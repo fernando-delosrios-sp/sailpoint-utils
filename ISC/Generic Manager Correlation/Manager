@@ -1,0 +1,25 @@
+{
+    "name": "Manager",
+    "type": "firstValid",
+    "attributes": {
+        "values": [
+            {
+                "type": "accountAttribute",
+                "attributes": {
+                    "sourceName": "NERM+ People",
+                    "attributeName": "sponsor.email"
+                }
+            },
+            {
+                "type": "accountAttribute",
+                "attributes": {
+                    "sourceName": "Microsoft Entra Guests (e522.site)",
+                    "attributeName": "sponsor"
+                }
+            },
+            "uid|username"
+        ],
+        "ignoreErrors": true
+    },
+    "internal": false
+}

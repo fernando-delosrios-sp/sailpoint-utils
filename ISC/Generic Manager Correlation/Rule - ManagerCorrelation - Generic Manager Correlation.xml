@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="Generic Manager Correlation" type="ManagerCorrelation">
+  <Description></Description>
+  <Signature returnType="Map">
+    <Inputs>
+      <Argument name="log" type="org.apache.log4j.Logger">
+        <Description>
+          Logger to log statements. Note: This executes in the cloud, and logging is currently not exposed to anyone other than SailPoint.
+        </Description>
+      </Argument>
+      <Argument name="idn" type="sailpoint.server.IdnRuleUtil">
+        <Description>
+          Provides a read-only starting point for using the SailPoint API. From this passed reference, the rule can interrogate the Identity Security Cloud data model including identities or account information via helper methods as described in IdnRuleUtil.
+        </Description>
+      </Argument>
+      <Argument name="link" type="sailpoint.object.Link">
+        <Description>
+          Read-only representation of account data that has been aggregated. Use this as a basis to determine manager linkages to a specific manager identity.
+        </Description>
+      </Argument>
+	  <Argument name="managerAttributeValue" type="java.lang.Object">
+        <Description>
+			Attribute value stored in the manager attribute. 
+        </Description>
+      </Argument>
+    </Inputs>
+    <Returns>
+      <Argument name="returnMap" type="java.util.Map">
+        <Description>
+          Map object containing a reference to the identity attributes to identify the manager's identity. These should contain both identityAttributeName and identityAttributeValue as keys.
+        </Description>
+      </Argument>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+	
+import java.util.HashMap;
+import java.util.Map;
+
+Map returnMap = new HashMap();
+
+if (managerAttributeValue == null) {
+    log.warn("Manager Correlation - Split Pipeline: managerAttributeValue is null. Skipping manager correlation.");
+    return null;
+}
+
+String managerAttrStr = managerAttributeValue.toString();
+
+if (managerAttrStr.trim().isEmpty()) {
+    log.warn("Manager Correlation - Split Pipeline: managerAttributeValue is empty. Skipping manager correlation.");
+    return null;
+}
+
+if (!managerAttrStr.contains("|")) {
+    log.error("Manager Correlation - Split Pipeline: managerAttributeValue does not contain the pipeline character '|'. Value: " + managerAttrStr);
+    return null;
+}
+
+String[] parts = managerAttrStr.split("\\|", -1);
+
+if (parts.length != 2) {
+    log.error("Manager Correlation - Split Pipeline: Expected exactly 2 parts after splitting on '|', but got " + parts.length + ". Value: " + managerAttrStr);
+    return null;
+}
+
+String identityAttrName = parts[0].trim();
+String identityAttrValue = parts[1].trim();
+
+if (identityAttrName.isEmpty()) {
+    log.error("Manager Correlation - Split Pipeline: identityAttributeName (first part) is empty after splitting. Value: " + managerAttrStr);
+    return null;
+}
+
+if (identityAttrValue.isEmpty()) {
+    log.error("Manager Correlation - Split Pipeline: identityAttributeValue (second part) is empty after splitting. Value: " + managerAttrStr);
+    return null;
+}
+
+log.debug("Manager Correlation - Split Pipeline: Resolved identityAttributeName='" + identityAttrName + "', identityAttributeValue='" + identityAttrValue + "'");
+
+returnMap.put("identityAttributeName", identityAttrName);
+returnMap.put("identityAttributeValue", identityAttrValue);
+
+return returnMap;
+
+]]></Source>
+</Rule>
