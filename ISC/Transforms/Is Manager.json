@@ -1,0 +1,8 @@
+{
+    "name": "Is Manager",
+    "type": "static",
+    "attributes": {
+        "value": "$identity.getManagerStatus()"
+    },
+    "internal": false
+}

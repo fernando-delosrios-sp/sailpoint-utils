@@ -1,0 +1,67 @@
+{
+    "name": "Lifecycle State",
+    "type": "firstValid",
+    "attributes": {
+        "values": [
+            {
+                "type": "dateCompare",
+                "attributes": {
+                    "firstDate": {
+                        "type": "reference",
+                        "attributes": {
+                            "id": "Effective End Date"
+                        }
+                    },
+                    "secondDate": "now",
+                    "operator": "gt",
+                    "positiveCondition": {
+                        "type": "dateCompare",
+                        "attributes": {
+                            "firstDate": {
+                                "type": "reference",
+                                "attributes": {
+                                    "id": "Effective Start Date"
+                                }
+                            },
+                            "secondDate": "now",
+                            "operator": "lt",
+                            "positiveCondition": "active",
+                            "negativeCondition": "prehire"
+                        }
+                    },
+                    "negativeCondition": {
+                        "type": "dateCompare",
+                        "attributes": {
+                            "firstDate": {
+                                "type": "reference",
+                                "attributes": {
+                                    "id": "Effective End Date"
+                                }
+                            },
+                            "secondDate": {
+                                "type": "dateMath",
+                                "attributes": {
+                                    "expression": "now-90d"
+                                }
+                            },
+                            "operator": "gt",
+                            "positiveCondition": "inactive",
+                            "negativeCondition": "archived"
+                        }
+                    }
+                }
+            },
+            {
+                "type": "reference",
+                "attributes": {
+                    "id": "Default Lifecycle State",
+                    "input": {
+                        "type": "trim"
+                    }
+                }
+            }
+        ],
+        "ignoreErrors": true
+    },
+    "internal": false
+}

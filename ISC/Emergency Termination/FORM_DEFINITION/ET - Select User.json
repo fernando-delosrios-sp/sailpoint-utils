@@ -1,0 +1,123 @@
+{
+  "id": "1931be62-8346-4e53-9913-74ad3d85239c",
+  "name": "ET - Select User",
+  "description": "Form to select the user for Emergency Termination (ET) task.",
+  "owner": {
+    "type": "IDENTITY",
+    "id": "ce49d357cbed44f9ac582b889f8e7a90",
+    "name": ""
+  },
+  "usedBy": [
+    {
+      "type": "WORKFLOW",
+      "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
+      "name": "Emergency Termination"
+    }
+  ],
+  "formInput": [
+    {
+      "id": "username",
+      "type": "STRING",
+      "label": "Username",
+      "description": "The username of the person initiating the Emergency Termination (ET)."
+    }
+  ],
+  "formElements": [
+    {
+      "id": "1144046420884",
+      "elementType": "SECTION",
+      "config": {
+        "alignment": "LEFT",
+        "description": "",
+        "formElements": [
+          {
+            "config": {
+              "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Emergency Termination</strong></span></p>\n<p style=\"text-align: center;\"><span style=\"font-size: 24pt; color: #236fa1;\"><strong>Step 2 of 2</strong></span></p>\n<p><strong>Welcome <span style=\"color: #236fa1;\">{{$.form.input.username}}</span> !!</strong></p>\n<p>You have selected to immediately terminate an active worker.</p>\n<p>This is a task which is audited and should not be entered into without thoughtful consideration.  If you need more information or guidance, please review the <a href=\"https://www.sailpoint.com\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Emergency Termination Policy</a>.</p>\n<p>You can also reach out for help via Slack in <strong><span style=\"color: #236fa1;\">#help-emergency-termination</span></strong>.</p>\n<p> </p>",
+              "label": "Instructions",
+              "showLabel": false
+            },
+            "elementType": "DESCRIPTION",
+            "id": "1195095076399",
+            "key": "",
+            "validations": []
+          },
+          {
+            "config": {
+              "dataSource": {
+                "config": {
+                  "aggregationBucketField": "attributes.displayName",
+                  "filters": {
+                    "manager.displayName": {
+                      "exclude": false,
+                      "value": "{{$.form.input.username}}"
+                    }
+                  },
+                  "indices": [
+                    "identities"
+                  ],
+                  "query": "*"
+                },
+                "dataSourceType": "SEARCH"
+              },
+              "forceSelect": true,
+              "helpText": "Please select the one (1) person you need to terminate immediately.",
+              "label": "Selected Individual",
+              "maximum": 1,
+              "placeholder": "",
+              "required": true
+            },
+            "elementType": "SELECT",
+            "id": "1641681738546",
+            "key": "selectedIndividual",
+            "validations": [
+              {
+                "validationType": "DATA_SOURCE"
+              },
+              {
+                "validationType": "REQUIRED"
+              }
+            ]
+          },
+          {
+            "config": {
+              "default": "",
+              "description": "",
+              "helpText": "Please provide the justification for requesting Emergency Termination (ET).",
+              "label": "Justification",
+              "placeholder": "",
+              "required": true,
+              "resize": true,
+              "rows": 2
+            },
+            "elementType": "TEXTAREA",
+            "id": "625087201363",
+            "key": "justification",
+            "validations": [
+              {
+                "validationType": "REQUIRED"
+              }
+            ]
+          },
+          {
+            "config": {
+              "description": "<p> </p>\n<p>When you have completed the form, please press <span style=\"color: #236fa1;\"><strong>Submit</strong></span>.</p>\n<p>If you wish to abandon this process, please press <span style=\"color: #236fa1;\"><strong>Cancel</strong></span>.</p>",
+              "label": "Final Instructions",
+              "showLabel": false
+            },
+            "elementType": "DESCRIPTION",
+            "id": "742897457840",
+            "key": "",
+            "validations": []
+          }
+        ],
+        "label": "Form Instructions",
+        "labelStyle": "h5",
+        "showLabel": false
+      },
+      "validations": []
+    }
+  ],
+  "formConditions": [],
+  "created": "2024-12-18T18:26:32.212972586Z",
+  "modified": "2026-07-02T16:07:39.918728744Z"
+}

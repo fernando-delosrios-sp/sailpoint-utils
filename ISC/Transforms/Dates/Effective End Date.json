@@ -1,0 +1,29 @@
+{
+    "name": "Effective End Date",
+    "type": "firstValid",
+    "attributes": {
+        "values": [
+            {
+                "type": "reference",
+                "attributes": {
+                    "id": "Parse Date",
+                    "input": {
+                        "type": "accountAttribute",
+                        "attributes": {
+                            "sourceName": "HR - Erste (Users)",
+                            "attributeName": "AUSTRITT"
+                        }
+                    }
+                }
+            },
+            {
+                "type": "dateMath",
+                "attributes": {
+                    "expression": "now+1M"
+                }
+            }
+        ],
+        "ignoreErrors": true
+    },
+    "internal": false
+}

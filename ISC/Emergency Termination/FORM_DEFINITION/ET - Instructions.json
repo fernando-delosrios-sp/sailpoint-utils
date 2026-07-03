@@ -1,0 +1,79 @@
+{
+  "id": "ac018c86-6933-4963-a519-44a5c20075ea",
+  "name": "ET - Instructions",
+  "description": "Instructions for Emergency Termination (ET) task.",
+  "owner": {
+    "type": "IDENTITY",
+    "id": "ce49d357cbed44f9ac582b889f8e7a90",
+    "name": ""
+  },
+  "usedBy": [
+    {
+      "type": "WORKFLOW",
+      "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
+      "name": "Emergency Termination"
+    }
+  ],
+  "formInput": [
+    {
+      "id": "username",
+      "type": "STRING",
+      "label": "Username",
+      "description": "The login (username) of the person initiating the ET task."
+    }
+  ],
+  "formElements": [
+    {
+      "id": "1144046420884",
+      "elementType": "SECTION",
+      "config": {
+        "alignment": "LEFT",
+        "description": "",
+        "formElements": [
+          {
+            "config": {
+              "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Emergency Termination</strong></span></p>\n<p style=\"text-align: center;\"><span style=\"font-size: 24pt; color: #236fa1;\"><strong>Step 1 of 2</strong></span></p>\n<p><strong>Welcome <span style=\"color: #236fa1;\">{{$.form.input.username}}</span> !!</strong></p>\n<p>You have selected to immediately terminate an active worker.</p>\n<p>This is a task which is audited and should not be entered into without thoughtful consideration.  If you need more information or guidance, please review the <a href=\"https://www.sailpoint.com\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Emergency Termination Policy</a>.</p>\n<p>You can also reach out for help via Slack in <strong><span style=\"color: #236fa1;\">#help-emergency-termination</span></strong>.</p>\n<p> </p>",
+              "label": "Instructions",
+              "showLabel": false
+            },
+            "elementType": "DESCRIPTION",
+            "id": "1195095076399",
+            "key": "",
+            "validations": []
+          },
+          {
+            "config": {
+              "default": false,
+              "falseLabel": "No.  I don't understand.",
+              "helpText": "Please use this toggle to confirm you understand and acknowledge the instructions.",
+              "label": "User Acknowledgement",
+              "trueLabel": "Yes.  I understand the instructions."
+            },
+            "elementType": "TOGGLE",
+            "id": "1087534078162",
+            "key": "userAcknowledgement",
+            "validations": []
+          },
+          {
+            "config": {
+              "description": "<p> </p>\n<p>When you have completed the form, please press <span style=\"color: #236fa1;\"><strong>Submit</strong></span>.</p>\n<p>If you wish to abandon this process, please press <span style=\"color: #236fa1;\"><strong>Cancel</strong></span>.</p>",
+              "label": "Final Instructions",
+              "showLabel": false
+            },
+            "elementType": "DESCRIPTION",
+            "id": "742897457840",
+            "key": "",
+            "validations": []
+          }
+        ],
+        "label": "Form Instructions",
+        "labelStyle": "h5",
+        "showLabel": false
+      },
+      "validations": []
+    }
+  ],
+  "formConditions": [],
+  "created": "2024-12-17T21:51:22.868080351Z",
+  "modified": "2026-07-02T16:07:39.538101414Z"
+}

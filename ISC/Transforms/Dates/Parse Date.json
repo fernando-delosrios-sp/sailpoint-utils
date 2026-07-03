@@ -1,0 +1,34 @@
+{
+    "name": "Parse Date",
+    "type": "firstValid",
+    "attributes": {
+        "values": [
+            {
+                "type": "dateFormat",
+                "attributes": {
+                    "inputFormat": "dd/MM/yyyy",
+                    "outputFormat": "ISO8601"
+                }
+            },
+            {
+                "type": "dateFormat",
+                "attributes": {
+                    "inputFormat": "MM/dd/yyyy",
+                    "outputFormat": "ISO8601"
+                }
+            },
+            {
+                "type": "dateFormat",
+                "attributes": {
+                    "inputFormat": "yyyy/MM/dd",
+                    "outputFormat": "ISO8601"
+                }
+            },
+            {
+                "type": "trim"
+            }
+        ],
+        "ignoreErrors": true
+    },
+    "internal": false
+}

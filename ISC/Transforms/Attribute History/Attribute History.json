@@ -1,0 +1,104 @@
+{
+    "type": "firstValid",
+    "attributes": {
+        "requiresPeriodicRefresh": "true",
+        "values": [
+            {
+                "type": "static",
+                "attributes": {
+                    "currentValueNoBrackets": {
+                        "type": "reference",
+                        "attributes": {
+                            "id": "<ATTRIBUTE>"
+                        }
+                    },
+                    "currentValue": {
+                        "type": "concat",
+                        "attributes": {
+                            "values": [
+                                "[",
+                                {
+                                    "type": "reference",
+                                    "attributes": {
+                                        "id": "<ATTRIBUTE>"
+                                    }
+                                },
+                                "]"
+                            ]
+                        }
+                    },
+                    "currentHistory": {
+                        "type": "firstValid",
+                        "attributes": {
+                            "values": [
+                                {
+                                    "type": "identityAttribute",
+                                    "attributes": {
+                                        "name": "<ATTRIBUTE>History"
+                                    }
+                                },
+                                "N/A"
+                            ],
+                            "ignoreErrors": true
+                        }
+                    },
+                    "latestHistoricValue": {
+                        "type": "split",
+                        "attributes": {
+                            "delimiter": "/",
+                            "index": 0,
+                            "throw": false,
+                            "input": {
+                                "type": "identityAttribute",
+                                "attributes": {
+                                    "name": "<ATTRIBUTE>History"
+                                }
+                            }
+                        }
+                    },
+                    "currentGracePeriodExpiry": {
+                        "type": "firstValid",
+                        "attributes": {
+                            "values": [
+                                {
+                                    "type": "split",
+                                    "attributes": {
+                                        "delimiter": "/",
+                                        "index": 1,
+                                        "throw": false,
+                                        "input": {
+                                            "type": "identityAttribute",
+                                            "attributes": {
+                                                "name": "<ATTRIBUTE>History"
+                                            }
+                                        }
+                                    }
+                                },
+                                "null"
+                            ]
+                        }
+                    },
+                    "newGracePeriodExpiry": {
+                        "type": "dateMath",
+                        "attributes": {
+                            "expression": "now+5m/m"
+                        }
+                    },
+                    "currentTimeStamp": {
+                        "type": "dateMath",
+                        "attributes": {
+                            "expression": "now/m"
+                        }
+                    },
+                    "value": "#if($currentHistory == \"N/A\" || $currentHistory == $currentValue || $currentHistory == $currentValueNoBrackets)$currentValue#elseif($currentValue != $latestHistoricValue)$currentValue/$newGracePeriodExpiry/$currentHistory#elseif($currentGracePeriodExpiry.compareTo($currentTimeStamp) <= 0 || $currentGracePeriodExpiry == \"null\")$currentValue#{else}$currentHistory#end"
+                }
+            },
+            {
+                "type": "static",
+                "attributes": {
+                    "value": "N/A"
+                }
+            }
+        ]
+    }
+}

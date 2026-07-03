@@ -1,0 +1,199 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="LCS Operations" type="BeforeProvisioning">
+    <Description>LCS Operations rule</Description>
+    <Signature>
+        <Inputs>
+            <Argument name="log" type="org.apache.commons.logging.Log">
+                <Description>The log object associated with the SailPointContext.</Description>
+            </Argument>
+            <Argument name="plan">
+                <Description>The ProvisioningPlan object on its way to the Connector.</Description>
+            </Argument>
+            <Argument name="application">
+                <Description>The application object that references this before/after script.</Description>
+            </Argument>
+        </Inputs>
+    </Signature>
+    <Source><![CDATA[
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.commons.logging.Log;
+
+import sailpoint.object.Application;
+import sailpoint.object.ProvisioningPlan;
+import sailpoint.object.ProvisioningPlan.AccountRequest;
+import sailpoint.object.ProvisioningPlan.AttributeRequest;
+import sailpoint.server.IdnRuleUtil;
+
+List processActiveDirectoryOperations(AccountRequest request, Log log, Map options) {
+    log.info("LCS: Processing Active Directory operation.");
+    List attRequests = new ArrayList();
+    Boolean ouWasMoved = false;
+    AttributeRequest newReq;
+    for (AttributeRequest req : request.getAttributeRequests()) {
+        String key = req.getName();
+        switch (key) {
+            case "cn":
+                log.info("   - Found cn change attribute request");
+                String cn = "CN=" + req.getValue();
+                log.info("   - Changing CN to " + cn);
+                newReq = new AttributeRequest("AC_NewName", ProvisioningPlan.Operation.Set, cn);
+                attRequests.add(newReq);
+                break;
+
+            case "distinguishedName":
+                String PATTERN = "CN=.*?(?:,(?<ou>[A-Z]+=.+)|$)";
+                log.info("   - Found distinguishedName change attribute request");
+                String value = (String) req.getValue();
+                Pattern pattern = Pattern.compile(PATTERN, Pattern.CASE_INSENSITIVE);
+                Matcher matcher = pattern.matcher(value);
+                if (matcher.matches()) {
+                    String ou = matcher.group("ou");
+                    log.info("   - Changing OU to " + ou);
+                    newReq = new AttributeRequest("AC_NewParent", ProvisioningPlan.Operation.Set, ou);
+                    attRequests.add(newReq);
+                    ouWasMoved = true;
+                } else {
+                    log.info("   " + value + " does not match " + PATTERN + " pattern");
+                }
+                
+                break;
+
+            default:
+                attRequests.add(req);
+                break;
+        }
+    }
+    request.setAttributeRequests(attRequests);
+    if (options.size() > 0) {
+        if (!ouWasMoved) {
+            String lcsOu = (String) options.get("OU");
+            if (lcsOu != null) {
+                newReq = new AttributeRequest("AC_NewParent", ProvisioningPlan.Operation.Set, lcsOu);
+                request.add(newReq);
+            }
+        }
+    }
+    List defaultRequests = processDefaultLCSOperation(request, log, options);
+    return defaultRequests;
+}
+
+List processDefaultLCSOperation(AccountRequest request, Log log,
+        Map options) {
+    List requests = new ArrayList();
+    if (options.size() > 0) {
+        log.info("LCS: Processing default operation.");
+        String op = options.get("OP");
+        log.info("   - Adding " + op + " operation request for " + request.getNativeIdentity());
+        try {
+            AccountRequest lcsRequest = new AccountRequest();
+            lcsRequest.setOperation(AccountRequest.Operation.valueOf(op));
+            lcsRequest.setApplication(request.getApplication());
+            lcsRequest.setNativeIdentity(request.getNativeIdentity());
+            requests.add(lcsRequest);
+        } catch (Exception e) {
+            log.error("   Failed to process " + op + " operation");
+        }
+    }
+
+    return requests;
+}
+
+List processOperations(AccountRequest request, Application application,
+        Log log, Map options, IdnRuleUtil idn) {
+    String appConnector = application.getConnector();
+    switch (appConnector) {
+        case "sailpoint.connector.ADLDAPConnector":
+            return processActiveDirectoryOperations(request, log, options);
+        default:
+            return processDefaultLCSOperation(request, log, options);
+    }
+}
+
+Map getLCSOptions(AccountRequest request) {
+    log.info("LCS: Getting options from account request.");
+    Map options = new HashMap();
+    String lcs = null;
+    for (AttributeRequest req : request.getAttributeRequests()) {
+        String key = req.getName();
+        if ("LCS".equals(key)) {
+            lcs = (String) req.getValue();
+            log.info("   LCS set to " + lcs.toLowerCase());
+            options.put("LCS", lcs.toLowerCase());
+            break;
+        }
+    }
+    if (lcs != null) {
+        String PATTERN = "LCS_" + lcs.toUpperCase() + "_(?<option>[^_]+)";
+        Pattern pattern = Pattern.compile(PATTERN);
+        for (AttributeRequest req : request.getAttributeRequests()) {
+            String key = req.getName();
+            log.info("   - Found " + key + " attribute request");
+            Matcher matcher = pattern.matcher(key);
+            if (matcher.matches()) {
+                String option = matcher.group("option");
+                log.info("   Setting LCS " + option + " to " + req.getValue());
+                options.put(option, req.getValue());
+            }
+        }
+    }
+    log.info("   LCS options set to: " + options.toString());
+
+    return options;
+}
+
+void removeLCSOptions(AccountRequest request) {
+    log.info("LCS: Removing LCS-related attribute requests.");
+    List attRequests = new ArrayList();
+    Pattern pattern = Pattern.compile("LCS.*");
+    for (AttributeRequest attReq : request.getAttributeRequests()) {
+        String key = attReq.getName();
+        log.info("   - Found " + key + " attribute request");
+        if (pattern.matcher(key).matches()) {
+            log.info("   - Removing " + key + " attribute request");
+        } else {
+            attRequests.add(attReq);
+        }
+    }
+    request.setAttributeRequests(attRequests);
+}
+
+//===================================================================
+
+if (plan == null) {
+    log.info("LCS: empty plan received.");
+    return;
+} else {
+    //log.info("LCS: Original plan:");
+    //log.info(plan.to Xml());
+}
+List finalRequests = new ArrayList();
+for (AccountRequest request : plan.getAccountRequests()) {
+    Map options = getLCSOptions(request);
+    removeLCSOptions(request);
+    if (AccountRequest.Operation.Modify.equals(request.getOperation())) {
+        log.info("LCS: Inspecting modify account request");
+        List newRequests = processOperations(request, application, log, options, idn);
+        List attributeRequests = request.getAttributeRequests();
+        if (attributeRequests != null && attributeRequests.size() > 0) {
+            finalRequests.add(request);
+        }
+        for (AccountRequest newRequest : newRequests) {
+            finalRequests.add(newRequest);
+        }
+    } else {
+        log.info("LCS: Skipping non-modify account request");
+        finalRequests.add(request);
+    }
+    plan.setAccountRequests(finalRequests);
+    //log.info("LCS: Resulting plan:");
+    //log.info(plan.to Xml());
+}
+    ]]>    </Source>
+</Rule>
