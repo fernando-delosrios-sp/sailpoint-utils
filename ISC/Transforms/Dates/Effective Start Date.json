@@ -10,8 +10,8 @@
                     "input": {
                         "type": "accountAttribute",
                         "attributes": {
-                            "sourceName": "HR - Erste (Users)",
-                            "attributeName": "EINTRITT"
+                            "sourceName": "<SOURCE>",
+                            "attributeName": "<ATTRIBUTE>"
                         }
                     }
                 }

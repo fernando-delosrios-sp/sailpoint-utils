@@ -7,9 +7,10 @@
                 "type": "static",
                 "attributes": {
                     "currentValueNoBrackets": {
-                        "type": "reference",
+                        "type": "accountAttribute",
                         "attributes": {
-                            "id": "<ATTRIBUTE>"
+                            "sourceName": "<SOURCE>",
+                            "attributeName": "<ATTRIBUTE>"
                         }
                     },
                     "currentValue": {
@@ -18,9 +19,10 @@
                             "values": [
                                 "[",
                                 {
-                                    "type": "reference",
+                                    "type": "accountAttribute",
                                     "attributes": {
-                                        "id": "<ATTRIBUTE>"
+                                        "sourceName": "<SOURCE>",
+                                        "attributeName": "<ATTRIBUTE>"
                                     }
                                 },
                                 "]"

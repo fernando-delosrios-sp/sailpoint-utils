@@ -1,0 +1,57 @@
+{
+    "type": "firstValid",
+    "attributes": {
+        "values": [
+            {
+                "type": "dateCompare",
+                "attributes": {
+                    "firstDate": {
+                        "type": "reference",
+                        "attributes": {
+                            "id": "Effective End Date"
+                        }
+                    },
+                    "secondDate": "now",
+                    "operator": "lt",
+                    "positiveCondition": {
+                        "type": "dateCompare",
+                        "attributes": {
+                            "firstDate": {
+                                "type": "reference",
+                                "attributes": {
+                                    "id": "Effective End Date"
+                                }
+                            },
+                            "secondDate": {
+                                "type": "dateMath",
+                                "attributes": {
+                                    "expression": "now-30d"
+                                }
+                            },
+                            "operator": "lt",
+                            "positiveCondition": "inactive",
+                            "negativeCondition": "archive"
+                        }
+                    },
+                    "negativeCondition": {
+                        "type": "dateCompare",
+                        "attributes": {
+                            "firstDate": {
+                                "type": "reference",
+                                "attributes": {
+                                    "id": "Effective Start Date"
+                                }
+                            },
+                            "secondDate": "now",
+                            "operator": "lt",
+                            "positiveCondition": "active",
+                            "negativeCondition": "prehire"
+                        }
+                    }
+                }
+            },
+            "-"
+        ],
+        "ignoreErrors": true
+    }
+}
