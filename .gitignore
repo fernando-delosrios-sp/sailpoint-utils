@@ -29,13 +29,6 @@ pnpm-debug.log*
 node_modules/
 vendor/
 
-# Build and coverage outputs
-dist/
-build/
-out/
-coverage/
-.nyc_output/
-
 # Python
 __pycache__/
 *.py[cod]
