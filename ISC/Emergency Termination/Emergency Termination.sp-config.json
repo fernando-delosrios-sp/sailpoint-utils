@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "timestamp": "2026-07-02T16:12:39.253687566Z",
-  "tenant": "company19271-poc",
-  "description": "Export Job vscode 2026-07-02T16:12:34.209Z",
+  "timestamp": "2026-07-21T07:54:38.401779008Z",
+  "tenant": "company23128-poc",
+  "description": "Export Job vscode 2026-07-21T07:54:36.914Z",
   "options": {
     "excludeTypes": null,
     "includeTypes": [
@@ -21,7 +21,7 @@
       "WORKFLOW": {
         "includedNames": [],
         "includedIds": [
-          "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428"
+          "c781e8b0-137f-445c-955c-9254eb96e106"
         ]
       }
     }
@@ -30,24 +30,34 @@
     {
       "version": 1,
       "self": {
-        "id": "9b9578a7-42e6-4057-a1e5-b0da9c203421",
+        "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
         "name": "ET - Approval",
         "type": "FORM_DEFINITION"
       },
       "object": {
-        "id": "9b9578a7-42e6-4057-a1e5-b0da9c203421",
+        "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
         "name": "ET - Approval",
         "description": "Approval step for Emergency Termination (ET) task.",
         "owner": {
           "type": "IDENTITY",
-          "id": "ce49d357cbed44f9ac582b889f8e7a90",
-          "name": ""
+          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
+          "name": "fernando.delosrios"
         },
         "usedBy": [
           {
             "type": "WORKFLOW",
             "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
-            "name": "Emergency Termination"
+            "name": ""
+          },
+          {
+            "type": "WORKFLOW",
+            "id": "de68ba5f-4ec9-4e83-b490-41520c27bad1",
+            "name": "Copy of Emergency Termination"
+          },
+          {
+            "type": "WORKFLOW",
+            "id": "c781e8b0-137f-445c-955c-9254eb96e106",
+            "name": "Emergency Termination Request"
           }
         ],
         "formInput": [
@@ -411,31 +421,41 @@
             ]
           }
         ],
-        "created": "2024-12-19T19:39:50.315876281Z",
-        "modified": "2026-07-02T16:07:40.729581898Z"
+        "created": "2026-07-14T16:25:52.989367234Z",
+        "modified": "2026-07-14T16:28:00.541982819Z"
       }
     },
     {
       "version": 1,
       "self": {
-        "id": "ac018c86-6933-4963-a519-44a5c20075ea",
+        "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
         "name": "ET - Instructions",
         "type": "FORM_DEFINITION"
       },
       "object": {
-        "id": "ac018c86-6933-4963-a519-44a5c20075ea",
+        "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
         "name": "ET - Instructions",
         "description": "Instructions for Emergency Termination (ET) task.",
         "owner": {
           "type": "IDENTITY",
-          "id": "ce49d357cbed44f9ac582b889f8e7a90",
-          "name": ""
+          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
+          "name": "fernando.delosrios"
         },
         "usedBy": [
           {
             "type": "WORKFLOW",
             "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
-            "name": "Emergency Termination"
+            "name": ""
+          },
+          {
+            "type": "WORKFLOW",
+            "id": "de68ba5f-4ec9-4e83-b490-41520c27bad1",
+            "name": "Copy of Emergency Termination"
+          },
+          {
+            "type": "WORKFLOW",
+            "id": "c781e8b0-137f-445c-955c-9254eb96e106",
+            "name": "Emergency Termination Request"
           }
         ],
         "formInput": [
@@ -498,31 +518,41 @@
           }
         ],
         "formConditions": [],
-        "created": "2024-12-17T21:51:22.868080351Z",
-        "modified": "2026-07-02T16:07:39.538101414Z"
+        "created": "2026-07-14T16:26:09.669086918Z",
+        "modified": "2026-07-14T16:28:27.602676142Z"
       }
     },
     {
       "version": 1,
       "self": {
-        "id": "1931be62-8346-4e53-9913-74ad3d85239c",
+        "id": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
         "name": "ET - Select User",
         "type": "FORM_DEFINITION"
       },
       "object": {
-        "id": "1931be62-8346-4e53-9913-74ad3d85239c",
+        "id": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
         "name": "ET - Select User",
         "description": "Form to select the user for Emergency Termination (ET) task.",
         "owner": {
           "type": "IDENTITY",
-          "id": "ce49d357cbed44f9ac582b889f8e7a90",
-          "name": ""
+          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
+          "name": "fernando.delosrios"
         },
         "usedBy": [
           {
             "type": "WORKFLOW",
             "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
-            "name": "Emergency Termination"
+            "name": ""
+          },
+          {
+            "type": "WORKFLOW",
+            "id": "de68ba5f-4ec9-4e83-b490-41520c27bad1",
+            "name": "Copy of Emergency Termination"
+          },
+          {
+            "type": "WORKFLOW",
+            "id": "c781e8b0-137f-445c-955c-9254eb96e106",
+            "name": "Emergency Termination Request"
           }
         ],
         "formInput": [
@@ -629,27 +659,27 @@
           }
         ],
         "formConditions": [],
-        "created": "2024-12-18T18:26:32.212972586Z",
-        "modified": "2026-07-02T16:07:39.918728744Z"
+        "created": "2026-07-14T16:26:26.861375203Z",
+        "modified": "2026-07-15T08:21:57.352884349Z"
       }
     },
     {
       "version": 1,
       "self": {
-        "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
-        "name": "Emergency Termination",
+        "id": "c781e8b0-137f-445c-955c-9254eb96e106",
+        "name": "Emergency Termination Request",
         "type": "WORKFLOW"
       },
       "object": {
-        "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
-        "name": "Emergency Termination",
+        "id": "c781e8b0-137f-445c-955c-9254eb96e106",
+        "name": "Emergency Termination Request",
         "description": "Task to immediately terminate an individual, presumably before the HR system is updated and aggregated.",
-        "created": "2026-07-02T16:07:41.843124971Z",
-        "modified": "2026-07-02T16:07:41.843124971Z",
+        "created": "2026-07-15T08:10:43.866649283Z",
+        "modified": "2026-07-15T08:22:26.854191842Z",
         "modifiedBy": {
           "type": "IDENTITY",
-          "id": "cb9cdd017ae94b3e82eca349a02ccd04",
-          "name": "slpt.support"
+          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
+          "name": "fernando.delosrios"
         },
         "definition": {
           "start": "Define Variable",
@@ -693,7 +723,7 @@
                   "variableB": "true"
                 }
               ],
-              "defaultStep": "Interactive Message 4",
+              "defaultStep": "Interactive Message 1",
               "description": "Check the Set ISC Tenant Variables variable \"Approval Required\" to see if the manager approval step is required.",
               "displayName": "Is Manager Approval Required?",
               "type": "choice"
@@ -704,28 +734,16 @@
                 "id": "sp:define-variable",
                 "variables": [
                   {
-                    "description": "The Client ID portion of the PAT token.",
-                    "name": "Client ID",
+                    "description": "The Base URL for API calls",
+                    "name": "Base API URL",
                     "transforms": [],
-                    "variableA": "7ca8cd27cd524efdaf1e23ac57f02d91"
-                  },
-                  {
-                    "description": "The Token URL for the ISC tenant.",
-                    "name": "Token URL",
-                    "transforms": [],
-                    "variableA": "https://beta-18013.api.identitynow-demo.com/oauth/token"
-                  },
-                  {
-                    "description": "The Base URL for v2024 API calls",
-                    "name": "v2024 Base URL",
-                    "transforms": [],
-                    "variableA": "https://beta-18013.api.identitynow-demo.com/v2024"
+                    "variableA": "https://company23128-poc.api.identitynow-demo.com"
                   },
                   {
                     "description": "The ID for the LCS \"Emergency Termination\" in the HR identity profile.",
                     "name": "ET LCS ID",
                     "transforms": [],
-                    "variableA": "464cafcbbb704476bf4217e638b3cc34"
+                    "variableA": "2bdf0654e7874535a1c86d0454cddeea"
                   },
                   {
                     "description": "Flag to indicate whether the manager approval step is required. \n\nNote: Set to \"true\" if approval is required.  Setting to any other value will skip the manager approval step.",
@@ -753,12 +771,12 @@
               "actionId": "sp:forms",
               "attributes": {
                 "deadline": "2h",
-                "formDefinitionId": "9b9578a7-42e6-4057-a1e5-b0da9c203421",
-                "inputForForm_department": "{{$.hTTPRequest1.body[0].attributes.department}}",
-                "inputForForm_firstname": "{{$.hTTPRequest1.body[0].attributes.firstname}}",
-                "inputForForm_jobTitle": "{{$.hTTPRequest1.body[0].attributes.jobTitle}}",
+                "formDefinitionId": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
+                "inputForForm_department.$": "$.hTTPRequest1.body[0].attributes.department",
+                "inputForForm_firstname.$": "$.hTTPRequest1.body[0].attributes.firstname",
+                "inputForForm_jobTitle.$": "$.hTTPRequest1.body[0].attributes.jobTitle",
                 "inputForForm_justification.$": "$.interactiveForm1.formData.justification",
-                "inputForForm_lastname": "{{$.hTTPRequest1.body[0].attributes.lastname}}",
+                "inputForForm_lastname.$": "$.hTTPRequest1.body[0].attributes.lastname",
                 "inputForForm_requestor.$": "$.getIdentity.attributes.displayName",
                 "inputForForm_username.$": "$.getIdentity1.attributes.displayName",
                 "notificationBody": "As a 2nd level manager, you have been requested to review and approve an emergency termination.  Please select the link to review the proposed termination.",
@@ -768,7 +786,7 @@
                 "reminderBody": "Get going..."
               },
               "displayName": "Form: Manager Approval",
-              "nextStep": "Interactive Message 3",
+              "nextStep": "Interactive Message 4",
               "type": "action",
               "versionNumber": 1
             },
@@ -789,7 +807,7 @@
                 "id.$": "$.getIdentity.managerRef.id"
               },
               "displayName": "Get Identity of 2nd Manager",
-              "nextStep": "Interactive Message 1",
+              "nextStep": "Interactive Message 3",
               "type": "action",
               "versionNumber": 2
             },
@@ -801,17 +819,33 @@
                   "lifecycleStateId": "{{$.defineVariable.eTLCSID}}"
                 },
                 "method": "post",
-                "oAuthClientId.$": "$.defineVariable.clientID",
-                "oAuthClientSecret": "",
-                "oAuthCredentialLocation": "oAuthInHeader",
-                "oAuthTokenUrl.$": "$.defineVariable.tokenURL",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "b27031c0-cdbf-41f6-af60-f9a39eb495be",
+                  "paramType": "1.4",
+                  "refID": "6b0c5ab9-8f24-4bb5-9093-cf0392691194"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "657b902d-1147-4252-8978-dd23614018bc",
+                  "paramType": "3.1",
+                  "refID": "8b6a682c-8be6-4a26-98db-8aa5db10552e"
+                },
                 "requestContentType": "json",
-                "url": "{{$.defineVariable.v2024BaseURL}}/identities/{{$.hTTPRequest1.body[0].id}}/set-lifecycle-state"
+                "url": "{{$.defineVariable.baseAPIURL}}/identities/v1/{{$.hTTPRequest1.body[0].id}}/set-lifecycle-state"
               },
-              "displayName": "API (0): Set ET Lifecycle State",
+              "displayName": "API: Set ET Lifecycle State",
               "nextStep": "End Step - Success",
               "type": "action",
-              "versionNumber": 2
+              "versionNumber": 3
             },
             "HTTP Request 1": {
               "actionId": "sp:http",
@@ -829,26 +863,39 @@
                   }
                 },
                 "method": "post",
-                "oAuthClientId.$": "$.defineVariable.clientID",
-                "oAuthClientSecret": "",
-                "oAuthCredentialLocation": "oAuthInHeader",
-                "oAuthTokenUrl.$": "$.defineVariable.tokenURL",
-                "requestContentType": "json",
-                "requestHeaders": {
-                  "Accept": "application/json",
-                  "X-SailPoint-Experimental": "true"
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "b27031c0-cdbf-41f6-af60-f9a39eb495be",
+                  "paramType": "1.4",
+                  "refID": "6b0c5ab9-8f24-4bb5-9093-cf0392691194"
                 },
-                "url": "{{$.defineVariable.v2024BaseURL}}/search"
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "657b902d-1147-4252-8978-dd23614018bc",
+                  "paramType": "3.1",
+                  "refID": "8b6a682c-8be6-4a26-98db-8aa5db10552e"
+                },
+                "requestContentType": "json",
+                "requestHeaders": null,
+                "url": "{{$.defineVariable.baseAPIURL}}/search/v1"
               },
-              "displayName": "API (1): Get Terminated Identity",
+              "displayName": "API: Get Terminated Identity",
               "nextStep": "Compare Strings",
               "type": "action",
-              "versionNumber": 2
+              "versionNumber": 3
             },
             "Interactive Form": {
               "actionId": "sp:interactive-form",
               "attributes": {
-                "formDefinitionId": "ac018c86-6933-4963-a519-44a5c20075ea",
+                "formDefinitionId": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
                 "inputForForm_username.$": "$.getIdentity.attributes.displayName",
                 "interactiveProcessId.$": "$.trigger.interactiveProcessId",
                 "ownerId.$": "$.trigger.launchedBy.id",
@@ -862,11 +909,11 @@
             "Interactive Form 1": {
               "actionId": "sp:interactive-form",
               "attributes": {
-                "formDefinitionId": "1931be62-8346-4e53-9913-74ad3d85239c",
+                "formDefinitionId": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
                 "inputForForm_username.$": "$.getIdentity.attributes.displayName",
                 "interactiveProcessId.$": "$.trigger.interactiveProcessId",
                 "ownerId.$": "$.trigger.launchedBy.id",
-                "title": "Select User"
+                "title.$": "$.getIdentity.attributes.displayName"
               },
               "displayName": "Form: Select User to Terminate",
               "nextStep": "HTTP Request 1",
@@ -892,12 +939,12 @@
               "attributes": {
                 "category": "WARN",
                 "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p>&nbsp;</p>\n<p>You have selected to initiate an&nbsp;<span style=\"text-decoration: underline; color: #e03e2d;\">emergency termination</span> for</p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}}</span></p>\n<p><span style=\"color: #000000;\">You have provided the following (optional) comments:</span></p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.justification}}</span></p>\n<p><span style=\"color: #000000;\">Corporate policy dictates that your manager, <span style=\"color: #236fa1;\">{{$.getIdentity1.attributes.displayName}}</span>, will have to approve the termination request before it becomes effective.&nbsp; You will be notified when your manager has made their decision.</span></p>\n<p><span style=\"color: #000000;\">If you like, you can <span style=\"font-size: 14pt;\"><strong>X</strong></span> out of this task and wait for the notification.</span></p>",
+                "message": "<p>&nbsp;</p>\n<p>You have selected to initiate an&nbsp;<span style=\"text-decoration: underline; color: #e03e2d;\">Emergency Termination</span> for</p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}}</span></p>\n<p><span style=\"color: #000000;\">You have provided the following (optional) comments:</span></p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.justification}}</span></p>\n<p><span style=\"color: #000000;\">Corporate policy states that <span style=\"text-decoration: underline;\">no additional approvals are required</span>.</span></p>\n<p><span style=\"color: #000000;\">The <span style=\"color: #e03e2d;\">Emergency Termination</span> of <span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}} </span>will begin immediately.</span></p>",
                 "ownerId.$": "$.trigger.launchedBy.id",
                 "title": "Emergency Termination"
               },
-              "displayName": "Message: 2nd Approval is required",
-              "nextStep": "Form",
+              "displayName": "Message: No Approval Required",
+              "nextStep": "HTTP Request",
               "type": "action",
               "versionNumber": 1
             },
@@ -920,12 +967,12 @@
               "attributes": {
                 "category": "WARN",
                 "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p>&nbsp;</p>\n<p>You have selected to initiate an&nbsp;<span style=\"text-decoration: underline; color: #e03e2d;\">Emergency Termination</span> for</p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}}</span></p>\n<p><span style=\"color: #000000;\">You have provided the following (optional) comments:</span></p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.justification}}</span></p>\n<p><span style=\"color: #000000;\">Your manager, <span style=\"color: #236fa1;\">{{$.getIdentity1.attributes.displayName}}</span>, made the following decision:</span></p>\n<p><span style=\"color: #236fa1;\"><span style=\"color: #000000;\">Approve Emergency Termination?&nbsp;</span> {{$.form.formData.approvalDecision}}</span></p>\n<p>and provided the following comments:</p>\n<p><span style=\"color: #236fa1;\">{{$.form.formData.approvalComments}}</span></p>",
+                "message": "<p>&nbsp;</p>\n<p>You have selected to initiate an&nbsp;<span style=\"text-decoration: underline; color: #e03e2d;\">emergency termination</span> for</p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}}</span></p>\n<p><span style=\"color: #000000;\">You have provided the following (optional) comments:</span></p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.justification}}</span></p>\n<p><span style=\"color: #000000;\">Corporate policy dictates that your manager, <span style=\"color: #236fa1;\">{{$.getIdentity1.attributes.displayName}}</span>, will have to approve the termination request before it becomes effective.&nbsp; You will be notified when your manager has made their decision.</span></p>\n<p><span style=\"color: #000000;\">If you like, you can <span style=\"font-size: 14pt;\"><strong>X</strong></span> out of this task and wait for the notification.</span></p>",
                 "ownerId.$": "$.trigger.launchedBy.id",
                 "title": "Emergency Termination"
               },
-              "displayName": "Message: Approval Decision",
-              "nextStep": "Compare Boolean 1",
+              "displayName": "Message: 2nd Approval is required",
+              "nextStep": "Form",
               "type": "action",
               "versionNumber": 1
             },
@@ -934,12 +981,12 @@
               "attributes": {
                 "category": "WARN",
                 "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p>&nbsp;</p>\n<p>You have selected to initiate an&nbsp;<span style=\"text-decoration: underline; color: #e03e2d;\">Emergency Termination</span> for</p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}}</span></p>\n<p><span style=\"color: #000000;\">You have provided the following (optional) comments:</span></p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.justification}}</span></p>\n<p><span style=\"color: #000000;\">Corporate policy states that <span style=\"text-decoration: underline;\">no additional approvals are required</span>.</span></p>\n<p><span style=\"color: #000000;\">The <span style=\"color: #e03e2d;\">Emergency Termination</span> of <span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}} </span>will begin immediately.</span></p>",
+                "message": "<p>&nbsp;</p>\n<p>You have selected to initiate an&nbsp;<span style=\"text-decoration: underline; color: #e03e2d;\">Emergency Termination</span> for</p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}}</span></p>\n<p><span style=\"color: #000000;\">You have provided the following (optional) comments:</span></p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.justification}}</span></p>\n<p><span style=\"color: #000000;\">Your manager, <span style=\"color: #236fa1;\">{{$.getIdentity1.attributes.displayName}}</span>, made the following decision:</span></p>\n<p><span style=\"color: #236fa1;\"><span style=\"color: #000000;\">Approve Emergency Termination?&nbsp;</span> {{$.form.formData.approvalDecision}}</span></p>\n<p>and provided the following comments:</p>\n<p><span style=\"color: #236fa1;\">{{$.form.formData.approvalComments}}</span></p>",
                 "ownerId.$": "$.trigger.launchedBy.id",
                 "title": "Emergency Termination"
               },
-              "displayName": "Message: No Approval Required",
-              "nextStep": "HTTP Request",
+              "displayName": "Message: Approval Decision",
+              "nextStep": "Compare Boolean 1",
               "type": "action",
               "versionNumber": 1
             },
@@ -959,21 +1006,21 @@
             }
           }
         },
-        "enabled": false,
+        "enabled": true,
         "creator": {
           "type": "IDENTITY",
-          "id": "cb9cdd017ae94b3e82eca349a02ccd04",
-          "name": "slpt.support"
+          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
+          "name": "fernando.delosrios"
         },
         "owner": {
           "type": "IDENTITY",
-          "id": "c1b26b86b0a64e639dc049f45fec4bcd",
-          "name": "slpt.services"
+          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
+          "name": "fernando.delosrios"
         },
         "trigger": {
           "type": "EVENT",
           "attributes": {
-            "filter.$": "$[?(@.workflowId == 'a7bcb33e-ce68-4202-b5de-6a5f3d3fd428')]",
+            "filter.$": "$[?(@.workflowId == 'c781e8b0-137f-445c-955c-9254eb96e106')]",
             "id": "idn:interactive-process-launched",
             "integrationId": null
           }
