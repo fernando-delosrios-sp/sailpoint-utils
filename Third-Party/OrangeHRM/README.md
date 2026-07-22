@@ -20,11 +20,13 @@ Cancelled actions, invalid forms, and validation failures do not trigger aggrega
 
 ## Implementation
 
-The shared integration entry point is the static method:
+Employee creation retains the original instance entry point:
 
 ```php
-AddEmployeeForm::callIIQ();
+$this->callIIQ();
 ```
+
+The additional update workflows use `AddEmployeeForm::callIIQAfterChange()`. Both methods delegate to the same ISC request implementation.
 
 It is defined in:
 
@@ -32,27 +34,23 @@ It is defined in:
 symfony/plugins/orangehrmPimPlugin/lib/form/AddEmployeeForm.php
 ```
 
-Making the method static allows every workflow to use the same authentication and aggregation logic.
+This preserves the original employee-creation behavior while allowing other workflows to reuse the same authentication and aggregation logic.
 
 ### Changed files
 
-
-| Workflow               | File                                                      | Behavior                                                                                       |
-| ---------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Employee creation      | `lib/form/AddEmployeeForm.php`                            | Calls ISC after the new employee and related form data are saved.                              |
-| Employment termination | `lib/form/EmployeeTerminateForm.php`                      | Calls ISC after the termination record is saved.                                               |
-| Employment activation  | `modules/pim/actions/activateEmployementAction.class.php` | Calls ISC after the employee is reactivated.                                                   |
-| Contact details update | `modules/pim/actions/contactDetailsAction.class.php`      | Calls ISC after valid contact details and the employee event are saved.                        |
-| Job details update     | `modules/pim/actions/viewJobDetailsAction.class.php`      | Calls ISC after valid job details, including contract dates, and the employee event are saved. |
-
+| Workflow | File | Behavior |
+| --- | --- | --- |
+| Employee creation | `lib/form/AddEmployeeForm.php` | Retains the original ISC call after the new employee and related form data are saved. |
+| Employment termination | `lib/form/EmployeeTerminateForm.php` | Calls ISC after the termination record is saved. |
+| Employment activation | `modules/pim/actions/activateEmployementAction.class.php` | Calls ISC after the employee is reactivated. |
+| Contact details update | `modules/pim/actions/contactDetailsAction.class.php` | Calls ISC after valid contact details and the employee event are saved. |
+| Job details update | `modules/pim/actions/viewJobDetailsAction.class.php` | Calls ISC after valid job details, including contract dates, and the employee event are saved. |
 
 The paths in the table are relative to:
 
 ```text
 symfony/plugins/orangehrmPimPlugin/
 ```
-
-
 
 ## Configuration
 
@@ -62,16 +60,12 @@ symfony/plugins/orangehrmPimPlugin/
 C:\Users\Administrator.SERI\Documents\orangeIIQ.ini
 ```
 
-
-
 ### ISC/IDN mode
 
 When `mode=IDN`, the integration:
 
 1. Requests an OAuth access token using `domain`, `client_id`, and `client_secret`.
 2. Sends a `POST` request to the load-accounts endpoint for the configured `source_id`.
-
-
 
 ### IdentityIQ mode
 
@@ -83,8 +77,6 @@ For other mode values, the integration launches the configured IdentityIQ workfl
 - cURL responses and errors are written through PHP's `error_log`.
 - A failed SailPoint request is logged but does not roll back the OrangeHRM employee change.
 
-
-
 ## Production considerations
 
 The current implementation is demo-oriented. Before production use:
@@ -94,4 +86,3 @@ The current implementation is demo-oriented. Before production use:
 - Protect the INI file with appropriate filesystem permissions.
 - Move the hard-coded INI path into environment-specific configuration.
 - Consider moving aggregation to an asynchronous job so SailPoint response time does not delay the OrangeHRM request.
-
