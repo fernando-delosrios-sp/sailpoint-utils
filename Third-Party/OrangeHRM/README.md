@@ -15,6 +15,7 @@ ISC aggregation is requested after each of these successful operations:
 - Confirming **Activate Employment**.
 - Saving changes on the employee **Contact Details** page.
 - Saving changes on the employee **Job** page, including employment contract start and end dates.
+- Adding, updating, or removing assigned supervisors and subordinates in the **Report-to** section.
 
 Cancelled actions, invalid forms, and validation failures do not trigger aggregation.
 
@@ -45,6 +46,8 @@ This preserves the original employee-creation behavior while allowing other work
 | Employment activation | `modules/pim/actions/activateEmployementAction.class.php` | Calls ISC after the employee is reactivated. |
 | Contact details update | `modules/pim/actions/contactDetailsAction.class.php` | Calls ISC after valid contact details and the employee event are saved. |
 | Job details update | `modules/pim/actions/viewJobDetailsAction.class.php` | Calls ISC after valid job details, including contract dates, and the employee event are saved. |
+| Report-to assignment | `modules/pim/actions/updateReportToDetailAction.class.php` | Calls ISC after a supervisor or subordinate relationship is successfully added or updated. |
+| Report-to removal | `modules/pim/actions/deleteReportToSupervisorAction.class.php` and `deleteReportToSubordinateAction.class.php` | Calls ISC after a supervisor or subordinate relationship is successfully removed. |
 
 The paths in the table are relative to:
 
