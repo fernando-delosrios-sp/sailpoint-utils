@@ -294,7 +294,7 @@ class AddEmployeeForm extends sfForm {
         //merge location dropdown
         $formExtension = PluginFormMergeManager::instance();
         $formExtension->saveMergeForms($this, 'addEmployee', 'AddEmployeeForm');
-        self::callIIQ();
+        $this->callIIQ();
         return $empNumber;
     }
     private function saveUser($empNumber) {
@@ -443,7 +443,15 @@ class AddEmployeeForm extends sfForm {
         $hashValue = hash("sha256", $password.$hashUser);
         return $hashValue;
     }
-    public static function callIIQ() {
+    public function callIIQ() {
+        self::executeIIQ();
+    }
+
+    public static function callIIQAfterChange() {
+        self::executeIIQ();
+    }
+
+    private static function executeIIQ() {
 		$ini=parse_ini_file("C:\Users\Administrator.SERI\Documents\orangeIIQ.ini");
 			error_log("ini-mode=".$ini['mode']."<br/>");	
         //if($ini['enabled']!='true') return;
