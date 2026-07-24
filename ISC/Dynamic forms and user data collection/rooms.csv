@@ -1,0 +1,201 @@
+id,name,description
+L001-B001-R001,Boardroom,Boardroom located at Tower A
+L001-B001-R002,Executive Suite,Executive Suite located at Tower A
+L001-B001-R003,Reception,Reception located at Tower A
+L001-B001-R004,Huddle Room,Huddle Room located at Tower A
+L001-B001-R005,Telepresence Studio,Telepresence Studio located at Tower A
+L001-B002-R001,Tech Lab,Tech Lab located at Block B
+L001-B002-R002,Testing Bay,Testing Bay located at Block B
+L001-B002-R003,Training Classroom,Training Classroom located at Block B
+L001-B002-R004,Project Room Alpha,Project Room Alpha located at Block B
+L001-B002-R005,Project Room Beta,Project Room Beta located at Block B
+L001-B003-R001,Dining Hall,Dining Hall located at Commons
+L001-B003-R002,Coffee Bar,Coffee Bar located at Commons
+L001-B003-R003,Central Lounge,Central Lounge located at Commons
+L001-B003-R004,Main Stage,Main Stage located at Commons
+L001-B003-R005,Recreation Zone,Recreation Zone located at Commons
+L001-B004-R001,Mailroom,Mailroom located at Annex
+L001-B004-R002,IT Helpdesk,IT Helpdesk located at Annex
+L001-B004-R003,Supply Closet,Supply Closet located at Annex
+L001-B004-R004,Security Office,Security Office located at Annex
+L001-B004-R005,Maintenance Shop,Maintenance Shop located at Annex
+L002-B001-R001,Front Lobby,Front Lobby located at Main Office
+L002-B001-R002,Conference Room A,Conference Room A located at Main Office
+L002-B001-R003,Quiet Booth,Quiet Booth located at Main Office
+L002-B001-R004,Hot Desking Hub,Hot Desking Hub located at Main Office
+L002-B001-R005,Wellness Room,Wellness Room located at Main Office
+L002-B002-R001,Loading Bay 1,Loading Bay 1 located at Warehouse
+L002-B002-R002,Loading Bay 2,Loading Bay 2 located at Warehouse
+L002-B002-R003,Main Inventory Floor,Main Inventory Floor located at Warehouse
+L002-B002-R004,Shipping Desk,Shipping Desk located at Warehouse
+L002-B002-R005,Manager Office,Manager Office located at Warehouse
+L002-B003-R001,Operations Floor,Operations Floor located at Support Center
+L002-B003-R002,Staff Breakroom,Staff Breakroom located at Support Center
+L002-B003-R003,Onboarding Classroom,Onboarding Classroom located at Support Center
+L002-B003-R004,Meeting Room C,Meeting Room C located at Support Center
+L002-B003-R005,Focus Pod 1,Focus Pod 1 located at Support Center
+L002-B004-R001,Co-Working Space,Co-Working Space located at Flex Space
+L002-B004-R002,Creative Lounge,Creative Lounge located at Flex Space
+L002-B004-R003,Phone Booth 1,Phone Booth 1 located at Flex Space
+L002-B004-R004,Phone Booth 2,Phone Booth 2 located at Flex Space
+L002-B004-R005,Event Arena,Event Arena located at Flex Space
+L003-B001-R001,Hardware Workbench,Hardware Workbench located at Engineering
+L003-B001-R002,Software Suite,Software Suite located at Engineering
+L003-B001-R003,Local Server Room,Local Server Room located at Engineering
+L003-B001-R004,Diagnostics Area,Diagnostics Area located at Engineering
+L003-B001-R005,Collaboration Area,Collaboration Area located at Engineering
+L003-B002-R001,Design Desk Row,Design Desk Row located at Design
+L003-B002-R002,Material Library,Material Library located at Design
+L003-B002-R003,CAD Station,CAD Station located at Design
+L003-B002-R004,Prototyping Bay,Prototyping Bay located at Design
+L003-B002-R005,Review Room,Review Room located at Design
+L003-B003-R001,Finance Desk,Finance Desk located at Administration
+L003-B003-R002,HR Office,HR Office located at Administration
+L003-B003-R003,File Archives,File Archives located at Administration
+L003-B003-R004,Visitor Lobby,Visitor Lobby located at Administration
+L003-B003-R005,Interview Room 1,Interview Room 1 located at Administration
+L003-B004-R001,Commercial Kitchen,Commercial Kitchen located at Cafeteria
+L003-B004-R002,Indoor Seating,Indoor Seating located at Cafeteria
+L003-B004-R003,Patio Dining,Patio Dining located at Cafeteria
+L003-B004-R004,Pantry Storage,Pantry Storage located at Cafeteria
+L003-B004-R005,Catering Office,Catering Office located at Cafeteria
+L004-B001-R001,Classroom 101,Classroom 101 located at Block 1
+L004-B001-R002,Classroom 102,Classroom 102 located at Block 1
+L004-B001-R003,Classroom 103,Classroom 103 located at Block 1
+L004-B001-R004,Classroom 104,Classroom 104 located at Block 1
+L004-B001-R005,Storage Room 1A,Storage Room 1A located at Block 1
+L004-B002-R001,Office 201,Office 201 located at Block 2
+L004-B002-R002,Office 202,Office 202 located at Block 2
+L004-B002-R003,Office 203,Office 203 located at Block 2
+L004-B002-R004,Office 204,Office 204 located at Block 2
+L004-B002-R005,Copy and Print Hub,Copy and Print Hub located at Block 2
+L004-B003-R001,Seminar Room 301,Seminar Room 301 located at Block 3
+L004-B003-R002,Seminar Room 302,Seminar Room 302 located at Block 3
+L004-B003-R003,Seminar Room 303,Seminar Room 303 located at Block 3
+L004-B003-R004,Seminar Room 304,Seminar Room 304 located at Block 3
+L004-B003-R005,Student Lounge,Student Lounge located at Block 3
+L004-B004-R001,Main Control Desk,Main Control Desk located at Power Station
+L004-B004-R002,Turbine Floor,Turbine Floor located at Power Station
+L004-B004-R003,Grid Operations,Grid Operations located at Power Station
+L004-B004-R004,Battery Storage,Battery Storage located at Power Station
+L004-B004-R005,Safety Station,Safety Station located at Power Station
+L005-B001-R001,Primary Reception,Primary Reception located at Primary Facility
+L005-B001-R002,Workspace East,Workspace East located at Primary Facility
+L005-B001-R003,Workspace West,Workspace West located at Primary Facility
+L005-B001-R004,Main Conference Hall,Main Conference Hall located at Primary Facility
+L005-B001-R005,Coffee Nook,Coffee Nook located at Primary Facility
+L005-B002-R001,Flex Area 1,Flex Area 1 located at Secondary Facility
+L005-B002-R002,Flex Area 2,Flex Area 2 located at Secondary Facility
+L005-B002-R003,Huddle Pod Green,Huddle Pod Green located at Secondary Facility
+L005-B002-R004,Huddle Pod Blue,Huddle Pod Blue located at Secondary Facility
+L005-B002-R005,Supply Depot,Supply Depot located at Secondary Facility
+L005-B003-R001,Secured Vault A,Secured Vault A located at Storage Vault
+L005-B003-R002,Secured Vault B,Secured Vault B located at Storage Vault
+L005-B003-R003,Receiving Bay,Receiving Bay located at Storage Vault
+L005-B003-R004,Archive Room,Archive Room located at Storage Vault
+L005-B003-R005,Data Scanning Room,Data Scanning Room located at Storage Vault
+L005-B004-R001,Bulk Storage Area,Bulk Storage Area located at Loading Dock
+L005-B004-R002,Cold Storage Room,Cold Storage Room located at Loading Dock
+L005-B004-R003,High-Value Cage,High-Value Cage located at Loading Dock
+L005-B004-R004,Freight Elevator Lobby,Freight Elevator Lobby located at Loading Dock
+L005-B004-R005,Logistics Desk,Logistics Desk located at Loading Dock
+L006-B001-R001,Robotics Workshop,Robotics Workshop located at Alpha Lab
+L006-B001-R002,Machine Learning Lab,Machine Learning Lab located at Alpha Lab
+L006-B001-R003,Flight Test Cage,Flight Test Cage located at Alpha Lab
+L006-B001-R004,Soldering Lab,Soldering Lab located at Alpha Lab
+L006-B001-R005,Project Lounge,Project Lounge located at Alpha Lab
+L006-B002-R001,Biochemistry Bench,Biochemistry Bench located at Beta Lab
+L006-B002-R002,Clean Room,Clean Room located at Beta Lab
+L006-B002-R003,Incubation Area,Incubation Area located at Beta Lab
+L006-B002-R004,Analysis Lab,Analysis Lab located at Beta Lab
+L006-B002-R005,Research Library,Research Library located at Beta Lab
+L006-B003-R001,Optics and Laser Bay,Optics and Laser Bay located at Gamma Lab
+L006-B003-R002,Photonic Darkroom,Photonic Darkroom located at Gamma Lab
+L006-B003-R003,Laser Assembly,Laser Assembly located at Gamma Lab
+L006-B003-R004,Calibration Desk,Calibration Desk located at Gamma Lab
+L006-B003-R005,Engineer Pod,Engineer Pod located at Gamma Lab
+L006-B004-R001,Immersive Simulation Lab,Immersive Simulation Lab located at Delta Lab
+L006-B004-R002,Recording Stage,Recording Stage located at Delta Lab
+L006-B004-R003,Render Farm,Render Farm located at Delta Lab
+L006-B004-R004,Motion Studio,Motion Studio located at Delta Lab
+L006-B004-R005,Interactive Area,Interactive Area located at Delta Lab
+L007-B001-R001,Tenant Space 100,Tenant Space 100 located at Plaza 1
+L007-B001-R002,Tenant Space 101,Tenant Space 101 located at Plaza 1
+L007-B001-R003,Tenant Space 102,Tenant Space 102 located at Plaza 1
+L007-B001-R004,Plaza Conference Room,Plaza Conference Room located at Plaza 1
+L007-B001-R005,Pantry Room,Pantry Room located at Plaza 1
+L007-B002-R001,Tenant Space 200,Tenant Space 200 located at Plaza 2
+L007-B002-R002,Tenant Space 201,Tenant Space 201 located at Plaza 2
+L007-B002-R003,Tenant Space 202,Tenant Space 202 located at Plaza 2
+L007-B002-R004,Study Zone,Study Zone located at Plaza 2
+L007-B002-R005,Document Center,Document Center located at Plaza 2
+L007-B003-R001,Communal Desk East,Communal Desk East located at Pavilion
+L007-B003-R002,Communal Desk West,Communal Desk West located at Pavilion
+L007-B003-R003,Focus Room A,Focus Room A located at Pavilion
+L007-B003-R004,Focus Room B,Focus Room B located at Pavilion
+L007-B003-R005,Atrium Coffee Lounge,Atrium Coffee Lounge located at Pavilion
+L007-B004-R001,Server Row 01,Server Row 01 located at Data Center
+L007-B004-R002,Server Row 02,Server Row 02 located at Data Center
+L007-B004-R003,Network Command Center,Network Command Center located at Data Center
+L007-B004-R004,Power Backup System,Power Backup System located at Data Center
+L007-B004-R005,Cooling Infrastructure,Cooling Infrastructure located at Data Center
+L008-B001-R001,Editing Bay 1,Editing Bay 1 located at Studio A
+L008-B001-R002,Editing Bay 2,Editing Bay 2 located at Studio A
+L008-B001-R003,Voiceover Booth,Voiceover Booth located at Studio A
+L008-B001-R004,Production Desk,Production Desk located at Studio A
+L008-B001-R005,Green Room,Green Room located at Studio A
+L008-B002-R001,Main Cyclorama Stage,Main Cyclorama Stage located at Studio B
+L008-B002-R002,Equipment Locker,Equipment Locker located at Studio B
+L008-B002-R003,Video Control Room,Video Control Room located at Studio B
+L008-B002-R004,Makeup and Wardrobe,Makeup and Wardrobe located at Studio B
+L008-B002-R005,Screening Room,Screening Room located at Studio B
+L008-B003-R001,CNC Routing Room,CNC Routing Room located at Workshop
+L008-B003-R002,3D Printing Desk,3D Printing Desk located at Workshop
+L008-B003-R003,Assembly Area,Assembly Area located at Workshop
+L008-B003-R004,Finishing Hood,Finishing Hood located at Workshop
+L008-B003-R005,Materials Inventory,Materials Inventory located at Workshop
+L008-B004-R001,Main Exhibition Hall,Main Exhibition Hall located at Gallery
+L008-B004-R002,Artwork Storage Vault,Artwork Storage Vault located at Gallery
+L008-B004-R003,Ticketing Desk,Ticketing Desk located at Gallery
+L008-B004-R004,Projection Alcove,Projection Alcove located at Gallery
+L008-B004-R005,Courtyard Gallery,Courtyard Gallery located at Gallery
+L009-B001-R001,Distribution Dock A,Distribution Dock A located at Depot 1
+L009-B001-R002,Distribution Dock B,Distribution Dock B located at Depot 1
+L009-B001-R003,Dock Supervisor Office,Dock Supervisor Office located at Depot 1
+L009-B001-R004,Driver Locker Room,Driver Locker Room located at Depot 1
+L009-B001-R005,Device Charging Room,Device Charging Room located at Depot 1
+L009-B002-R001,Inbound Deck C,Inbound Deck C located at Depot 2
+L009-B002-R002,Inbound Deck D,Inbound Deck D located at Depot 2
+L009-B002-R003,Hazmat Storage Station,Hazmat Storage Station located at Depot 2
+L009-B002-R004,Forklift Charging Zone,Forklift Charging Zone located at Depot 2
+L009-B002-R005,Admin Annex,Admin Annex located at Depot 2
+L009-B003-R001,Conveyor Control Booth,Conveyor Control Booth located at Sorting Facility
+L009-B003-R002,Automated Scan Loop,Automated Scan Loop located at Sorting Facility
+L009-B003-R003,Outbound Sorting Area,Outbound Sorting Area located at Sorting Facility
+L009-B003-R004,Manual Sorting Table,Manual Sorting Table located at Sorting Facility
+L009-B003-R005,Maintenance Garage,Maintenance Garage located at Sorting Facility
+L009-B004-R001,Logistics Dispatch,Logistics Dispatch located at Headquarters
+L009-B004-R002,Boardroom Lounge,Boardroom Lounge located at Headquarters
+L009-B004-R003,Route Planning Hub,Route Planning Hub located at Headquarters
+L009-B004-R004,Breakroom Kitchen,Breakroom Kitchen located at Headquarters
+L009-B004-R005,Operations Admin,Operations Admin located at Headquarters
+L010-B001-R001,Observation Desk A,Observation Desk A located at Outpost Station 1
+L010-B001-R002,Observation Desk B,Observation Desk B located at Outpost Station 1
+L010-B001-R003,Environmental Science Lab,Environmental Science Lab located at Outpost Station 1
+L010-B001-R004,Sample Cryo Vault,Sample Cryo Vault located at Outpost Station 1
+L010-B001-R005,Decontamination Airlock,Decontamination Airlock located at Outpost Station 1
+L010-B002-R001,Telemetry Suite,Telemetry Suite located at Outpost Station 2
+L010-B002-R002,System Mainframe,System Mainframe located at Outpost Station 2
+L010-B002-R003,Power Generator Room,Power Generator Room located at Outpost Station 2
+L010-B002-R004,Workshop Bay,Workshop Bay located at Outpost Station 2
+L010-B002-R005,Station Control Room,Station Control Room located at Outpost Station 2
+L010-B003-R001,Dorm Room 1,Dorm Room 1 located at Living Quarters
+L010-B003-R002,Dorm Room 2,Dorm Room 2 located at Living Quarters
+L010-B003-R003,Mess Hall Kitchen,Mess Hall Kitchen located at Living Quarters
+L010-B003-R004,Medical Station,Medical Station located at Living Quarters
+L010-B003-R005,Recreational Lounge,Recreational Lounge located at Living Quarters
+L010-B004-R001,Uplink Terminal,Uplink Terminal located at Comms Dome
+L010-B004-R002,Antenna Control Room,Antenna Control Room located at Comms Dome
+L010-B004-R003,Encryption Suite,Encryption Suite located at Comms Dome
+L010-B004-R004,Weather Diagnostics,Weather Diagnostics located at Comms Dome
+L010-B004-R005,Backup Fuel Systems,Backup Fuel Systems located at Comms Dome

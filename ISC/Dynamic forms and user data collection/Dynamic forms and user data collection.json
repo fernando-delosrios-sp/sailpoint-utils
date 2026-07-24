@@ -1,0 +1,851 @@
+{
+  "version": 1,
+  "timestamp": "2026-07-24T08:49:19.836175614Z",
+  "tenant": "TENANT",
+  "description": "Export Job vscode 2026-07-24T08:49:15.726Z",
+  "options": {
+    "excludeTypes": null,
+    "includeTypes": [
+      "FORM_DEFINITION",
+      "SOURCE",
+      "WORKFLOW"
+    ],
+    "objectOptions": {
+      "FORM_DEFINITION": {
+        "includedNames": [
+          "Corporate details"
+        ],
+        "includedIds": []
+      },
+      "SOURCE": {
+        "includedNames": [],
+        "includedIds": [
+          "a9aadeab0cd648abb3a7f4ab397b926b"
+        ]
+      },
+      "WORKFLOW": {
+        "includedNames": [],
+        "includedIds": [
+          "541a2e72-fb8f-4eca-be85-b5252de3f3d2"
+        ]
+      }
+    }
+  },
+  "objects": [
+    {
+      "version": 1,
+      "self": {
+        "id": "754c359f-32a9-4c3d-bafa-bd582cfe9170",
+        "name": "Corporate details",
+        "type": "FORM_DEFINITION"
+      },
+      "object": {
+        "id": "754c359f-32a9-4c3d-bafa-bd582cfe9170",
+        "name": "Corporate details",
+        "description": "",
+        "owner": {
+          "type": "IDENTITY",
+          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
+          "name": "fernando.delosrios"
+        },
+        "usedBy": [
+          {
+            "type": "WORKFLOW",
+            "id": "541a2e72-fb8f-4eca-be85-b5252de3f3d2",
+            "name": "Modify corporate details"
+          }
+        ],
+        "formInput": [],
+        "formElements": [
+          {
+            "id": "340327531269",
+            "elementType": "SECTION",
+            "config": {
+              "alignment": "LEFT",
+              "description": "",
+              "formElements": [
+                {
+                  "config": {
+                    "dataSource": {
+                      "config": {
+                        "indices": [
+                          "entitlements"
+                        ],
+                        "label": "displayName",
+                        "query": "attribute:location",
+                        "sublabel": "description",
+                        "value": "value"
+                      },
+                      "dataSourceType": "SEARCH_V2"
+                    },
+                    "forceSelect": true,
+                    "helpText": "",
+                    "label": "Location",
+                    "maximum": 1,
+                    "placeholder": "",
+                    "required": false
+                  },
+                  "elementType": "SELECT",
+                  "id": "1057201268293",
+                  "key": "location",
+                  "validations": [
+                    {
+                      "validationType": "DATA_SOURCE"
+                    }
+                  ]
+                },
+                {
+                  "config": {
+                    "dataSource": {
+                      "config": {
+                        "filters": {
+                          "value.exact": {
+                            "exclude": false,
+                            "value": "{{$.form.data.location}}"
+                          }
+                        },
+                        "indices": [
+                          "entitlements"
+                        ],
+                        "label": "displayName",
+                        "query": "attribute:building",
+                        "sublabel": "description",
+                        "value": "value"
+                      },
+                      "dataSourceType": "SEARCH_V2"
+                    },
+                    "forceSelect": true,
+                    "helpText": "",
+                    "label": "Building",
+                    "maximum": 1,
+                    "placeholder": "",
+                    "required": false
+                  },
+                  "elementType": "SELECT",
+                  "id": "728311173376",
+                  "key": "building",
+                  "validations": [
+                    {
+                      "validationType": "DATA_SOURCE"
+                    }
+                  ]
+                },
+                {
+                  "config": {
+                    "dataSource": {
+                      "config": {
+                        "filters": {
+                          "value.exact": {
+                            "exclude": false,
+                            "value": "{{$.form.data.building}}"
+                          }
+                        },
+                        "indices": [
+                          "entitlements"
+                        ],
+                        "label": "displayName",
+                        "query": "attribute:room",
+                        "sublabel": "description",
+                        "value": "value"
+                      },
+                      "dataSourceType": "SEARCH_V2"
+                    },
+                    "forceSelect": true,
+                    "helpText": "",
+                    "label": "Room",
+                    "maximum": 1,
+                    "placeholder": "",
+                    "required": false
+                  },
+                  "elementType": "SELECT",
+                  "id": "411552518858",
+                  "key": "room",
+                  "validations": [
+                    {
+                      "validationType": "DATA_SOURCE"
+                    }
+                  ]
+                }
+              ],
+              "label": "Location details",
+              "labelStyle": "h2",
+              "showLabel": true
+            },
+            "validations": []
+          },
+          {
+            "id": "1066728093257",
+            "elementType": "SECTION",
+            "config": {
+              "alignment": "LEFT",
+              "description": "",
+              "formElements": [
+                {
+                  "config": {
+                    "default": "",
+                    "description": "",
+                    "formatAsYouType": true,
+                    "helpText": "",
+                    "internationalized": true,
+                    "label": "Phone number",
+                    "placeholder": "",
+                    "required": false
+                  },
+                  "elementType": "PHONE",
+                  "id": "1646847267089",
+                  "key": "phoneNumber",
+                  "validations": [
+                    {
+                      "validationType": "PHONE"
+                    }
+                  ]
+                },
+                {
+                  "config": {
+                    "default": "",
+                    "description": "",
+                    "formatAsYouType": true,
+                    "helpText": "",
+                    "internationalized": true,
+                    "label": "Mobile number",
+                    "placeholder": "",
+                    "required": false
+                  },
+                  "elementType": "PHONE",
+                  "id": "191368611838",
+                  "key": "mobileNumber",
+                  "validations": [
+                    {
+                      "validationType": "PHONE"
+                    }
+                  ]
+                },
+                {
+                  "config": {
+                    "dataSource": {
+                      "config": {
+                        "options": [
+                          {
+                            "label": "German",
+                            "sublabel": "",
+                            "value": "German"
+                          },
+                          {
+                            "label": "English",
+                            "sublabel": "",
+                            "value": "English"
+                          }
+                        ]
+                      },
+                      "dataSourceType": "STATIC"
+                    },
+                    "forceSelect": true,
+                    "helpText": "",
+                    "label": "Preferred display language",
+                    "maximum": 1,
+                    "placeholder": "",
+                    "required": false
+                  },
+                  "elementType": "SELECT",
+                  "id": "1660402478552",
+                  "key": "preferredDisplayLanguage",
+                  "validations": [
+                    {
+                      "validationType": "DATA_SOURCE"
+                    }
+                  ]
+                }
+              ],
+              "label": "Communication details",
+              "labelStyle": "h2",
+              "showLabel": true
+            },
+            "validations": []
+          }
+        ],
+        "formConditions": [],
+        "created": "2026-07-13T10:51:34.381981595Z",
+        "modified": "2026-07-14T16:09:04.782427649Z"
+      }
+    },
+    {
+      "version": 1,
+      "self": {
+        "id": "a9aadeab0cd648abb3a7f4ab397b926b",
+        "name": "Corporate Details",
+        "type": "SOURCE"
+      },
+      "object": {
+        "id": "a9aadeab0cd648abb3a7f4ab397b926b",
+        "name": "Corporate Details",
+        "type": "DelimitedFile",
+        "connectorClass": "sailpoint.connector.delimitedfile.DelimitedFileConnector",
+        "connectorScriptName": "delimited-file-angularsc",
+        "description": "Corporate Details",
+        "deleteThreshold": 10,
+        "provisionAsCsv": true,
+        "owner": {
+          "type": "IDENTITY",
+          "id": "4a0099c363a948b8b5700dbb9c777ca3",
+          "name": "slpt.services"
+        },
+        "accountCorrelationRule": null,
+        "managerCorrelationRule": null,
+        "beforeProvisioningRule": null,
+        "features": [
+          "DIRECT_PERMISSIONS",
+          "DISCOVER_SCHEMA",
+          "NO_RANDOM_ACCESS"
+        ],
+        "schemas": [
+          {
+            "nativeObjectType": "User",
+            "identityAttribute": "accountName",
+            "displayAttribute": "accountName",
+            "hierarchyAttribute": null,
+            "includePermissions": false,
+            "features": [],
+            "configuration": {},
+            "attributes": [
+              {
+                "name": "accountName",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "accountName",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "location",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": {
+                  "type": "CONNECTOR_SCHEMA",
+                  "id": "c81e4596f474441e955f1364d36ff18b",
+                  "name": "location"
+                },
+                "description": "location",
+                "isMulti": false,
+                "isEntitlement": true,
+                "isGroup": true,
+                "isManaged": false
+              },
+              {
+                "name": "building",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": {
+                  "type": "CONNECTOR_SCHEMA",
+                  "id": "9ad8b695f4844d2a95bf879bd62752ad",
+                  "name": "building"
+                },
+                "description": "building",
+                "isMulti": false,
+                "isEntitlement": true,
+                "isGroup": true,
+                "isManaged": false
+              },
+              {
+                "name": "room",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": {
+                  "type": "CONNECTOR_SCHEMA",
+                  "id": "cbf385f2523e4ad3a05b158e7fbf8712",
+                  "name": "room"
+                },
+                "description": "room",
+                "isMulti": false,
+                "isEntitlement": true,
+                "isGroup": true,
+                "isManaged": false
+              },
+              {
+                "name": "phoneNumber",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "phoneNumber",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "mobileNumber",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "mobileNumber",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "preferredDisplayLanguage",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "preferredDisplayLanguage",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              }
+            ],
+            "id": "7e22e7bd893b462abc2ce8a7bf415602",
+            "name": "account",
+            "created": "2026-07-13T11:14:57.192Z",
+            "modified": "2026-07-14T15:30:18.083Z"
+          },
+          {
+            "nativeObjectType": "building",
+            "identityAttribute": "id",
+            "displayAttribute": "name",
+            "hierarchyAttribute": null,
+            "includePermissions": false,
+            "features": [],
+            "configuration": {},
+            "attributes": [
+              {
+                "name": "id",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "id",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "name",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "name",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "description",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "description",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              }
+            ],
+            "id": "9ad8b695f4844d2a95bf879bd62752ad",
+            "name": "building",
+            "created": "2026-07-14T15:15:37.989Z",
+            "modified": "2026-07-14T16:05:53.658Z"
+          },
+          {
+            "nativeObjectType": "location",
+            "identityAttribute": "id",
+            "displayAttribute": "name",
+            "hierarchyAttribute": null,
+            "includePermissions": false,
+            "features": [],
+            "configuration": {},
+            "attributes": [
+              {
+                "name": "id",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "id",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "name",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "name",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "description",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "description",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              }
+            ],
+            "id": "c81e4596f474441e955f1364d36ff18b",
+            "name": "location",
+            "created": "2026-07-14T15:16:12.657Z",
+            "modified": "2026-07-14T16:05:59.164Z"
+          },
+          {
+            "nativeObjectType": "room",
+            "identityAttribute": "id",
+            "displayAttribute": "name",
+            "hierarchyAttribute": null,
+            "includePermissions": false,
+            "features": [],
+            "configuration": {},
+            "attributes": [
+              {
+                "name": "id",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "id",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "name",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "name",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "description",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "description",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              }
+            ],
+            "id": "cbf385f2523e4ad3a05b158e7fbf8712",
+            "name": "room",
+            "created": "2026-07-14T15:28:48.164Z",
+            "modified": "2026-07-14T16:06:05.661Z"
+          }
+        ],
+        "connectorAttributes": {
+          "room.columnNames": [
+            "id",
+            "name",
+            "description"
+          ],
+          "group.mergeRows": false,
+          "group.delimiter": ",",
+          "room.file": "/tmp/source-groups-a9aadeab0cd648abb3a7f4ab397b926b6781170435231510483.csv",
+          "mergeRows": false,
+          "group.filetransport": "local",
+          "location.mergeRows": false,
+          "partitionMode": "disabled",
+          "connectionType": "file",
+          "group.host": "local",
+          "delimiter": ",",
+          "building.file": "/tmp/source-groups-a9aadeab0cd648abb3a7f4ab397b926b18179631841398368616.csv",
+          "host": "local",
+          "building.columnNames": [
+            "id",
+            "name",
+            "description"
+          ],
+          "commentCharacter": "#",
+          "entitlementFiles": {
+            "location": {
+              "name": "locations.csv",
+              "key": "gov-entitlement//aggregations/stg02-eucentral1/TENANT/a9aadeab0cd648abb3a7f4ab397b926b-entitlement-feed.csv",
+              "uploadTime": "2026-07-14T16:06:41.690960592Z",
+              "expiry": "2026-07-22T00:00Z",
+              "expired": true,
+              "bucket": null
+            },
+            "building": {
+              "name": "buildings.csv",
+              "key": "gov-entitlement//aggregations/stg02-eucentral1/TENANT/a9aadeab0cd648abb3a7f4ab397b926b-entitlement-feed.csv",
+              "uploadTime": "2026-07-14T16:06:35.034046213Z",
+              "expiry": "2026-07-22T00:00Z",
+              "expired": true,
+              "bucket": null
+            },
+            "room": {
+              "name": "rooms.csv",
+              "key": "gov-entitlement//aggregations/stg02-eucentral1/TENANT/a9aadeab0cd648abb3a7f4ab397b926b-entitlement-feed.csv",
+              "uploadTime": "2026-07-14T16:06:46.795701129Z",
+              "expiry": "2026-07-22T00:00Z",
+              "expired": true,
+              "bucket": null
+            }
+          },
+          "hasHeader": true,
+          "filterEmptyRecords": true,
+          "location.file": "/tmp/source-groups-a9aadeab0cd648abb3a7f4ab397b926b2989785265572691043.csv",
+          "filetransport": "local",
+          "group.filterEmptyRecords": true,
+          "deleteThresholdPercentage": 10,
+          "group.hasHeader": true,
+          "group.partitionMode": "disabled",
+          "labels": [
+            "standard"
+          ],
+          "parseType": "delimited",
+          "group.columnNames": [
+            "id",
+            "name"
+          ],
+          "building.mergeRows": false,
+          "templateApplication": "DelimitedFile Template",
+          "encrypted": "transportUserPassword,pgpPrivateKey,pgpPrivateKeyPassword,s3SecretKey,scpPrivateKey,PassphraseForPrivateKey,ftpsClientCertificatePassphrase",
+          "healthy": true,
+          "location.columnNames": [
+            "id",
+            "name",
+            "description"
+          ],
+          "cloudDisplayName": "Corporate Details",
+          "room.mergeRows": false,
+          "connectorName": "Delimited File",
+          "since": "2026-07-14T16:20:11.167Z",
+          "status": "SOURCE_STATE_HEALTHY",
+          "cloudOriginalApplicationType": "Delimited File"
+        },
+        "crossTenantConnectorAttributes": {},
+        "correlationConfigDetails": {
+          "attributeAssignments": null,
+          "id": null,
+          "name": null
+        },
+        "managerCorrelationMapping": null,
+        "provisioningPolicies": [
+          {
+            "name": "Create Policy",
+            "description": "Create Policy",
+            "usageType": "CREATE",
+            "fields": [
+              {
+                "name": "id",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "name",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "givenName",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "familyName",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "e-mail",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "location",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "manager",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "groups",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              }
+            ]
+          }
+        ],
+        "managementWorkgroup": null,
+        "passwordPolicies": null
+      }
+    },
+    {
+      "version": 1,
+      "self": {
+        "id": "541a2e72-fb8f-4eca-be85-b5252de3f3d2",
+        "name": "Modify corporate details",
+        "type": "WORKFLOW"
+      },
+      "object": {
+        "id": "541a2e72-fb8f-4eca-be85-b5252de3f3d2",
+        "name": "Modify corporate details",
+        "description": "",
+        "created": "2026-07-13T10:57:51.311243746Z",
+        "modified": "2026-07-22T11:50:39.249918949Z",
+        "modifiedBy": {
+          "type": "IDENTITY",
+          "id": "4a0099c363a948b8b5700dbb9c777ca3",
+          "name": "slpt.services"
+        },
+        "definition": {
+          "start": "Define Variable",
+          "steps": {
+            "Define Variable": {
+              "actionId": "sp:define-variable",
+              "attributes": {
+                "id": "sp:define-variable",
+                "variables": [
+                  {
+                    "description": "",
+                    "name": "Source ID",
+                    "transforms": [],
+                    "variableA": "a9aadeab0cd648abb3a7f4ab397b926b"
+                  }
+                ]
+              },
+              "displayName": "Configuration",
+              "nextStep": "Get Identity",
+              "type": "Mutation"
+            },
+            "End Step - Success": {
+              "actionId": "sp:operator-success",
+              "displayName": "",
+              "type": "success"
+            },
+            "Get Identity": {
+              "actionId": "sp:get-identity",
+              "attributes": {
+                "id.$": "$.trigger.launchedBy.id"
+              },
+              "displayName": "",
+              "nextStep": "Interactive Form",
+              "type": "action",
+              "versionNumber": 2
+            },
+            "HTTP Request": {
+              "actionId": "sp:http",
+              "attributes": {
+                "jsonRequestBody": {
+                  "attributes": {
+                    "accountName": "{{$.getIdentity.name}}",
+                    "building": "{{$.interactiveForm.formData.building}}",
+                    "location": "{{$.interactiveForm.formData.location}}",
+                    "mobileNumber": "{{$.interactiveForm.formData.mobileNumber}}",
+                    "phoneNumber": "{{$.interactiveForm.formData.phoneNumber}}",
+                    "preferredDisplayLanguage": "{{$.interactiveForm.formData.preferredDisplayLanguage}}",
+                    "room": "{{$.interactiveForm.formData.room}}",
+                    "sourceId": "{{$.defineVariable.sourceID}}"
+                  }
+                },
+                "method": "post",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "b27031c0-cdbf-41f6-af60-f9a39eb495be",
+                  "paramType": "1.4",
+                  "refID": "e2269635-a7ac-41fa-a5e1-1727a374a22a"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "657b902d-1147-4252-8978-dd23614018bc",
+                  "paramType": "3.1",
+                  "refID": "824f978e-8ed8-49ef-963e-2cb66eba9850"
+                },
+                "requestContentType": "json",
+                "url": "https://TENANT.api.identitynow.com/accounts/v1"
+              },
+              "displayName": "Update Corporate Details",
+              "nextStep": "End Step - Success",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Interactive Form": {
+              "actionId": "sp:interactive-form",
+              "attributes": {
+                "formDefinitionId": "754c359f-32a9-4c3d-bafa-bd582cfe9170",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p>TODO</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "Update Corporate Details"
+              },
+              "displayName": "Corporate Details Form",
+              "nextStep": "HTTP Request",
+              "type": "action",
+              "versionNumber": 1
+            }
+          }
+        },
+        "enabled": true,
+        "creator": {
+          "type": "IDENTITY",
+          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
+          "name": "fernando.delosrios"
+        },
+        "owner": {
+          "type": "IDENTITY",
+          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
+          "name": "fernando.delosrios"
+        },
+        "trigger": {
+          "type": "EVENT",
+          "attributes": {
+            "filter.$": "$[?(@.workflowId == '541a2e72-fb8f-4eca-be85-b5252de3f3d2')]",
+            "id": "idn:interactive-process-launched",
+            "integrationId": null
+          }
+        }
+      }
+    }
+  ]
+}
