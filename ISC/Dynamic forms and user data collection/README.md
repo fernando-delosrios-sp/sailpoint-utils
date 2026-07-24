@@ -1,6 +1,10 @@
 # Dynamic Forms and User Data Collection
 
-Reference implementation for SailPoint ISC showing how entitlement-backed **dynamic dropdowns** in forms can be combined with an optional **user data persistence** pattern via a supporting delimited-file source and interactive workflow.
+![Dynamic Forms and User Data Collection](promo.png)
+
+Interactive workflow forms in ISC often rely on static SELECT options. That works until reference data changes—locations, buildings, departments—and every update means editing the form again. Capturing and storing what users submit is often a second project on its own.
+
+This reference implementation shows how to solve both with native ISC patterns: **dynamic dropdowns** that load and cascade at runtime, and **optional user data persistence** via workflow—all without external infrastructure.
 
 ## Two Separate Use Cases
 
@@ -185,3 +189,4 @@ The account is keyed by `accountName` (set to the identity name). This creates o
 - Child dropdown filters use the parent's selected entitlement **value**. If you change how hierarchy is encoded, update both the data and the search filters accordingly.
 - The HTTP Request step requires a configured OAuth client with permission to create or update accounts on the target source.
 - Sample CSV `description` columns are informational only in this pattern; hierarchy is carried by entitlement values, not descriptions.
+
