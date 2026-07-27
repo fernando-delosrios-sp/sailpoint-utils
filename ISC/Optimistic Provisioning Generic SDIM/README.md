@@ -1,5 +1,7 @@
 # Generic SDIM Configuration Guide (Optimistic Provisioning)
 
+![Optimistic Provisioning Generic SDIM](promo.png)
+
 Follow these instructions to configure the Generic SDIM integration in SailPoint Identity Security Cloud (ISC). These instructions are mapped directly to the fields presented in the configuration UI, utilizing a public echo service (`postman-echo.com`) to seamlessly fake the ticket lifecycle.
 
 To avoid issues with how the connector serializes payload bodies (which can cause JSON parsing errors on the receiving end), we pass the required dummy values natively via the URL query parameters.

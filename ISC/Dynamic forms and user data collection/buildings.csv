@@ -1,0 +1,41 @@
+id,name,description
+L001-B001,Tower A,Tower A located at HQ Campus
+L001-B002,Block B,Block B located at HQ Campus
+L001-B003,Commons,Commons located at HQ Campus
+L001-B004,Annex,Annex located at HQ Campus
+L002-B001,Main Office,Main Office located at East Hub
+L002-B002,Warehouse,Warehouse located at East Hub
+L002-B003,Support Center,Support Center located at East Hub
+L002-B004,Flex Space,Flex Space located at East Hub
+L003-B001,Engineering,Engineering located at West Campus
+L003-B002,Design,Design located at West Campus
+L003-B003,Administration,Administration located at West Campus
+L003-B004,Cafeteria,Cafeteria located at West Campus
+L004-B001,Block 1,Block 1 located at North Center
+L004-B002,Block 2,Block 2 located at North Center
+L004-B003,Block 3,Block 3 located at North Center
+L004-B004,Power Station,Power Station located at North Center
+L005-B001,Primary Facility,Primary Facility located at South Annex
+L005-B002,Secondary Facility,Secondary Facility located at South Annex
+L005-B003,Storage Vault,Storage Vault located at South Annex
+L005-B004,Loading Dock,Loading Dock located at South Annex
+L006-B001,Alpha Lab,Alpha Lab located at Innovation Lab
+L006-B002,Beta Lab,Beta Lab located at Innovation Lab
+L006-B003,Gamma Lab,Gamma Lab located at Innovation Lab
+L006-B004,Delta Lab,Delta Lab located at Innovation Lab
+L007-B001,Plaza 1,Plaza 1 located at Tech Park
+L007-B002,Plaza 2,Plaza 2 located at Tech Park
+L007-B003,Pavilion,Pavilion located at Tech Park
+L007-B004,Data Center,Data Center located at Tech Park
+L008-B001,Studio A,Studio A located at Creative Block
+L008-B002,Studio B,Studio B located at Creative Block
+L008-B003,Workshop,Workshop located at Creative Block
+L008-B004,Gallery,Gallery located at Creative Block
+L009-B001,Depot 1,Depot 1 located at Logistics Hub
+L009-B002,Depot 2,Depot 2 located at Logistics Hub
+L009-B003,Sorting Facility,Sorting Facility located at Logistics Hub
+L009-B004,Headquarters,Headquarters located at Logistics Hub
+L010-B001,Outpost Station 1,Outpost Station 1 located at Remote Outpost
+L010-B002,Outpost Station 2,Outpost Station 2 located at Remote Outpost
+L010-B003,Living Quarters,Living Quarters located at Remote Outpost
+L010-B004,Comms Dome,Comms Dome located at Remote Outpost
