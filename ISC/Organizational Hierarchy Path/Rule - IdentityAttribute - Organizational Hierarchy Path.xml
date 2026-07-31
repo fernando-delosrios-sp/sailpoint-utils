@@ -1,13 +1,15 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
 <Rule name="Organizational Hierarchy Path" type="IdentityAttribute">
-  <Description>Returns the consolidated organizational hierarchy position for the identity by traversing entitlement parent relationships via the description field.</Description>
+  <Description>Returns the consolidated organizational hierarchy position for the identity by traversing entitlement parent relationships via a configured entitlement attribute.</Description>
   <Source><![CDATA[
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Collections;
+import java.util.Map;
+import sailpoint.object.ManagedAttribute.Type;
 
 String SOURCE_ID = "<SOURCE_ID>";
 String DEFAULT_VALUE = "-";
@@ -16,10 +18,12 @@ String DEFAULT_VALUE = "-";
    These are defined per-source in the IdentityNow admin UI. */
 String identityAttr = idn.getSourceAttributeBySourceId(SOURCE_ID, "identityAttribute");
 String entitlementAccAttr = idn.getSourceAttributeBySourceId(SOURCE_ID, "entitlementAccountAttribute");
+String parentOrgAttr = idn.getSourceAttributeBySourceId(SOURCE_ID, "parentOrganizationAttribute");
+String displayAttr = idn.getSourceAttributeBySourceId(SOURCE_ID, "entitlementDisplayAttribute");
 String hierarchySep = idn.getSourceAttributeBySourceId(SOURCE_ID, "hierarchySeparator");
 
 /* Validate that required source attributes are configured. */
-if (identityAttr == null || entitlementAccAttr == null) {
+if (identityAttr == null || entitlementAccAttr == null || parentOrgAttr == null || displayAttr == null) {
     return DEFAULT_VALUE;
 }
 
@@ -39,8 +43,8 @@ if (entitlementValue == null || entitlementValue.trim().isEmpty()) {
 }
 
 /* Traverse the entitlement hierarchy.
-   Each entitlement's description field must contain the name of its parent entitlement.
-   The loop walks up the chain until it reaches an entitlement with no parent (description is null/empty). */
+   Each entitlement must expose its parent organization in the attribute named by parentOrganizationAttribute.
+   The loop walks up the chain until it reaches an entitlement with no parent (attribute is null/empty). */
 
 /* path: ordered list of entitlement display names from top-level to leaf. */
 List path = new ArrayList();
@@ -56,20 +60,37 @@ while (current != null && !current.trim().isEmpty() && !visited.contains(current
     /* Look up the managed attribute details for the current entitlement.
        entitlementAccAttr is the account attribute name that holds the entitlement value on source accounts. */
     sailpoint.rule.ManagedAttributeDetails details = idn.getManagedAttributeDetails(
-        SOURCE_ID, entitlementAccAttr, current
+        SOURCE_ID, entitlementAccAttr, current, Type.Entitlement
     );
     if (details == null) {
         break;
     }
 
-    /* details.getName() returns the entitlement's display name.
-       Fall back to 'current' (the raw entitlement value) if getName() returns null. */
-    String name = details.getName();
-    path.add(name != null ? name : current);
+    Map attrs = details.getAttributes();
 
-    /* details.getDescription() contains the parent entitlement name.
+    /* Read the display name from the configured entitlement attribute (e.g., "name").
+       details.getName() returns the account attribute name, not the entitlement display name. */
+    String name = null;
+    if (attrs != null) {
+        Object displayVal = attrs.get(displayAttr);
+        if (displayVal != null) {
+            name = displayVal.toString();
+        }
+    }
+    if (name == null || name.trim().isEmpty()) {
+        name = current;
+    }
+    path.add(name);
+
+    /* Read the parent organization from the configured entitlement attribute.
        If null or empty, this entitlement has no parent — traversal is complete. */
-    String parent = details.getDescription();
+    String parent = null;
+    if (attrs != null) {
+        Object parentVal = attrs.get(parentOrgAttr);
+        if (parentVal != null) {
+            parent = parentVal.toString();
+        }
+    }
     if (parent == null || parent.trim().isEmpty()) {
         break;
     }
