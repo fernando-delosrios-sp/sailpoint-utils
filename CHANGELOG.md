@@ -4,13 +4,11 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
----
-
 ## 2026-08-04
 
 ### ✨ New Features
 
-- **JDBC SaaS Driver Downloader** (`ISC/JDBC SaaS Driver Downloader/`)
+- **JDBC SaaS Driver Downloader** — Download and package JDBC drivers for SailPoint SaaS upload from Maven Central (`ISC/JDBC SaaS Driver Downloader/`).
   - Interactive command (`npm run download`) to pick a database engine, select a version, and download a ready-to-upload JAR + ZIP.
   - Batch command (`npm run download:all`) to download and zip all supported JDBC drivers using defaults from `config/drivers.json`.
   - Supports DB2, Oracle, Sybase (jTDS), SQL Server, MySQL, and PostgreSQL from Maven Central.
@@ -42,11 +40,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 ### 📚 Documentation
 
-- Expanded README for dynamic forms: how dropdowns chain together and how user selections persist.
+- **Dynamic forms README** — Expanded guide covering cascading dropdowns and how user selections persist.
 
 ### 🐛 Fixes
 
-- Restored promotional screenshot accidentally removed from the dynamic forms guide.
+- **Dynamic forms guide screenshot** — Restored promotional screenshot accidentally removed from the guide.
 
 ---
 
@@ -64,7 +62,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 ### 🐛 Fixes
 
-- **OrangeHRM** — Corrected new-employee aggregation behavior.
+- **OrangeHRM new-employee aggregation** — Corrected aggregation trigger on employee creation.
 
 ---
 
@@ -77,20 +75,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 ### 🔧 Improvements
 
-- Reorganized repository layout under `ISC/`, `SaaS Connectivity/`, and `Third-Party/` for clearer navigation.
-- Added README documentation for LCS Operations and Optimistic Provisioning Generic SDIM.
+- **Repository layout** — Reorganized under `ISC/`, `SaaS Connectivity/`, and `Third-Party/` for clearer navigation.
+- **LCS and SDIM READMEs** — Added setup and usage documentation for LCS Operations and Optimistic Provisioning Generic SDIM.
+- **Gitignore updates** — Excludes build and coverage output directories.
 
 ### 🗑️ Removed
 
-- Legacy Emergency Termination assets; configuration consolidated elsewhere.
+- **Legacy Emergency Termination assets** — Configuration consolidated elsewhere.
 
 ### 📚 Documentation
 
-- Promotional image added to the Generic SDIM configuration guide.
-
-### 🧹 Maintenance
-
-- Updated `.gitignore` to exclude build and coverage output directories.
+- **Generic SDIM guide** — Added promotional image to the configuration guide.
 
 ---
 
@@ -98,7 +93,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 ### 🔧 Improvements
 
-- Consolidated prior work from the `fernando` branch into the main utilities tree (squash merge).
+- **Branch consolidation** — Merged prior work from the `fernando` branch into the main utilities tree (squash merge).
 
 ---
 
@@ -111,7 +106,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 ### 📚 Documentation
 
-- Added infographic for Generic Manager Correlation setup and flow.
+- **Generic Manager Correlation infographic** — Added visual guide for setup and flow.
 
 ---
 
@@ -132,4 +127,4 @@ When adding a new utility or integration pattern:
 
 1. Place it under the appropriate top-level folder.
 2. Include a `README.md` with setup, artifacts, and usage.
-3. Add an entry under `[Unreleased]` in this changelog before release.
+3. Add an entry under the newest `## YYYY-MM-DD` release section (create one for today's date if needed).
