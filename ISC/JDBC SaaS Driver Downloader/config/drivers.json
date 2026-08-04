@@ -1,0 +1,32 @@
+{
+    "db2": {
+        "name": "IBM Data Server Driver for JDBC and SQLJ",
+        "class": "com.ibm.db2.jcc.DB2Driver",
+        "version": "latest"
+    },
+    "oracle": {
+        "name": "Oracle JDBC Driver",
+        "class": "oracle.jdbc.OracleDriver",
+        "version": "latest"
+    },
+    "sybase": {
+        "name": "jTDS JDBC Driver for Sybase",
+        "class": "net.sourceforge.jtds.jdbc.Driver",
+        "version": "latest"
+    },
+    "sqlserver": {
+        "name": "Microsoft JDBC Driver for SQL Server",
+        "class": "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+        "version": "latest"
+    },
+    "mysql": {
+        "name": "MySQL Connector/J",
+        "class": "com.mysql.cj.jdbc.Driver",
+        "version": "latest"
+    },
+    "postgres": {
+        "name": "PostgreSQL JDBC Driver",
+        "class": "org.postgresql.Driver",
+        "version": "latest"
+    }
+}
