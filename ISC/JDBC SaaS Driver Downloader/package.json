@@ -1,0 +1,13 @@
+{
+    "name": "jdbc-saas-driver-downloader",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "download": "node download-interactive.mjs",
+        "download:all": "node download-all.mjs"
+    },
+    "engines": {
+        "node": ">=18"
+    }
+}
