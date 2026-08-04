@@ -31,6 +31,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git merge public/main --no-edit -m "Merge branch 'main' into internal [sync]"
+          # This workflow runs from the public repo only; exclude it from the
+          # internal mirror so the sync token does not need the workflow scope.
+          if git ls-files --error-unmatch .github/workflows/sync-to-internal.yml >/dev/null 2>&1; then
+            git rm .github/workflows/sync-to-internal.yml
+            git commit -m "chore: exclude public-only sync workflow from internal mirror"
+          fi
 
       - name: Push internal branch
         run: git push origin internal
+
