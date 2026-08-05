@@ -1,0 +1,14 @@
+{
+    "connectorRef": "{{$.defineVariable.saaSCustomOperationsConnectorID}}",
+    "tag": "latest",
+    "type": "custom:example",
+    "input": {
+        "requestId": "req-123",
+        "message": "Hello, world!"
+    },
+    "config": {
+        "apiUrl": "{{$.defineVariable.aPIURL}}",
+        "token": "{{$.hTTPRequest.body.accessToken}}",
+        "sourceId": "{{$.defineVariable.saaSCustomOperationsSourceID}}"
+    }
+}

@@ -1,0 +1,8 @@
+- [x] Open opsx change artifacts
+- [x] Extend sdk-factory with ISC loopback APIs
+- [x] Port service layer from isc-custom-endpoint
+- [x] Implement wired operations with persist + tests
+- [x] Implement deferred operations with ctx.res.send + tests
+- [x] Register commands and update connector-spec.json
+- [x] Create workflows/ migrated JSON + MIGRATION.md
+- [x] npm test, build, pack-zip
