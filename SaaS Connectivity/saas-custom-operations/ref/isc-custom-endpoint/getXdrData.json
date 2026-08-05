@@ -1,0 +1,30 @@
+{
+  "body": [
+    {
+      "attributes": {
+        "department": null,
+        "displayName": "jonathan.mueller",
+        "jobTitle": null,
+        "location": null,
+        "manager": null
+      },
+      "firstDetectionDate": "2026-07-14T04:30:23.343Z",
+      "id": "75aa4e84-d1b7-42c1-85b5-4f88afa56b97",
+      "identityId": "821bb84a6ca84121bed8e05559c32687",
+      "ignoreDate": null,
+      "ignored": false,
+      "latestDetectionDate": "2026-07-16T03:57:03.601Z",
+      "score": 0.69156075,
+      "type": "LOW_SIMILARITY",
+      "unignoreDate": null,
+      "unignoreType": null
+    }
+  ],
+  "headers": {
+    "Content-Type": [
+      "application/json;charset=utf-8"
+    ]
+  },
+  "responseTime": "0.098647 seconds",
+  "statusCode": 200
+}

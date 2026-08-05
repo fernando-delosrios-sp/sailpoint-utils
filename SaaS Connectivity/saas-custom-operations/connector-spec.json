@@ -1,0 +1,46 @@
+{
+	"name": "saas-custom-operations",
+	"commands": [
+		"custom:example",
+		"custom:access-request-status",
+		"custom:govgroup-emails",
+		"custom:access-request-threshold",
+		"custom:check-sod-pending"
+	],
+	"sourceConfig": [
+		{
+			"type": "menu",
+			"label": "Connection",
+			"items": [
+				{
+					"type": "section",
+					"sectionTitle": "ISC Loopback",
+					"sectionHelpMessage": "Credentials and target source for custom operation loopback and result persistence.",
+					"items": [
+						{
+							"key": "apiUrl",
+							"label": "ISC API URL",
+							"type": "url",
+							"required": true,
+							"placeholder": "https://your-tenant.api.identitynow.com"
+						},
+						{
+							"key": "token",
+							"label": "Access Token",
+							"type": "secret",
+							"required": true
+						},
+						{
+							"key": "sourceId",
+							"label": "Dummy Result Source ID",
+							"type": "text",
+							"required": true
+						}
+					]
+				}
+			]
+		}
+	],
+	"entitlementSchemas": []
+}
+

@@ -1,0 +1,487 @@
+{
+  "version": 1,
+  "timestamp": "2026-08-03T13:44:21.578200352Z",
+  "tenant": "company22986-poc",
+  "description": "Export Job vscode 2026-08-03T13:44:15.876Z",
+  "options": {
+    "excludeTypes": null,
+    "includeTypes": [
+      "SOURCE",
+      "WORKFLOW"
+    ],
+    "objectOptions": {
+      "SOURCE": {
+        "includedNames": [],
+        "includedIds": [
+          "170f7a14192043b49ce429fed77f6c9e"
+        ]
+      },
+      "WORKFLOW": {
+        "includedNames": [],
+        "includedIds": [
+          "ce96dd2e-6135-47e9-b7dd-e6840f5e6366"
+        ]
+      }
+    }
+  },
+  "objects": [
+    {
+      "version": 1,
+      "self": {
+        "id": "170f7a14192043b49ce429fed77f6c9e",
+        "name": "SaaS Custom Operations",
+        "type": "SOURCE"
+      },
+      "object": {
+        "id": "170f7a14192043b49ce429fed77f6c9e",
+        "name": "SaaS Custom Operations",
+        "type": "DelimitedFile",
+        "connectorClass": "sailpoint.connector.delimitedfile.DelimitedFileConnector",
+        "connectorScriptName": "delimited-file-angularsc",
+        "description": "SaaS Custom Operations",
+        "deleteThreshold": 10,
+        "provisionAsCsv": true,
+        "owner": {
+          "type": "IDENTITY",
+          "id": "fed0f8932606496e8e6ceab8a242c29e",
+          "name": "fernando.delosrios"
+        },
+        "accountCorrelationRule": null,
+        "managerCorrelationRule": null,
+        "beforeProvisioningRule": null,
+        "features": [
+          "DIRECT_PERMISSIONS",
+          "DISCOVER_SCHEMA",
+          "NO_RANDOM_ACCESS"
+        ],
+        "schemas": [
+          {
+            "nativeObjectType": "User",
+            "identityAttribute": "id",
+            "displayAttribute": "id",
+            "hierarchyAttribute": null,
+            "includePermissions": false,
+            "features": [],
+            "configuration": {},
+            "attributes": [
+              {
+                "name": "id",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": "The unique ID for the account",
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "status",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "date",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "param1",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "param2",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "param3",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "param4",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "param5",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "param6",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "param7",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "param8",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              },
+              {
+                "name": "param9",
+                "nativeName": null,
+                "type": "STRING",
+                "schema": null,
+                "description": null,
+                "isMulti": false,
+                "isEntitlement": false,
+                "isGroup": false,
+                "isManaged": false
+              }
+            ],
+            "id": "57f88161cf23486daa4c7e1a966c9a00",
+            "name": "account",
+            "created": "2026-08-03T07:52:37.932Z",
+            "modified": "2026-08-03T08:57:43.311Z"
+          }
+        ],
+        "connectorAttributes": {
+          "group.mergeRows": true,
+          "group.delimiter": ",",
+          "mergeRows": false,
+          "group.filetransport": "local",
+          "partitionMode": "disabled",
+          "connectionType": "file",
+          "group.host": "local",
+          "group.indexColumn": "id",
+          "delimiter": ",",
+          "host": "local",
+          "commentCharacter": "#",
+          "group.mergeColumns": [
+            "entitlements",
+            "groups",
+            "permissions"
+          ],
+          "hasHeader": true,
+          "filterEmptyRecords": true,
+          "filetransport": "local",
+          "deleteThresholdPercentage": 10,
+          "group.filterEmptyRecords": true,
+          "group.hasHeader": true,
+          "group.partitionMode": "disabled",
+          "labels": [
+            "standard"
+          ],
+          "parseType": "delimited",
+          "group.columnNames": [
+            "id",
+            "name",
+            "displayName",
+            "created",
+            "description",
+            "modified",
+            "entitlements",
+            "groups",
+            "permissions"
+          ],
+          "templateApplication": "DelimitedFile Template",
+          "encrypted": "transportUserPassword,pgpPrivateKey,pgpPrivateKeyPassword,s3SecretKey,scpPrivateKey,PassphraseForPrivateKey,ftpsClientCertificatePassphrase",
+          "healthy": true,
+          "cloudDisplayName": "SaaS Custom Operations",
+          "connectorName": "Delimited File",
+          "cloudOriginalApplicationType": "Delimited File",
+          "since": "2026-08-03T11:38:43.100Z",
+          "status": "SOURCE_STATE_HEALTHY"
+        },
+        "crossTenantConnectorAttributes": {},
+        "correlationConfigDetails": {
+          "attributeAssignments": null,
+          "id": null,
+          "name": null
+        },
+        "managerCorrelationMapping": null,
+        "provisioningPolicies": [
+          {
+            "name": "Create Policy",
+            "description": "Create Policy",
+            "usageType": "CREATE",
+            "fields": [
+              {
+                "name": "id",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "name",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "givenName",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "familyName",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "e-mail",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "location",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "manager",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              },
+              {
+                "name": "groups",
+                "transform": null,
+                "attributes": {},
+                "isRequired": false,
+                "type": null,
+                "isMultiValued": false
+              }
+            ]
+          }
+        ],
+        "managementWorkgroup": null,
+        "passwordPolicies": null
+      }
+    },
+    {
+      "version": 1,
+      "self": {
+        "id": "ce96dd2e-6135-47e9-b7dd-e6840f5e6366",
+        "name": "SaaS Custom Operations Call",
+        "type": "WORKFLOW"
+      },
+      "object": {
+        "id": "ce96dd2e-6135-47e9-b7dd-e6840f5e6366",
+        "name": "SaaS Custom Operations Call",
+        "description": "",
+        "created": "2026-08-03T13:24:58.079349998Z",
+        "modified": "2026-08-03T13:37:00.861069292Z",
+        "modifiedBy": {
+          "type": "IDENTITY",
+          "id": "fed0f8932606496e8e6ceab8a242c29e",
+          "name": "fernando.delosrios"
+        },
+        "definition": {
+          "start": "Configuration",
+          "steps": {
+            "Call SaaS Custom Operation": {
+              "actionId": "sp:http",
+              "attributes": {
+                "jsonRequestBody": {
+                  "config": {
+                    "apiUrl": "{{$.configuration.aPIURL}}",
+                    "sourceId": "{{$.configuration.saaSCustomOperationsSourceID}}",
+                    "token": "{{$.getAccessToken.body.access_token}}"
+                  },
+                  "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+                  "input": {
+                    "message": "Hello, world!",
+                    "requestId": "req-888"
+                  },
+                  "tag": "latest",
+                  "type": "custom:example"
+                },
+                "method": "post",
+                "param_authenticationRef": "none",
+                "requestContentType": "json",
+                "requestHeaders": {
+                  "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+                },
+                "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke"
+              },
+              "displayName": "Call SaaS Custom Operation",
+              "nextStep": "Read SaaS Custom Operations Result",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Configuration": {
+              "actionId": "sp:define-variable",
+              "attributes": {
+                "id": "sp:define-variable",
+                "variables": [
+                  {
+                    "description": "",
+                    "name": "API URL",
+                    "transforms": [],
+                    "variableA": "https://company22986-poc.api.identitynow.com"
+                  },
+                  {
+                    "description": "",
+                    "name": "SaaS Custom Operations Source ID",
+                    "transforms": [],
+                    "variableA": "170f7a14192043b49ce429fed77f6c9e"
+                  },
+                  {
+                    "description": "",
+                    "name": "SaaS Custom Operations Connector ID",
+                    "transforms": [],
+                    "variableA": "131d48cc-d53f-4a67-9858-845f16166376"
+                  }
+                ]
+              },
+              "displayName": "Configuration",
+              "nextStep": "Get Access Token",
+              "type": "Mutation"
+            },
+            "End Step - Success": {
+              "actionId": "sp:operator-success",
+              "displayName": "",
+              "type": "success"
+            },
+            "Get Access Token": {
+              "actionId": "sp:http",
+              "attributes": {
+                "formRequestBody": {
+                  "grant_type": "client_credentials"
+                },
+                "method": "post",
+                "param_authenticationRef": "basic",
+                "param_basic": {
+                  "mapping": {
+                    "auth_password": "password",
+                    "auth_username": "username"
+                  },
+                  "paramID": "06484d5d-98e6-44c6-8de0-3f7f855bf888",
+                  "paramType": "1.1",
+                  "refID": "cfefeca4-9db2-4356-8630-c814739e6bbb"
+                },
+                "requestContentType": "form",
+                "url": "{{$.configuration.aPIURL}}/oauth/token"
+              },
+              "displayName": "Get Access Token",
+              "nextStep": "Call SaaS Custom Operation",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Read SaaS Custom Operation Result": {
+              "actionId": "sp:get-accounts",
+              "attributes": {
+                "filterCriteria": "nativeIdentity",
+                "getAccountsBy": "filters",
+                "operator": "eq",
+                "resultSelector": [
+                  "$.readSaaSCustomOperationResult.accounts[*].attributes"
+                ],
+                "value": "req-888"
+              },
+              "displayName": "Read SaaS Custom Operation Result",
+              "nextStep": "End Step - Success",
+              "type": "action",
+              "versionNumber": 1
+            }
+          }
+        },
+        "enabled": false,
+        "creator": {
+          "type": "IDENTITY",
+          "id": "fed0f8932606496e8e6ceab8a242c29e",
+          "name": "fernando.delosrios"
+        },
+        "owner": {
+          "type": "IDENTITY",
+          "id": "fed0f8932606496e8e6ceab8a242c29e",
+          "name": "fernando.delosrios"
+        },
+        "trigger": {
+          "type": "EXTERNAL",
+          "attributes": {
+            "id": "idn:external-http",
+            "integrationId": null
+          }
+        }
+      }
+    }
+  ]
+}

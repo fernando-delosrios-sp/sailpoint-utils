@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "description": "Migrated template for T1.21 approval workflow — replaces isc-custom-endpoint HTTP calls with custom:access-request-status",
+  "object": {
+    "id": "38d42800-ad18-4ba5-91d4-286423fc1efb",
+    "name": "T1.21 Quorum Based Approval of Access Request (Migrated)",
+    "description": "Uses custom:access-request-status (approval-email profile) instead of external HTTP endpoint.",
+    "enabled": false,
+    "definition": {
+      "start": "Configuration",
+      "steps": {
+        "Configuration": {
+          "actionId": "sp:define-variable",
+          "attributes": {
+            "variables": [
+              {
+                "name": "API URL",
+                "variableA": "https://your-tenant.api.identitynow.com"
+              },
+              {
+                "name": "SaaS Custom Operations Source ID",
+                "variableA": "YOUR_DUMMY_SOURCE_ID"
+              },
+              {
+                "name": "SaaS Custom Operations Connector ID",
+                "variableA": "YOUR_CONNECTOR_ID"
+              }
+            ]
+          },
+          "nextStep": "Get Identity",
+          "type": "Mutation"
+        },
+        "Get Identity": {
+          "actionId": "sp:get-identity",
+          "attributes": {
+            "id.$": "$.trigger.requestedFor.id"
+          },
+          "nextStep": "Get Access Token",
+          "type": "action",
+          "versionNumber": 2
+        },
+        "Get Access Token": {
+          "actionId": "sp:http",
+          "attributes": {
+            "formRequestBody": {
+              "grant_type": "client_credentials"
+            },
+            "method": "post",
+            "param_authenticationRef": "basic",
+            "requestContentType": "form",
+            "url": "{{$.configuration.aPIURL}}/oauth/token"
+          },
+          "nextStep": "Invoke Access Request Status",
+          "type": "action",
+          "versionNumber": 3
+        },
+        "Invoke Access Request Status": {
+          "actionId": "sp:http",
+          "attributes": {
+            "jsonRequestBody": {
+              "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+              "tag": "latest",
+              "type": "custom:access-request-status",
+              "input": {
+                "requestId": "{{$.trigger.accessRequestId}}",
+                "accessRequestId": "{{$.trigger.accessRequestId}}",
+                "outputProfile": "approval-email",
+                "govGroupName": "SOD Governance Group"
+              },
+              "config": {
+                "apiUrl": "{{$.configuration.aPIURL}}",
+                "token": "{{$.getAccessToken.body.access_token}}",
+                "sourceId": "{{$.configuration.saaSCustomOperationsSourceID}}"
+              }
+            },
+            "method": "post",
+            "requestContentType": "json",
+            "requestHeaders": {
+              "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+            },
+            "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke"
+          },
+          "nextStep": "Read Access Request Status Result",
+          "type": "action",
+          "versionNumber": 3
+        },
+        "Read Access Request Status Result": {
+          "actionId": "sp:get-accounts",
+          "attributes": {
+            "filterCriteria": "nativeIdentity",
+            "getAccountsBy": "filters",
+            "operator": "eq",
+            "resultSelector": ["$.readAccessRequestStatusResult.accounts[*].attributes"],
+            "value": "{{$.trigger.accessRequestId}}"
+          },
+          "nextStep": "Route Email By Risk",
+          "type": "action",
+          "versionNumber": 1
+        },
+        "Route Email By Risk": {
+          "actionId": "sp:compare-strings",
+          "choiceList": [
+            {
+              "comparator": "StringEquals",
+              "nextStep": "Send Email Manager",
+              "variableA.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param1",
+              "variableB": "manager"
+            },
+            {
+              "comparator": "StringEquals",
+              "nextStep": "Send Email Manager Owner",
+              "variableA.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param1",
+              "variableB": "manager-owner"
+            },
+            {
+              "comparator": "StringEquals",
+              "nextStep": "Send Email Manager Owner BCC",
+              "variableA.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param1",
+              "variableB": "manager-owner-bcc"
+            }
+          ],
+          "defaultStep": "End Step - Failure",
+          "type": "choice"
+        },
+        "Send Email Manager": {
+          "actionId": "sp:send-email",
+          "attributes": {
+            "body.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param2",
+            "recipientEmailList.$": "$.getIdentity.managerRef.id"
+          },
+          "nextStep": "End Step - Success",
+          "type": "action",
+          "versionNumber": 2
+        },
+        "Send Email Manager Owner": {
+          "actionId": "sp:send-email",
+          "attributes": {
+            "body.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param2",
+            "carbonCopy.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param4",
+            "recipientEmailList.$": "$.getIdentity.managerRef.id"
+          },
+          "nextStep": "End Step - Success",
+          "type": "action",
+          "versionNumber": 2
+        },
+        "Send Email Manager Owner BCC": {
+          "actionId": "sp:send-email",
+          "attributes": {
+            "blindCarbonCopy.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param3",
+            "body.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param2",
+            "carbonCopy.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param4",
+            "recipientEmailList.$": "$.getIdentity.managerRef.id"
+          },
+          "nextStep": "End Step - Success",
+          "type": "action",
+          "versionNumber": 2
+        },
+        "End Step - Success": {
+          "actionId": "sp:operator-success",
+          "type": "success"
+        },
+        "End Step - Failure": {
+          "actionId": "sp:operator-failure",
+          "failureName": "Unable to resolve approval email route",
+          "type": "failure"
+        }
+      }
+    },
+    "trigger": {
+      "type": "AccessRequestTrigger",
+      "attributes": {
+        "id": "idn:access-request-trigger"
+      }
+    }
+  }
+}

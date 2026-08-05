@@ -1,0 +1,797 @@
+import express, { type Request, type Response } from "express";
+
+const app = express();
+app.use(express.json());
+
+// ---- Globale Variable für das Access Token ----
+let access_token: string | null = null;
+
+
+interface EntitlementRef {
+  type: "ENTITLEMENT";
+  id: string;
+  name?: string;
+}
+
+interface AccessRef {
+  type: "ENTITLEMENT";
+  id: string;
+  name?: string;
+}
+
+interface AccessProfileRef {
+  id: string;
+  name?: string;
+  type: "ACCESS_PROFILE";
+  entitlements?: EntitlementRef[];
+}
+
+interface AccessModelAttributeValue {
+  name: string;
+  status: string;
+  value: string;
+}
+
+interface AccessModelAttribute {
+  description?: string;
+  key: string;
+  multiselect?: boolean;
+  name?: string;
+  objectTypes?: string[];
+  status?: string;
+  type?: string;
+  values?: AccessModelAttributeValue[];
+}
+
+interface AccessModelMetadata {
+  attributes?: AccessModelAttribute[];
+}
+
+interface GetRequestedItems {
+  accessModelMetadata?: AccessModelMetadata;
+  accessProfiles?: AccessProfileRef[];
+  entitlements?: EntitlementRef[];
+  [key: string]: unknown;
+}
+
+interface ViolatedPolicy {
+  type: string;
+  id: string;
+  name: string;
+}
+
+interface ViolationCheckResult {
+  message?: {
+    locale: string;
+    localeOrigin: string;
+    text: string;
+  };
+  violatedPolicies?: ViolatedPolicy[] | null;
+}
+
+interface SodViolationContext {
+  state: string;
+  violationCheckResult?: ViolationCheckResult;
+  uuid?: string;
+}
+
+interface AccessRequestItem {
+  name: string;
+  id: string;
+  sodViolationContext?: SodViolationContext;
+  [key: string]: unknown;
+}
+
+interface GetAccessRequestStatus {
+  type?: string;
+  accessRequestId?: string;
+  requestedFor?: { id: string; name?: string; type?: string };
+  sodViolationContext?: SodViolationContext;
+  [key: string]: unknown;
+}
+
+interface OpenAccessRequestItem {
+  id: string;
+  name?: string;
+  type: string;
+  state?: string;
+  accessRequestId?: string;
+  requestedFor?: { id: string; name?: string; type?: string };
+  [key: string]: unknown;
+}
+
+interface RoleDetail {
+  id: string;
+  name?: string;
+  entitlements?: EntitlementRef[];
+  accessProfiles?: AccessProfileRef[];
+  [key: string]: unknown;
+}
+
+interface IdentityWithNewAccess {
+  identityId: string;
+  accessRefs: AccessRef[];
+}
+
+interface ViolationPrediction {
+  identityId?: string;
+  violationContexts?: unknown[];
+  message?: {
+    locale: string;
+    localeOrigin: string;
+    text: string;
+  };
+  [key: string]: unknown;
+}
+
+interface XdrData {
+  attributes?: {
+    department?: string | null;
+    displayName?: string | null;
+    jobTitle?: string | null;
+    location?: string | null;
+    manager?: string | null;
+  };
+  firstDetectionDate?: string;
+  id?: string;
+  identityId?: string;
+  ignoreDate?: string | null;
+  ignored?: boolean;
+  latestDetectionDate?: string;
+  score?: number;
+  type?: string;
+  unignoreDate?: string | null;
+  unignoreType?: string | null;
+}
+
+interface AccessRequestStatusPayload {
+  getAccessRequestStatus?: GetAccessRequestStatus | null;
+  getRequestedItems?: GetRequestedItems | null;
+  getXdrData?: XdrData | null;
+}
+
+interface AccessProfileDetail {
+  id: string;
+  name?: string;
+  entitlements?: EntitlementRef[];
+  [key: string]: unknown;
+}
+
+interface SodPolicyCriteriaItem {
+  type: "ENTITLEMENT";
+  id: string;
+  name?: string;
+}
+
+interface SodPolicyCriteriaSide {
+  name?: string;
+  criteriaList: SodPolicyCriteriaItem[];
+}
+
+interface SodPolicy {
+  id: string;
+  name: string;
+  conflictingAccessCriteria?: {
+    leftCriteria: SodPolicyCriteriaSide;
+    rightCriteria: SodPolicyCriteriaSide;
+  } | null;
+  [key: string]: unknown;
+}
+
+interface DetectedViolation {
+  policyId: string;
+  policyName: string;
+  matchedLeft: string[];
+  matchedRight: string[];
+}
+interface CheckSodPendingRequestBody {
+  identityId: string;
+}
+
+interface SourceRef {
+  id: string;
+  name?: string;
+}
+
+interface EntitlementRef {
+  type: "ENTITLEMENT";
+  id: string;
+  name?: string;
+  source?: SourceRef;
+}
+
+interface AccessRef {
+  type: "ENTITLEMENT";
+  id: string;
+  name?: string;
+  source?: SourceRef;
+}
+
+interface EntitlementDetail {
+  id: string;
+  name?: string;
+  source?: SourceRef;
+  [key: string]: unknown;
+}
+
+async function fetchEntitlementDetail(
+  apiBaseUrl: string,
+  entitlementId: string,
+  token: string
+): Promise<EntitlementDetail | null> {
+  const url = `${apiBaseUrl}/v3/entitlements/${entitlementId}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    console.error(`Fehler beim Laden von Entitlement ${entitlementId}: ${response.status}`);
+    return null;
+  }
+
+  return (await response.json()) as EntitlementDetail;
+}
+
+async function enrichEntitlementsWithSource(
+  apiBaseUrl: string,
+  entitlements: EntitlementRef[],
+  token: string
+): Promise<EntitlementRef[]> {
+  return Promise.all(
+    entitlements.map(async (ent) => {
+      if (ent.source) return ent;
+      const detail = await fetchEntitlementDetail(apiBaseUrl, ent.id, token);
+      return {
+        ...ent,
+        ...(detail?.source !== undefined && { source: detail.source }),
+      };
+    })
+  );
+}
+
+async function fetchAccessProfileSource(
+  apiBaseUrl: string,
+  accessProfileId: string,
+  token: string
+): Promise<SourceRef | undefined> {
+  const url = `${apiBaseUrl}/v3/access-profiles/${accessProfileId}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    console.error(
+      `Fehler beim Laden der Source für Access Profile ${accessProfileId}: ${response.status}`
+    );
+    return undefined;
+  }
+
+  const detail = (await response.json()) as { source?: SourceRef };
+  return detail.source;
+}
+
+function checkPoliciesAgainstEntitlements(
+  policies: SodPolicy[],
+  entitlementIds: string[]
+): DetectedViolation[] | string[] {
+  const entitlementIdSet = new Set(entitlementIds);
+  const violations: DetectedViolation[] = [];
+
+  console.log("=== SOD-Policy-Prüfung ===");
+  console.log("Zu prüfende Entitlement-IDs:", entitlementIds);
+
+  for (const policy of policies) {
+    const criteria = policy.conflictingAccessCriteria;
+    if (!criteria) continue;
+
+    const matchedLeft = criteria.leftCriteria.criteriaList
+      .filter((c) => entitlementIdSet.has(c.id))
+      .map((c) => c.id);
+
+    const matchedRight = criteria.rightCriteria.criteriaList
+      .filter((c) => entitlementIdSet.has(c.id))
+      .map((c) => c.id);
+
+    console.log(`\nPolicy: ${policy.name} (${policy.id})`);
+    console.log("  leftCriteria IDs: ", criteria.leftCriteria.criteriaList.map((c) => c.id));
+    console.log("  rightCriteria IDs:", criteria.rightCriteria.criteriaList.map((c) => c.id));
+    console.log("  matchedLeft:      ", matchedLeft);
+    console.log("  matchedRight:     ", matchedRight);
+
+    if (matchedLeft.length > 0 && matchedRight.length > 0) {
+      console.log("  ⚠️  VERLETZUNG erkannt!");
+      violations.push({
+        policyId: policy.id,
+        policyName: policy.name,
+        matchedLeft,
+        matchedRight,
+      });
+    } else {
+      console.log("  ✓ keine Verletzung");
+    }
+  }
+
+  console.log(`\n=== Ergebnis: ${violations.length} Verletzung(en) gefunden ===\n`);
+
+  return violations.length > 0 ? violations : ["N/A"];
+}
+
+async function fetchSodPolicies(
+  apiBaseUrl: string,
+  token: string
+): Promise<SodPolicy[]> {
+  const url = `${apiBaseUrl}/beta/sod-policies`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`Fehler beim Laden der SOD-Policies: ${response.status} - ${errorBody}`);
+    return [];
+  }
+
+  return (await response.json()) as SodPolicy[];
+}
+
+async function fetchOpenAccessRequests(
+  apiBaseUrl: string,
+  requestedForId: string,
+  currentAccessRequestId: string | undefined,
+  token: string
+): Promise<OpenAccessRequestItem[]> {
+  const url = `${apiBaseUrl}/v3/access-request-status?requested-for=${requestedForId}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`Fehler beim Laden der Access Requests: ${response.status} - ${errorBody}`);
+    return [];
+  }
+
+  const items = (await response.json()) as OpenAccessRequestItem[];
+
+  return items.filter(
+    (item) =>
+      item.state === "EXECUTING" &&
+      item.accessRequestId !== currentAccessRequestId
+  );
+}
+
+async function fetchRoleDetail(
+  apiBaseUrl: string,
+  roleId: string,
+  token: string
+): Promise<RoleDetail | null> {
+  const url = `${apiBaseUrl}/v3/roles/${roleId}`;
+
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    console.error(`Fehler beim Laden von Role ${roleId}: ${response.status}`);
+    return null;
+  }
+
+  return (await response.json()) as RoleDetail;
+}
+
+async function fetchEntitlementsForItem(
+  apiBaseUrl: string,
+  item: OpenAccessRequestItem,
+  token: string,
+  addEntitlement: (ent: EntitlementRef | undefined) => void
+): Promise<void> {
+  switch (item.type) {
+    case "ENTITLEMENT": {
+      addEntitlement({
+        type: "ENTITLEMENT",
+        id: item.id,
+        ...(item.name !== undefined && { name: item.name }),
+      });
+      break;
+    }
+
+    case "ACCESS_PROFILE": {
+      const entitlements = await fetchAccessProfileEntitlements(apiBaseUrl, item.id, token);
+      entitlements.forEach(addEntitlement);
+      break;
+    }
+
+    case "ROLE": {
+      const role = await fetchRoleDetail(apiBaseUrl, item.id, token);
+      if (!role) break;
+
+      role.entitlements?.forEach(addEntitlement);
+
+      const accessProfiles = role.accessProfiles ?? [];
+      const entitlementLists = await Promise.all(
+        accessProfiles.map((profile) =>
+          fetchAccessProfileEntitlements(apiBaseUrl, profile.id, token)
+        )
+      );
+      entitlementLists.flat().forEach(addEntitlement);
+      break;
+    }
+
+    default:
+      console.log(`Unbekannter Typ übersprungen: ${item.type} (${item.id})`);
+  }
+}
+
+async function extractAllOpenEntitlements(
+  apiBaseUrl: string,
+  requestedForId: string,
+  currentAccessRequestId: string | undefined,
+  token: string
+): Promise<AccessRef[]> {
+  const refs: AccessRef[] = [];
+  const seenIds = new Set<string>();
+
+const addEntitlement = (ent: EntitlementRef | undefined) => {
+  if (!ent?.id || seenIds.has(ent.id)) return;
+  seenIds.add(ent.id);
+  refs.push({
+    type: "ENTITLEMENT",
+    id: ent.id,
+    ...(ent.name !== undefined && { name: ent.name }),
+  });
+};
+
+  const openItems = await fetchOpenAccessRequests(
+    apiBaseUrl,
+    requestedForId,
+    currentAccessRequestId,
+    token
+  );
+
+  for (const item of openItems) {
+    await fetchEntitlementsForItem(apiBaseUrl, item, token, addEntitlement);
+  }
+
+  return refs;
+}
+
+function extractAccessToken(req: Request): string | null {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return null;
+
+  const [scheme, token] = authHeader.split(" ");
+  if (scheme?.toLowerCase() !== "bearer" || !token) return null;
+
+  return token;
+}
+function extractIscRiskName(
+  getRequestedItems: GetRequestedItems | null | undefined
+): string {
+  const attributes = getRequestedItems?.accessModelMetadata?.attributes;
+
+  if (!attributes) {
+    return "N/A";
+  }
+
+  const iscRiskAttribute = attributes.find((attr) => attr.key === "iscRisk");
+  const riskName = iscRiskAttribute?.values?.[0]?.name;
+
+  return riskName ?? "N/A";
+}
+// Kleiner Helper zum Extrahieren der Policy-Namen mit N/A-Fallback
+function extractViolatedPolicyNames(
+  violatedPolicies: ViolatedPolicy[] | null | undefined
+): string[] {
+  if (!violatedPolicies || violatedPolicies.length === 0) {
+    return ["N/A"];
+  }
+  return violatedPolicies.map((p) => p.name);
+}
+
+async function predictSodViolations(
+  apiBaseUrl: string,
+  identityId: string,
+  accessRefs: AccessRef[],
+  token: string
+): Promise<ViolationPrediction | null> {
+  const url = `${apiBaseUrl}/beta/sod-violations/predict`;
+
+  const body: IdentityWithNewAccess = {
+    identityId,
+    accessRefs,
+  };
+
+  console.log("→ Request-URL:", url);
+  console.log("→ Body:", JSON.stringify(body, null, 2));
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  console.log("← Status:", response.status);
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error(`Fehler bei SOD-Prediction: ${response.status} - ${errorBody}`);
+    return null;
+  }
+
+  return (await response.json()) as ViolationPrediction;
+}
+
+app.post("/sod-violations", (req: Request, res: Response) => {
+  access_token = extractAccessToken(req);
+
+  const body = req.body as AccessRequestItem[];
+  const firstItem = Array.isArray(body) ? body[0] : undefined;
+
+  const policies =
+    firstItem?.sodViolationContext?.violationCheckResult?.violatedPolicies;
+
+  const violatedPolicyNames = extractViolatedPolicyNames(policies);
+
+  res.json({
+    violatedPolicies: violatedPolicyNames,
+    receivedToken: access_token,
+  });
+});
+
+
+function extractApiBaseUrl(token: string): string | null {
+  try {
+    const [headerB64] = token.split(".");
+    if (!headerB64) return null;
+
+    const headerJson = Buffer.from(headerB64, "base64url").toString("utf-8");
+    const header = JSON.parse(headerJson) as { jku?: string };
+
+    if (!header.jku) return null;
+
+    // jku sieht so aus: https://<tenant>.api.identitynow-demo.com/oauth/jwks
+    const jkuUrl = new URL(header.jku);
+    return `${jkuUrl.protocol}//${jkuUrl.host}`;
+  } catch {
+    return null;
+  }
+}
+
+
+async function fetchAccessProfileEntitlements(
+  apiBaseUrl: string,
+  accessProfileId: string,
+  token: string
+): Promise<EntitlementRef[]> {
+  const url = `${apiBaseUrl}/access-profiles/v1/${accessProfileId}/entitlements`;
+
+  const [entitlementsResponse, source] = await Promise.all([
+    fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    }),
+    fetchAccessProfileSource(apiBaseUrl, accessProfileId, token),
+  ]);
+
+  if (!entitlementsResponse.ok) {
+    const errorBody = await entitlementsResponse.text();
+    console.error(`Fehler: ${entitlementsResponse.status} - ${errorBody}`);
+    return [];
+  }
+
+  const entitlements = (await entitlementsResponse.json()) as EntitlementRef[];
+
+  return entitlements.map((ent) => ({
+    ...ent,
+    ...(source !== undefined && { source }),
+  }));
+}
+
+async function extractAccessRefs(
+  getAccessRequestStatus: GetAccessRequestStatus | null | undefined,
+  getRequestedItems: GetRequestedItems | null | undefined,
+  token: string | null
+): Promise<AccessRef[]> {
+  if (getAccessRequestStatus?.type !== "ROLE" || !getRequestedItems) {
+    return [];
+  }
+
+  const refs: AccessRef[] = [];
+  const seenIds = new Set<string>();
+
+  const addEntitlement = (ent: EntitlementRef | undefined) => {
+  if (!ent?.id || seenIds.has(ent.id)) return;
+  seenIds.add(ent.id);
+  refs.push({
+    type: "ENTITLEMENT",
+    id: ent.id,
+    ...(ent.name !== undefined && { name: ent.name }),
+  });
+};
+
+const apiBaseUrl = extractApiBaseUrl(token!);
+  if (!apiBaseUrl) {
+    console.error("Konnte API-Basis-URL nicht aus Token extrahieren.");
+    return refs;
+  }
+
+  // Direkt an der Rolle hängende Entitlements
+if (getRequestedItems.entitlements && getRequestedItems.entitlements.length > 0) {
+  const enriched = await enrichEntitlementsWithSource(
+    apiBaseUrl,
+    getRequestedItems.entitlements,
+    token!
+  );
+  enriched.forEach(addEntitlement);
+}
+
+  const accessProfiles = getRequestedItems.accessProfiles ?? [];
+
+  if (accessProfiles.length === 0 || !token) {
+    return refs;
+  }
+
+  
+
+  const entitlementLists = await Promise.all(
+    accessProfiles.map((profile) =>
+      fetchAccessProfileEntitlements(apiBaseUrl, profile.id, token)
+    )
+  );
+
+  entitlementLists.flat().forEach(addEntitlement);
+
+  return refs;
+}
+
+function extractXdrScore(xdrData: XdrData | null | undefined): string {
+  if (!xdrData || xdrData.score === undefined || xdrData.score === null) {
+    return "N/A";
+  }
+  const percentage = xdrData.score * 100;
+  return `${percentage.toFixed(2)}%`;
+}
+
+app.post("/access-request-status", async (req: Request, res: Response) => {
+  access_token = extractAccessToken(req);
+
+  const body = req.body as AccessRequestStatusPayload;
+
+  const getAccessRequestStatus = body?.getAccessRequestStatus ?? null;
+  const getRequestedItems = body?.getRequestedItems ?? null;
+  const getXdrData = body?.getXdrData ?? null;
+
+  const policies =
+    getAccessRequestStatus?.sodViolationContext?.violationCheckResult
+      ?.violatedPolicies;
+
+  const violatedPolicyNames = extractViolatedPolicyNames(policies);
+  const xdrScore = extractXdrScore(getXdrData);
+  const iscRiskName = extractIscRiskName(getRequestedItems);
+  const accessRefs = await extractAccessRefs(
+    getAccessRequestStatus,
+    getRequestedItems,
+    access_token
+  );
+
+  const requestedForId = getAccessRequestStatus?.requestedFor?.id;
+  const currentAccessRequestId = getAccessRequestStatus?.accessRequestId;
+  const apiBaseUrl = access_token ? extractApiBaseUrl(access_token) : null;
+
+  const allOpenEntitlements =
+    requestedForId && apiBaseUrl && access_token
+      ? await extractAllOpenEntitlements(
+        apiBaseUrl,
+        requestedForId,
+        currentAccessRequestId,
+        access_token
+      )
+      : [];
+
+  const identityId = getAccessRequestStatus?.requestedFor?.id;
+
+  const sodPrediction =
+    identityId && apiBaseUrl && access_token
+      ? await predictSodViolations(apiBaseUrl, identityId, accessRefs, access_token)
+      : null;
+
+  const entitlementIds = accessRefs.map((ref) => ref.id);
+
+  const sodPolicies =
+    apiBaseUrl && access_token
+      ? await fetchSodPolicies(apiBaseUrl, access_token)
+      : [];
+
+  const internalViolations = checkPoliciesAgainstEntitlements(
+    sodPolicies,
+    entitlementIds
+  );
+
+  
+
+  res.json({
+    getAccessRequestStatus,
+    getRequestedItems,
+    getXdrData,
+    violatedPolicyNames,
+    xdrScore,
+    iscRiskName,
+    accessRefs,
+    sodPrediction,       // Konflikte gegen bestehenden Zugriff (via SailPoint-API)
+    internalViolations,  // Konflikte NUR innerhalb der neuen Entitlement-Liste (lokal berechnet)
+  });
+});
+
+app.post("/check-sod-pending-request", async (req: Request, res: Response) => {
+  access_token = extractAccessToken(req);
+
+  const body = req.body as CheckSodPendingRequestBody;
+  const identityId = body?.identityId;
+
+  if (!identityId) {
+    return res.status(400).json({ error: "identityId ist erforderlich." });
+  }
+
+  if (!access_token) {
+    return res.status(401).json({ error: "Kein gültiges Access Token übermittelt." });
+  }
+
+  const apiBaseUrl = extractApiBaseUrl(access_token);
+
+  if (!apiBaseUrl) {
+    return res.status(400).json({ error: "Konnte API-Basis-URL nicht aus Token extrahieren." });
+  }
+
+  // Da es hier keinen "aktuellen" Request gibt, den wir ausschließen müssten
+  const allOpenEntitlements = await extractAllOpenEntitlements(
+    apiBaseUrl,
+    identityId,
+    undefined,
+    access_token
+  );
+
+  const entitlementIds = allOpenEntitlements.map((ref) => ref.id);
+
+  const sodPolicies = await fetchSodPolicies(apiBaseUrl, access_token);
+
+  const internalViolations = checkPoliciesAgainstEntitlements(
+    sodPolicies,
+    entitlementIds
+  );
+
+  res.json({
+    identityId,
+    allOpenEntitlements,
+    internalViolations,
+  });
+});
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Server läuft auf http://localhost:${PORT}`);
+});

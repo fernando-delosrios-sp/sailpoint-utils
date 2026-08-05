@@ -1,0 +1,247 @@
+{
+  "version": 1,
+  "description": "Migrated template for T2.05 Adaptive Approval Threshold — replaces isc-custom-endpoint /access-request-threshold",
+  "object": {
+    "id": "418355cf-d12c-48ba-9e2f-399a51694445",
+    "name": "T2.05 Adaptive Approval Threshold (Migrated)",
+    "description": "Uses custom:access-request-threshold instead of external HTTP threshold endpoint.",
+    "enabled": false,
+    "definition": {
+      "start": "Approval Policy",
+      "steps": {
+        "Approval Policy": {
+          "actionId": "sp:access-request-approval",
+          "attributes": {
+            "accessRequestId.$": "$.trigger.accessRequestId",
+            "approvalActionAtTimeout": "EXPIRED",
+            "approvalTimeout": 1,
+            "approvalType": "SINGLE",
+            "singleApproverCategory": "MANAGER_OF"
+          },
+          "displayName": "apprPolicy Manager",
+          "nextStep": "Compare Strings",
+          "type": "action",
+          "versionNumber": 1
+        },
+        "Approval Policy 1": {
+          "actionId": "sp:access-request-approval",
+          "attributes": {
+            "accessRequestId.$": "$.trigger.accessRequestId",
+            "approvalActionAtTimeout": "EXPIRED",
+            "approvalTimeout": 1,
+            "approvalType": "SINGLE",
+            "singleApproverCategory": "ACCESS_ITEM_OWNER",
+            "multiApproverReviewersConfig_approvalScheme": "PARALLEL",
+            "multiApproverReviewersConfig_reviewers": [
+              { "approverCategory": "ACCESS_ITEM_OWNER", "approverNumber": 2 },
+              { "approverCategory": "MANAGER_OF", "approverNumber": 1 }
+            ]
+          },
+          "displayName": "apprPolicy1 itemOwner",
+          "nextStep": "End Step - Success",
+          "type": "action",
+          "versionNumber": 1
+        },
+        "Compare Strings": {
+          "actionId": "sp:compare-strings",
+          "choiceList": [
+            {
+              "comparator": "StringEquals",
+              "nextStep": "Configuration",
+              "variableA.$": "$.approvalPolicy.status",
+              "variableB": "APPROVED"
+            }
+          ],
+          "defaultStep": "End Step - Failure",
+          "displayName": "compString isApproved?",
+          "type": "choice"
+        },
+        "Compare Strings 1": {
+          "actionId": "sp:compare-strings",
+          "choiceList": [
+            {
+              "comparator": "StringEquals",
+              "nextStep": "Send Email 1",
+              "variableA.$": "$.readThresholdResult.accounts[0].attributes.param1",
+              "variableB": "true"
+            }
+          ],
+          "defaultStep": "Send Email",
+          "displayName": "compStr thresholdHit?",
+          "type": "choice"
+        },
+        "Configuration": {
+          "actionId": "sp:define-variable",
+          "attributes": {
+            "variables": [
+              {
+                "name": "API URL",
+                "variableA": "https://your-tenant.api.identitynow.com"
+              },
+              {
+                "name": "SaaS Custom Operations Source ID",
+                "variableA": "YOUR_DUMMY_SOURCE_ID"
+              },
+              {
+                "name": "SaaS Custom Operations Connector ID",
+                "variableA": "YOUR_CONNECTOR_ID"
+              },
+              {
+                "name": "sourceName",
+                "variableA": "SAP GRC"
+              },
+              {
+                "name": "thresholdValue",
+                "variableA": "2"
+              }
+            ]
+          },
+          "nextStep": "Get Identity",
+          "type": "Mutation"
+        },
+        "End Step - Failure": {
+          "actionId": "sp:operator-failure",
+          "failureName": "requestRejected",
+          "type": "failure"
+        },
+        "End Step - Success": {
+          "actionId": "sp:operator-success",
+          "type": "success"
+        },
+        "Get Access Token": {
+          "actionId": "sp:http",
+          "attributes": {
+            "formRequestBody": { "grant_type": "client_credentials" },
+            "method": "post",
+            "param_authenticationRef": "basic",
+            "requestContentType": "form",
+            "url": "{{$.configuration.aPIURL}}/oauth/token"
+          },
+          "nextStep": "Invoke Access Request Threshold",
+          "type": "action",
+          "versionNumber": 3
+        },
+        "Get Identity": {
+          "actionId": "sp:get-identity",
+          "attributes": {
+            "id.$": "$.trigger.requestedFor.id"
+          },
+          "nextStep": "Get Access Token",
+          "type": "action",
+          "versionNumber": 2
+        },
+        "HTTP Request 2": {
+          "actionId": "sp:http",
+          "attributes": {
+            "method": "get",
+            "param_authenticationRef": "oauth",
+            "url": "{{$.configuration.aPIURL}}/{{$.defineVariable.apiPath}}/v1/{{$.trigger.requestedItem.id}}"
+          },
+          "displayName": "http requestedItem owner",
+          "nextStep": "Compare Strings 1",
+          "type": "action",
+          "versionNumber": 3
+        },
+        "Define Variable": {
+          "actionId": "sp:define-variable",
+          "attributes": {
+            "variables": [
+              {
+                "name": "apiPath",
+                "transforms": [
+                  {
+                    "id": "sp:transform:replace:string",
+                    "input": { "pattern": "ACCESS_PROFILE", "replacement": "access-profiles" }
+                  },
+                  {
+                    "id": "sp:transform:replace:string",
+                    "input": { "pattern": "ENTITLEMENT", "replacement": "entitlements" }
+                  },
+                  {
+                    "id": "sp:transform:replace:string",
+                    "input": { "pattern": "ROLE", "replacement": "roles" }
+                  }
+                ],
+                "variableA.$": "$.trigger.requestedItem.type"
+              }
+            ]
+          },
+          "nextStep": "HTTP Request 2",
+          "type": "Mutation"
+        },
+        "Invoke Access Request Threshold": {
+          "actionId": "sp:http",
+          "attributes": {
+            "jsonRequestBody": {
+              "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+              "tag": "latest",
+              "type": "custom:access-request-threshold",
+              "input": {
+                "requestId": "{{$.trigger.accessRequestId}}",
+                "accessRequestId": "{{$.trigger.accessRequestId}}",
+                "sourceName": "{{$.configuration.sourceName}}",
+                "thresholdValue": "{{$.configuration.thresholdValue}}"
+              },
+              "config": {
+                "apiUrl": "{{$.configuration.aPIURL}}",
+                "token": "{{$.getAccessToken.body.access_token}}",
+                "sourceId": "{{$.configuration.saaSCustomOperationsSourceID}}"
+              }
+            },
+            "method": "post",
+            "requestContentType": "json",
+            "requestHeaders": {
+              "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+            },
+            "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke"
+          },
+          "nextStep": "Read Threshold Result",
+          "type": "action",
+          "versionNumber": 3
+        },
+        "Read Threshold Result": {
+          "actionId": "sp:get-accounts",
+          "attributes": {
+            "filterCriteria": "nativeIdentity",
+            "getAccountsBy": "filters",
+            "operator": "eq",
+            "resultSelector": ["$.readThresholdResult.accounts[*].attributes"],
+            "value": "{{$.trigger.accessRequestId}}"
+          },
+          "nextStep": "Define Variable",
+          "type": "action",
+          "versionNumber": 1
+        },
+        "Send Email": {
+          "actionId": "sp:send-email",
+          "attributes": {
+            "body": "<p>Dear {{$.getIdentity.managerRef.name}},</p>\n<p>You have <strong>APPROVE</strong> access request from {{$.getIdentity.attributes.displayName}} with id {{$.trigger.accessRequestId}} for item {{$.trigger.requestedItem.name}}. This request has passed preliminary approval without hitting a threshold value. Details:</p>\n<ul>\n<li>Identity IS: {{$.trigger.requestedFor.id}}</li>\n<li>Current threshold: {{$.readThresholdResult.accounts[0].attributes.param4}}</li>\n<li>Entitlements in total: {{$.readThresholdResult.accounts[0].attributes.param2}}</li>\n<li>Breakdown of entitlements<ul>\n<li>requested: {{$.readThresholdResult.accounts[0].attributes.param5}}</li>\n<li>pending: {{$.readThresholdResult.accounts[0].attributes.param6}}</li>\n<li>granted: {{$.readThresholdResult.accounts[0].attributes.param7}}</li>\n</ul></li></ul>",
+            "recipientEmailList.$": "$.getIdentity.managerRef.id",
+            "subject": "{{$.readThresholdResult.accounts[0].attributes.param3}} threshold warning for {{$.getIdentity.attributes.displayName}}"
+          },
+          "nextStep": "End Step - Success",
+          "type": "action",
+          "versionNumber": 2
+        },
+        "Send Email 1": {
+          "actionId": "sp:send-email",
+          "attributes": {
+            "body": "<p>Dear {{$.hTTPRequest2.body.owner.name}},</p>\n<p>Please <strong>APPROVE</strong> or <strong>DENY</strong> access request from {{$.getIdentity.attributes.displayName}} with id {{$.trigger.accessRequestId}} for item {{$.trigger.requestedItem.name}}. This request has passed preliminary approval with a threshold. Details:</p>\n<ul>\n<li>Identity IS: {{$.trigger.requestedFor.id}}</li>\n<li>Current threshold: {{$.readThresholdResult.accounts[0].attributes.param4}}</li>\n<li>Entitlements in total: {{$.readThresholdResult.accounts[0].attributes.param2}}</li>\n<li>Breakdown of entitlements<ul>\n<li>requested: {{$.readThresholdResult.accounts[0].attributes.param5}}</li>\n<li>pending: {{$.readThresholdResult.accounts[0].attributes.param6}}</li>\n<li>granted: {{$.readThresholdResult.accounts[0].attributes.param7}}</li>\n</ul></li></ul>",
+            "carbonCopy.$": "$.getIdentity.managerRef.id",
+            "recipientEmailList.$": "$.hTTPRequest2.body.owner.id",
+            "subject": "{{$.readThresholdResult.accounts[0].attributes.param3}} threshold warning for {{$.getIdentity.attributes.displayName}}"
+          },
+          "nextStep": "Approval Policy 1",
+          "type": "action",
+          "versionNumber": 2
+        }
+      }
+    },
+    "trigger": {
+      "type": "AccessRequestTrigger",
+      "attributes": {
+        "id": "idn:access-request-trigger"
+      }
+    }
+  }
+}
