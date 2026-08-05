@@ -1,22 +1,28 @@
-import { withCustomOperation } from '../framework'
+import { customOperation, OperationSignature } from '../framework'
 
 /**
  * Copy this file when adding a new custom operation.
  * Register the command in index.ts.
  */
-export const templateOperation = withCustomOperation(async (ctx, input) => {
+
+export interface TemplateOperation extends OperationSignature {
+    input: {
+        exampleField?: string
+    }
+    output: {
+        result: string
+        detail?: string
+    }
+}
+
+export const templateOperation = customOperation<TemplateOperation>(async (ctx, input) => {
     console.log(`[${ctx.requestId}] template operation invoked`, input)
 
-    // Example: persist with inline verification (default)
-    await ctx.persist(ctx.requestId, ['example-value'])
+    await ctx.persist(ctx.requestId, { result: 'example-value' })
 
-    // Example: defer verification for multiple writes, then batch verify
-    // await ctx.persist(ctx.requestId, ['summary'], undefined, { verify: false })
-    // await ctx.persist(`${ctx.requestId}:detail`, ['step-output'], undefined, { verify: false })
+    // await ctx.persist(ctx.requestId, { result: 'summary' }, undefined, { verify: false })
+    // await ctx.persist(`${ctx.requestId}:detail`, { detail: 'step-output' }, undefined, { verify: false })
     // await ctx.verifyPersisted([ctx.requestId, `${ctx.requestId}:detail`])
 
     ctx.res.send({ status: 'success' })
-
-    // Example: loopback call into ISC (uncomment when needed)
-    // const accounts = await ctx.sdk.accounts.listAccountsV1({ filters: 'sourceId eq "' + ctx.sourceId + '"' })
 })

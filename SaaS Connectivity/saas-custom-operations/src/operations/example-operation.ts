@@ -1,16 +1,22 @@
-import { withCustomOperation } from '../framework'
+import { customOperation, OperationSignature } from '../framework'
 
-interface ExampleOperationInput extends Record<string, unknown> {
-    message?: string
+export interface ExampleOperation extends OperationSignature {
+    input: {
+        message?: string
+    }
+    output: {
+        summary: string
+        step?: string
+    }
 }
 
-/** Example custom operation demonstrating persist with a child identity. */
-export const exampleOperation = withCustomOperation<ExampleOperationInput>(async (ctx, input) => {
+/** Example custom operation demonstrating typed persist with a child identity. */
+export const exampleOperation = customOperation<ExampleOperation>(async (ctx, input) => {
     console.log(`[${ctx.requestId}] example operation started`, { message: input.message })
 
     const summary = input.message ?? 'completed'
-    await ctx.persist(`${ctx.requestId}:detail`, [summary])
-    await ctx.persist(ctx.requestId, [summary, '1'])
+    await ctx.persist(`${ctx.requestId}:detail`, { summary })
+    await ctx.persist(ctx.requestId, { summary, step: '1' })
 
     console.log(`[${ctx.requestId}] example operation finished`)
     ctx.res.send({ status: 'success' })

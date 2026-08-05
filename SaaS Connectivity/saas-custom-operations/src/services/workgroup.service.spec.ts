@@ -3,7 +3,7 @@ import { WorkgroupService } from './workgroup.service'
 import type { SailPointClients } from '../framework/types'
 
 describe('WorkgroupService', () => {
-    it('joins member emails as comma-separated string', async () => {
+    it('returns member emails as string array', async () => {
         const sdk = {
             governanceGroups: {
                 listWorkgroupsV1: vi.fn().mockResolvedValue({ data: [{ id: 'wg-1' }] }),
@@ -14,12 +14,13 @@ describe('WorkgroupService', () => {
         } as unknown as SailPointClients
 
         const service = new WorkgroupService(sdk)
-        await expect(service.resolveGroupEmails('SOD Governance Group')).resolves.toBe(
-            'a@example.com, b@example.com'
-        )
+        await expect(service.resolveGroupMemberEmails('SOD Governance Group')).resolves.toEqual([
+            'a@example.com',
+            'b@example.com',
+        ])
     })
 
-    it('returns N/A when group is not found', async () => {
+    it('returns empty array when group is not found', async () => {
         const sdk = {
             governanceGroups: {
                 listWorkgroupsV1: vi.fn().mockResolvedValue({ data: [] }),
@@ -27,6 +28,6 @@ describe('WorkgroupService', () => {
         } as unknown as SailPointClients
 
         const service = new WorkgroupService(sdk)
-        await expect(service.resolveGroupEmails('Missing Group')).resolves.toBe('N/A')
+        await expect(service.resolveGroupMemberEmails('Missing Group')).resolves.toEqual([])
     })
 })

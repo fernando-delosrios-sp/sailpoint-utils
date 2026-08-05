@@ -8,7 +8,7 @@ ABB POV workflows call an external Express service (`isc-custom-endpoint`) becau
 - Assimilate upstream workflow HTTP steps (access-request-status fetch, outliers, item metadata) into operations
 - Assimilate Compare Strings routing and email/comment formatting to minimize persisted params
 - Deliver migrated workflow JSON under root `workflows/`
-- Defer persist contracts for threshold and check-sod-pending until calling workflows exist
+- Persist threshold analytics via `custom:access-request-threshold`; defer persist for `custom:check-sod-pending` until a calling workflow exists
 
 ## Capabilities
 
@@ -24,3 +24,4 @@ ABB POV workflows call an external Express service (`isc-custom-endpoint`) becau
 - `src/services/*`, `src/operations/*`
 - `connector-spec.json`, `workflows/*`
 - `abb-pov` workflows superseded by `workflows/` exports
+

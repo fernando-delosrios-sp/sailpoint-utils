@@ -5,11 +5,18 @@ export default defineConfig({
         globals: true,
         environment: 'node',
         clearMocks: true,
-        include: ['src/**/*.spec.ts'],
+        include: ['src/**/*.spec.ts', 'scripts/**/*.spec.ts'],
         coverage: {
             provider: 'v8',
             include: ['src/**/*.ts'],
-            exclude: ['src/**/*.spec.ts', 'src/operations/_template.ts'],
+            exclude: [
+                'src/**/*.spec.ts',
+                'src/operations/_template.ts',
+                // Endpoint-migration stubs — not registered on the connector yet
+                'src/services/access.service.ts',
+                'src/services/recommendation.service.ts',
+                'src/services/email-templates.ts',
+            ],
             thresholds: {
                 statements: 60,
                 branches: 50,
@@ -19,4 +26,5 @@ export default defineConfig({
         },
     },
 })
+
 

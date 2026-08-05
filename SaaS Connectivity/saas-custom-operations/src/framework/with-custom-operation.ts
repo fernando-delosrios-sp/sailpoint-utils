@@ -1,6 +1,7 @@
 import { CommandHandler, ConnectorError, Context, readConfig, Response } from '@sailpoint/connector-sdk'
+import { InferOperationInput, InferOperationOutput, OperationSignature } from './output-schema'
 import { createRequestContext, RequestContextDependencies } from './request-context'
-import { StandardInput } from './types'
+import { RequestContext, StandardInput } from './types'
 
 const CONFIG_FIELDS = ['apiUrl', 'token', 'sourceId'] as const
 const INPUT_STANDARD_FIELDS = ['requestId'] as const
@@ -35,27 +36,27 @@ export function parseStandardInput(
     return { standard, operationInput }
 }
 
-export type CustomOperationHandler<T extends Record<string, unknown> = Record<string, unknown>> = (
-    ctx: ReturnType<typeof createRequestContext>,
-    input: T
+export type CustomOperationHandler<T extends OperationSignature> = (
+    ctx: RequestContext<InferOperationOutput<T>>,
+    input: InferOperationInput<T>
 ) => Promise<void> | void
 
 /**
  * Wraps a custom command handler with volatile RequestContext initialization.
- * Parses invoke payload shape: config (apiUrl, token, sourceId) + input (requestId, operation fields).
+ * Types come from the {@link OperationSignature} passed as T — handler only, no separate output config.
  */
-export function withCustomOperation<T extends Record<string, unknown>>(
+export function customOperation<T extends OperationSignature>(
     handler: CustomOperationHandler<T>,
     deps: RequestContextDependencies = {}
 ): CommandHandler {
     return async (context: Context, input: Record<string, unknown>, res: Response<any>) => {
         const config = deps.config ?? (await readConfig())
         const { standard, operationInput } = parseStandardInput(config, input)
-        const requestContext = createRequestContext(standard, res, deps)
+        const requestContext = createRequestContext<InferOperationOutput<T>>(standard, res, deps)
 
         console.log(`[${standard.requestId}] custom operation started: ${context.commandType}`)
 
-        await handler(requestContext, operationInput as T)
+        await handler(requestContext, operationInput as InferOperationInput<T>)
 
         console.log(`[${standard.requestId}] custom operation completed`)
     }

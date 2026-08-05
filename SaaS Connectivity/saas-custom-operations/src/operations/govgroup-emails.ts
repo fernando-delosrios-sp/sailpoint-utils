@@ -1,12 +1,17 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
-import { withCustomOperation } from '../framework'
+import { customOperation, OperationSignature } from '../framework'
 import { WorkgroupService } from '../services/workgroup.service'
 
-interface GovgroupEmailsInput extends Record<string, unknown> {
-    groupName?: string
+export interface GovgroupEmailsOperation extends OperationSignature {
+    input: {
+        groupName?: string
+    }
+    output: {
+        emails: string[]
+    }
 }
 
-export const govgroupEmailsOperation = withCustomOperation<GovgroupEmailsInput>(async (ctx, input) => {
+export const govgroupEmailsOperation = customOperation<GovgroupEmailsOperation>(async (ctx, input) => {
     const groupName = input.groupName
     if (!groupName) {
         throw new ConnectorError('Missing required input field: groupName')
@@ -18,7 +23,7 @@ export const govgroupEmailsOperation = withCustomOperation<GovgroupEmailsInput>(
         throw new ConnectorError(`Workgroup with name "${groupName}" not found`)
     }
 
-    const emails = await workgroupService.resolveGroupEmails(groupName)
-    await ctx.persist(ctx.requestId, [emails])
+    const emails = await workgroupService.resolveGroupMemberEmails(groupName)
+    await ctx.persist(ctx.requestId, { emails })
     ctx.res.send({ status: 'success', emails })
 })

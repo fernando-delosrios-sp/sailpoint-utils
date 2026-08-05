@@ -1,5 +1,5 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
-import { withCustomOperation } from '../framework'
+import { customOperation, OperationSignature } from '../framework'
 import {
     computeAccessRequestAnalytics,
     fetchIdentityDisplayContext,
@@ -12,13 +12,22 @@ import { WorkgroupService } from '../services/workgroup.service'
 
 const DEFAULT_GOV_GROUP_NAME = 'SOD Governance Group'
 
-interface AccessRequestStatusInput extends Record<string, unknown> {
-    outputProfile?: OutputProfile
-    accessRequestId?: string
-    govGroupName?: string
+export interface AccessRequestStatusOperation extends OperationSignature {
+    input: {
+        outputProfile?: OutputProfile
+        accessRequestId?: string
+        govGroupName?: string
+    }
+    output: {
+        preApprovalComment?: string
+        emailRoute?: string
+        emailBodyHtml?: string
+        bccEmails?: string[]
+        accessOwnerId?: string
+    }
 }
 
-export const accessRequestStatusOperation = withCustomOperation<AccessRequestStatusInput>(
+export const accessRequestStatusOperation = customOperation<AccessRequestStatusOperation>(
     async (ctx, input) => {
         const outputProfile = input.outputProfile
         const accessRequestId = input.accessRequestId
@@ -37,7 +46,7 @@ export const accessRequestStatusOperation = withCustomOperation<AccessRequestSta
 
         if (outputProfile === 'ets-comment') {
             const comment = buildEtsPreApprovalComment(analytics)
-            await ctx.persist(ctx.requestId, [comment])
+            await ctx.persist(ctx.requestId, { preApprovalComment: comment })
             ctx.res.send({ status: 'success', outputProfile, preApprovalComment: comment })
             return
         }
@@ -68,10 +77,15 @@ export const accessRequestStatusOperation = withCustomOperation<AccessRequestSta
         const govGroupName = input.govGroupName ?? DEFAULT_GOV_GROUP_NAME
         const bccEmails =
             emailRoute === 'manager-owner-bcc'
-                ? await workgroupService.resolveGroupEmails(govGroupName)
-                : 'N/A'
+                ? await workgroupService.resolveGroupMemberEmails(govGroupName)
+                : []
 
-        await ctx.persist(ctx.requestId, [emailRoute, emailBodyHtml, bccEmails, accessOwnerId])
+        await ctx.persist(ctx.requestId, {
+            emailRoute,
+            emailBodyHtml,
+            bccEmails,
+            accessOwnerId,
+        })
         ctx.res.send({
             status: 'success',
             outputProfile,

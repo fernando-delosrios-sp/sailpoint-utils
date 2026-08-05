@@ -29,13 +29,13 @@ export class WorkgroupService {
         }
     }
 
-    async resolveGroupEmails(groupName: string): Promise<string> {
+    async resolveGroupMemberEmails(groupName: string): Promise<string[]> {
         const workgroupId = await this.getWorkgroupIdByName(groupName)
         if (!workgroupId) {
-            return 'N/A'
+            return []
         }
 
-        const emails = await this.getWorkgroupMembersEmails(workgroupId)
-        return emails.length > 0 ? emails.join(', ') : 'N/A'
+        return this.getWorkgroupMembersEmails(workgroupId)
     }
 }
+

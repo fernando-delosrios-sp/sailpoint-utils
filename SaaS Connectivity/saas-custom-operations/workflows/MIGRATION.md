@@ -22,7 +22,7 @@ This folder contains migrated workflow templates that replace calls to `isc-cust
 | HTTP requestedItems (item owner) | Absorbed into `custom:access-request-status` |
 | HTTP POST `/api/access-request-status` | Invoke `custom:access-request-status` |
 | HTTP POST `/api/govgroup-emails` | Absorbed when `emailRoute` = `manager-owner-bcc` |
-| Compare Strings 1–4 | Compare `param1` (`emailRoute`) after Get Accounts |
+| Compare Strings 1–4 | Compare `emailRoute` after Get Accounts |
 
 **New flow**
 
@@ -30,10 +30,10 @@ This folder contains migrated workflow templates that replace calls to `isc-cust
 2. Configuration + Get Access Token
 3. Invoke `custom:access-request-status` with `outputProfile: approval-email`
 4. Get Accounts where `nativeIdentity eq "{requestId}"`
-5. Route on `attributes.param1`:
-   - `manager` → Send Email (body = `param2`)
-   - `manager-owner` → Send Email with CC = `param4` (body = `param2`)
-   - `manager-owner-bcc` → Send Email with CC = `param4`, BCC = `param3` (body = `param2`)
+5. Route on `attributes.emailRoute`:
+   - `manager` → Send Email (body = `emailBodyHtml`)
+   - `manager-owner` → Send Email with CC = `accessOwnerId` (body = `emailBodyHtml`)
+   - `manager-owner-bcc` → Send Email with CC = `accessOwnerId`, BCC = `bccEmails` (body = `emailBodyHtml`)
 
 ### Threshold workflow (`418355cf-threshold-migrated.json`)
 
@@ -41,7 +41,7 @@ This folder contains migrated workflow templates that replace calls to `isc-cust
 |---|---|
 | HTTP getAccessRequestStatus | Absorbed into `custom:access-request-threshold` |
 | HTTP POST `/api/access-request-threshold` | Invoke `custom:access-request-threshold` |
-| Compare Boolean on `thresholdHit` | Compare Strings on `param1` (`"true"` / `"false"`) |
+| Compare Boolean on `thresholdHit` | Compare Strings on `thresholdHit` (`"true"` / `"false"`) |
 
 **New flow**
 
@@ -51,7 +51,7 @@ This folder contains migrated workflow templates that replace calls to `isc-cust
 4. Invoke `custom:access-request-threshold`
 5. Get Accounts filtered by `accessRequestId`
 6. Fetch requested item owner (HTTP GET — still needed for threshold-hit path)
-7. Compare `param1`:
+7. Compare `thresholdHit`:
    - `"true"` → email item owner + escalated approval
    - default → informational email to manager
 
@@ -63,14 +63,14 @@ This folder contains migrated workflow templates that replace calls to `isc-cust
 | HTTP getXdrData | Absorbed |
 | HTTP requestedItems | Absorbed |
 | HTTP POST `/api/access-request-status` | Invoke with `outputProfile: ets-comment` |
-| Comment assembly in callback step | Read `param1` from Get Accounts |
+| Comment assembly in callback step | Read `preApprovalComment` from Get Accounts |
 
 **New flow**
 
 1. Configuration + Get Access Token
 2. Invoke `custom:access-request-status` with `outputProfile: ets-comment`
-3. Get Accounts → `param1` = preApproval comment
-4. HTTP callback uses `param1` in approval comment
+3. Get Accounts → `preApprovalComment` = preApproval comment
+4. HTTP callback uses `preApprovalComment` in approval comment
 
 ## Invoke payload examples
 
@@ -116,41 +116,42 @@ This folder contains migrated workflow templates that replace calls to `isc-cust
 }
 ```
 
-## Persist param contracts
+## Persist output contracts
 
 ### `custom:access-request-status` — `approval-email`
 
-| Param | Content |
+| Attribute | Content |
 |---|---|
-| param1 | `manager` \| `manager-owner` \| `manager-owner-bcc` |
-| param2 | HTML email body |
-| param3 | BCC emails (comma-separated) or `N/A` |
-| param4 | Access item owner ID |
+| emailRoute | `manager` \| `manager-owner` \| `manager-owner-bcc` |
+| emailBodyHtml | HTML email body |
+| bccEmails | BCC email list (`string[]`; empty when route is not `manager-owner-bcc`) |
+| accessOwnerId | Access item owner ID |
 
 ### `custom:access-request-status` — `ets-comment`
 
-| Param | Content |
+| Attribute | Content |
 |---|---|
-| param1 | Full preApproval comment text |
+| preApprovalComment | Full preApproval comment text |
 
 ### `custom:govgroup-emails`
 
-| Param | Content |
+| Attribute | Content |
 |---|---|
-| param1 | Comma-separated member emails |
+| emails | Member email list (`string[]`) |
 
 ### `custom:access-request-threshold`
 
-| Param | Content |
+| Attribute | Content |
 |---|---|
-| param1 | `thresholdHit` (`"true"` \| `"false"`) |
-| param2 | `foundCount` |
-| param3 | `sourceName` |
-| param4 | `thresholdValue` |
-| param5 | `requestedCount` |
-| param6 | `pendingCount` |
-| param7 | `grantedCount` |
+| thresholdHit | `true` \| `false` |
+| foundCount | Entitlement count for source |
+| sourceName | Source name filter |
+| thresholdValue | Configured threshold |
+| requestedCount | Requested entitlement count |
+| pendingCount | Pending entitlement count |
+| grantedCount | Granted entitlement count |
 
 ## Deferred operations (invoke response only)
 
 `custom:check-sod-pending` returns JSON via invoke for manual testing. No calling workflow exists in the `abb-poc` backup yet.
+

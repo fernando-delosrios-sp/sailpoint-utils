@@ -16,14 +16,18 @@ All ISC loopback calls use typed `sailpoint-api-client` APIs on `ctx.sdk`. Exper
 
 ### custom:access-request-status
 
-| outputProfile | param1 | param2 | param3 | param4 |
-|---|---|---|---|---|
-| approval-email | emailRoute | emailBodyHtml | bccEmails | accessOwnerId |
-| ets-comment | preApprovalComment | | | |
+| outputProfile | persisted attributes |
+|---|---|
+| approval-email | emailRoute, emailBodyHtml, bccEmails, accessOwnerId |
+| ets-comment | preApprovalComment |
 
 ### custom:govgroup-emails
 
-param1 = comma-separated emails
+emails = governance group member email list (`string[]`)
+
+### custom:access-request-threshold
+
+thresholdHit, foundCount, sourceName, thresholdValue, requestedCount, pendingCount, grantedCount
 
 ### Deferred (invoke response only)
 
@@ -31,4 +35,5 @@ param1 = comma-separated emails
 
 ## Email length risk
 
-If `emailBodyHtml` exceeds dummy-source attribute limits, split to child persist id `${requestId}:email`.
+**Deferred:** If `emailBodyHtml` exceeds dummy-source attribute limits, split to child persist id `${requestId}:email`. Not implemented in this change — monitor attribute size in POV; add split logic if limits are hit.
+

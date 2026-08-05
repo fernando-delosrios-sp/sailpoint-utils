@@ -13,11 +13,11 @@ export interface RequestContextDependencies {
 }
 
 /** Assembles the volatile request context for a custom operation invocation. */
-export function createRequestContext(
+export function createRequestContext<TOutput extends object>(
     input: StandardInput,
     res: Response<any>,
     deps: RequestContextDependencies = {}
-): RequestContext {
+): RequestContext<TOutput> {
     const sdk: SailPointClients =
         deps.sdk ??
         (deps.accountsApi
@@ -32,7 +32,7 @@ export function createRequestContext(
         createAccount: async (attributes) => {
             await accountsClient.createAccountV1({
                 accountAttributesCreate: {
-                    attributes: attributes as { sourceId: string; [key: string]: string },
+                    attributes: attributes as { sourceId: string; [key: string]: string | string[] },
                 },
             })
         },
@@ -41,11 +41,11 @@ export function createRequestContext(
                 filters: `nativeIdentity eq "${id}" and sourceId eq "${input.sourceId}"`,
             })
             const account = response.data?.[0]
-            return account?.attributes as Record<string, string> | undefined
+            return account?.attributes as Record<string, string | string[]> | undefined
         },
     }
 
-    const persist = createPersist(persistDeps, writeRegistry)
+    const persist = createPersist<TOutput>(persistDeps, writeRegistry)
     const verifyPersisted = createVerifyPersisted(persistDeps, writeRegistry)
 
     return {

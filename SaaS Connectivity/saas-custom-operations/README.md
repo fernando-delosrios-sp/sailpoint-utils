@@ -30,7 +30,7 @@ Provision a source in ISC with the account schema below before using custom oper
 | `id` | Identity attribute — native account identity |
 | `date` | Timestamp (set automatically by the framework) |
 | `status` | Operation outcome (defaults to `success`) |
-| `param1`..`param9` | Operation-specific output slots |
+| _operation attrs_ | Whatever your operation persists via `ctx.persist` — configure matching names on the dummy source |
 
 ### ISC tenant setup
 
@@ -51,7 +51,7 @@ The `exportedObjects/` directory contains an ISC **Export Job** snapshot you can
 
 The export includes:
 
-- **Source** — Delimited File dummy result source with `id`, `date`, `status`, and `param1`–`param9` on the account schema.
+- **Source** — Delimited File dummy result source with `id`, `date`, `status`, and operation-specific attributes on the account schema.
 - **Workflow** — end-to-end example: configuration variables → OAuth token → connector invoke → **Get Accounts** filtered by `requestId`.
 
 ### Importing the export
@@ -149,7 +149,7 @@ Content-Type: application/json
 After invoke, read persisted output from the dummy source using **Get Accounts** filtered by native identity:
 
 - Filter: `nativeIdentity eq "{requestId}"` (or a child id such as `{requestId}:detail`)
-- Map `param1`..`param9`, `status`, and `date` from account attributes
+- Map operation output attributes, `status`, and `date` from account attributes
 
 The exported workflow demonstrates this pattern in the **Read SaaS Custom Operation Result** step.
 
@@ -160,23 +160,24 @@ The exported workflow demonstrates this pattern in the **Read SaaS Custom Operat
 Copy `src/operations/_template.ts` to a new file under `src/operations/` and implement your handler:
 
 ```typescript
-import { withCustomOperation } from '../framework'
+import { customOperation, OperationSignature } from '../framework'
 
-interface MyOperationInput extends Record<string, unknown> {
-    accountId?: string
+export interface MyOperation extends OperationSignature {
+    input: {
+        accountId?: string
+    }
+    output: {
+        result: string
+        detail?: string
+    }
 }
 
-export const myOperation = withCustomOperation<MyOperationInput>(async (ctx, input) => {
+export const myOperation = customOperation<MyOperation>(async (ctx, input) => {
     console.log(`[${ctx.requestId}] starting`, input)
 
-    // Loopback into ISC
-    // const accounts = await ctx.sdk.accounts.listAccountsV1({ filters: '...' })
+    await ctx.persist(ctx.requestId, { result: 'result-value' })
+    await ctx.persist(`${ctx.requestId}:detail`, { detail: 'step-output' }, 'success')
 
-    // Persist result (id = native identity; params map to param1..param9)
-    await ctx.persist(ctx.requestId, ['result-value'])
-    await ctx.persist(`${ctx.requestId}:detail`, ['step-output'], 'success')
-
-    // Return command output to the caller
     ctx.res.send({ status: 'success' })
 })
 ```
@@ -224,17 +225,26 @@ Rebuild, repackage, and redeploy. Invoke with `"type": "custom:my-operation"` an
 ### Persist API
 
 ```typescript
-ctx.persist(id: string, params?: string[], status?: string, options?: { verify?: boolean })
-ctx.verifyPersisted(ids: string[])
+interface MyOperation extends OperationSignature {
+    input: { ... }
+    output: { fieldName: string, ... }
+}
+
+customOperation<MyOperation>(async (ctx, input) => { ... })
+ctx.persist(id, attributes?, status?, options?)
+ctx.verifyPersisted(ids)
 ```
 
+- **`OperationSignature`** — one interface with `input` and `output` using normal TypeScript types
+- **`customOperation<T>(handler)`** — types `input` and `ctx.persist` from `T`; no separate output config
+- **`ctx.persist`** — framework serializes values for ISC storage (strings as-is, arrays/objects as JSON)
 - **`id`** — native account identity (often `ctx.requestId` or a derived child id like `` `${ctx.requestId}:detail` ``)
-- **`params`** — positional values mapped to `param1`..`param9`
+- **`attributes`** — only keys declared in the operation output schema; arrays/objects use `'json'` type (stored as JSON string)
 - **`status`** — optional, defaults to `"success"`
 - **`date`** — always set automatically to the current timestamp
 - **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
 
-By default, `persist` reads the account back from ISC and verifies attributes before resolving. Pass `{ verify: false }` to defer verification, then call `verifyPersisted([...ids])` before the handler completes. Batch verify only works for identities written via `persist` in the same invocation.
+By default, `persist` reads the account back from ISC and verifies attributes before resolving. Pass `{ verify: false }` to defer verification, then call `verifyPersisted([...ids])` before the handler completes. Unknown attribute keys are rejected before account create.
 
 Account create is used for persistence (upsert on duplicate identity).
 
@@ -246,13 +256,26 @@ npm test             # run Vitest suite with coverage
 npm run build        # compile to dist/ via ncc
 npm run dev          # run locally with spcx
 npm run pack-zip     # build deployable connector package
+npm run templates    # generate operator artifacts (see below)
 ```
+
+### Operator templates
+
+Run `npm run templates` after adding or modifying registered operations in `src/operations/index.ts`. The generator introspects implemented handlers and writes local-only artifacts to `./templates/` (gitignored). Markdown guides follow the step structure in `workflows/Workflow - SaaS Custom Operations Call.json`:
+
+| File | Purpose |
+|---|---|
+| `account-schema.json` | ISC account schema with core attrs (`id`, `status`, `date`) plus union of operation output fields |
+| `access-token.md` | Shared OAuth client-credentials guide with tenant placeholders |
+| `workflow-invocation.md` | Per-operation invoke body, read-result, and child-identity steps |
+
+Re-run whenever you register a new operation or change an operation's `OperationSignature` or `ctx.persist` patterns. Commands declared in `connector-spec.json` but not registered in `src/operations/index.ts` are not included.
 
 ## Project structure
 
 ```
 src/
-  framework/          # RequestContext, persist helper, SDK factory, withCustomOperation wrapper
+  framework/          # RequestContext, persist helper, SDK factory, customOperation wrapper
   operations/         # Custom operation handlers (add yours here)
     _template.ts      # Authoring template — copy when adding operations
     example-operation.ts
@@ -262,3 +285,4 @@ connector-spec.json   # Declared commands and sourceConfig (ISC loopback setting
 invoke-payload.json   # Example invoke body for local / CLI testing
 exportedObjects/      # ISC export snapshot (dummy source + example workflow)
 ```
+

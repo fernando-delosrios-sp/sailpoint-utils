@@ -1,6 +1,6 @@
-import { PersistDependencies, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
+import { RESERVED_OUTPUT_KEYS } from './output-schema'
+import { AccountAttributeValue, PersistDependencies, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
 
-const MAX_PARAMS = 9
 const DEFAULT_STATUS = 'success'
 /** ISC account indexing can take several seconds after createAccountV1. */
 const DEFAULT_MAX_ATTEMPTS = 15
@@ -16,44 +16,97 @@ export class PersistVerificationError extends Error {
     }
 }
 
-export function buildAccountAttributes(
+/** Serializes an operation output value for ISC account attribute storage. */
+export function serializeAttributeValue(value: unknown): AccountAttributeValue | undefined {
+    if (value === null || value === undefined) {
+        return undefined
+    }
+
+    if (typeof value === 'string') {
+        return value
+    }
+
+    if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
+        return value
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+        return String(value)
+    }
+
+    return JSON.stringify(value)
+}
+
+export function buildAccountAttributes<TOutput extends object>(
     sourceId: string,
     id: string,
-    params: string[] | undefined,
+    attributes: Partial<TOutput> | undefined,
     status: string | undefined,
     now: () => Date = () => new Date()
-): Record<string, string> {
-    const attributes: Record<string, string> = {
+): Record<string, AccountAttributeValue> {
+    const result: Record<string, AccountAttributeValue> = {
         sourceId,
         id,
         date: now().toISOString(),
         status: status ?? DEFAULT_STATUS,
     }
 
-    params?.forEach((value, index) => {
-        if (index < MAX_PARAMS) {
-            attributes[`param${index + 1}`] = value
-        }
-    })
+    if (!attributes) {
+        return result
+    }
 
-    return attributes
+    for (const [key, value] of Object.entries(attributes)) {
+        if (RESERVED_OUTPUT_KEYS.has(key)) {
+            continue
+        }
+
+        const serialized = serializeAttributeValue(value)
+        if (serialized !== undefined) {
+            result[key] = serialized
+        }
+    }
+
+    return result
 }
 
-function comparableKeys(expected: Record<string, string>): string[] {
-    // date is omitted: upsert read-back may return a prior timestamp until ISC re-indexes
-    return ['status', ...Object.keys(expected).filter((key) => /^param\d+$/.test(key))]
+function comparableKeys(expected: Record<string, AccountAttributeValue>): string[] {
+    const authorKeys = Object.keys(expected).filter((key) => !RESERVED_OUTPUT_KEYS.has(key) && key !== 'status')
+    return ['status', ...authorKeys]
+}
+
+function attributeValuesMatch(expected: AccountAttributeValue, actual: unknown): boolean {
+    if (Array.isArray(expected)) {
+        if (Array.isArray(actual)) {
+            return expected.length === actual.length && expected.every((value, index) => value === actual[index])
+        }
+
+        if (typeof actual === 'string') {
+            try {
+                const parsed = JSON.parse(actual)
+                return Array.isArray(parsed) && attributeValuesMatch(expected, parsed)
+            } catch {
+                return false
+            }
+        }
+
+        return false
+    }
+
+    return String(actual ?? '') === expected
 }
 
 /** Returns human-readable mismatch descriptions, or empty array when attributes match. */
 export function verifyPersistedAccount(
-    expected: Record<string, string>,
-    actual: Record<string, string>
+    expected: Record<string, AccountAttributeValue>,
+    actual: Record<string, AccountAttributeValue>
 ): string[] {
     const mismatches: string[] = []
 
     for (const key of comparableKeys(expected)) {
-        if (actual[key] !== expected[key]) {
-            mismatches.push(`${key}: expected "${expected[key]}", got "${actual[key] ?? ''}"`)
+        if (!attributeValuesMatch(expected[key], actual[key])) {
+            const expectedValue = Array.isArray(expected[key]) ? JSON.stringify(expected[key]) : expected[key]
+            const actualValue = Array.isArray(actual[key]) ? JSON.stringify(actual[key]) : (actual[key] ?? '')
+            mismatches.push(`${key}: expected "${expectedValue}", got "${actualValue}"`)
         }
     }
 
@@ -70,7 +123,7 @@ export async function readWithRetry(
     maxAttempts = DEFAULT_MAX_ATTEMPTS,
     delayMs = DEFAULT_RETRY_DELAY_MS,
     sleep: (ms: number) => Promise<void> = defaultSleep
-): Promise<Record<string, string> | undefined> {
+): Promise<Record<string, AccountAttributeValue> | undefined> {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         const account = await readAccount(id)
         if (account) {
@@ -88,7 +141,7 @@ export async function readWithRetry(
 export async function verifyAccountWrite(
     deps: PersistDependencies,
     id: string,
-    expected: Record<string, string>
+    expected: Record<string, AccountAttributeValue>
 ): Promise<void> {
     const sleep = deps.sleep ?? defaultSleep
     const actual = await readWithRetry(deps.readAccount, id, DEFAULT_MAX_ATTEMPTS, DEFAULT_RETRY_DELAY_MS, sleep)
@@ -108,20 +161,22 @@ export async function verifyAccountWrite(
 
 /**
  * Persists operation output to the dummy source via account create (upsert semantics).
- * Signature: persist(id, params?, status?, options?) where id is the native account identity.
  * Verification runs by default; pass `{ verify: false }` to defer and call verifyPersisted later.
  */
-export function createPersist(deps: PersistDependencies, registry: WriteRegistry): PersistFn {
-    return async (id: string, params?: string[], status?: string, options?: { verify?: boolean }) => {
-        const attributes = buildAccountAttributes(deps.sourceId, id, params, status)
-        registry.set(id, attributes)
-        await deps.createAccount(attributes)
+export function createPersist<TOutput extends object>(
+    deps: PersistDependencies,
+    registry: WriteRegistry
+): PersistFn<TOutput> {
+    return async (id: string, attributes?: Partial<TOutput>, status?: string, options?: { verify?: boolean }) => {
+        const built = buildAccountAttributes(deps.sourceId, id, attributes, status)
+        registry.set(id, built)
+        await deps.createAccount(built)
 
         if (options?.verify !== false) {
-            await verifyAccountWrite(deps, id, attributes)
+            await verifyAccountWrite(deps, id, built)
         }
 
-        console.log(`[persist] identity=${id} status=${attributes.status}`)
+        console.log(`[persist] identity=${id} status=${built.status}`)
     }
 }
 
@@ -141,3 +196,4 @@ export function createVerifyPersisted(deps: PersistDependencies, registry: Write
         }
     }
 }
+

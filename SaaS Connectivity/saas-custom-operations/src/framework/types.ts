@@ -42,9 +42,9 @@ export interface PersistOptions {
 }
 
 /** Callback that persists operation output as a dummy account on the target source. */
-export type PersistFn = (
+export type PersistFn<TOutput extends object = Record<string, unknown>> = (
     id: string,
-    params?: string[],
+    attributes?: Partial<TOutput>,
     status?: string,
     options?: PersistOptions
 ) => Promise<void>
@@ -52,18 +52,21 @@ export type PersistFn = (
 /** Verifies identities previously written via persist in the same invocation. */
 export type VerifyPersistedFn = (ids: string[]) => Promise<void>
 
+/** ISC account attribute value — scalars as strings, multi-valued string lists as string[]. */
+export type AccountAttributeValue = string | string[]
+
 /** Expected attributes recorded per identity for batch verification. */
-export type WriteRegistry = Map<string, Record<string, string>>
+export type WriteRegistry = Map<string, Record<string, AccountAttributeValue>>
 
 /**
  * Volatile request context scoped to a single custom operation invocation.
- * Initialized automatically by {@link withCustomOperation}.
+ * Initialized automatically by {@link customOperation}.
  */
-export interface RequestContext {
+export interface RequestContext<TOutput extends object = Record<string, unknown>> {
     requestId: string
     sourceId: string
     sdk: SailPointClients
-    persist: PersistFn
+    persist: PersistFn<TOutput>
     verifyPersisted: VerifyPersistedFn
     /** SDK response object for sending command output back to ISC. */
     res: Response<any>
@@ -71,9 +74,10 @@ export interface RequestContext {
 
 export interface PersistDependencies {
     sourceId: string
-    createAccount: (attributes: Record<string, string>) => Promise<unknown>
-    readAccount: (id: string) => Promise<Record<string, string> | undefined>
+    createAccount: (attributes: Record<string, AccountAttributeValue>) => Promise<unknown>
+    readAccount: (id: string) => Promise<Record<string, AccountAttributeValue> | undefined>
     /** Override for tests to avoid real delays during retry loops. */
     sleep?: (ms: number) => Promise<void>
 }
+
 

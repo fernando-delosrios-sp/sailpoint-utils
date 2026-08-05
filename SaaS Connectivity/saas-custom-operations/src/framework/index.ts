@@ -4,11 +4,14 @@ export {
     createVerifyPersisted,
     PersistVerificationError,
     readWithRetry,
+    serializeAttributeValue,
     verifyAccountWrite,
     verifyPersistedAccount,
 } from './persist-result'
 export { createRequestContext } from './request-context'
 export { createSailPointClients } from './sdk-factory'
+export { RESERVED_OUTPUT_KEYS } from './output-schema'
+export type { InferOperationInput, InferOperationOutput, OperationSignature } from './output-schema'
 export type {
     PersistFn,
     PersistOptions,
@@ -18,5 +21,5 @@ export type {
     VerifyPersistedFn,
     WriteRegistry,
 } from './types'
-export { parseStandardInput, withCustomOperation } from './with-custom-operation'
+export { customOperation, parseStandardInput } from './with-custom-operation'
 export type { CustomOperationHandler } from './with-custom-operation'

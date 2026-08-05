@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from 'vitest'
+import { OperationSignature } from './output-schema'
 import { createRequestContext } from './request-context'
-import { parseStandardInput, withCustomOperation } from './with-custom-operation'
+import { customOperation, parseStandardInput } from './with-custom-operation'
 
 const testConfig = {
     apiUrl: 'https://tenant.api.identitynow.com',
     token: 'pat-token',
     sourceId: 'source-123',
+}
+
+interface TestOperation extends OperationSignature {
+    input: { payload?: string }
+    output: { result: string }
 }
 
 describe('parseStandardInput', () => {
@@ -43,7 +49,7 @@ describe('createRequestContext', () => {
         } as any
         const res = { send: vi.fn() } as any
 
-        const first = createRequestContext(
+        const first = createRequestContext<{ result: string }>(
             {
                 apiUrl: 'https://a.example.com',
                 token: 'token-a',
@@ -54,7 +60,7 @@ describe('createRequestContext', () => {
             { accountsApi }
         )
 
-        const second = createRequestContext(
+        const second = createRequestContext<{ result: string }>(
             {
                 apiUrl: 'https://b.example.com',
                 token: 'token-b',
@@ -78,7 +84,7 @@ describe('createRequestContext', () => {
         } as any
         const res = { send: vi.fn() } as any
 
-        const ctx = createRequestContext(
+        const ctx = createRequestContext<{ result: string }>(
             {
                 apiUrl: 'https://a.example.com',
                 token: 'token-a',
@@ -93,13 +99,13 @@ describe('createRequestContext', () => {
     })
 })
 
-describe('withCustomOperation', () => {
+describe('customOperation', () => {
     it('provides parsed standard input and res on context to the handler', async () => {
         const res = { send: vi.fn() }
         const handler = vi.fn(async (ctx) => {
             ctx.res.send({ status: 'success' })
         })
-        const wrapped = withCustomOperation(handler, { config: testConfig })
+        const wrapped = customOperation<TestOperation>(handler, { config: testConfig })
 
         await wrapped(
             { commandType: 'custom:test' } as any,
@@ -121,4 +127,3 @@ describe('withCustomOperation', () => {
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
     })
 })
-

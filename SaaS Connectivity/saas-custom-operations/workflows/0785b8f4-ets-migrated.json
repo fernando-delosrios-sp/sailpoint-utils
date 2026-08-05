@@ -94,7 +94,7 @@
               "output": {
                 "approved": true,
                 "approver": "RiskEvaluator",
-                "comment.$": "$.readETSCommentResult.accounts[0].attributes.param1"
+                "comment.$": "$.readETSCommentResult.accounts[0].attributes.preApprovalComment"
               },
               "secret": "{{$.trigger._metadata.secret}}"
             },
@@ -120,3 +120,4 @@
     }
   }
 }
+

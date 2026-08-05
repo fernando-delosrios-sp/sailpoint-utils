@@ -62,7 +62,7 @@
             {
               "comparator": "StringEquals",
               "nextStep": "Send Email 1",
-              "variableA.$": "$.readThresholdResult.accounts[0].attributes.param1",
+              "variableA.$": "$.readThresholdResult.accounts[0].attributes.thresholdHit",
               "variableB": "true"
             }
           ],
@@ -215,9 +215,9 @@
         "Send Email": {
           "actionId": "sp:send-email",
           "attributes": {
-            "body": "<p>Dear {{$.getIdentity.managerRef.name}},</p>\n<p>You have <strong>APPROVE</strong> access request from {{$.getIdentity.attributes.displayName}} with id {{$.trigger.accessRequestId}} for item {{$.trigger.requestedItem.name}}. This request has passed preliminary approval without hitting a threshold value. Details:</p>\n<ul>\n<li>Identity IS: {{$.trigger.requestedFor.id}}</li>\n<li>Current threshold: {{$.readThresholdResult.accounts[0].attributes.param4}}</li>\n<li>Entitlements in total: {{$.readThresholdResult.accounts[0].attributes.param2}}</li>\n<li>Breakdown of entitlements<ul>\n<li>requested: {{$.readThresholdResult.accounts[0].attributes.param5}}</li>\n<li>pending: {{$.readThresholdResult.accounts[0].attributes.param6}}</li>\n<li>granted: {{$.readThresholdResult.accounts[0].attributes.param7}}</li>\n</ul></li></ul>",
+            "body": "<p>Dear {{$.getIdentity.managerRef.name}},</p>\n<p>You have <strong>APPROVE</strong> access request from {{$.getIdentity.attributes.displayName}} with id {{$.trigger.accessRequestId}} for item {{$.trigger.requestedItem.name}}. This request has passed preliminary approval without hitting a threshold value. Details:</p>\n<ul>\n<li>Identity IS: {{$.trigger.requestedFor.id}}</li>\n<li>Current threshold: {{$.readThresholdResult.accounts[0].attributes.thresholdValue}}</li>\n<li>Entitlements in total: {{$.readThresholdResult.accounts[0].attributes.foundCount}}</li>\n<li>Breakdown of entitlements<ul>\n<li>requested: {{$.readThresholdResult.accounts[0].attributes.requestedCount}}</li>\n<li>pending: {{$.readThresholdResult.accounts[0].attributes.pendingCount}}</li>\n<li>granted: {{$.readThresholdResult.accounts[0].attributes.grantedCount}}</li>\n</ul></li></ul>",
             "recipientEmailList.$": "$.getIdentity.managerRef.id",
-            "subject": "{{$.readThresholdResult.accounts[0].attributes.param3}} threshold warning for {{$.getIdentity.attributes.displayName}}"
+            "subject": "{{$.readThresholdResult.accounts[0].attributes.sourceName}} threshold warning for {{$.getIdentity.attributes.displayName}}"
           },
           "nextStep": "End Step - Success",
           "type": "action",
@@ -226,10 +226,10 @@
         "Send Email 1": {
           "actionId": "sp:send-email",
           "attributes": {
-            "body": "<p>Dear {{$.hTTPRequest2.body.owner.name}},</p>\n<p>Please <strong>APPROVE</strong> or <strong>DENY</strong> access request from {{$.getIdentity.attributes.displayName}} with id {{$.trigger.accessRequestId}} for item {{$.trigger.requestedItem.name}}. This request has passed preliminary approval with a threshold. Details:</p>\n<ul>\n<li>Identity IS: {{$.trigger.requestedFor.id}}</li>\n<li>Current threshold: {{$.readThresholdResult.accounts[0].attributes.param4}}</li>\n<li>Entitlements in total: {{$.readThresholdResult.accounts[0].attributes.param2}}</li>\n<li>Breakdown of entitlements<ul>\n<li>requested: {{$.readThresholdResult.accounts[0].attributes.param5}}</li>\n<li>pending: {{$.readThresholdResult.accounts[0].attributes.param6}}</li>\n<li>granted: {{$.readThresholdResult.accounts[0].attributes.param7}}</li>\n</ul></li></ul>",
+            "body": "<p>Dear {{$.hTTPRequest2.body.owner.name}},</p>\n<p>Please <strong>APPROVE</strong> or <strong>DENY</strong> access request from {{$.getIdentity.attributes.displayName}} with id {{$.trigger.accessRequestId}} for item {{$.trigger.requestedItem.name}}. This request has passed preliminary approval with a threshold. Details:</p>\n<ul>\n<li>Identity IS: {{$.trigger.requestedFor.id}}</li>\n<li>Current threshold: {{$.readThresholdResult.accounts[0].attributes.thresholdValue}}</li>\n<li>Entitlements in total: {{$.readThresholdResult.accounts[0].attributes.foundCount}}</li>\n<li>Breakdown of entitlements<ul>\n<li>requested: {{$.readThresholdResult.accounts[0].attributes.requestedCount}}</li>\n<li>pending: {{$.readThresholdResult.accounts[0].attributes.pendingCount}}</li>\n<li>granted: {{$.readThresholdResult.accounts[0].attributes.grantedCount}}</li>\n</ul></li></ul>",
             "carbonCopy.$": "$.getIdentity.managerRef.id",
             "recipientEmailList.$": "$.hTTPRequest2.body.owner.id",
-            "subject": "{{$.readThresholdResult.accounts[0].attributes.param3}} threshold warning for {{$.getIdentity.attributes.displayName}}"
+            "subject": "{{$.readThresholdResult.accounts[0].attributes.sourceName}} threshold warning for {{$.getIdentity.attributes.displayName}}"
           },
           "nextStep": "Approval Policy 1",
           "type": "action",
@@ -245,3 +245,4 @@
     }
   }
 }
+

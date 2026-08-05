@@ -1,14 +1,25 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
-import { withCustomOperation } from '../framework'
+import { customOperation, OperationSignature } from '../framework'
 import { AccessService } from '../services/access.service'
 
-interface AccessRequestThresholdInput extends Record<string, unknown> {
-    accessRequestId?: string
-    sourceName?: string
-    thresholdValue?: number | string
+export interface AccessRequestThresholdOperation extends OperationSignature {
+    input: {
+        accessRequestId?: string
+        sourceName?: string
+        thresholdValue?: number | string
+    }
+    output: {
+        thresholdHit: boolean
+        foundCount: number
+        sourceName: string
+        thresholdValue: number
+        requestedCount: number
+        pendingCount: number
+        grantedCount: number
+    }
 }
 
-export const accessRequestThresholdOperation = withCustomOperation<AccessRequestThresholdInput>(
+export const accessRequestThresholdOperation = customOperation<AccessRequestThresholdOperation>(
     async (ctx, input) => {
         const accessRequestId = input.accessRequestId
         const sourceName = input.sourceName
@@ -48,15 +59,15 @@ export const accessRequestThresholdOperation = withCustomOperation<AccessRequest
         const foundCount = thresholdSourceEntitlements.length
         const thresholdHit = foundCount > thresholdValue
 
-        await ctx.persist(ctx.requestId, [
-            String(thresholdHit),
-            String(foundCount),
+        await ctx.persist(ctx.requestId, {
+            thresholdHit,
+            foundCount,
             sourceName,
-            String(thresholdValue),
-            String(requestedEntitlements.length),
-            String(pendingEntitlements.length),
-            String(grantedEntitlements.length),
-        ])
+            thresholdValue,
+            requestedCount: requestedEntitlements.length,
+            pendingCount: pendingEntitlements.length,
+            grantedCount: grantedEntitlements.length,
+        })
 
         ctx.res.send({
             status: 'success',

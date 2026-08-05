@@ -1,13 +1,20 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
-import { withCustomOperation } from '../framework'
+import { customOperation, OperationSignature } from '../framework'
 import { AccessService } from '../services/access.service'
 import { SodService } from '../services/sod.service'
 
-interface CheckSodPendingInput extends Record<string, unknown> {
-    identityId?: string
+export interface CheckSodPendingOperation extends OperationSignature {
+    input: {
+        identityId?: string
+    }
+    output: {
+        identityId: string
+        hasViolations: boolean
+        violatedPolicyNames: string[]
+    }
 }
 
-export const checkSodPendingOperation = withCustomOperation<CheckSodPendingInput>(async (ctx, input) => {
+export const checkSodPendingOperation = customOperation<CheckSodPendingOperation>(async (ctx, input) => {
     const identityId = input.identityId
     if (!identityId) {
         throw new ConnectorError('Missing required input field: identityId')
@@ -30,7 +37,7 @@ export const checkSodPendingOperation = withCustomOperation<CheckSodPendingInput
     const localViolations = sodService.checkPoliciesAgainstEntitlements(combinedEntitlements, policies)
     const violatedPolicyNamesSet = new Set<string>()
     localViolations.forEach((violation) => violatedPolicyNamesSet.add(violation.policyName))
-    const violatedPolicyNames = Array.from(violatedPolicyNamesSet).join(', ') || 'N/A'
+    const violatedPolicyNames = Array.from(violatedPolicyNamesSet)
 
     ctx.res.send({
         status: 'success',

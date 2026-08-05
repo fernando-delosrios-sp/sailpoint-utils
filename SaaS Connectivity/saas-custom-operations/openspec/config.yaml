@@ -56,5 +56,8 @@ rules:
   verify:
     - Confirm connector-spec.json commands align with registered handlers in src/index.ts.
     - Ensure Vitest coverage thresholds (60% statements, 50% branches) are met.
+  changes:
+    - Change directory names MUST start with a letter (e.g. endpoint-migration-2026-08-05) so openspec status/apply/archive CLI commands work.
   retrospective:
     - Compare plan-vs-actual for connector operation additions and schema changes.
+

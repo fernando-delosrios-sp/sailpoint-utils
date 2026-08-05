@@ -103,19 +103,19 @@
             {
               "comparator": "StringEquals",
               "nextStep": "Send Email Manager",
-              "variableA.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param1",
+              "variableA.$": "$.readAccessRequestStatusResult.accounts[0].attributes.emailRoute",
               "variableB": "manager"
             },
             {
               "comparator": "StringEquals",
               "nextStep": "Send Email Manager Owner",
-              "variableA.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param1",
+              "variableA.$": "$.readAccessRequestStatusResult.accounts[0].attributes.emailRoute",
               "variableB": "manager-owner"
             },
             {
               "comparator": "StringEquals",
               "nextStep": "Send Email Manager Owner BCC",
-              "variableA.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param1",
+              "variableA.$": "$.readAccessRequestStatusResult.accounts[0].attributes.emailRoute",
               "variableB": "manager-owner-bcc"
             }
           ],
@@ -125,7 +125,7 @@
         "Send Email Manager": {
           "actionId": "sp:send-email",
           "attributes": {
-            "body.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param2",
+            "body.$": "$.readAccessRequestStatusResult.accounts[0].attributes.emailBodyHtml",
             "recipientEmailList.$": "$.getIdentity.managerRef.id"
           },
           "nextStep": "End Step - Success",
@@ -135,8 +135,8 @@
         "Send Email Manager Owner": {
           "actionId": "sp:send-email",
           "attributes": {
-            "body.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param2",
-            "carbonCopy.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param4",
+            "body.$": "$.readAccessRequestStatusResult.accounts[0].attributes.emailBodyHtml",
+            "carbonCopy.$": "$.readAccessRequestStatusResult.accounts[0].attributes.accessOwnerId",
             "recipientEmailList.$": "$.getIdentity.managerRef.id"
           },
           "nextStep": "End Step - Success",
@@ -146,9 +146,9 @@
         "Send Email Manager Owner BCC": {
           "actionId": "sp:send-email",
           "attributes": {
-            "blindCarbonCopy.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param3",
-            "body.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param2",
-            "carbonCopy.$": "$.readAccessRequestStatusResult.accounts[0].attributes.param4",
+            "blindCarbonCopy.$": "$.readAccessRequestStatusResult.accounts[0].attributes.bccEmails",
+            "body.$": "$.readAccessRequestStatusResult.accounts[0].attributes.emailBodyHtml",
+            "carbonCopy.$": "$.readAccessRequestStatusResult.accounts[0].attributes.accessOwnerId",
             "recipientEmailList.$": "$.getIdentity.managerRef.id"
           },
           "nextStep": "End Step - Success",
@@ -174,3 +174,4 @@
     }
   }
 }
+
