@@ -11,6 +11,7 @@ import {
     RolesApi,
     SODPoliciesApi,
     SODViolationsApi,
+    SourcesApi,
 } from 'sailpoint-api-client'
 import { SailPointClients } from './types'
 
@@ -23,6 +24,7 @@ export function createSailPointClients(apiUrl: string, token: string): SailPoint
 
     return {
         accounts: new AccountsApi(configuration),
+        sources: new SourcesApi(configuration),
         accessRequests: new AccessRequestsApi(configuration),
         accessProfiles: new AccessProfilesApi(configuration),
         entitlements: new EntitlementsApi(configuration),
@@ -38,3 +40,4 @@ export function createSailPointClients(apiUrl: string, token: string): SailPoint
 
 /** Experimental ISC APIs require this header. */
 export const SAILPOINT_EXPERIMENTAL = 'true'
+

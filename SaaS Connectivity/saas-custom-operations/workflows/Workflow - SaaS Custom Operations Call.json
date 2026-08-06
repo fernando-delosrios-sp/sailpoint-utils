@@ -11,7 +11,7 @@
           "jsonRequestBody": {
             "config": {
               "apiUrl": "{{$.configuration.aPIURL}}",
-              "sourceId": "{{$.configuration.saaSCustomOperationsSourceID}}",
+              "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}",
               "token": "{{$.getAccessToken.body.access_token}}"
             },
             "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",

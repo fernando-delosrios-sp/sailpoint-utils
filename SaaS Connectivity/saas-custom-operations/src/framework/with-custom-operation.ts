@@ -1,9 +1,11 @@
 import { CommandHandler, ConnectorError, Context, readConfig, Response } from '@sailpoint/connector-sdk'
 import { InferOperationInput, InferOperationOutput, OperationSignature } from './output-schema'
 import { createRequestContext, RequestContextDependencies } from './request-context'
-import { RequestContext, StandardInput } from './types'
+import { createSailPointClients } from './sdk-factory'
+import { resolveSourceByName } from './source-provisioning'
+import { OperationSchemaContract, RequestContext, StandardInput } from './types'
 
-const CONFIG_FIELDS = ['apiUrl', 'token', 'sourceId'] as const
+const CONFIG_FIELDS = ['apiUrl', 'token', 'sourceName'] as const
 const INPUT_STANDARD_FIELDS = ['requestId'] as const
 
 /** Resolves standard fields from an invoke payload's `config` and `input` sections. */
@@ -24,7 +26,7 @@ export function parseStandardInput(
     const standard: StandardInput = {
         apiUrl: String(config.apiUrl),
         token: String(config.token),
-        sourceId: String(config.sourceId),
+        sourceName: String(config.sourceName),
         requestId: String(input.requestId),
     }
 
@@ -41,18 +43,39 @@ export type CustomOperationHandler<T extends OperationSignature> = (
     input: InferOperationInput<T>
 ) => Promise<void> | void
 
+export interface CustomOperationOptions extends RequestContextDependencies {
+    operationSchema?: OperationSchemaContract
+}
+
 /**
  * Wraps a custom command handler with volatile RequestContext initialization.
- * Types come from the {@link OperationSignature} passed as T — handler only, no separate output config.
+ * Resolves sourceName to sourceId and attaches operation output fields for schema reconciliation.
  */
 export function customOperation<T extends OperationSignature>(
     handler: CustomOperationHandler<T>,
-    deps: RequestContextDependencies = {}
+    deps: CustomOperationOptions = {}
 ): CommandHandler {
     return async (context: Context, input: Record<string, unknown>, res: Response<any>) => {
         const config = deps.config ?? (await readConfig())
         const { standard, operationInput } = parseStandardInput(config, input)
-        const requestContext = createRequestContext<InferOperationOutput<T>>(standard, res, deps)
+
+        const sdk = deps.sdk ?? createSailPointClients(standard.apiUrl, standard.token)
+        const sourceId =
+            deps.sourceId ?? (await resolveSourceByName(sdk.sources, standard.sourceName, standard.token))
+
+        const operationSchema: OperationSchemaContract | undefined = deps.operationSchema
+            ? {
+                  command: deps.operationSchema.command ?? context.commandType,
+                  outputFields: deps.operationSchema.outputFields,
+              }
+            : undefined
+
+        const requestContext = createRequestContext<InferOperationOutput<T>>(standard, res, {
+            ...deps,
+            sdk,
+            sourceId,
+            operationSchema,
+        })
 
         console.log(`[${standard.requestId}] custom operation started: ${context.commandType}`)
 

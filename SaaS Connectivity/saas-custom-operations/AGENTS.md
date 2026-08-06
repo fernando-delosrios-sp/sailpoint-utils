@@ -9,7 +9,8 @@ SailPoint ISC SaaS connector scaffold for custom operations. OpenSpec governs ch
 -   **Client:** `src/my-client.ts` — target application integration (currently mock)
 -   **Manifest:** `connector-spec.json` — commands, sourceConfig, accountSchema
 -   **Std commands:** `std:test-connection`, `std:account:list`, `std:account:read`
--   **Build/test:** `npm run build`, `npm test`
+-   **Build/test:** `npm run build`, `npm test`, `npm run codegen:schemas`
+-   **Schema codegen:** `OperationSignature.output` inline type literals → `*.schema.ts` sidecars (prebuild); aliases/imports not parsed
 -   **Spec domains:** `connector-operations`, `target-client`, `connector-config` under `openspec/specs/`
 
 See `openspec/config.yaml` for full project rules and artifact guidance.

@@ -2,7 +2,35 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
-## [Unreleased] — 0.1.0
+## [Unreleased] — 0.2.0
+
+### New features
+
+- **Operation schema codegen** — `npm run codegen:schemas` generates `{operation}.schema.ts` sidecars from each registered handler's `OperationSignature.output` type literal. Sidecars run on `prebuild`; commit generated files with handler changes.
+- **Dynamic result source** — Configure `sourceName` instead of a pre-provisioned source UUID. The framework resolves the source by name on each invocation and auto-creates a DelimitedFile source when missing.
+- **Schema reconciliation at persist** — Before each `ctx.persist`, the framework ensures the result source account schema includes the current operation's output fields plus core attributes (`id`, `status`, `date`).
+- **Typed attribute inference** — Operation output TypeScript types map to ISC schema types (`number`→INT, `boolean`→BOOLEAN, arrays→isMulti) and persist values are stored with native types where supported.
+- **SourcesApi on ctx.sdk** — Source lookup, creation, and schema management via `ctx.sdk.sources`.
+
+### Improvements
+
+- **Templates generator parity** — `account-schema.json` inference aligns with runtime type mapping (INT, BOOLEAN, LONG, DATE).
+- **Type-aware read-back verification** — Persist verification coerces DelimitedFile string read-back when comparing typed values.
+
+### Breaking changes
+
+- **`sourceId` → `sourceName`** — Connector config, invoke payloads, and workflow samples use `sourceName`. Update workflows and `connector-spec.json` connection settings.
+- **Typed persist** — Numeric and boolean output values are no longer stringified before account create; downstream reads may receive native types.
+- **`operationSchema` required for schema reconciliation** — Pass `operationSchema.outputFields` to `customOperation()` so persist can reconcile the source schema.
+
+### Migration
+
+1. Replace `sourceId` with `sourceName` in connector connection config and workflow invoke bodies (use your existing source's display name, e.g. `SaaS Custom Operations`).
+2. Remove manual account-schema application steps — runtime reconciliation handles missing attributes.
+3. Replace inline `defineOperationSchema({...})` with the generated `{handler}Schema` sidecar import (`npm run codegen:schemas` or `npm run build`).
+4. Ensure the invoke token has source create/update and account provisioning scopes.
+
+## [0.1.0]
 
 ### New features
 

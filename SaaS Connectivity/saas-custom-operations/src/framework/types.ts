@@ -11,19 +11,28 @@ import {
     RolesApi,
     SODPoliciesApi,
     SODViolationsApi,
+    SourcesApi,
 } from 'sailpoint-api-client'
+import { OperationField } from './schema-inference'
 
 /** Standard fields resolved from an invoke payload: config + input. */
 export interface StandardInput {
     apiUrl: string
     token: string
     requestId: string
-    sourceId: string
+    sourceName: string
+}
+
+/** Output contract for schema reconciliation during persist. */
+export interface OperationSchemaContract {
+    command?: string
+    outputFields: OperationField[]
 }
 
 /** SailPoint API clients pre-configured for ISC loopback during a custom operation. */
 export interface SailPointClients {
     accounts: AccountsApi
+    sources: SourcesApi
     accessRequests: AccessRequestsApi
     accessProfiles: AccessProfilesApi
     entitlements: EntitlementsApi
@@ -53,7 +62,7 @@ export type PersistFn<TOutput extends object = Record<string, unknown>> = (
 export type VerifyPersistedFn = (ids: string[]) => Promise<void>
 
 /** Expected attributes recorded per identity for batch verification. */
-export type WriteRegistry = Map<string, Record<string, string>>
+export type WriteRegistry = Map<string, Record<string, unknown>>
 
 /**
  * Volatile request context scoped to a single custom operation invocation.
@@ -61,7 +70,9 @@ export type WriteRegistry = Map<string, Record<string, string>>
  */
 export interface RequestContext<TOutput extends object = Record<string, unknown>> {
     requestId: string
+    sourceName: string
     sourceId: string
+    operationSchema?: OperationSchemaContract
     sdk: SailPointClients
     persist: PersistFn<TOutput>
     verifyPersisted: VerifyPersistedFn
@@ -71,9 +82,10 @@ export interface RequestContext<TOutput extends object = Record<string, unknown>
 
 export interface PersistDependencies {
     sourceId: string
-    createAccount: (attributes: Record<string, string>) => Promise<unknown>
-    readAccount: (id: string) => Promise<Record<string, string> | undefined>
+    operationSchema?: OperationSchemaContract
+    ensureSourceSchema?: (attributeKeys: string[]) => Promise<void>
+    createAccount: (attributes: Record<string, unknown>) => Promise<unknown>
+    readAccount: (id: string) => Promise<Record<string, unknown> | undefined>
     /** Override for tests to avoid real delays during retry loops. */
     sleep?: (ms: number) => Promise<void>
 }
-
