@@ -28,7 +28,7 @@
 						},
 						{
 							"key": "sourceName",
-							"label": "Dummy Result Source Name",
+							"label": "Result Source Name",
 							"type": "text",
 							"required": true,
 							"placeholder": "SaaS Custom Operations"

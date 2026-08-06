@@ -36,29 +36,31 @@ Core attributes are always ensured on the schema: `id` (identity), `status`, and
 
 **Token scopes:** The access token must allow source read/create/update and account create on the result source. PAT or OAuth client credentials used in workflows need `sp:manage:source`, `sp:manage:source-schema`, and account provisioning scopes for the tenant.
 
-Manual source setup is optional — `npm run templates` still generates `account-schema.json` as documentation, but runtime reconciliation keeps the live schema aligned.
+Manual source setup is not required. `npm run templates` generates `account-schema.json` as reference documentation for the attributes operations persist; the framework reconciles the live schema at runtime.
 
-## exportedObjects artefact
+## Workflow export
 
-The `exportedObjects/` directory contains an ISC **Export Job** snapshot you can import into another tenant to bootstrap the reference setup:
+The `workflows/` directory contains an ISC **Export Job** snapshot you can import for the reference **SaaS Custom Operations Call** workflow:
 
 | File | Contents |
 |---|---|
-| `exportedObjects/SaaS Custom Operations.json` | Dummy **SOURCE** (`SaaS Custom Operations`) and example **WORKFLOW** (`SaaS Custom Operations Call`) |
+| `workflows/SaaS Custom Operations.json` | Example **WORKFLOW** — invoke `custom:example`, then read results with **Get Accounts** |
 
-The export includes:
+The workflow demonstrates:
 
-- **Source** — Delimited File dummy result source with `id`, `date`, `status`, and operation-specific attributes on the account schema.
-- **Workflow** — end-to-end example: configuration variables → OAuth token → connector invoke → **Get Accounts** filtered by `requestId`.
+- Configuration variables → OAuth token → connector invoke → **Get Accounts** filtered by `requestId`
+- `config.sourceName` passed on invoke (the connector creates the DelimitedFile result source on first use)
 
-### Importing the export
+No separate result source import is required. The framework resolves `sourceName` at runtime, creates the DelimitedFile source when missing, and reconciles account schema on each `ctx.persist`.
+
+### Importing the workflow
 
 1. In ISC Admin, open **Global → Import / Export → Import**.
-2. Upload `exportedObjects/SaaS Custom Operations.json`.
-3. Review and confirm the import of the source and workflow objects.
+2. Upload `workflows/SaaS Custom Operations.json`.
+3. Review and confirm import of the workflow object.
 4. Update workflow **Configuration** step variables for your tenant:
    - **API URL** — e.g. `https://your-tenant.api.identitynow.com`
-   - **SaaS Custom Operations Source Name** — result source name (e.g. `SaaS Custom Operations`)
+   - **SaaS Custom Operations Source Name** — name for the auto-provisioned result source (e.g. `SaaS Custom Operations`; passed as invoke `config.sourceName`)
    - **SaaS Custom Operations Connector ID** — your deployed custom connector ID
 5. Configure the **Get Access Token** step with a valid OAuth client (Basic auth reference).
 6. Enable the workflow and trigger it (external HTTP trigger) or run steps manually while testing.
@@ -102,7 +104,7 @@ Custom operations use the standard SaaS connector invoke shape. See `invoke-payl
 | Section | Fields | Description |
 |---|---|---|
 | `type` | command name | Must match a command in `connector-spec.json` (e.g. `custom:example`) |
-| `config` | `apiUrl`, `token`, `sourceName` | ISC loopback credentials and dummy result source name |
+| `config` | `apiUrl`, `token`, `sourceName` | ISC loopback credentials and result source name (auto-provisioned at runtime) |
 | `input` | `requestId` + operation params | Per-invocation data; `requestId` correlates persisted accounts |
 
 The framework strips `requestId` from operation input and exposes it on `ctx.requestId`. All other `input` fields are passed to your handler.
@@ -131,7 +133,7 @@ With the SailPoint CLI:
 sail conn invoke raw -c {connectorId} -f invoke-payload.json
 ```
 
-Or from a workflow HTTP action (as in the exported workflow):
+Or from a workflow HTTP action (as in the reference workflow export):
 
 ```
 POST {apiUrl}/beta/platform-connectors/{connectorId}/invoke
@@ -143,12 +145,12 @@ Content-Type: application/json
 
 ### Reading results in a workflow
 
-After invoke, read persisted output from the dummy source using **Get Accounts** filtered by native identity:
+After invoke, read persisted output from the result source using **Get Accounts** filtered by native identity:
 
 - Filter: `nativeIdentity eq "{requestId}"` (or a child id such as `{requestId}:detail`)
 - Map operation output attributes, `status`, and `date` from account attributes
 
-The exported workflow demonstrates this pattern in the **Read SaaS Custom Operation Result** step.
+The reference workflow export demonstrates this pattern in the **Read SaaS Custom Operation Result** step.
 
 ## Extending the connector
 
@@ -223,8 +225,9 @@ Rebuild, repackage, and redeploy. Invoke with `"type": "custom:my-operation"` an
 | `ctx.requestId` | Correlation id from invoke `input` |
 | `ctx.sourceName` | Configured result source name (resolved/created at runtime) |
 | `ctx.sourceId` | Resolved ISC source ID after sourceName lookup |
-| `ctx.sdk` | SailPoint API client (`sailpoint-api-client`) for loopback calls |
-| `ctx.persist(...)` | Write results to the dummy source |
+| `ctx.sdk.accounts` | ISC loopback client for account create/read used by `ctx.persist` |
+| `ctx.sdk.sources` | ISC loopback client for result source lookup, creation, and schema management |
+| `ctx.persist(...)` | Write results to the result source (auto-provisioned DelimitedFile) |
 | `ctx.verifyPersisted(...)` | Batch verify deferred writes |
 | `ctx.res` | Connector SDK response object — call `ctx.res.send(...)` |
 
@@ -268,11 +271,11 @@ npm run templates    # generate operator artifacts (see below)
 
 ### Operator templates
 
-Run `npm run templates` after adding or modifying registered operations in `src/operations/index.ts`. The generator introspects implemented handlers and writes local-only artifacts to `./templates/` (gitignored). Markdown guides follow the step structure in `workflows/Workflow - SaaS Custom Operations Call.json`:
+Run `npm run templates` after adding or modifying registered operations in `src/operations/index.ts`. The generator introspects implemented handlers and writes local-only artifacts to `./templates/` (gitignored). Markdown guides follow the step structure of the **SaaS Custom Operations Call** workflow embedded in `workflows/SaaS Custom Operations.json`:
 
 | File | Purpose |
 |---|---|
-| `account-schema.json` | ISC account schema with core attrs (`id`, `status`, `date`) plus union of operation output fields |
+| `account-schema.json` | Reference account schema — core attrs (`id`, `status`, `date`) plus union of operation output fields |
 | `access-token.md` | Shared OAuth client-credentials guide with tenant placeholders |
 | `workflow-invocation.md` | Per-operation invoke body, read-result, and child-identity steps |
 
@@ -282,15 +285,22 @@ Re-run whenever you register a new operation or change an operation's `Operation
 
 ```
 src/
-  framework/          # RequestContext, persist helper, SDK factory, customOperation wrapper
+  framework/          # RequestContext, persist, source provisioning, schema inference, SDK factory
   operations/         # Custom operation handlers (add yours here)
     _template.ts      # Authoring template — copy when adding operations
     example-operation.ts
     example-operation.schema.ts  # Auto-generated — do not edit manually
     index.ts          # Command registration
   index.ts            # Connector entry point
+scripts/
+  generate-templates.ts       # Operator artifact generator (`npm run templates`)
+  generate-operation-schemas.ts
+  templates/                  # Generator modules (account-schema, workflow-invocation, …)
 connector-spec.json   # Declared commands and sourceConfig (ISC loopback settings)
 invoke-payload.json   # Example invoke body for local / CLI testing
-exportedObjects/      # ISC export snapshot (dummy source + example workflow)
+workflows/
+  SaaS Custom Operations.json # ISC export (example workflow only)
+templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```
+
 

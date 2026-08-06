@@ -242,7 +242,7 @@ export async function verifyAccountWrite(
 }
 
 /**
- * Persists operation output to the dummy source via account create (upsert semantics).
+ * Persists operation output to the result source via account create (upsert semantics).
  * Reconciles source schema before write. Verification runs by default.
  */
 export function createPersist<TOutput extends object>(
@@ -289,3 +289,4 @@ export function createVerifyPersisted(deps: PersistDependencies, registry: Write
         }
     }
 }
+

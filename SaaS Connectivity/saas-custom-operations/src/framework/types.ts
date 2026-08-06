@@ -27,7 +27,7 @@ export interface PersistOptions {
     verify?: boolean
 }
 
-/** Callback that persists operation output as a dummy account on the target source. */
+/** Callback that persists operation output as an account on the result source. */
 export type PersistFn<TOutput extends object = Record<string, unknown>> = (
     id: string,
     attributes?: Partial<TOutput>,
@@ -66,3 +66,4 @@ export interface PersistDependencies {
     /** Override for tests to avoid real delays during retry loops. */
     sleep?: (ms: number) => Promise<void>
 }
+
