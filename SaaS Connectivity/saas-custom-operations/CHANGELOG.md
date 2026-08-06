@@ -56,3 +56,5 @@ All notable changes to **saas-custom-operations** are documented here.
 ### Removed
 
 - Standard command handlers and mock aggregation client.
+
+

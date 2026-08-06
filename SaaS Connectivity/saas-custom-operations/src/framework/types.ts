@@ -1,18 +1,5 @@
 import { Response } from '@sailpoint/connector-sdk'
-import {
-    AccessProfilesApi,
-    AccessRequestsApi,
-    AccountsApi,
-    EntitlementsApi,
-    GovernanceGroupsApi,
-    IAIOutliersApi,
-    IAIRecommendationsApi,
-    IdentitiesApi,
-    RolesApi,
-    SODPoliciesApi,
-    SODViolationsApi,
-    SourcesApi,
-} from 'sailpoint-api-client'
+import { AccountsApi, SourcesApi } from 'sailpoint-api-client'
 import { OperationField } from './schema-inference'
 
 /** Standard fields resolved from an invoke payload: config + input. */
@@ -33,16 +20,6 @@ export interface OperationSchemaContract {
 export interface SailPointClients {
     accounts: AccountsApi
     sources: SourcesApi
-    accessRequests: AccessRequestsApi
-    accessProfiles: AccessProfilesApi
-    entitlements: EntitlementsApi
-    roles: RolesApi
-    identities: IdentitiesApi
-    governanceGroups: GovernanceGroupsApi
-    sodPolicies: SODPoliciesApi
-    sodViolations: SODViolationsApi
-    iaiRecommendations: IAIRecommendationsApi
-    iaiOutliers: IAIOutliersApi
 }
 
 /** Options for {@link PersistFn}. Verification runs by default; set verify to false to defer. */

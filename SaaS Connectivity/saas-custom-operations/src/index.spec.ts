@@ -21,5 +21,3 @@ describe('connector unit tests', () => {
         expect(conn.handlers.has('custom:example')).toBe(true)
     })
 })
-
-

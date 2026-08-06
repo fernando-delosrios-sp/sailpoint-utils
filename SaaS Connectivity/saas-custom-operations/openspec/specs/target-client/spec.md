@@ -14,11 +14,11 @@ The connector SHALL pre-configure `sailpoint-api-client` instances from operatio
 - **WHEN** the handler accesses ctx.sdk.accounts
 - **THEN** the client SHALL be configured for ISC loopback account create and read used by ctx.persist
 
-#### Scenario: Extended ISC clients available on context
+#### Scenario: Sources client configured for result source management
 
-- **GIVEN** a custom operation receives valid apiUrl and token
-- **WHEN** the handler accesses ctx.sdk for accessRequests, accessProfiles, entitlements, roles, identities, governanceGroups, sodPolicies, sodViolations, iaiRecommendations, or iaiOutliers
-- **THEN** each client SHALL share the same apiUrl and token configuration from the invocation input
+- **GIVEN** a custom operation receives valid apiUrl and token in its input envelope
+- **WHEN** the handler or framework accesses ctx.sdk.sources
+- **THEN** the client SHALL be configured for source lookup, creation, and schema management used by dynamic result source provisioning
 
 ### Requirement: No external target application client
 
