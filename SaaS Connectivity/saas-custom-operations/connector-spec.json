@@ -31,10 +31,11 @@
 							"required": true
 						},
 						{
-							"key": "sourceId",
-							"label": "Dummy Result Source ID",
+							"key": "sourceName",
+							"label": "Dummy Result Source Name",
 							"type": "text",
-							"required": true
+							"required": true,
+							"placeholder": "SaaS Custom Operations"
 						}
 					]
 				}

@@ -3,45 +3,56 @@ import {
     buildAccountAttributes,
     createPersist,
     createVerifyPersisted,
+    formatAttributeValue,
     PersistVerificationError,
     readWithRetry,
-    serializeAttributeValue,
     verifyPersistedAccount,
 } from './persist-result'
 
-describe('serializeAttributeValue', () => {
+describe('formatAttributeValue', () => {
     it('passes strings through', () => {
-        expect(serializeAttributeValue('hello')).toBe('hello')
+        expect(formatAttributeValue('hello')).toBe('hello')
     })
 
-    it('passes string arrays through for multi-valued attributes', () => {
-        expect(serializeAttributeValue(['a', 'b'])).toEqual(['a', 'b'])
+    it('keeps numbers as numbers', () => {
+        expect(formatAttributeValue(42, 'number')).toBe(42)
     })
 
-    it('JSON-stringifies non-string arrays and objects', () => {
-        expect(serializeAttributeValue([1, 2])).toBe('[1,2]')
-        expect(serializeAttributeValue({ a: 1 })).toBe('{"a":1}')
+    it('keeps booleans as booleans', () => {
+        expect(formatAttributeValue(true, 'boolean')).toBe(true)
+    })
+
+    it('JSON-stringifies objects', () => {
+        expect(formatAttributeValue({ key: 'value' }, 'Record<string, unknown>')).toBe('{"key":"value"}')
     })
 
     it('returns undefined for null and undefined', () => {
-        expect(serializeAttributeValue(null)).toBeUndefined()
-        expect(serializeAttributeValue(undefined)).toBeUndefined()
+        expect(formatAttributeValue(null)).toBeUndefined()
+        expect(formatAttributeValue(undefined)).toBeUndefined()
     })
 
-    it('coerces numbers to strings', () => {
-        expect(serializeAttributeValue(42)).toBe('42')
+    it('formats string arrays', () => {
+        expect(formatAttributeValue(['a', 'b'], 'string[]')).toEqual(['a', 'b'])
     })
 })
 
 describe('buildAccountAttributes', () => {
     const fixedDate = new Date('2026-08-03T10:00:00.000Z')
     const now = () => fixedDate
+    const outputFields = [{ name: 'outcome', type: 'string' }, { name: 'count', type: 'number' }]
 
-    it('maps record keys to account attributes', () => {
-        const attributes = buildAccountAttributes('source-1', 'req-001', { outcome: 'processed', count: 42 }, undefined, now)
+    it('maps record keys to account attributes with typed values', () => {
+        const attributes = buildAccountAttributes(
+            'source-1',
+            'req-001',
+            { outcome: 'processed', count: 42 },
+            undefined,
+            outputFields,
+            now
+        )
 
         expect(attributes.outcome).toBe('processed')
-        expect(attributes.count).toBe('42')
+        expect(attributes.count).toBe(42)
         expect(attributes.status).toBe('success')
         expect(attributes.date).toBe('2026-08-03T10:00:00.000Z')
         expect(attributes.id).toBe('req-001')
@@ -49,18 +60,29 @@ describe('buildAccountAttributes', () => {
     })
 
     it('accepts explicit status override', () => {
-        const attributes = buildAccountAttributes('source-1', 'req-001:err', { errorCode: 'timeout' }, 'failed', now)
+        const attributes = buildAccountAttributes(
+            'source-1',
+            'req-001:err',
+            { errorCode: 'timeout' },
+            'failed',
+            [{ name: 'errorCode', type: 'string' }],
+            now
+        )
 
         expect(attributes.status).toBe('failed')
         expect(attributes.errorCode).toBe('timeout')
     })
 
-    it('preserves string array values for multi-valued attributes', () => {
+    it('formats array values per element type', () => {
         const attributes = buildAccountAttributes(
             'source-1',
             'req-001',
             { name: 'Fernando', emails: ['dfas', 'fasdfas'] },
             undefined,
+            [
+                { name: 'name', type: 'string' },
+                { name: 'emails', type: 'string[]' },
+            ],
             now
         )
 
@@ -74,6 +96,7 @@ describe('buildAccountAttributes', () => {
             'req-001',
             { outcome: 'ok', id: 'override', status: 'override' },
             undefined,
+            [{ name: 'outcome', type: 'string' }],
             now
         )
 
@@ -87,6 +110,13 @@ describe('verifyPersistedAccount', () => {
     it('returns empty array when attributes match', () => {
         const expected = { status: 'success', date: '2026-08-03T10:00:00.000Z', outcome: 'a' }
         const actual = { status: 'success', date: '2026-08-03T10:00:00.000Z', outcome: 'a', extra: 'ignored' }
+
+        expect(verifyPersistedAccount(expected, actual)).toEqual([])
+    })
+
+    it('coerces string read-back for numeric values', () => {
+        const expected = { status: 'success', count: 42 }
+        const actual = { status: 'success', count: '42' }
 
         expect(verifyPersistedAccount(expected, actual)).toEqual([])
     })
@@ -126,11 +156,12 @@ describe('readWithRetry', () => {
 })
 
 function createTestDeps(overrides: Partial<Parameters<typeof createPersist>[0]> = {}) {
-    let lastWritten: Record<string, string | string[]> | undefined
+    let lastWritten: Record<string, unknown> | undefined
 
     const base = {
         sourceId: 'source-1',
-        createAccount: vi.fn().mockImplementation(async (attributes: Record<string, string | string[]>) => {
+        ensureSourceSchema: vi.fn().mockResolvedValue(undefined),
+        createAccount: vi.fn().mockImplementation(async (attributes: Record<string, unknown>) => {
             lastWritten = attributes
         }),
         readAccount: vi.fn().mockImplementation(async () => lastWritten),
@@ -142,6 +173,15 @@ function createTestDeps(overrides: Partial<Parameters<typeof createPersist>[0]> 
 }
 
 describe('createPersist', () => {
+    it('calls ensureSourceSchema before account create', async () => {
+        const deps = createTestDeps()
+        const persist = createPersist<{ errorCode: string }>(deps, new Map())
+
+        await persist('req-001:child', { errorCode: 'value' }, 'failed')
+
+        expect(deps.ensureSourceSchema).toHaveBeenCalledWith(['errorCode'])
+    })
+
     it('calls account create and verifies matching attributes by default', async () => {
         const deps = createTestDeps()
         const registry = new Map()
@@ -159,6 +199,17 @@ describe('createPersist', () => {
         )
         expect(deps.readAccount).toHaveBeenCalledWith('req-001:child')
         expect(registry.get('req-001:child')).toMatchObject({ errorCode: 'value', status: 'failed' })
+    })
+
+    it('stores typed number values', async () => {
+        const deps = createTestDeps({
+            operationSchema: { outputFields: [{ name: 'count', type: 'number' }] },
+        })
+        const persist = createPersist<{ count: number }>(deps, new Map())
+
+        await persist('req-001', { count: 42 })
+
+        expect(deps.createAccount).toHaveBeenCalledWith(expect.objectContaining({ count: 42 }))
     })
 
     it('skips inline read when verify is false', async () => {
@@ -203,9 +254,9 @@ describe('createPersist', () => {
     })
 
     it('retries read when account is not immediately available', async () => {
-        let lastWritten: Record<string, string | string[]> | undefined
+        let lastWritten: Record<string, unknown> | undefined
         const deps = createTestDeps({
-            createAccount: vi.fn().mockImplementation(async (attributes: Record<string, string | string[]>) => {
+            createAccount: vi.fn().mockImplementation(async (attributes: Record<string, unknown>) => {
                 lastWritten = attributes
             }),
             readAccount: vi
@@ -221,8 +272,15 @@ describe('createPersist', () => {
         expect(deps.sleep).toHaveBeenCalledWith(500)
     })
 
-    it('preserves string array attributes on persist', async () => {
-        const deps = createTestDeps()
+    it('formats array attributes on persist', async () => {
+        const deps = createTestDeps({
+            operationSchema: {
+                outputFields: [
+                    { name: 'name', type: 'string' },
+                    { name: 'emails', type: 'string[]' },
+                ],
+            },
+        })
         const persist = createPersist<{ name: string; emails: string[] }>(deps, new Map())
 
         await persist('req-001', { name: 'Fernando', emails: ['dfas', 'fasdfas'] })
@@ -240,7 +298,7 @@ describe('createVerifyPersisted', () => {
     const fixedDate = new Date('2026-08-03T10:00:00.000Z')
 
     it('verifies all ids against registry expectations', async () => {
-        const registry = new Map<string, Record<string, string | string[]>>([
+        const registry = new Map<string, Record<string, unknown>>([
             [
                 'req-001',
                 { status: 'success', date: fixedDate.toISOString(), outcome: 'a', sourceId: 'source-1', id: 'req-001' },
@@ -276,7 +334,7 @@ describe('createVerifyPersisted', () => {
     })
 
     it('rejects on attribute mismatch during batch verify', async () => {
-        const registry = new Map<string, Record<string, string | string[]>>([
+        const registry = new Map<string, Record<string, unknown>>([
             ['req-001', { status: 'success', date: fixedDate.toISOString(), outcome: 'expected', sourceId: 'source-1', id: 'req-001' }],
         ])
         const deps = createTestDeps({
@@ -292,7 +350,7 @@ describe('createVerifyPersisted', () => {
     })
 
     it('rejects when account missing after retries during batch verify', async () => {
-        const registry = new Map<string, Record<string, string | string[]>>([
+        const registry = new Map<string, Record<string, unknown>>([
             ['req-001', { status: 'success', date: fixedDate.toISOString(), sourceId: 'source-1', id: 'req-001' }],
         ])
         const deps = createTestDeps({
@@ -303,4 +361,3 @@ describe('createVerifyPersisted', () => {
         await expect(verifyPersisted(['req-001'])).rejects.toThrow(/account not found after retries/)
     })
 })
-

@@ -1,6 +1,6 @@
 # saas-custom-operations
 
-Foundation template for SailPoint ISC **custom operations**. This connector is **not** an aggregation source — it provides a runtime for custom commands that loop back into ISC via the API and persist results as accounts on a pre-provisioned dummy source.
+Foundation template for SailPoint ISC **custom operations**. This connector is **not** an aggregation source — it provides a runtime for custom commands that loop back into ISC via the API and persist results as accounts on a DelimitedFile result source.
 
 ## How it works
 
@@ -8,38 +8,35 @@ Foundation template for SailPoint ISC **custom operations**. This connector is *
 Workflow / API invoke
         │
         ▼
+  Resolve sourceName → sourceId (create DelimitedFile if missing)
+        │
+        ▼
   Custom operation handler  ──►  ctx.sdk (ISC loopback)
         │
         ▼
-  ctx.persist(...)  ──►  Dummy result source (account create / upsert)
+  ctx.persist(...)  ──►  Reconcile schema → account create / upsert
         │
         ▼
   ctx.res.send(...)  ──►  Command response to caller
 ```
 
-Each invocation receives a standard envelope (`config` + `input`), builds a volatile `RequestContext`, runs your handler, and optionally writes structured output to the dummy source so downstream workflow steps can read results with **Get Accounts**.
+Each invocation receives a standard envelope (`config` + `input`), resolves the result source by name, builds a volatile `RequestContext`, runs your handler, and optionally writes typed output to the result source so downstream workflow steps can read results with **Get Accounts**.
 
 ## Prerequisites
 
-### Dummy result source (per tenant)
+### Result source (auto-provisioned)
 
-Provision a source in ISC with the account schema below before using custom operations. The source must allow account create (upsert on duplicate `id`).
+Configure a **source name** in connector config (`sourceName`). On each invocation the framework:
 
-| Attribute | Description |
-|---|---|
-| `id` | Identity attribute — native account identity |
-| `date` | Timestamp (set automatically by the framework) |
-| `status` | Operation outcome (defaults to `success`) |
-| _operation attrs_ | Whatever your operation persists via `ctx.persist` — configure matching names on the dummy source |
+1. Looks up an ISC source with that name
+2. Creates a DelimitedFile source with CSV provisioning if missing (owner = token identity)
+3. Reconciles the account schema before each `ctx.persist` for the current operation's output fields
 
-### ISC tenant setup
+Core attributes are always ensured on the schema: `id` (identity), `status`, and `date`.
 
-You need:
+**Token scopes:** The access token must allow source read/create/update and account create on the result source. PAT or OAuth client credentials used in workflows need `sp:manage:source`, `sp:manage:source-schema`, and account provisioning scopes for the tenant.
 
-1. **Dummy result source** — Delimited File (or any source that supports account create) with the schema above.
-2. **SaaS custom connector** — this project, built and uploaded to ISC (`npm run pack-zip`).
-3. **OAuth client credentials** — PAT or client with scopes to invoke the connector and call ISC APIs used by your operations.
-4. **Workflow (optional)** — to orchestrate invoke → read result.
+Manual source setup is optional — `npm run templates` still generates `account-schema.json` as documentation, but runtime reconciliation keeps the live schema aligned.
 
 ## exportedObjects artefact
 
@@ -61,7 +58,7 @@ The export includes:
 3. Review and confirm the import of the source and workflow objects.
 4. Update workflow **Configuration** step variables for your tenant:
    - **API URL** — e.g. `https://your-tenant.api.identitynow.com`
-   - **SaaS Custom Operations Source ID** — imported dummy source ID
+   - **SaaS Custom Operations Source Name** — result source name (e.g. `SaaS Custom Operations`)
    - **SaaS Custom Operations Connector ID** — your deployed custom connector ID
 5. Configure the **Get Access Token** step with a valid OAuth client (Basic auth reference).
 6. Enable the workflow and trigger it (external HTTP trigger) or run steps manually while testing.
@@ -97,7 +94,7 @@ Custom operations use the standard SaaS connector invoke shape. See `invoke-payl
     "config": {
         "apiUrl": "{{$.defineVariable.aPIURL}}",
         "token": "{{$.hTTPRequest.body.accessToken}}",
-        "sourceId": "{{$.defineVariable.saaSCustomOperationsSourceID}}"
+        "sourceName": "{{$.defineVariable.saaSCustomOperationsSourceName}}"
     }
 }
 ```
@@ -105,7 +102,7 @@ Custom operations use the standard SaaS connector invoke shape. See `invoke-payl
 | Section | Fields | Description |
 |---|---|---|
 | `type` | command name | Must match a command in `connector-spec.json` (e.g. `custom:example`) |
-| `config` | `apiUrl`, `token`, `sourceId` | ISC loopback credentials and dummy result source ID |
+| `config` | `apiUrl`, `token`, `sourceName` | ISC loopback credentials and dummy result source name |
 | `input` | `requestId` + operation params | Per-invocation data; `requestId` correlates persisted accounts |
 
 The framework strips `requestId` from operation input and exposes it on `ctx.requestId`. All other `input` fields are passed to your handler.
@@ -157,10 +154,11 @@ The exported workflow demonstrates this pattern in the **Read SaaS Custom Operat
 
 ### 1. Add an operation handler
 
-Copy `src/operations/_template.ts` to a new file under `src/operations/` and implement your handler:
+Copy `src/operations/_template.ts` to a new file under `src/operations/` and implement your handler. Declare `input` and `output` on an `OperationSignature` interface — the build generates a matching schema sidecar:
 
 ```typescript
 import { customOperation, OperationSignature } from '../framework'
+import { myOperationSchema } from './my-operation.schema'
 
 export interface MyOperation extends OperationSignature {
     input: {
@@ -172,15 +170,22 @@ export interface MyOperation extends OperationSignature {
     }
 }
 
-export const myOperation = customOperation<MyOperation>(async (ctx, input) => {
-    console.log(`[${ctx.requestId}] starting`, input)
+export const myOperation = customOperation<MyOperation>(
+    async (ctx, input) => {
+        console.log(`[${ctx.requestId}] starting`, input)
 
-    await ctx.persist(ctx.requestId, { result: 'result-value' })
-    await ctx.persist(`${ctx.requestId}:detail`, { detail: 'step-output' }, 'success')
+        await ctx.persist(ctx.requestId, { result: 'result-value' })
+        await ctx.persist(`${ctx.requestId}:detail`, { detail: 'step-output' }, 'success')
 
-    ctx.res.send({ status: 'success' })
-})
+        ctx.res.send({ status: 'success' })
+    },
+    {
+        operationSchema: myOperationSchema,
+    }
+)
 ```
+
+Register the command in `index.ts`, then run `npm run codegen:schemas` (also runs automatically on `npm run build`) to create `my-operation.schema.ts` from your `output` type literal.
 
 ### 2. Register the command
 
@@ -216,7 +221,8 @@ Rebuild, repackage, and redeploy. Invoke with `"type": "custom:my-operation"` an
 | Member | Description |
 |---|---|
 | `ctx.requestId` | Correlation id from invoke `input` |
-| `ctx.sourceId` | Dummy result source ID from `config` |
+| `ctx.sourceName` | Configured result source name (resolved/created at runtime) |
+| `ctx.sourceId` | Resolved ISC source ID after sourceName lookup |
 | `ctx.sdk` | SailPoint API client (`sailpoint-api-client`) for loopback calls |
 | `ctx.persist(...)` | Write results to the dummy source |
 | `ctx.verifyPersisted(...)` | Batch verify deferred writes |
@@ -235,11 +241,11 @@ ctx.persist(id, attributes?, status?, options?)
 ctx.verifyPersisted(ids)
 ```
 
-- **`OperationSignature`** — one interface with `input` and `output` using normal TypeScript types
-- **`customOperation<T>(handler)`** — types `input` and `ctx.persist` from `T`; no separate output config
-- **`ctx.persist`** — framework serializes values for ISC storage (strings as-is, arrays/objects as JSON)
+- **`OperationSignature`** — one interface with `input` and `output` using inline TypeScript type literals (aliases and imported types are not parsed by codegen)
+- **`customOperation<T>(handler, options?)`** — types `input` and `ctx.persist` from `T`; pass the generated `{handler}Schema` sidecar for schema reconciliation
+- **`ctx.persist`** — formats values using typed inference (numbers/booleans native, objects JSON-serialized); reconciles schema before write
 - **`id`** — native account identity (often `ctx.requestId` or a derived child id like `` `${ctx.requestId}:detail` ``)
-- **`attributes`** — only keys declared in the operation output schema; arrays/objects use `'json'` type (stored as JSON string)
+- **`attributes`** — only keys declared in the operation output schema; typed per `OperationSignature.output`
 - **`status`** — optional, defaults to `"success"`
 - **`date`** — always set automatically to the current timestamp
 - **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
@@ -253,7 +259,8 @@ Account create is used for persistence (upsert on duplicate identity).
 ```bash
 npm install          # install dependencies
 npm test             # run Vitest suite with coverage
-npm run build        # compile to dist/ via ncc
+npm run build        # codegen sidecars, then compile to dist/ via ncc
+npm run codegen:schemas  # regenerate *.schema.ts sidecars from OperationSignature
 npm run dev          # run locally with spcx
 npm run pack-zip     # build deployable connector package
 npm run templates    # generate operator artifacts (see below)
@@ -279,6 +286,7 @@ src/
   operations/         # Custom operation handlers (add yours here)
     _template.ts      # Authoring template — copy when adding operations
     example-operation.ts
+    example-operation.schema.ts  # Auto-generated — do not edit manually
     index.ts          # Command registration
   index.ts            # Connector entry point
 connector-spec.json   # Declared commands and sourceConfig (ISC loopback settings)

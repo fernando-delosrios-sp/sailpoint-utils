@@ -9,6 +9,6 @@
     "config": {
         "apiUrl": "{{$.defineVariable.aPIURL}}",
         "token": "{{$.hTTPRequest.body.accessToken}}",
-        "sourceId": "{{$.defineVariable.saaSCustomOperationsSourceID}}"
+        "sourceName": "{{$.defineVariable.saaSCustomOperationsSourceName}}"
     }
 }

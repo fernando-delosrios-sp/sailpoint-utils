@@ -1,13 +1,25 @@
 import { Response } from '@sailpoint/connector-sdk'
-import { AccountsApi } from 'sailpoint-api-client'
+import { AccountsApi, SourcesApi } from 'sailpoint-api-client'
 import { createPersist, createVerifyPersisted } from './persist-result'
 import { createSailPointClients } from './sdk-factory'
-import { PersistDependencies, RequestContext, SailPointClients, StandardInput, WriteRegistry } from './types'
+import { ensureSourceSchema } from './source-provisioning'
+import {
+    OperationSchemaContract,
+    PersistDependencies,
+    RequestContext,
+    SailPointClients,
+    StandardInput,
+    WriteRegistry,
+} from './types'
 
 export interface RequestContextDependencies {
     accountsApi?: AccountsApi
+    sourcesApi?: SourcesApi
     /** Full SDK override (tests). */
     sdk?: SailPointClients
+    /** Resolved source ID when source resolution is handled externally (tests). */
+    sourceId?: string
+    operationSchema?: OperationSchemaContract
     /** Override connector config (for tests); defaults to {@link readConfig} at runtime. */
     config?: Record<string, unknown>
 }
@@ -20,28 +32,44 @@ export function createRequestContext<TOutput extends object>(
 ): RequestContext<TOutput> {
     const sdk: SailPointClients =
         deps.sdk ??
-        (deps.accountsApi
-            ? { ...createSailPointClients(input.apiUrl, input.token), accounts: deps.accountsApi }
+        (deps.accountsApi || deps.sourcesApi
+            ? {
+                  ...createSailPointClients(input.apiUrl, input.token),
+                  ...(deps.accountsApi ? { accounts: deps.accountsApi } : {}),
+                  ...(deps.sourcesApi ? { sources: deps.sourcesApi } : {}),
+              }
             : createSailPointClients(input.apiUrl, input.token))
 
+    const sourceId = deps.sourceId ?? ''
     const accountsClient = sdk.accounts
     const writeRegistry: WriteRegistry = new Map()
 
     const persistDeps: PersistDependencies = {
-        sourceId: input.sourceId,
+        sourceId,
+        operationSchema: deps.operationSchema,
+        ensureSourceSchema: deps.operationSchema
+            ? async (attributeKeys) => {
+                  await ensureSourceSchema(
+                      sdk.sources,
+                      sourceId,
+                      deps.operationSchema!.outputFields,
+                      attributeKeys
+                  )
+              }
+            : undefined,
         createAccount: async (attributes) => {
             await accountsClient.createAccountV1({
                 accountAttributesCreate: {
-                    attributes: attributes as { sourceId: string; [key: string]: string | string[] },
+                    attributes: attributes as { sourceId: string; [key: string]: unknown },
                 },
             })
         },
         readAccount: async (id) => {
             const response = await accountsClient.listAccountsV1({
-                filters: `nativeIdentity eq "${id}" and sourceId eq "${input.sourceId}"`,
+                filters: `nativeIdentity eq "${id}" and sourceId eq "${sourceId}"`,
             })
             const account = response.data?.[0]
-            return account?.attributes as Record<string, string | string[]> | undefined
+            return account?.attributes as Record<string, unknown> | undefined
         },
     }
 
@@ -50,11 +78,12 @@ export function createRequestContext<TOutput extends object>(
 
     return {
         requestId: input.requestId,
-        sourceId: input.sourceId,
+        sourceName: input.sourceName,
+        sourceId,
+        operationSchema: deps.operationSchema,
         sdk,
         persist,
         verifyPersisted,
         res,
     }
 }
-
