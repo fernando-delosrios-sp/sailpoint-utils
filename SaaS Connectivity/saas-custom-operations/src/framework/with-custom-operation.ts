@@ -8,6 +8,11 @@ import { OperationSchemaContract, RequestContext, StandardInput } from './types'
 const CONFIG_FIELDS = ['apiUrl', 'token', 'sourceName'] as const
 const INPUT_STANDARD_FIELDS = ['requestId'] as const
 
+/** Strips workflow/PAT copy-paste artifacts before SDK clients add `Authorization: Bearer`. */
+export function normalizeAccessToken(token: string): string {
+    return token.trim().replace(/^Bearer\s+/i, '')
+}
+
 /** Resolves standard fields from an invoke payload's `config` and `input` sections. */
 export function parseStandardInput(
     config: Record<string, unknown>,
@@ -24,10 +29,10 @@ export function parseStandardInput(
     }
 
     const standard: StandardInput = {
-        apiUrl: String(config.apiUrl),
-        token: String(config.token),
-        sourceName: String(config.sourceName),
-        requestId: String(input.requestId),
+        apiUrl: String(config.apiUrl).trim(),
+        token: normalizeAccessToken(String(config.token)),
+        sourceName: String(config.sourceName).trim(),
+        requestId: String(input.requestId).trim(),
     }
 
     const operationInput = { ...input }

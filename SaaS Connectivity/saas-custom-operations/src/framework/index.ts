@@ -33,5 +33,5 @@ export type {
     VerifyPersistedFn,
     WriteRegistry,
 } from './types'
-export { customOperation, parseStandardInput } from './with-custom-operation'
+export { customOperation, normalizeAccessToken, parseStandardInput } from './with-custom-operation'
 export type { CustomOperationHandler, CustomOperationOptions } from './with-custom-operation'

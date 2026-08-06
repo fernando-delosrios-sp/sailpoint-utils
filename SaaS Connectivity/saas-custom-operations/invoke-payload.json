@@ -8,7 +8,7 @@
     },
     "config": {
         "apiUrl": "{{$.defineVariable.aPIURL}}",
-        "token": "{{$.hTTPRequest.body.accessToken}}",
+        "token": "{{$.getAccessToken.body.access_token}}",
         "sourceName": "{{$.defineVariable.saaSCustomOperationsSourceName}}"
     }
 }

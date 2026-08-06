@@ -95,7 +95,7 @@ Custom operations use the standard SaaS connector invoke shape. See `invoke-payl
     },
     "config": {
         "apiUrl": "{{$.defineVariable.aPIURL}}",
-        "token": "{{$.hTTPRequest.body.accessToken}}",
+        "token": "{{$.getAccessToken.body.access_token}}",
         "sourceName": "{{$.defineVariable.saaSCustomOperationsSourceName}}"
     }
 }

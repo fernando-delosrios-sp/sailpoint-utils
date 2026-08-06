@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { OperationSignature } from './output-schema'
 import { createRequestContext } from './request-context'
-import { customOperation, parseStandardInput } from './with-custom-operation'
+import { customOperation, normalizeAccessToken, parseStandardInput } from './with-custom-operation'
 
 const testConfig = {
     apiUrl: 'https://tenant.api.identitynow.com',
@@ -13,6 +13,12 @@ interface TestOperation extends OperationSignature {
     input: { payload?: string }
     output: { result: string }
 }
+
+describe('normalizeAccessToken', () => {
+    it('strips Bearer prefix and surrounding whitespace from config.token', () => {
+        expect(normalizeAccessToken('  Bearer eyJ.test.sig  ')).toBe('eyJ.test.sig')
+    })
+})
 
 describe('parseStandardInput', () => {
     it('parses apiUrl, token, and sourceName from config and requestId from input', () => {
