@@ -16,6 +16,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 - **Templates generator parity** — `account-schema.json` inference aligns with runtime type mapping (INT, BOOLEAN, LONG, DATE).
 - **Type-aware read-back verification** — Persist verification coerces DelimitedFile string read-back when comparing typed values.
+- **Workflow-only bootstrap export** — `workflows/SaaS Custom Operations.json` ships the example workflow only; the result source is auto-provisioned via `sourceName` (no separate source import).
 
 ### Breaking changes
 
@@ -25,7 +26,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### Migration
 
-1. Replace `sourceId` with `sourceName` in connector connection config and workflow invoke bodies (use your existing source's display name, e.g. `SaaS Custom Operations`).
+1. Replace `sourceId` with `sourceName` in connector connection config and workflow invoke bodies (choose a stable name, e.g. `SaaS Custom Operations`).
 2. Remove manual account-schema application steps — runtime reconciliation handles missing attributes.
 3. Replace inline `defineOperationSchema({...})` with the generated `{handler}Schema` sidecar import (`npm run codegen:schemas` or `npm run build`).
 4. Ensure the invoke token has source create/update and account provisioning scopes.
