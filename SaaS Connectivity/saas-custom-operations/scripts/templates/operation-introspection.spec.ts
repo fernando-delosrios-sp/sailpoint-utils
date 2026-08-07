@@ -193,6 +193,23 @@ export const badOperation = customOperation<BadOperation>(async () => {})
 
         expect(() => discoverAutoOperations(tempDir)).toThrow(/Invalid command prefix/)
     })
+
+    it('throws when command is declared but module has no customOperation export', () => {
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'op-discover-'))
+        fs.writeFileSync(
+            path.join(tempDir, 'orphan-operation.ts'),
+            `import { OperationSignature } from '../framework'
+
+export interface OrphanOperation extends OperationSignature {
+    command: 'custom:orphan'
+    input: {}
+    output: { summary: string }
+}
+`
+        )
+
+        expect(() => discoverAutoOperations(tempDir)).toThrow(/has no customOperation export/)
+    })
 })
 
 describe('discoverAllOperations', () => {
@@ -277,3 +294,4 @@ export function registerCommands(connector: unknown) {
         )
     })
 })
+
