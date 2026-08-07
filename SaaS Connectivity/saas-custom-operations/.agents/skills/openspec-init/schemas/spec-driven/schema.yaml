@@ -154,6 +154,7 @@ apply:
     Read context files, work through pending tasks, mark complete as you go.
     Pause if you hit blockers or need clarification.
 
-    Enforce a changelog update for each spec change applied using the `changelog-generator` skill. Follow the `openspec-git-discipline` skill when making commits.
+    Enforce a changelog update for each spec change applied using the `changelog-generator` skill. Follow the `git-commit` skill when making commits.
 
     Always keep documentation up-to-date for any spec change introduced.
+

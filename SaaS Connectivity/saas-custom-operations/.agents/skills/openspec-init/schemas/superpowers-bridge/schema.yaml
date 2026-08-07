@@ -1,5 +1,5 @@
 name: superpowers-bridge
-version: 1
+version: 2
 description: >
   Role: OpenSpec + Superpowers workflow orchestrator for a single change under
   openspec/changes/<change-name>/ — bridges artifact governance (what) with
@@ -11,10 +11,10 @@ description: >
   Platform: subagent-capable runtime required (Claude Code, Codex, etc.).
   No executing-plans fallback — use spec-driven schema instead.
 
-  Required skills: brainstorming, writing-plans, subagent-driven-development
-  (transitive: test-driven-development, requesting-code-review),
-  finishing-a-development-branch. Each artifact/apply step PRECHECKs skills
-  before invoking; STOP with clear error if missing.
+  Required skills: brainstorming, writing-plans, using-git-worktrees,
+  subagent-driven-development (transitive: test-driven-development,
+  requesting-code-review), finishing-a-development-branch. Each artifact/apply
+  step PRECHECKs skills before invoking; STOP with clear error if missing.
 
   Apply runs autonomous verify-fix until verify.md shows PASS before done.
   design reorganizes raw brainstorm into Context / Goals / Decisions / Risks /
@@ -328,8 +328,8 @@ artifacts:
       | LOW | openspec-verify-change skill | Preferred verification path |
 
       ## STEPS
-      1. **PRECHECK — apply completion gate** (apply step 1b MUST have passed;
-         if any fail, apply loops in step 2 — do NOT hand off to user):
+      1. **PRECHECK — apply completion gate** (apply step 2b MUST have passed;
+         if any fail, apply loops in step 3 — do NOT hand off to user):
          - No unchecked tasks: `! grep -q '^- \[ \]' openspec/changes/<change-name>/tasks.md`
          - Tests green: `<project test command from plan.md>` exit code 0
          - Structural validation: `openspec validate --all --json` — every item `"valid": true`
@@ -351,9 +351,9 @@ artifacts:
       8. Record all results in verify.md using @./templates/verify.md.
          Overwrite on each apply loop iteration until Overall Decision is ✅ PASS.
 
-      **Timing**: verify.md is produced inside apply step 2 (verify-fix loop),
+      **Timing**: verify.md is produced inside apply step 3 (verify-fix loop),
       NOT after apply "finishes". Standalone `/opsx:verify` is for interruption
-      re-runs only; failures route back to apply step 2.
+      re-runs only; failures route back to apply step 3.
 
       ## EXPECTATIONS
       - Deliverable: verify.md with Overall Decision ✅ PASS before apply done.
@@ -410,7 +410,7 @@ artifacts:
          Otherwise produce §0 + all 6 analysis sections.
       5. **Forward-pointer policy**: if facts change later, add
          `> **Update YYYY-MM-DD**: ...` — do NOT rewrite the retro.
-      6. After writing, proceed immediately to apply step 4 (Archive).
+      6. After writing, proceed immediately to apply step 5 (Archive).
 
       **Timing**: retrospective runs AFTER apply verify PASS, BEFORE PR. The
       `requires: [verify]` edge is schema-graph only.
@@ -444,26 +444,31 @@ apply:
     | HIGH | plan.md | Micro-task executor input |
     | HIGH | tasks.md | Checkbox progress (tracked) |
     | HIGH | specs/**/*.md | Scenario → test coverage gate |
+    | MED | using-git-worktrees skill | Isolated workspace (apply step 1) |
     | MED | design.md | Implementation guidance |
     | MED | verify artifact instruction | Verify-fix loop checks |
     | MED | retrospective artifact instruction | Post-verify analysis |
-    | MED | git-commit skill | Archive step 4d (manual fallback if missing) |
-    | LOW | changelog-generator skill | Changelog task in step 1b |
+    | MED | git-commit skill | Archive step 5d (manual fallback if missing) |
+    | LOW | changelog-generator skill | Changelog task in step 2b |
 
     ## STEPS
     0. **Pre-flight — skills and tooling**
        Required skills (STOP if missing — no silent fallback):
+       - using-git-worktrees
        - subagent-driven-development (transitive: test-driven-development,
          requesting-code-review)
        - finishing-a-development-branch
        Optional: changelog-generator, openspec-verify-change
        Confirm project CLI tools from plan.md on PATH. If missing, STOP.
-       (`git-commit` is invoked in archive step 4d — manual fallback if absent.)
+       (`git-commit` is invoked in archive step 5d — manual fallback if absent.)
 
-    1. **Executor — subagent-driven-development**
+    1. **Workspace — using-git-worktrees**
+       Invoke via Skill tool to create an isolated git worktree for this change.
+
+    2. **Executor — subagent-driven-development**
        Invoke via Skill tool. Tell executor:
        - Read plan.md micro-tasks; update tasks.md checkboxes as coarse tasks complete
-       - Work on current branch; do NOT mark `[x]` until tests pass and lint clean
+       - Work within the created worktree; do NOT mark `[x]` until tests pass and lint clean
        - Complete Documentation and Changelog groups last
        - Every `#### Scenario:` maps to passing automated test before reporting done
        - Run `openspec validate --all --json`; fix `"valid": false` items
@@ -471,7 +476,7 @@ apply:
        REFACTOR); requesting-code-review (per-task + final review).
        No `executing-plans` fallback — use spec-driven schema on non-subagent platforms.
 
-    1b. **Completion gate** (re-run after every fix in step 2):
+    2b. **Completion gate** (re-run after every fix in step 3):
        - All tasks.md checkboxes `[x]` (including Documentation/Changelog)
        - Tests: plan.md canonical command exit 0; every scenario has passing test
        - Lint/format: plan.md commands; zero new warnings from this change
@@ -479,17 +484,17 @@ apply:
        - Documentation tasks reflect actual behavior
        - Changelog: changelog-generator if available, else manual
        - Commits: stage and commit all implementation work; working tree clean
-         (`git status --porcelain` empty) before step 2
+         (`git status --porcelain` empty) before step 3
 
-    2. **Verify-fix loop** (BLOCKING — apply NOT complete until ✅ PASS):
+    3. **Verify-fix loop** (BLOCKING — apply NOT complete until ✅ PASS):
        Repeat: (a) invoke openspec-verify-change or manual verify checks →
        verify.md; (b) on ❌ FAIL fix immediately — do NOT ask user, do NOT open PR;
-       (c) re-run 1b, return to (a). Proceed to step 3 only on ✅ PASS.
+       (c) re-run 2b, return to (a). Proceed to step 4 only on ✅ PASS.
 
-    3. **Retrospective** (while context is hot, BEFORE PR):
+    4. **Retrospective** (while context is hot, BEFORE PR):
        Produce retrospective artifact (own PRECHECK). Part of same PR deliverables.
 
-    4. **Archive** (backfill → sync → **commit** → gate):
+    5. **Archive** (backfill → sync → **commit** → gate):
        Archive is NOT complete until step (e) passes — including when
        re-running on a change archived in a prior session with uncommitted
        openspec files still on disk.
@@ -511,7 +516,7 @@ apply:
                spec sync, archive path in message context).
              - **Fallback** if git-commit unavailable: conventional commit
                manually, e.g. `docs(openspec): archive <change-name> and sync specs`
-          5. Do NOT open a PR or call step 5 until (e) passes.
+          5. Do NOT open a PR or call step 6 until (e) passes.
        e. **Post-commit gate** (BLOCKING — archive incomplete until pass):
           - `test -z "$(git status --porcelain)"`
           - If (c) ran OR change is under `openspec/changes/archive/`: confirm
@@ -519,17 +524,17 @@ apply:
             `git log -1 --name-only -- openspec/specs/ openspec/changes/archive/`
           - If (c) was skipped but porcelain was non-empty before (d), the
             commit from (d) must have cleared porcelain — re-run (d) if not.
-          Do NOT proceed to step 5 until this gate passes.
+          Do NOT proceed to step 6 until this gate passes.
 
-    5. **Completion — PR LAST**
-       PRECHECK: step 4e passed. Invoke **finishing-a-development-branch**.
+    6. **Completion — PR LAST**
+       PRECHECK: step 5e passed. Invoke **finishing-a-development-branch**.
        PR diff MUST contain complete archived cycle. Do NOT reorder.
 
     ## EXPECTATIONS
     - Deliverable: branch PR with all artifacts, synced specs, archived change,
       retrospective, verify PASS, changelog, updated docs.
     - Apply owns verify end-to-end in one session.
-    - Archive incomplete until post-commit gate (4e) passes — including 4d commit.
+    - Archive incomplete until post-commit gate (5e) passes — including 5d commit.
     - No skipping archive commit because git-commit skill is missing — use manual fallback.
 
     ## NARROWING
@@ -538,3 +543,4 @@ apply:
     - No PR before retrospective + archive commit.
     - No deferring verify failures to the user (schema violation).
     - No reporting apply complete with ❌ FAIL in verify.md.
+

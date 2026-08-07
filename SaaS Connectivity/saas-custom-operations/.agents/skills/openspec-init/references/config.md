@@ -30,7 +30,11 @@ To build a meaningful `context` section:
 
 ## Organize Specs by Domain
 
-Organize specifications by domain — logical groupings that make sense for the system. Common patterns include:
+**Mandatory**: Every initialized project MUST include `openspec/specs/ubiquitous-language/spec.md`.
+Seed it from `references/ubiquitous-language-spec.md`. New domain terms introduced in any
+change MUST be reflected here before archive.
+
+Organize additional specifications by domain — logical groupings that make sense for the system. Common patterns include:
 
 - **By feature area**: `auth/`, `payments/`, `search/`
 - **By component**: `api/`, `frontend/`, `workers/`

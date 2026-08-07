@@ -32,15 +32,31 @@ description: Use when the user asks to initialize an OpenSpec project.
 
 ## 5. Initial Spec Generation
 
+- **Mandatory ubiquitous language**: Always create `openspec/specs/ubiquitous-language/spec.md` using `references/ubiquitous-language-spec.md` as the starting template. This spec is required for every project — do not skip it or fold it into another domain.
 - **Discover Domains**: Analyze the project structure to infer logical domains. Ask the user to confirm or adjust these domains. Stop and wait for their response.
 - **Pre-populate**: Create the confirmed domain subdirectories in `openspec/specs/` and generate an initial `spec.md` for each. Stick to the domain categories found; do not create specs for more particular sub-groupings (e.g., do not create a spec for each individual service within a structural grouping).
-- **Completion Criterion**: `openspec/specs/` contains at least one domain subdirectory with an initial `spec.md` file.
+- **Completion Criterion**: `openspec/specs/ubiquitous-language/spec.md` exists and `openspec/specs/` contains at least one additional domain subdirectory with an initial `spec.md` file (or only ubiquitous-language if the project is too early to infer domains — ask the user).
 
 ## 6. Recommended Skills Installation
 
-- **Install Skills**: Ask the user for permission to install the required behavioral skills using `npx skills add fernando-delosrios-sp/skills --skill <skill-name>`:
-   - `c4-diagram`
-   - `gherkin-authoring`
-   - `changelog-generator`
-   - `openspec-git-discipline`
-- **Completion Criterion**: The skills have been installed or the user explicitly skipped this step.
+- **Install Skills**: Ask the user for permission to install behavioral skills. Install all that apply to the chosen schema:
+
+  **All schemas** (from `fernando-delosrios-sp/skills`):
+  ```bash
+  npx skills add fernando-delosrios-sp/skills --skill changelog-generator
+  npx skills add fernando-delosrios-sp/skills --skill git-commit
+  npx skills add fernando-delosrios-sp/skills --skill gherkin-authoring
+  npx skills add fernando-delosrios-sp/skills --skill c4-diagram
+  ```
+
+  **superpowers-bridge only** — also install Superpowers execution skills:
+  ```bash
+  npx skills add obra/superpowers
+  ```
+  Required after install: `brainstorming`, `writing-plans`, `using-git-worktrees`,
+  `subagent-driven-development`, `finishing-a-development-branch`
+  (plus transitive `test-driven-development`, `requesting-code-review`).
+
+  If the schema has its own `INSTALL.md`, follow its skill list — it is authoritative for schema-specific requirements.
+
+- **Completion Criterion**: Required skills for the chosen schema are installed, or the user explicitly skipped with acknowledgment of which skills are missing.
