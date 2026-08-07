@@ -1,5 +1,6 @@
 import { CommandHandler, ConnectorError, Context, readConfig, Response } from '@sailpoint/connector-sdk'
 import { InferOperationInput, InferOperationOutput, OperationSignature } from './output-schema'
+import { getOperationSchema } from './operation-schema-registry'
 import { createRequestContext, RequestContextDependencies } from './request-context'
 import { createSailPointClients } from './sdk-factory'
 import { resolveSourceByName } from './source-provisioning'
@@ -49,12 +50,14 @@ export type CustomOperationHandler<T extends OperationSignature> = (
 ) => Promise<void> | void
 
 export interface CustomOperationOptions extends RequestContextDependencies {
+    /** Explicit schema sidecar; overrides registry lookup for auto-discovered operations. */
     operationSchema?: OperationSchemaContract
 }
 
 /**
  * Wraps a custom command handler with volatile RequestContext initialization.
  * Resolves sourceName to sourceId and attaches operation output fields for schema reconciliation.
+ * Auto-discovered operations resolve `operationSchema` from the build-time registry when omitted.
  */
 export function customOperation<T extends OperationSignature>(
     handler: CustomOperationHandler<T>,
@@ -68,10 +71,13 @@ export function customOperation<T extends OperationSignature>(
         const sourceId =
             deps.sourceId ?? (await resolveSourceByName(sdk.sources, standard.sourceName, standard.token))
 
-        const operationSchema: OperationSchemaContract | undefined = deps.operationSchema
+        const resolvedSchema =
+            deps.operationSchema ??
+            (context.commandType ? getOperationSchema(context.commandType) : undefined)
+        const operationSchema: OperationSchemaContract | undefined = resolvedSchema
             ? {
-                  command: deps.operationSchema.command ?? context.commandType,
-                  outputFields: deps.operationSchema.outputFields,
+                  command: resolvedSchema.command ?? context.commandType,
+                  outputFields: resolvedSchema.outputFields,
               }
             : undefined
 

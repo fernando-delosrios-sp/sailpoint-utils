@@ -17,4 +17,4 @@ node_modules/
 # Compiled source
 dist/
 coverage/
-templates/
+/templates/

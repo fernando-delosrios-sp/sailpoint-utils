@@ -6,7 +6,12 @@ import {
     extractOperationSignature,
     loadOperationMeta,
 } from './templates/operation-introspection'
-import { generateOperationSchemas, renderOperationSchemaSidecar } from './generate-operation-schemas'
+import {
+    generateOperationSchemas,
+    renderAutoRegistry,
+    renderOperationSchemaSidecar,
+    syncConnectorSpecCommands,
+} from './generate-operation-schemas'
 
 describe('renderOperationSchemaSidecar', () => {
     it('emits banner, import, and alphabetically sorted fields', () => {
@@ -27,6 +32,55 @@ describe('renderOperationSchemaSidecar', () => {
     })
 })
 
+describe('renderAutoRegistry', () => {
+    it('emits registerAutoOperations with schema registration for auto ops', () => {
+        const content = renderAutoRegistry([
+            {
+                command: 'custom:example',
+                handlerName: 'exampleOperation',
+                modulePath: '/tmp/example-operation.ts',
+            },
+        ])
+
+        expect(content).toContain("registerOperationSchema('custom:example', exampleOperationSchema)")
+        expect(content).toContain(".command('custom:example', exampleOperation)")
+        expect(content).toContain("import { exampleOperation } from './example-operation'")
+    })
+
+    it('emits a no-op registerAutoOperations when there are no auto ops', () => {
+        const content = renderAutoRegistry([])
+        expect(content).toContain('export function registerAutoOperations(connector: Connector): Connector {')
+        expect(content).toContain('return connector')
+        expect(content).not.toContain('registerOperationSchema')
+    })
+})
+
+describe('syncConnectorSpecCommands', () => {
+    let tempDir: string
+
+    afterEach(() => {
+        if (tempDir && fs.existsSync(tempDir)) {
+            fs.rmSync(tempDir, { recursive: true, force: true })
+        }
+    })
+
+    it('replaces commands[] while preserving other manifest keys', () => {
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-sync-'))
+        const specPath = path.join(tempDir, 'connector-spec.json')
+        fs.writeFileSync(
+            specPath,
+            `${JSON.stringify({ name: 'test-connector', commands: ['custom:old'], sourceConfig: [{ key: 'token' }] }, null, '\t')}\n`
+        )
+
+        syncConnectorSpecCommands(['custom:example', 'custom:manual'], specPath)
+
+        const spec = JSON.parse(fs.readFileSync(specPath, 'utf-8'))
+        expect(spec.commands).toEqual(['custom:example', 'custom:manual'])
+        expect(spec.name).toBe('test-connector')
+        expect(spec.sourceConfig).toEqual([{ key: 'token' }])
+    })
+})
+
 describe('generateOperationSchemas', () => {
     let tempDir: string
 
@@ -43,9 +97,10 @@ describe('generateOperationSchemas', () => {
 
         fs.writeFileSync(
             path.join(operationsDir, 'example-operation.ts'),
-            `import { OperationSignature } from '../framework'
+            `import { customOperation, OperationSignature } from '../framework'
 
 export interface ExampleOperation extends OperationSignature {
+    command: 'custom:example'
     input: { message?: string }
     output: {
         summary: string
@@ -53,7 +108,65 @@ export interface ExampleOperation extends OperationSignature {
     }
 }
 
-export const exampleOperation = async () => {}
+export const exampleOperation = customOperation<ExampleOperation>(async () => {})
+`
+        )
+
+        fs.writeFileSync(
+            path.join(operationsDir, 'index.ts'),
+            `import { Connector } from '@sailpoint/connector-sdk'
+import { registerAutoOperations } from './auto-registry'
+
+export function registerCommands(connector: Connector): Connector {
+    return registerAutoOperations(connector)
+}
+`
+        )
+
+        const specPath = path.join(tempDir, 'connector-spec.json')
+        fs.writeFileSync(specPath, `${JSON.stringify({ name: 'test', commands: [], sourceConfig: [] }, null, '\t')}\n`)
+
+        generateOperationSchemas({
+            indexPath: path.join(operationsDir, 'index.ts'),
+            specPath,
+        })
+
+        const sidecarPath = path.join(operationsDir, 'example-operation.schema.ts')
+        expect(fs.existsSync(sidecarPath)).toBe(true)
+
+        const autoRegistryPath = path.join(operationsDir, 'auto-registry.ts')
+        expect(fs.existsSync(autoRegistryPath)).toBe(true)
+        const autoRegistry = fs.readFileSync(autoRegistryPath, 'utf-8')
+        expect(autoRegistry).toContain("registerOperationSchema('custom:example', exampleOperationSchema)")
+
+        const spec = JSON.parse(fs.readFileSync(specPath, 'utf-8'))
+        expect(spec.commands).toEqual(['custom:example'])
+
+        const sidecar = fs.readFileSync(sidecarPath, 'utf-8')
+        expect(sidecar).toContain('export const exampleOperationSchema = defineOperationSchema({')
+        expect(sidecar).toContain("summary: 'string',")
+        expect(sidecar).toContain("step: { type: 'string', optional: true },")
+
+        const { output } = extractOperationSignature(path.join(operationsDir, 'example-operation.ts'))
+        expect(output.map((field) => field.name).sort()).toEqual(['step', 'summary'])
+    })
+
+    it('throws when auto-discovered and manual registrations collide', () => {
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'schema-codegen-'))
+        const operationsDir = path.join(tempDir, 'operations')
+        fs.mkdirSync(operationsDir, { recursive: true })
+
+        fs.writeFileSync(
+            path.join(operationsDir, 'example-operation.ts'),
+            `import { customOperation, OperationSignature } from '../framework'
+
+export interface ExampleOperation extends OperationSignature {
+    command: 'custom:example'
+    input: {}
+    output: { summary: string }
+}
+
+export const exampleOperation = customOperation<ExampleOperation>(async () => {})
 `
         )
 
@@ -67,18 +180,9 @@ export function registerCommands(connector: unknown) {
 `
         )
 
-        generateOperationSchemas({ indexPath: path.join(operationsDir, 'index.ts') })
-
-        const sidecarPath = path.join(operationsDir, 'example-operation.schema.ts')
-        expect(fs.existsSync(sidecarPath)).toBe(true)
-
-        const sidecar = fs.readFileSync(sidecarPath, 'utf-8')
-        expect(sidecar).toContain('export const exampleOperationSchema = defineOperationSchema({')
-        expect(sidecar).toContain("summary: 'string',")
-        expect(sidecar).toContain("step: { type: 'string', optional: true },")
-
-        const { output } = extractOperationSignature(path.join(operationsDir, 'example-operation.ts'))
-        expect(output.map((field) => field.name).sort()).toEqual(['step', 'summary'])
+        expect(() => generateOperationSchemas({ indexPath: path.join(operationsDir, 'index.ts') })).toThrow(
+            /both auto-discovered and manually registered/
+        )
     })
 
     it('throws when handler module lacks OperationSignature', () => {
@@ -118,3 +222,4 @@ export function registerCommands(connector: unknown) {
         expect(meta?.output).toEqual(output)
     })
 })
+

@@ -3,10 +3,9 @@
  * Template generator for ISC operator artifacts.
  *
  * Discovery rules:
- * - Parses `src/operations/index.ts` for `.command('custom:…', handler)` registrations
- * - Resolves handler modules and extracts `OperationSignature` input/output via TypeScript compiler API
- * - Scans operation sources for `ctx.persist(...)` child identity patterns (non-`ctx.requestId` first args)
- * - Only registered operations are included; connector-spec declarations without handlers are ignored
+ * - Auto ops: modules with `command` literal + exactly one customOperation export
+ * - Manual ops: index.ts registrations where the handler module has no `command` literal
+ * - Unified via discoverAllOperations (auto + manual)
  *
  * Output (gitignored `./templates/`):
  * - account-schema.json — ISC create-source-schema shape
@@ -44,3 +43,4 @@ export function generateTemplates(options?: { outputDir?: string; indexPath?: st
 if (require.main === module) {
     generateTemplates()
 }
+

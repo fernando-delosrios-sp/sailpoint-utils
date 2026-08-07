@@ -1,5 +1,6 @@
 import { _withConfig } from '@sailpoint/connector-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import './auto-registry'
 import { exampleOperation } from './example-operation'
 
 const workflowConfig = {
@@ -115,3 +116,4 @@ describe('exampleOperation', () => {
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
     })
 })
+

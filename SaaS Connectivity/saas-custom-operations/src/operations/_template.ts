@@ -1,13 +1,19 @@
 import { customOperation, OperationSignature } from '../framework'
-// After registering in index.ts, run `npm run codegen:schemas`, then import the sidecar:
+// Manual path: register in index.ts and pass the generated sidecar:
 // import { templateOperationSchema } from './template-operation.schema'
 
 /**
  * Copy this file when adding a new custom operation.
- * Register the command in index.ts.
+ *
+ * Auto-discovery (recommended): add `command: 'custom:your-command'` to the interface below.
+ * Codegen registers the handler in auto-registry.ts and syncs connector-spec.json.
+ *
+ * Manual registration: omit `command`, register in index.ts, import the generated sidecar,
+ * and pass `{ operationSchema: templateOperationSchema }` to customOperation.
  */
 
 export interface TemplateOperation extends OperationSignature {
+    command: 'custom:template'
     input: {
         exampleField?: string
     }
@@ -29,6 +35,4 @@ export const templateOperation = customOperation<TemplateOperation>(
 
         ctx.res.send({ status: 'success' })
     }
-    // Pass the generated sidecar for schema reconciliation at persist time:
-    // , { operationSchema: templateOperationSchema }
 )

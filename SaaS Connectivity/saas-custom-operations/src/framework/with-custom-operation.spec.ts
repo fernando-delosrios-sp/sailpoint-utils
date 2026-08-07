@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
+import { defineOperationSchema } from './define-operation-schema'
 import { OperationSignature } from './output-schema'
+import {
+    clearOperationSchemaRegistry,
+    registerOperationSchema,
+} from './operation-schema-registry'
 import { createRequestContext } from './request-context'
 import { customOperation, normalizeAccessToken, parseStandardInput } from './with-custom-operation'
 
@@ -166,5 +171,62 @@ describe('customOperation', () => {
             expect.objectContaining({ sourceId: 'resolved-id', sourceName: 'SaaS Custom Operations' }),
             {}
         )
+    })
+
+    it('resolves operationSchema from registry when operationSchema option is omitted', async () => {
+        clearOperationSchemaRegistry()
+        registerOperationSchema(
+            'custom:example',
+            defineOperationSchema({ summary: 'string', step: { type: 'string', optional: true } })
+        )
+
+        const res = { send: vi.fn() }
+        const handler = vi.fn(async (ctx) => {
+            expect(ctx.operationSchema?.outputFields.map((field) => field.name).sort()).toEqual(['step', 'summary'])
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: testConfig,
+            sourceId: 'source-123',
+        })
+
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(handler).toHaveBeenCalled()
+    })
+
+    it('prefers explicit operationSchema over registry lookup', async () => {
+        clearOperationSchemaRegistry()
+        registerOperationSchema('custom:test', defineOperationSchema({ registry: 'string' }))
+
+        const res = { send: vi.fn() }
+        const explicitSchema = defineOperationSchema({ explicit: 'string' })
+        const handler = vi.fn(async (ctx) => {
+            expect(ctx.operationSchema?.outputFields.map((field) => field.name)).toEqual(['explicit'])
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: testConfig,
+            sourceId: 'source-123',
+            operationSchema: explicitSchema,
+        })
+
+        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(handler).toHaveBeenCalled()
+    })
+
+    it('leaves operationSchema undefined for manual ops without registry entry or explicit option', async () => {
+        clearOperationSchemaRegistry()
+        const res = { send: vi.fn() }
+        const handler = vi.fn(async (ctx) => {
+            expect(ctx.operationSchema).toBeUndefined()
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: testConfig,
+            sourceId: 'source-123',
+        })
+
+        await wrapped({ commandType: 'custom:manual' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(handler).toHaveBeenCalled()
     })
 })

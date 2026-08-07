@@ -4,6 +4,10 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ## 2026-08-07 · v0.2.2
 
+### ✨ New Features
+
+- **Auto operation registration** — Add `command: 'custom:…'` to `OperationSignature` and codegen auto-registers handlers in `auto-registry.ts`, populates the schema registry, and syncs `connector-spec.json` `commands[]`. Manual registration remains supported for ops without `command` (pass `{ operationSchema: sidecar }` and register in `index.ts`).
+
 ### 🐛 Fixes
 
 - **DelimitedFile auto-create** — Source create now includes the required `connector` field (`delimited-file-angularsc`). First-run invoke no longer fails with ISC `Required field "connector" was missing or empty`.

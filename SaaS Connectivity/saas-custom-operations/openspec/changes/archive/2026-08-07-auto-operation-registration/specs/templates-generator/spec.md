@@ -1,19 +1,4 @@
-# templates-generator
-
-## Purpose
-
-Generate ISC operator artifacts (account schema JSON, OAuth guide, workflow invocation guide) from registered custom operations via `npm run templates`.
-## Requirements
-### Requirement: Templates npm script
-
-The project SHALL provide an npm script named `templates` that executes the template generator and writes output files to `./templates/`.
-
-#### Scenario: Script runs successfully
-
-- **GIVEN** at least one custom operation is registered in `src/operations/index.ts`
-- **WHEN** the developer runs `npm run templates`
-- **THEN** the generator SHALL create the `./templates/` directory if missing
-- **AND** SHALL write `account-schema.json`, `access-token.md`, and `workflow-invocation.md`
+## MODIFIED Requirements
 
 ### Requirement: Account schema generation
 
@@ -40,18 +25,6 @@ The generator SHALL produce `templates/account-schema.json` compatible with ISC 
 - **WHEN** account schema is generated
 - **THEN** only discovered operations SHALL contribute output fields to the schema
 
-### Requirement: Access token guide generation
-
-The generator SHALL produce `templates/access-token.md` documenting OAuth client-credentials token acquisition for workflow integration.
-
-#### Scenario: Placeholder configuration documented
-
-- **GIVEN** the sample workflow at `workflows/Workflow - SaaS Custom Operations Call.json` defines Configuration and Get Access Token steps
-- **WHEN** access-token guide is generated
-- **THEN** the guide SHALL document POST `{API_URL}/oauth/token` with `grant_type=client_credentials`
-- **AND** SHALL use placeholders instead of tenant-specific IDs or URLs
-- **AND** SHALL explain how to use the token in subsequent invoke requests
-
 ### Requirement: Workflow invocation guide generation
 
 The generator SHALL produce `templates/workflow-invocation.md` with one section per registered custom operation.
@@ -77,14 +50,3 @@ The generator SHALL produce `templates/workflow-invocation.md` with one section 
 - **WHEN** an operator reads an operation section
 - **THEN** the guide SHALL reference `access-token.md` for authentication setup
 - **AND** SHALL NOT duplicate the full OAuth section in each operation block
-
-### Requirement: Generated output not committed
-
-The project SHALL gitignore the `./templates/` directory so generated files are local-only artifacts.
-
-#### Scenario: Templates directory ignored
-
-- **GIVEN** the generator has written files to `./templates/`
-- **WHEN** git status is checked
-- **THEN** `./templates/` contents SHALL be ignored by git
-

@@ -11,6 +11,11 @@ export {
 } from './persist-result'
 export { defineOperationSchema } from './define-operation-schema'
 export type { OperationFieldSpec } from './define-operation-schema'
+export {
+    clearOperationSchemaRegistry,
+    getOperationSchema,
+    registerOperationSchema,
+} from './operation-schema-registry'
 export { createRequestContext } from './request-context'
 export { createSailPointClients } from './sdk-factory'
 export { inferFromTsType, inferSchemaAttribute } from './schema-inference'

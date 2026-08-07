@@ -156,13 +156,15 @@ The reference workflow export demonstrates this pattern in the **Read SaaS Custo
 
 ### 1. Add an operation handler
 
-Copy `src/operations/_template.ts` to a new file under `src/operations/` and implement your handler. Declare `input` and `output` on an `OperationSignature` interface — the build generates a matching schema sidecar:
+Copy `src/operations/_template.ts` to a new file under `src/operations/` and implement your handler. Declare `input` and `output` on an `OperationSignature` interface — the build generates a matching schema sidecar.
+
+**Auto-discovery (recommended):** add a `command` string literal to your interface. Codegen registers the handler, syncs `connector-spec.json`, and wires the schema registry — no manual `index.ts` entry required.
 
 ```typescript
 import { customOperation, OperationSignature } from '../framework'
-import { myOperationSchema } from './my-operation.schema'
 
 export interface MyOperation extends OperationSignature {
+    command: 'custom:my-operation'
     input: {
         accountId?: string
     }
@@ -180,41 +182,33 @@ export const myOperation = customOperation<MyOperation>(
         await ctx.persist(`${ctx.requestId}:detail`, { detail: 'step-output' }, 'success')
 
         ctx.res.send({ status: 'success' })
-    },
-    {
-        operationSchema: myOperationSchema,
     }
 )
 ```
 
-Register the command in `index.ts`, then run `npm run codegen:schemas` (also runs automatically on `npm run build`) to create `my-operation.schema.ts` from your `output` type literal.
+Run `npm run codegen:schemas` (also runs on `npm run build`) to generate `my-operation.schema.ts`, update `auto-registry.ts`, and sync `connector-spec.json`.
 
-### 2. Register the command
-
-In `src/operations/index.ts`:
+**Manual registration:** omit `command` from the interface, register in `index.ts`, import the generated sidecar, and pass it explicitly:
 
 ```typescript
-import { myOperation } from './my-operation'
+import { myOperationSchema } from './my-operation.schema'
 
+export const myOperation = customOperation<MyOperation>(
+    async (ctx, input) => { /* ... */ },
+    { operationSchema: myOperationSchema }
+)
+```
+
+```typescript
+// src/operations/index.ts
 export function registerCommands(connector: Connector): Connector {
-    return connector
-        .command('custom:example', exampleOperation)
-        .command('custom:my-operation', myOperation)
+    return registerAutoOperations(connector).command('custom:my-operation', myOperation)
 }
 ```
 
-### 3. Declare the command in the manifest
+Add the command to `connector-spec.json` manually when using the manual path (auto-discovery syncs it for you).
 
-Add the command name to `connector-spec.json`:
-
-```json
-{
-    "commands": [
-        "custom:example",
-        "custom:my-operation"
-    ]
-}
-```
+### 2. Rebuild and deploy
 
 Rebuild, repackage, and redeploy. Invoke with `"type": "custom:my-operation"` and any additional fields in `input`.
 
@@ -271,7 +265,7 @@ npm run templates    # generate operator artifacts (see below)
 
 ### Operator templates
 
-Run `npm run templates` after adding or modifying registered operations in `src/operations/index.ts`. The generator introspects implemented handlers and writes local-only artifacts to `./templates/` (gitignored). Markdown guides follow the step structure of the **SaaS Custom Operations Call** workflow embedded in `workflows/SaaS Custom Operations.json`:
+Run `npm run templates` after adding or modifying operations under `src/operations/`. The generator introspects auto-discovered and manually registered handlers and writes local-only artifacts to `./templates/` (gitignored). Markdown guides follow the step structure of the **SaaS Custom Operations Call** workflow embedded in `workflows/SaaS Custom Operations.json`:
 
 | File | Purpose |
 |---|---|
@@ -279,7 +273,7 @@ Run `npm run templates` after adding or modifying registered operations in `src/
 | `access-token.md` | Shared OAuth client-credentials guide with tenant placeholders |
 | `workflow-invocation.md` | Per-operation invoke body, read-result, and child-identity steps |
 
-Re-run whenever you register a new operation or change an operation's `OperationSignature` or `ctx.persist` patterns. Commands declared in `connector-spec.json` but not registered in `src/operations/index.ts` are not included.
+Re-run whenever you add an operation or change an operation's `OperationSignature` or `ctx.persist` patterns. Discovery includes auto-registered ops (`command` literal on the interface) and manual index.ts registrations.
 
 ## Project structure
 
@@ -290,7 +284,8 @@ src/
     _template.ts      # Authoring template — copy when adding operations
     example-operation.ts
     example-operation.schema.ts  # Auto-generated — do not edit manually
-    index.ts          # Command registration
+    auto-registry.ts        # Auto-generated command + schema registration
+    index.ts          # Calls registerAutoOperations; append manual .command() as needed
   index.ts            # Connector entry point
 scripts/
   generate-templates.ts       # Operator artifact generator (`npm run templates`)
