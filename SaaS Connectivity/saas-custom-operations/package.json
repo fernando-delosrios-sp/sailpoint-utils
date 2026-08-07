@@ -1,6 +1,6 @@
 {
   "name": "saas-custom-operations",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "main": "dist/index.js",
   "scripts": {
     "clean": "shx rm -rf ./dist",
@@ -39,8 +39,7 @@
     "singleQuote": true
   },
   "allowScripts": {
-    "esbuild@0.21.5": true,
+    "esbuild@0.28.1": true,
     "fsevents@2.3.3": true
   }
 }
-

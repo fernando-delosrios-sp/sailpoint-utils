@@ -2,7 +2,12 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
-## [Unreleased] — 0.2.0
+## [0.2.2]
+
+### Fixed
+
+- **DelimitedFile auto-create** — Source create now includes the required `connector` field (`delimited-file-angularsc`). First-run invoke no longer fails with ISC `Required field "connector" was missing or empty`.
+- **Example workflow nextStep** — Call step now routes to `Read SaaS Custom Operation Result` (was a plural typo that broke read-back).
 
 ### New features
 
@@ -17,6 +22,7 @@ All notable changes to **saas-custom-operations** are documented here.
 - **Templates generator parity** — `account-schema.json` inference aligns with runtime type mapping (INT, BOOLEAN, LONG, DATE).
 - **Type-aware read-back verification** — Persist verification coerces DelimitedFile string read-back when comparing typed values.
 - **Workflow-only bootstrap export** — `workflows/SaaS Custom Operations.json` ships the example workflow only; the result source is auto-provisioned via `sourceName` (no separate source import).
+- **Token normalization** — Accidental `Bearer ` prefixes on `config.token` are stripped before loopback API calls.
 
 ### Breaking changes
 

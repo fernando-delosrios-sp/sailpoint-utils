@@ -62,6 +62,9 @@ describe('resolveSourceByName', () => {
                 source: expect.objectContaining({
                     name: 'Results Store',
                     type: 'DelimitedFile',
+                    connector: 'delimited-file-angularsc',
+                    connectorClass: 'sailpoint.connector.delimitedfile.DelimitedFileConnector',
+                    connectorScriptName: 'delimited-file-angularsc',
                     provisionAsCsv: true,
                     owner: { type: 'IDENTITY', id: 'owner-id' },
                 }),

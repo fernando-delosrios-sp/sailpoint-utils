@@ -65,7 +65,7 @@
                 "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke"
               },
               "displayName": "Call SaaS Custom Operation",
-              "nextStep": "Read SaaS Custom Operations Result",
+              "nextStep": "Read SaaS Custom Operation Result",
               "type": "action",
               "versionNumber": 3
             },
@@ -168,3 +168,4 @@
     }
   ]
 }
+

@@ -13,6 +13,8 @@ interface SourcePayload {
     name: string
     description?: string
     type: string
+    /** Required by ISC create-source; e.g. delimited-file-angularsc */
+    connector?: string
     connectorClass?: string
     connectorScriptName?: string
     provisionAsCsv?: boolean
@@ -115,6 +117,7 @@ export async function createDelimitedFileSource(
         name: sourceName,
         description: `Auto-provisioned result source for ${sourceName}`,
         type: 'DelimitedFile',
+        connector: 'delimited-file-angularsc',
         connectorClass: 'sailpoint.connector.delimitedfile.DelimitedFileConnector',
         connectorScriptName: 'delimited-file-angularsc',
         provisionAsCsv: true,
