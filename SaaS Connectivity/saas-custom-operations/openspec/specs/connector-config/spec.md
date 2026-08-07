@@ -27,28 +27,41 @@ The connector manifest SHALL declare custom commands only and SHALL NOT declare 
 
 ### Requirement: Standard input envelope
 
-Every custom operation SHALL document and accept a standard input envelope containing apiUrl, token, requestId, and sourceId.
+Every custom operation SHALL document and accept a standard input envelope containing apiUrl, token, requestId, and sourceName. The framework SHALL resolve sourceName to a source ID at runtime.
 
 #### Scenario: Standard fields parsed by framework
 
-- **GIVEN** a custom operation input includes apiUrl, token, requestId, and sourceId
+- **GIVEN** a custom operation input includes apiUrl, token, requestId, and sourceName
 - **WHEN** withCustomOperation parses the input
 - **THEN** all four fields SHALL be available on the request context or passed to the handler
+- **AND** the framework SHALL resolve sourceName to sourceId before the handler executes
 
-### Requirement: Dummy source schema documentation
+#### Scenario: Missing sourceName rejected
 
-The project documentation SHALL describe the expected dummy source account schema required for result persistence.
+- **GIVEN** connector config omits sourceName or it is empty
+- **WHEN** a custom operation is invoked
+- **THEN** the framework SHALL reject with a ConnectorError indicating the missing field
 
-#### Scenario: Dummy source schema documented
+### Requirement: Result source name configuration
+
+The connector manifest SHALL declare sourceName as a required connection config field and SHALL NOT declare sourceId.
+
+#### Scenario: Manifest uses sourceName
+
+- **GIVEN** the connector manifest sourceConfig is loaded
+- **WHEN** the Connection section is inspected
+- **THEN** it SHALL include a required sourceName text field
+- **AND** it SHALL NOT include a sourceId field
+
+### Requirement: Auto-provisioning documentation
+
+The project documentation SHALL describe automatic result source creation and token permission prerequisites.
+
+#### Scenario: Auto-provision prerequisites documented
 
 - **GIVEN** a developer reads the project README
-- **WHEN** they look for dummy source prerequisites
-- **THEN** the documentation SHALL specify framework-managed attributes id (identity), date, and status
-- **AND** the documentation SHALL explain that operations declare output fields via OperationSignature and persist named attributes via ctx.persist
-
-#### Scenario: Operation template demonstrates operation signature
-
-- **GIVEN** a developer copies src/operations/_template.ts
-- **WHEN** they implement a new custom operation
-- **THEN** the template SHALL show defining an OperationSignature interface with input and output fields and registering the handler via customOperation
+- **WHEN** they look for result source setup
+- **THEN** the documentation SHALL explain that sourceName identifies a DelimitedFile source created automatically if missing
+- **AND** the documentation SHALL list required token scopes for source and schema management
+- **AND** the documentation SHALL state that account schema is reconciled at persist time per operation
 

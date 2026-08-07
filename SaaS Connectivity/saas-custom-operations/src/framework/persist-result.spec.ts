@@ -212,6 +212,32 @@ describe('createPersist', () => {
         expect(deps.createAccount).toHaveBeenCalledWith(expect.objectContaining({ count: 42 }))
     })
 
+    it('stores boolean values and verifies read-back', async () => {
+        const deps = createTestDeps({
+            operationSchema: { outputFields: [{ name: 'active', type: 'boolean' }] },
+        })
+        const persist = createPersist<{ active: boolean }>(deps, new Map())
+
+        await persist('req-001', { active: true })
+
+        expect(deps.createAccount).toHaveBeenCalledWith(expect.objectContaining({ active: true }))
+        expect(deps.readAccount).toHaveBeenCalledWith('req-001')
+    })
+
+    it('serializes object values and verifies read-back', async () => {
+        const deps = createTestDeps({
+            operationSchema: { outputFields: [{ name: 'meta', type: 'Record<string, unknown>' }] },
+        })
+        const persist = createPersist<{ meta: Record<string, unknown> }>(deps, new Map())
+
+        await persist('req-001', { meta: { key: 'value' } })
+
+        expect(deps.createAccount).toHaveBeenCalledWith(
+            expect.objectContaining({ meta: '{"key":"value"}' })
+        )
+        expect(deps.readAccount).toHaveBeenCalledWith('req-001')
+    })
+
     it('skips inline read when verify is false', async () => {
         const deps = createTestDeps()
         const registry = new Map()

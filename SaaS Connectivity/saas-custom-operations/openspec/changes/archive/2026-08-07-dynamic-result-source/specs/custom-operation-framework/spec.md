@@ -25,16 +25,6 @@ The framework SHALL resolve the configured sourceName to an ISC source ID at the
 - **WHEN** one create succeeds and the other receives a conflict
 - **THEN** the framework SHALL re-list sources by name and use the existing source ID
 
-### Requirement: Operation schema contract on context
-
-The framework SHALL attach an OperationSchemaContract to the request context containing the current command name and output fields from the operation's OperationSignature.
-
-#### Scenario: Context carries current operation output fields
-
-- **GIVEN** custom:example declares output fields summary string and optional step string
-- **WHEN** custom:example is invoked
-- **THEN** the request context operationSchema SHALL include summary and step as output fields for schema reconciliation
-
 ### Requirement: Schema reconciliation at persist
 
 The framework SHALL reconcile the result source account schema before each ctx.persist call, scoped to the current operation's output contract and the keys present in the attributes argument.
@@ -149,6 +139,27 @@ The framework SHALL provide persist(id, attributes?, status?, options?) on a Req
 - **THEN** the framework SHALL create an account with identity req-001, status success, date set, and outcome processed
 - **AND** the framework SHALL verify read-back status and outcome match before resolving
 
+#### Scenario: Persist with typed output attributes and default status
+
+- **GIVEN** a request context typed to an output with outcome string and count number
+- **WHEN** ctx.persist('req-001', { outcome: 'processed', count: 42 }) is called
+- **THEN** the framework SHALL create an account with identity req-001, status success, date set, outcome processed, and count 42
+- **AND** the framework SHALL verify read-back status, outcome, and count match before resolving
+
+#### Scenario: Persist with sparse params
+
+- **GIVEN** a valid typed request context
+- **WHEN** ctx.persist('req-001') is called with no attributes
+- **THEN** the framework SHALL create an account with identity req-001, status success, and date set
+- **AND** the framework SHALL verify status on read-back without requiring unset output attributes
+
+#### Scenario: Persist with no attributes
+
+- **GIVEN** a valid typed request context
+- **WHEN** ctx.persist('req-001') is called with no attributes
+- **THEN** the framework SHALL create an account with identity req-001, status success, and date set
+- **AND** the framework SHALL verify status on read-back
+
 #### Scenario: Persist with explicit status override
 
 - **GIVEN** a request context typed to an output with errorCode string
@@ -163,12 +174,26 @@ The framework SHALL provide persist(id, attributes?, status?, options?) on a Req
 - **THEN** the framework SHALL upsert the account via account create without error
 - **AND** the framework SHALL verify read-back outcome is updated before resolving
 
+#### Scenario: Persist serializes array and object values
+
+- **GIVEN** a request context typed to an output with name string and emails string array
+- **WHEN** ctx.persist('req-001', { name: 'Fernando', emails: ['dfas', 'fasdfas'] }) is called
+- **THEN** the framework SHALL store name as Fernando and emails as the string array
+- **AND** the framework SHALL verify read-back name and emails match before resolving
+
 #### Scenario: Persist ignores reserved framework keys in attributes
 
 - **GIVEN** a request context typed to an output with outcome string
 - **WHEN** ctx.persist('req-001', { id: 'override', status: 'override', outcome: 'ok' }) is called
 - **THEN** the framework SHALL set id and status from framework logic
 - **AND** the framework SHALL persist outcome ok
+
+#### Scenario: Positional param mapping
+
+- **GIVEN** a request context typed to an output with fieldA string, fieldB string, and fieldC string
+- **WHEN** ctx.persist('req-001', { fieldA: 'a', fieldB: 'b', fieldC: 'c' }) is called
+- **THEN** the framework SHALL persist fieldA, fieldB, and fieldC as named account attributes
+- **AND** the framework SHALL verify read-back fieldA, fieldB, and fieldC match a, b, and c
 
 #### Scenario: Persist retries read until account is available
 
@@ -181,6 +206,12 @@ The framework SHALL provide persist(id, attributes?, status?, options?) on a Req
 - **GIVEN** account create succeeds but read-back never returns a matching account within retry limits
 - **WHEN** ctx.persist('req-001', { outcome: 'value' }) is called
 - **THEN** the persist call SHALL reject with an error indicating verification failed for identity req-001
+
+#### Scenario: Persist rejects on attribute mismatch
+
+- **GIVEN** account create succeeds but read-back returns an account with status or output attribute values that differ from what was written
+- **WHEN** ctx.persist('req-001', { outcome: 'expected' }, 'success') is called
+- **THEN** the persist call SHALL reject with an error indicating which attributes failed verification
 
 #### Scenario: Persist skips inline verification when verify is false
 
@@ -204,3 +235,16 @@ The framework SHALL provide verifyPersisted(ids) on the request context that rea
 - **GIVEN** an identity was written with verify false but read-back attributes differ from recorded expectations
 - **WHEN** ctx.verifyPersisted(['req-001']) is called
 - **THEN** the call SHALL reject with an error indicating which attributes failed verification
+
+#### Scenario: Batch verify rejects on missing account
+
+- **GIVEN** an identity was written with verify false but is not readable within retry limits
+- **WHEN** ctx.verifyPersisted(['req-001']) is called
+- **THEN** the call SHALL reject with an error indicating verification failed for identity req-001
+
+#### Scenario: Batch verify rejects unknown identity
+
+- **GIVEN** identity req-999 was not written via ctx.persist in the current invocation
+- **WHEN** ctx.verifyPersisted(['req-999']) is called
+- **THEN** the call SHALL reject with an error indicating req-999 was not persisted in this invocation
+

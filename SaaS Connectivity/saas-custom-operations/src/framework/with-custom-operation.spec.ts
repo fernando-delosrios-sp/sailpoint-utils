@@ -47,6 +47,19 @@ describe('parseStandardInput', () => {
         ).toThrow(/Missing required config fields: apiUrl/)
     })
 
+    it('throws when sourceName is missing or empty', () => {
+        expect(() =>
+            parseStandardInput({ apiUrl: 'https://tenant.api.identitynow.com', token: 'pat-token' }, { requestId: 'req-001' })
+        ).toThrow(/Missing required config fields: sourceName/)
+
+        expect(() =>
+            parseStandardInput(
+                { apiUrl: 'https://tenant.api.identitynow.com', token: 'pat-token', sourceName: '' },
+                { requestId: 'req-001' }
+            )
+        ).toThrow(/Missing required config fields: sourceName/)
+    })
+
     it('throws when requestId is missing from input', () => {
         expect(() => parseStandardInput(testConfig, { message: 'hello' })).toThrow(/Missing required input fields: requestId/)
     })
