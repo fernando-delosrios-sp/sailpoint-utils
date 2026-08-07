@@ -8,12 +8,20 @@ vi.mock('@sailpoint/connector-sdk', async () => {
         readConfig: vi.fn().mockResolvedValue({
             apiUrl: 'https://tenant.api.identitynow.com',
             token: 'token',
-            sourceId: 'source-1',
+            sourceName: 'SaaS Custom Operations',
         }),
     }
 })
 
 const mockPersist = vi.fn().mockResolvedValue(undefined)
+
+vi.mock('../framework/source-provisioning', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../framework/source-provisioning')>()
+    return {
+        ...actual,
+        resolveSourceByName: vi.fn().mockResolvedValue('source-1'),
+    }
+})
 
 vi.mock('../framework/request-context', async () => {
     const actual = await vi.importActual<typeof import('../framework/request-context')>('../framework/request-context')
@@ -21,7 +29,7 @@ vi.mock('../framework/request-context', async () => {
         ...actual,
         createRequestContext: vi.fn((_input, res) => ({
             requestId: _input.requestId,
-            sourceId: _input.sourceId,
+            sourceName: _input.sourceName,
             sdk: {} as never,
             persist: mockPersist,
             verifyPersisted: vi.fn().mockResolvedValue(undefined),
@@ -267,3 +275,4 @@ describe('custom operations', () => {
         })
     })
 })
+
