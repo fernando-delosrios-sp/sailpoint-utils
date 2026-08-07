@@ -2,14 +2,18 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
-## [0.2.2]
+## 2026-08-07 · v0.2.2
 
-### Fixed
+### 🐛 Fixes
 
 - **DelimitedFile auto-create** — Source create now includes the required `connector` field (`delimited-file-angularsc`). First-run invoke no longer fails with ISC `Required field "connector" was missing or empty`.
 - **Example workflow nextStep** — Call step now routes to `Read SaaS Custom Operation Result` (was a plural typo that broke read-back).
 
-### New features
+---
+
+## 2026-08-06 · v0.2.0
+
+### ✨ New Features
 
 - **Operation schema codegen** — `npm run codegen:schemas` generates `{operation}.schema.ts` sidecars from each registered handler's `OperationSignature.output` type literal. Sidecars run on `prebuild`; commit generated files with handler changes.
 - **Dynamic result source** — Configure `sourceName` instead of a pre-provisioned source UUID. The framework resolves the source by name on each invocation and auto-creates a DelimitedFile source when missing.
@@ -17,29 +21,31 @@ All notable changes to **saas-custom-operations** are documented here.
 - **Typed attribute inference** — Operation output TypeScript types map to ISC schema types (`number`→INT, `boolean`→BOOLEAN, arrays→isMulti) and persist values are stored with native types where supported.
 - **SourcesApi on ctx.sdk** — Source lookup, creation, and schema management via `ctx.sdk.sources`.
 
-### Improvements
+### 🔧 Improvements
 
 - **Templates generator parity** — `account-schema.json` inference aligns with runtime type mapping (INT, BOOLEAN, LONG, DATE).
 - **Type-aware read-back verification** — Persist verification coerces DelimitedFile string read-back when comparing typed values.
 - **Workflow-only bootstrap export** — `workflows/SaaS Custom Operations.json` ships the example workflow only; the result source is auto-provisioned via `sourceName` (no separate source import).
 - **Token normalization** — Accidental `Bearer ` prefixes on `config.token` are stripped before loopback API calls.
 
-### Breaking changes
+### ⚠️ Breaking Changes
 
-- **`sourceId` → `sourceName`** — Connector config, invoke payloads, and workflow samples use `sourceName`. Update workflows and `connector-spec.json` connection settings.
+- **`sourceId` → `sourceName`** — Connector config, invoke payloads, and workflow samples use `sourceName` instead of a source UUID.
+  - Migration: replace `sourceId` with `sourceName` in connection config and workflow invoke bodies (e.g. `SaaS Custom Operations`).
 - **Typed persist** — Numeric and boolean output values are no longer stringified before account create; downstream reads may receive native types.
+  - Migration: update workflow steps that assumed all account attributes were strings.
 - **`operationSchema` required for schema reconciliation** — Pass `operationSchema.outputFields` to `customOperation()` so persist can reconcile the source schema.
+  - Migration: replace inline `defineOperationSchema({...})` with the generated `{handler}Schema` sidecar (`npm run codegen:schemas` or `npm run build`). Ensure the invoke token has source create/update and account provisioning scopes.
 
-### Migration
+### 📚 Documentation
 
-1. Replace `sourceId` with `sourceName` in connector connection config and workflow invoke bodies (choose a stable name, e.g. `SaaS Custom Operations`).
-2. Remove manual account-schema application steps — runtime reconciliation handles missing attributes.
-3. Replace inline `defineOperationSchema({...})` with the generated `{handler}Schema` sidecar import (`npm run codegen:schemas` or `npm run build`).
-4. Ensure the invoke token has source create/update and account provisioning scopes.
+- **Auto-provisioned result source docs** — README and operator guides aligned with `sourceName` resolution and runtime schema reconciliation (no separate source import step).
 
-## [0.1.0]
+---
 
-### New features
+## 2026-08-05 · v0.1.0
+
+### ✨ New Features
 
 - **Custom operation foundation** — Build ISC custom commands without reimplementing SDK setup, logging, or result persistence. Copy `_template.ts`, register your handler, and deploy.
 - **Result persistence to a dummy source** — Write flat, workflow-readable output via `ctx.persist()`. Downstream steps read results with **Get Accounts** filtered by `requestId`.
@@ -48,18 +54,19 @@ All notable changes to **saas-custom-operations** are documented here.
 - **Example operation** — `custom:example` demonstrates invoke → persist → read-back, with an exportable ISC workflow under `workflows/`.
 - **Tenant bootstrap export** — Import `source/SaaS Custom Operations.json` to provision a dummy result source and sample workflow in a new tenant.
 
-### Improvements
+### 🔧 Improvements
 
 - **Typed operation signatures** — `customOperation<T>()` ties handler input and `ctx.persist` output to a single `OperationSignature` interface.
 - **Persist verification** — Writes are read back from ISC by default; use `{ verify: false }` and `verifyPersisted()` for deferred multi-write flows.
 - **Correlated logging** — Operation logs include `requestId` with token redaction.
-- **Vitest coverage** — Tests scoped to `src/` and the templates generator scripts.
 
-### Breaking changes
+### ⚠️ Breaking Changes
 
 - **No longer an aggregation connector** — Standard commands (`std:test-connection`, `std:account:list`, `std:account:read`) and the mock `MyClient` scaffold are removed. This project is a custom-operation runtime only.
+  - Migration: use custom commands only; do not expect aggregation std commands from this connector.
 - **`customOperation<T>()` API** — Replaces earlier positional handler params and separate output config. Define one interface with `input` and `output` types.
+  - Migration: update handlers to the `OperationSignature` + `customOperation<T>()` pattern.
 
-### Removed
+### 🗑️ Removed
 
-- Standard command handlers and mock aggregation client.
+- **Standard aggregation scaffold** — Standard command handlers and mock aggregation client removed.

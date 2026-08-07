@@ -276,20 +276,21 @@ PLANNING ━━━━━━━━━━━━━━━━━━━━━━━�
                           apply.requires: [plan], apply.tracks: tasks  ▼
 APPLY ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   0. Pre-flight — required skills + CLI tools on PATH
-  1. subagent-driven-development (+ TDD + code-review transitive)
-  1b. Completion gate — all tasks [x], tests green, lint, validate, clean tree
-  2. Verify-fix loop — openspec-verify-change → verify.md ◄┐
-                              │ FAIL → fix → 1b              │ until ✅ PASS
+  1. using-git-worktrees (isolated workspace)
+  2. subagent-driven-development (+ TDD + code-review transitive)
+  2b. Completion gate — all tasks [x], tests green, lint, validate, clean tree
+  3. Verify-fix loop — openspec-verify-change → verify.md ◄┐
+                              │ FAIL → fix → 2b              │ until ✅ PASS
                               ▼                              │
-  3. retrospective.md (BEFORE PR; hot context)
-  4. Archive — backfill → cleanup → openspec archive -y → commit (4d) → post-commit gate (4e)
-  5. finishing-a-development-branch (🏁 PR is LAST)
+  4. retrospective.md (BEFORE PR; hot context)
+  5. Archive — backfill → cleanup → openspec archive -y → commit (5d) → post-commit gate (5e)
+  6. finishing-a-development-branch (🏁 PR is LAST)
 ```
 
 > **Timing notes** (full rationale in "Six design touches" #6):
-> - `verify.md` declares `requires: plan` in the graph but is produced inside apply **step 2** (verify-fix loop), not as a separate post-apply chore.
-> - `retrospective.md` declares `requires: verify` and runs in apply **step 3** — **before** the PR opens.
-> - Archive (apply **step 4**) runs `openspec archive -y` **and** a required git commit; archive is incomplete until the post-commit gate passes.
+> - `verify.md` declares `requires: plan` in the graph but is produced inside apply **step 3** (verify-fix loop), not as a separate post-apply chore.
+> - `retrospective.md` declares `requires: verify` and runs in apply **step 4** — **before** the PR opens.
+> - Archive (apply **step 5**) runs `openspec archive -y` **and** a required git commit; archive is incomplete until the post-commit gate passes.
 > - Standalone `/opsx:verify` and `/opsx:archive` are for interruption recovery — a normal `/opsx:apply` cycle must not skip the verify-fix loop or archive commit.
 > - The `requires:` edges are file-existence dependencies for OpenSpec's graph engine; runtime ordering lives in [schema.yaml](./schema.yaml) `apply.instruction`.
 
@@ -299,10 +300,11 @@ APPLY ━━━━━━━━━━━━━━━━━━━━━━━━�
 |---|---|---|---|
 | 1 | `superpowers:brainstorming` | `brainstorm` artifact instruction | Direct (with PRECHECK) |
 | 2 | `superpowers:writing-plans` | `plan` artifact instruction | Direct (with PRECHECK) |
-| 3 | `superpowers:subagent-driven-development` | apply step 1 | Direct |
-| 4 | `superpowers:test-driven-development` | (activated inside #3) | **Transitive** |
-| 5 | `superpowers:requesting-code-review` | (activated inside #3) | **Transitive** |
-| 6 | `superpowers:finishing-a-development-branch` | apply step 5 | Direct |
+| 3 | `superpowers:using-git-worktrees` | apply step 1 | Direct |
+| 4 | `superpowers:subagent-driven-development` | apply step 2 | Direct |
+| 5 | `superpowers:test-driven-development` | (activated inside #4) | **Transitive** |
+| 6 | `superpowers:requesting-code-review` | (activated inside #4) | **Transitive** |
+| 7 | `superpowers:finishing-a-development-branch` | apply step 6 | Direct |
 
 Plus optional helpers when present: `changelog-generator`.
 
@@ -601,3 +603,4 @@ If a Superpowers skill is unavailable:
 - [obra/superpowers](https://github.com/obra/superpowers) — Superpowers skill source
 - [Fission-AI/OpenSpec](https://github.com/Fission-AI/OpenSpec) — OpenSpec
 - [OpenSpec PR #970](https://github.com/Fission-AI/OpenSpec/pull/970) — original review thread that drove this design
+
