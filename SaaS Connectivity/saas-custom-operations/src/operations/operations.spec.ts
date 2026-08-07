@@ -50,6 +50,7 @@ vi.mock('../services/access-request-analytics', () => ({
 
 const mockGetRequestedItemOwnerId = vi.fn().mockResolvedValue('owner-123')
 const mockResolveGroupMemberEmails = vi.fn().mockResolvedValue(['a@example.com', 'b@example.com'])
+const mockGetWorkgroupMembersEmails = vi.fn().mockResolvedValue(['a@example.com', 'b@example.com'])
 const mockGetWorkgroupIdByName = vi.fn().mockResolvedValue('wg-1')
 
 vi.mock('../services/access.service', () => ({
@@ -71,6 +72,7 @@ vi.mock('../services/access.service', () => ({
 vi.mock('../services/workgroup.service', () => ({
     WorkgroupService: vi.fn().mockImplementation(() => ({
         getWorkgroupIdByName: mockGetWorkgroupIdByName,
+        getWorkgroupMembersEmails: mockGetWorkgroupMembersEmails,
         resolveGroupMemberEmails: mockResolveGroupMemberEmails,
     })),
 }))
@@ -217,6 +219,7 @@ describe('custom operations', () => {
                 { send } as never
             )
 
+            expect(mockGetWorkgroupMembersEmails).toHaveBeenCalledWith('wg-1')
             expect(mockPersist).toHaveBeenCalledWith('req-gov', {
                 emails: ['a@example.com', 'b@example.com'],
             })
@@ -275,4 +278,5 @@ describe('custom operations', () => {
         })
     })
 })
+
 

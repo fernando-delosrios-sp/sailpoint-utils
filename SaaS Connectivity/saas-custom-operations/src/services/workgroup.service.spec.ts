@@ -1,3 +1,4 @@
+import { ConnectorError } from '@sailpoint/connector-sdk'
 import { describe, expect, it, vi } from 'vitest'
 import { WorkgroupService } from './workgroup.service'
 import type { SailPointClients } from '../framework/types'
@@ -30,4 +31,16 @@ describe('WorkgroupService', () => {
         const service = new WorkgroupService(sdk)
         await expect(service.resolveGroupMemberEmails('Missing Group')).resolves.toEqual([])
     })
+
+    it('throws when governance group lookup fails', async () => {
+        const sdk = {
+            governanceGroups: {
+                listWorkgroupsV1: vi.fn().mockRejectedValue(new Error('403 Forbidden')),
+            },
+        } as unknown as SailPointClients
+
+        const service = new WorkgroupService(sdk)
+        await expect(service.getWorkgroupIdByName('SOD Governance Group')).rejects.toBeInstanceOf(ConnectorError)
+    })
 })
+

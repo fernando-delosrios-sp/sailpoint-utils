@@ -1,4 +1,10 @@
+import { ConnectorError } from '@sailpoint/connector-sdk'
 import type { SailPointClients } from '../framework/types'
+
+function toConnectorError(action: string, error: unknown): ConnectorError {
+    const detail = error instanceof Error ? error.message : String(error)
+    return new ConnectorError(`${action}: ${detail}`)
+}
 
 export class WorkgroupService {
     constructor(private sdk: SailPointClients) {}
@@ -12,7 +18,7 @@ export class WorkgroupService {
             return groups[0]?.id ?? null
         } catch (error) {
             console.error(`[WorkgroupService] Error fetching workgroup ID for name "${groupName}":`, error)
-            return null
+            throw toConnectorError(`Failed to lookup governance group "${groupName}"`, error)
         }
     }
 
@@ -25,7 +31,7 @@ export class WorkgroupService {
                 .filter((email): email is string => !!email && email.trim() !== '')
         } catch (error) {
             console.error(`[WorkgroupService] Error fetching members for workgroup ID ${workgroupId}:`, error)
-            return []
+            throw toConnectorError(`Failed to list members for governance group ${workgroupId}`, error)
         }
     }
 
@@ -38,4 +44,5 @@ export class WorkgroupService {
         return this.getWorkgroupMembersEmails(workgroupId)
     }
 }
+
 
