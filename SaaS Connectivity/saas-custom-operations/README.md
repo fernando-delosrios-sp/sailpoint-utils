@@ -1,5 +1,9 @@
 # saas-custom-operations
 
+<p align="center">
+  <img src="./assets/custom-workflow-actions-promo.png" alt="Custom Workflow Actions - Bridging Workflows and SaaS Connectivity" width="100%" />
+</p>
+
 Foundation template for SailPoint ISC **custom operations**. This connector is **not** an aggregation source — it provides a runtime for custom commands that loop back into ISC via the API and persist results as accounts on a DelimitedFile result source.
 
 ## How it works
