@@ -125,6 +125,37 @@ curl -X POST http://localhost:3000/ \
 
 Replace template variables in `invoke-payload.json` with real values when testing locally (`connectorRef` is ignored by `spcx run`; `config` and `input` must be concrete).
 
+### Test mode (dry run)
+
+Set `config.testMode: true` (or export `SPCX_TEST_MODE=1`) to run handler logic without writing accounts or mutating source schema on ISC. `ctx.res.send` behaves normally; each inhibited `ctx.persist` / `ctx.verifyPersisted` call is logged to the console with a `[test-mode]` prefix.
+
+| Token provided | ISC behavior | Writes |
+|---|---|---|
+| Yes (`apiUrl` + `token`) | Read-only status check + list-only source lookup | Inhibited (logged) |
+| No | All ISC calls skipped | Inhibited (logged) |
+
+Run from a JSON fixture after build:
+
+```bash
+npm run build
+npm run test:operation -- fixtures/custom-example-offline.json
+npm run test:operation -- fixtures/custom-example.json   # requires valid token
+```
+
+Fixture shape:
+
+```json
+{
+  "command": "custom:example",
+  "config": { "testMode": true },
+  "input": { "requestId": "offline-001", "message": "hello" }
+}
+```
+
+Offline fixtures require only `requestId` in `input`. With a token, include `apiUrl`, `token`, and `sourceName` as in production invokes.
+
+The fixture runner resolves commands from a static registry in `scripts/run-operation-fixture.ts`. When you add a new custom operation, register its handler in `COMMAND_HANDLERS` alongside `custom:example`.
+
 ### Invoke against a deployed connector
 
 With the SailPoint CLI:

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, afterEach } from 'vitest'
 import { defineOperationSchema } from './define-operation-schema'
 import { OperationSignature } from './output-schema'
 import {
@@ -62,6 +62,17 @@ describe('parseStandardInput', () => {
 
     it('throws when requestId is missing from input', () => {
         expect(() => parseStandardInput(testConfig, { message: 'hello' })).toThrow(/Missing required input fields: requestId/)
+    })
+
+    it('accepts minimal offline fixture when test mode is active without token', () => {
+        const { standard, operationInput } = parseStandardInput({ testMode: true }, { requestId: 'offline-001', message: 'hi' }, {
+            testMode: true,
+        })
+
+        expect(standard.requestId).toBe('offline-001')
+        expect(standard.token).toBe('')
+        expect(standard.sourceName).toBe('test-mode-local')
+        expect(operationInput).toEqual({ message: 'hi' })
     })
 })
 
@@ -241,5 +252,201 @@ describe('customOperation', () => {
         await wrapped({ commandType: 'custom:manual' } as any, { requestId: 'req-001' }, res as any)
 
         expect(handler).toHaveBeenCalled()
+    })
+})
+
+describe('customOperation test mode', () => {
+    const originalEnv = process.env.SPCX_TEST_MODE
+
+    afterEach(() => {
+        if (originalEnv === undefined) {
+            delete process.env.SPCX_TEST_MODE
+        } else {
+            process.env.SPCX_TEST_MODE = originalEnv
+        }
+    })
+
+    it('activates test mode via SPCX_TEST_MODE when config omits testMode', async () => {
+        process.env.SPCX_TEST_MODE = '1'
+        const lines: string[] = []
+        const logSpy = vi.spyOn(console, 'log').mockImplementation((...args) => {
+            lines.push(args.map(String).join(' '))
+        })
+        const res = { send: vi.fn() }
+        const wrapped = customOperation<TestOperation>(async () => {}, {
+            config: { apiUrl: 'https://tenant.api.identitynow.com', token: '', sourceName: 'Test' },
+        })
+
+        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'env-001' }, res as any)
+
+        expect(lines.some((line) => line.includes('[test-mode] active'))).toBe(true)
+        expect(lines.some((line) => line.includes('offline — skipping all ISC API calls'))).toBe(true)
+        logSpy.mockRestore()
+    })
+
+    it('rejects when ISC status check fails with token present', async () => {
+        const res = { send: vi.fn() }
+        const sourcesApi = {
+            listSourcesV1: vi.fn().mockRejectedValue(new Error('Unauthorized')),
+            createSourceV1: vi.fn(),
+        }
+        const wrapped = customOperation<TestOperation>(async () => {}, {
+            config: { ...testConfig, testMode: true },
+            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
+        })
+
+        await expect(
+            wrapped(
+                { commandType: 'custom:test', config: { ...testConfig, testMode: true } } as any,
+                { requestId: 'req-001' },
+                res as any
+            )
+        ).rejects.toThrow('Unauthorized')
+    })
+
+    it('skips all ISC API calls without token', async () => {
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const res = { send: vi.fn() }
+        const sourcesApi = { listSourcesV1: vi.fn(), createSourceV1: vi.fn() }
+        const accountsApi = { createAccountV1: vi.fn(), listAccountsV1: vi.fn() }
+        const handler = vi.fn(async (ctx) => {
+            await ctx.persist('req-001', { result: 'ok' })
+            ctx.res.send({ status: 'success' })
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { testMode: true },
+            sdk: { sources: sourcesApi as any, accounts: accountsApi as any },
+        })
+
+        await wrapped(
+            { commandType: 'custom:test' } as any,
+            { requestId: 'offline-001' },
+            res as any
+        )
+
+        expect(sourcesApi.listSourcesV1).not.toHaveBeenCalled()
+        expect(accountsApi.createAccountV1).not.toHaveBeenCalled()
+        expect(handler).toHaveBeenCalledWith(
+            expect.objectContaining({ sourceId: 'test-mode-local' }),
+            {}
+        )
+        expect(res.send).toHaveBeenCalledWith({ status: 'success' })
+        logSpy.mockRestore()
+        warnSpy.mockRestore()
+    })
+
+    it('checks ISC status and resolves source read-only when token is provided', async () => {
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+        const res = { send: vi.fn() }
+        const sourcesApi = {
+            listSourcesV1: vi
+                .fn()
+                .mockResolvedValueOnce({ data: [] })
+                .mockResolvedValueOnce({ data: [{ id: 'source-readonly', name: 'SaaS Custom Operations' }] }),
+            createSourceV1: vi.fn(),
+        }
+        const accountsApi = { createAccountV1: vi.fn(), listAccountsV1: vi.fn() }
+        const handler = vi.fn(async () => {})
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { ...testConfig, testMode: true },
+            sdk: { sources: sourcesApi as any, accounts: accountsApi as any },
+        })
+
+        await wrapped({ commandType: 'custom:test', config: { ...testConfig, testMode: true } } as any, { requestId: 'req-001' }, res as any)
+
+        expect(sourcesApi.listSourcesV1).toHaveBeenCalledWith({ limit: 1 })
+        expect(sourcesApi.createSourceV1).not.toHaveBeenCalled()
+        expect(handler).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 'source-readonly' }), {})
+        expect(logSpy.mock.calls.some((call) => String(call[0]).includes('ISC status check succeeded'))).toBe(true)
+        logSpy.mockRestore()
+    })
+
+    it('uses placeholder sourceId when token provided but source not found', async () => {
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const res = { send: vi.fn() }
+        const sourcesApi = {
+            listSourcesV1: vi.fn().mockResolvedValue({ data: [] }),
+            createSourceV1: vi.fn(),
+        }
+        const handler = vi.fn(async () => {})
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { ...testConfig, testMode: true },
+            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
+        })
+
+        await wrapped({ commandType: 'custom:test', config: { ...testConfig, testMode: true } } as any, { requestId: 'req-001' }, res as any)
+
+        expect(sourcesApi.createSourceV1).not.toHaveBeenCalled()
+        expect(handler).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 'test-mode-local' }), {})
+        expect(warnSpy.mock.calls.some((call) => String(call[0]).includes('not found'))).toBe(true)
+        logSpy.mockRestore()
+        warnSpy.mockRestore()
+    })
+
+    it('logs test mode startup, inhibited persist, and summary', async () => {
+        const lines: string[] = []
+        const logSpy = vi.spyOn(console, 'log').mockImplementation((...args) => {
+            lines.push(args.map(String).join(' '))
+        })
+        const res = { send: vi.fn() }
+        const handler = vi.fn(async (ctx) => {
+            await ctx.persist('req-001', { result: 'done' })
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { testMode: true },
+        })
+
+        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(lines.some((line) => line.includes('[test-mode] active'))).toBe(true)
+        expect(lines.some((line) => line.includes('[test-mode] inhibited persist'))).toBe(true)
+        expect(lines.some((line) => line.includes('[test-mode] completed') && line.includes('inhibitedPersists=1'))).toBe(
+            true
+        )
+        logSpy.mockRestore()
+    })
+
+    it('does not log token values in test mode output', async () => {
+        const lines: string[] = []
+        const logSpy = vi.spyOn(console, 'log').mockImplementation((...args) => {
+            lines.push(args.map(String).join(' '))
+        })
+        const res = { send: vi.fn() }
+        const secretToken = 'super-secret-token-value'
+        const sourcesApi = {
+            listSourcesV1: vi.fn().mockResolvedValue({ data: [] }),
+            createSourceV1: vi.fn(),
+        }
+        const wrapped = customOperation<TestOperation>(async () => {}, {
+            config: { ...testConfig, testMode: true, token: secretToken },
+            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
+        })
+
+        await wrapped(
+            { commandType: 'custom:test', config: { ...testConfig, testMode: true, token: secretToken } } as any,
+            { requestId: 'req-001' },
+            res as any
+        )
+
+        for (const line of lines) {
+            expect(line).not.toContain(secretToken)
+        }
+        logSpy.mockRestore()
+    })
+
+    it('invokes res.send normally in test mode', async () => {
+        const res = { send: vi.fn() }
+        const wrapped = customOperation<TestOperation>(
+            async (ctx) => {
+                ctx.res.send({ status: 'success', outcome: 'ok' })
+            },
+            { config: { testMode: true } }
+        )
+
+        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(res.send).toHaveBeenCalledWith({ status: 'success', outcome: 'ok' })
     })
 })

@@ -1,6 +1,6 @@
 {
   "name": "saas-custom-operations",
-  "version": "0.2.2",
+    "version": "0.2.4",
   "main": "dist/index.js",
   "scripts": {
     "clean": "shx rm -rf ./dist",
@@ -12,6 +12,7 @@
     "prettier": "npx prettier --write .",
     "templates": "tsx scripts/generate-templates.ts",
     "test": "vitest run --coverage",
+    "test:operation": "tsx scripts/run-operation-fixture.ts",
     "prepack-zip": "npm ci && npm run build",
     "pack-zip": "spcx package"
   },

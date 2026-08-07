@@ -1,0 +1,13 @@
+{
+  "command": "custom:example",
+  "config": {
+    "apiUrl": "https://your-tenant.api.identitynow.com",
+    "token": "<access-token>",
+    "sourceName": "SaaS Custom Operations",
+    "testMode": true
+  },
+  "input": {
+    "requestId": "fixture-001",
+    "message": "dry run with token"
+  }
+}

@@ -107,6 +107,20 @@ async function listSourceByName(sourcesApi: SourcesApi, sourceName: string): Pro
     return response.data?.[0] as SourcePayload | undefined
 }
 
+/** Read-only ISC connectivity check for test mode (list sources with minimal page size). */
+export async function verifyIscStatus(sourcesApi: SourcesApi): Promise<void> {
+    await sourcesApi.listSourcesV1({ limit: 1 })
+}
+
+/** Resolves an ISC source ID by name without auto-provisioning (test mode). */
+export async function resolveSourceByNameReadOnly(
+    sourcesApi: SourcesApi,
+    sourceName: string
+): Promise<string | undefined> {
+    const existing = await listSourceByName(sourcesApi, sourceName)
+    return existing?.id
+}
+
 /** Creates a DelimitedFile result source with CSV provisioning enabled. */
 export async function createDelimitedFileSource(
     sourcesApi: SourcesApi,
@@ -252,3 +266,4 @@ export async function ensureSourceSchema(
         })
     }
 }
+

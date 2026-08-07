@@ -1,0 +1,10 @@
+{
+  "command": "custom:example",
+  "config": {
+    "testMode": true
+  },
+  "input": {
+    "requestId": "offline-001",
+    "message": "no isc"
+  }
+}
