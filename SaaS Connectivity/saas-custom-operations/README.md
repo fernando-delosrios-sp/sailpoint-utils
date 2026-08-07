@@ -127,32 +127,45 @@ Replace template variables in `invoke-payload.json` with real values when testin
 
 ### Test mode (dry run)
 
-Set `config.testMode: true` (or export `SPCX_TEST_MODE=1`) to run handler logic without writing accounts or mutating source schema on ISC. `ctx.res.send` behaves normally; each inhibited `ctx.persist` / `ctx.verifyPersisted` call is logged to the console with a `[test-mode]` prefix.
+Set `config.testMode: true` (or export `SPCX_TEST_MODE=1` for config-less runs) to run handler logic without writing accounts or mutating source schema on ISC. `ctx.res.send` behaves normally; each inhibited `ctx.persist` / `ctx.verifyPersisted` call is logged to the console with a `[test-mode]` prefix.
 
-| Token provided | ISC behavior | Writes |
+| Config provided | ISC behavior | Writes |
 |---|---|---|
-| Yes (`apiUrl` + `token`) | Read-only status check + list-only source lookup | Inhibited (logged) |
+| Yes (full `apiUrl`, `token`, `sourceName`) | Read-only status check + list-only source lookup; fails on missing/invalid token | Inhibited (logged) |
 | No | All ISC calls skipped | Inhibited (logged) |
 
-Run from a JSON fixture after build:
+Run from a JSON fixture:
 
 ```bash
-npm run build
 npm run test:operation -- fixtures/custom-example-offline.json
-npm run test:operation -- fixtures/custom-example.json   # requires valid token
+npm run test:operation -- fixtures/custom-example.json   # requires valid token in config
 ```
 
-Fixture shape:
+Offline fixtures (no `config` block) automatically enable test mode in the fixture runner. You can also export `SPCX_TEST_MODE=1` when invoking handlers outside the runner.
 
 ```json
 {
   "command": "custom:example",
-  "config": { "testMode": true },
   "input": { "requestId": "offline-001", "message": "hello" }
 }
 ```
 
-Offline fixtures require only `requestId` in `input`. With a token, include `apiUrl`, `token`, and `sourceName` as in production invokes.
+Config-present dry-run fixture:
+
+```json
+{
+  "command": "custom:example",
+  "config": {
+    "apiUrl": "https://your-tenant.api.identitynow.com",
+    "token": "<access-token>",
+    "sourceName": "SaaS Custom Operations",
+    "testMode": true
+  },
+  "input": { "requestId": "fixture-001", "message": "dry run" }
+}
+```
+
+Partial config (e.g. `{ "testMode": true }` only) is rejected — provide full connection fields or omit config entirely.
 
 The fixture runner resolves commands from a static registry in `scripts/run-operation-fixture.ts`. When you add a new custom operation, register its handler in `COMMAND_HANDLERS` alongside `custom:example`.
 

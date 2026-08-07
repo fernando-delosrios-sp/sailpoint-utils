@@ -2,15 +2,16 @@
 
 ### Requirement: Operation schema sidecar generation
 
-The project SHALL provide a codegen script that generates one TypeScript sidecar file per registered custom operation, containing an `OperationSchemaContract` derived from the operation module's `OperationSignature.output` type literal.
+The project SHALL provide a codegen script that generates one TypeScript sidecar file per discovered custom operation, containing an `OperationSchemaContract` derived from the operation module's `OperationSignature.output` type literal. For auto-discovered operations (those with a `command` literal on the interface), codegen SHALL also generate `auto-registry.ts` to register handlers and schema sidecars, and SHALL sync `connector-spec.json` `commands[]`.
 
 #### Scenario: Sidecar generated for registered operation
 
-- **GIVEN** `custom:example` is registered in `src/operations/index.ts` with handler module `example-operation.ts`
+- **GIVEN** `custom:example` is auto-discovered with handler module `example-operation.ts`
 - **AND** the module declares `interface ExampleOperation extends OperationSignature` with output fields `summary` and optional `step`
 - **WHEN** the developer runs `npm run codegen:schemas`
 - **THEN** the generator SHALL write `src/operations/example-operation.schema.ts`
 - **AND** the sidecar SHALL export `exampleOperationSchema` calling `defineOperationSchema` with fields matching the interface
+- **AND** the generator SHALL write `src/operations/auto-registry.ts` registering the handler and schema
 
 #### Scenario: Sidecar includes auto-generated banner
 
@@ -37,7 +38,7 @@ The project SHALL run operation schema codegen as part of the build pipeline so 
 
 ### Requirement: Shared operation introspection
 
-The codegen script SHALL use the same operation registration and `OperationSignature` field extraction logic as the templates generator.
+The codegen script SHALL use the same operation discovery and `OperationSignature` field extraction logic as the templates generator via `scripts/templates/operation-introspection.ts`.
 
 #### Scenario: Codegen and templates agree on output fields
 

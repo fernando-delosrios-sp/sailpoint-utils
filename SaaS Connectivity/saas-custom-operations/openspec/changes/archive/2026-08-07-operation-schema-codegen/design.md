@@ -8,19 +8,19 @@
 
 **Goals:**
 
-- Generate one `*.schema.ts` sidecar per registered operation handler
+- Generate one `*.schema.ts` sidecar per discovered operation handler
 - Run codegen on `prebuild` and via standalone `npm run codegen:schemas`
 - Sidecar exports `{handlerName}Schema` using `defineOperationSchema`
-- Operation file imports sidecar — no manual field maps
+- Auto-discovered ops (`command` literal): wire sidecar via generated `auto-registry.ts` and sync `connector-spec.json`
+- Manual ops: pass generated sidecar explicitly to `customOperation`
 - Share parser with templates generator
-- Commit generated sidecars; fail build on parse errors
+- Commit generated sidecars and auto-registry; fail build on parse errors
 
 **Non-Goals:**
 
-- Option A central registry
+- Option A central registry (manual file)
 - Bundler plugin (ncc hook) in v1
 - Parsing non-literal output types (aliases, imports)
-- Auto-injecting schema without explicit import in operation module
 - Merging templates and codegen CLI in v1
 
 ## Decisions
@@ -33,12 +33,14 @@
 
 ### D2: Codegen script
 
-- **Choice:** `scripts/generate-operation-schemas.ts` with exported `generateOperationSchemas({ indexPath, operationsDir })`
+- **Choice:** `scripts/generate-operation-schemas.ts` with exported `generateOperationSchemas({ indexPath, operationsDir, specPath })`
 - **Flow:**
-  1. `parseRegistrations(indexPath)` → command + handler + module path
+  1. `discoverAllOperations(operationsDir, indexPath)` → command + handler + module path (auto + manual)
   2. `extractOperationSignature(modulePath)` → output fields
   3. Emit sidecar TS file per module
-  4. Delete orphaned `*.schema.ts` files for removed operations (optional v1: warn only)
+  4. Emit `auto-registry.ts` for auto-discovered ops (handler import, schema import, `registerOperationSchema`, `.command(...)`)
+  5. Sync `connector-spec.json` `commands[]` from discovered commands
+  6. Delete orphaned `*.schema.ts` files for removed operations (optional v1: warn only — not implemented)
 
 ### D3: Emitted sidecar content
 
@@ -47,8 +49,8 @@
 import { defineOperationSchema } from '../framework'
 
 export const exampleOperationSchema = defineOperationSchema({
-    summary: 'string',
     step: { type: 'string', optional: true },
+    summary: 'string',
 })
 ```
 
@@ -71,11 +73,13 @@ export const exampleOperationSchema = defineOperationSchema({
 - **Choice:** Exit code 1 + stderr message when:
   - Registered handler module missing
   - No `OperationSignature` interface found
-  - Zero output fields (warn) vs hard fail (TBD: warn for empty output)
+  - Auto-discovered and manual registration collide for same command
+  - Zero output fields → warn (not hard fail)
 
-### D7: Migration from manual schema
+### D7: Schema wiring patterns
 
-- **Choice:** Update `example-operation.ts` and `_template.ts` to import sidecar; remove inline `defineOperationSchema` blocks
+- **Auto-discovery (recommended):** Add `command: 'custom:…'` to OperationSignature; codegen registers schema in `auto-registry.ts`; handler uses `customOperation<T>(handler)` without explicit `operationSchema`
+- **Manual registration:** Omit `command`; register in `index.ts`; import generated sidecar; pass `{ operationSchema: handlerSchema }` to `customOperation`
 - **Keep:** `defineOperationSchema` in framework for emission and rare manual overrides
 
 ## Risks / Trade-offs
@@ -88,7 +92,7 @@ export const exampleOperationSchema = defineOperationSchema({
 
 1. Add codegen script + tests
 2. Wire prebuild / npm script
-3. Generate sidecars for existing operations
-4. Update operation modules to import sidecars
-5. Update README and `_template.ts`
+3. Generate sidecars and auto-registry for existing operations
+4. Update operation modules and `_template.ts` for auto/manual patterns
+5. Update README and AGENTS.md
 6. Run `npm test` and `npm run build`

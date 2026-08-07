@@ -6,16 +6,37 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ---
 
+## 2026-08-07 · v0.2.6
+
+### 🔧 Improvements
+
+- **Offline fixture auto test mode** — `npm run test:operation` enables test mode automatically when a fixture omits `config`; no need to export `SPCX_TEST_MODE=1` for offline runs.
+- **Fixture output summary** — After a fixture run, the runner prints highlighted sections for inhibited persist outputs (would-be ISC accounts) and the operation response (`ctx.res.send`), with prettified multi-line JSON.
+
+---
+
+## 2026-08-07 · v0.2.5
+
+### 🔧 Improvements
+
+- **Test mode config gate** — ISC skip is based on config absence, not token absence. When config is provided, `apiUrl`, `token`, and `sourceName` are required and read-only ISC checks run, failing on missing or invalid credentials. When no config is resolved, ISC is skipped (use `SPCX_TEST_MODE=1` for offline fixture runs).
+
+### 📚 Documentation
+
+- **Breaking:** Offline fixtures must omit the `config` section; `{ "testMode": true }` alone is no longer valid without connection fields.
+
+---
+
 ## 2026-08-07 · v0.2.4
 
 ### ✨ New Features
 
-- **Test mode** — Opt-in dry-run via `config.testMode` or `SPCX_TEST_MODE=1`. Inhibits ISC persistence and schema/source writes while handlers and `ctx.res.send` run unchanged. With a valid access token, performs read-only ISC status validation and list-only source lookup; without a token, skips all ISC API calls. Inhibited operations are logged with a `[test-mode]` prefix.
-- **Operation fixture runner** — `npm run test:operation -- <fixture.json>` loads a `{ command, config, input }` envelope and prints the `res.send` payload. Example fixtures under `fixtures/`.
+-   **Test mode** — Opt-in dry-run via `config.testMode` or `SPCX_TEST_MODE=1`. Inhibits ISC persistence and schema/source writes while handlers and `ctx.res.send` run unchanged. With a valid access token, performs read-only ISC status validation and list-only source lookup; without a token, skips all ISC API calls. Inhibited operations are logged with a `[test-mode]` prefix.
+-   **Operation fixture runner** — `npm run test:operation -- <fixture.json>` loads a `{ command, config, input }` envelope and prints the `res.send` payload. Example fixtures under `fixtures/`.
 
 ### 📚 Documentation
 
-- **README test mode** — Documents token-present vs offline fixture behavior, fixture format, and fixture runner command registration.
+-   **README test mode** — Documents token-present vs offline fixture behavior, fixture format, and fixture runner command registration.
 
 ---
 

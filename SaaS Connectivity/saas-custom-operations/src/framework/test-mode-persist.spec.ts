@@ -18,8 +18,10 @@ describe('createTestModePersist', () => {
 
         await persist('req-001', { outcome: 'processed' })
 
-        expect(lines.some((line) => line.includes('[test-mode] inhibited persist identity=req-001'))).toBe(true)
-        expect(lines.some((line) => line.includes('outcome') && line.includes('processed'))).toBe(true)
+        expect(lines.some((line) => line.includes('[test-mode] inhibited persist identity=req-001 status=success'))).toBe(
+            true
+        )
+        expect(lines.some((line) => line.includes('outcome') && line.includes('processed'))).toBe(false)
         expect(registry.get('req-001')?.outcome).toBe('processed')
     })
 
@@ -53,3 +55,4 @@ describe('createTestModePersist', () => {
         }
     })
 })
+

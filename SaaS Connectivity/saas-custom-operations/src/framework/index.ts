@@ -27,7 +27,8 @@ export {
     resolveTokenIdentity,
     verifyIscStatus,
 } from './source-provisioning'
-export { hasAccessToken, isTestMode, TEST_MODE_PLACEHOLDER_SOURCE_ID } from './test-mode'
+export { isTestMode, resolveInvocationConfig, TEST_MODE_PLACEHOLDER_SOURCE_ID } from './test-mode'
+export type { ResolvedInvocationConfig } from './test-mode'
 export { createTestModePersist } from './test-mode-persist'
 export { RESERVED_OUTPUT_KEYS } from './output-schema'
 export type { InferOperationInput, InferOperationOutput, OperationSignature } from './output-schema'

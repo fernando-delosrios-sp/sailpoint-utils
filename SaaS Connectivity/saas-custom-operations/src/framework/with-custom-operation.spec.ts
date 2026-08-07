@@ -64,15 +64,22 @@ describe('parseStandardInput', () => {
         expect(() => parseStandardInput(testConfig, { message: 'hello' })).toThrow(/Missing required input fields: requestId/)
     })
 
-    it('accepts minimal offline fixture when test mode is active without token', () => {
-        const { standard, operationInput } = parseStandardInput({ testMode: true }, { requestId: 'offline-001', message: 'hi' }, {
+    it('accepts minimal input when test mode is active without config', () => {
+        const { standard, operationInput } = parseStandardInput({}, { requestId: 'offline-001', message: 'hi' }, {
             testMode: true,
+            configProvided: false,
         })
 
         expect(standard.requestId).toBe('offline-001')
         expect(standard.token).toBe('')
         expect(standard.sourceName).toBe('test-mode-local')
         expect(operationInput).toEqual({ message: 'hi' })
+    })
+
+    it('rejects partial config when config is provided in test mode', () => {
+        expect(() =>
+            parseStandardInput({ testMode: true }, { requestId: 'req-001' }, { testMode: true, configProvided: true })
+        ).toThrow(/Missing required config fields/)
     })
 })
 
@@ -266,22 +273,31 @@ describe('customOperation test mode', () => {
         }
     })
 
-    it('activates test mode via SPCX_TEST_MODE when config omits testMode', async () => {
+    it('activates test mode via SPCX_TEST_MODE when no config is provided', async () => {
         process.env.SPCX_TEST_MODE = '1'
         const lines: string[] = []
         const logSpy = vi.spyOn(console, 'log').mockImplementation((...args) => {
             lines.push(args.map(String).join(' '))
         })
         const res = { send: vi.fn() }
-        const wrapped = customOperation<TestOperation>(async () => {}, {
-            config: { apiUrl: 'https://tenant.api.identitynow.com', token: '', sourceName: 'Test' },
-        })
+        const wrapped = customOperation<TestOperation>(async () => {})
 
         await wrapped({ commandType: 'custom:test' } as any, { requestId: 'env-001' }, res as any)
 
         expect(lines.some((line) => line.includes('[test-mode] active'))).toBe(true)
-        expect(lines.some((line) => line.includes('offline — skipping all ISC API calls'))).toBe(true)
+        expect(lines.some((line) => line.includes('no config — skipping ISC'))).toBe(true)
         logSpy.mockRestore()
+    })
+
+    it('rejects partial config with missing connection fields', async () => {
+        const res = { send: vi.fn() }
+        const wrapped = customOperation<TestOperation>(async () => {}, {
+            config: { testMode: true },
+        })
+
+        await expect(
+            wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-001' }, res as any)
+        ).rejects.toThrow(/Missing required config fields/)
     })
 
     it('rejects when ISC status check fails with token present', async () => {
@@ -304,7 +320,8 @@ describe('customOperation test mode', () => {
         ).rejects.toThrow('Unauthorized')
     })
 
-    it('skips all ISC API calls without token', async () => {
+    it('skips all ISC API calls when no config is provided', async () => {
+        process.env.SPCX_TEST_MODE = '1'
         const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
         const res = { send: vi.fn() }
@@ -315,15 +332,10 @@ describe('customOperation test mode', () => {
             ctx.res.send({ status: 'success' })
         })
         const wrapped = customOperation<TestOperation>(handler, {
-            config: { testMode: true },
             sdk: { sources: sourcesApi as any, accounts: accountsApi as any },
         })
 
-        await wrapped(
-            { commandType: 'custom:test' } as any,
-            { requestId: 'offline-001' },
-            res as any
-        )
+        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'offline-001' }, res as any)
 
         expect(sourcesApi.listSourcesV1).not.toHaveBeenCalled()
         expect(accountsApi.createAccountV1).not.toHaveBeenCalled()
@@ -386,6 +398,7 @@ describe('customOperation test mode', () => {
     })
 
     it('logs test mode startup, inhibited persist, and summary', async () => {
+        process.env.SPCX_TEST_MODE = '1'
         const lines: string[] = []
         const logSpy = vi.spyOn(console, 'log').mockImplementation((...args) => {
             lines.push(args.map(String).join(' '))
@@ -394,9 +407,7 @@ describe('customOperation test mode', () => {
         const handler = vi.fn(async (ctx) => {
             await ctx.persist('req-001', { result: 'done' })
         })
-        const wrapped = customOperation<TestOperation>(handler, {
-            config: { testMode: true },
-        })
+        const wrapped = customOperation<TestOperation>(handler)
 
         await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-001' }, res as any)
 
@@ -437,13 +448,11 @@ describe('customOperation test mode', () => {
     })
 
     it('invokes res.send normally in test mode', async () => {
+        process.env.SPCX_TEST_MODE = '1'
         const res = { send: vi.fn() }
-        const wrapped = customOperation<TestOperation>(
-            async (ctx) => {
-                ctx.res.send({ status: 'success', outcome: 'ok' })
-            },
-            { config: { testMode: true } }
-        )
+        const wrapped = customOperation<TestOperation>(async (ctx) => {
+            ctx.res.send({ status: 'success', outcome: 'ok' })
+        })
 
         await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-001' }, res as any)
 

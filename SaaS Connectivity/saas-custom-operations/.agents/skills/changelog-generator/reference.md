@@ -27,7 +27,7 @@ Category definitions and emoji assignments live in [`SKILL.md` § Change Categor
 ## Format Example
 
 ```markdown
-## 2026-07-24
+## 2026-07-24 · v2.5.0
 
 ### ✨ New Features
 
@@ -44,9 +44,30 @@ Category definitions and emoji assignments live in [`SKILL.md` § Change Categor
 ---
 ```
 
-Optional semver in heading: `## 2026-07-24 · v2.5.0`
+Prefer semver in every release heading: `## YYYY-MM-DD · vX.Y.Z`. Never use `[Unreleased]` or date-only headings for new work.
 
 Scope labels for multi-surface products: `[API]`, `[UI]`, `[CLI]`.
+
+## Semver bump
+
+Compute from baseline `X.Y.Z` and the **highest** trigger in scope:
+
+```
+X  .  Y  .  Z
+ │     │     └─ PATCH — 🐛 Fixes, 🔧 Improvements, 📚 Documentation, 🔒 Security
+ │     └─────── MINOR — ✨ New Features, ⏳ Deprecated
+ └───────────── MAJOR — ⚠️ Breaking Changes, 🗑️ Removed
+```
+
+| Situation | Proposed target |
+| --- | --- |
+| Baseline `1.2.3`, fixes only | `1.2.4` (PATCH) |
+| Baseline `1.2.3`, new features, no breaking | `1.3.0` (MINOR) |
+| Baseline `1.2.3`, any breaking or removal | `2.0.0` (MAJOR) |
+| No baseline, first feature release | `0.1.0` (MINOR) |
+| No baseline, fixes/docs/security only | `0.0.1` (PATCH) |
+
+Present baseline, bump class, and target at Phase 2; apply to `CHANGELOG.md` after approval. Phase 4 also proposes updating manifest `version` (and a git tag when releasing).
 
 ## Breaking Change Format
 
@@ -75,8 +96,10 @@ Every ⚠️ entry must state who is affected and include migration guidance whe
 
 ## Style Constraints
 
-- Release headings: `## YYYY-MM-DD` or `## YYYY-MM-DD · vX.Y.Z`
+- Release headings: always `## YYYY-MM-DD · vX.Y.Z`; never `[Unreleased]`
 - Category headings: see **Category Headings** above
 - Entry format: `- **Title** — Description.` (em dash, not hyphen)
 - Separators: `---` between release sections only
 - Omit empty category sections entirely
+
+

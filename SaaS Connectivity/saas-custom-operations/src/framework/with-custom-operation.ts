@@ -1,4 +1,4 @@
-import { CommandHandler, ConnectorError, Context, readConfig, Response } from '@sailpoint/connector-sdk'
+import { CommandHandler, ConnectorError, Context, Response } from '@sailpoint/connector-sdk'
 import { InferOperationInput, InferOperationOutput, OperationSignature } from './output-schema'
 import { getOperationSchema } from './operation-schema-registry'
 import { createRequestContext, RequestContextDependencies } from './request-context'
@@ -8,7 +8,7 @@ import {
     resolveSourceByNameReadOnly,
     verifyIscStatus,
 } from './source-provisioning'
-import { hasAccessToken, isTestMode, TEST_MODE_PLACEHOLDER_SOURCE_ID } from './test-mode'
+import { isTestMode, resolveInvocationConfig, TEST_MODE_PLACEHOLDER_SOURCE_ID } from './test-mode'
 import { OperationSchemaContract, RequestContext, StandardInput } from './types'
 
 const CONFIG_FIELDS = ['apiUrl', 'token', 'sourceName'] as const
@@ -23,6 +23,7 @@ export function normalizeAccessToken(token: string): string {
 
 export interface ParseStandardInputOptions {
     testMode?: boolean
+    configProvided?: boolean
 }
 
 /** Resolves standard fields from an invoke payload's `config` and `input` sections. */
@@ -32,18 +33,18 @@ export function parseStandardInput(
     options: ParseStandardInputOptions = {}
 ): { standard: StandardInput; operationInput: Record<string, unknown> } {
     const testMode = options.testMode ?? isTestMode(config)
-    const offline = testMode && !hasAccessToken(config)
+    const noConfigOffline = testMode && options.configProvided === false
 
-    if (offline) {
+    if (noConfigOffline) {
         const missingInput = INPUT_STANDARD_FIELDS.filter((field) => input[field] == null || input[field] === '')
         if (missingInput.length > 0) {
             throw new ConnectorError(`Missing required input fields: ${missingInput.join(', ')}`)
         }
 
         const standard: StandardInput = {
-            apiUrl: config.apiUrl != null ? String(config.apiUrl).trim() : '',
+            apiUrl: '',
             token: '',
-            sourceName: config.sourceName != null ? String(config.sourceName).trim() : TEST_MODE_PLACEHOLDER_SOURCE_ID,
+            sourceName: TEST_MODE_PLACEHOLDER_SOURCE_ID,
             requestId: String(input.requestId).trim(),
         }
 
@@ -100,10 +101,9 @@ export function customOperation<T extends OperationSignature>(
     deps: CustomOperationOptions = {}
 ): CommandHandler {
     return async (context: Context, input: Record<string, unknown>, res: Response<any>) => {
-        const contextConfig = (context as ContextWithConfig).config
-        const config = deps.config ?? contextConfig ?? (await readConfig())
-        const testMode = isTestMode(config)
-        const { standard, operationInput } = parseStandardInput(config, input, { testMode })
+        const { config, configProvided } = await resolveInvocationConfig(deps, context as ContextWithConfig)
+        const testMode = configProvided ? isTestMode(config) : isTestMode({})
+        const { standard, operationInput } = parseStandardInput(config, input, { testMode, configProvided })
 
         let sdk = deps.sdk
         let sourceId = deps.sourceId
@@ -112,7 +112,7 @@ export function customOperation<T extends OperationSignature>(
         if (testMode) {
             console.log(`[test-mode] active command=${context.commandType} requestId=${standard.requestId}`)
 
-            if (hasAccessToken(config)) {
+            if (configProvided) {
                 sdk = sdk ?? createSailPointClients(standard.apiUrl, standard.token)
                 await verifyIscStatus(sdk.sources)
                 console.log(`[test-mode] ISC status check succeeded`)
@@ -129,7 +129,7 @@ export function customOperation<T extends OperationSignature>(
                     }
                 }
             } else {
-                console.log(`[test-mode] offline — skipping all ISC API calls`)
+                console.log(`[test-mode] no config — skipping ISC`)
                 sourceId = sourceId ?? TEST_MODE_PLACEHOLDER_SOURCE_ID
             }
         } else {

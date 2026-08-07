@@ -94,7 +94,20 @@ git add -p path/to/mixed-file   # when only some hunks belong to this session
 
 **Done when:** the staged diff contains only in-scope changes.
 
-### 4. Generate commit message
+### 4. Changelog gate
+
+When the repo root has `CHANGELOG.md` and it is **not** among staged paths, update the changelog before continuing — do not generate a commit message or commit until this step completes.
+
+```bash
+git rev-parse --show-toplevel   # repo root
+git diff --cached --name-only   # staged paths
+```
+
+Read and follow the **changelog-generator** skill, scoped to the **staged diff** (this commit's changes). Update `CHANGELOG.md` per that skill's format rules when the staged changes include user-visible work. Stage `CHANGELOG.md` when modified.
+
+**Done when:** `CHANGELOG.md` is staged, or changelog-generator confirms the staged diff has no user-visible entry to add.
+
+### 5. Generate commit message
 
 Analyze the **staged** diff (not the full working tree) to determine:
 
@@ -102,7 +115,7 @@ Analyze the **staged** diff (not the full working tree) to determine:
 - **Scope**: What area/module is affected?
 - **Description**: One-line summary (present tense, imperative mood, <72 chars)
 
-### 5. Execute commit
+### 6. Execute commit
 
 ```bash
 # Single line

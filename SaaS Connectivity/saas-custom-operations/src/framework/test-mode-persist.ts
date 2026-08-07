@@ -1,4 +1,5 @@
 import { buildAccountAttributes, PersistVerificationError } from './persist-result'
+import { recordInhibitedPersist } from './test-mode-fixture-collector'
 import { OperationSchemaContract, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
 
 export interface TestModePersistOptions {
@@ -29,9 +30,8 @@ export function createTestModePersist<TOutput extends object>(
             options.operationSchema?.outputFields
         )
         registry.set(id, built)
-        log(
-            `[test-mode] inhibited persist identity=${id} status=${built.status} attributes=${JSON.stringify(built)}`
-        )
+        recordInhibitedPersist({ identity: id, status: built.status, attributes: built })
+        log(`[test-mode] inhibited persist identity=${id} status=${built.status}`)
         options.onPersist?.()
     }
 
@@ -50,3 +50,4 @@ export function createTestModePersist<TOutput extends object>(
 
     return { persist, verifyPersisted }
 }
+

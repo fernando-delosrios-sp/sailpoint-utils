@@ -1,4 +1,4 @@
-import { normalizeAccessToken } from './with-custom-operation'
+import { readConfig } from '@sailpoint/connector-sdk'
 
 export const TEST_MODE_PLACEHOLDER_SOURCE_ID = 'test-mode-local'
 
@@ -13,11 +13,32 @@ export function isTestMode(config: Record<string, unknown>): boolean {
     return process.env.SPCX_TEST_MODE === '1'
 }
 
-/** True when config contains a non-empty access token after normalization. */
-export function hasAccessToken(config: Record<string, unknown>): boolean {
-    const raw = config.token
-    if (raw == null || raw === '') {
-        return false
+export interface ResolvedInvocationConfig {
+    config: Record<string, unknown>
+    configProvided: boolean
+}
+
+type ConfigSource = { config?: Record<string, unknown> }
+
+/** Resolves invoke config and whether an explicit config object was supplied. */
+export async function resolveInvocationConfig(
+    deps: ConfigSource,
+    context: ConfigSource,
+    readConfigFn: () => Promise<Record<string, unknown>> = readConfig
+): Promise<ResolvedInvocationConfig> {
+    if (deps.config !== undefined) {
+        return { config: deps.config, configProvided: true }
     }
-    return normalizeAccessToken(String(raw)).length > 0
+
+    if (context.config !== undefined) {
+        return { config: context.config, configProvided: true }
+    }
+
+    try {
+        const config = await readConfigFn()
+        const configProvided = Object.keys(config).length > 0
+        return { config, configProvided }
+    } catch {
+        return { config: {}, configProvided: false }
+    }
 }

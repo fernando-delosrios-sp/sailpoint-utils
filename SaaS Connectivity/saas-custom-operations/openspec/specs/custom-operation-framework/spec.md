@@ -217,7 +217,15 @@ Each custom operation SHALL declare an OperationSignature interface with input a
 
 ### Requirement: Operation schema contract on context
 
-The framework SHALL attach an OperationSchemaContract to the request context containing the current command name and output fields from the operation's OperationSignature. For auto-discovered operations, the framework SHALL resolve the schema from a build-time populated registry keyed by command name when `operationSchema` is not passed explicitly to `customOperation`. Manually registered operations SHALL continue to pass an explicit `operationSchema` sidecar.
+The framework SHALL attach an OperationSchemaContract to the request context containing the current command name and output fields from the operation's OperationSignature. For auto-discovered operations, the framework SHALL resolve the schema from a build-time populated registry keyed by command name when `operationSchema` is not passed explicitly to `customOperation`. Manually registered operations SHALL continue to pass an explicit `operationSchema` sidecar. Operation modules SHALL NOT hand-maintain duplicate `defineOperationSchema({...})` field maps.
+
+#### Scenario: Context carries current operation output fields
+
+- **GIVEN** `custom:example` declares output fields `summary` string and optional `step` string in its OperationSignature interface
+- **AND** `example-operation.schema.ts` is generated from that interface
+- **AND** the sidecar is registered via generated `auto-registry.ts`
+- **WHEN** `custom:example` is invoked
+- **THEN** the request context operationSchema SHALL include `summary` and `step` as output fields for schema reconciliation
 
 #### Scenario: Auto-discovered operation resolves schema from registry
 
@@ -225,6 +233,15 @@ The framework SHALL attach an OperationSchemaContract to the request context con
 - **AND** the handler is created via `customOperation<ExampleOperation>(handler)` without an explicit `operationSchema` option
 - **WHEN** `custom:example` is invoked
 - **THEN** the request context operationSchema SHALL include output fields from the generated sidecar for schema reconciliation
+
+#### Scenario: Auto-discovered operation wires sidecar via auto-registry
+
+- **GIVEN** `example-operation.ts` declares `command: 'custom:example'` on its OperationSignature interface
+- **AND** codegen generates `example-operation.schema.ts` and `auto-registry.ts`
+- **WHEN** the generated auto-registry is loaded
+- **THEN** it SHALL import `exampleOperationSchema` from `./example-operation.schema`
+- **AND** SHALL call `registerOperationSchema('custom:example', exampleOperationSchema)`
+- **AND** `example-operation.ts` SHALL NOT inline a manual `defineOperationSchema({...})` field map
 
 #### Scenario: Manual operation requires explicit operationSchema
 
@@ -314,4 +331,141 @@ The framework SHALL infer ISC account schema attribute definitions from Operatio
 - **GIVEN** an operation output field tags with type string array
 - **WHEN** schema reconciliation runs for that field
 - **THEN** the inferred attribute SHALL have type STRING and isMulti true
+
+### Requirement: Test mode activation
+
+The framework SHALL activate test mode when config testMode is true or when environment variable SPCX_TEST_MODE equals 1 and config testMode is not explicitly false.
+
+#### Scenario: Test mode enabled via config
+
+- **GIVEN** invoke config contains testMode true
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL operate in test mode for that invocation
+
+#### Scenario: Test mode enabled via environment fallback
+
+- **GIVEN** SPCX_TEST_MODE is 1 and config does not set testMode
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL operate in test mode for that invocation
+
+#### Scenario: Test mode disabled by default
+
+- **GIVEN** config omits testMode and SPCX_TEST_MODE is not 1
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL NOT operate in test mode
+- **AND** persistence behavior SHALL match the existing production path
+
+### Requirement: Inhibited ISC persistence in test mode
+
+When test mode is active, the framework SHALL NOT call ISC account create, account read-back verification for persist, source auto-provision, or schema reconciliation APIs. ctx.persist and ctx.verifyPersisted SHALL remain callable with unchanged signatures.
+
+#### Scenario: Persist does not create ISC account
+
+- **GIVEN** test mode is active
+- **WHEN** the handler calls ctx.persist with an identity and attributes
+- **THEN** the framework SHALL NOT invoke createAccountV1
+- **AND** the persist call SHALL resolve without error
+
+#### Scenario: VerifyPersisted does not read ISC accounts
+
+- **GIVEN** test mode is active and ctx.persist was called for identity req-001
+- **WHEN** the handler calls ctx.verifyPersisted with req-001
+- **THEN** the framework SHALL NOT invoke listAccountsV1 for verification
+- **AND** the call SHALL resolve without error
+
+#### Scenario: Source auto-provision inhibited in test mode
+
+- **GIVEN** test mode is active with a valid access token and no existing source for sourceName
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL NOT call createSourceV1
+- **AND** SHALL set sourceId to a placeholder value and log that source was not found
+
+### Requirement: Test mode persistence console logging
+
+When test mode is active, the framework SHALL log each inhibited persist and verifyPersisted operation to console with a test-mode prefix including identity, status, and formatted attributes.
+
+#### Scenario: Inhibited persist logged with attributes
+
+- **GIVEN** test mode is active
+- **WHEN** ctx.persist is called with identity req-001 and attributes containing outcome processed
+- **THEN** console output SHALL include a test-mode log line for identity req-001
+- **AND** SHALL include the formatted attributes that would have been written
+
+#### Scenario: Test mode startup and summary logged
+
+- **GIVEN** test mode is active
+- **WHEN** a custom operation starts and completes
+- **THEN** console output SHALL log that test mode is active at start
+- **AND** SHALL log a summary of inhibited persist count at completion
+
+#### Scenario: Token not logged in test mode output
+
+- **GIVEN** test mode is active and config contains a token
+- **WHEN** the framework logs test mode messages
+- **THEN** the token value SHALL NOT appear in console output
+
+### Requirement: Unchanged res.send in test mode
+
+When test mode is active, ctx.res SHALL remain the SDK Response object and handler calls to ctx.res.send SHALL behave identically to non-test-mode invocations.
+
+#### Scenario: res.send invoked normally
+
+- **GIVEN** test mode is active
+- **WHEN** the handler calls ctx.res.send with a payload
+- **THEN** the response object SHALL receive the payload through the standard SDK send mechanism
+
+### Requirement: Config-gated ISC status checks in test mode
+
+When test mode is active and an invocation config object is provided, the framework SHALL validate standard connection fields, perform read-only ISC connectivity validation before the handler runs, and fail when the token is missing, invalid, or when any read-only ISC call errors. When test mode is active and no invocation config is provided, the framework SHALL skip all ISC API calls.
+
+#### Scenario: ISC status checked when config provided
+
+- **GIVEN** test mode is active and an invocation config object is provided with apiUrl token and sourceName
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL call a read-only ISC API to verify connectivity and token validity
+- **AND** SHALL fail with ConnectorError when the status check fails
+
+#### Scenario: ISC status logged on success
+
+- **GIVEN** test mode is active with provided config and a successful ISC status check
+- **WHEN** customOperation completes initialization
+- **THEN** console output SHALL include a test-mode log line indicating ISC status check succeeded
+
+#### Scenario: All ISC calls skipped when no config provided
+
+- **GIVEN** test mode is active via SPCX_TEST_MODE and no invocation config object is provided
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL NOT call any ISC API
+- **AND** SHALL set sourceId to a fixed placeholder value for the invocation
+
+#### Scenario: Source resolved read-only when config provided
+
+- **GIVEN** test mode is active with provided config and an existing ISC source matching sourceName
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL resolve sourceId via list-only lookup
+- **AND** SHALL NOT auto-provision a missing source
+
+#### Scenario: Missing token fails when config provided
+
+- **GIVEN** test mode is active and an invocation config object is provided without token
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL reject with ConnectorError indicating missing required config fields
+
+### Requirement: Invocation config presence detection
+
+The framework SHALL determine whether an invocation config object was provided from deps.config, context.config, or readConfig before applying test mode ISC gating.
+
+#### Scenario: Context config counts as provided
+
+- **GIVEN** test mode is active and context.config contains connection fields
+- **WHEN** customOperation resolves configuration
+- **THEN** the framework SHALL treat config as provided
+- **AND** SHALL require apiUrl token and sourceName
+
+#### Scenario: Absent config enables offline test mode path
+
+- **GIVEN** test mode is active via SPCX_TEST_MODE only and neither deps.config nor context.config is set
+- **WHEN** customOperation resolves configuration
+- **THEN** the framework SHALL treat config as not provided
+- **AND** SHALL skip ISC API calls
 

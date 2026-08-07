@@ -1,6 +1,5 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest'
-import { hasAccessToken, isTestMode } from './test-mode'
-import { normalizeAccessToken } from './with-custom-operation'
+import { describe, expect, it, afterEach } from 'vitest'
+import { isTestMode, resolveInvocationConfig } from './test-mode'
 
 describe('isTestMode', () => {
     const originalEnv = process.env.SPCX_TEST_MODE
@@ -33,16 +32,45 @@ describe('isTestMode', () => {
     })
 })
 
-describe('hasAccessToken', () => {
-    it('returns false for missing or empty token', () => {
-        expect(hasAccessToken({})).toBe(false)
-        expect(hasAccessToken({ token: '' })).toBe(false)
-        expect(hasAccessToken({ token: '   ' })).toBe(false)
+describe('resolveInvocationConfig', () => {
+    it('prefers deps.config when provided', async () => {
+        const result = await resolveInvocationConfig(
+            { config: { testMode: true, token: 'x' } },
+            {},
+            async () => ({ apiUrl: 'ignored' })
+        )
+        expect(result.configProvided).toBe(true)
+        expect(result.config.token).toBe('x')
     })
 
-    it('returns true for non-empty token after normalization', () => {
-        expect(hasAccessToken({ token: 'pat-token' })).toBe(true)
-        expect(hasAccessToken({ token: ' Bearer eyJ.test.sig ' })).toBe(true)
-        expect(normalizeAccessToken(' Bearer eyJ.test.sig ')).toBe('eyJ.test.sig')
+    it('uses context.config when deps.config is absent', async () => {
+        const result = await resolveInvocationConfig({}, { config: { testMode: true } }, async () => ({}))
+        expect(result.configProvided).toBe(true)
+    })
+
+    it('treats empty readConfig result as config not provided', async () => {
+        const result = await resolveInvocationConfig({}, {}, async () => ({}))
+        expect(result.configProvided).toBe(false)
+    })
+
+    it('treats non-empty readConfig result as config provided', async () => {
+        const result = await resolveInvocationConfig(
+            {},
+            {},
+            async () => ({ apiUrl: 'https://example.com', token: 't', sourceName: 'S' })
+        )
+        expect(result.configProvided).toBe(true)
+    })
+
+    it('returns config not provided when readConfig fails', async () => {
+        const result = await resolveInvocationConfig(
+            {},
+            {},
+            async () => {
+                throw new Error('no config file')
+            }
+        )
+        expect(result.configProvided).toBe(false)
+        expect(result.config).toEqual({})
     })
 })
