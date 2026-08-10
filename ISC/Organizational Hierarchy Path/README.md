@@ -2,7 +2,9 @@
 
 ![Organizational Hierarchy Path](promo.png)
 
-IdentityAttribute rule for SailPoint ISC that builds a consolidated organizational hierarchy path for an identity by traversing entitlement parent relationships stored in a configured entitlement attribute.
+## Purpose
+
+IdentityAttribute rule that builds a consolidated organizational hierarchy path on each identity (e.g., `Business Unit>Division>Department`) by walking entitlement parent links configured on a source.
 
 ## Overview
 
@@ -150,3 +152,4 @@ Define the following source attributes on the target source in IdentityNow (via 
 - Maximum traversal depth is 20 levels to prevent runaway chains.
 - If any required source attribute is missing or the identity has no entitlement value, the rule returns `-` (the default value).
 - This rule depends on the parent organization attribute being maintained correctly on each entitlement. Any broken parent reference will truncate the path at the break.
+

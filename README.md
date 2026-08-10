@@ -1,8 +1,8 @@
 # sailpoint-utils
 
-Reusable utilities, integration patterns, and supporting tools for [SailPoint Identity Security Cloud (ISC)](https://www.sailpoint.com/products/identity-security-cloud/) and IdentityIQ (IIQ).
+## Purpose
 
-Each utility lives in its own folder with a dedicated `README.md` covering setup, artifacts, and usage. Browse by area below or see [CHANGELOG.md](CHANGELOG.md) for release history.
+Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https://www.sailpoint.com/products/identity-security-cloud/) and IdentityIQ (IIQ) patterns — rules, transforms, connector tooling, and third-party integrations. Each utility is self-contained with its own README for setup, artifacts, and usage. Browse by area below or see [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Repository layout
 
@@ -52,9 +52,10 @@ Utilities that include a Node.js toolchain (for example, [JDBC SaaS Driver Downl
 When adding a new utility or integration pattern:
 
 1. Place it under the appropriate top-level folder (`ISC/`, `SaaS Connectivity/`, `Third-Party/`, or `IIQ/`).
-2. Include a `README.md` with setup steps, artifacts, and usage examples.
+2. Include a `README.md` with a **Purpose** section, setup steps, artifacts, and usage examples.
 3. Add an entry under the newest dated section in [CHANGELOG.md](CHANGELOG.md) (create one for today's date if needed).
 
 ## Changelog
 
 Notable changes are recorded in [CHANGELOG.md](CHANGELOG.md), grouped by date in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
+
