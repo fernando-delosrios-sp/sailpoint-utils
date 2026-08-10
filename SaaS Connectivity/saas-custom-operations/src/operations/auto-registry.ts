@@ -2,10 +2,13 @@
 import { Connector } from '@sailpoint/connector-sdk'
 import { registerOperationSchema } from '../framework'
 import { exampleOperation } from './example-operation'
+import { sodRemediationOperation } from './sod-remediation-operation'
 import { exampleOperationSchema } from './example-operation.schema'
+import { sodRemediationOperationSchema } from './sod-remediation-operation.schema'
 
 registerOperationSchema('custom:example', exampleOperationSchema)
+registerOperationSchema('custom:sod-remediation', sodRemediationOperationSchema)
 
 export function registerAutoOperations(connector: Connector): Connector {
-    return connector.command('custom:example', exampleOperation)
+    return connector.command('custom:example', exampleOperation).command('custom:sod-remediation', sodRemediationOperation)
 }

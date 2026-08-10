@@ -203,7 +203,7 @@ npm run test:operation -- fixtures/sod-remediation-offline.json
 
 ### `custom:sod-remediation`
 
-Launch-only operation that fetches an SOD violation, ensures a named form definition exists, creates a standalone remediation form for the violation owner (or override recipient), and persists `formUrl` plus `situationSummary` for downstream workflow steps.
+Launch-only operation that fetches an SOD violation, ensures a named form definition exists (owned by the access-token identity on first create), creates a standalone remediation form for the violation owner (or override recipient), and persists `formUrl` plus `situationSummary` for downstream workflow steps.
 
 **Invoke payload:**
 
@@ -229,8 +229,8 @@ Launch-only operation that fetches an SOD violation, ensures a named form defini
 | Input field | Required | Description |
 |---|---|---|
 | `violationId` | Yes | SOD violation ID (`GET /violations/v1/:id`, experimental API) |
-| `formName` | Yes | Tenant form definition name — created from bundled seed on first use |
-| `owner` | No | Recipient identity ID override; defaults to violation owner |
+| `formName` | Yes | Tenant form definition name — created from bundled seed on first use; **owner on create** is the access-token identity (not the violation owner) |
+| `owner` | No | Form instance recipient override; defaults to violation owner |
 
 | Output field (persisted) | Description |
 |---|---|

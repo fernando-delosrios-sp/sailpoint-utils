@@ -1,0 +1,8 @@
+{
+    "command": "custom:sod-remediation",
+    "input": {
+        "requestId": "offline-sod-001",
+        "violationId": "00000000-0000-0000-0000-000000000001",
+        "formName": "SOD Violation Remediation"
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "command": "custom:sod-remediation",
+    "config": {
+        "apiUrl": "https://company23429-poc.api.identitynow-demo.com",
+        "token": "<access-token>",
+        "sourceName": "SaaS Custom Operations",
+        "testMode": true
+    },
+    "input": {
+        "requestId": "fixture-sod-001",
+        "violationId": "9d372c5365e447a3b979d046184f97b3",
+        "formName": "SOD Violation Remediation"
+    }
+}

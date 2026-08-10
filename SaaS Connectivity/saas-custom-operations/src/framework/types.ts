@@ -1,5 +1,5 @@
 import { Response } from '@sailpoint/connector-sdk'
-import { AccountsApi, SourcesApi } from 'sailpoint-api-client'
+import { AccountsApi, AccessProfilesApi, CustomFormsApi, IdentityHistoryApi, RolesApi, SourcesApi } from 'sailpoint-api-client'
 import { OperationField } from './schema-inference'
 
 /** Standard fields resolved from an invoke payload: config + input. */
@@ -20,6 +20,10 @@ export interface OperationSchemaContract {
 export interface SailPointClients {
     accounts: AccountsApi
     sources: SourcesApi
+    forms: CustomFormsApi
+    identityHistory: IdentityHistoryApi
+    accessProfiles: AccessProfilesApi
+    roles: RolesApi
 }
 
 /** Options for {@link PersistFn}. Verification runs by default; set verify to false to defer. */
@@ -47,6 +51,8 @@ export type WriteRegistry = Map<string, Record<string, unknown>>
  */
 export interface RequestContext<TOutput extends object = Record<string, unknown>> {
     requestId: string
+    apiUrl: string
+    token: string
     sourceName: string
     sourceId: string
     operationSchema?: OperationSchemaContract

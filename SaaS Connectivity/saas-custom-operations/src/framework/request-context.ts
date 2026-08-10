@@ -1,5 +1,5 @@
 import { Response } from '@sailpoint/connector-sdk'
-import { AccountsApi, SourcesApi } from 'sailpoint-api-client'
+import { AccountsApi, CustomFormsApi, SourcesApi } from 'sailpoint-api-client'
 import { createPersist, createVerifyPersisted } from './persist-result'
 import { createSailPointClients } from './sdk-factory'
 import { ensureSourceSchema } from './source-provisioning'
@@ -96,6 +96,8 @@ export function createRequestContext<TOutput extends object>(
 
     return {
         requestId: input.requestId,
+        apiUrl: input.apiUrl,
+        token: input.token,
         sourceName: input.sourceName,
         sourceId,
         operationSchema: deps.operationSchema,
@@ -113,6 +115,13 @@ function offlineApiError(): never {
 /** Stub SDK used when test mode runs without an access token. */
 function createOfflineSdkStub(): SailPointClients {
     const stub = () => offlineApiError()
+    const offlineFormsStub = {
+        searchFormDefinitionsByTenantV1: async () => ({ data: { results: [{ id: 'offline-form-def' }] } }),
+        createFormDefinitionV1: async () => ({ data: { id: 'offline-form-def' } }),
+        createFormInstanceV1: async () => ({
+            data: { standAloneFormUrl: 'https://offline.example.com/form/offline-instance' },
+        }),
+    }
     return {
         accounts: { createAccountV1: stub, listAccountsV1: stub } as unknown as AccountsApi,
         sources: {
@@ -122,5 +131,9 @@ function createOfflineSdkStub(): SailPointClients {
             updateSourceSchemaV1: stub,
             createSourceSchemaV1: stub,
         } as unknown as SourcesApi,
+        forms: offlineFormsStub as unknown as CustomFormsApi,
+        identityHistory: { listIdentityAccessItemsV1: stub } as unknown as SailPointClients['identityHistory'],
+        accessProfiles: { getAccessProfileEntitlementsV1: stub } as unknown as SailPointClients['accessProfiles'],
+        roles: { getRoleEntitlementsV1: stub } as unknown as SailPointClients['roles'],
     }
 }

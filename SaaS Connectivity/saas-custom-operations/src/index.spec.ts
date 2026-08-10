@@ -27,6 +27,7 @@ describe('connector unit tests', () => {
         const conn = await connector()
 
         expect(conn.handlers.has('custom:example')).toBe(true)
+        expect(conn.handlers.has('custom:sod-remediation')).toBe(true)
     })
 
     it('connector manifest uses sourceName for result source config', () => {
@@ -36,4 +37,5 @@ describe('connector unit tests', () => {
         expect(keys).not.toContain('sourceId')
     })
 })
+
 

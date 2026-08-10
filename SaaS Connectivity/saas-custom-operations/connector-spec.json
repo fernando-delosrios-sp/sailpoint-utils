@@ -1,7 +1,8 @@
 {
 	"name": "saas-custom-operations",
 	"commands": [
-		"custom:example"
+		"custom:example",
+		"custom:sod-remediation"
 	],
 	"sourceConfig": [
 		{

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
-import { loadFixture, runFixture, runFixtureFromPath } from './run-operation-fixture'
+import { loadFixture, normalizeFixtureConfig, runFixture, runFixtureFromPath } from './run-operation-fixture'
 import { writeFileSync, unlinkSync } from 'fs'
 import { tmpdir } from 'os'
 
@@ -101,6 +101,33 @@ describe('run-operation-fixture', () => {
         }
     })
 
+    it('normalizes config.url to apiUrl when loading fixture', () => {
+        expect(normalizeFixtureConfig({ url: 'https://tenant.example.com', token: 't', sourceName: 'S' })?.apiUrl).toBe(
+            'https://tenant.example.com'
+        )
+    })
+
+    it('returns exit code 1 with helpful message for missing apiUrl', async () => {
+        const path = join(tmpdir(), `fixture-bad-config-${Date.now()}.json`)
+        writeFileSync(
+            path,
+            JSON.stringify({
+                command: 'custom:example',
+                config: { token: 't', sourceName: 'S' },
+                input: { requestId: 'x' },
+            })
+        )
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        try {
+            expect(await runFixtureFromPath(path)).toBe(1)
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/missing: apiUrl/))
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/sod-remediation-offline/))
+        } finally {
+            unlinkSync(path)
+            errorSpy.mockRestore()
+        }
+    })
+
     it('returns exit code 1 for fixture missing command', async () => {
         const path = join(tmpdir(), `fixture-missing-cmd-${Date.now()}.json`)
         writeFileSync(path, JSON.stringify({ input: { requestId: 'x' } }))
@@ -119,3 +146,4 @@ describe('run-operation-fixture', () => {
         expect(pkg.scripts['test:operation']).toContain('run-operation-fixture')
     })
 })
+

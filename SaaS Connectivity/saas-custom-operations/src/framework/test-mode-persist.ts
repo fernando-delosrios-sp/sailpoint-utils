@@ -30,7 +30,7 @@ export function createTestModePersist<TOutput extends object>(
             options.operationSchema?.outputFields
         )
         registry.set(id, built)
-        recordInhibitedPersist({ identity: id, status: built.status, attributes: built })
+        recordInhibitedPersist({ identity: id, status: String(built.status ?? 'success'), attributes: built })
         log(`[test-mode] inhibited persist identity=${id} status=${built.status}`)
         options.onPersist?.()
     }
@@ -50,4 +50,5 @@ export function createTestModePersist<TOutput extends object>(
 
     return { persist, verifyPersisted }
 }
+
 
