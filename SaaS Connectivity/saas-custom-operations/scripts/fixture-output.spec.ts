@@ -18,23 +18,33 @@ describe('formatSpreadJson', () => {
 })
 
 describe('formatFixtureOutputSummary', () => {
-    it('includes inhibited persist and response sections', () => {
+    it('includes fixture header, inhibited persist, response, and primary output sections', () => {
         process.env.NO_COLOR = '1'
         const formatted = formatFixtureOutputSummary({
+            command: 'custom:sod-remediation',
+            requestId: 'offline-001',
+            testMode: true,
             inhibitedPersists: [
                 {
                     identity: 'offline-001',
                     status: 'success',
-                    attributes: { id: 'offline-001', summary: 'hello' },
+                    attributes: {
+                        id: 'offline-001',
+                        formUrl: 'https://example.com/form/1',
+                        situationSummary: 'SOD Violation Remediation Required',
+                    },
                 },
             ],
             response: { status: 'success' },
         })
 
+        expect(formatted).toContain('Fixture run')
+        expect(formatted).toContain('command=custom:sod-remediation')
         expect(formatted).toContain('Inhibited persist outputs (would-be ISC accounts)')
+        expect(formatted).toContain('Persisted operation output (primary identity)')
+        expect(formatted).toContain('"formUrl": "https://example.com/form/1"')
         expect(formatted).toContain('Operation response (ctx.res.send)')
-        expect(formatted).toContain('"summary": "hello"')
-        expect(formatted).toContain('"status": "success"')
         delete process.env.NO_COLOR
     })
 })
+

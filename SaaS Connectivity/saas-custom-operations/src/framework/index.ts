@@ -43,5 +43,8 @@ export type {
     VerifyPersistedFn,
     WriteRegistry,
 } from './types'
+export { formatSpreadJson } from './pretty-json'
+export { readExternalInvokeConfig, readInvokeConfig } from './invoke-config'
+export { formatIncomingRequest, printIncomingRequest, resolveConfigForRequestLogging, withRequestLogging, wrapConnectorWithRequestLogging } from './request-logging'
 export { customOperation, normalizeAccessToken, parseStandardInput } from './with-custom-operation'
 export type { CustomOperationHandler, CustomOperationOptions } from './with-custom-operation'

@@ -4,7 +4,9 @@
   <img src="./assets/custom-workflow-actions-promo.png" alt="Custom Workflow Actions - Bridging Workflows and SaaS Connectivity" width="100%" />
 </p>
 
-Foundation template for SailPoint ISC **custom operations**. This connector is **not** an aggregation source — it provides a runtime for custom commands that loop back into ISC via the API and persist results as accounts on a DelimitedFile result source.
+## Purpose
+
+Foundation template for SailPoint ISC **custom operations**: invoke commands from workflows, call back into ISC APIs, and persist typed results to an auto-provisioned DelimitedFile source for downstream **Get Accounts** steps. This connector is **not** an aggregation source—it is a runtime for workflow-driven custom logic.
 
 ## How it works
 
@@ -129,6 +131,28 @@ curl -X POST http://localhost:3000/ \
 
 Replace template variables in `invoke-payload.json` with real values when testing locally (`connectorRef` is ignored by `spcx run`; `config` and `input` must be concrete).
 
+The POST body uses three top-level fields — `type` (command name), `config` (connection settings), and `input` (per-invocation payload including `requestId`):
+
+```json
+{
+    "type": "custom:example",
+    "config": {
+        "apiUrl": "https://your-tenant.api.identitynow.com",
+        "token": "<access-token>",
+        "sourceName": "SaaS Custom Operations",
+        "testMode": true
+    },
+    "input": {
+        "requestId": "local-dev-001",
+        "message": "Hello from spcx"
+    }
+}
+```
+
+#### Default request logging
+
+Every invoke during `npm run debug` logs an **Incoming request** section to stdout before the handler runs. The output matches the readable format used by `npm run test:operation` (section headers and spread JSON). The log includes `command`, `input`, and resolved `config` when available. **`config.token` is always redacted** as `[REDACTED]` — other config fields are shown as received.
+
 ### Test mode (dry run)
 
 Set `config.testMode: true` (or export `SPCX_TEST_MODE=1` for config-less runs) to run handler logic without writing accounts or mutating source schema on ISC. `ctx.res.send` behaves normally; each inhibited `ctx.persist` / `ctx.verifyPersisted` call is logged to the console with a `[test-mode]` prefix.
@@ -172,6 +196,58 @@ Config-present dry-run fixture:
 Partial config (e.g. `{ "testMode": true }` only) is rejected — provide full connection fields or omit config entirely.
 
 The fixture runner resolves commands from a static registry in `scripts/run-operation-fixture.ts`. When you add a new custom operation, register its handler in `COMMAND_HANDLERS` alongside `custom:example`.
+
+```bash
+npm run test:operation -- fixtures/sod-remediation-offline.json
+```
+
+### `custom:sod-remediation`
+
+Launch-only operation that fetches an SOD violation, ensures a named form definition exists, creates a standalone remediation form for the violation owner (or override recipient), and persists `formUrl` plus `situationSummary` for downstream workflow steps.
+
+**Invoke payload:**
+
+```json
+{
+    "connectorRef": "{{$.defineVariable.saaSCustomOperationsConnectorID}}",
+    "tag": "latest",
+    "type": "custom:sod-remediation",
+    "input": {
+        "requestId": "req-sod-001",
+        "violationId": "00000000-0000-0000-0000-000000000001",
+        "formName": "SOD Violation Remediation",
+        "owner": "optional-recipient-identity-id"
+    },
+    "config": {
+        "apiUrl": "{{$.defineVariable.aPIURL}}",
+        "token": "{{$.getAccessToken.body.access_token}}",
+        "sourceName": "{{$.defineVariable.saaSCustomOperationsSourceName}}"
+    }
+}
+```
+
+| Input field | Required | Description |
+|---|---|---|
+| `violationId` | Yes | SOD violation ID (`GET /violations/v1/:id`, experimental API) |
+| `formName` | Yes | Tenant form definition name — created from bundled seed on first use |
+| `owner` | No | Recipient identity ID override; defaults to violation owner |
+
+| Output field (persisted) | Description |
+|---|---|
+| `formUrl` | Standalone form URL (`standAloneFormUrl`) for email deep links |
+| `situationSummary` | Plain-text summary for notification workflows |
+
+**Workflow integration pattern:**
+
+1. Invoke `custom:sod-remediation` with violation ID and form name.
+2. Read persisted output via **Get Accounts** filtered by `requestId`.
+3. Send email to recipient with `situationSummary` and link to `formUrl`.
+4. Wait for form submission; read `formData` keys:
+   - User keys: `action`, `remediationSide`, `policyControl`, `comments`
+   - Hidden keys: `violationId`, `targetIdentityId`, `groupARevokePayload`, `groupBRevokePayload`
+5. Execute corrective revoke or apply compensating control in separate workflow HTTP actions (not handled by the connector).
+
+Experimental APIs require header `X-SailPoint-Experimental: true` (handled internally). Offline fixture runs use canned violation data when no `config` is provided.
 
 ### Invoke against a deployed connector
 
@@ -269,6 +345,7 @@ Rebuild, repackage, and redeploy. Invoke with `"type": "custom:my-operation"` an
 | `ctx.sourceId` | Resolved ISC source ID after sourceName lookup |
 | `ctx.sdk.accounts` | ISC loopback client for account create/read used by `ctx.persist` |
 | `ctx.sdk.sources` | ISC loopback client for result source lookup, creation, and schema management |
+| `ctx.sdk.forms` | ISC Custom Forms API for form definition search/create and form instance create |
 | `ctx.persist(...)` | Write results to the result source (auto-provisioned DelimitedFile) |
 | `ctx.verifyPersisted(...)` | Batch verify deferred writes |
 | `ctx.res` | Connector SDK response object — call `ctx.res.send(...)` |
@@ -345,5 +422,6 @@ workflows/
   SaaS Custom Operations.json # ISC export (example workflow only)
 templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```
+
 
 

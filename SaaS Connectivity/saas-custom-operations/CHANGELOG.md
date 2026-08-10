@@ -2,7 +2,23 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
-## Unreleased
+## 2026-08-10 · v0.3.0
+
+### 🔧 Improvements
+
+- **Default request logging** — Every registered command logs an **Incoming request** section (command, input, resolved config) to stdout before handler execution during `npm run debug` and production invokes. Output uses the same spread-JSON format as `npm run test:operation`; `config.token` is redacted.
+- **spcx invoke config resolution** — Per-invoke `config` from the spcx POST body now reaches handlers and request logs. The framework reads from the external node_modules SDK `readConfig()` (spcx AsyncLocalStorage) before falling back to the bundled CONNECTOR_CONFIG path.
+
+### ✨ New Features
+
+- **`custom:sod-remediation`** — Launch-only SOD violation remediation operation that fetches a violation via experimental `/violations/v1`, lists tenant compensating controls, resolves entitlement access paths (including access profile and role grants), ensures a named form definition from a bundled seed template, creates a standalone form instance, and persists `formUrl` and `situationSummary` for workflow orchestration.
+- **Custom Forms SDK client** — `ctx.sdk.forms` exposes `CustomFormsApi` for form definition search/create and form instance create.
+- **Offline SOD fixture** — `fixtures/sod-remediation-offline.json` for config-less test-mode dry runs with canned violation data.
+
+### 📚 Documentation
+
+- **README** — Documents spcx local invoke envelope (`type`, `config`, `input`), default incoming request logging, and token redaction during `npm run debug`.
+- **README** — Documents `custom:sod-remediation` invoke contract, output fields, form submission keys, and downstream workflow integration pattern.
 
 ---
 

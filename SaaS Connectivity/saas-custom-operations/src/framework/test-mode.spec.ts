@@ -62,6 +62,20 @@ describe('resolveInvocationConfig', () => {
         expect(result.configProvided).toBe(true)
     })
 
+    it('treats spcx AsyncLocalStorage config as provided via readInvokeConfig', async () => {
+        const result = await resolveInvocationConfig(
+            {},
+            {},
+            async () => ({
+                apiUrl: 'https://tenant.api.identitynow.com',
+                token: 'spcx-token',
+                sourceName: 'SaaS Custom Operations',
+            })
+        )
+        expect(result.configProvided).toBe(true)
+        expect(result.config.sourceName).toBe('SaaS Custom Operations')
+    })
+
     it('returns config not provided when readConfig fails', async () => {
         const result = await resolveInvocationConfig(
             {},
@@ -74,3 +88,4 @@ describe('resolveInvocationConfig', () => {
         expect(result.config).toEqual({})
     })
 })
+

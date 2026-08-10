@@ -1,4 +1,4 @@
-import { readConfig } from '@sailpoint/connector-sdk'
+import { readInvokeConfig } from './invoke-config'
 
 export const TEST_MODE_PLACEHOLDER_SOURCE_ID = 'test-mode-local'
 
@@ -24,7 +24,7 @@ type ConfigSource = { config?: Record<string, unknown> }
 export async function resolveInvocationConfig(
     deps: ConfigSource,
     context: ConfigSource,
-    readConfigFn: () => Promise<Record<string, unknown>> = readConfig
+    readConfigFn: () => Promise<Record<string, unknown> | undefined> = readInvokeConfig
 ): Promise<ResolvedInvocationConfig> {
     if (deps.config !== undefined) {
         return { config: deps.config, configProvided: true }
@@ -35,10 +35,11 @@ export async function resolveInvocationConfig(
     }
 
     try {
-        const config = await readConfigFn()
+        const config = (await readConfigFn()) ?? {}
         const configProvided = Object.keys(config).length > 0
         return { config, configProvided }
     } catch {
         return { config: {}, configProvided: false }
     }
 }
+
