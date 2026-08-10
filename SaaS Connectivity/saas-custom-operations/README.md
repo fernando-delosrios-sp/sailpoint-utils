@@ -151,9 +151,9 @@ The POST body uses three top-level fields — `type` (command name), `config` (c
 
 #### Default request logging
 
-Every invoke during `npm run debug` logs an **Incoming request** section to stdout before the handler runs. The output matches the readable format used by `npm run test:operation` (section headers and spread JSON). The log includes `command`, `input`, and resolved `config` when available. **`config.token` is always redacted** as `[REDACTED]` — other config fields are shown as received.
+Every invoke during `npm run debug` logs an **Incoming request** section to stdout before the handler runs. The output matches the readable format used by `npm run call:op` (section headers and spread JSON). The log includes `type`, `input`, and resolved `config` when available. **`config.token` is always redacted** as `[REDACTED]` — other config fields are shown as received.
 
-### Test mode (dry run)
+### Persist inhibition (`config.testMode`)
 
 Set `config.testMode: true` (or export `SPCX_TEST_MODE=1` for config-less runs) to run handler logic without writing accounts or mutating source schema on ISC. `ctx.res.send` behaves normally; each inhibited `ctx.persist` / `ctx.verifyPersisted` call is logged to the console with a `[test-mode]` prefix.
 
@@ -162,43 +162,43 @@ Set `config.testMode: true` (or export `SPCX_TEST_MODE=1` for config-less runs) 
 | Yes (full `apiUrl`, `token`, `sourceName`) | Read-only status check + list-only source lookup; fails on missing/invalid token | Inhibited (logged) |
 | No | All ISC calls skipped | Inhibited (logged) |
 
-Run from a JSON fixture:
+Run from an invoke payload:
 
 ```bash
-npm run test:operation -- fixtures/custom-example-offline.json
-npm run test:operation -- fixtures/custom-example.json   # requires valid token in config
+npm run call:op -- payloads/custom-example-offline.json
+npm run call:op -- payloads/custom-example.json   # requires valid token in config
 ```
 
-Offline fixtures (no `config` block) automatically enable test mode in the fixture runner. You can also export `SPCX_TEST_MODE=1` when invoking handlers outside the runner.
+Offline payloads (no `config` block) automatically enable persist inhibition (`testMode`) in the local runner. You can also export `SPCX_TEST_MODE=1` when invoking handlers outside the runner.
 
 ```json
 {
-  "command": "custom:example",
+  "type": "custom:example",
   "input": { "requestId": "offline-001", "message": "hello" }
 }
 ```
 
-Config-present dry-run fixture:
+Config-present dry-run payload:
 
 ```json
 {
-  "command": "custom:example",
+  "type": "custom:example",
   "config": {
     "apiUrl": "https://your-tenant.api.identitynow.com",
     "token": "<access-token>",
     "sourceName": "SaaS Custom Operations",
     "testMode": true
   },
-  "input": { "requestId": "fixture-001", "message": "dry run" }
+  "input": { "requestId": "payload-001", "message": "dry run" }
 }
 ```
 
 Partial config (e.g. `{ "testMode": true }` only) is rejected — provide full connection fields or omit config entirely.
 
-The fixture runner resolves commands from a static registry in `scripts/run-operation-fixture.ts`. When you add a new custom operation, register its handler in `COMMAND_HANDLERS` alongside `custom:example`.
+The local runner resolves operations from a static registry in `scripts/call-op.ts`. When you add a new custom operation, register its handler in `OPERATION_HANDLERS` alongside `custom:example`.
 
 ```bash
-npm run test:operation -- fixtures/sod-remediation-offline.json
+npm run call:op -- payloads/sod-remediation-offline.json
 ```
 
 ### `custom:sod-remediation`
@@ -247,7 +247,7 @@ Launch-only operation that fetches an SOD violation, ensures a named form defini
    - Hidden keys: `violationId`, `targetIdentityId`, `groupARevokePayload`, `groupBRevokePayload`
 5. Execute corrective revoke or apply compensating control in separate workflow HTTP actions (not handled by the connector).
 
-Experimental APIs require header `X-SailPoint-Experimental: true` (handled internally). Offline fixture runs use canned violation data when no `config` is provided.
+Experimental APIs require header `X-SailPoint-Experimental: true` (handled internally). Offline payload runs use canned violation data when no `config` is provided.
 
 ### Invoke against a deployed connector
 
@@ -413,15 +413,18 @@ src/
     index.ts          # Calls registerAutoOperations; append manual .command() as needed
   index.ts            # Connector entry point
 scripts/
+  call-op.ts                  # Local invoke runner (`npm run call:op`)
   generate-templates.ts       # Operator artifact generator (`npm run templates`)
   generate-operation-schemas.ts
   templates/                  # Generator modules (account-schema, workflow-invocation, …)
 connector-spec.json   # Declared commands and sourceConfig (ISC loopback settings)
 invoke-payload.json   # Example invoke body for local / CLI testing
+payloads/             # Example invoke payloads for `npm run call:op`
 workflows/
   SaaS Custom Operations.json # ISC export (example workflow only)
 templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```
+
 
 
 

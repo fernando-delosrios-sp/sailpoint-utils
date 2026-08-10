@@ -1,5 +1,5 @@
 {
-  "command": "custom:example",
+  "type": "custom:example",
   "config": {
     "apiUrl": "https://your-tenant.api.identitynow.com",
     "token": "<access-token>",
@@ -7,7 +7,7 @@
     "testMode": true
   },
   "input": {
-    "requestId": "fixture-001",
+    "requestId": "payload-001",
     "message": "dry run with token"
   }
 }

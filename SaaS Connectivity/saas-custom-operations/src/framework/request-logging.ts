@@ -55,7 +55,7 @@ export interface IncomingRequestSummary {
     input: Record<string, unknown>
 }
 
-/** Formats an invoke payload for terminal display (fixture-style). */
+/** Formats an invoke payload for terminal display (payload-style). */
 export function formatIncomingRequest(summary: IncomingRequestSummary): string {
     const headerParts = [
         `command=${summary.command}`,
@@ -75,7 +75,7 @@ export function formatIncomingRequest(summary: IncomingRequestSummary): string {
     return ['', formatSection('Incoming request', `${headerParts.join('  ')}\n\n${formatSpreadJson(payload)}`), ''].join('\n')
 }
 
-/** Logs an invoke payload to stdout in a readable, fixture-style format. */
+/** Logs an invoke payload to stdout in a readable, payload-style format. */
 export function printIncomingRequest(summary: IncomingRequestSummary): void {
     console.log(formatIncomingRequest(summary))
 }
@@ -104,3 +104,4 @@ export function wrapConnectorWithRequestLogging(connector: Connector): Connector
         },
     })
 }
+

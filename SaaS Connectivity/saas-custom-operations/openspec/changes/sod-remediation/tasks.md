@@ -17,7 +17,7 @@
 - [x] 3.1 Unit test experimental violations/controls client with mocked HTTP
 - [x] 3.2 Unit test access-path resolver (entitlement-only, AP-granted, role-granted, warnings)
 - [x] 3.3 Unit test sod-remediation handler (form create path, recipient override, missing form definition seed create, zero controls)
-- [x] 3.4 Add operation fixture under `fixtures/` and register handler in `scripts/run-operation-fixture.ts`
+- [x] 3.4 Add operation payload under `payloads/` and register handler in `scripts/call-op.ts`
 - [x] 3.5 Run `npm test` and confirm coverage thresholds
 
 ## 4. Documentation

@@ -24,7 +24,7 @@ describe('redactConfigForLogging', () => {
 })
 
 describe('formatIncomingRequest', () => {
-    it('formats command, config, and input like fixture output', () => {
+    it('formats command, config, and input like payload output', () => {
         process.env.NO_COLOR = '1'
         const formatted = formatIncomingRequest({
             command: 'custom:example',
@@ -115,3 +115,4 @@ describe('wrapConnectorWithRequestLogging', () => {
         expect(handler).not.toBe(handlers.get('custom:example'))
     })
 })
+

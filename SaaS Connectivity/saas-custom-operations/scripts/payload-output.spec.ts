@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatFixtureOutputSummary, formatSpreadJson } from './fixture-output'
+import { formatPayloadOutputSummary, formatSpreadJson } from './payload-output'
 
 describe('formatSpreadJson', () => {
     it('inserts blank lines between top-level object properties', () => {
@@ -17,11 +17,11 @@ describe('formatSpreadJson', () => {
     })
 })
 
-describe('formatFixtureOutputSummary', () => {
-    it('includes fixture header, inhibited persist, response, and primary output sections', () => {
+describe('formatPayloadOutputSummary', () => {
+    it('includes invoke header, simulated persist, response, and primary output sections', () => {
         process.env.NO_COLOR = '1'
-        const formatted = formatFixtureOutputSummary({
-            command: 'custom:sod-remediation',
+        const formatted = formatPayloadOutputSummary({
+            type: 'custom:sod-remediation',
             requestId: 'offline-001',
             testMode: true,
             inhibitedPersists: [
@@ -38,13 +38,12 @@ describe('formatFixtureOutputSummary', () => {
             response: { status: 'success' },
         })
 
-        expect(formatted).toContain('Fixture run')
-        expect(formatted).toContain('command=custom:sod-remediation')
-        expect(formatted).toContain('Inhibited persist outputs (would-be ISC accounts)')
+        expect(formatted).toContain('Local invoke')
+        expect(formatted).toContain('type=custom:sod-remediation')
+        expect(formatted).toContain('Simulated persist (testMode=true)')
         expect(formatted).toContain('Persisted operation output (primary identity)')
         expect(formatted).toContain('"formUrl": "https://example.com/form/1"')
         expect(formatted).toContain('Operation response (ctx.res.send)')
         delete process.env.NO_COLOR
     })
 })
-

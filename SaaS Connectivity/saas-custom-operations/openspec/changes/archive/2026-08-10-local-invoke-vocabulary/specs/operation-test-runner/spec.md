@@ -1,9 +1,5 @@
-# operation-test-runner Specification
+## MODIFIED Requirements
 
-## Purpose
-Local invoke runner for custom operations via JSON invoke payloads (`npm run call:op`).
-
-## Requirements
 ### Requirement: Invoke payload envelope
 
 The local invoke runner SHALL accept a JSON payload file containing `type` string and `input` object. The `config` object SHALL be optional; when omitted the runner SHALL invoke the handler without context.config for offline persist inhibition.
@@ -47,3 +43,10 @@ The project SHALL provide an npm script named `call:op` that runs the local invo
 - **WHEN** a developer runs the call op npm script with a payload path after build
 - **THEN** the script SHALL execute the local invoke runner against that path
 
+## RENAMED Requirements
+
+- FROM: `### Requirement: Operation fixture envelope`
+- TO: `### Requirement: Invoke payload envelope`
+
+- FROM: `### Requirement: Fixture runner captures res.send output`
+- TO: `### Requirement: Local invoke runner captures res.send output`

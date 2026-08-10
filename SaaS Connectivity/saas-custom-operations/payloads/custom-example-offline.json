@@ -1,5 +1,5 @@
 {
-  "command": "custom:example",
+  "type": "custom:example",
   "input": {
     "requestId": "offline-001",
     "message": "no isc"

@@ -4,6 +4,14 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ## Unreleased
 
+### 💥 Breaking Changes
+
+- **Local invoke rename** — `npm run test:operation` is now `npm run call:op`. Invoke payloads live under `payloads/` and use `type` (matching spcx/workflow invoke shape) instead of `command`.
+
+### 🔧 Improvements
+
+- **Local invoke output** — Runner summary sections renamed to **Local invoke** and **Simulated persist (testMode=true)**.
+
 ### 🐛 Bug Fixes
 
 - **Persist upsert** — `ctx.persist` now probes for an existing result account by native identity and updates via `putAccountV1` when present, or creates via `createAccountV1` when absent. Re-running local debug with the same `requestId` no longer fails on duplicate account create.

@@ -105,7 +105,7 @@
 - [ ] **Step 3:** Write failing test — zero controls sets mitigate-unavailable formInput + summary note
 - [ ] **Step 4:** Implement handler wiring violation fetch, controls list, access resolver, form service
 - [ ] **Step 5:** Run `npm run codegen:schemas`; commit generated registry + manifest
-- [ ] **Step 6:** Register fixture handler in `scripts/run-operation-fixture.ts`
+- [ ] **Step 6:** Register payload handler in `scripts/call-op.ts`
 - [ ] **Step 7:** Run `npm test -- sod-remediation-operation` — PASS
 
 ---
@@ -113,7 +113,7 @@
 ## Task 7: Fixture and docs
 
 **Files:**
-- Create: `fixtures/sod-remediation.json` (or under existing fixtures dir)
+- Create: `payloads/sod-remediation.json`
 - Modify: `README.md`
 - Modify: `CHANGELOG.md` (via changelog-generator skill)
 

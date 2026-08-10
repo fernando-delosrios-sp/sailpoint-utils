@@ -7,21 +7,21 @@ export interface InhibitedPersistRecord {
 let capturing = false
 let records: InhibitedPersistRecord[] = []
 
-/** Starts collecting inhibited persist records for fixture runner summaries. */
-export function beginFixtureOutputCapture(): void {
+/** Starts collecting inhibited persist records for local invoke summaries. */
+export function beginPayloadOutputCapture(): void {
     capturing = true
     records = []
 }
 
 /** Stops capture and returns collected records. */
-export function endFixtureOutputCapture(): InhibitedPersistRecord[] {
+export function endPayloadOutputCapture(): InhibitedPersistRecord[] {
     capturing = false
     const collected = records
     records = []
     return collected
 }
 
-/** Records an inhibited persist when fixture capture is active. */
+/** Records an inhibited persist when payload output capture is active. */
 export function recordInhibitedPersist(record: InhibitedPersistRecord): void {
     if (!capturing) {
         return

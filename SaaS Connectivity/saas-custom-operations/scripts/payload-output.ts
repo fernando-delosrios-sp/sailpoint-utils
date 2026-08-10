@@ -1,5 +1,5 @@
 import { formatSpreadJson } from '../src/framework/pretty-json'
-import type { InhibitedPersistRecord } from '../src/framework/test-mode-fixture-collector'
+import type { InhibitedPersistRecord } from '../src/framework/payload-persist-collector'
 
 function useColor(): boolean {
     return Boolean(process.stdout.isTTY && !process.env.NO_COLOR)
@@ -19,10 +19,10 @@ function dim(text: string): string {
 
 export { formatSpreadJson } from '../src/framework/pretty-json'
 
-export interface FixtureOutputSummary {
+export interface PayloadOutputSummary {
     response: unknown
     inhibitedPersists: InhibitedPersistRecord[]
-    command?: string
+    type?: string
     requestId?: unknown
     testMode?: boolean
 }
@@ -32,25 +32,25 @@ function formatSection(title: string, body: string): string {
     return [rule, bold(cyan(title)), rule, body, rule].join('\n')
 }
 
-/** Formats fixture operation outputs for terminal display. */
-export function formatFixtureOutputSummary(summary: FixtureOutputSummary): string {
+/** Formats local invoke outputs for terminal display. */
+export function formatPayloadOutputSummary(summary: PayloadOutputSummary): string {
     const sections: string[] = ['']
 
     const headerParts = [
-        summary.command ? `command=${summary.command}` : undefined,
+        summary.type ? `type=${summary.type}` : undefined,
         summary.requestId != null ? `requestId=${String(summary.requestId)}` : undefined,
         summary.testMode ? 'testMode=true' : undefined,
     ].filter(Boolean)
 
     if (headerParts.length > 0) {
-        sections.push(formatSection('Fixture run', `${bold('Status:')} ${cyan('success')}\n${headerParts.join('  ')}`))
+        sections.push(formatSection('Local invoke', `${bold('Status:')} ${cyan('success')}\n${headerParts.join('  ')}`))
         sections.push('')
     }
 
     if (summary.inhibitedPersists.length > 0) {
         sections.push(
             formatSection(
-                'Inhibited persist outputs (would-be ISC accounts)',
+                'Simulated persist (testMode=true)',
                 formatSpreadJson(summary.inhibitedPersists)
             )
         )
@@ -59,7 +59,7 @@ export function formatFixtureOutputSummary(summary: FixtureOutputSummary): strin
         sections.push(
             formatSection(
                 'Persist outputs',
-                dim('No inhibited persists captured — testMode was false; accounts may have been written to ISC.')
+                dim('No simulated persists captured — testMode was false; accounts may have been written to ISC.')
             )
         )
         sections.push('')
@@ -87,9 +87,7 @@ export function formatFixtureOutputSummary(summary: FixtureOutputSummary): strin
     return sections.join('\n')
 }
 
-/** Prints highlighted fixture operation outputs to stdout. */
-export function printFixtureOutputSummary(summary: FixtureOutputSummary): void {
-    console.log(formatFixtureOutputSummary(summary))
+/** Prints highlighted local invoke outputs to stdout. */
+export function printPayloadOutputSummary(summary: PayloadOutputSummary): void {
+    console.log(formatPayloadOutputSummary(summary))
 }
-
-

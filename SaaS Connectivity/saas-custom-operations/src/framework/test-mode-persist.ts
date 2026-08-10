@@ -1,5 +1,5 @@
 import { buildAccountAttributes, PersistVerificationError } from './persist-result'
-import { recordInhibitedPersist } from './test-mode-fixture-collector'
+import { recordInhibitedPersist } from './payload-persist-collector'
 import { OperationSchemaContract, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
 
 export interface TestModePersistOptions {
