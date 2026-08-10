@@ -1,4 +1,5 @@
 import { CommandHandler, ConnectorError, Context, Response } from '@sailpoint/connector-sdk'
+import { toConnectorError } from './connector-error'
 import { InferOperationInput, InferOperationOutput, OperationSignature } from './output-schema'
 import { getOperationSchema } from './operation-schema-registry'
 import { createRequestContext, RequestContextDependencies } from './request-context'
@@ -95,12 +96,28 @@ export interface CustomOperationOptions extends RequestContextDependencies {
  * Wraps a custom command handler with volatile RequestContext initialization.
  * Resolves sourceName to sourceId and attaches operation output fields for schema reconciliation.
  * Auto-discovered operations resolve `operationSchema` from the build-time registry when omitted.
+ * All failures escaping this wrapper are normalized to {@link ConnectorError}.
  */
 export function customOperation<T extends OperationSignature>(
     handler: CustomOperationHandler<T>,
     deps: CustomOperationOptions = {}
 ): CommandHandler {
     return async (context: Context, input: Record<string, unknown>, res: Response<any>) => {
+        try {
+            await runCustomOperation(context, input, res, handler, deps)
+        } catch (e) {
+            throw toConnectorError(e, context.commandType)
+        }
+    }
+}
+
+async function runCustomOperation<T extends OperationSignature>(
+    context: Context,
+    input: Record<string, unknown>,
+    res: Response<any>,
+    handler: CustomOperationHandler<T>,
+    deps: CustomOperationOptions
+): Promise<void> {
         const { config, configProvided } = await resolveInvocationConfig(deps, context as ContextWithConfig)
         const testMode = configProvided ? isTestMode(config) : isTestMode({})
         const { standard, operationInput } = parseStandardInput(config, input, { testMode, configProvided })
@@ -167,5 +184,4 @@ export function customOperation<T extends OperationSignature>(
         }
 
         console.log(`[${standard.requestId}] custom operation completed`)
-    }
 }

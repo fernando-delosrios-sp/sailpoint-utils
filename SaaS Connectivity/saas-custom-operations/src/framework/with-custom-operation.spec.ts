@@ -1,3 +1,4 @@
+import { ConnectorError } from '@sailpoint/connector-sdk'
 import { describe, expect, it, vi, afterEach } from 'vitest'
 import { defineOperationSchema } from './define-operation-schema'
 import { OperationSignature } from './output-schema'
@@ -260,6 +261,43 @@ describe('customOperation', () => {
 
         expect(handler).toHaveBeenCalled()
     })
+
+    it('wraps persist verification failure as ConnectorError', async () => {
+        vi.useFakeTimers()
+        try {
+            const res = { send: vi.fn() }
+            const accountsApi = {
+                createAccountV1: vi.fn().mockResolvedValue({}),
+                listAccountsV1: vi.fn().mockResolvedValue({ data: [] }),
+            }
+            const wrapped = customOperation<TestOperation>(
+                async (ctx) => {
+                    await ctx.persist('req-001', { result: 'value' } as never)
+                },
+                {
+                    config: testConfig,
+                    sourceId: 'source-1',
+                    sdk: {
+                        sources: { getSourceSchemasV1: vi.fn() } as any,
+                        accounts: accountsApi as any,
+                    },
+                }
+            )
+
+            const invocation = wrapped(
+                { commandType: 'custom:test', config: testConfig } as any,
+                { requestId: 'req-001' },
+                res as any
+            )
+            await vi.runAllTimersAsync()
+            await expect(invocation).rejects.toSatisfy(
+                (error: unknown) =>
+                    error instanceof ConnectorError && /account not found after retries/.test((error as ConnectorError).message)
+            )
+        } finally {
+            vi.useRealTimers()
+        }
+    })
 })
 
 describe('customOperation test mode', () => {
@@ -317,7 +355,31 @@ describe('customOperation test mode', () => {
                 { requestId: 'req-001' },
                 res as any
             )
-        ).rejects.toThrow('Unauthorized')
+        ).rejects.toThrow(ConnectorError)
+    })
+
+    it('wraps handler plain Error as ConnectorError', async () => {
+        const res = { send: vi.fn() }
+        const wrapped = customOperation<TestOperation>(
+            async () => {
+                throw new Error('operation failed')
+            },
+            {
+                config: testConfig,
+                sourceId: 'source-1',
+                sdk: {
+                    sources: { listSourcesV1: vi.fn(), createSourceV1: vi.fn() } as any,
+                    accounts: { createAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any,
+                },
+            }
+        )
+
+        await expect(
+            wrapped({ commandType: 'custom:test', config: testConfig } as any, { requestId: 'req-001' }, res as any)
+        ).rejects.toSatisfy(
+            (error: unknown) =>
+                error instanceof ConnectorError && /operation failed/.test((error as ConnectorError).message)
+        )
     })
 
     it('skips all ISC API calls when no config is provided', async () => {
@@ -346,6 +408,18 @@ describe('customOperation test mode', () => {
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
         logSpy.mockRestore()
         warnSpy.mockRestore()
+    })
+
+    it('offline SDK accounts stub throws ConnectorError', async () => {
+        const ctx = createRequestContext(
+            { apiUrl: '', token: '', sourceName: 'test-mode-local', requestId: 'offline-001' },
+            { send: vi.fn() },
+            { testMode: true, sourceId: 'test-mode-local' }
+        )
+
+        expect(() =>
+            ctx.sdk.accounts.createAccountV1({ accountAttributesCreate: { attributes: {} } } as any)
+        ).toThrow(ConnectorError)
     })
 
     it('checks ISC status and resolves source read-only when token is provided', async () => {

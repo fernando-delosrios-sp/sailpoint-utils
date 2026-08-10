@@ -1,4 +1,4 @@
-import { Response } from '@sailpoint/connector-sdk'
+import { ConnectorError, Response } from '@sailpoint/connector-sdk'
 import { AccountsApi, CustomFormsApi, SourcesApi } from 'sailpoint-api-client'
 import { createPersist, createVerifyPersisted } from './persist-result'
 import { createSailPointClients } from './sdk-factory'
@@ -109,7 +109,7 @@ export function createRequestContext<TOutput extends object>(
 }
 
 function offlineApiError(): never {
-    throw new Error('ISC API is unavailable in offline test mode')
+    throw new ConnectorError('ISC API is unavailable in offline test mode')
 }
 
 /** Stub SDK used when test mode runs without an access token. */

@@ -2,7 +2,13 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
-## 2026-08-10 · v0.3.0
+## 2026-08-10 · v0.3.1
+
+### 🐛 Bug Fixes
+
+- **ConnectorError propagation** — All custom operation failures now surface as `ConnectorError` from the connector-sdk. A framework boundary wrapper converts plain errors, SDK rejections, and persist verification failures so ISC workflows treat them as intentional connector failures instead of unclassified crashes that trigger spurious retries. Custom Forms API failures in sod remediation include HTTP status and response body in the error message.
+
+---
 
 ### 🔧 Improvements
 
