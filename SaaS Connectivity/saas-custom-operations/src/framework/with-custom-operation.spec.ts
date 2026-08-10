@@ -88,6 +88,7 @@ describe('createRequestContext', () => {
     it('initializes independent contexts per invocation input', () => {
         const accountsApi = {
             createAccountV1: vi.fn().mockResolvedValue({}),
+            putAccountV1: vi.fn().mockResolvedValue({}),
             listAccountsV1: vi.fn().mockResolvedValue({ data: [] }),
         } as any
         const sourcesApi = {
@@ -131,6 +132,7 @@ describe('createRequestContext', () => {
     it('exposes verifyPersisted on the request context', () => {
         const accountsApi = {
             createAccountV1: vi.fn().mockResolvedValue({}),
+            putAccountV1: vi.fn().mockResolvedValue({}),
             listAccountsV1: vi.fn().mockResolvedValue({ data: [] }),
         } as any
         const res = { send: vi.fn() } as any
@@ -192,7 +194,7 @@ describe('customOperation', () => {
             config: testConfig,
             sdk: {
                 sources: sourcesApi,
-                accounts: { createAccountV1: vi.fn(), listAccountsV1: vi.fn() },
+                accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() },
             } as any,
         })
 
@@ -268,6 +270,7 @@ describe('customOperation', () => {
             const res = { send: vi.fn() }
             const accountsApi = {
                 createAccountV1: vi.fn().mockResolvedValue({}),
+                putAccountV1: vi.fn().mockResolvedValue({}),
                 listAccountsV1: vi.fn().mockResolvedValue({ data: [] }),
             }
             const wrapped = customOperation<TestOperation>(
@@ -289,11 +292,12 @@ describe('customOperation', () => {
                 { requestId: 'req-001' },
                 res as any
             )
-            await vi.runAllTimersAsync()
-            await expect(invocation).rejects.toSatisfy(
+            const assertion = expect(invocation).rejects.toSatisfy(
                 (error: unknown) =>
                     error instanceof ConnectorError && /account not found after retries/.test((error as ConnectorError).message)
             )
+            await vi.runAllTimersAsync()
+            await assertion
         } finally {
             vi.useRealTimers()
         }
@@ -346,7 +350,7 @@ describe('customOperation test mode', () => {
         }
         const wrapped = customOperation<TestOperation>(async () => {}, {
             config: { ...testConfig, testMode: true },
-            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
+            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
         })
 
         await expect(
@@ -369,7 +373,7 @@ describe('customOperation test mode', () => {
                 sourceId: 'source-1',
                 sdk: {
                     sources: { listSourcesV1: vi.fn(), createSourceV1: vi.fn() } as any,
-                    accounts: { createAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any,
+                    accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any,
                 },
             }
         )
@@ -388,7 +392,7 @@ describe('customOperation test mode', () => {
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
         const res = { send: vi.fn() }
         const sourcesApi = { listSourcesV1: vi.fn(), createSourceV1: vi.fn() }
-        const accountsApi = { createAccountV1: vi.fn(), listAccountsV1: vi.fn() }
+        const accountsApi = { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() }
         const handler = vi.fn(async (ctx) => {
             await ctx.persist('req-001', { result: 'ok' })
             ctx.res.send({ status: 'success' })
@@ -432,7 +436,7 @@ describe('customOperation test mode', () => {
                 .mockResolvedValueOnce({ data: [{ id: 'source-readonly', name: 'SaaS Custom Operations' }] }),
             createSourceV1: vi.fn(),
         }
-        const accountsApi = { createAccountV1: vi.fn(), listAccountsV1: vi.fn() }
+        const accountsApi = { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() }
         const handler = vi.fn(async () => {})
         const wrapped = customOperation<TestOperation>(handler, {
             config: { ...testConfig, testMode: true },
@@ -459,7 +463,7 @@ describe('customOperation test mode', () => {
         const handler = vi.fn(async () => {})
         const wrapped = customOperation<TestOperation>(handler, {
             config: { ...testConfig, testMode: true },
-            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
+            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
         })
 
         await wrapped({ commandType: 'custom:test', config: { ...testConfig, testMode: true } } as any, { requestId: 'req-001' }, res as any)
@@ -506,7 +510,7 @@ describe('customOperation test mode', () => {
         }
         const wrapped = customOperation<TestOperation>(async () => {}, {
             config: { ...testConfig, testMode: true, token: secretToken },
-            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
+            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
         })
 
         await wrapped(

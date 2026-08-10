@@ -1,6 +1,6 @@
 import { ConnectorError, Response } from '@sailpoint/connector-sdk'
 import { AccountsApi, CustomFormsApi, SourcesApi } from 'sailpoint-api-client'
-import { createPersist, createVerifyPersisted } from './persist-result'
+import { createPersist, createVerifyPersisted, findAccountOnSource, upsertSourceAccount } from './persist-result'
 import { createSailPointClients } from './sdk-factory'
 import { ensureSourceSchema } from './source-provisioning'
 import { createTestModePersist } from './test-mode-persist'
@@ -64,19 +64,12 @@ export function createRequestContext<TOutput extends object>(
                   )
               }
             : undefined,
-        createAccount: async (attributes) => {
-            await accountsClient.createAccountV1({
-                accountAttributesCreate: {
-                    attributes: attributes as { sourceId: string; [key: string]: unknown },
-                },
-            })
+        upsertAccount: async (attributes) => {
+            await upsertSourceAccount(accountsClient, sourceId, attributes)
         },
         readAccount: async (id) => {
-            const response = await accountsClient.listAccountsV1({
-                filters: `nativeIdentity eq "${id}" and sourceId eq "${sourceId}"`,
-            })
-            const account = response.data?.[0]
-            return account?.attributes as Record<string, unknown> | undefined
+            const account = await findAccountOnSource(accountsClient, sourceId, id)
+            return account?.attributes
         },
     }
 
@@ -123,7 +116,7 @@ function createOfflineSdkStub(): SailPointClients {
         }),
     }
     return {
-        accounts: { createAccountV1: stub, listAccountsV1: stub } as unknown as AccountsApi,
+        accounts: { createAccountV1: stub, listAccountsV1: stub, putAccountV1: stub } as unknown as AccountsApi,
         sources: {
             listSourcesV1: stub,
             createSourceV1: stub,

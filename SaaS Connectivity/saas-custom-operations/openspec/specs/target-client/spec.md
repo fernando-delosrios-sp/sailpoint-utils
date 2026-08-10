@@ -1,9 +1,7 @@
 ## Purpose
 
 ISC SDK loopback integration for custom operations. Legacy target client layer (`src/my-client.ts`) was removed; configuration and connectivity are handled per invocation via the standard input envelope and `ctx.sdk`.
-
 ## Requirements
-
 ### Requirement: SDK loopback client factory
 
 The connector SHALL pre-configure `sailpoint-api-client` instances from operation input `apiUrl` and `token`, exposing them on `RequestContext.sdk` for the duration of each custom operation invocation.
@@ -12,7 +10,7 @@ The connector SHALL pre-configure `sailpoint-api-client` instances from operatio
 
 - **GIVEN** a custom operation receives valid apiUrl and token in its input envelope
 - **WHEN** the handler accesses ctx.sdk.accounts
-- **THEN** the client SHALL be configured for ISC loopback account create and read used by ctx.persist
+- **THEN** the client SHALL be configured for ISC loopback account create, update, and read used by ctx.persist
 
 #### Scenario: Sources client configured for result source management
 
@@ -52,3 +50,4 @@ The connector SHALL surface Custom Forms API failures used by sod remediation as
 - **GIVEN** `searchFormDefinitionsByTenantV1` rejects with an axios or SDK error
 - **WHEN** `ensureFormDefinition` performs the search step
 - **THEN** the function SHALL throw `ConnectorError` rather than propagating a raw axios error
+

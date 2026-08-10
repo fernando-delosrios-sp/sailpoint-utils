@@ -343,7 +343,7 @@ Rebuild, repackage, and redeploy. Invoke with `"type": "custom:my-operation"` an
 | `ctx.requestId` | Correlation id from invoke `input` |
 | `ctx.sourceName` | Configured result source name (resolved/created at runtime) |
 | `ctx.sourceId` | Resolved ISC source ID after sourceName lookup |
-| `ctx.sdk.accounts` | ISC loopback client for account create/read used by `ctx.persist` |
+| `ctx.sdk.accounts` | ISC loopback client for account create, update, and read used by `ctx.persist` |
 | `ctx.sdk.sources` | ISC loopback client for result source lookup, creation, and schema management |
 | `ctx.sdk.forms` | ISC Custom Forms API for form definition search/create and form instance create |
 | `ctx.persist(...)` | Write results to the result source (auto-provisioned DelimitedFile) |
@@ -372,9 +372,9 @@ ctx.verifyPersisted(ids)
 - **`date`** — always set automatically to the current timestamp
 - **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
 
-By default, `persist` reads the account back from ISC and verifies attributes before resolving. Pass `{ verify: false }` to defer verification, then call `verifyPersisted([...ids])` before the handler completes. Unknown attribute keys are rejected before account create.
+By default, `persist` reads the account back from ISC and verifies attributes before resolving. Pass `{ verify: false }` to defer verification, then call `verifyPersisted([...ids])` before the handler completes. Unknown attribute keys are rejected before the write.
 
-Account create is used for persistence (upsert on duplicate identity).
+Persistence uses probe-first upsert: `createAccountV1` when the native identity is absent on the result source, `putAccountV1` when an account already exists. Re-running local debug with the same `requestId` updates the prior result instead of failing on duplicate create.
 
 ## Development
 

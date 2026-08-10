@@ -67,7 +67,7 @@ export interface PersistDependencies {
     sourceId: string
     operationSchema?: OperationSchemaContract
     ensureSourceSchema?: (attributeKeys: string[]) => Promise<void>
-    createAccount: (attributes: Record<string, unknown>) => Promise<unknown>
+    upsertAccount: (attributes: Record<string, unknown>) => Promise<void>
     readAccount: (id: string) => Promise<Record<string, unknown> | undefined>
     /** Override for tests to avoid real delays during retry loops. */
     sleep?: (ms: number) => Promise<void>

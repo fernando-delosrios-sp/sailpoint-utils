@@ -10,9 +10,11 @@ const workflowConfig = {
 }
 
 const createAccountV1 = vi.fn().mockResolvedValue({})
+const putAccountV1 = vi.fn().mockResolvedValue({})
 const listAccountsV1 = vi.fn()
 const getSourceSchemasV1 = vi.fn()
 const resolveSourceByName = vi.fn()
+const persistedAccounts = new Map<string, Record<string, unknown>>()
 
 vi.mock('../framework/source-provisioning', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../framework/source-provisioning')>()
@@ -30,6 +32,7 @@ vi.mock('../framework/sdk-factory', () => ({
         },
         accounts: {
             createAccountV1: (...args: unknown[]) => createAccountV1(...args),
+            putAccountV1: (...args: unknown[]) => putAccountV1(...args),
             listAccountsV1: (...args: unknown[]) => listAccountsV1(...args),
         },
     })),
@@ -38,6 +41,18 @@ vi.mock('../framework/sdk-factory', () => ({
 describe('exampleOperation', () => {
     beforeEach(() => {
         createAccountV1.mockClear()
+        putAccountV1.mockClear()
+        persistedAccounts.clear()
+        createAccountV1.mockImplementation(async ({ accountAttributesCreate }) => {
+            const attributes = accountAttributesCreate.attributes as Record<string, unknown>
+            persistedAccounts.set(String(attributes.id), attributes)
+            return {}
+        })
+        putAccountV1.mockImplementation(async ({ accountAttributes }) => {
+            const attributes = accountAttributes.attributes as Record<string, unknown>
+            persistedAccounts.set(String(attributes.id), attributes)
+            return {}
+        })
         resolveSourceByName.mockResolvedValue('source-123')
         getSourceSchemasV1.mockResolvedValue({
             data: [
@@ -57,22 +72,11 @@ describe('exampleOperation', () => {
         listAccountsV1.mockImplementation(async ({ filters }) => {
             const match = /nativeIdentity eq "([^"]+)"/.exec(filters ?? '')
             const id = match?.[1]
-            if (!id) {
+            if (!id || !persistedAccounts.has(id)) {
                 return { data: [] }
             }
 
-            const attributes: Record<string, unknown> = {
-                sourceId: 'source-123',
-                id,
-                date: '2026-08-06T00:00:00.000Z',
-                status: 'success',
-                summary: 'Hello, world!',
-            }
-            if (id === 'req-888') {
-                attributes.step = '1'
-            }
-
-            return { data: [{ attributes }] }
+            return { data: [{ id: `isc-${id}`, attributes: persistedAccounts.get(id) }] }
         })
     })
 
@@ -116,4 +120,5 @@ describe('exampleOperation', () => {
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
     })
 })
+
 

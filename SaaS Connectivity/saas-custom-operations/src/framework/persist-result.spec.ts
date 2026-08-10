@@ -6,6 +6,8 @@ import {
     formatAttributeValue,
     PersistVerificationError,
     readWithRetry,
+    upsertSourceAccount,
+    verifyAccountWrite,
     verifyPersistedAccount,
 } from './persist-result'
 
@@ -155,13 +157,101 @@ describe('readWithRetry', () => {
     })
 })
 
+describe('verifyAccountWrite', () => {
+    it('retries until persisted attributes match', async () => {
+        const readAccount = vi
+            .fn()
+            .mockResolvedValueOnce({ formUrl: 'https://old.example/form/1' })
+            .mockResolvedValueOnce({ formUrl: 'https://new.example/form/2' })
+        const sleep = vi.fn().mockResolvedValue(undefined)
+
+        await verifyAccountWrite(
+            {
+                sourceId: 'source-1',
+                upsertAccount: vi.fn(),
+                readAccount,
+                sleep,
+            },
+            'req-001',
+            { formUrl: 'https://new.example/form/2' }
+        )
+
+        expect(readAccount).toHaveBeenCalledTimes(2)
+        expect(sleep).toHaveBeenCalledWith(500)
+    })
+})
+
+describe('upsertSourceAccount', () => {
+    it('creates when no account exists for native identity', async () => {
+        const createAccountV1 = vi.fn().mockResolvedValue({})
+        const putAccountV1 = vi.fn().mockResolvedValue({})
+        const listAccountsV1 = vi.fn().mockResolvedValue({ data: [] })
+        const accounts = { createAccountV1, putAccountV1, listAccountsV1 }
+
+        await upsertSourceAccount(accounts as never, 'source-1', {
+            sourceId: 'source-1',
+            id: 'req-001',
+            formUrl: 'https://example.com/form/1',
+        })
+
+        expect(createAccountV1).toHaveBeenCalled()
+        expect(putAccountV1).not.toHaveBeenCalled()
+    })
+
+    it('puts when account already exists for native identity', async () => {
+        const createAccountV1 = vi.fn().mockResolvedValue({})
+        const putAccountV1 = vi.fn().mockResolvedValue({})
+        const listAccountsV1 = vi.fn().mockResolvedValue({
+            data: [{ id: 'isc-account-1', attributes: { id: 'req-001', formUrl: 'https://old.example/form/1' } }],
+        })
+        const accounts = { createAccountV1, putAccountV1, listAccountsV1 }
+
+        await upsertSourceAccount(accounts as never, 'source-1', {
+            sourceId: 'source-1',
+            id: 'req-001',
+            formUrl: 'https://new.example/form/2',
+        })
+
+        expect(putAccountV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: 'isc-account-1',
+                accountAttributes: expect.objectContaining({
+                    attributes: expect.objectContaining({ formUrl: 'https://new.example/form/2' }),
+                }),
+            })
+        )
+        expect(createAccountV1).not.toHaveBeenCalled()
+    })
+
+    it('rejects when list returns account without ISC id', async () => {
+        const accounts = {
+            createAccountV1: vi.fn(),
+            putAccountV1: vi.fn(),
+            listAccountsV1: vi.fn().mockResolvedValue({
+                data: [{ attributes: { id: 'req-001' } }],
+            }),
+        }
+
+        await expect(
+            upsertSourceAccount(accounts as never, 'source-1', {
+                sourceId: 'source-1',
+                id: 'req-001',
+                outcome: 'new',
+            })
+        ).rejects.toThrow(/missing ISC account id/)
+
+        expect(accounts.createAccountV1).not.toHaveBeenCalled()
+        expect(accounts.putAccountV1).not.toHaveBeenCalled()
+    })
+})
+
 function createTestDeps(overrides: Partial<Parameters<typeof createPersist>[0]> = {}) {
     let lastWritten: Record<string, unknown> | undefined
 
     const base = {
         sourceId: 'source-1',
         ensureSourceSchema: vi.fn().mockResolvedValue(undefined),
-        createAccount: vi.fn().mockImplementation(async (attributes: Record<string, unknown>) => {
+        upsertAccount: vi.fn().mockImplementation(async (attributes: Record<string, unknown>) => {
             lastWritten = attributes
         }),
         readAccount: vi.fn().mockImplementation(async () => lastWritten),
@@ -189,7 +279,7 @@ describe('createPersist', () => {
 
         await persist('req-001:child', { errorCode: 'value' }, 'failed')
 
-        expect(deps.createAccount).toHaveBeenCalledWith(
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
             expect.objectContaining({
                 sourceId: 'source-1',
                 id: 'req-001:child',
@@ -209,7 +299,7 @@ describe('createPersist', () => {
 
         await persist('req-001', { count: 42 })
 
-        expect(deps.createAccount).toHaveBeenCalledWith(expect.objectContaining({ count: 42 }))
+        expect(deps.upsertAccount).toHaveBeenCalledWith(expect.objectContaining({ count: 42 }))
     })
 
     it('stores boolean values and verifies read-back', async () => {
@@ -220,7 +310,7 @@ describe('createPersist', () => {
 
         await persist('req-001', { active: true })
 
-        expect(deps.createAccount).toHaveBeenCalledWith(expect.objectContaining({ active: true }))
+        expect(deps.upsertAccount).toHaveBeenCalledWith(expect.objectContaining({ active: true }))
         expect(deps.readAccount).toHaveBeenCalledWith('req-001')
     })
 
@@ -232,7 +322,7 @@ describe('createPersist', () => {
 
         await persist('req-001', { meta: { key: 'value' } })
 
-        expect(deps.createAccount).toHaveBeenCalledWith(
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
             expect.objectContaining({ meta: '{"key":"value"}' })
         )
         expect(deps.readAccount).toHaveBeenCalledWith('req-001')
@@ -282,7 +372,7 @@ describe('createPersist', () => {
     it('retries read when account is not immediately available', async () => {
         let lastWritten: Record<string, unknown> | undefined
         const deps = createTestDeps({
-            createAccount: vi.fn().mockImplementation(async (attributes: Record<string, unknown>) => {
+            upsertAccount: vi.fn().mockImplementation(async (attributes: Record<string, unknown>) => {
                 lastWritten = attributes
             }),
             readAccount: vi
@@ -298,6 +388,29 @@ describe('createPersist', () => {
         expect(deps.sleep).toHaveBeenCalledWith(500)
     })
 
+    it('upserts duplicate identity and verifies updated read-back', async () => {
+        let lastWritten: Record<string, unknown> | undefined = {
+            status: 'success',
+            outcome: 'original',
+            sourceId: 'source-1',
+            id: 'req-001',
+        }
+        const deps = createTestDeps({
+            upsertAccount: vi.fn().mockImplementation(async (attributes: Record<string, unknown>) => {
+                lastWritten = attributes
+            }),
+            readAccount: vi.fn().mockImplementation(async () => lastWritten),
+        })
+        const persist = createPersist<{ outcome: string }>(deps, new Map())
+
+        await persist('req-001', { outcome: 'updated' })
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'req-001', outcome: 'updated' })
+        )
+        expect(deps.readAccount).toHaveBeenCalledWith('req-001')
+    })
+
     it('formats array attributes on persist', async () => {
         const deps = createTestDeps({
             operationSchema: {
@@ -311,7 +424,7 @@ describe('createPersist', () => {
 
         await persist('req-001', { name: 'Fernando', emails: ['dfas', 'fasdfas'] })
 
-        expect(deps.createAccount).toHaveBeenCalledWith(
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'Fernando',
                 emails: ['dfas', 'fasdfas'],

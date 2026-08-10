@@ -32,13 +32,19 @@ const createAccountV1 = vi.fn().mockImplementation(async ({ accountAttributesCre
     return {}
 })
 
+const putAccountV1 = vi.fn().mockImplementation(async ({ accountAttributes }) => {
+    const attributes = accountAttributes.attributes as Record<string, unknown>
+    persistedAccounts.set(String(attributes.id), attributes)
+    return {}
+})
+
 const listAccountsV1 = vi.fn().mockImplementation(async ({ filters }) => {
     const match = /nativeIdentity eq "([^"]+)"/.exec(filters ?? '')
     const id = match?.[1]
     if (!id || !persistedAccounts.has(id)) {
         return { data: [] }
     }
-    return { data: [{ attributes: persistedAccounts.get(id) }] }
+    return { data: [{ id: `isc-${id}`, attributes: persistedAccounts.get(id) }] }
 })
 const resolveSourceByName = vi.fn().mockResolvedValue('source-123')
 const getSourceSchemasV1 = vi.fn().mockResolvedValue({
@@ -80,6 +86,7 @@ vi.mock('../framework/sdk-factory', () => ({
         },
         accounts: {
             createAccountV1: (...args: unknown[]) => createAccountV1(...args),
+            putAccountV1: (...args: unknown[]) => putAccountV1(...args),
             listAccountsV1: (...args: unknown[]) => listAccountsV1(...args),
         },
         forms: {},
@@ -272,4 +279,5 @@ describe('sodRemediationOperation', () => {
         )
     })
 })
+
 

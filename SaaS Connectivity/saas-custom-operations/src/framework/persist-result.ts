@@ -1,3 +1,4 @@
+import { AccountsApi } from 'sailpoint-api-client'
 import { RESERVED_OUTPUT_KEYS } from './output-schema'
 import { inferFromTsType, OperationField } from './schema-inference'
 import { PersistDependencies, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
@@ -226,23 +227,82 @@ export async function verifyAccountWrite(
     expected: Record<string, unknown>
 ): Promise<void> {
     const sleep = deps.sleep ?? defaultSleep
-    const actual = await readWithRetry(deps.readAccount, id, DEFAULT_MAX_ATTEMPTS, DEFAULT_RETRY_DELAY_MS, sleep)
 
-    if (!actual) {
-        throw new PersistVerificationError(id, `Verification failed for identity ${id}: account not found after retries`)
-    }
+    for (let attempt = 1; attempt <= DEFAULT_MAX_ATTEMPTS; attempt++) {
+        const actual = await deps.readAccount(id)
 
-    const mismatches = verifyPersistedAccount(expected, actual)
-    if (mismatches.length > 0) {
-        throw new PersistVerificationError(
-            id,
-            `Verification failed for identity ${id}: ${mismatches.join('; ')}`
-        )
+        if (actual) {
+            const mismatches = verifyPersistedAccount(expected, actual)
+            if (mismatches.length === 0) {
+                return
+            }
+            if (attempt === DEFAULT_MAX_ATTEMPTS) {
+                throw new PersistVerificationError(
+                    id,
+                    `Verification failed for identity ${id}: ${mismatches.join('; ')}`
+                )
+            }
+        } else if (attempt === DEFAULT_MAX_ATTEMPTS) {
+            throw new PersistVerificationError(id, `Verification failed for identity ${id}: account not found after retries`)
+        }
+
+        if (attempt < DEFAULT_MAX_ATTEMPTS) {
+            await sleep(DEFAULT_RETRY_DELAY_MS)
+        }
     }
 }
 
+/** Looks up a result-source account by native identity. */
+export async function findAccountOnSource(
+    accounts: AccountsApi,
+    sourceId: string,
+    nativeIdentity: string
+): Promise<{ id: string; attributes: Record<string, unknown> } | undefined> {
+    const response = await accounts.listAccountsV1({
+        filters: `nativeIdentity eq "${nativeIdentity}" and sourceId eq "${sourceId}"`,
+    })
+    const account = response.data?.[0]
+    if (!account) {
+        return undefined
+    }
+    if (!account.id) {
+        throw new Error(
+            `Account for native identity ${nativeIdentity} on source ${sourceId} is missing ISC account id`
+        )
+    }
+
+    return {
+        id: account.id,
+        attributes: account.attributes as Record<string, unknown>,
+    }
+}
+
+/** Creates or replaces a result-source account keyed by native identity. */
+export async function upsertSourceAccount(
+    accounts: AccountsApi,
+    sourceId: string,
+    attributes: Record<string, unknown>
+): Promise<void> {
+    const nativeId = String(attributes.id)
+    const existing = await findAccountOnSource(accounts, sourceId, nativeId)
+
+    if (existing) {
+        await accounts.putAccountV1({
+            id: existing.id,
+            accountAttributes: { attributes: attributes as { sourceId: string; [key: string]: unknown } },
+        })
+        return
+    }
+
+    await accounts.createAccountV1({
+        accountAttributesCreate: {
+            attributes: attributes as { sourceId: string; [key: string]: unknown },
+        },
+    })
+}
+
 /**
- * Persists operation output to the result source via account create (upsert semantics).
+ * Persists operation output to the result source via account upsert (create or put by native identity).
  * Reconciles source schema before write. Verification runs by default.
  */
 export function createPersist<TOutput extends object>(
@@ -263,7 +323,7 @@ export function createPersist<TOutput extends object>(
             deps.operationSchema?.outputFields
         )
         registry.set(id, built)
-        await deps.createAccount(built)
+        await deps.upsertAccount(built)
 
         if (options?.verify !== false) {
             await verifyAccountWrite(deps, id, built)
