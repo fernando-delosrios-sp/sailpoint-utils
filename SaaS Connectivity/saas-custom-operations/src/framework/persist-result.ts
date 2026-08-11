@@ -1,5 +1,10 @@
 import { AccountsApi, TaskManagementApi } from 'sailpoint-api-client'
 import { createAccount, findAccountOnSource, getAccount, putAccount } from '../isc/accounts'
+import {
+    ISC_IDENTITY_MAX_LENGTH,
+    ISC_STRING_ATTRIBUTE_MAX_LENGTH,
+    truncateForIscStorage,
+} from './attribute-limits'
 import { RESERVED_OUTPUT_KEYS } from './output-schema'
 import { inferFromTsType, OperationField } from './schema-inference'
 import { PersistDependencies, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
@@ -40,26 +45,26 @@ function outputFieldType(fieldName: string, outputFields: OperationField[] | und
 }
 
 /** Formats an operation output value for ISC account attribute storage using typed inference. */
-export function formatAttributeValue(value: unknown, fieldType?: string): unknown {
+export function formatAttributeValue(value: unknown, fieldType?: string, fieldName?: string): unknown {
     if (value === null || value === undefined) {
         return undefined
     }
 
     if (Array.isArray(value)) {
         const elementType = fieldType ? inferFromTsType(fieldType).type : 'STRING'
-        return value.map((item) => formatScalarValue(item, elementType))
+        return value.map((item) => formatScalarValue(item, elementType, fieldName))
     }
 
     if (fieldType) {
         const { type, isMulti } = inferFromTsType(fieldType)
         if (isMulti && Array.isArray(value)) {
-            return value.map((item) => formatScalarValue(item, type))
+            return value.map((item) => formatScalarValue(item, type, fieldName))
         }
-        return formatScalarValue(value, type)
+        return formatScalarValue(value, type, fieldName)
     }
 
     if (typeof value === 'string') {
-        return value
+        return truncateForIscStorage(value, ISC_STRING_ATTRIBUTE_MAX_LENGTH, fieldName)
     }
     if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
         return value
@@ -70,7 +75,7 @@ export function formatAttributeValue(value: unknown, fieldType?: string): unknow
     return JSON.stringify(value)
 }
 
-function formatScalarValue(value: unknown, iscType: string): unknown {
+function formatScalarValue(value: unknown, iscType: string, fieldName?: string): unknown {
     if (value === null || value === undefined) {
         return undefined
     }
@@ -85,14 +90,17 @@ function formatScalarValue(value: unknown, iscType: string): unknown {
         case 'DATE':
             return value instanceof Date ? value.toISOString() : String(value)
         case 'STRING':
-        default:
+        default: {
+            let stringValue: string
             if (typeof value === 'string') {
-                return value
+                stringValue = value
+            } else if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+                stringValue = String(value)
+            } else {
+                stringValue = JSON.stringify(value)
             }
-            if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-                return String(value)
-            }
-            return JSON.stringify(value)
+            return truncateForIscStorage(stringValue, ISC_STRING_ATTRIBUTE_MAX_LENGTH, fieldName)
+        }
     }
 }
 
@@ -115,7 +123,7 @@ export function buildAccountAttributes<TOutput extends object>(
 ): Record<string, unknown> {
     const result: Record<string, unknown> = {
         sourceId,
-        id,
+        id: truncateForIscStorage(id, ISC_IDENTITY_MAX_LENGTH, 'identity'),
         date: now().toISOString(),
         status: status ?? DEFAULT_STATUS,
     }
@@ -129,7 +137,7 @@ export function buildAccountAttributes<TOutput extends object>(
             continue
         }
 
-        const formatted = formatAttributeValue(value, outputFieldType(key, outputFields))
+        const formatted = formatAttributeValue(value, outputFieldType(key, outputFields), key)
         if (formatted !== undefined) {
             result[key] = formatted
         }

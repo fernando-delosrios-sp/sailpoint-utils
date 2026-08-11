@@ -1,4 +1,9 @@
 export {
+    ISC_IDENTITY_MAX_LENGTH,
+    ISC_STRING_ATTRIBUTE_MAX_LENGTH,
+    truncateForIscStorage,
+} from './attribute-limits'
+export {
     buildAccountAttributes,
     createPersist,
     createVerifyPersisted,

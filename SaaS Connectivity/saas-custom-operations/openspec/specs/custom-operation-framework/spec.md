@@ -32,7 +32,7 @@ The framework SHALL pre-configure sailpoint-api-client instances on the request 
 
 ### Requirement: Result persistence helper
 
-The framework SHALL provide persist(id, attributes?, status?, options?) on a RequestContext typed to the operation output signature. Before writing the account, the framework SHALL reconcile the result source schema for the current operation. The attributes parameter SHALL accept Partial of the operation output type. The framework SHALL always set id, sourceId, date, and status; author-supplied keys matching those names SHALL be ignored. The framework SHALL format attribute values for ISC storage using typed inference: strings booleans numbers bigint and Date stored as native values matching their ISC types, objects and unknown values JSON-serialized to STRING, arrays stored per element type rules with isMulti true on schema. The options parameter SHALL accept verify boolean where verify defaults to true. When no account exists for the identity on the result source, the framework SHALL create the account via createAccountV1, wait for the provisioning task to complete, and read the account back. When an account already exists for the identity, the framework SHALL update the account via putAccountV1, wait for the provisioning task when one is returned, and read the account back. The framework SHALL NOT remove existing accounts via deleteAccountAsyncV1 before writing. When verify is true, the framework SHALL read the account back and verify persisted attributes match written values with type-aware comparison before returning control. When verify is false, the framework SHALL skip inline read-back but SHALL record written attributes for later batch verification.
+The framework SHALL provide persist(id, attributes?, status?, options?) on a RequestContext typed to the operation output signature. Before writing the account, the framework SHALL reconcile the result source schema for the current operation. The attributes parameter SHALL accept Partial of the operation output type. The framework SHALL always set id, sourceId, date, and status; author-supplied keys matching those names SHALL be ignored. The framework SHALL format attribute values for ISC storage using typed inference: strings booleans numbers bigint and Date stored as native values matching their ISC types, objects and unknown values JSON-serialized to STRING, arrays stored per element type rules with isMulti true on schema. Before writing, the framework SHALL enforce ISC account value limits: the persist identity (account id / nativeIdentity) SHALL NOT exceed 128 characters, and each STRING attribute value (including each element of a STRING array and JSON-serialized object values) SHALL NOT exceed 256 characters. Values exceeding a limit SHALL be truncated to the limit and the framework SHALL log a warning naming the attribute or identity context. The options parameter SHALL accept verify boolean where verify defaults to true. When no account exists for the identity on the result source, the framework SHALL create the account via createAccountV1, wait for the provisioning task to complete, and read the account back. When an account already exists for the identity, the framework SHALL update the account via putAccountV1, wait for the provisioning task when one is returned, and read the account back. The framework SHALL NOT remove existing accounts via deleteAccountAsyncV1 before writing. When verify is true, the framework SHALL read the account back and verify persisted attributes match written values with type-aware comparison before returning control. When verify is false, the framework SHALL skip inline read-back but SHALL record written attributes for later batch verification.
 
 #### Scenario: Persist stores typed number value
 
@@ -150,6 +150,36 @@ The framework SHALL provide persist(id, attributes?, status?, options?) on a Req
 - **WHEN** ctx.persist('req-001', { outcome: 'value' }, undefined, { verify: false }) is called
 - **THEN** the framework SHALL write the account without inline read-back verification
 - **AND** the framework SHALL record expected attributes for identity req-001 in the write registry
+
+#### Scenario: Identity truncated at 128 characters
+
+- **GIVEN** a persist identity string longer than 128 characters
+- **WHEN** ctx.persist is called with that identity
+- **THEN** the framework SHALL store an account identity of exactly 128 characters equal to the first 128 characters of the supplied identity
+- **AND** the framework SHALL log a warning that the identity was truncated
+
+#### Scenario: STRING attribute truncated at 256 characters
+
+- **GIVEN** a request context typed to an output with summary string
+- **AND** summary value longer than 256 characters
+- **WHEN** ctx.persist('req-001', { summary: '<long value>' }) is called
+- **THEN** the framework SHALL store summary as exactly 256 characters equal to the first 256 characters of the input
+- **AND** the framework SHALL log a warning naming summary
+
+#### Scenario: STRING array elements truncated independently
+
+- **GIVEN** a request context typed to an output with tags string array
+- **AND** one tag element longer than 256 characters
+- **WHEN** ctx.persist('req-001', { tags: ['ok', '<long tag>'] }) is called
+- **THEN** the framework SHALL store the long tag truncated to 256 characters
+- **AND** the framework SHALL store the short tag unchanged
+
+#### Scenario: Values within limits unchanged
+
+- **GIVEN** a persist identity of 64 characters and a STRING attribute of 200 characters
+- **WHEN** ctx.persist is called with those values
+- **THEN** the framework SHALL store identity and attribute values without truncation
+- **AND** the framework SHALL NOT log a truncation warning
 
 ### Requirement: Accounts API delegation for persist
 

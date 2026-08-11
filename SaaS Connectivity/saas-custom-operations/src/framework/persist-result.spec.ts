@@ -1,4 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+    ISC_IDENTITY_MAX_LENGTH,
+    ISC_STRING_ATTRIBUTE_MAX_LENGTH,
+} from './attribute-limits'
 import {
     buildAccountAttributes,
     createPersist,
@@ -38,9 +42,44 @@ describe('formatAttributeValue', () => {
     it('formats string arrays', () => {
         expect(formatAttributeValue(['a', 'b'], 'string[]')).toEqual(['a', 'b'])
     })
+
+    it('truncates STRING values at 256 characters', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const longValue = 's'.repeat(ISC_STRING_ATTRIBUTE_MAX_LENGTH + 20)
+
+        const result = formatAttributeValue(longValue, 'string', 'summary')
+
+        expect(result).toHaveLength(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
+        expect(warn).toHaveBeenCalledWith(
+            `[persist] truncated summary from ${longValue.length} to ${ISC_STRING_ATTRIBUTE_MAX_LENGTH} chars`
+        )
+    })
+
+    it('truncates STRING array elements independently', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const longTag = 't'.repeat(ISC_STRING_ATTRIBUTE_MAX_LENGTH + 5)
+
+        const result = formatAttributeValue(['ok', longTag], 'string[]', 'tags') as string[]
+
+        expect(result[0]).toBe('ok')
+        expect(result[1]).toHaveLength(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
+        expect(warn).toHaveBeenCalledTimes(1)
+    })
+
+    it('leaves values within STRING limit unchanged', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const value = 'a'.repeat(200)
+
+        expect(formatAttributeValue(value, 'string', 'summary')).toBe(value)
+        expect(warn).not.toHaveBeenCalled()
+    })
 })
 
 describe('buildAccountAttributes', () => {
+    afterEach(() => {
+        vi.restoreAllMocks()
+    })
+
     const fixedDate = new Date('2026-08-03T10:00:00.000Z')
     const now = () => fixedDate
     const outputFields = [{ name: 'outcome', type: 'string' }, { name: 'count', type: 'number' }]
@@ -107,6 +146,19 @@ describe('buildAccountAttributes', () => {
         expect(attributes.id).toBe('req-001')
         expect(attributes.status).toBe('success')
         expect(attributes.outcome).toBe('ok')
+    })
+
+    it('truncates identity at 128 characters', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const longId = 'r'.repeat(ISC_IDENTITY_MAX_LENGTH + 10)
+
+        const attributes = buildAccountAttributes('source-1', longId, undefined, undefined, undefined, now)
+
+        expect(attributes.id).toHaveLength(ISC_IDENTITY_MAX_LENGTH)
+        expect(attributes.id).toBe(longId.slice(0, ISC_IDENTITY_MAX_LENGTH))
+        expect(warn).toHaveBeenCalledWith(
+            `[persist] truncated identity from ${longId.length} to ${ISC_IDENTITY_MAX_LENGTH} chars`
+        )
     })
 })
 
