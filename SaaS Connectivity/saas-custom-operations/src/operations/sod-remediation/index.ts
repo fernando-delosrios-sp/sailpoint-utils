@@ -1,4 +1,5 @@
 import { customOperation, OperationSignature } from '../../framework'
+import { sodRemediationOperationSchema } from './index.schema'
 import { listAssignedEntitlements, listAssignedEntitlementsOffline } from '../../isc/identity-history'
 import {
     fetchKeepRecommendations,
@@ -22,8 +23,8 @@ import {
 import { AccessPathLine } from './access-path-resolver'
 import {
     assembleFormInput,
+    buildPersistedSituationSummary,
     buildSituationHeader,
-    buildSituationSummary,
     resolveViolationAccessPaths,
 } from './context'
 import { createSodRemediationInstance, ensureSodFormDefinition } from './form-service'
@@ -161,7 +162,7 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
         })
 
         const situationHeader = buildSituationHeader(summaryInput)
-        const situationSummary = buildSituationSummary(summaryInput, { formUrl })
+        const situationSummary = buildPersistedSituationSummary(summaryInput, formUrl)
 
         logSodRemediationOutput(ctx.requestId, {
             formUrl,
@@ -178,5 +179,6 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
 
         logSodRemediationComplete(ctx.requestId)
         ctx.res.send({ status: 'success' })
-    }
+    },
+    { operationSchema: sodRemediationOperationSchema }
 )

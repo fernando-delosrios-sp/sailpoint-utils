@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { resolve } from 'path'
 import { buildCreateFormDefinitionPayload, loadFormSeed } from '../../isc/forms'
+import { ELEVATED_WARNING } from './access-path-resolver'
 
 const seedPath = resolve(__dirname, 'seed/sod-violation-remediation.seed.json')
 
@@ -53,7 +54,7 @@ function findFormElementById(
 }
 
 describe('sod-remediation seed', () => {
-    it('loads seed with workflow-friendly user and hidden form keys', () => {
+    it('loads seed with user form element keys and launch-only formInput workflow keys', () => {
         const seed = loadFormSeed(seedPath)
         const keys = collectFormElementKeys(seed.formElements)
 
@@ -61,14 +62,16 @@ describe('sod-remediation seed', () => {
             expect.arrayContaining([
                 'action',
                 'remediationSide',
-                'policyControl',
+                'control',
                 'comments',
-                'violationId',
-                'targetIdentityId',
-                'groupARevokePayload',
-                'groupBRevokePayload',
             ])
         )
+        expect(keys).not.toContain('violationId')
+        expect(keys).not.toContain('targetIdentityId')
+        expect(keys).not.toContain('groupAAccessSearch')
+        expect(keys).not.toContain('groupBAccessSearch')
+        expect(seed.formInput?.some((input) => input.id === 'violationId')).toBe(true)
+        expect(seed.formInput?.some((input) => input.id === 'groupAAccessSearch')).toBe(true)
         expect(keys).not.toContain('removeGroupAAccess')
         expect(keys).not.toContain('removeGroupBAccess')
         expect(keys).not.toContain('groupA')
@@ -79,20 +82,30 @@ describe('sod-remediation seed', () => {
         expect(seed.formInput?.some((input) => input.id === 'hasControls' && input.type === 'STRING')).toBe(true)
     })
 
+    it('renders violation context from formInput interpolation', () => {
+        const seed = loadFormSeed(seedPath)
+        const identityContext = findFormElementById(seed.formElements, 'ctx-identity')
+
+        expect((identityContext?.config as { description?: string })?.description).toContain(
+            '{{$.form.input.violationId}}'
+        )
+    })
+
     it('renders group access paths as DESCRIPTION elements with HTML formInput interpolation', () => {
         const seed = loadFormSeed(seedPath)
 
         const groupA = findFormElementById(seed.formElements, 'group-a-contents')
         const groupB = findFormElementById(seed.formElements, 'group-b-contents')
+        const toxicHeader = findFormElementById(seed.formElements, 'toxic-combination-header')
         const toxic = findFormElementById(seed.formElements, 'toxic-column-set')
 
         expect(groupA?.elementType).toBe('DESCRIPTION')
         expect(groupB?.elementType).toBe('DESCRIPTION')
+        expect(toxicHeader?.elementType).toBe('DESCRIPTION')
         expect((groupA?.config as { description?: string })?.description).toBe('{{$.form.input.groupAContentsHtml}}')
         expect((groupB?.config as { description?: string })?.description).toBe('{{$.form.input.groupBContentsHtml}}')
-        expect((toxic?.config as { description?: string })?.description).toContain(
-            'Removing access profile- or role-level access may affect other functions of the user.'
-        )
+        expect((toxicHeader?.config as { description?: string })?.description).toContain(ELEVATED_WARNING)
+        expect((toxic?.config as { description?: string })?.description).toBe('')
         expect(findFormElementById(seed.formElements, 'group-a-warning')).toBeUndefined()
         expect(findFormElementById(seed.formElements, 'group-b-warning')).toBeUndefined()
 
@@ -121,10 +134,23 @@ describe('sod-remediation seed', () => {
         const effectTypes = (seed.formConditions ?? []).flatMap((condition) =>
             ((condition.effects as Array<{ effectType?: string }>) ?? []).map((effect) => effect.effectType)
         )
+        const hideTargets = (seed.formConditions ?? []).flatMap((condition) =>
+            ((condition.effects as Array<{ effectType?: string; config?: { element?: string } }>) ?? [])
+                .filter((effect) => effect.effectType === 'HIDE')
+                .map((effect) => effect.config?.element)
+        )
 
         expect(effectTypes).not.toContain('SET_OPTION')
         expect(effectTypes.every((type) => ['SHOW', 'HIDE', 'SET_DEFAULT_VALUE', 'DISABLE'].includes(String(type)))).toBe(true)
-        expect(effectTypes.filter((type) => type === 'SET_DEFAULT_VALUE').length).toBeGreaterThanOrEqual(4)
+        expect(effectTypes.filter((type) => type === 'SET_DEFAULT_VALUE').length).toBe(0)
+        expect(hideTargets).not.toContain('hidden-section')
+    })
+
+    it('does not define hidden pass-through form elements for workflow keys', () => {
+        const seed = loadFormSeed(seedPath)
+
+        expect(findFormElementById(seed.formElements, 'hidden-section')).toBeUndefined()
+        expect(findFormElementById(seed.formElements, 'hidden-violation-id')).toBeUndefined()
     })
 })
 

@@ -82,8 +82,9 @@ The connector SHALL register a custom command `custom:sod-remediation` that prep
 
 - **GIVEN** the seed form definition used for SOD remediation
 - **WHEN** a recipient submits the form
-- **THEN** submitted `formData` SHALL expose user keys `action`, `remediationSide`, `policyControl`, and `comments`
-- **AND** SHALL include hidden launch-populated keys `violationId`, `targetIdentityId`, `groupARevokePayload`, and `groupBRevokePayload` suitable for downstream workflow JSONPath access
+- **THEN** submitted `formData` SHALL expose user keys `action`, `remediationSide`, `control`, and `comments`
+- **AND** launch-time keys `violationId`, `targetIdentityId`, `groupAAccessSearch`, and `groupBAccessSearch` SHALL be populated on the form instance `formInput` at create time and SHALL NOT require hidden form elements or `formData` pass-through
+- **AND** SHALL NOT include hidden keys `groupARevokePayload` or `groupBRevokePayload`
 
 #### Scenario: Single-side corrective selection
 
@@ -115,10 +116,32 @@ The sod-remediation operation SHALL resolve each conflicting entitlement on a vi
 - **THEN** the side display list SHALL include the access profile or role in addition to the entitlement
 - **AND** the side warning text SHALL state that removing profile- or role-level access may affect other functions of the user
 
-#### Scenario: Hidden revoke payload per side
+#### Scenario: Hidden access search string per side
 
 - **WHEN** form input is assembled for launch
-- **THEN** each side SHALL produce a JSON revoke payload including item references and a `recommendedRevoke` entry preferring Role over Access Profile over Entitlement
+- **THEN** each side SHALL produce an ISC access-item search filter joining **revocable** resolved path item ids with ` OR ` in the form `id:{uuid}`
+- **AND** SHALL NOT include ids for access path items marked not revocable
+
+#### Scenario: Single-item side search string
+
+- **GIVEN** a violation side with one revocable resolved access path item
+- **WHEN** form input is assembled for launch
+- **THEN** that side access search string SHALL be `id:{itemId}` without an ` OR ` suffix
+
+#### Scenario: Mixed revocable and non-revocable items on side
+
+- **GIVEN** a conflicting entitlement granted via an assigned role on the same side
+- **AND** the entitlement line is marked not revocable
+- **AND** the role line is marked revocable
+- **WHEN** form input is assembled for launch
+- **THEN** that side access search string SHALL include only the role id
+- **AND** SHALL NOT include the entitlement id
+
+#### Scenario: Entitlement-only revocable side unchanged
+
+- **GIVEN** a violation side with conflicting entitlements and no assigned access profile or role granting them
+- **WHEN** form input is assembled for launch
+- **THEN** that side access search string SHALL include each entitlement id joined with ` OR `
 
 ### Requirement: SOD controls and violation data at launch
 
@@ -164,44 +187,139 @@ The sod-remediation operation SHALL build `sod-remediation:situation-summary` as
 - **WHEN** the ctx-summary DESCRIPTION element is inspected
 - **THEN** its `description` SHALL be exactly `{{$.form.input.situationSummaryHtml}}` without an additional surrounding wrapper element
 
+### Requirement: ISC keep recommendation annotation
+
+The sod-remediation operation SHALL fetch ISC keep recommendations for each resolved access path item on the violation target identity at launch using the Recommendations API. Items whose recommendation is `YES` SHALL be annotated for display as recommended to keep. Items whose recommendation is `MAYBE`, `NO`, or `NOT_FOUND` SHALL NOT receive a keep star.
+
+#### Scenario: Batch keep recommendations at launch
+
+- **GIVEN** resolved access paths for Group A and Group B
+- **WHEN** `custom:sod-remediation` assembles form input
+- **THEN** the handler SHALL request keep recommendations for all unique access items across both sides in a single batch call
+- **AND** SHALL map each response back to the corresponding access path line by item id and type
+
+#### Scenario: YES shows keep star
+
+- **GIVEN** the Recommendations API returns `YES` for a role on Group B
+- **WHEN** form input and situation summary HTML are rendered
+- **THEN** that role line SHALL include a keep star with label Recommended to keep
+- **AND** SHALL NOT include a connector revoke recommendation star
+
+#### Scenario: MAYBE does not show keep star
+
+- **GIVEN** the Recommendations API returns `MAYBE` for an entitlement
+- **WHEN** HTML is rendered
+- **THEN** that line SHALL NOT include a keep star
+- **AND** SHALL NOT count toward side correction logic as a keep recommendation
+
+#### Scenario: Recommendations API failure degrades silently
+
+- **GIVEN** the Recommendations API call fails or times out
+- **WHEN** `custom:sod-remediation` completes launch
+- **THEN** the handler SHALL proceed without keep stars or side correction hint
+- **AND** SHALL NOT surface an error message to the form recipient
+
+### Requirement: Side correction recommendation
+
+When keep recommendations exist on exactly one violation group, the sod-remediation operation SHALL recommend correcting the opposite group. When both groups have at least one `YES` keep recommendation or neither group has any `YES`, the operation SHALL emit no side correction recommendation.
+
+#### Scenario: Recommend correct Group A
+
+- **GIVEN** Group A has no items with keep recommendation `YES`
+- **AND** Group B has at least one item with keep recommendation `YES`
+- **WHEN** form input and situation summary are assembled
+- **THEN** the operation SHALL recommend correcting Group A
+- **AND** SHALL expose `recommendedSideToCorrect` value `groupA` in launch context suitable for workflow consumption
+
+#### Scenario: Recommend correct Group B
+
+- **GIVEN** Group A has at least one item with keep recommendation `YES`
+- **AND** Group B has no items with keep recommendation `YES`
+- **WHEN** form input and situation summary are assembled
+- **THEN** the operation SHALL recommend correcting Group B
+
+#### Scenario: No side recommendation when symmetric
+
+- **GIVEN** both Group A and Group B have at least one `YES` keep recommendation
+- **WHEN** HTML is rendered
+- **THEN** the operation SHALL NOT display a side correction recommendation
+
+#### Scenario: Side hint in form and email
+
+- **GIVEN** a side correction recommendation is computed
+- **WHEN** form input and operation output are produced
+- **THEN** the side hint SHALL appear in group column DESCRIPTION HTML and in `situationSummaryHtml` and `sod-remediation:situation-summary`
+
+### Requirement: Privileged access indicator
+
+The sod-remediation operation SHALL annotate entitlement access path lines with a privileged indicator when entitlement metadata marks the entitlement as privileged.
+
+#### Scenario: Privileged entitlement badge
+
+- **GIVEN** entitlement metadata indicates an entitlement is privileged
+- **WHEN** access path HTML is rendered
+- **THEN** that entitlement line SHALL include a privileged badge using UTF-8 emoji
+
+#### Scenario: Missing privileged metadata
+
+- **GIVEN** entitlement privileged metadata is unavailable
+- **WHEN** access paths are rendered
+- **THEN** lines SHALL render without a privileged badge
+- **AND** launch SHALL still succeed
+
 ### Requirement: Access path revocability annotation
 
-The sod-remediation operation SHALL annotate each resolved access path (entitlement, access profile, role) with workflow-actionable revocability derived from path expansion. Entitlements on a side that also includes an access profile or role SHALL be marked not revocable with reason granted-via-role or granted-via-access-profile. Entitlements on entitlement-only sides SHALL be marked revocable.
+The sod-remediation operation SHALL annotate each resolved access path with workflow-actionable revocability derived from path expansion. Entitlements on a side that also includes an access profile or role granting that entitlement SHALL be marked not directly revocable and SHALL include a named grantor reference. Entitlements on entitlement-only sides SHALL be marked revocable. Connector revoke recommendation SHALL NOT be shown in owner-facing HTML.
 
 #### Scenario: Entitlement-only side
 
 - **GIVEN** a violation side with conflicting entitlements and no assigned access profile or role granting them
 - **WHEN** access paths are resolved
 - **THEN** each entitlement line SHALL be marked revocable
-- **AND** the recommended revoke target SHALL be that entitlement
+- **AND** SHALL NOT display a connector revoke recommendation star
+
+#### Scenario: Entitlement with named role grantor
+
+- **GIVEN** a conflicting entitlement granted via role "B2B Buyer" on the same side
+- **WHEN** access paths are resolved and HTML is rendered
+- **THEN** the entitlement line SHALL be marked not directly revocable with reason granted-via-role
+- **AND** the reason text SHALL name the grantor as granted via B2B Buyer role
+- **AND** the role line SHALL be marked revocable without a connector revoke star in HTML
 
 #### Scenario: Entitlement with role on side
 
 - **GIVEN** a conflicting entitlement granted via an assigned role on the same side
 - **WHEN** access paths are resolved
-- **THEN** the entitlement line SHALL be marked not revocable with reason granted-via-role
-- **AND** the role line SHALL be marked revocable and recommended
+- **THEN** the entitlement line SHALL be marked not directly revocable with reason granted-via-role
+- **AND** the role line SHALL be marked revocable without owner-visible connector revoke star
 
 #### Scenario: Revoke payload includes revocability metadata
 
 - **WHEN** form input is assembled for launch
-- **THEN** each side revoke payload item SHALL include `revocable`, `recommended`, and optional `reason`
-- **AND** `recommendedRevoke` SHALL reference the highest-priority revocable item
+- **THEN** each side revoke payload item SHALL include `revocable`, optional `reason`, optional `grantedVia`, and optional `keepRecommendation`
+- **AND** `recommendedRevoke` SHALL reference the highest-priority revocable item for workflow use without owner-visible star
+
+#### Scenario: Revoke payload includes keep metadata
+
+- **WHEN** form input is assembled for launch
+- **THEN** each side revoke payload item SHALL include `revocable`, optional `reason`, optional `grantedVia`, and optional `keepRecommendation`
+- **AND** `recommendedRevoke` MAY remain for workflow use without owner-visible star
 
 ### Requirement: Revocability HTML display with emojis
 
-The sod-remediation operation SHALL render access path revocability in HTML using UTF-8 emojis alongside text labels in group column form input and in the operation `sod-remediation:situation-summary` output.
+The sod-remediation operation SHALL render access path annotations in HTML using UTF-8 emojis alongside text labels in group column form input and in operation `sod-remediation:situation-summary` output. Keep recommendation stars SHALL use distinct copy from revocability labels.
 
 #### Scenario: Group column HTML form input
 
 - **WHEN** `custom:sod-remediation` assembles form input
 - **THEN** `groupAContentsHtml` and `groupBContentsHtml` SHALL contain HTML list items with revocability emoji and text labels
+- **AND** keep recommendation stars SHALL appear only for `YES` responses with label Recommended to keep
 - **AND** the bundled seed SHALL render those keys in DESCRIPTION elements for group A and group B columns
 
 #### Scenario: Email summary parity
 
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** persisted output `sod-remediation:situation-summary` SHALL include the same revocability annotations as the group column HTML
+- **THEN** persisted output `sod-remediation:situation-summary` SHALL include the same access path annotations and side correction hint as the group column HTML
 
 
 

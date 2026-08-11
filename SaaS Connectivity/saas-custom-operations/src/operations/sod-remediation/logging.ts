@@ -131,8 +131,8 @@ export function logSodRemediationFormInput(requestId: string, formInput: SodForm
             formInput.groupBContentsHtml.length > 160
                 ? `${formInput.groupBContentsHtml.slice(0, 160)}…`
                 : formInput.groupBContentsHtml,
-        groupARevokePayload: formInput.groupARevokePayload,
-        groupBRevokePayload: formInput.groupBRevokePayload,
+        groupAAccessSearch: formInput.groupAAccessSearch,
+        groupBAccessSearch: formInput.groupBAccessSearch,
         controlOptions: formInput.controlOptions,
         situationSummaryHtmlPreview:
             formInput.situationSummaryHtml.length > 160

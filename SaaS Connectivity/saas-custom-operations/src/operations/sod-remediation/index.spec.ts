@@ -1,6 +1,7 @@
 import { _withConfig } from '@sailpoint/connector-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import '../auto-registry'
+import { ISC_STRING_ATTRIBUTE_MAX_LENGTH } from '../../framework/attribute-limits'
+import { clearOperationSchemaRegistry } from '../../framework'
 import { sodRemediationOperation } from './index'
 
 function createMockJwt(payload: Record<string, unknown>): string {
@@ -14,6 +15,13 @@ const workflowConfig = {
     token: createMockJwt({ identity_id: 'token-owner-id', sub: 'other-sub' }),
     sourceName: 'SaaS Custom Operations',
 }
+
+const sodRemediationPersistAttributes = [
+    { name: 'sod-remediation:form-url', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:situation-header', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:situation-summary', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:owner-email', type: 'STRING', isMulti: false },
+]
 
 const mockViolation = {
     id: 'vio-1',
@@ -74,14 +82,12 @@ const getSourceSchemasV1 = vi.fn().mockResolvedValue({
                 { name: 'id', type: 'STRING', isMulti: false },
                 { name: 'status', type: 'STRING', isMulti: false },
                 { name: 'date', type: 'STRING', isMulti: false },
-                { name: 'sod-remediation:form-url', type: 'STRING', isMulti: false },
-                { name: 'sod-remediation:situation-header', type: 'STRING', isMulti: false },
-                { name: 'sod-remediation:situation-summary', type: 'STRING', isMulti: false },
-                { name: 'sod-remediation:owner-email', type: 'STRING', isMulti: false },
+                ...sodRemediationPersistAttributes,
             ],
         },
     ],
 })
+const updateSourceSchemaV1 = vi.fn().mockResolvedValue({})
 
 const getViolationV1 = vi.fn()
 const listControlsV1 = vi.fn()
@@ -102,7 +108,7 @@ vi.mock('../../framework/sdk-factory', () => ({
     createSailPointClients: vi.fn(() => ({
         sources: {
             getSourceSchemasV1: (...args: unknown[]) => getSourceSchemasV1(...args),
-            updateSourceSchemaV1: vi.fn(),
+            updateSourceSchemaV1: (...args: unknown[]) => updateSourceSchemaV1(...args),
         },
         accounts: {
             createAccountV1: (...args: unknown[]) => createAccountV1(...args),
@@ -197,6 +203,22 @@ describe('sodRemediationOperation', () => {
     beforeEach(() => {
         persistedAccounts.clear()
         createAccountV1.mockClear()
+        updateSourceSchemaV1.mockClear()
+        getSourceSchemasV1.mockClear()
+        getSourceSchemasV1.mockResolvedValue({
+            data: [
+                {
+                    id: 'schema-1',
+                    name: 'account',
+                    attributes: [
+                        { name: 'id', type: 'STRING', isMulti: false },
+                        { name: 'status', type: 'STRING', isMulti: false },
+                        { name: 'date', type: 'STRING', isMulti: false },
+                        ...sodRemediationPersistAttributes,
+                    ],
+                },
+            ],
+        })
         getViolationV1.mockResolvedValue(mockViolation)
         listControlsV1.mockResolvedValue([{ id: 'ctrl-1', name: 'Control 1' }])
         fetchIdentityAccessItemsFromSdk.mockResolvedValue([])
@@ -232,8 +254,11 @@ describe('sodRemediationOperation', () => {
                 formInput: expect.objectContaining({
                     hasControls: true,
                     violationId: 'vio-1',
+                    targetIdentityId: 'ident-1',
+                    groupAAccessSearch: expect.any(String),
+                    groupBAccessSearch: expect.any(String),
                     situationSummaryHtml: expect.not.stringContaining('Remediation form:'),
-                    controlOptions: [{ label: 'Control 1', value: 'ctrl-1', sublabel: undefined }],
+                    controlOptions: [{ label: 'Control 1', value: 'ctrl-1' }],
                 }),
             })
         )
@@ -248,15 +273,70 @@ describe('sodRemediationOperation', () => {
                         'sod-remediation:form-url': 'https://tenant.identitynow.com/form/instance-1',
                         'sod-remediation:situation-header':
                             '⚠️ SOD Violation Remediation Required — Alice Example',
-                        'sod-remediation:situation-summary': expect.stringMatching(
-                            /Alice Example[\s\S]*Remediation form:[\s\S]*https:\/\/tenant\.identitynow\.com\/form\/instance-1/
-                        ),
+                        'sod-remediation:situation-summary': expect.stringMatching(/Alice Example/),
                         'sod-remediation:owner-email': 'owner-default@example.com',
                     }),
                 }),
             })
         )
+        const persistedSummary = createAccountV1.mock.calls[0][0].accountAttributesCreate.attributes[
+            'sod-remediation:situation-summary'
+        ] as string
+        expect(persistedSummary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
+        expect(persistedSummary).not.toContain('<ul>')
+        expect(persistedSummary).toMatch(/access paths?.*in conflict/)
+        expect(persistedSummary).toContain(
+            '<a href=https://tenant.identitynow.com/form/instance-1>Remediate here</a>'
+        )
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
+    })
+
+    it('reconciles schema from operation sidecar without auto-registry lookup', async () => {
+        clearOperationSchemaRegistry()
+        getSourceSchemasV1.mockResolvedValue({
+            data: [
+                {
+                    id: 'schema-1',
+                    name: 'account',
+                    identityAttribute: 'id',
+                    displayAttribute: 'id',
+                    nativeObjectType: 'User',
+                    attributes: [
+                        { name: 'id', type: 'STRING', isMulti: false },
+                        { name: 'status', type: 'STRING', isMulti: false },
+                        { name: 'date', type: 'STRING', isMulti: false },
+                    ],
+                },
+            ],
+        })
+
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await sodRemediationOperation(
+                { commandType: 'custom:sod-remediation' } as never,
+                {
+                    requestId: 'req-sod-schema',
+                    violationId: 'vio-1',
+                    formName: 'SOD Remediation',
+                },
+                res as never
+            )
+        })
+
+        expect(updateSourceSchemaV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                jsonPatchOperation: expect.arrayContaining([
+                    expect.objectContaining({
+                        op: 'replace',
+                        path: '/attributes',
+                        value: expect.arrayContaining([
+                            expect.objectContaining({ name: 'sod-remediation:form-url', type: 'STRING' }),
+                        ]),
+                    }),
+                ]),
+            })
+        )
     })
 
     it('uses owner input override for recipient', async () => {
@@ -361,12 +441,18 @@ describe('sodRemediationOperation', () => {
             expect.objectContaining({
                 accountAttributesCreate: expect.objectContaining({
                         attributes: expect.objectContaining({
-                            'sod-remediation:situation-summary': expect.stringMatching(
-                                /No compensating controls[\s\S]*Remediation form:/
-                            ),
+                            'sod-remediation:situation-summary': expect.stringMatching(/Alice Example/),
                         }),
                 }),
             })
+        )
+        const zeroControlsSummary = createAccountV1.mock.calls[0][0].accountAttributesCreate.attributes[
+            'sod-remediation:situation-summary'
+        ] as string
+        expect(zeroControlsSummary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
+        expect(zeroControlsSummary).toMatch(/Alice Example/)
+        expect(zeroControlsSummary).toContain(
+            '<a href=https://tenant.identitynow.com/form/instance-1>Remediate here</a>'
         )
     })
 })

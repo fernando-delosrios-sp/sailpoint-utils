@@ -49,13 +49,13 @@ export function renderAccessPathLineHtml(line: AccessPathLine, escapeHtml: (text
             : ''
 
     if (line.revocable) {
-        return `<li>${namePart}${privilegedSuffix}${keepSuffix} — ${REVOCABILITY_EMOJI.revocable} <span style='color: #27ae60;'>Revocable</span></li>`
+        return `<li>${namePart}${privilegedSuffix}${keepSuffix} — ${REVOCABILITY_EMOJI.revocable} Revocable</li>`
     }
 
     const reason = reasonPhrase(line, escapeHtml)
     const reasonHtml = reason ? ` <em>${reason}</em>` : ''
 
-    return `<li>${namePart}${privilegedSuffix}${keepSuffix} — ${REVOCABILITY_EMOJI.notRevocable} <span style='color: #e67e23;'>Not directly revocable</span>${reasonHtml}</li>`
+    return `<li>${namePart}${privilegedSuffix}${keepSuffix} — ${REVOCABILITY_EMOJI.notRevocable} Not directly revocable${reasonHtml}</li>`
 }
 
 /** Renders access paths as an HTML unordered list. */

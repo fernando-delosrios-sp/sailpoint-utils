@@ -8,10 +8,10 @@
         { "id": "groupBContentsHtml", "type": "STRING", "label": "Group B Contents HTML", "description": "HTML access path list with revocability labels for group B" },
         { "id": "hasControls", "type": "STRING", "label": "Has Controls", "description": "Whether tenant compensating controls exist (true/false)" },
         { "id": "controlOptions", "type": "ARRAY", "label": "Control Options", "description": "Compensating control labels for mitigate select options" },
-        { "id": "violationId", "type": "STRING", "label": "Violation ID", "description": "Hidden workflow key" },
-        { "id": "targetIdentityId", "type": "STRING", "label": "Target Identity ID", "description": "Hidden workflow key" },
-        { "id": "groupARevokePayload", "type": "STRING", "label": "Group A Revoke Payload", "description": "Hidden JSON revoke payload for group A" },
-        { "id": "groupBRevokePayload", "type": "STRING", "label": "Group B Revoke Payload", "description": "Hidden JSON revoke payload for group B" }
+        { "id": "violationId", "type": "STRING", "label": "Violation ID", "description": "Launch-time workflow key (read from form instance formInput, not formData)" },
+        { "id": "targetIdentityId", "type": "STRING", "label": "Target Identity ID", "description": "Launch-time workflow key (read from form instance formInput, not formData)" },
+        { "id": "groupAAccessSearch", "type": "STRING", "label": "Group A Access Search", "description": "ISC access-item search filter for group A (id:x OR id:y)" },
+        { "id": "groupBAccessSearch", "type": "STRING", "label": "Group B Access Search", "description": "ISC access-item search filter for group B (id:x OR id:y)" }
     ],
     "formElements": [
         {
@@ -31,7 +31,7 @@
                         "config": {
                             "label": "Target Identity",
                             "showLabel": true,
-                            "description": "<p><strong>Identity:</strong> {{$.form.input.targetIdentityName}}</p><p><strong>Policy:</strong> {{$.form.input.policyName}}</p>"
+                            "description": "<p><strong>Identity:</strong> {{$.form.input.targetIdentityName}}</p><p><strong>Policy:</strong> {{$.form.input.policyName}}</p><p><strong>Violation ID:</strong> {{$.form.input.violationId}}</p>"
                         },
                         "validations": []
                     },
@@ -117,14 +117,25 @@
                         "validations": [{ "validationType": "REQUIRED" }, { "validationType": "DATA_SOURCE" }]
                     },
                     {
-                        "id": "toxic-column-set",
-                        "elementType": "COLUMN_SET",
+                        "id": "toxic-combination-header",
+                        "elementType": "DESCRIPTION",
                         "key": "",
                         "config": {
                             "label": "Toxic Combination",
                             "labelStyle": "h5",
                             "showLabel": true,
-                            "description": "<p><em>⚠️ Removing access profile- or role-level access may affect other functions of the user.</em></p>",
+                            "description": "<p><em>⚠️ Removing access profile- or role-level access may affect other functions of the user.</em></p>"
+                        },
+                        "validations": []
+                    },
+                    {
+                        "id": "toxic-column-set",
+                        "elementType": "COLUMN_SET",
+                        "key": "",
+                        "config": {
+                            "label": "",
+                            "showLabel": false,
+                            "description": "",
                             "columnCount": 2,
                             "columns": [
                                 [
@@ -172,9 +183,9 @@
                 "showLabel": true,
                 "formElements": [
                     {
-                        "id": "policy-control",
+                        "id": "control-select",
                         "elementType": "SELECT",
-                        "key": "policyControl",
+                        "key": "control",
                         "config": {
                             "label": "Compensating Control",
                             "required": true,
@@ -205,48 +216,6 @@
                 ]
             },
             "validations": []
-        },
-        {
-            "id": "hidden-section",
-            "elementType": "SECTION",
-            "config": {
-                "alignment": "LEFT",
-                "description": "",
-                "label": "Workflow Keys",
-                "labelStyle": "h6",
-                "showLabel": false,
-                "formElements": [
-                    {
-                        "id": "hidden-violation-id",
-                        "elementType": "TEXT",
-                        "key": "violationId",
-                        "config": { "label": "Violation ID", "required": false },
-                        "validations": []
-                    },
-                    {
-                        "id": "hidden-target-id",
-                        "elementType": "TEXT",
-                        "key": "targetIdentityId",
-                        "config": { "label": "Target Identity ID", "required": false },
-                        "validations": []
-                    },
-                    {
-                        "id": "hidden-group-a-payload",
-                        "elementType": "TEXT",
-                        "key": "groupARevokePayload",
-                        "config": { "label": "Group A Revoke Payload", "required": false },
-                        "validations": []
-                    },
-                    {
-                        "id": "hidden-group-b-payload",
-                        "elementType": "TEXT",
-                        "key": "groupBRevokePayload",
-                        "config": { "label": "Group B Revoke Payload", "required": false },
-                        "validations": []
-                    }
-                ]
-            },
-            "validations": []
         }
     ],
     "formConditions": [
@@ -262,43 +231,6 @@
                 { "sourceType": "INPUT", "source": "hasControls", "operator": "EQ", "valueType": "STRING", "value": "true" }
             ],
             "effects": [{ "effectType": "SHOW", "config": { "element": "mitigate-section" } }]
-        },
-        {
-            "ruleOperator": "AND",
-            "rules": [{ "sourceType": "INPUT", "source": "violationId", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
-            "effects": [
-                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "violationId", "element": "hidden-violation-id" } },
-                { "effectType": "DISABLE", "config": { "element": "hidden-violation-id" } }
-            ]
-        },
-        {
-            "ruleOperator": "AND",
-            "rules": [{ "sourceType": "INPUT", "source": "targetIdentityId", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
-            "effects": [
-                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "targetIdentityId", "element": "hidden-target-id" } },
-                { "effectType": "DISABLE", "config": { "element": "hidden-target-id" } }
-            ]
-        },
-        {
-            "ruleOperator": "AND",
-            "rules": [{ "sourceType": "INPUT", "source": "groupARevokePayload", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
-            "effects": [
-                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "groupARevokePayload", "element": "hidden-group-a-payload" } },
-                { "effectType": "DISABLE", "config": { "element": "hidden-group-a-payload" } }
-            ]
-        },
-        {
-            "ruleOperator": "AND",
-            "rules": [{ "sourceType": "INPUT", "source": "groupBRevokePayload", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
-            "effects": [
-                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "groupBRevokePayload", "element": "hidden-group-b-payload" } },
-                { "effectType": "DISABLE", "config": { "element": "hidden-group-b-payload" } }
-            ]
-        },
-        {
-            "ruleOperator": "AND",
-            "rules": [{ "sourceType": "INPUT", "source": "violationId", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
-            "effects": [{ "effectType": "HIDE", "config": { "element": "hidden-section" } }]
         }
     ]
 }

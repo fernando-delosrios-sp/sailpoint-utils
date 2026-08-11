@@ -1,7 +1,43 @@
 import { describe, expect, it } from 'vitest'
-import { resolveAccessSide } from './access-path-resolver'
+import { buildAccessSearchString, buildRevocableAccessSearchString, resolveAccessSide } from './access-path-resolver'
 
 describe('access-path-resolver', () => {
+    it('buildAccessSearchString joins item ids with OR', () => {
+        expect(buildAccessSearchString([{ id: 'ent-a' }, { id: 'role-1' }])).toBe('id:ent-a OR id:role-1')
+        expect(buildAccessSearchString([{ id: 'ent-a' }])).toBe('id:ent-a')
+        expect(buildAccessSearchString([])).toBe('')
+    })
+
+    it('buildRevocableAccessSearchString excludes non-revocable items', () => {
+        const accessPaths = resolveAccessSide(
+            [{ id: 'ent-1', name: 'Finance Ledger' }],
+            [{ type: 'ROLE', id: 'role-1', name: 'B2B Buyer', grantedEntitlementIds: ['ent-1'] }]
+        ).accessPaths
+
+        expect(buildRevocableAccessSearchString(accessPaths)).toBe('id:role-1')
+    })
+
+    it('buildRevocableAccessSearchString includes all items on entitlement-only side', () => {
+        const accessPaths = resolveAccessSide([{ id: 'ent-a', name: 'Ent A' }], []).accessPaths
+
+        expect(buildRevocableAccessSearchString(accessPaths)).toBe('id:ent-a')
+    })
+
+    it('buildRevocableAccessSearchString returns empty string when no revocable items', () => {
+        expect(
+            buildRevocableAccessSearchString([
+                {
+                    type: 'ENTITLEMENT',
+                    id: 'ent-1',
+                    name: 'Finance Ledger',
+                    revocable: false,
+                    recommended: false,
+                    reason: 'granted-via-role',
+                },
+            ])
+        ).toBe('')
+    })
+
     it('entitlement-only side produces revocable entitlement and standard warning', () => {
         const result = resolveAccessSide([{ id: 'ent-1', name: 'Finance Ledger' }], [])
 

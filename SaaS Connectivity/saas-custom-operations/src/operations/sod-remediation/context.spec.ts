@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { ISC_STRING_ATTRIBUTE_MAX_LENGTH } from '../../framework/attribute-limits'
 import {
     assembleFormInput,
     buildAccessContentsHtml,
     buildControlOptions,
+    buildPersistedSituationSummary,
     buildSituationHeader,
     buildSituationSummary,
 } from './context'
@@ -128,7 +130,6 @@ describe('sod-remediation context', () => {
         expect(summary).toContain('Not directly revocable')
         expect(summary).toContain('(granted via Finance Role role)')
         expect(summary).toContain('Recommended to correct Group A')
-        expect(summary).not.toContain('⭐ Recommended</span>')
     })
 
     it('buildSituationSummary escapes HTML in dynamic values', () => {
@@ -150,27 +151,74 @@ describe('sod-remediation context', () => {
         expect(summary).toContain('ℹ️ Note: No compensating controls are configured for this tenant.')
     })
 
-    it('buildSituationSummary omits newline separators for DelimitedFile CSV persist', () => {
-        const summary = buildSituationSummary(summaryInput, {
-            formUrl: 'https://tenant.identitynow.com/form/instance-1',
-        })
+    it('buildSituationSummary omits CSV-unsafe characters for DelimitedFile form input', () => {
+        const summary = buildSituationSummary(summaryInput)
 
         expect(summary).not.toContain('\n')
-        expect(summary).not.toMatch(/(?:href|style)="/)
+        expect(summary).not.toMatch(/(?:href|style)=/)
+        expect(summary).not.toMatch(/['"]/)
     })
 
-    it('buildSituationSummary appends remediation form link when formUrl is provided', () => {
-        const summary = buildSituationSummary(summaryInput, {
-            formUrl: 'https://tenant.identitynow.com/form/instance-1',
-        })
+    const sampleFormUrl = 'https://tenant.identitynow.com/form/instance-1'
 
-        expect(summary).toContain('Remediation form:')
-        expect(summary).toContain(
-            "<a href='https://tenant.identitynow.com/form/instance-1'>https://tenant.identitynow.com/form/instance-1</a>"
+    it('buildPersistedSituationSummary stays within ISC STRING limit', () => {
+        const summary = buildPersistedSituationSummary(summaryInput, sampleFormUrl)
+
+        expect(summary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
+        expect(summary).toContain('Please review a SOD violation for Alice Example (AP vs AP)')
+        expect(summary).toMatch(/access paths?.*in conflict/)
+        expect(summary).toContain(`<a href=${sampleFormUrl}>Remediate here</a>`)
+        expect(summary).not.toMatch(/['"]/)
+        expect(summary).not.toContain('<ul>')
+    })
+
+    it('buildPersistedSituationSummary includes controls note when it fits', () => {
+        const summary = buildPersistedSituationSummary({ ...summaryInput, controls: [] }, sampleFormUrl)
+
+        expect(summary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
+        expect(summary).toContain('No compensating controls are available')
+        expect(summary).toContain(`<a href=${sampleFormUrl}>Remediate here</a>`)
+    })
+
+    it('buildPersistedSituationSummary keeps long identity and policy names when form URL fits', () => {
+        const summary = buildPersistedSituationSummary(
+            {
+                ...summaryInput,
+                violation: {
+                    ...summaryInput.violation,
+                    identity: { id: 'ident-1', name: 'A'.repeat(40) },
+                    policy: { id: 'pol-1', name: 'P'.repeat(40) },
+                },
+            },
+            sampleFormUrl
         )
+
+        expect(summary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
+        expect(summary).toContain('access paths are in conflict')
+        expect(summary).toContain('A'.repeat(40))
+        expect(summary).toContain('P'.repeat(40))
+        expect(summary).toContain(`<a href=${sampleFormUrl}>Remediate here</a>`)
     })
 
-    it('buildSituationSummary omits remediation form link for form instance output', () => {
+    it('buildPersistedSituationSummary truncates names but keeps actionable form link', () => {
+        const summary = buildPersistedSituationSummary(
+            {
+                ...summaryInput,
+                violation: {
+                    ...summaryInput.violation,
+                    identity: { id: 'ident-1', name: 'A'.repeat(120) },
+                    policy: { id: 'pol-1', name: 'P'.repeat(120) },
+                },
+            },
+            sampleFormUrl
+        )
+
+        expect(summary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
+        expect(summary).toContain(`<a href=${sampleFormUrl}>Remediate here</a>`)
+        expect(summary).toContain('…')
+    })
+
+    it('buildSituationSummary does not include remediation form link', () => {
         const summary = buildSituationSummary(summaryInput)
 
         expect(summary).not.toContain('Remediation form:')
@@ -191,7 +239,7 @@ describe('sod-remediation context', () => {
         expect(formInput.situationSummaryHtml).not.toContain('Remediation form:')
         expect(formInput.groupAContentsHtml).toContain('Ent A')
         expect(formInput.groupBContentsHtml).toContain('Not directly revocable')
-        expect(formInput.recommendedSideToCorrect).toBe('groupA')
+        expect(formInput.groupAContentsHtml).toContain('Recommended to correct Group A')
     })
 
     it('buildControlOptions maps tenant controls to select options', () => {
@@ -206,14 +254,11 @@ describe('sod-remediation context', () => {
         ])
     })
 
-    it('assembleFormInput includes hidden revoke payloads with keep metadata', () => {
+    it('assembleFormInput includes hidden access search strings for each side', () => {
         const formInput = assembleFormInput(summaryInput)
 
         expect(formInput.hasControls).toBe(true)
-        expect(JSON.parse(formInput.groupBRevokePayload).items[1]).toMatchObject({
-            keepRecommendation: 'YES',
-            recommended: false,
-        })
-        expect(JSON.parse(formInput.groupBRevokePayload).recommendedRevoke.type).toBe('ROLE')
+        expect(formInput.groupAAccessSearch).toBe('id:ent-a')
+        expect(formInput.groupBAccessSearch).toBe('id:role-1')
     })
 })

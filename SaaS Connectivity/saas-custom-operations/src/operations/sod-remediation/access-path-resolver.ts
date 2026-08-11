@@ -44,6 +44,16 @@ const ELEVATED_WARNING =
 
 export { ELEVATED_WARNING }
 
+/** Builds an ISC access-item search filter from resolved path item ids (`id:a OR id:b`). */
+export function buildAccessSearchString(items: Array<{ id: string }>): string {
+    return items.map((item) => `id:${item.id}`).join(' OR ')
+}
+
+/** Builds an access-item search filter from revocable path items only. */
+export function buildRevocableAccessSearchString(accessPaths: AccessPathLine[]): string {
+    return buildAccessSearchString(accessPaths.filter((item) => item.revocable))
+}
+
 const TYPE_PRIORITY: Record<AccessPathType, number> = {
     ROLE: 3,
     ACCESS_PROFILE: 2,

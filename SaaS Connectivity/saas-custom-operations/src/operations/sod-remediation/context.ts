@@ -1,3 +1,4 @@
+import { ISC_STRING_ATTRIBUTE_MAX_LENGTH } from '../../framework/attribute-limits'
 import { CompensatingControlV1 } from '../../isc/controls'
 import { ViolationV1, extractSideEntitlements, resolveViolationSides } from '../../isc/violations'
 import { IdentityAccessItem } from '../../isc/identity-access'
@@ -5,7 +6,7 @@ import {
     RecommendedSideToCorrect,
     sideCorrectionLabel,
 } from './access-path-enrichment'
-import { ResolvedAccessSide, resolveAccessSide } from './access-path-resolver'
+import { buildRevocableAccessSearchString, ResolvedAccessSide, resolveAccessSide } from './access-path-resolver'
 import { FormInputSelectOption, SodFormInputValues } from './form-service'
 import {
     REVOCABILITY_EMOJI,
@@ -35,16 +36,81 @@ export function buildSituationHeader(input: Pick<SituationSummaryInput, 'violati
     return `${REVOCABILITY_EMOJI.warning} SOD Violation Remediation Required — ${targetName}`
 }
 
-export interface BuildSituationSummaryOptions {
-    /** When set, appends a clickable remediation form link for email output. */
-    formUrl?: string
+function truncateEscaped(text: string, maxLength: number): string {
+    if (text.length <= maxLength) {
+        return text
+    }
+
+    if (maxLength <= 1) {
+        return text.slice(0, maxLength)
+    }
+
+    return `${text.slice(0, maxLength - 1)}…`
 }
 
-/** Builds an HTML situation summary suitable for workflow email notifications. */
-export function buildSituationSummary(
+function pathConflictPhrase(groupACount: number, groupBCount: number): string {
+    const sideLabel = (count: number): string => (count === 1 ? 'access path' : 'access paths')
+
+    if (groupACount === groupBCount) {
+        return `${groupACount} ${sideLabel(groupACount)} on each side are in conflict`
+    }
+
+    return `${groupACount} and ${groupBCount} ${sideLabel(Math.max(groupACount, groupBCount))} are in conflict`
+}
+
+function remediationFormLink(formUrl: string): string {
+    const safeFormUrl = escapeHtml(formUrl)
+    // Unquoted href: no literal quote chars (DelimitedFile provisionAsCsv-safe); valid when URL has no spaces.
+    return `<a href=${safeFormUrl}>Remediate here</a>`
+}
+
+/**
+ * Compact HTML for persisted `sod-remediation:situation-summary`.
+ * Fits ISC STRING storage (256 chars); access-path detail lives in the remediation form.
+ */
+export function buildPersistedSituationSummary(
     input: SituationSummaryInput,
-    options: BuildSituationSummaryOptions = {}
+    formUrl: string,
+    maxLength: number = ISC_STRING_ATTRIBUTE_MAX_LENGTH
 ): string {
+    const { violation, groupA, groupB, controls } = input
+
+    let identity = escapeHtml(violation.identity.name ?? violation.identity.id)
+    let policy = escapeHtml(violation.policy?.name ?? 'Unknown policy')
+    const formLink = remediationFormLink(formUrl)
+    const pathPhrase = pathConflictPhrase(groupA.accessPaths.length, groupB.accessPaths.length)
+
+    const render = (identityValue: string, policyValue: string, includeControls: boolean): string => {
+        const controlsNote =
+            includeControls && controls.length === 0
+                ? ' No compensating controls are available.'
+                : ''
+        return `<p>Please review a SOD violation for ${identityValue} (${policyValue}). ${pathPhrase}.${controlsNote} ${formLink}.</p>`
+    }
+
+    if (render(identity, policy, true).length <= maxLength) {
+        return render(identity, policy, true)
+    }
+    if (render(identity, policy, false).length <= maxLength) {
+        return render(identity, policy, false)
+    }
+
+    const overhead = render('', '', false).length
+    const nameBudget = maxLength - overhead
+    if (nameBudget > 2) {
+        const combinedLength = identity.length + policy.length
+        const identityBudget = Math.max(1, Math.floor(nameBudget * (identity.length / combinedLength)))
+        const policyBudget = Math.max(1, nameBudget - identityBudget)
+        identity = truncateEscaped(identity, identityBudget)
+        policy = truncateEscaped(policy, policyBudget)
+    }
+
+    const truncated = render(identity, policy, false)
+    return truncated.length <= maxLength ? truncated : truncated.slice(0, maxLength)
+}
+
+/** Builds full HTML for in-form DESCRIPTION rendering (includes access-path lists). */
+export function buildSituationSummary(input: SituationSummaryInput): string {
     const { violation, groupA, groupB, controls, recommendedSideToCorrect = null } = input
     const targetName = escapeHtml(violation.identity.name ?? violation.identity.id)
     const policyName = escapeHtml(violation.policy?.name ?? 'Unknown policy')
@@ -69,12 +135,6 @@ export function buildSituationSummary(
         )
     }
 
-    if (options.formUrl) {
-        const formUrl = escapeHtml(options.formUrl)
-        // Single-quoted attrs: DelimitedFile provisionAsCsv breaks on double quotes inside attribute values.
-        parts.push(`<p><strong>Remediation form:</strong> <a href='${formUrl}'>${formUrl}</a></p>`)
-    }
-
     // Single-line HTML: DelimitedFile provisionAsCsv breaks on embedded newlines in attribute values.
     return parts.join('')
 }
@@ -95,11 +155,16 @@ export function buildAccessContentsHtml(
 
 /** Builds FORM_INPUT select options for tenant compensating controls. */
 export function buildControlOptions(controls: CompensatingControlV1[]): FormInputSelectOption[] {
-    return controls.map((control) => ({
-        label: control.name,
-        value: control.id,
-        sublabel: control.description,
-    }))
+    return controls.map((control) => {
+        const option: FormInputSelectOption = {
+            label: control.name,
+            value: control.id,
+        }
+        if (control.description) {
+            option.sublabel = control.description
+        }
+        return option
+    })
 }
 
 export interface AssembleFormInputParams {
@@ -124,9 +189,8 @@ export function assembleFormInput(params: AssembleFormInputParams): SodFormInput
         hasControls: controls.length > 0,
         violationId: violation.id,
         targetIdentityId: violation.identity.id,
-        groupARevokePayload: JSON.stringify(groupA.revokePayload),
-        groupBRevokePayload: JSON.stringify(groupB.revokePayload),
-        recommendedSideToCorrect: recommendedSideToCorrect ?? '',
+        groupAAccessSearch: buildRevocableAccessSearchString(groupA.accessPaths),
+        groupBAccessSearch: buildRevocableAccessSearchString(groupB.accessPaths),
         controlOptions: buildControlOptions(controls),
     }
 }

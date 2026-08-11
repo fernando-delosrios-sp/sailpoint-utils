@@ -87,8 +87,8 @@ describe('sod-remediation logging', () => {
             hasControls: false,
             violationId: 'vio-1',
             targetIdentityId: 'ident-1',
-            groupARevokePayload: '{}',
-            groupBRevokePayload: '{}',
+            groupAAccessSearch: 'id:ent-a',
+            groupBAccessSearch: 'id:ent-b',
             controlOptions: [{ label: 'A (Control)', value: 'ctrl-a' }],
         })
         logSodRemediationOutput('req-log-1', {

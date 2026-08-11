@@ -1,0 +1,189 @@
+{
+  "id": "c4b3b425-8a75-465d-bc73-dacff7b6c125",
+  "name": "SOD Remediation - Action",
+  "description": "",
+  "definition": {
+    "start": "Define Variable 1",
+    "steps": {
+      "Compare Strings": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Define Variable",
+            "variableA.$": "$.trigger.formData.action",
+            "variableB": "Correct"
+          }
+        ],
+        "defaultStep": "HTTP Request",
+        "displayName": "Remediation - Correct?",
+        "type": "choice"
+      },
+      "Compare Strings 1": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Update Variable",
+            "variableA.$": "$.trigger.formData.remediationSide",
+            "variableB": "groupA"
+          }
+        ],
+        "defaultStep": "Update Variable 1",
+        "displayName": "Correction - Group A?",
+        "type": "choice"
+      },
+      "Define Variable": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "Access Search Query",
+              "transforms": []
+            }
+          ]
+        },
+        "displayName": "Init Access Search Query",
+        "nextStep": "Compare Strings 1",
+        "type": "Mutation"
+      },
+      "Define Variable 1": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "API URL",
+              "transforms": [],
+              "variableA": "https://company23429-poc.api.identitynow-demo.com"
+            }
+          ]
+        },
+        "displayName": "Configuration",
+        "nextStep": "Compare Strings",
+        "type": "Mutation"
+      },
+      "End Step - Success": {
+        "actionId": "sp:operator-success",
+        "displayName": "",
+        "type": "success"
+      },
+      "Get Access": {
+        "actionId": "sp:access:get",
+        "attributes": {
+          "accessprofiles": true,
+          "entitlements": true,
+          "getAccessBy": "searchQuery",
+          "identityToReturn": null,
+          "query": "{{$.defineVariable.accessSearchQuery}}",
+          "roles": true
+        },
+        "displayName": "Get Access to Revoke",
+        "nextStep": "Manage Access",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "HTTP Request": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody": {
+            "comments": "{{$.trigger.formData.comments}}",
+            "control": "{{$.trigger.formData.control}}"
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "c509bc14-d06d-4368-b6e5-1b2cff35d8d1",
+            "paramType": "1.4",
+            "refID": "f3530408-31ec-4202-a86e-f33c0c93a2ca"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "a34f79b2-02c8-43d7-9dd7-d76baa0c7fa4",
+            "paramType": "3.1",
+            "refID": "db876dc7-4d6e-4fa2-bd77-c95507f9d148"
+          },
+          "requestContentType": "json",
+          "requestHeaders": {
+            "X-SailPoint-Experimental": "true"
+          },
+          "url": "{{$.defineVariable1.aPIURL}}/violations/v1/{{$.trigger.formInstanceInputs[0].violationId.value}}/controls"
+        },
+        "displayName": "Apply Policy Control",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Manage Access": {
+        "actionId": "sp:access:manage",
+        "attributes": {
+          "comments": "{{$.trigger.formInstanceInputs[0].policyName.value}} policy violation correction",
+          "removeIdentity.$": "$.trigger.formInstanceInputs[0].targetIdentityId.value",
+          "requestType": "REVOKE_ACCESS",
+          "requestedItems.$": "$.getAccess.accessItems"
+        },
+        "displayName": "",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Update Variable": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.accessSearchQuery",
+              "transforms": [],
+              "variableA.$": "$.trigger.formInstanceInputs[0].groupAAccessSearch.value"
+            }
+          ]
+        },
+        "displayName": "Set Access Search Query to Group A",
+        "nextStep": "Get Access",
+        "type": "Mutation"
+      },
+      "Update Variable 1": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.accessSearchQuery",
+              "transforms": [],
+              "variableA.$": "$.trigger.formInstanceInputs[0].groupBAccessSearch.value"
+            }
+          ]
+        },
+        "displayName": "Set Access Search Query to Group B",
+        "nextStep": "Get Access",
+        "type": "Mutation"
+      }
+    }
+  },
+  "enabled": false,
+  "executionCount": 6,
+  "failureCount": 1,
+  "trigger": {
+    "type": "EVENT",
+    "attributes": {
+      "filter.$": "$[?(@.formDefinitionId == '1774adfd-b8cf-4cd1-8263-933787aacf8b')]",
+      "formDefinitionId": "1774adfd-b8cf-4cd1-8263-933787aacf8b",
+      "id": "sp:form-submitted",
+      "integrationId": null
+    }
+  }
+}
