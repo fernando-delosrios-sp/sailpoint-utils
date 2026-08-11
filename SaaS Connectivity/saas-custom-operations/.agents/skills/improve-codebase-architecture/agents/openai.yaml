@@ -1,0 +1,5 @@
+interface:
+  display_name: "Improve Codebase Architecture"
+  short_description: "Scan a codebase for deepening opportunities, present them as a markdown report"
+policy:
+  allow_implicit_invocation: false
