@@ -234,18 +234,27 @@ Launch-only operation that fetches an SOD violation, ensures a named form defini
 
 | Output field (persisted) | Description |
 |---|---|
-| `formUrl` | Standalone form URL (`standAloneFormUrl`) for email deep links |
-| `situationSummary` | HTML summary for workflow email bodies (identity, policy, access paths) |
+| `sod-remediation:form-url` | Standalone form URL (`standAloneFormUrl`) for email deep links |
+| `sod-remediation:situation-summary` | HTML summary for workflow email bodies |
+| `sod-remediation:situation-header` | Plain-text email subject |
+| `sod-remediation:owner-email` | Recipient email for notifications |
 
 **Workflow integration pattern:**
 
 1. Invoke `custom:sod-remediation` with violation ID and form name.
-2. Read persisted output via **Get Accounts** filtered by `requestId`.
-3. Send email to recipient with `situationSummary` as the HTML body and link to `formUrl`.
-4. Wait for form submission; read `formData` keys:
-   - User keys: `action`, `remediationSide`, `policyControl`, `comments`
-   - Hidden keys: `violationId`, `targetIdentityId`, `groupARevokePayload`, `groupBRevokePayload`
-5. Execute corrective revoke or apply compensating control in separate workflow HTTP actions (not handled by the connector).
+2. Read persisted output via **Get Accounts** filtered by `requestId` (`form-url`, email fields).
+3. Send email to recipient with `situation-summary` as the HTML body and link to `form-url`.
+4. Wait for form submission; read **user decisions** from submitted `formData`: `action`, `remediationSide`, `control`, `comments`.
+5. Read **launch-time workflow keys** from the completed form instance **`formInput`** (not `formData`):
+   - `violationId`, `targetIdentityId`, `groupAAccessSearch`, `groupBAccessSearch`
+   - Access search strings include **revocable** access path ids only (`id:x OR id:y`); non-revocable entitlements granted via role or access profile on the same side are omitted from the filter
+   - Workflow JSONPath example after a Wait for Form / Get Form Instance step: `{{$.form.formInput.groupAAccessSearch}}`
+6. Select the access-search string for the chosen side using `formData.remediationSide`.
+7. Execute corrective revoke or apply compensating control in separate workflow HTTP actions (not handled by the connector).
+
+Workflow keys are declared in the form definition `formInput` schema and populated at instance create. They do **not** need hidden form elements and do **not** round-trip through `formData`.
+
+After upgrading the connector, re-invoke `custom:sod-remediation` so the form-definition watermark patches the tenant form definition before creating a new instance. Each invoke creates a **new** form instance; re-opening a URL from an already-submitted instance shows "already submitted".
 
 Experimental APIs require header `X-SailPoint-Experimental: true` (handled internally). Offline payload runs use canned violation data when no `config` is provided.
 
@@ -377,6 +386,8 @@ ctx.verifyPersisted(ids)
 By default, `persist` reads the account back from ISC and verifies attributes before resolving. Pass `{ verify: false }` to defer verification, then call `verifyPersisted([...ids])` before the handler completes. Unknown attribute keys are rejected before the write.
 
 Persistence uses probe-first upsert: `createAccountV1` when the native identity is absent on the result source, or `putAccountV1` when an account already exists. Both paths wait for the async provisioning task to complete, then read the account back for verification.
+
+ISC enforces account value storage limits on result sources: **128 characters** for the persist identity (`id` / nativeIdentity) and **256 characters** per STRING attribute value (including JSON-serialized objects and each element of STRING arrays). Values exceeding a limit are truncated before write and a `[persist] truncated …` warning is logged — persist still succeeds with the shortened value.
 
 ## Development
 
