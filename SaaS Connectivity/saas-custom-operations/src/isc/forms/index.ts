@@ -10,3 +10,9 @@ export {
     buildCreateFormDefinitionPayload,
     loadFormSeed,
 } from './seed-loader'
+export {
+    computeFormSeedFingerprint,
+    formatWatermarkedDescription,
+    parseFormSeedWatermark,
+    FORM_SEED_WATERMARK_PREFIX,
+} from './seed-watermark'

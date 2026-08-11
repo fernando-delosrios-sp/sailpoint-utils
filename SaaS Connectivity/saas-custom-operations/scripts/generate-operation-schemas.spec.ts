@@ -34,6 +34,22 @@ describe('renderOperationSchemaSidecar', () => {
         const summaryIndex = content.indexOf('summary:')
         expect(stepIndex).toBeLessThan(summaryIndex)
     })
+
+    it('quotes output field names that are not valid identifiers', () => {
+        const content = renderOperationSchemaSidecar(
+            'sodRemediationOperation',
+            [
+                { name: 'sod-remediation:form-url', optional: false, type: 'string' },
+                { name: 'sod-remediation:owner-email', optional: false, type: 'string' },
+                { name: 'sod-remediation:situation-summary', optional: false, type: 'string' },
+            ],
+            '/tmp/operations/sod-remediation/index.ts'
+        )
+
+        expect(content).toContain("'sod-remediation:form-url': 'string',")
+        expect(content).toContain("'sod-remediation:owner-email': 'string',")
+        expect(content).toContain("'sod-remediation:situation-summary': 'string',")
+    })
 })
 
 describe('renderAutoRegistry', () => {

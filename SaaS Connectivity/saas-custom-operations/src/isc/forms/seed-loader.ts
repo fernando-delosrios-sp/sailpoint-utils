@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
+import { computeFormSeedFingerprint, formatWatermarkedDescription } from './seed-watermark'
 
 export interface FormDefinitionSeed {
     description?: string
@@ -49,9 +50,11 @@ export function buildCreateFormDefinitionPayload(
     seed: FormDefinitionSeed,
     description?: string
 ): CreateFormDefinitionPayload {
+    const humanDescription = description ?? seed.description
+    const fingerprint = computeFormSeedFingerprint(seed)
     return {
         name: formName,
-        description: description ?? seed.description ?? formName,
+        description: formatWatermarkedDescription(fingerprint, humanDescription),
         owner: { type: 'IDENTITY', id: ownerId },
         formInput: seed.formInput ?? [],
         formElements: seed.formElements,

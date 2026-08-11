@@ -150,6 +150,17 @@ export async function runPayloadFromPath(payloadPath: string): Promise<number> {
     try {
         payload = loadPayload(payloadPath)
         const result = await runPayload(payload)
+        const failed =
+            result.response != null &&
+            typeof result.response === 'object' &&
+            (result.response as { status?: unknown }).status === 'failed'
+
+        if (failed) {
+            const errorMessage = String((result.response as { error?: unknown }).error ?? 'operation failed')
+            console.error(formatPayloadFailure(payloadPath, payload, new Error(errorMessage)))
+            return 1
+        }
+
         printPayloadOutputSummary({
             ...result,
             type: payload.type,

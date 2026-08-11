@@ -1,12 +1,27 @@
-import { AccountsApi } from 'sailpoint-api-client'
+import { AccountsApi, TaskManagementApi } from 'sailpoint-api-client'
 import { RESERVED_OUTPUT_KEYS } from './output-schema'
 import { inferFromTsType, OperationField } from './schema-inference'
 import { PersistDependencies, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
 
 const DEFAULT_STATUS = 'success'
 /** ISC account indexing can take several seconds after createAccountV1. */
-const DEFAULT_MAX_ATTEMPTS = 15
+const DEFAULT_MAX_ATTEMPTS = 30
 const DEFAULT_RETRY_DELAY_MS = 500
+const POST_CREATE_LOOKUP_ATTEMPTS = 5
+const SOURCE_SCAN_PAGE_SIZE = 250
+
+interface AccountProvisioningTaskStatus {
+    completed?: string | null
+    completionStatus?: string | null
+    messages?: Array<{
+        type?: string
+        key?: string
+        localizedText?: { message?: string } | null
+        parameters?: Record<string, unknown> | null
+    }>
+    target?: { id?: string; type?: string | null; name?: string }
+    attributes?: Record<string, unknown>
+}
 
 export class PersistVerificationError extends Error {
     constructor(
@@ -20,6 +35,11 @@ export class PersistVerificationError extends Error {
 
 function outputFieldType(fieldName: string, outputFields: OperationField[] | undefined): string | undefined {
     return outputFields?.find((field) => field.name === fieldName)?.type
+}
+
+/** Escapes a value for use inside OData double-quoted string literals. */
+export function escapeODataString(value: string): string {
+    return value.replace(/\\/g, '\\\\').replace(/"/g, '""')
 }
 
 /** Formats an operation output value for ISC account attribute storage using typed inference. */
@@ -200,6 +220,17 @@ async function defaultSleep(ms: number): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+async function readPersistedAccount(
+    deps: PersistDependencies,
+    nativeIdentity: string,
+    iscAccountId?: string
+): Promise<Record<string, unknown> | undefined> {
+    if (iscAccountId && deps.readAccountByIscId) {
+        return deps.readAccountByIscId(iscAccountId)
+    }
+    return deps.readAccount(nativeIdentity)
+}
+
 export async function readWithRetry(
     readAccount: PersistDependencies['readAccount'],
     id: string,
@@ -224,12 +255,13 @@ export async function readWithRetry(
 export async function verifyAccountWrite(
     deps: PersistDependencies,
     id: string,
-    expected: Record<string, unknown>
+    expected: Record<string, unknown>,
+    iscAccountId?: string
 ): Promise<void> {
     const sleep = deps.sleep ?? defaultSleep
 
     for (let attempt = 1; attempt <= DEFAULT_MAX_ATTEMPTS; attempt++) {
-        const actual = await deps.readAccount(id)
+        const actual = await readPersistedAccount(deps, id, iscAccountId)
 
         if (actual) {
             const mismatches = verifyPersistedAccount(expected, actual)
@@ -243,7 +275,13 @@ export async function verifyAccountWrite(
                 )
             }
         } else if (attempt === DEFAULT_MAX_ATTEMPTS) {
-            throw new PersistVerificationError(id, `Verification failed for identity ${id}: account not found after retries`)
+            const taskHint = iscAccountId
+                ? ''
+                : ' Check ISC task monitor for the createAccount taskId logged above.'
+            throw new PersistVerificationError(
+                id,
+                `Verification failed for identity ${id}: account not found after retries.${taskHint}`
+            )
         }
 
         if (attempt < DEFAULT_MAX_ATTEMPTS) {
@@ -252,53 +290,310 @@ export async function verifyAccountWrite(
     }
 }
 
+type SourceAccountMatch = { id: string; attributes: Record<string, unknown> }
+
+function accountMatchesNativeIdentity(
+    account: { nativeIdentity?: string | null; name?: string | null; attributes?: unknown },
+    nativeIdentity: string
+): boolean {
+    const attrs = (account.attributes ?? {}) as Record<string, unknown>
+    return (
+        account.nativeIdentity === nativeIdentity ||
+        account.name === nativeIdentity ||
+        attrs.id === nativeIdentity
+    )
+}
+
+function accountOnSource(
+    account: {
+        id?: string
+        sourceId?: string
+        nativeIdentity?: string | null
+        name?: string | null
+        attributes?: unknown
+    },
+    sourceId: string,
+    nativeIdentity: string
+): SourceAccountMatch | undefined {
+    if (!account.id || account.sourceId !== sourceId || !accountMatchesNativeIdentity(account, nativeIdentity)) {
+        return undefined
+    }
+
+    return {
+        id: account.id,
+        attributes: (account.attributes ?? {}) as Record<string, unknown>,
+    }
+}
+
+async function listAccountsMatchingFilter(
+    accounts: AccountsApi,
+    filters: string,
+    sourceId: string,
+    nativeIdentity: string
+): Promise<SourceAccountMatch | undefined> {
+    const response = await accounts.listAccountsV1({
+        filters,
+        limit: SOURCE_SCAN_PAGE_SIZE,
+        detailLevel: 'FULL',
+    })
+
+    for (const account of response.data ?? []) {
+        if (account && !account.id) {
+            throw new Error(
+                `Account for native identity ${nativeIdentity} on source ${sourceId} is missing ISC account id`
+            )
+        }
+
+        const match = accountOnSource(account, sourceId, nativeIdentity)
+        if (match) {
+            return match
+        }
+    }
+
+    return undefined
+}
+
+async function scanAccountsOnSourceForIdentity(
+    accounts: AccountsApi,
+    sourceId: string,
+    nativeIdentity: string
+): Promise<SourceAccountMatch | undefined> {
+    let offset = 0
+
+    while (true) {
+        const response = await accounts.listAccountsV1({
+            filters: `sourceId eq "${sourceId}"`,
+            limit: SOURCE_SCAN_PAGE_SIZE,
+            offset,
+            detailLevel: 'FULL',
+        })
+        const page = response.data ?? []
+
+        for (const account of page) {
+            if (!account.id || account.sourceId !== sourceId) {
+                continue
+            }
+
+            const attrs = (account.attributes ?? {}) as Record<string, unknown>
+            if (
+                attrs.id === nativeIdentity ||
+                account.nativeIdentity === nativeIdentity ||
+                account.name === nativeIdentity
+            ) {
+                return { id: account.id, attributes: attrs }
+            }
+        }
+
+        if (page.length < SOURCE_SCAN_PAGE_SIZE) {
+            return undefined
+        }
+
+        offset += SOURCE_SCAN_PAGE_SIZE
+    }
+}
+
 /** Looks up a result-source account by native identity. */
 export async function findAccountOnSource(
     accounts: AccountsApi,
     sourceId: string,
     nativeIdentity: string
-): Promise<{ id: string; attributes: Record<string, unknown> } | undefined> {
-    const response = await accounts.listAccountsV1({
-        filters: `nativeIdentity eq "${nativeIdentity}" and sourceId eq "${sourceId}"`,
-    })
-    const account = response.data?.[0]
-    if (!account) {
-        return undefined
-    }
-    if (!account.id) {
-        throw new Error(
-            `Account for native identity ${nativeIdentity} on source ${sourceId} is missing ISC account id`
-        )
+): Promise<SourceAccountMatch | undefined> {
+    const escaped = escapeODataString(nativeIdentity)
+    const sourceFilter = `sourceId eq "${sourceId}"`
+
+    const lookupFilters = [
+        `nativeIdentity eq "${escaped}" and ${sourceFilter}`,
+        `nativeIdentity eq "${escaped}"`,
+        `name eq "${escaped}" and ${sourceFilter}`,
+        `name eq "${escaped}"`,
+    ]
+
+    for (const filters of lookupFilters) {
+        const match = await listAccountsMatchingFilter(accounts, filters, sourceId, nativeIdentity)
+        if (match) {
+            if (filters.startsWith('nativeIdentity eq') && !filters.includes('sourceId eq')) {
+                console.log(`[persist] located identity=${nativeIdentity} via nativeIdentity filter`)
+            } else if (filters.startsWith('name eq')) {
+                console.log(`[persist] located identity=${nativeIdentity} via name filter`)
+            }
+            return match
+        }
     }
 
-    return {
-        id: account.id,
-        attributes: account.attributes as Record<string, unknown>,
+    const byScan = await scanAccountsOnSourceForIdentity(accounts, sourceId, nativeIdentity)
+    if (byScan) {
+        console.log(`[persist] located identity=${nativeIdentity} via source scan`)
     }
+    return byScan
 }
 
-/** Creates or replaces a result-source account keyed by native identity. */
+const TASK_SUCCESS_STATUSES = new Set(['SUCCESS', 'WARNING'])
+
+function formatTaskMessages(messages: Array<{ type?: string; localizedText?: { message?: string } | null; key?: string }> | undefined): string {
+    if (!messages?.length) {
+        return ''
+    }
+
+    const parts = messages
+        .filter((message) => message.type === 'ERROR' || message.type === 'WARN')
+        .map((message) => message.localizedText?.message ?? message.key)
+        .filter(Boolean)
+
+    return parts.length > 0 ? `: ${parts.join('; ')}` : ''
+}
+
+const ISC_ACCOUNT_ID_PATTERN = /^[a-f0-9]{32}$/i
+
+/** Best-effort extraction of the ISC account UUID from a completed provisioning task. */
+export function extractIscAccountIdFromProvisioningTask(task: AccountProvisioningTaskStatus): string | undefined {
+    const candidates: string[] = []
+
+    if (task.target?.id) {
+        candidates.push(task.target.id)
+    }
+
+    for (const value of Object.values(task.attributes ?? {})) {
+        if (typeof value === 'string') {
+            candidates.push(value)
+        }
+    }
+
+    for (const message of task.messages ?? []) {
+        for (const value of Object.values(message.parameters ?? {})) {
+            if (typeof value === 'string') {
+                candidates.push(value)
+            }
+        }
+    }
+
+    return candidates.find((candidate) => ISC_ACCOUNT_ID_PATTERN.test(candidate))
+}
+
+/** Polls an ISC account provisioning task until it completes or fails. */
+export async function waitForAccountProvisioningTask(
+    tasks: TaskManagementApi,
+    taskId: string,
+    maxAttempts = DEFAULT_MAX_ATTEMPTS,
+    delayMs = DEFAULT_RETRY_DELAY_MS,
+    sleep: (ms: number) => Promise<void> = defaultSleep
+): Promise<AccountProvisioningTaskStatus> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const response = await tasks.getTaskStatusV1({ id: taskId })
+        const task = response.data
+
+        if (!task) {
+            if (attempt === maxAttempts) {
+                throw new Error(`Account provisioning task ${taskId} was not found`)
+            }
+        } else if (task.completed) {
+            const completionStatus = task.completionStatus ?? 'UNKNOWN'
+            if (TASK_SUCCESS_STATUSES.has(completionStatus)) {
+                console.log(`[persist] account task ${taskId} completed with ${completionStatus}`)
+                return task as AccountProvisioningTaskStatus
+            }
+
+            throw new Error(
+                `Account provisioning task ${taskId} failed with ${completionStatus}${formatTaskMessages(task.messages)}`
+            )
+        }
+
+        if (attempt < maxAttempts) {
+            await sleep(delayMs)
+        }
+    }
+
+    throw new Error(`Account provisioning task ${taskId} did not complete after retries`)
+}
+
+async function resolveAccountAfterProvisioning(
+    accounts: AccountsApi,
+    sourceId: string,
+    nativeIdentity: string,
+    task?: AccountProvisioningTaskStatus,
+    maxAttempts = POST_CREATE_LOOKUP_ATTEMPTS,
+    delayMs = DEFAULT_RETRY_DELAY_MS,
+    sleep: (ms: number) => Promise<void> = defaultSleep
+): Promise<string | undefined> {
+    const taskAccountIds = [
+        task?.target?.id,
+        task ? extractIscAccountIdFromProvisioningTask(task) : undefined,
+    ].filter((value): value is string => Boolean(value))
+
+    for (const taskAccountId of taskAccountIds) {
+        try {
+            const response = await accounts.getAccountV1({ id: taskAccountId })
+            const account = response.data
+            if (account?.id && account.sourceId === sourceId) {
+                console.log(`[persist] resolved identity=${nativeIdentity} iscAccountId=${account.id} from task`)
+                return account.id
+            }
+        } catch {
+            // Fall back to list-based lookup below.
+        }
+    }
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const found = await findAccountOnSource(accounts, sourceId, nativeIdentity)
+        if (found?.id) {
+            return found.id
+        }
+
+        if (attempt < maxAttempts) {
+            await sleep(delayMs)
+        }
+    }
+
+    return undefined
+}
+
+export interface UpsertSourceAccountOptions {
+    waitForAccountTask?: (taskId: string) => Promise<AccountProvisioningTaskStatus>
+}
+
+/** Creates or updates a result-source account keyed by native identity. */
 export async function upsertSourceAccount(
     accounts: AccountsApi,
     sourceId: string,
-    attributes: Record<string, unknown>
-): Promise<void> {
+    attributes: Record<string, unknown>,
+    options: UpsertSourceAccountOptions = {}
+): Promise<string | undefined> {
     const nativeId = String(attributes.id)
+    console.log(`[persist] upsert sourceId=${sourceId} identity=${nativeId}`)
     const existing = await findAccountOnSource(accounts, sourceId, nativeId)
 
     if (existing) {
-        await accounts.putAccountV1({
+        console.log(`[persist] upsert identity=${nativeId} action=put iscAccountId=${existing.id}`)
+        const putResponse = await accounts.putAccountV1({
             id: existing.id,
             accountAttributes: { attributes: attributes as { sourceId: string; [key: string]: unknown } },
         })
-        return
+        const putTaskId = putResponse.data?.id
+        let completedTask: AccountProvisioningTaskStatus | undefined
+        if (putTaskId) {
+            console.log(`[persist] putAccount taskId=${putTaskId}`)
+            if (options.waitForAccountTask) {
+                completedTask = await options.waitForAccountTask(putTaskId)
+            }
+        }
+        return (await resolveAccountAfterProvisioning(accounts, sourceId, nativeId, completedTask)) ?? existing.id
     }
 
-    await accounts.createAccountV1({
+    console.log(`[persist] upsert identity=${nativeId} action=create`)
+    const createResponse = await accounts.createAccountV1({
         accountAttributesCreate: {
             attributes: attributes as { sourceId: string; [key: string]: unknown },
         },
     })
+    const taskId = createResponse.data?.id
+    let completedTask: AccountProvisioningTaskStatus | undefined
+    if (taskId) {
+        console.log(`[persist] createAccount taskId=${taskId}`)
+        if (options.waitForAccountTask) {
+            completedTask = await options.waitForAccountTask(taskId)
+        }
+    }
+
+    return resolveAccountAfterProvisioning(accounts, sourceId, nativeId, completedTask)
 }
 
 /**
@@ -323,10 +618,10 @@ export function createPersist<TOutput extends object>(
             deps.operationSchema?.outputFields
         )
         registry.set(id, built)
-        await deps.upsertAccount(built)
+        const iscAccountId = await deps.upsertAccount(built)
 
         if (options?.verify !== false) {
-            await verifyAccountWrite(deps, id, built)
+            await verifyAccountWrite(deps, id, built, iscAccountId)
         }
 
         console.log(`[persist] identity=${id} status=${built.status}`)
@@ -349,4 +644,3 @@ export function createVerifyPersisted(deps: PersistDependencies, registry: Write
         }
     }
 }
-

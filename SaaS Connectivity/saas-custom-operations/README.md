@@ -235,13 +235,13 @@ Launch-only operation that fetches an SOD violation, ensures a named form defini
 | Output field (persisted) | Description |
 |---|---|
 | `formUrl` | Standalone form URL (`standAloneFormUrl`) for email deep links |
-| `situationSummary` | Plain-text summary for notification workflows |
+| `situationSummary` | HTML summary for workflow email bodies (identity, policy, access paths) |
 
 **Workflow integration pattern:**
 
 1. Invoke `custom:sod-remediation` with violation ID and form name.
 2. Read persisted output via **Get Accounts** filtered by `requestId`.
-3. Send email to recipient with `situationSummary` and link to `formUrl`.
+3. Send email to recipient with `situationSummary` as the HTML body and link to `formUrl`.
 4. Wait for form submission; read `formData` keys:
    - User keys: `action`, `remediationSide`, `policyControl`, `comments`
    - Hidden keys: `violationId`, `targetIdentityId`, `groupARevokePayload`, `groupBRevokePayload`
@@ -376,7 +376,7 @@ ctx.verifyPersisted(ids)
 
 By default, `persist` reads the account back from ISC and verifies attributes before resolving. Pass `{ verify: false }` to defer verification, then call `verifyPersisted([...ids])` before the handler completes. Unknown attribute keys are rejected before the write.
 
-Persistence uses probe-first upsert: `createAccountV1` when the native identity is absent on the result source, `putAccountV1` when an account already exists. Re-running local debug with the same `requestId` updates the prior result instead of failing on duplicate create.
+Persistence uses probe-first upsert: `createAccountV1` when the native identity is absent on the result source, or `putAccountV1` when an account already exists. Both paths wait for the async provisioning task to complete, then read the account back for verification.
 
 ## Development
 

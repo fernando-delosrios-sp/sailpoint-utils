@@ -11,6 +11,9 @@ All notable changes to **saas-custom-operations** are documented here.
 ### 🔧 Improvements
 
 - **Base schema on result source create** — Auto-provisioned DelimitedFile result sources now receive the full base account schema (core attrs plus union of all registered operation output fields) immediately after source creation, replacing or aligning any ISC-discovered schema. Persist-time reconciliation remains add-only for attributes introduced after create.
+- **SOD remediation keep recommendations** — Access paths show ISC keep recommendations (⭐ Recommended to keep) from the Recommendations API; connector revoke stars removed from owner-facing HTML. Non-revocable entitlements use “Not directly revocable” with named grantor; privileged entitlements show 🔐 when metadata is available. Asymmetric keep recommendations produce a side correction hint in form columns and email summary. Hidden payload adds `keepRecommendation`, `grantedVia`, and `recommendedSideToCorrect`.
+- **SOD remediation revocability** — Access paths (entitlement, access profile, role) show revocable vs not-revocable with UTF-8 emoji labels in form group columns and email HTML `situationSummary`. Hidden revoke payloads include `revocable`, `recommended`, and `reason`. Bundled seed uses DESCRIPTION columns (`groupAContentsHtml` / `groupBContentsHtml`).
+- **Form definition version watermark** — Form definitions store a `@form-seed-sha256:<hex>` fingerprint in the definition `description` field. `ensureFormDefinitionByName` reuses matching definitions and auto-patches stale or legacy definitions on launch, so seed updates no longer require manual tenant form recreate.
 - **Form HTML capabilities spec** — Document empirically verified ISC Custom Forms DESCRIPTION HTML rendering (block/inline tags, inline styles, links, nested lists, formInput interpolation) in `target-client/forms` spec; document `situationSummaryHtml` escaping and seed interpolation pattern in `connector-operations/sod-remediation` spec.
 - **Bundled form seed loading** — `loadFormSeed` accepts in-memory seed objects; SOD remediation imports its seed JSON directly (enables bundler-friendly packaging). `tsconfig.json` enables `resolveJsonModule`.
 - **SOD remediation debug logging** — Step logs use `util.inspect` with full depth so nested violation entitlements render in `npm run debug` output instead of `[Object]`.
@@ -21,7 +24,8 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🐛 Bug Fixes
 
-- **Persist upsert** — `ctx.persist` now probes for an existing result account by native identity and updates via `putAccountV1` when present, or creates via `createAccountV1` when absent. Re-running local debug with the same `requestId` no longer fails on duplicate account create.
+- **Operation errors stop workflow retries** — Failures escaping `customOperation` now send `{ status: 'failed', error }` on the command response (HTTP 200) instead of throwing `ConnectorError` (spcx HTTP 500). Calling workflows receive the error and do not keep retrying.
+- **Persist upsert** — Existing result accounts are updated via `putAccountV1`; new identities use `createAccountV1`. Both paths wait for the async provisioning task and read the account back before verification.
 
 ---
 

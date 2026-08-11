@@ -16,19 +16,65 @@ describe('sod-remediation logging', () => {
         logSodRemediationAccessPaths(
             'req-log-1',
             {
+                accessPaths: [
+                    {
+                        type: 'ENTITLEMENT',
+                        id: 'ent-a',
+                        name: 'A',
+                        revocable: true,
+                        recommended: true,
+                    },
+                ],
                 displayLines: ['Entitlement: A'],
                 warningText: 'warn',
                 revokePayload: {
-                    items: [{ type: 'ENTITLEMENT', id: 'ent-a', name: 'A' }],
-                    recommendedRevoke: { type: 'ENTITLEMENT', id: 'ent-a', name: 'A' },
+                    items: [
+                        {
+                            type: 'ENTITLEMENT',
+                            id: 'ent-a',
+                            name: 'A',
+                            revocable: true,
+                            recommended: true,
+                        },
+                    ],
+                    recommendedRevoke: {
+                        type: 'ENTITLEMENT',
+                        id: 'ent-a',
+                        name: 'A',
+                        revocable: true,
+                        recommended: true,
+                    },
                 },
             },
             {
+                accessPaths: [
+                    {
+                        type: 'ENTITLEMENT',
+                        id: 'ent-b',
+                        name: 'B',
+                        revocable: true,
+                        recommended: true,
+                    },
+                ],
                 displayLines: ['Entitlement: B'],
                 warningText: 'warn',
                 revokePayload: {
-                    items: [{ type: 'ENTITLEMENT', id: 'ent-b', name: 'B' }],
-                    recommendedRevoke: { type: 'ENTITLEMENT', id: 'ent-b', name: 'B' },
+                    items: [
+                        {
+                            type: 'ENTITLEMENT',
+                            id: 'ent-b',
+                            name: 'B',
+                            revocable: true,
+                            recommended: true,
+                        },
+                    ],
+                    recommendedRevoke: {
+                        type: 'ENTITLEMENT',
+                        id: 'ent-b',
+                        name: 'B',
+                        revocable: true,
+                        recommended: true,
+                    },
                 },
             }
         )
@@ -36,10 +82,8 @@ describe('sod-remediation logging', () => {
             targetIdentityName: 'Alice',
             policyName: 'Policy',
             situationSummaryHtml: '<p>summary</p>',
-            groupAContents: '- A (Entitlement)',
-            groupBContents: '- B (Entitlement)',
-            groupAWarning: 'w',
-            groupBWarning: 'w',
+            groupAContentsHtml: '<ul><li>✅ Revocable</li></ul>',
+            groupBContentsHtml: '<ul><li>✅ Revocable</li></ul>',
             hasControls: false,
             violationId: 'vio-1',
             targetIdentityId: 'ident-1',
@@ -47,11 +91,42 @@ describe('sod-remediation logging', () => {
             groupBRevokePayload: '{}',
             controlOptions: [{ label: 'A (Control)', value: 'ctrl-a' }],
         })
-        logSodRemediationOutput('req-log-1', 'https://example.com/form/1', 'summary text')
+        logSodRemediationOutput('req-log-1', {
+            formUrl: 'https://example.com/form/1',
+            situationHeader: '⚠️ SOD Violation Remediation Required — Alice',
+            situationSummary: 'summary text',
+            ownerEmail: 'owner@example.com',
+        })
 
         expect(logSpy).toHaveBeenCalled()
         expect(logSpy.mock.calls.some((call) => String(call[0]).includes('controls'))).toBe(true)
         expect(logSpy.mock.calls.some((call) => String(call[0]).includes('output'))).toBe(true)
+
+        logSpy.mockRestore()
+    })
+
+    it('logs situationSummary as a single string without inspect concatenation breaks', () => {
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+        const situationSummary = [
+            '<h2>⚠️ SOD Violation Remediation Required</h2>',
+            '<p><strong>Identity:</strong> Amanda.Ross</p>',
+            '<ul><li><strong>Entitlement: CommerceSession</strong> — not revocable</li></ul>',
+        ].join('\n')
+
+        logSodRemediationOutput('req-log-summary', {
+            formUrl: 'https://example.com/form/1',
+            situationHeader: '⚠️ SOD Violation Remediation Required — Amanda.Ross',
+            situationSummary,
+            ownerEmail: 'owner@example.com',
+        })
+
+        const outputLog = logSpy.mock.calls.find((call) => String(call[0]).includes('output'))
+        expect(outputLog).toBeDefined()
+        const logged = String(outputLog?.[1])
+        expect(logged).toContain('<h2>⚠️ SOD Violation Remediation Required</h2>')
+        expect(logged).toContain('<p><strong>Identity:</strong> Amanda.Ross</p>')
+        expect(logged).not.toMatch(/'\s*\+\s*\n/)
 
         logSpy.mockRestore()
     })

@@ -4,6 +4,7 @@ export {
     findSourceByName,
     getAccountSchema,
     getAccountSchemas,
+    isHttpNotFound,
     patchAccountSchema,
     verifyIscStatus,
     type JsonPatchOperation,

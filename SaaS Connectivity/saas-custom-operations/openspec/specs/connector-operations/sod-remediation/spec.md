@@ -11,7 +11,7 @@ The connector SHALL register a custom command `custom:sod-remediation` that prep
 
 - **GIVEN** `custom:sod-remediation` is declared in connector-spec.json and registered
 - **WHEN** ISC invokes the command with input containing `violationId`, `formName`, and standard `requestId`
-- **THEN** the handler SHALL fetch the violation, ensure the form definition identified by `formName` exists, create a standalone form instance, and respond with output fields `formUrl` and `situationSummary`
+- **THEN** the handler SHALL fetch the violation, ensure the form definition identified by `formName` exists, create a standalone form instance, and persist namespaced output fields `sod-remediation:form-url`, `sod-remediation:situation-header`, `sod-remediation:situation-summary`, and `sod-remediation:owner-email`
 
 #### Scenario: Recipient defaults to violation owner
 
@@ -50,11 +50,32 @@ The connector SHALL register a custom command `custom:sod-remediation` that prep
 - **THEN** the form definition owner SHALL use the connector's offline canned owner identity
 - **AND** SHALL NOT attempt JWT token identity resolution
 
+#### Scenario: Owner email resolved for workflow delivery
+
+- **GIVEN** the resolved form instance recipient identity ID is `owner-a`
+- **AND** the public identity record for `owner-a` has email `owner-a@example.com`
+- **WHEN** `custom:sod-remediation` completes successfully
+- **THEN** persisted output `sod-remediation:owner-email` SHALL be `owner-a@example.com`
+
+#### Scenario: Email subject header output
+
+- **GIVEN** a violation for identity `Alice Example`
+- **WHEN** `custom:sod-remediation` completes successfully
+- **THEN** persisted output `sod-remediation:situation-header` SHALL be plain text suitable for workflow email subject lines
+- **AND** SHALL include the violating identity display name
+
+#### Scenario: Email summary includes remediation form link
+
+- **GIVEN** a successful launch producing form URL `https://tenant.example/form/1`
+- **WHEN** the handler persists operation output
+- **THEN** `sod-remediation:situation-summary` SHALL include an HTML link to the remediation form URL
+- **AND** form launch input `situationSummaryHtml` SHALL NOT include the remediation form link
+
 #### Scenario: Output contract is minimal
 
 - **GIVEN** a successful launch
 - **WHEN** the handler completes
-- **THEN** operation output persisted and returned via `ctx.res.send` SHALL include only `formUrl` and `situationSummary` as typed output fields
+- **THEN** operation output persisted via `ctx.persist` SHALL include only `sod-remediation:form-url`, `sod-remediation:situation-header`, `sod-remediation:situation-summary`, and `sod-remediation:owner-email` as typed output fields
 - **AND** SHALL NOT require output fields `formInstanceId`, `violationId`, `formName`, `formDefinitionId`, or `recipientName`
 
 #### Scenario: Workflow-friendly form keys
@@ -116,27 +137,71 @@ The sod-remediation operation SHALL fetch violation details and tenant compensat
 - **THEN** form input SHALL indicate mitigation is unavailable
 - **AND** the situation summary SHALL note that no compensating controls are configured
 
-### Requirement: Situation summary HTML form input format
+### Requirement: Situation summary HTML format
 
-The sod-remediation operation SHALL populate `situationSummaryHtml` formInput as escaped plain text with newline breaks suitable for DESCRIPTION rendering, and SHALL NOT embed unescaped rich HTML from violation or identity data.
+The sod-remediation operation SHALL build `sod-remediation:situation-summary` as HTML suitable for workflow email bodies. The same HTML SHALL populate `situationSummaryHtml` formInput for in-form DESCRIPTION rendering. Violation-derived dynamic text SHALL be HTML-escaped and SHALL NOT embed unescaped user-controlled markup.
 
-#### Scenario: Dynamic summary escaped and line-broken
+#### Scenario: Email-oriented HTML structure
+
+- **WHEN** `custom:sod-remediation` completes successfully
+- **THEN** operation output `sod-remediation:situation-summary` SHALL include a top-level heading, labeled identity/policy/violation fields, grouped access-path lists, and an optional note when no compensating controls exist
+- **AND** SHALL use semantic HTML elements such as `h2`, `h3`, `p`, `strong`, `ul`, `li`, and `em`
+
+#### Scenario: Dynamic values escaped
+
+- **WHEN** `custom:sod-remediation` assembles the situation summary
+- **THEN** violation-derived text in both `sod-remediation:situation-summary` and `situationSummaryHtml` SHALL escape `&`, `<`, `>`, and `"` characters
+
+#### Scenario: Form input reuses operation summary without email-only link
 
 - **WHEN** `custom:sod-remediation` assembles form input
-- **THEN** `situationSummaryHtml` SHALL escape `&`, `<`, and `>` characters from violation-derived text
-- **AND** SHALL convert newlines to `<br/>` elements
-- **AND** SHALL wrap the result in a single top-level `<p>...</p>` element
+- **THEN** `situationSummaryHtml` SHALL equal the shared situation summary HTML without the remediation form link
+- **AND** persisted output `sod-remediation:situation-summary` SHALL equal that same HTML plus the remediation form link
 
 #### Scenario: Seed interpolates summary without extra wrapper
 
 - **GIVEN** the bundled SOD remediation seed template
 - **WHEN** the ctx-summary DESCRIPTION element is inspected
-- **THEN** its `description` SHALL be exactly `{{$.form.input.situationSummaryHtml}}` without an additional surrounding `<p>` wrapper
+- **THEN** its `description` SHALL be exactly `{{$.form.input.situationSummaryHtml}}` without an additional surrounding wrapper element
 
-#### Scenario: Plain-text summary separate from HTML form input
+### Requirement: Access path revocability annotation
+
+The sod-remediation operation SHALL annotate each resolved access path (entitlement, access profile, role) with workflow-actionable revocability derived from path expansion. Entitlements on a side that also includes an access profile or role SHALL be marked not revocable with reason granted-via-role or granted-via-access-profile. Entitlements on entitlement-only sides SHALL be marked revocable.
+
+#### Scenario: Entitlement-only side
+
+- **GIVEN** a violation side with conflicting entitlements and no assigned access profile or role granting them
+- **WHEN** access paths are resolved
+- **THEN** each entitlement line SHALL be marked revocable
+- **AND** the recommended revoke target SHALL be that entitlement
+
+#### Scenario: Entitlement with role on side
+
+- **GIVEN** a conflicting entitlement granted via an assigned role on the same side
+- **WHEN** access paths are resolved
+- **THEN** the entitlement line SHALL be marked not revocable with reason granted-via-role
+- **AND** the role line SHALL be marked revocable and recommended
+
+#### Scenario: Revoke payload includes revocability metadata
+
+- **WHEN** form input is assembled for launch
+- **THEN** each side revoke payload item SHALL include `revocable`, `recommended`, and optional `reason`
+- **AND** `recommendedRevoke` SHALL reference the highest-priority revocable item
+
+### Requirement: Revocability HTML display with emojis
+
+The sod-remediation operation SHALL render access path revocability in HTML using UTF-8 emojis alongside text labels in group column form input and in the operation `sod-remediation:situation-summary` output.
+
+#### Scenario: Group column HTML form input
+
+- **WHEN** `custom:sod-remediation` assembles form input
+- **THEN** `groupAContentsHtml` and `groupBContentsHtml` SHALL contain HTML list items with revocability emoji and text labels
+- **AND** the bundled seed SHALL render those keys in DESCRIPTION elements for group A and group B columns
+
+#### Scenario: Email summary parity
 
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** operation output `situationSummary` SHALL remain plain text for workflow email use
-- **AND** `situationSummaryHtml` formInput SHALL be used only for in-form DESCRIPTION rendering
+- **THEN** persisted output `sod-remediation:situation-summary` SHALL include the same revocability annotations as the group column HTML
+
 
 

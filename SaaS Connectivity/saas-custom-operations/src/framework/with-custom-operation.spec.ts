@@ -177,7 +177,7 @@ describe('customOperation', () => {
                 requestId: 'req-001',
                 sourceName: 'SaaS Custom Operations',
                 sourceId: 'source-123',
-                res,
+                res: expect.objectContaining({ send: expect.any(Function) }),
             }),
             { payload: 'data' }
         )
@@ -188,7 +188,9 @@ describe('customOperation', () => {
         const res = { send: vi.fn() }
         const handler = vi.fn(async () => {})
         const sourcesApi = {
-            listSourcesV1: vi.fn().mockResolvedValue({ data: [{ id: 'resolved-id', name: 'SaaS Custom Operations' }] }),
+            listSourcesV1: vi.fn().mockResolvedValue({
+                data: [{ id: 'resolved-id', name: 'SaaS Custom Operations', type: 'DelimitedFile' }],
+            }),
         } as any
         const wrapped = customOperation<TestOperation>(handler, {
             config: testConfig,
@@ -264,13 +266,14 @@ describe('customOperation', () => {
         expect(handler).toHaveBeenCalled()
     })
 
-    it('wraps persist verification failure as ConnectorError', async () => {
+    it('sends status failed for persist verification failure instead of throwing', async () => {
         vi.useFakeTimers()
         try {
             const res = { send: vi.fn() }
             const accountsApi = {
                 createAccountV1: vi.fn().mockResolvedValue({}),
                 putAccountV1: vi.fn().mockResolvedValue({}),
+                deleteAccountAsyncV1: vi.fn().mockResolvedValue({}),
                 listAccountsV1: vi.fn().mockResolvedValue({ data: [] }),
             }
             const wrapped = customOperation<TestOperation>(
@@ -292,10 +295,14 @@ describe('customOperation', () => {
                 { requestId: 'req-001' },
                 res as any
             )
-            const assertion = expect(invocation).rejects.toSatisfy(
-                (error: unknown) =>
-                    error instanceof ConnectorError && /account not found after retries/.test((error as ConnectorError).message)
-            )
+            const assertion = invocation.then(() => {
+                expect(res.send).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        status: 'failed',
+                        error: expect.stringMatching(/account not found after retries/),
+                    })
+                )
+            })
             await vi.runAllTimersAsync()
             await assertion
         } finally {
@@ -331,18 +338,23 @@ describe('customOperation test mode', () => {
         logSpy.mockRestore()
     })
 
-    it('rejects partial config with missing connection fields', async () => {
+    it('sends status failed for partial config with missing connection fields', async () => {
         const res = { send: vi.fn() }
         const wrapped = customOperation<TestOperation>(async () => {}, {
             config: { testMode: true },
         })
 
-        await expect(
-            wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-001' }, res as any)
-        ).rejects.toThrow(/Missing required config fields/)
+        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                error: expect.stringMatching(/Missing required config fields/),
+            })
+        )
     })
 
-    it('rejects when ISC status check fails with token present', async () => {
+    it('sends status failed when ISC status check fails with token present', async () => {
         const res = { send: vi.fn() }
         const sourcesApi = {
             listSourcesV1: vi.fn().mockRejectedValue(new Error('Unauthorized')),
@@ -350,19 +362,32 @@ describe('customOperation test mode', () => {
         }
         const wrapped = customOperation<TestOperation>(async () => {}, {
             config: { ...testConfig, testMode: true },
-            sdk: { sources: sourcesApi as any, accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any },
+            sdk: {
+                sources: sourcesApi as any,
+                accounts: {
+                    createAccountV1: vi.fn(),
+                    putAccountV1: vi.fn(),
+                    deleteAccountAsyncV1: vi.fn(),
+                    listAccountsV1: vi.fn(),
+                } as any,
+            },
         })
 
-        await expect(
-            wrapped(
-                { commandType: 'custom:test', config: { ...testConfig, testMode: true } } as any,
-                { requestId: 'req-001' },
-                res as any
-            )
-        ).rejects.toThrow(ConnectorError)
+        await wrapped(
+            { commandType: 'custom:test', config: { ...testConfig, testMode: true } } as any,
+            { requestId: 'req-001' },
+            res as any
+        )
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                error: expect.stringMatching(/Unauthorized/),
+            })
+        )
     })
 
-    it('wraps handler plain Error as ConnectorError', async () => {
+    it('sends status failed for handler plain Error instead of throwing', async () => {
         const res = { send: vi.fn() }
         const wrapped = customOperation<TestOperation>(
             async () => {
@@ -373,16 +398,23 @@ describe('customOperation test mode', () => {
                 sourceId: 'source-1',
                 sdk: {
                     sources: { listSourcesV1: vi.fn(), createSourceV1: vi.fn() } as any,
-                    accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() } as any,
+                    accounts: {
+                        createAccountV1: vi.fn(),
+                        putAccountV1: vi.fn(),
+                        deleteAccountAsyncV1: vi.fn(),
+                        listAccountsV1: vi.fn(),
+                    } as any,
                 },
             }
         )
 
-        await expect(
-            wrapped({ commandType: 'custom:test', config: testConfig } as any, { requestId: 'req-001' }, res as any)
-        ).rejects.toSatisfy(
-            (error: unknown) =>
-                error instanceof ConnectorError && /operation failed/.test((error as ConnectorError).message)
+        await wrapped({ commandType: 'custom:test', config: testConfig } as any, { requestId: 'req-001' }, res as any)
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                error: expect.stringMatching(/operation failed/),
+            })
         )
     })
 
@@ -433,7 +465,7 @@ describe('customOperation test mode', () => {
             listSourcesV1: vi
                 .fn()
                 .mockResolvedValueOnce({ data: [] })
-                .mockResolvedValueOnce({ data: [{ id: 'source-readonly', name: 'SaaS Custom Operations' }] }),
+                .mockResolvedValueOnce({ data: [{ id: 'source-readonly', name: 'SaaS Custom Operations', type: 'DelimitedFile' }] }),
             createSourceV1: vi.fn(),
         }
         const accountsApi = { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() }

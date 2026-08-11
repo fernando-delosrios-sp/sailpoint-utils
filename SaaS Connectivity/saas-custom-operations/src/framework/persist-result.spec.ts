@@ -3,13 +3,23 @@ import {
     buildAccountAttributes,
     createPersist,
     createVerifyPersisted,
+    escapeODataString,
+    extractIscAccountIdFromProvisioningTask,
+    findAccountOnSource,
     formatAttributeValue,
     PersistVerificationError,
     readWithRetry,
     upsertSourceAccount,
     verifyAccountWrite,
     verifyPersistedAccount,
+    waitForAccountProvisioningTask,
 } from './persist-result'
+
+describe('escapeODataString', () => {
+    it('escapes double quotes for OData filters', () => {
+        expect(escapeODataString('say "hello"')).toBe('say ""hello""')
+    })
+})
 
 describe('formatAttributeValue', () => {
     it('passes strings through', () => {
@@ -179,38 +189,199 @@ describe('verifyAccountWrite', () => {
         expect(readAccount).toHaveBeenCalledTimes(2)
         expect(sleep).toHaveBeenCalledWith(500)
     })
+
+    it('reads by ISC account id when provided', async () => {
+        const readAccount = vi.fn()
+        const readAccountByIscId = vi.fn().mockResolvedValue({ outcome: 'updated' })
+
+        await verifyAccountWrite(
+            {
+                sourceId: 'source-1',
+                upsertAccount: vi.fn(),
+                readAccount,
+                readAccountByIscId,
+            },
+            'req-001',
+            { outcome: 'updated' },
+            'isc-account-1'
+        )
+
+        expect(readAccountByIscId).toHaveBeenCalledWith('isc-account-1')
+        expect(readAccount).not.toHaveBeenCalled()
+    })
+})
+
+describe('waitForAccountProvisioningTask', () => {
+    it('resolves when task completes successfully', async () => {
+        const completedTask = {
+            completed: '2026-08-11T10:00:00Z',
+            completionStatus: 'SUCCESS',
+            messages: [],
+        }
+        const getTaskStatusV1 = vi
+            .fn()
+            .mockResolvedValueOnce({ data: { completed: null } })
+            .mockResolvedValueOnce({ data: completedTask })
+        const sleep = vi.fn().mockResolvedValue(undefined)
+
+        await expect(
+            waitForAccountProvisioningTask({ getTaskStatusV1 } as never, 'task-1', 5, 10, sleep)
+        ).resolves.toEqual(completedTask)
+
+        expect(getTaskStatusV1).toHaveBeenCalledTimes(2)
+        expect(sleep).toHaveBeenCalledWith(10)
+    })
+
+    it('throws when task completes with error messages', async () => {
+        const getTaskStatusV1 = vi.fn().mockResolvedValue({
+            data: {
+                completed: '2026-08-11T10:00:00Z',
+                completionStatus: 'ERROR',
+                messages: [{ type: 'ERROR', key: 'invalid.attribute', localizedText: { message: 'Invalid attribute name' } }],
+            },
+        })
+
+        await expect(waitForAccountProvisioningTask({ getTaskStatusV1 } as never, 'task-err', 1, 10)).rejects.toThrow(
+            /Invalid attribute name/
+        )
+    })
+})
+
+describe('extractIscAccountIdFromProvisioningTask', () => {
+    it('returns account id from task target', () => {
+        expect(
+            extractIscAccountIdFromProvisioningTask({
+                target: { id: 'ef38f94347e94562b5bb8424a56397d8' },
+                messages: [],
+            } as never)
+        ).toBe('ef38f94347e94562b5bb8424a56397d8')
+    })
+})
+
+describe('findAccountOnSource', () => {
+    it('does not use id eq filters (ISC id is account UUID, not native identity)', async () => {
+        const violationId = '9d372c5365e447a3b979d046184f97b3'
+        const listAccountsV1 = vi.fn().mockImplementation(async ({ filters, offset }) => {
+            const filterText = String(filters ?? '')
+            expect(filterText).not.toMatch(/^id eq /)
+            if (filterText.includes('sourceId eq') && offset == null) {
+                return {
+                    data: [
+                        {
+                            id: violationId,
+                            sourceId: 'source-1',
+                            attributes: { id: 'unrelated-native-id' },
+                        },
+                    ],
+                }
+            }
+            return { data: [] }
+        })
+
+        const found = await findAccountOnSource({ listAccountsV1 } as never, 'source-1', violationId)
+
+        expect(found).toBeUndefined()
+    })
+
+    it('ignores list rows whose stored identity does not match the requested native identity', async () => {
+        const listAccountsV1 = vi.fn().mockResolvedValue({
+            data: [
+                {
+                    id: 'isc-account-1',
+                    sourceId: 'source-1',
+                    nativeIdentity: 'other-id',
+                    attributes: { id: 'other-id' },
+                },
+            ],
+        })
+
+        const found = await findAccountOnSource({ listAccountsV1 } as never, 'source-1', 'req-001')
+
+        expect(found).toBeUndefined()
+    })
+
+    it('matches by attributes.id during source scan when nativeIdentity is unset', async () => {
+        const listAccountsV1 = vi.fn().mockImplementation(async ({ filters, offset }) => {
+            if (String(filters).includes('nativeIdentity eq') || String(filters).includes('name eq')) {
+                return { data: [] }
+            }
+            if (String(filters).includes('sourceId eq') && offset === 0) {
+                return {
+                    data: [
+                        {
+                            id: 'isc-account-5',
+                            sourceId: 'source-1',
+                            attributes: { id: 'sod-remediation:9d372c5365e447a3b979d046184f97b3' },
+                        },
+                    ],
+                }
+            }
+            return { data: [] }
+        })
+
+        const found = await findAccountOnSource(
+            { listAccountsV1 } as never,
+            'source-1',
+            'sod-remediation:9d372c5365e447a3b979d046184f97b3'
+        )
+
+        expect(found).toEqual({
+            id: 'isc-account-5',
+            attributes: { id: 'sod-remediation:9d372c5365e447a3b979d046184f97b3' },
+        })
+    })
 })
 
 describe('upsertSourceAccount', () => {
     it('creates when no account exists for native identity', async () => {
-        const createAccountV1 = vi.fn().mockResolvedValue({})
+        const createAccountV1 = vi.fn().mockResolvedValue({ data: { id: 'task-create-1' } })
         const putAccountV1 = vi.fn().mockResolvedValue({})
+        const getAccountV1 = vi.fn().mockResolvedValue({
+            data: { id: 'isc-account-new', sourceId: 'source-1', attributes: { id: 'req-001' } },
+        })
         const listAccountsV1 = vi.fn().mockResolvedValue({ data: [] })
-        const accounts = { createAccountV1, putAccountV1, listAccountsV1 }
+        const waitForAccountTask = vi.fn().mockResolvedValue({
+            completed: '2026-08-11T10:00:00Z',
+            completionStatus: 'SUCCESS',
+            target: { id: 'isc-account-new' },
+            messages: [],
+        })
+        const accounts = { createAccountV1, putAccountV1, listAccountsV1, getAccountV1 }
 
-        await upsertSourceAccount(accounts as never, 'source-1', {
+        const iscAccountId = await upsertSourceAccount(accounts as never, 'source-1', {
             sourceId: 'source-1',
             id: 'req-001',
             formUrl: 'https://example.com/form/1',
-        })
+        }, { waitForAccountTask })
 
         expect(createAccountV1).toHaveBeenCalled()
         expect(putAccountV1).not.toHaveBeenCalled()
+        expect(waitForAccountTask).toHaveBeenCalledWith('task-create-1')
+        expect(iscAccountId).toBe('isc-account-new')
     })
 
     it('puts when account already exists for native identity', async () => {
         const createAccountV1 = vi.fn().mockResolvedValue({})
-        const putAccountV1 = vi.fn().mockResolvedValue({})
-        const listAccountsV1 = vi.fn().mockResolvedValue({
-            data: [{ id: 'isc-account-1', attributes: { id: 'req-001', formUrl: 'https://old.example/form/1' } }],
+        const putAccountV1 = vi.fn().mockResolvedValue({ data: { id: 'task-put-1' } })
+        const getAccountV1 = vi.fn().mockResolvedValue({
+            data: { id: 'isc-account-1', sourceId: 'source-1', attributes: { id: 'req-001', formUrl: 'https://new.example/form/2' } },
         })
-        const accounts = { createAccountV1, putAccountV1, listAccountsV1 }
+        const listAccountsV1 = vi.fn().mockResolvedValue({
+            data: [{ id: 'isc-account-1', sourceId: 'source-1', attributes: { id: 'req-001', formUrl: 'https://old.example/form/1' } }],
+        })
+        const waitForAccountTask = vi.fn().mockResolvedValue({
+            completed: '2026-08-11T10:00:00Z',
+            completionStatus: 'SUCCESS',
+            target: { id: 'isc-account-1' },
+            messages: [],
+        })
+        const accounts = { createAccountV1, putAccountV1, listAccountsV1, getAccountV1 }
 
-        await upsertSourceAccount(accounts as never, 'source-1', {
+        const iscAccountId = await upsertSourceAccount(accounts as never, 'source-1', {
             sourceId: 'source-1',
             id: 'req-001',
             formUrl: 'https://new.example/form/2',
-        })
+        }, { waitForAccountTask })
 
         expect(putAccountV1).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -221,6 +392,73 @@ describe('upsertSourceAccount', () => {
             })
         )
         expect(createAccountV1).not.toHaveBeenCalled()
+        expect(waitForAccountTask).toHaveBeenCalledWith('task-put-1')
+        expect(iscAccountId).toBe('isc-account-1')
+    })
+
+    it('falls back to source scan when indexed filters miss', async () => {
+        const listAccountsV1 = vi.fn().mockImplementation(async ({ filters, offset }) => {
+            if (String(filters).includes('nativeIdentity eq') || String(filters).includes('name eq')) {
+                return { data: [] }
+            }
+            if (String(filters).includes('sourceId eq') && offset === 0) {
+                return {
+                    data: [
+                        {
+                            id: 'isc-account-3',
+                            sourceId: 'source-1',
+                            nativeIdentity: 'other',
+                            attributes: { id: 'req-003' },
+                        },
+                        {
+                            id: 'isc-account-4',
+                            sourceId: 'source-1',
+                            attributes: { id: 'req-004', outcome: 'stored' },
+                        },
+                    ],
+                }
+            }
+            return { data: [] }
+        })
+
+        const found = await findAccountOnSource({ listAccountsV1 } as never, 'source-1', 'req-004')
+
+        expect(found).toEqual({
+            id: 'isc-account-4',
+            attributes: { id: 'req-004', outcome: 'stored' },
+        })
+    })
+
+    it('falls back to name filter when nativeIdentity lookup misses', async () => {
+        const createAccountV1 = vi.fn().mockResolvedValue({})
+        const putAccountV1 = vi.fn().mockResolvedValue({})
+        const listAccountsV1 = vi.fn().mockImplementation(async ({ filters }) => {
+            if (String(filters).includes('nativeIdentity eq') || String(filters).includes('id eq')) {
+                return { data: [] }
+            }
+            if (String(filters).includes('name eq')) {
+                return {
+                    data: [{ id: 'isc-account-2', sourceId: 'source-1', attributes: { id: 'req-002', outcome: 'old' } }],
+                }
+            }
+            return { data: [] }
+        })
+        const accounts = {
+            createAccountV1,
+            putAccountV1,
+            listAccountsV1,
+        }
+
+        const iscAccountId = await upsertSourceAccount(accounts as never, 'source-1', {
+            sourceId: 'source-1',
+            id: 'req-002',
+            outcome: 'updated',
+        })
+
+        expect(putAccountV1).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'isc-account-2' })
+        )
+        expect(iscAccountId).toBe('isc-account-2')
     })
 
     it('rejects when list returns account without ISC id', async () => {
@@ -253,6 +491,7 @@ function createTestDeps(overrides: Partial<Parameters<typeof createPersist>[0]> 
         ensureSourceSchema: vi.fn().mockResolvedValue(undefined),
         upsertAccount: vi.fn().mockImplementation(async (attributes: Record<string, unknown>) => {
             lastWritten = attributes
+            return undefined
         }),
         readAccount: vi.fn().mockImplementation(async () => lastWritten),
         sleep: vi.fn().mockResolvedValue(undefined),

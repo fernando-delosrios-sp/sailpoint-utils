@@ -5,6 +5,7 @@ import {
     createSource,
     findSourceByName,
     getAccountSchema,
+    getAccountSchemas,
     patchAccountSchema,
 } from './source-client'
 
@@ -73,5 +74,12 @@ describe('isc/sources source-client', () => {
         await patchAccountSchema(sourcesApi, 'source-1', 'schema-1', [{ op: 'add', path: '/attributes/-', value: {} }])
 
         expect(updateSourceSchemaV1).toHaveBeenCalled()
+    })
+
+    it('getAccountSchemas returns empty array on HTTP 404', async () => {
+        const getSourceSchemasV1 = vi.fn().mockRejectedValue({ response: { status: 404 } })
+        const sourcesApi = { getSourceSchemasV1 } as unknown as SourcesApi
+
+        await expect(getAccountSchemas(sourcesApi, 'source-1')).resolves.toEqual([])
     })
 })

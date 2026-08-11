@@ -4,10 +4,8 @@
         { "id": "targetIdentityName", "type": "STRING", "label": "Target Identity Name", "description": "Display name of the violating identity" },
         { "id": "policyName", "type": "STRING", "label": "Policy Name", "description": "SOD policy that was violated" },
         { "id": "situationSummaryHtml", "type": "STRING", "label": "Situation Summary", "description": "HTML summary for form context" },
-        { "id": "groupAContents", "type": "STRING", "label": "Group A Contents", "description": "Newline-separated access path labels for group A display" },
-        { "id": "groupBContents", "type": "STRING", "label": "Group B Contents", "description": "Newline-separated access path labels for group B display" },
-        { "id": "groupAWarning", "type": "STRING", "label": "Group A Warning", "description": "Help text when group A includes AP/role paths" },
-        { "id": "groupBWarning", "type": "STRING", "label": "Group B Warning", "description": "Help text when group B includes AP/role paths" },
+        { "id": "groupAContentsHtml", "type": "STRING", "label": "Group A Contents HTML", "description": "HTML access path list with revocability labels for group A" },
+        { "id": "groupBContentsHtml", "type": "STRING", "label": "Group B Contents HTML", "description": "HTML access path list with revocability labels for group B" },
         { "id": "hasControls", "type": "STRING", "label": "Has Controls", "description": "Whether tenant compensating controls exist (true/false)" },
         { "id": "controlOptions", "type": "ARRAY", "label": "Control Options", "description": "Compensating control labels for mitigate select options" },
         { "id": "violationId", "type": "STRING", "label": "Violation ID", "description": "Hidden workflow key" },
@@ -126,54 +124,31 @@
                             "label": "Toxic Combination",
                             "labelStyle": "h5",
                             "showLabel": true,
+                            "description": "<p><em>⚠️ Removing access profile- or role-level access may affect other functions of the user.</em></p>",
                             "columnCount": 2,
                             "columns": [
                                 [
                                     {
-                                        "id": "group-a-warning",
+                                        "id": "group-a-contents",
                                         "elementType": "DESCRIPTION",
                                         "key": "",
                                         "config": {
-                                            "label": "Group A Warning",
-                                            "showLabel": false,
-                                            "description": "<p><em>{{$.form.input.groupAWarning}}</em></p>"
-                                        },
-                                        "validations": []
-                                    },
-                                    {
-                                        "id": "group-a-contents",
-                                        "elementType": "TEXTAREA",
-                                        "key": "groupA",
-                                        "config": {
                                             "label": "Group A",
-                                            "required": false,
-                                            "rows": 3,
-                                            "resize": false
+                                            "showLabel": true,
+                                            "description": "{{$.form.input.groupAContentsHtml}}"
                                         },
                                         "validations": []
                                     }
                                 ],
                                 [
                                     {
-                                        "id": "group-b-warning",
+                                        "id": "group-b-contents",
                                         "elementType": "DESCRIPTION",
                                         "key": "",
                                         "config": {
-                                            "label": "Group B Warning",
-                                            "showLabel": false,
-                                            "description": "<p><em>{{$.form.input.groupBWarning}}</em></p>"
-                                        },
-                                        "validations": []
-                                    },
-                                    {
-                                        "id": "group-b-contents",
-                                        "elementType": "TEXTAREA",
-                                        "key": "groupB",
-                                        "config": {
                                             "label": "Group B",
-                                            "required": false,
-                                            "rows": 3,
-                                            "resize": false
+                                            "showLabel": true,
+                                            "description": "{{$.form.input.groupBContentsHtml}}"
                                         },
                                         "validations": []
                                     }
@@ -287,32 +262,6 @@
                 { "sourceType": "INPUT", "source": "hasControls", "operator": "EQ", "valueType": "STRING", "value": "true" }
             ],
             "effects": [{ "effectType": "SHOW", "config": { "element": "mitigate-section" } }]
-        },
-        {
-            "ruleOperator": "AND",
-            "rules": [{ "sourceType": "INPUT", "source": "groupAContents", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
-            "effects": [
-                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "groupAContents", "element": "group-a-contents" } },
-                { "effectType": "DISABLE", "config": { "element": "group-a-contents" } }
-            ]
-        },
-        {
-            "ruleOperator": "AND",
-            "rules": [{ "sourceType": "INPUT", "source": "groupBContents", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
-            "effects": [
-                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "groupBContents", "element": "group-b-contents" } },
-                { "effectType": "DISABLE", "config": { "element": "group-b-contents" } }
-            ]
-        },
-        {
-            "ruleOperator": "AND",
-            "rules": [{ "sourceType": "INPUT", "source": "groupAWarning", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
-            "effects": [{ "effectType": "SHOW", "config": { "element": "group-a-warning" } }]
-        },
-        {
-            "ruleOperator": "AND",
-            "rules": [{ "sourceType": "INPUT", "source": "groupBWarning", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
-            "effects": [{ "effectType": "SHOW", "config": { "element": "group-b-warning" } }]
         },
         {
             "ruleOperator": "AND",

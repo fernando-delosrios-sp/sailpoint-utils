@@ -26,25 +26,43 @@ const mockViolation = {
 
 const persistedAccounts = new Map<string, Record<string, unknown>>()
 
+const putAccountV1 = vi.fn().mockResolvedValue({})
+
 const createAccountV1 = vi.fn().mockImplementation(async ({ accountAttributesCreate }) => {
     const attributes = accountAttributesCreate.attributes as Record<string, unknown>
     persistedAccounts.set(String(attributes.id), attributes)
-    return {}
+    return { data: { id: 'task-create-1' } }
 })
 
-const putAccountV1 = vi.fn().mockImplementation(async ({ accountAttributes }) => {
-    const attributes = accountAttributes.attributes as Record<string, unknown>
-    persistedAccounts.set(String(attributes.id), attributes)
+const deleteAccountAsyncV1 = vi.fn().mockImplementation(async ({ id }) => {
+    const nativeId = String(id).replace(/^isc-/, '')
+    persistedAccounts.delete(nativeId)
     return {}
 })
 
 const listAccountsV1 = vi.fn().mockImplementation(async ({ filters }) => {
-    const match = /nativeIdentity eq "([^"]+)"/.exec(filters ?? '')
+    const filterText = String(filters ?? '')
+    if (
+        filterText.includes('sourceId eq') &&
+        !filterText.includes('nativeIdentity eq') &&
+        !filterText.includes('name eq') &&
+        !filterText.includes('id eq')
+    ) {
+        return {
+            data: [...persistedAccounts.entries()].map(([id, attributes]) => ({
+                id: `isc-${id}`,
+                sourceId: 'source-123',
+                attributes,
+            })),
+        }
+    }
+
+    const match = /(?:nativeIdentity|id|name) eq "([^"]+)"/.exec(filterText)
     const id = match?.[1]
     if (!id || !persistedAccounts.has(id)) {
         return { data: [] }
     }
-    return { data: [{ id: `isc-${id}`, attributes: persistedAccounts.get(id) }] }
+    return { data: [{ id: `isc-${id}`, sourceId: 'source-123', attributes: persistedAccounts.get(id) }] }
 })
 const resolveSourceByName = vi.fn().mockResolvedValue('source-123')
 const getSourceSchemasV1 = vi.fn().mockResolvedValue({
@@ -56,8 +74,10 @@ const getSourceSchemasV1 = vi.fn().mockResolvedValue({
                 { name: 'id', type: 'STRING', isMulti: false },
                 { name: 'status', type: 'STRING', isMulti: false },
                 { name: 'date', type: 'STRING', isMulti: false },
-                { name: 'formUrl', type: 'STRING', isMulti: false },
-                { name: 'situationSummary', type: 'STRING', isMulti: false },
+                { name: 'sod-remediation:form-url', type: 'STRING', isMulti: false },
+                { name: 'sod-remediation:situation-header', type: 'STRING', isMulti: false },
+                { name: 'sod-remediation:situation-summary', type: 'STRING', isMulti: false },
+                { name: 'sod-remediation:owner-email', type: 'STRING', isMulti: false },
             ],
         },
     ],
@@ -86,8 +106,21 @@ vi.mock('../../framework/sdk-factory', () => ({
         },
         accounts: {
             createAccountV1: (...args: unknown[]) => createAccountV1(...args),
-            putAccountV1: (...args: unknown[]) => putAccountV1(...args),
+            deleteAccountAsyncV1: (...args: unknown[]) => deleteAccountAsyncV1(...args),
             listAccountsV1: (...args: unknown[]) => listAccountsV1(...args),
+            putAccountV1: (...args: unknown[]) => putAccountV1(...args),
+            getAccountV1: vi.fn().mockImplementation(async ({ id }) => {
+                const nativeId = String(id).replace(/^isc-/, '')
+                const attributes = persistedAccounts.get(nativeId)
+                return attributes
+                    ? { data: { id: `isc-${nativeId}`, sourceId: 'source-123', attributes } }
+                    : { data: undefined }
+            }),
+        },
+        tasks: {
+            getTaskStatusV1: vi.fn().mockResolvedValue({
+                data: { completed: '2026-08-11T10:00:00Z', completionStatus: 'SUCCESS', messages: [] },
+            }),
         },
         forms: {},
         identityHistory: {},
@@ -121,6 +154,36 @@ vi.mock('../../isc/identity-access', async (importOriginal) => {
     }
 })
 
+const fetchKeepRecommendations = vi.fn()
+const listAssignedEntitlements = vi.fn()
+const resolveIdentityEmail = vi.fn()
+
+vi.mock('../../isc/recommendations', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../isc/recommendations')>()
+    return {
+        ...actual,
+        fetchKeepRecommendations: (...args: unknown[]) => fetchKeepRecommendations(...args),
+        fetchKeepRecommendationsOffline: actual.fetchKeepRecommendationsOffline,
+    }
+})
+
+vi.mock('../../isc/identity-history', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../isc/identity-history')>()
+    return {
+        ...actual,
+        listAssignedEntitlements: (...args: unknown[]) => listAssignedEntitlements(...args),
+        listAssignedEntitlementsOffline: actual.listAssignedEntitlementsOffline,
+    }
+})
+
+vi.mock('../../isc/public-identities', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../isc/public-identities')>()
+    return {
+        ...actual,
+        resolveIdentityEmail: (...args: unknown[]) => resolveIdentityEmail(...args),
+    }
+})
+
 vi.mock('./form-service', async (importOriginal) => {
     const actual = await importOriginal<typeof import('./form-service')>()
     return {
@@ -138,11 +201,14 @@ describe('sodRemediationOperation', () => {
         listControlsV1.mockResolvedValue([{ id: 'ctrl-1', name: 'Control 1' }])
         fetchIdentityAccessItemsFromSdk.mockResolvedValue([])
         fetchIdentityAccessItemsOffline.mockResolvedValue([])
+        fetchKeepRecommendations.mockResolvedValue(new Map())
+        listAssignedEntitlements.mockResolvedValue([])
+        resolveIdentityEmail.mockResolvedValue('owner-default@example.com')
         ensureSodFormDefinition.mockResolvedValue('def-1')
         createSodRemediationInstance.mockResolvedValue('https://tenant.identitynow.com/form/instance-1')
     })
 
-    it('returns formUrl and situationSummary on happy path', async () => {
+    it('returns namespaced output fields on happy path', async () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
@@ -166,16 +232,26 @@ describe('sodRemediationOperation', () => {
                 formInput: expect.objectContaining({
                     hasControls: true,
                     violationId: 'vio-1',
+                    situationSummaryHtml: expect.not.stringContaining('Remediation form:'),
                     controlOptions: [{ label: 'Control 1', value: 'ctrl-1', sublabel: undefined }],
                 }),
             })
+        )
+        expect(resolveIdentityEmail).toHaveBeenCalledWith(
+            expect.objectContaining({ apiUrl: workflowConfig.apiUrl }),
+            'owner-default'
         )
         expect(createAccountV1).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAttributesCreate: expect.objectContaining({
                     attributes: expect.objectContaining({
-                        formUrl: 'https://tenant.identitynow.com/form/instance-1',
-                        situationSummary: expect.stringContaining('Alice Example'),
+                        'sod-remediation:form-url': 'https://tenant.identitynow.com/form/instance-1',
+                        'sod-remediation:situation-header':
+                            '⚠️ SOD Violation Remediation Required — Alice Example',
+                        'sod-remediation:situation-summary': expect.stringMatching(
+                            /Alice Example[\s\S]*Remediation form:[\s\S]*https:\/\/tenant\.identitynow\.com\/form\/instance-1/
+                        ),
+                        'sod-remediation:owner-email': 'owner-default@example.com',
                     }),
                 }),
             })
@@ -202,6 +278,7 @@ describe('sodRemediationOperation', () => {
         expect(createSodRemediationInstance).toHaveBeenCalledWith(
             expect.objectContaining({ recipientId: 'owner-override' })
         )
+        expect(resolveIdentityEmail).toHaveBeenCalledWith(expect.anything(), 'owner-override')
     })
 
     it('creates form definition from seed when missing', async () => {
@@ -249,6 +326,7 @@ describe('sodRemediationOperation', () => {
             expect(createSodRemediationInstance).toHaveBeenCalledWith(
                 expect.objectContaining({ recipientId: 'offline-owner' })
             )
+            expect(resolveIdentityEmail).not.toHaveBeenCalled()
         } finally {
             if (previousTestMode === undefined) {
                 delete process.env.SPCX_TEST_MODE
@@ -282,9 +360,11 @@ describe('sodRemediationOperation', () => {
         expect(createAccountV1).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAttributesCreate: expect.objectContaining({
-                    attributes: expect.objectContaining({
-                        situationSummary: expect.stringContaining('No compensating controls'),
-                    }),
+                        attributes: expect.objectContaining({
+                            'sod-remediation:situation-summary': expect.stringMatching(
+                                /No compensating controls[\s\S]*Remediation form:/
+                            ),
+                        }),
                 }),
             })
         )

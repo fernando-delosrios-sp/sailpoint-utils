@@ -12,32 +12,33 @@ describe('createRequestContext persist wiring', () => {
 
     it('creates account when native identity is absent', async () => {
         const createAccountV1 = vi.fn().mockResolvedValue({})
-        const putAccountV1 = vi.fn().mockResolvedValue({})
+        const deleteAccountAsyncV1 = vi.fn().mockResolvedValue({})
         const listAccountsV1 = vi.fn().mockResolvedValue({ data: [] })
 
         const ctx = createRequestContext(input, {} as Response<any>, {
             sourceId: 'source-1',
             sdk: {
-                accounts: { createAccountV1, putAccountV1, listAccountsV1 } as never,
+                accounts: { createAccountV1, deleteAccountAsyncV1, listAccountsV1 } as never,
                 sources: {} as never,
                 forms: {} as never,
                 identityHistory: {} as never,
-                accessProfiles: {} as never,
-                roles: {} as never,
+            accessProfiles: {} as never,
+            roles: {} as never,
+            tasks: { getTaskStatusV1: vi.fn() } as never,
             },
         })
 
         await ctx.persist('req-001', { outcome: 'new' }, undefined, { verify: false })
 
         expect(createAccountV1).toHaveBeenCalled()
-        expect(putAccountV1).not.toHaveBeenCalled()
+        expect(deleteAccountAsyncV1).not.toHaveBeenCalled()
     })
 
     it('updates account via putAccountV1 when native identity exists', async () => {
         const createAccountV1 = vi.fn().mockResolvedValue({})
         const putAccountV1 = vi.fn().mockResolvedValue({})
         const listAccountsV1 = vi.fn().mockResolvedValue({
-            data: [{ id: 'isc-account-1', attributes: { id: 'req-001', outcome: 'old' } }],
+            data: [{ id: 'isc-account-1', sourceId: 'source-1', attributes: { id: 'req-001', outcome: 'old' } }],
         })
 
         const ctx = createRequestContext(input, {} as Response<any>, {
@@ -47,8 +48,9 @@ describe('createRequestContext persist wiring', () => {
                 sources: {} as never,
                 forms: {} as never,
                 identityHistory: {} as never,
-                accessProfiles: {} as never,
-                roles: {} as never,
+            accessProfiles: {} as never,
+            roles: {} as never,
+            tasks: { getTaskStatusV1: vi.fn() } as never,
             },
         })
 

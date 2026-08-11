@@ -66,6 +66,19 @@ export function parseRegistrations(indexPath: string): OperationRegistration[] {
     return parseRegistrationsFromSource(source, path.dirname(indexPath))
 }
 
+function propertyNameFromSignature(member: ts.PropertySignature, sourceFile: ts.SourceFile): string | undefined {
+    if (!member.name) {
+        return undefined
+    }
+    if (ts.isIdentifier(member.name)) {
+        return member.name.text
+    }
+    if (ts.isStringLiteral(member.name)) {
+        return member.name.text
+    }
+    return undefined
+}
+
 function extractFieldsFromTypeLiteral(sourceFile: ts.SourceFile, typeNode: ts.TypeNode | undefined): OperationField[] {
     if (!typeNode || !ts.isTypeLiteralNode(typeNode)) {
         return []
@@ -73,10 +86,13 @@ function extractFieldsFromTypeLiteral(sourceFile: ts.SourceFile, typeNode: ts.Ty
 
     const fields: OperationField[] = []
     for (const member of typeNode.members) {
-        if (!ts.isPropertySignature(member) || !member.name || !ts.isIdentifier(member.name)) {
+        if (!ts.isPropertySignature(member)) {
             continue
         }
-        const name = member.name.text
+        const name = propertyNameFromSignature(member, sourceFile)
+        if (!name) {
+            continue
+        }
         const optional = Boolean(member.questionToken)
         const type = member.type ? member.type.getText(sourceFile) : 'unknown'
         fields.push({ name, optional, type })
@@ -125,12 +141,13 @@ export function extractOperationSignature(filePath: string): { input: OperationF
     let output: OperationField[] = []
 
     for (const member of iface.members) {
-        if (!ts.isPropertySignature(member) || !member.name || !ts.isIdentifier(member.name)) {
+        if (!ts.isPropertySignature(member)) {
             continue
         }
-        if (member.name.text === 'input') {
+        const memberName = propertyNameFromSignature(member, sourceFile)
+        if (memberName === 'input') {
             input = extractFieldsFromTypeLiteral(sourceFile, member.type)
-        } else if (member.name.text === 'output') {
+        } else if (memberName === 'output') {
             output = extractFieldsFromTypeLiteral(sourceFile, member.type)
         }
     }

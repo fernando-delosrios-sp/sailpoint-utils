@@ -96,17 +96,33 @@ export interface CustomOperationOptions extends RequestContextDependencies {
  * Wraps a custom command handler with volatile RequestContext initialization.
  * Resolves sourceName to sourceId and attaches operation output fields for schema reconciliation.
  * Auto-discovered operations resolve `operationSchema` from the build-time registry when omitted.
- * All failures escaping this wrapper are normalized to {@link ConnectorError}.
+ * Failures are normalized via {@link toConnectorError} and returned as `{ status: 'failed', error }`
+ * (HTTP 200) so calling workflows do not retry on spcx/platform 500s — unless the handler already sent a response.
  */
 export function customOperation<T extends OperationSignature>(
     handler: CustomOperationHandler<T>,
     deps: CustomOperationOptions = {}
 ): CommandHandler {
     return async (context: Context, input: Record<string, unknown>, res: Response<any>) => {
+        let responseSent = false
+        const trackedRes: Response<any> = {
+            send(output: unknown) {
+                responseSent = true
+                res.send(output)
+            },
+            saveState: (state) => res.saveState(state),
+            keepAlive: () => res.keepAlive(),
+            patchConfig: (patches) => res.patchConfig(patches),
+        }
+
         try {
-            await runCustomOperation(context, input, res, handler, deps)
+            await runCustomOperation(context, input, trackedRes, handler, deps)
         } catch (e) {
-            throw toConnectorError(e, context.commandType)
+            const error = toConnectorError(e, context.commandType)
+            console.error(error.message)
+            if (!responseSent) {
+                trackedRes.send({ status: 'failed', error: error.message })
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 import { Response } from '@sailpoint/connector-sdk'
-import { AccountsApi, AccessProfilesApi, CustomFormsApi, IdentityHistoryApi, RolesApi, SourcesApi } from 'sailpoint-api-client'
+import { AccountsApi, AccessProfilesApi, CustomFormsApi, IdentityHistoryApi, RolesApi, SourcesApi, TaskManagementApi } from 'sailpoint-api-client'
 import { OperationField } from './schema-inference'
 
 /** Standard fields resolved from an invoke payload: config + input. */
@@ -24,6 +24,7 @@ export interface SailPointClients {
     identityHistory: IdentityHistoryApi
     accessProfiles: AccessProfilesApi
     roles: RolesApi
+    tasks: TaskManagementApi
 }
 
 /** Options for {@link PersistFn}. Verification runs by default; set verify to false to defer. */
@@ -67,8 +68,10 @@ export interface PersistDependencies {
     sourceId: string
     operationSchema?: OperationSchemaContract
     ensureSourceSchema?: (attributeKeys: string[]) => Promise<void>
-    upsertAccount: (attributes: Record<string, unknown>) => Promise<void>
+    /** Returns the ISC account UUID when an existing account was updated via put. */
+    upsertAccount: (attributes: Record<string, unknown>) => Promise<string | undefined>
     readAccount: (id: string) => Promise<Record<string, unknown> | undefined>
+    readAccountByIscId?: (iscAccountId: string) => Promise<Record<string, unknown> | undefined>
     /** Override for tests to avoid real delays during retry loops. */
     sleep?: (ms: number) => Promise<void>
 }

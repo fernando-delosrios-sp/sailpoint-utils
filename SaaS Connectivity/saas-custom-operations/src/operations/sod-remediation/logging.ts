@@ -1,13 +1,14 @@
-import { inspect } from 'node:util'
+import { inspect, InspectOptions } from 'node:util'
 import { IdentityAccessItem } from '../../isc/identity-access'
 import { CompensatingControlV1 } from '../../isc/controls'
 import { ViolationV1 } from '../../isc/violations'
 import { ResolvedAccessSide } from './access-path-resolver'
 import { SodFormInputValues } from './form-service'
 
-function logInspectOptions(): inspect.Options {
+function logInspectOptions(): InspectOptions {
     return {
         depth: null,
+        breakLength: Infinity,
         colors: Boolean(process.stdout.isTTY && !process.env.NO_COLOR),
     }
 }
@@ -122,10 +123,14 @@ export function logSodRemediationFormInput(requestId: string, formInput: SodForm
         hasControls: formInput.hasControls,
         violationId: formInput.violationId,
         targetIdentityId: formInput.targetIdentityId,
-        groupAContents: formInput.groupAContents,
-        groupBContents: formInput.groupBContents,
-        groupAWarning: formInput.groupAWarning,
-        groupBWarning: formInput.groupBWarning,
+        groupAContentsHtmlPreview:
+            formInput.groupAContentsHtml.length > 160
+                ? `${formInput.groupAContentsHtml.slice(0, 160)}…`
+                : formInput.groupAContentsHtml,
+        groupBContentsHtmlPreview:
+            formInput.groupBContentsHtml.length > 160
+                ? `${formInput.groupBContentsHtml.slice(0, 160)}…`
+                : formInput.groupBContentsHtml,
         groupARevokePayload: formInput.groupARevokePayload,
         groupBRevokePayload: formInput.groupBRevokePayload,
         controlOptions: formInput.controlOptions,
@@ -137,11 +142,21 @@ export function logSodRemediationFormInput(requestId: string, formInput: SodForm
 }
 
 /** Logs operation output prior to persist. */
-export function logSodRemediationOutput(requestId: string, formUrl: string, situationSummary: string): void {
+export function logSodRemediationOutput(
+    requestId: string,
+    output: {
+        formUrl: string
+        situationHeader: string
+        situationSummary: string
+        ownerEmail: string
+    }
+): void {
     logStep(requestId, 'output', {
-        formUrl,
-        situationSummary,
-        situationSummaryLength: situationSummary.length,
+        'sod-remediation:form-url': output.formUrl,
+        'sod-remediation:situation-header': output.situationHeader,
+        'sod-remediation:situation-summary': output.situationSummary,
+        'sod-remediation:owner-email': output.ownerEmail,
+        situationSummaryLength: output.situationSummary.length,
     })
 }
 
@@ -149,6 +164,7 @@ export function logSodRemediationOutput(requestId: string, formUrl: string, situ
 export function logSodRemediationComplete(requestId: string): void {
     console.log(`[${requestId}] sod-remediation finished`)
 }
+
 
 
 

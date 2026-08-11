@@ -49,6 +49,16 @@ export interface JsonPatchOperation {
     value?: unknown
 }
 
+/** True when an HTTP client error indicates the resource was not found. */
+export function isHttpNotFound(error: unknown): boolean {
+    if (typeof error !== 'object' || error === null) {
+        return false
+    }
+
+    const candidate = error as { status?: number; response?: { status?: number } }
+    return candidate.status === 404 || candidate.response?.status === 404
+}
+
 /** Lists sources matching a name filter. */
 export async function findSourceByName(sourcesApi: SourcesApi, sourceName: string): Promise<SourcePayload | undefined> {
     const response = await sourcesApi.listSourcesV1({ filters: `name eq "${sourceName}"` })
@@ -83,8 +93,15 @@ export async function getAccountSchemas(
     sourceId: string,
     includeNames = 'account'
 ): Promise<SchemaPayload[]> {
-    const response = await sourcesApi.getSourceSchemasV1({ sourceId, includeNames })
-    return (response.data as SchemaPayload[] | undefined) ?? []
+    try {
+        const response = await sourcesApi.getSourceSchemasV1({ sourceId, includeNames })
+        return (response.data as SchemaPayload[] | undefined) ?? []
+    } catch (error) {
+        if (isHttpNotFound(error)) {
+            return []
+        }
+        throw error
+    }
 }
 
 /** Returns the account schema for a source when present. */

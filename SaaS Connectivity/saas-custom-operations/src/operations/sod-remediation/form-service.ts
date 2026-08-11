@@ -17,15 +17,14 @@ export interface SodFormInputValues {
     targetIdentityName: string
     policyName: string
     situationSummaryHtml: string
-    groupAContents: string
-    groupBContents: string
-    groupAWarning: string
-    groupBWarning: string
+    groupAContentsHtml: string
+    groupBContentsHtml: string
     hasControls: boolean
     violationId: string
     targetIdentityId: string
     groupARevokePayload: string
     groupBRevokePayload: string
+    recommendedSideToCorrect: string
     controlOptions: FormInputSelectOption[]
 }
 

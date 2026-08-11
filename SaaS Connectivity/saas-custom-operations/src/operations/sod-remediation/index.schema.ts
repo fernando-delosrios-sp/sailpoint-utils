@@ -2,6 +2,8 @@
 import { defineOperationSchema } from '../../framework'
 
 export const sodRemediationOperationSchema = defineOperationSchema({
-    formUrl: 'string',
-    situationSummary: 'string',
+    'sod-remediation:form-url': 'string',
+    'sod-remediation:owner-email': 'string',
+    'sod-remediation:situation-header': 'string',
+    'sod-remediation:situation-summary': 'string',
 })

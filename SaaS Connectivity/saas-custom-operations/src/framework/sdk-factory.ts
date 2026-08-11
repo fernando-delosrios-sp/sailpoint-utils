@@ -1,4 +1,4 @@
-import { AccountsApi, AccessProfilesApi, Configuration, CustomFormsApi, IdentityHistoryApi, RolesApi, SourcesApi } from 'sailpoint-api-client'
+import { AccountsApi, AccessProfilesApi, Configuration, CustomFormsApi, IdentityHistoryApi, RolesApi, SourcesApi, TaskManagementApi } from 'sailpoint-api-client'
 import { SailPointClients } from './types'
 
 /** Builds pre-configured SailPoint API clients for ISC loopback operations. */
@@ -16,6 +16,7 @@ export function createSailPointClients(apiUrl: string, token: string): SailPoint
         identityHistory: new IdentityHistoryApi(configuration),
         accessProfiles: new AccessProfilesApi(configuration),
         roles: new RolesApi(configuration),
+        tasks: new TaskManagementApi(configuration),
     }
 }
 

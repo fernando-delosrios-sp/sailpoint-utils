@@ -37,6 +37,10 @@ const PROJECT_ROOT = path.resolve(__dirname, '..')
 const INDEX_PATH = path.join(PROJECT_ROOT, 'src/operations/index.ts')
 const CONNECTOR_SPEC_PATH = path.join(PROJECT_ROOT, 'connector-spec.json')
 
+function quotePropertyName(name: string): string {
+    return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name) ? name : `'${name.replace(/'/g, "\\'")}'`
+}
+
 function fieldToSpec(field: OperationField): string {
     if (field.optional) {
         return `{ type: '${field.type}', optional: true }`
@@ -51,7 +55,9 @@ export function renderOperationSchemaSidecar(
     modulePath: string
 ): string {
     const sorted = [...outputFields].sort((a, b) => a.name.localeCompare(b.name))
-    const fieldLines = sorted.map((field) => `    ${field.name}: ${fieldToSpec(field)},`).join('\n')
+    const fieldLines = sorted
+        .map((field) => `    ${quotePropertyName(field.name)}: ${fieldToSpec(field)},`)
+        .join('\n')
     const frameworkImport = frameworkImportPath(modulePath)
 
     return `${BANNER}

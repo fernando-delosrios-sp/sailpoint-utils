@@ -1,6 +1,6 @@
 import { ConnectorError, Response } from '@sailpoint/connector-sdk'
-import { AccountsApi, CustomFormsApi, SourcesApi } from 'sailpoint-api-client'
-import { createPersist, createVerifyPersisted, findAccountOnSource, upsertSourceAccount } from './persist-result'
+import { AccountsApi, CustomFormsApi, SourcesApi, TaskManagementApi } from 'sailpoint-api-client'
+import { createPersist, createVerifyPersisted, findAccountOnSource, upsertSourceAccount, waitForAccountProvisioningTask } from './persist-result'
 import { createSailPointClients } from './sdk-factory'
 import { ensureSourceSchema } from './result-source'
 import { createTestModePersist } from './test-mode-persist'
@@ -65,11 +65,22 @@ export function createRequestContext<TOutput extends object>(
               }
             : undefined,
         upsertAccount: async (attributes) => {
-            await upsertSourceAccount(accountsClient, sourceId, attributes)
+            return upsertSourceAccount(accountsClient, sourceId, attributes, {
+                waitForAccountTask: (taskId) => waitForAccountProvisioningTask(sdk.tasks, taskId),
+            })
         },
         readAccount: async (id) => {
             const account = await findAccountOnSource(accountsClient, sourceId, id)
             return account?.attributes
+        },
+        readAccountByIscId: async (iscAccountId) => {
+            try {
+                const response = await accountsClient.getAccountV1({ id: iscAccountId })
+                const attributes = response.data?.attributes
+                return attributes ? (attributes as Record<string, unknown>) : undefined
+            } catch {
+                return undefined
+            }
         },
     }
 
@@ -110,13 +121,23 @@ function createOfflineSdkStub(): SailPointClients {
     const stub = () => offlineApiError()
     const offlineFormsStub = {
         searchFormDefinitionsByTenantV1: async () => ({ data: { results: [{ id: 'offline-form-def' }] } }),
+        getFormDefinitionByKeyV1: async () => ({
+            data: { id: 'offline-form-def', description: 'Legacy offline form definition' },
+        }),
         createFormDefinitionV1: async () => ({ data: { id: 'offline-form-def' } }),
+        patchFormDefinitionV1: async () => ({ data: { id: 'offline-form-def' } }),
         createFormInstanceV1: async () => ({
             data: { standAloneFormUrl: 'https://offline.example.com/form/offline-instance' },
         }),
     }
     return {
-        accounts: { createAccountV1: stub, listAccountsV1: stub, putAccountV1: stub } as unknown as AccountsApi,
+        accounts: {
+            createAccountV1: stub,
+            listAccountsV1: stub,
+            putAccountV1: stub,
+            getAccountV1: stub,
+            deleteAccountAsyncV1: stub,
+        } as unknown as AccountsApi,
         sources: {
             listSourcesV1: stub,
             createSourceV1: stub,
@@ -128,6 +149,7 @@ function createOfflineSdkStub(): SailPointClients {
         identityHistory: { listIdentityAccessItemsV1: stub } as unknown as SailPointClients['identityHistory'],
         accessProfiles: { getAccessProfileEntitlementsV1: stub } as unknown as SailPointClients['accessProfiles'],
         roles: { getRoleEntitlementsV1: stub } as unknown as SailPointClients['roles'],
+        tasks: { getTaskStatusV1: stub } as unknown as TaskManagementApi,
     }
 }
 
