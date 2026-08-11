@@ -115,7 +115,7 @@ describe('resolveSourceByName', () => {
 })
 
 describe('applyBaseAccountSchema', () => {
-    it('patches an existing discovered schema instead of creating a duplicate', async () => {
+    it('replaces a discovered schema with the base schema attributes', async () => {
         registerOperationSchema(
             'custom:example',
             defineOperationSchema({ summary: 'string' }, { command: 'custom:example' })
@@ -148,13 +148,23 @@ describe('applyBaseAccountSchema', () => {
                 jsonPatchOperation: expect.arrayContaining([
                     expect.objectContaining({ op: 'replace', path: '/identityAttribute', value: 'id' }),
                     expect.objectContaining({
-                        op: 'add',
-                        path: '/attributes/-',
-                        value: expect.objectContaining({ name: 'summary', type: 'STRING' }),
+                        op: 'replace',
+                        path: '/attributes',
+                        value: expect.arrayContaining([
+                            expect.objectContaining({ name: 'id', type: 'STRING' }),
+                            expect.objectContaining({ name: 'summary', type: 'STRING' }),
+                        ]),
                     }),
                 ]),
             })
         )
+
+        const patchCall = (sourcesApi.updateSourceSchemaV1 as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
+        const attributesPatch = patchCall.jsonPatchOperation.find(
+            (op: { path?: string }) => op.path === '/attributes'
+        )
+        const attributeNames = attributesPatch.value.map((attr: { name: string }) => attr.name)
+        expect(attributeNames).not.toContain('nativeId')
     })
 
     it('excludes reserved framework keys from the base schema', async () => {
@@ -176,8 +186,7 @@ describe('applyBaseAccountSchema', () => {
         expect(attributeNames).not.toContain('sourceId')
     })
 
-    it('warns on type conflict during base apply and keeps existing attribute', async () => {
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    it('replaces conflicting attribute types during base apply', async () => {
         registerOperationSchema(
             'custom:typed',
             defineOperationSchema({ count: 'number' }, { command: 'custom:typed' })
@@ -207,15 +216,12 @@ describe('applyBaseAccountSchema', () => {
 
         await applyBaseAccountSchema(sourcesApi, 'source-1')
 
-        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Type conflict for count'))
-        if ((sourcesApi.updateSourceSchemaV1 as ReturnType<typeof vi.fn>).mock.calls.length > 0) {
-            const patchCall = (sourcesApi.updateSourceSchemaV1 as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
-            const attributePatches = patchCall.jsonPatchOperation.filter(
-                (op: { path?: string }) => op.path?.startsWith('/attributes/')
-            )
-            expect(attributePatches.every((op: { value?: { name?: string } }) => op.value?.name !== 'count')).toBe(true)
-        }
-        warnSpy.mockRestore()
+        const patchCall = (sourcesApi.updateSourceSchemaV1 as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
+        const attributesPatch = patchCall.jsonPatchOperation.find(
+            (op: { path?: string }) => op.path === '/attributes'
+        )
+        const countAttr = attributesPatch.value.find((attr: { name: string }) => attr.name === 'count')
+        expect(countAttr).toEqual(expect.objectContaining({ name: 'count', type: 'INT', isMulti: false }))
     })
 })
 
@@ -250,13 +256,38 @@ describe('ensureSourceSchema', () => {
                 schemaId: 'schema-1',
                 jsonPatchOperation: expect.arrayContaining([
                     expect.objectContaining({
-                        op: 'add',
-                        path: '/attributes/-',
-                        value: expect.objectContaining({ name: 'summary', type: 'STRING', isMulti: false }),
+                        op: 'replace',
+                        path: '/attributes',
+                        value: expect.arrayContaining([
+                            expect.objectContaining({ name: 'summary', type: 'STRING', isMulti: false }),
+                        ]),
                     }),
                 ]),
             })
         )
+    })
+
+    it('creates schema with operation output fields when schema is missing', async () => {
+        const sourcesApi = {
+            getSourceSchemasV1: vi.fn().mockResolvedValue({ data: [] }),
+            createSourceSchemaV1: vi.fn().mockResolvedValue({ data: { id: 'schema-1', name: 'account' } }),
+            updateSourceSchemaV1: vi.fn(),
+        } as unknown as SourcesApi
+
+        await ensureSourceSchema(sourcesApi, 'source-1', [{ name: 'summary', type: 'string' }], ['summary'])
+
+        expect(sourcesApi.createSourceSchemaV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sourceId: 'source-1',
+                schema: expect.objectContaining({
+                    attributes: expect.arrayContaining([
+                        expect.objectContaining({ name: 'id', type: 'STRING' }),
+                        expect.objectContaining({ name: 'summary', type: 'STRING' }),
+                    ]),
+                }),
+            })
+        )
+        expect(sourcesApi.updateSourceSchemaV1).not.toHaveBeenCalled()
     })
 
     it('warns on type conflict and keeps existing attribute', async () => {

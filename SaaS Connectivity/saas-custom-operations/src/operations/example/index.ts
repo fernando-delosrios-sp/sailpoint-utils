@@ -1,4 +1,5 @@
 import { customOperation, OperationSignature } from '../../framework'
+import { exampleOperationSchema } from './index.schema'
 
 export interface ExampleOperation extends OperationSignature {
     command: 'custom:example'
@@ -22,5 +23,6 @@ export const exampleOperation = customOperation<ExampleOperation>(
 
         console.log(`[${ctx.requestId}] example operation finished`)
         ctx.res.send({ status: 'success' })
-    }
+    },
+    { operationSchema: exampleOperationSchema }
 )

@@ -16,7 +16,6 @@ import {
     BASE_CORE_ATTRIBUTES,
     baseSchemaAttributeDefinition,
     buildBaseAccountSchema,
-    collectBaseSchemaAttributes,
 } from './base-account-schema'
 import { listRegisteredOperationSchemas } from './operation-schema-registry'
 import { RESERVED_OUTPUT_KEYS } from './output-schema'
@@ -57,12 +56,7 @@ function registeredOutputFields(): OperationField[] {
     return listRegisteredOperationSchemas().flatMap((schema) => schema.outputFields)
 }
 
-function buildSchemaAttributePatches(
-    schema: SchemaPayload,
-    required: Map<string, InferredSchemaAttribute>
-): Array<{ op: string; path: string; value?: unknown }> {
-    const existingAttrs = schema.attributes ?? []
-    const existingByName = new Map(existingAttrs.map((attr: SchemaAttribute) => [attr.name ?? '', attr]))
+function buildMetadataPatches(schema: SchemaPayload): Array<{ op: string; path: string; value?: unknown }> {
     const patches: Array<{ op: string; path: string; value?: unknown }> = []
 
     if (schema.identityAttribute !== 'id') {
@@ -78,14 +72,22 @@ function buildSchemaAttributePatches(
         patches.push({ op: 'replace', path: '/name', value: 'account' })
     }
 
+    return patches
+}
+
+function mergeSchemaAttributes(
+    existingAttrs: SchemaAttribute[],
+    required: Map<string, InferredSchemaAttribute>
+): { attributes: SchemaAttribute[]; changed: boolean } {
+    const merged: SchemaAttribute[] = existingAttrs.map((attr) => ({ ...attr }))
+    const existingByName = new Map(merged.map((attr) => [attr.name ?? '', attr]))
+    let changed = false
+
     for (const [name, inferred] of required) {
         const existing = existingByName.get(name)
         if (!existing) {
-            patches.push({
-                op: 'add',
-                path: '/attributes/-',
-                value: baseSchemaAttributeDefinition(inferred),
-            })
+            merged.push(baseSchemaAttributeDefinition(inferred))
+            changed = true
             continue
         }
 
@@ -97,14 +99,58 @@ function buildSchemaAttributePatches(
         }
 
         if (existing.isMulti === false && inferred.isMulti) {
-            const index = existingAttrs.findIndex((attr: SchemaAttribute) => attr.name === name)
+            const index = merged.findIndex((attr) => attr.name === name)
             if (index >= 0) {
                 console.warn(`[schema] isMulti conflict for ${name}: patching to true`)
-                patches.push({ op: 'replace', path: `/attributes/${index}/isMulti`, value: true })
+                merged[index] = { ...merged[index], isMulti: true }
+                changed = true
             }
         }
     }
 
+    return { attributes: merged, changed }
+}
+
+function buildSchemaReconciliationPatches(
+    schema: SchemaPayload,
+    required: Map<string, InferredSchemaAttribute>
+): Array<{ op: string; path: string; value?: unknown }> {
+    const patches = buildMetadataPatches(schema)
+    const { attributes, changed } = mergeSchemaAttributes(schema.attributes ?? [], required)
+
+    if (changed) {
+        patches.push({ op: 'replace', path: '/attributes', value: attributes })
+    }
+
+    return patches
+}
+
+function buildSchemaPayloadFromRequired(required: Map<string, InferredSchemaAttribute>): SchemaPayload {
+    const coreNames = ['id', 'status', 'date'] as const
+    const dynamicNames = [...required.keys()]
+        .filter((name) => !coreNames.includes(name as (typeof coreNames)[number]))
+        .sort((a, b) => a.localeCompare(b))
+    const orderedNames = [...coreNames, ...dynamicNames]
+
+    return {
+        name: 'account',
+        nativeObjectType: 'User',
+        identityAttribute: 'id',
+        displayAttribute: 'id',
+        hierarchyAttribute: null,
+        includePermissions: false,
+        features: [],
+        configuration: {},
+        attributes: orderedNames.map((name) => baseSchemaAttributeDefinition(required.get(name)!)),
+    }
+}
+
+function buildBaseSchemaAlignmentPatches(
+    schema: SchemaPayload,
+    baseSchema: SchemaPayload
+): Array<{ op: string; path: string; value?: unknown }> {
+    const patches = buildMetadataPatches(schema)
+    patches.push({ op: 'replace', path: '/attributes', value: baseSchema.attributes ?? [] })
     return patches
 }
 
@@ -118,8 +164,7 @@ export async function applyBaseAccountSchema(sourcesApi: SourcesApi, sourceId: s
         return
     }
 
-    const required = collectBaseSchemaAttributes(registeredOutputFields())
-    const patches = buildSchemaAttributePatches(schema, required)
+    const patches = buildBaseSchemaAlignmentPatches(schema, baseSchema)
     await patchAccountSchema(sourcesApi, sourceId, schema.id, patches)
 }
 
@@ -214,10 +259,12 @@ export async function ensureSourceSchema(
     outputFields: OperationField[],
     attributeKeys: string[]
 ): Promise<void> {
+    const required = collectRequiredAttributes(outputFields, attributeKeys)
     let schema = await getAccountSchema(sourcesApi, sourceId)
     if (!schema?.id) {
         try {
-            schema = await createAccountSchema(sourcesApi, sourceId, DEFAULT_RESULT_ACCOUNT_SCHEMA)
+            await createAccountSchema(sourcesApi, sourceId, buildSchemaPayloadFromRequired(required))
+            return
         } catch (error) {
             if (isHttpNotFound(error)) {
                 console.warn(
@@ -229,8 +276,7 @@ export async function ensureSourceSchema(
         }
     }
 
-    const required = collectRequiredAttributes(outputFields, attributeKeys)
-    const patches = buildSchemaAttributePatches(schema, required)
+    const patches = buildSchemaReconciliationPatches(schema, required)
 
     try {
         await patchAccountSchema(sourcesApi, sourceId, schema.id!, patches)
