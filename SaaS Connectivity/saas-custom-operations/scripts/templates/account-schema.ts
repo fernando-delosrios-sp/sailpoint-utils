@@ -1,5 +1,6 @@
 import { RESERVED_OUTPUT_KEYS } from '../../src/framework/output-schema'
-import { inferFromTsType, IscAttributeType } from '../../src/framework/schema-inference'
+import { buildBaseAccountSchema } from '../../src/framework/base-account-schema'
+import { IscAttributeType } from '../../src/framework/schema-inference'
 import { OperationMeta } from './types'
 
 export interface IscAttribute {
@@ -26,68 +27,37 @@ export interface IscAccountSchema {
     attributes: IscAttribute[]
 }
 
-function createAttribute(
-    name: string,
-    type: IscAttributeType,
-    isMulti: boolean,
-    description: string | null = null
-): IscAttribute {
-    return {
-        name,
-        nativeName: null,
-        type,
-        schema: null,
-        description,
-        isMulti,
-        isEntitlement: false,
-        isGroup: false,
-        isManaged: false,
-    }
-}
-
-const CORE_ATTRIBUTES: IscAttribute[] = [
-    createAttribute('id', 'STRING', false, 'The unique ID for the account'),
-    createAttribute('status', 'STRING', false),
-    createAttribute('date', 'STRING', false),
-]
-
 /** Builds an ISC account schema from registered operation output fields. */
 export function buildAccountSchema(operations: OperationMeta[]): IscAccountSchema {
-    const attributeMeta = new Map<string, { type: IscAttributeType; isMulti: boolean }>([
-        ['id', { type: 'STRING', isMulti: false }],
-        ['status', { type: 'STRING', isMulti: false }],
-        ['date', { type: 'STRING', isMulti: false }],
-    ])
+    const outputFields = operations.flatMap((op) =>
+        op.output.map((field) => ({
+            name: field.name,
+            type: field.type,
+            optional: field.optional,
+        }))
+    )
 
-    for (const op of operations) {
-        for (const field of op.output) {
-            if (RESERVED_OUTPUT_KEYS.has(field.name)) {
-                continue
-            }
-
-            const inferred = inferFromTsType(field.type)
-            const existing = attributeMeta.get(field.name)
-            attributeMeta.set(field.name, {
-                type: existing?.type ?? inferred.type,
-                isMulti: existing?.isMulti === true || inferred.isMulti,
-            })
-        }
-    }
-
-    const dynamicAttributes = [...attributeMeta.entries()]
-        .filter(([name]) => !['id', 'status', 'date'].includes(name))
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([name, meta]) => createAttribute(name, meta.type, meta.isMulti))
+    const payload = buildBaseAccountSchema(outputFields)
 
     return {
-        name: 'account',
-        nativeObjectType: 'User',
-        identityAttribute: 'id',
-        displayAttribute: 'id',
+        name: payload.name ?? 'account',
+        nativeObjectType: payload.nativeObjectType ?? 'User',
+        identityAttribute: payload.identityAttribute ?? 'id',
+        displayAttribute: payload.displayAttribute ?? 'id',
         hierarchyAttribute: null,
         includePermissions: false,
         features: [],
         configuration: {},
-        attributes: [...CORE_ATTRIBUTES, ...dynamicAttributes],
+        attributes: (payload.attributes ?? []).map((attr) => ({
+            name: attr.name ?? '',
+            nativeName: null,
+            type: (attr.type ?? 'STRING') as IscAttributeType,
+            schema: null,
+            description: attr.description ?? null,
+            isMulti: attr.isMulti ?? false,
+            isEntitlement: false,
+            isGroup: false,
+            isManaged: false,
+        })),
     }
 }

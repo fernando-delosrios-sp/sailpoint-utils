@@ -12,6 +12,11 @@ export function getOperationSchema(command: string): OperationSchemaContract | u
     return registry.get(command)
 }
 
+/** Returns all registered operation schemas (for base account schema union at source create). */
+export function listRegisteredOperationSchemas(): OperationSchemaContract[] {
+    return [...registry.values()]
+}
+
 /** Clears the registry — for unit tests only. */
 export function clearOperationSchemaRegistry(): void {
     registry.clear()

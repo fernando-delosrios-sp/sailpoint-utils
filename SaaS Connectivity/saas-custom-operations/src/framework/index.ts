@@ -14,12 +14,15 @@ export type { OperationFieldSpec } from './define-operation-schema'
 export {
     clearOperationSchemaRegistry,
     getOperationSchema,
+    listRegisteredOperationSchemas,
     registerOperationSchema,
 } from './operation-schema-registry'
+export { buildBaseAccountSchema } from './base-account-schema'
 export { createRequestContext } from './request-context'
 export { createSailPointClients } from './sdk-factory'
 export { inferFromTsType, inferSchemaAttribute } from './schema-inference'
 export {
+    applyBaseAccountSchema,
     createDelimitedFileResultSource,
     ensureSourceSchema,
     resolveSourceByName,

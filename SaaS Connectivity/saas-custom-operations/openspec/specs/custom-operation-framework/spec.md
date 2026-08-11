@@ -32,7 +32,7 @@ The framework SHALL pre-configure sailpoint-api-client instances on the request 
 
 ### Requirement: Result persistence helper
 
-The framework SHALL provide persist(id, attributes?, status?, options?) on a RequestContext typed to the operation output signature. Before writing the account, the framework SHALL reconcile the result source schema for the current operation. The attributes parameter SHALL accept Partial of the operation output type. The framework SHALL always set id, sourceId, date, and status; author-supplied keys matching those names SHALL be ignored. The framework SHALL format attribute values for ISC storage using typed inference: strings booleans numbers bigint and Date stored as native values matching their ISC types, objects and unknown values JSON-serialized to STRING, arrays stored per element type rules with isMulti true on schema. The options parameter SHALL accept verify boolean where verify defaults to true. When no account exists for the identity on the result source, the framework SHALL create the account via createAccountV1. When an account already exists for the identity, the framework SHALL update the account via putAccountV1 using the ISC account id from list lookup. When verify is true, the framework SHALL read the account back and verify persisted attributes match written values with type-aware comparison before returning control. When verify is false, the framework SHALL skip inline read-back but SHALL record written attributes for later batch verification.
+The framework SHALL provide persist(id, attributes?, status?, options?) on a RequestContext typed to the operation output signature. Before writing the account, the framework SHALL reconcile the result source schema for the current operation. The attributes parameter SHALL accept Partial of the operation output type. The framework SHALL always set id, sourceId, date, and status; author-supplied keys matching those names SHALL be ignored. The framework SHALL format attribute values for ISC storage using typed inference: strings booleans numbers bigint and Date stored as native values matching their ISC types, objects and unknown values JSON-serialized to STRING, arrays stored per element type rules with isMulti true on schema. The options parameter SHALL accept verify boolean where verify defaults to true. When no account exists for the identity on the result source, the framework SHALL create the account via createAccountV1, wait for the provisioning task to complete, and read the account back. When an account already exists for the identity, the framework SHALL update the account via putAccountV1, wait for the provisioning task when one is returned, and read the account back. The framework SHALL NOT remove existing accounts via deleteAccountAsyncV1 before writing. When verify is true, the framework SHALL read the account back and verify persisted attributes match written values with type-aware comparison before returning control. When verify is false, the framework SHALL skip inline read-back but SHALL record written attributes for later batch verification.
 
 #### Scenario: Persist stores typed number value
 
@@ -101,8 +101,8 @@ The framework SHALL provide persist(id, attributes?, status?, options?) on a Req
 
 - **GIVEN** an account with identity req-001 already exists on the result source with a resolvable ISC account id
 - **WHEN** ctx.persist('req-001', { outcome: 'updated' }) is called again
-- **THEN** the framework SHALL update the account via putAccountV1 without error
-- **AND** the framework SHALL NOT invoke createAccountV1
+- **THEN** the framework SHALL update the account via putAccountV1 with the updated attributes
+- **AND** the framework SHALL NOT invoke deleteAccountAsyncV1
 - **AND** the framework SHALL verify read-back outcome is updated before resolving
 
 #### Scenario: Persist serializes array and object values
@@ -263,6 +263,40 @@ The framework SHALL attach an OperationSchemaContract to the request context con
 - **WHEN** the operation is invoked
 - **THEN** the explicit schema SHALL take precedence over the registry lookup
 
+### Requirement: Base account schema on result source create
+
+When the framework auto-provisions a new DelimitedFile result source, it SHALL apply the **base account schema** immediately after source creation. The base schema SHALL include core framework attributes (`id`, `status`, `date`) plus the union of all registered custom operation output fields (excluding reserved framework keys), with typed inference matching templates generator and persist-time reconciliation rules.
+
+If an account schema already exists on the newly created source (for example from ISC schema discovery), the framework SHALL align that schema to the base schema by adding missing attributes and correcting schema metadata (`identityAttribute`, `displayAttribute`, `nativeObjectType`, `name`) when absent or incorrect. The framework SHALL NOT remove existing attributes. Type and isMulti conflicts SHALL follow the same warn-only policy as persist-time schema reconciliation.
+
+#### Scenario: New source receives full base schema
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **AND** registered operations declare output fields `summary` and `violationId`
+- **WHEN** a custom operation invocation auto-creates the result source
+- **THEN** the framework SHALL create or align the account schema to include `id`, `status`, `date`, `summary`, and `violationId`
+- **AND** SHALL set `identityAttribute` to `id`
+
+#### Scenario: ISC-discovered schema replaced with base schema
+
+- **GIVEN** source create completes and ISC has already materialized an account schema with only discovered CSV columns
+- **WHEN** the framework applies the base account schema
+- **THEN** the framework SHALL patch the existing account schema to add all base schema attributes
+- **AND** SHALL NOT fail with a duplicate schema create error
+
+#### Scenario: Base schema excludes reserved framework keys
+
+- **GIVEN** registered operation output includes field `sourceId`
+- **WHEN** base schema is applied on source create
+- **THEN** the account schema SHALL NOT include attribute `sourceId`
+
+#### Scenario: Existing result source unchanged
+
+- **GIVEN** an ISC result source with the configured sourceName already exists
+- **WHEN** a custom operation is invoked
+- **THEN** the framework SHALL resolve the existing source ID
+- **AND** SHALL NOT re-apply the base account schema
+
 ### Requirement: Result source resolution by name
 
 The framework SHALL resolve the configured sourceName to an ISC source ID at the start of each custom operation invocation using SourcesApi.
@@ -280,6 +314,7 @@ The framework SHALL resolve the configured sourceName to an ISC source ID at the
 - **WHEN** a custom operation is invoked
 - **THEN** the framework SHALL create a DelimitedFile source with provisionAsCsv true and the configured name
 - **AND** the source owner SHALL be the identity associated with the access token
+- **AND** the framework SHALL apply the base account schema on the new source
 - **AND** the framework SHALL set sourceId on the request context to the created source ID
 
 #### Scenario: Duplicate source name on concurrent create
@@ -301,7 +336,7 @@ The framework SHALL reconcile the result source account schema before each ctx.p
 
 #### Scenario: Core framework attributes always present
 
-- **GIVEN** a newly created result source
+- **GIVEN** a newly created result source with base schema applied
 - **WHEN** ctx.persist is called for any operation
 - **THEN** the account schema SHALL include id status and date attributes
 - **AND** identityAttribute SHALL be id
@@ -540,41 +575,43 @@ The framework SHALL resolve per-invoke config from context.config when present, 
 - **THEN** configProvided SHALL be false
 - **AND** config SHALL be an empty object
 
-### Requirement: ConnectorError propagation for custom operations
+### Requirement: Failed operation responses for custom operations
 
-The framework SHALL ensure every failure escaping a `customOperation`-wrapped handler is a `ConnectorError` from `@sailpoint/connector-sdk`. Errors that are already `ConnectorError` SHALL be rethrown unchanged. All other errors — including plain `Error`, axios rejections from `sailpoint-api-client`, and `PersistVerificationError` — SHALL be converted to `ConnectorError` before propagating to the connector runtime.
+The framework SHALL catch every failure escaping a `customOperation`-wrapped handler, normalize it via `toConnectorError` (plain `Error`, axios rejections, `PersistVerificationError`, and existing `ConnectorError`), and send `{ status: 'failed', error: <message> }` on the command response when the handler has not already sent a response. The invocation SHALL resolve without throwing so local spcx and workflow HTTP invokes return success transport status with a terminal failed payload instead of HTTP 500 retries.
 
 #### Scenario: Handler throws plain Error
 
 - **GIVEN** a custom operation handler that throws `new Error('operation failed')`
 - **WHEN** ISC invokes the custom command via `customOperation`
-- **THEN** the invocation SHALL reject with an error that is an instance of `ConnectorError`
-- **AND** the error message SHALL include the original failure message
+- **THEN** the invocation SHALL resolve without throwing
+- **AND** the response SHALL include status failed
+- **AND** the error field SHALL include the original failure message
 
 #### Scenario: Initialization failure before handler runs
 
 - **GIVEN** test mode is active with provided config and ISC status check rejects with a plain SDK error
 - **WHEN** `customOperation` initializes the request context
-- **THEN** the invocation SHALL reject with `ConnectorError`
-- **AND** SHALL NOT propagate the raw SDK error type unchanged
+- **THEN** the invocation SHALL resolve without throwing
+- **AND** the response SHALL include status failed with the normalized error message
 
 #### Scenario: Persist verification failure
 
 - **GIVEN** a handler calls `ctx.persist` and account read-back verification fails after bounded retries
 - **WHEN** the persist helper throws `PersistVerificationError`
-- **THEN** the invocation SHALL reject with `ConnectorError` describing the verification failure
+- **THEN** the invocation SHALL resolve without throwing
+- **AND** the response SHALL include status failed describing the verification failure
 
-#### Scenario: Existing ConnectorError preserved
+#### Scenario: Existing ConnectorError message preserved
 
 - **GIVEN** a handler or framework helper throws `new ConnectorError('missing field')`
-- **WHEN** the error propagates through `customOperation`
-- **THEN** the same `ConnectorError` instance or equivalent type and message SHALL be rethrown without double-wrapping
+- **WHEN** the error is handled by `customOperation`
+- **THEN** the failed response error field SHALL include missing field without double-wrapping prefixes beyond the optional command context
 
 #### Scenario: HTTP 404 maps to NotFound type
 
 - **GIVEN** an ISC client call fails with HTTP status 404
 - **WHEN** the error is normalized by the framework
-- **THEN** the resulting `ConnectorError` SHALL have type `notFound`
+- **THEN** the resulting `ConnectorError` SHALL have type `notFound` before its message is placed on the failed response
 
 ### Requirement: Inline Vitest unit test fixtures
 

@@ -3,6 +3,7 @@ import { defineOperationSchema } from './define-operation-schema'
 import {
     clearOperationSchemaRegistry,
     getOperationSchema,
+    listRegisteredOperationSchemas,
     registerOperationSchema,
 } from './operation-schema-registry'
 
@@ -14,5 +15,18 @@ describe('operation-schema-registry', () => {
 
         expect(getOperationSchema('custom:example')).toBe(schema)
         expect(getOperationSchema('custom:missing')).toBeUndefined()
+    })
+
+    it('lists all registered schemas', () => {
+        clearOperationSchemaRegistry()
+        const example = defineOperationSchema({ summary: 'string' }, { command: 'custom:example' })
+        const sod = defineOperationSchema({ violationId: 'string' }, { command: 'custom:sod-remediation' })
+        registerOperationSchema('custom:example', example)
+        registerOperationSchema('custom:sod-remediation', sod)
+
+        const listed = listRegisteredOperationSchemas()
+        expect(listed).toHaveLength(2)
+        expect(listed).toContain(example)
+        expect(listed).toContain(sod)
     })
 })

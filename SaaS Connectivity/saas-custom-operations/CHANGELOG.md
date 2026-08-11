@@ -10,6 +10,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🔧 Improvements
 
+- **Base schema on result source create** — Auto-provisioned DelimitedFile result sources now receive the full base account schema (core attrs plus union of all registered operation output fields) immediately after source creation, replacing or aligning any ISC-discovered schema. Persist-time reconciliation remains add-only for attributes introduced after create.
 - **Form HTML capabilities spec** — Document empirically verified ISC Custom Forms DESCRIPTION HTML rendering (block/inline tags, inline styles, links, nested lists, formInput interpolation) in `target-client/forms` spec; document `situationSummaryHtml` escaping and seed interpolation pattern in `connector-operations/sod-remediation` spec.
 - **Bundled form seed loading** — `loadFormSeed` accepts in-memory seed objects; SOD remediation imports its seed JSON directly (enables bundler-friendly packaging). `tsconfig.json` enables `resolveJsonModule`.
 - **SOD remediation debug logging** — Step logs use `util.inspect` with full depth so nested violation entitlements render in `npm run debug` output instead of `[Object]`.

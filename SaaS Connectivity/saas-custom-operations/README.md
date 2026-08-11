@@ -35,14 +35,14 @@ Each invocation receives a standard envelope (`config` + `input`), resolves the 
 Configure a **source name** in connector config (`sourceName`). On each invocation the framework:
 
 1. Looks up an ISC source with that name
-2. Creates a DelimitedFile source with CSV provisioning if missing (owner = token identity)
-3. Reconciles the account schema before each `ctx.persist` for the current operation's output fields
+2. Creates a DelimitedFile source with CSV provisioning if missing (owner = token identity), applying the **base account schema** (core attrs plus union of all registered operation output fields)
+3. Reconciles the account schema before each `ctx.persist` for the current operation's output fields (add-only for attributes added after source create)
 
 Core attributes are always ensured on the schema: `id` (identity), `status`, and `date`.
 
 **Token scopes:** The access token must allow source read/create/update and account create on the result source. PAT or OAuth client credentials used in workflows need `sp:manage:source`, `sp:manage:source-schema`, and account provisioning scopes for the tenant.
 
-Manual source setup is not required. `npm run templates` generates `account-schema.json` as reference documentation for the attributes operations persist; the framework reconciles the live schema at runtime.
+Manual source setup is not required. `npm run templates` generates `account-schema.json` as reference documentation for the attributes operations persist; auto-created result sources receive the same base schema at runtime, with per-persist reconciliation for any later additions.
 
 ## Workflow export
 
