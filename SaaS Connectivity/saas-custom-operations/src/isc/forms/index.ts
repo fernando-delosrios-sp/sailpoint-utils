@@ -7,6 +7,10 @@ export {
 } from './ensure-definition'
 export { formatFormsApiError } from './error-formatting'
 export {
+    declaredFormInputIds,
+    pickDeclaredFormInputValues,
+} from './form-input-values'
+export {
     buildCreateFormDefinitionPayload,
     loadFormSeed,
 } from './seed-loader'

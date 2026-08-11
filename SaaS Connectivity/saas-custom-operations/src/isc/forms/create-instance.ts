@@ -33,6 +33,11 @@ export async function createStandaloneFormInstance(params: CreateStandaloneFormI
         forms.createFormInstanceV1({ body: requestBody as never })
     )
 
+    const instanceState = response.data?.state
+    if (instanceState && instanceState !== 'ASSIGNED' && instanceState !== 'IN_PROGRESS') {
+        throw new ConnectorError(`Form instance create returned unexpected state: ${instanceState}`)
+    }
+
     const formUrl = response.data?.standAloneFormUrl
     if (!formUrl) {
         throw new ConnectorError('Form instance create did not return standAloneFormUrl')

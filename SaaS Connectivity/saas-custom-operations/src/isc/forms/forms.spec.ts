@@ -5,6 +5,7 @@ import { createStandaloneFormInstance } from './create-instance'
 import { ensureFormDefinitionByName } from './ensure-definition'
 import { formatFormsApiError } from './error-formatting'
 import { buildCreateFormDefinitionPayload, loadFormSeed } from './seed-loader'
+import { pickDeclaredFormInputValues } from './form-input-values'
 import {
     computeFormSeedFingerprint,
     formatWatermarkedDescription,
@@ -61,6 +62,7 @@ describe('isc/forms seed-loader', () => {
     it('loadFormSeed reads caller-supplied seed path', () => {
         const seed = loadFormSeed(seedPath)
         expect(seed.formElements.length).toBeGreaterThan(0)
+        expect(seed.formInput?.some((input) => input.id === 'hasControls')).toBe(true)
         expect(seed.formInput?.some((input) => input.id === 'violationId')).toBe(true)
     })
 
@@ -71,6 +73,21 @@ describe('isc/forms seed-loader', () => {
 
     it('loadFormSeed rejects bundled seed without formElements', () => {
         expect(() => loadFormSeed({ formInput: [] })).toThrow(/missing formElements/)
+    })
+
+    it('pickDeclaredFormInputValues drops undeclared keys and normalizes controlOptions', () => {
+        const seed = loadFormSeed(seedPath)
+        const picked = pickDeclaredFormInputValues(seed, {
+            violationId: 'vio-1',
+            recommendedSideToCorrect: 'groupA',
+            hasControls: 'true',
+            controlOptions: [{ label: 'Control 1', value: 'ctrl-1', sublabel: undefined }],
+        })
+
+        expect(picked.violationId).toBe('vio-1')
+        expect(picked.hasControls).toBe('true')
+        expect(picked).not.toHaveProperty('recommendedSideToCorrect')
+        expect(picked.controlOptions).toEqual([{ label: 'Control 1', value: 'ctrl-1' }])
     })
 
     it('buildCreateFormDefinitionPayload applies runtime form name, owner, and watermark', () => {
@@ -238,6 +255,24 @@ describe('isc/forms create-instance', () => {
             })
         )
         expect(url).toBe('https://tenant.identitynow.com/form/abc')
+    })
+
+    it('createStandaloneFormInstance rejects unexpected initial state', async () => {
+        const forms = createFormsStub({
+            createFormInstanceV1: vi.fn().mockResolvedValue({
+                data: { standAloneFormUrl: 'https://tenant.identitynow.com/form/abc', state: 'SUBMITTED' },
+            }),
+        })
+
+        await expect(
+            createStandaloneFormInstance({
+                forms,
+                formDefinitionId: 'def-1',
+                recipientId: 'owner-1',
+                createdBySourceId: 'source-1',
+                formInput: {},
+            })
+        ).rejects.toThrow(/unexpected state: SUBMITTED/)
     })
 
     it('createStandaloneFormInstance throws ConnectorError when standAloneFormUrl is missing', async () => {
