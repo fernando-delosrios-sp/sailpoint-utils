@@ -110,8 +110,12 @@ Custom operations use the standard SaaS connector invoke shape. See `invoke-payl
 | Section | Fields | Description |
 |---|---|---|
 | `type` | command name | Must match a command in `connector-spec.json` (e.g. `custom:example`) |
+| `connectorRef` | connector UUID | Workflow variable (e.g. `{{$.configuration.saaSCustomOperationsConnectorID}}`); ignored by `call:op` and spcx local debug |
+| `tag` | `"latest"` | Connector package tag; required for ISC platform invoke |
 | `config` | `apiUrl`, `token`, `sourceName` | ISC loopback credentials and result source name (auto-provisioned at runtime) |
 | `input` | `requestId` + operation params | Per-invocation data; `requestId` correlates persisted accounts |
+
+Workflow-ready examples under `payloads/*-workflow.json` use ISC template variables for `connectorRef` and `config` connection fields. Local `call:op` payloads use concrete `type`, `config`, and `input` only (`connectorRef` and `tag` are optional and ignored).
 
 The framework strips `requestId` from operation input and exposes it on `ctx.requestId`. All other `input` fields are passed to your handler.
 
@@ -205,7 +209,7 @@ npm run call:op -- payloads/sod-remediation-offline.json
 
 Launch-only operation that fetches an SOD violation, ensures a named form definition exists (owned by the access-token identity on first create), creates a standalone remediation form for the violation owner (or override recipient), and persists `formUrl` plus `situationSummary` for downstream workflow steps.
 
-**Invoke payload:**
+**Invoke payload:** See `payloads/sod-remediation-workflow.json` for a workflow-ready example aligned with `workflows/SOD Remediation - Violation Response.json`. Use `payloads/sod-remediation-offline.json` or `payloads/sod-remediation.json` for local `call:op` runs.
 
 ```json
 {
@@ -440,9 +444,11 @@ scripts/
   templates/                  # Generator modules (account-schema, workflow-invocation, …)
 connector-spec.json   # Declared commands and sourceConfig (ISC loopback settings)
 invoke-payload.json   # Example invoke body for local / CLI testing
-payloads/             # Example invoke payloads for `npm run call:op`
+payloads/             # Invoke payloads — local (`call:op`) and workflow-ready (`*-workflow.json`)
 workflows/
-  SaaS Custom Operations.json # ISC export (example workflow only)
+  SaaS Custom Operations.json              # ISC export (example workflow)
+  SOD Remediation - Violation Response.json
+  SOD Remediation - Action.json
 templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```
 

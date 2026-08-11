@@ -80,7 +80,7 @@ The project documentation SHALL describe persist inhibition via config testMode.
 
 ### Requirement: Invoke payload documentation
 
-The project documentation SHALL describe offline invoke payloads without a config section and connected dry-run payloads with full config including connection fields. Payload examples SHALL use type config and input top-level fields matching spcx invoke shape.
+The project documentation SHALL describe offline invoke payloads without a config section and connected dry-run payloads with full config including connection fields. Local invoke payload examples SHALL use type config and input top-level fields matching spcx invoke shape. Workflow invoke payload examples SHALL additionally include connectorRef and tag and SHALL use ISC workflow template variables for connectorRef and config connection fields rather than hardcoded tenant or connector identifiers.
 
 #### Scenario: Payload format documented
 
@@ -90,6 +90,15 @@ The project documentation SHALL describe offline invoke payloads without a confi
 - **AND** SHALL show a config-present example with apiUrl token sourceName and testMode
 - **AND** SHALL reference npm run call:op as the script used to run payloads
 - **AND** SHALL place example payloads under payloads/
+
+#### Scenario: Workflow invoke payload shape documented
+
+- **GIVEN** a developer reads the project README or payloads directory
+- **WHEN** they look for workflow-ready invoke payload examples
+- **THEN** the documentation or example files SHALL show connectorRef tag type input and config top-level fields
+- **AND** connectorRef SHALL use an ISC workflow variable such as `{{$.configuration.saaSCustomOperationsConnectorID}}`
+- **AND** config apiUrl token and sourceName SHALL use ISC workflow variables rather than hardcoded tenant values
+- **AND** tag SHALL be the literal string `latest`
 
 ### Requirement: Local debug invoke envelope documentation
 

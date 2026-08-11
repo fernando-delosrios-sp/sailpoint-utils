@@ -1,15 +1,16 @@
 {
+    "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+    "tag": "latest",
     "type": "custom:sod-remediation",
-    "config": {
-        "apiUrl": "https://company23429-poc.api.identitynow-demo.com",
-        "token": "<access-token>",
-        "sourceName": "SaaS Custom Operations",
-        "testMode": false
-    },
     "input": {
-        "requestId": "sod-remediation:9d372c5365e447a3b979d046184f97b3",
-        "violationId": "9d372c5365e447a3b979d046184f97b3",
-        "formName": "SOD Violation Remediation",
-        "owner": "49d1b304294449769e5551c8ece08896"
+        "requestId": "{{$.configuration.requestID}}",
+        "violationId": "{{$.configuration.violationID}}",
+        "formName": "{{$.configuration.formName}}",
+        "owner": "{{$.configuration.overrideOwnerID}}"
+    },
+    "config": {
+        "apiUrl": "{{$.configuration.aPIURL}}",
+        "token": "{{$.getAccessToken.body.access_token}}",
+        "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}"
     }
 }
