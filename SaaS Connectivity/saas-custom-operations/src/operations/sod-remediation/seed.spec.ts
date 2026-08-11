@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { resolve } from 'path'
-import { buildCreateFormDefinitionPayload, loadFormSeed } from '../../isc/forms/seed-loader'
+import { buildCreateFormDefinitionPayload, loadFormSeed } from '../../isc/forms'
 
 const seedPath = resolve(__dirname, 'seed/sod-violation-remediation.seed.json')
 
@@ -71,3 +71,4 @@ describe('sod-remediation seed', () => {
         expect(effectTypes.filter((type) => type === 'SET_DEFAULT_VALUE').length).toBeGreaterThanOrEqual(4)
     })
 })
+
