@@ -11,20 +11,31 @@ describe('createRequestContext persist wiring', () => {
     }
 
     it('creates account when native identity is absent', async () => {
-        const createAccountV1 = vi.fn().mockResolvedValue({})
+        const createAccountV1 = vi.fn().mockResolvedValue({ data: { id: 'task-create-1' } })
         const deleteAccountAsyncV1 = vi.fn().mockResolvedValue({})
+        const getAccountV1 = vi.fn().mockResolvedValue({
+            data: { id: 'isc-account-new', sourceId: 'source-1', attributes: { id: 'req-001', outcome: 'new' } },
+        })
         const listAccountsV1 = vi.fn().mockResolvedValue({ data: [] })
+        const getTaskStatusV1 = vi.fn().mockResolvedValue({
+            data: {
+                completed: '2026-08-11T10:00:00Z',
+                completionStatus: 'SUCCESS',
+                target: { id: 'isc-account-new' },
+                messages: [],
+            },
+        })
 
         const ctx = createRequestContext(input, {} as Response<any>, {
             sourceId: 'source-1',
             sdk: {
-                accounts: { createAccountV1, deleteAccountAsyncV1, listAccountsV1 } as never,
+                accounts: { createAccountV1, deleteAccountAsyncV1, listAccountsV1, getAccountV1 } as never,
                 sources: {} as never,
                 forms: {} as never,
                 identityHistory: {} as never,
-            accessProfiles: {} as never,
-            roles: {} as never,
-            tasks: { getTaskStatusV1: vi.fn() } as never,
+                accessProfiles: {} as never,
+                roles: {} as never,
+                tasks: { getTaskStatusV1 } as never,
             },
         })
 
@@ -48,9 +59,9 @@ describe('createRequestContext persist wiring', () => {
                 sources: {} as never,
                 forms: {} as never,
                 identityHistory: {} as never,
-            accessProfiles: {} as never,
-            roles: {} as never,
-            tasks: { getTaskStatusV1: vi.fn() } as never,
+                accessProfiles: {} as never,
+                roles: {} as never,
+                tasks: { getTaskStatusV1: vi.fn() } as never,
             },
         })
 

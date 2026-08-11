@@ -1,6 +1,7 @@
 import { ConnectorError, Response } from '@sailpoint/connector-sdk'
 import { AccountsApi, CustomFormsApi, SourcesApi, TaskManagementApi } from 'sailpoint-api-client'
-import { createPersist, createVerifyPersisted, findAccountOnSource, upsertSourceAccount, waitForAccountProvisioningTask } from './persist-result'
+import { createPersist, createVerifyPersisted, upsertSourceAccount, waitForAccountProvisioningTask } from './persist-result'
+import { findAccountOnSource, getAccount } from '../isc/accounts'
 import { createSailPointClients } from './sdk-factory'
 import { ensureSourceSchema } from './result-source'
 import { createTestModePersist } from './test-mode-persist'
@@ -75,8 +76,8 @@ export function createRequestContext<TOutput extends object>(
         },
         readAccountByIscId: async (iscAccountId) => {
             try {
-                const response = await accountsClient.getAccountV1({ id: iscAccountId })
-                const attributes = response.data?.attributes
+                const account = await getAccount(accountsClient, iscAccountId)
+                const attributes = account?.attributes
                 return attributes ? (attributes as Record<string, unknown>) : undefined
             } catch {
                 return undefined

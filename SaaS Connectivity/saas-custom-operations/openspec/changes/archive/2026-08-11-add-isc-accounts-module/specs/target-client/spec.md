@@ -1,10 +1,4 @@
-## Purpose
-
-ISC SDK loopback integration for custom operations. Legacy target client layer (`src/my-client.ts`) was removed; configuration and connectivity are handled per invocation via the standard input envelope and `ctx.sdk`.
-
-Generic ISC helpers live under `src/isc/<api-grouping>/` — one subdirectory per ISC API surface. Each subdirectory SHALL host thin wrappers for a single API client and MAY grow additional modules without mixing unrelated APIs. Shared pre-SDK HTTP transport utilities live under `src/isc/http/` and SHALL NOT group multiple API clients.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: ISC module layout by API grouping
 
@@ -50,45 +44,3 @@ Each ISC client API folder under `src/isc/<api-grouping>/` SHALL provide an `ind
 - **WHEN** a developer reads `index.ts` for that folder
 - **THEN** every public API function and type intended for external use SHALL be exported from `index.ts`
 - **AND** `index.ts` SHALL NOT export operation-specific or internal-only helpers
-
-### Requirement: SDK loopback client factory
-
-The connector SHALL pre-configure `sailpoint-api-client` instances from operation input `apiUrl` and `token`, exposing them on `RequestContext.sdk` for the duration of each custom operation invocation.
-
-#### Scenario: Accounts client configured for persist
-
-- **GIVEN** a custom operation receives valid apiUrl and token in its input envelope
-- **WHEN** the handler accesses ctx.sdk.accounts
-- **THEN** the client SHALL be configured for ISC loopback account create, update, and read used by ctx.persist
-
-#### Scenario: Sources client configured for result source management
-
-- **GIVEN** a custom operation receives valid apiUrl and token in its input envelope
-- **WHEN** the handler or framework accesses ctx.sdk.sources
-- **THEN** the client SHALL be configured for source lookup, creation, and schema management used by dynamic result source provisioning
-
-### Requirement: No external target application client
-
-The connector SHALL NOT require a separate target-application HTTP client for custom operations; ISC integration SHALL use SDK loopback only.
-
-#### Scenario: Legacy mock client absent
-
-- **GIVEN** the connector source tree
-- **WHEN** a developer inspects target integration code
-- **THEN** src/my-client.ts SHALL NOT exist and custom operations SHALL use ctx.sdk exclusively
-
-### Requirement: Access token identity resolution
-
-The connector SHALL provide a generic JWT helper under `src/isc/token-identity/` for resolving the invoking identity id from an access token. The helper SHALL NOT encode result-source or operation-specific provisioning policy.
-
-#### Scenario: identity_id claim preferred
-
-- **GIVEN** a JWT with `identity_id` and `sub` claims
-- **WHEN** `resolveTokenIdentity` is invoked
-- **THEN** the function SHALL return the `identity_id` value
-
-#### Scenario: Invalid token rejected
-
-- **GIVEN** a string that is not a decodable JWT
-- **WHEN** `resolveTokenIdentity` is invoked
-- **THEN** the function SHALL throw `ConnectorError`
