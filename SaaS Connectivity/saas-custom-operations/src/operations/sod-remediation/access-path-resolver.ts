@@ -1,4 +1,4 @@
-import { IdentityAccessItem } from '../../isc/identity-access-client'
+import { IdentityAccessItem } from '../../isc/identity-access'
 
 export type AccessPathType = IdentityAccessItem['type']
 
@@ -83,3 +83,4 @@ export function resolveAccessSide(
         },
     }
 }
+

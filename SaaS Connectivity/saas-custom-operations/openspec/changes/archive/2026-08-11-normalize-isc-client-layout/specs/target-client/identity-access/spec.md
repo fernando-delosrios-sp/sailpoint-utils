@@ -1,10 +1,4 @@
-# target-client/identity-access Specification
-
-## Purpose
-
-Orchestration helpers under `src/isc/identity-access/` that compose identity-history, access-profiles, and roles modules into unified identity access items for custom operations. This module SHALL NOT call SDK APIs directly except by delegating to per-API isc modules.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Identity access item listing
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fetchIdentityAccessItemsFromSdk, fetchIdentityAccessItemsOffline } from './identity-access-client'
+import { fetchIdentityAccessItemsFromSdk, fetchIdentityAccessItemsOffline } from './index'
 
-describe('identity-access-client', () => {
+describe('isc/identity-access', () => {
     it('fetchIdentityAccessItemsFromSdk maps access profiles and roles with granted entitlement IDs', async () => {
         const listIdentityAccessItemsV1 = vi
             .fn()
@@ -52,7 +52,7 @@ describe('identity-access-client', () => {
         ])
     })
 
-    it('fetchIdentityAccessItemsOffline returns deterministic fixtures for known offline identities', async () => {
+    it('fetchIdentityAccessItemsOffline returns deterministic offline data for known offline identities', async () => {
         await expect(fetchIdentityAccessItemsOffline('offline-identity')).resolves.toEqual([
             {
                 type: 'ACCESS_PROFILE',
@@ -67,4 +67,3 @@ describe('identity-access-client', () => {
         await expect(fetchIdentityAccessItemsOffline('unknown-identity')).resolves.toEqual([])
     })
 })
-

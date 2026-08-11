@@ -96,17 +96,24 @@ vi.mock('../../framework/sdk-factory', () => ({
     })),
 }))
 
-vi.mock('../../isc/isc-client', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../isc/isc-client')>()
+vi.mock('../../isc/violations', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../isc/violations')>()
     return {
         ...actual,
         getViolationV1: (...args: unknown[]) => getViolationV1(...args),
+    }
+})
+
+vi.mock('../../isc/controls', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../isc/controls')>()
+    return {
+        ...actual,
         listControlsV1: (...args: unknown[]) => listControlsV1(...args),
     }
 })
 
-vi.mock('../../isc/identity-access-client', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../isc/identity-access-client')>()
+vi.mock('../../isc/identity-access', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../isc/identity-access')>()
     return {
         ...actual,
         fetchIdentityAccessItemsFromSdk: (...args: unknown[]) => fetchIdentityAccessItemsFromSdk(...args),
@@ -283,4 +290,5 @@ describe('sodRemediationOperation', () => {
         )
     })
 })
+
 

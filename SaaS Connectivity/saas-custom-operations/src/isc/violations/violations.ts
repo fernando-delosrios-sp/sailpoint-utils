@@ -1,6 +1,5 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
-
-export const EXPERIMENTAL_HEADER = 'X-SailPoint-Experimental'
+import { type IscClientConfig, iscGet } from '../http'
 
 export interface ViolationAccessItem {
     id: string
@@ -23,18 +22,6 @@ export interface ViolationV1 {
     rightSide?: ViolationSide
     groupA?: ViolationSide
     groupB?: ViolationSide
-}
-
-export interface CompensatingControlV1 {
-    id: string
-    name: string
-    description?: string
-}
-
-export interface IscClientConfig {
-    apiUrl: string
-    token: string
-    fetchFn?: typeof fetch
 }
 
 interface ViolationReferenceResponse {
@@ -195,37 +182,6 @@ export function normalizeViolationV1Response(raw: ViolationV1Response): Violatio
     }
 }
 
-function normalizeApiUrl(apiUrl: string): string {
-    return apiUrl.replace(/\/$/, '')
-}
-
-async function iscGet<T>(
-    config: IscClientConfig,
-    path: string,
-    options?: { experimental?: boolean }
-): Promise<T> {
-    const fetchFn = config.fetchFn ?? fetch
-    const url = `${normalizeApiUrl(config.apiUrl)}${path}`
-    const headers: Record<string, string> = {
-        Authorization: `Bearer ${config.token}`,
-        Accept: 'application/json',
-    }
-    if (options?.experimental) {
-        headers[EXPERIMENTAL_HEADER] = 'true'
-    }
-
-    const response = await fetchFn(url, {
-        method: 'GET',
-        headers,
-    })
-
-    if (!response.ok) {
-        throw new ConnectorError(`ISC API ${path} failed with status ${response.status}`)
-    }
-
-    return (await response.json()) as T
-}
-
 /** Fetches a policy violation by ID. */
 export async function getViolationV1(
     config: IscClientConfig,
@@ -237,16 +193,6 @@ export async function getViolationV1(
         { experimental: true }
     )
     return normalizeViolationV1Response(raw)
-}
-
-/** Lists tenant compensating controls. */
-export async function listControlsV1(config: IscClientConfig): Promise<CompensatingControlV1[]> {
-    const result = await iscGet<CompensatingControlV1[] | { items?: CompensatingControlV1[] }>(
-        config,
-        '/controls/v1',
-        { experimental: true }
-    )
-    return Array.isArray(result) ? result : (result.items ?? [])
 }
 
 /** Resolves left/right violation sides regardless of response field naming. */
@@ -265,5 +211,3 @@ export function extractSideEntitlements(side: ViolationSide): ViolationAccessIte
         (item) => !item.type || item.type.toUpperCase() === 'ENTITLEMENT'
     )
 }
-
-

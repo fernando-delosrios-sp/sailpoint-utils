@@ -1,5 +1,6 @@
-import { CompensatingControlV1, ViolationV1, extractSideEntitlements, resolveViolationSides } from '../../isc/isc-client'
-import { IdentityAccessItem } from '../../isc/identity-access-client'
+import { CompensatingControlV1 } from '../../isc/controls'
+import { ViolationV1, extractSideEntitlements, resolveViolationSides } from '../../isc/violations'
+import { IdentityAccessItem } from '../../isc/identity-access'
 import { ELEVATED_WARNING, ResolvedAccessSide, resolveAccessSide } from './access-path-resolver'
 import { FormInputSelectOption, SodFormInputValues } from './form-service'
 
@@ -111,4 +112,5 @@ export function resolveViolationAccessPaths(params: ResolveViolationAccessParams
         groupB: resolveAccessSide(extractSideEntitlements(sides.groupB), identityAccess),
     }
 }
+
 

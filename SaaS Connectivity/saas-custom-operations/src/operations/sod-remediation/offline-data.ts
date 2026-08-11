@@ -1,4 +1,4 @@
-import { ViolationV1 } from '../../isc/isc-client'
+import { ViolationV1 } from '../../isc/violations'
 
 /** Canned violation used for offline test-mode runs without ISC credentials. */
 export const OFFLINE_VIOLATION: ViolationV1 = {
@@ -9,3 +9,4 @@ export const OFFLINE_VIOLATION: ViolationV1 = {
     leftSide: { entitlements: [{ id: 'offline-ent-a', name: 'Offline Entitlement A' }] },
     rightSide: { entitlements: [{ id: 'offline-ent-b', name: 'Offline Entitlement B' }] },
 }
+

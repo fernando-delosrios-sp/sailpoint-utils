@@ -1,5 +1,6 @@
-import { IdentityAccessItem } from '../../isc/identity-access-client'
-import { CompensatingControlV1, ViolationV1 } from '../../isc/isc-client'
+import { IdentityAccessItem } from '../../isc/identity-access'
+import { CompensatingControlV1 } from '../../isc/controls'
+import { ViolationV1 } from '../../isc/violations'
 import { ResolvedAccessSide } from './access-path-resolver'
 import { SodFormInputValues } from './form-service'
 
@@ -140,4 +141,5 @@ export function logSodRemediationOutput(requestId: string, formUrl: string, situ
 export function logSodRemediationComplete(requestId: string): void {
     console.log(`[${requestId}] sod-remediation finished`)
 }
+
 

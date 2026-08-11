@@ -8,7 +8,7 @@ import {
     resolveSourceByName,
     resolveSourceByNameReadOnly,
 } from './result-source'
-import { verifyIscStatus } from '../isc/sources/source-client'
+import { verifyIscStatus } from '../isc/sources'
 import { isTestMode, resolveInvocationConfig, TEST_MODE_PLACEHOLDER_SOURCE_ID } from './test-mode'
 import { OperationSchemaContract, RequestContext, StandardInput } from './types'
 
@@ -185,4 +185,5 @@ async function runCustomOperation<T extends OperationSignature>(
 
         console.log(`[${standard.requestId}] custom operation completed`)
 }
+
 

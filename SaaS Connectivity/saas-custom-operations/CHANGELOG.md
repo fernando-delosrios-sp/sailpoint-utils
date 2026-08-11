@@ -10,6 +10,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🔧 Improvements
 
+- **ISC client layout normalization** — Generic ISC integration code now lives in per-API subdirectories under `src/isc/` (violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, http). Pre-SDK GET transport is shared via `src/isc/http/`; identity-access orchestrates only and delegates to per-API modules. Import paths change; runtime behavior and custom operation contracts are unchanged. Extend new ISC helpers by adding modules under the matching API folder with an `index.ts` barrel export.
 - **Operation layer boundaries** — Custom operations now live in mandatory `src/operations/<slug>/index.ts` subdirectories. Generic Custom Forms helpers moved to `src/isc/forms/`; SOD domain modules co-locate under `src/operations/sod-remediation/`. `src/isc/sources/` exposes generic SourcesApi wrappers only; result source auto-provision and schema reconciliation remain in `src/framework/result-source.ts`. Codegen discovers subdirectory entries and emits nested auto-registry imports. `custom:example` and `custom:sod-remediation` input/output contracts are unchanged.
 - **Local invoke output** — Runner summary sections renamed to **Local invoke** and **Simulated persist (testMode=true)**.
 
@@ -36,7 +37,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 - **`custom:sod-remediation`** — Launch-only SOD violation remediation operation that fetches a violation via experimental `/violations/v1`, lists tenant compensating controls, resolves entitlement access paths (including access profile and role grants), ensures a named form definition from a bundled seed template, creates a standalone form instance, and persists `formUrl` and `situationSummary` for workflow orchestration.
 - **Custom Forms SDK client** — `ctx.sdk.forms` exposes `CustomFormsApi` for form definition search/create and form instance create.
-- **Offline SOD fixture** — `fixtures/sod-remediation-offline.json` for config-less test-mode dry runs with canned violation data.
+- **Offline SOD invoke payload** — `payloads/sod-remediation-offline.json` for config-less dry runs with canned violation data.
 
 ### 📚 Documentation
 
@@ -157,4 +158,5 @@ All notable changes to **saas-custom-operations** are documented here.
 ### 🗑️ Removed
 
 -   **Standard aggregation scaffold** — Standard command handlers and mock aggregation client removed.
+
 

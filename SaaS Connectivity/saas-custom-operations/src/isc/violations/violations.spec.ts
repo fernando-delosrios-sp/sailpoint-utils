@@ -1,12 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import {
-    EXPERIMENTAL_HEADER,
-    getViolationV1,
-    listControlsV1,
-    normalizeViolationV1Response,
-} from './isc-client'
+import { EXPERIMENTAL_HEADER } from '../http'
+import { getViolationV1, normalizeViolationV1Response } from './index'
 
-describe('isc-client', () => {
+describe('isc/violations', () => {
     it('getViolationV1 calls GET /violations/v1/{id} with experimental header', async () => {
         const fetchFn = vi.fn().mockResolvedValue({
             ok: true,
@@ -169,29 +165,6 @@ describe('isc-client', () => {
         expect(violation.rightSide?.entitlements?.[0]?.id).toBe('ent-b')
     })
 
-    it('listControlsV1 calls GET /controls/v1 with experimental header', async () => {
-        const fetchFn = vi.fn().mockResolvedValue({
-            ok: true,
-            json: async () => [{ id: 'ctrl-1', name: 'Control 1' }],
-        })
-
-        const controls = await listControlsV1({
-            apiUrl: 'https://tenant.api.identitynow.com/',
-            token: 'tok',
-            fetchFn,
-        })
-
-        expect(fetchFn).toHaveBeenCalledWith(
-            'https://tenant.api.identitynow.com/controls/v1',
-            expect.objectContaining({
-                headers: expect.objectContaining({
-                    [EXPERIMENTAL_HEADER]: 'true',
-                }),
-            })
-        )
-        expect(controls).toHaveLength(1)
-    })
-
     it('surfaces ConnectorError on HTTP failure', async () => {
         const fetchFn = vi.fn().mockResolvedValue({ ok: false, status: 404 })
 
@@ -200,5 +173,3 @@ describe('isc-client', () => {
         ).rejects.toThrow(/404/)
     })
 })
-
-

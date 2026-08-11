@@ -7,10 +7,15 @@ import {
     patchAccountSchema,
     SchemaAttribute,
     SchemaPayload,
-} from '../isc/sources/source-client'
+} from '../isc/sources'
 import { resolveTokenIdentity } from '../isc/token-identity'
 import { RESERVED_OUTPUT_KEYS } from './output-schema'
-import { inferSchemaAttribute, InferredSchemaAttribute, OperationField } from './schema-inference'
+import {
+    IscAttributeType,
+    inferSchemaAttribute,
+    InferredSchemaAttribute,
+    OperationField,
+} from './schema-inference'
 
 const CORE_ATTRIBUTES: SchemaAttribute[] = [
     { name: 'id', type: 'STRING', isMulti: false },
@@ -108,7 +113,11 @@ function collectRequiredAttributes(
     const required = new Map<string, InferredSchemaAttribute>()
 
     for (const core of CORE_ATTRIBUTES) {
-        required.set(core.name!, { name: core.name!, type: core.type!, isMulti: core.isMulti ?? false })
+        required.set(core.name!, {
+            name: core.name!,
+            type: core.type! as IscAttributeType,
+            isMulti: core.isMulti ?? false,
+        })
     }
 
     for (const field of outputFields) {
@@ -177,3 +186,4 @@ export async function ensureSourceSchema(
 
     await patchAccountSchema(sourcesApi, sourceId, schema.id!, patches)
 }
+

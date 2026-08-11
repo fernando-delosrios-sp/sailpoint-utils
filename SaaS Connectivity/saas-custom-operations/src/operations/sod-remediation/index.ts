@@ -1,17 +1,18 @@
 import { customOperation, OperationSignature } from '../../framework'
 import { resolveTokenIdentity } from '../../isc/token-identity'
-import { getViolationV1, listControlsV1 } from '../../isc/isc-client'
+import { getViolationV1 } from '../../isc/violations'
+import { listControlsV1 } from '../../isc/controls'
 import {
     fetchIdentityAccessItemsFromSdk,
     fetchIdentityAccessItemsOffline,
-} from '../../isc/identity-access-client'
+} from '../../isc/identity-access'
 import {
     assembleFormInput,
     buildSituationSummary,
     resolveViolationAccessPaths,
 } from './context'
 import { createSodRemediationInstance, ensureSodFormDefinition } from './form-service'
-import { OFFLINE_VIOLATION } from './offline-fixtures'
+import { OFFLINE_VIOLATION } from './offline-data'
 import {
     logSodRemediationAccessPaths,
     logSodRemediationComplete,
@@ -95,3 +96,4 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
         ctx.res.send({ status: 'success' })
     }
 )
+
