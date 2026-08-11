@@ -15,6 +15,15 @@ describe('isc/forms seed-loader', () => {
         expect(seed.formInput?.some((input) => input.id === 'violationId')).toBe(true)
     })
 
+    it('loadFormSeed accepts bundled seed object', () => {
+        const seed = loadFormSeed(loadFormSeed(seedPath))
+        expect(seed.formElements.length).toBeGreaterThan(0)
+    })
+
+    it('loadFormSeed rejects bundled seed without formElements', () => {
+        expect(() => loadFormSeed({ formInput: [] })).toThrow(/missing formElements/)
+    })
+
     it('buildCreateFormDefinitionPayload applies runtime form name and owner', () => {
         const seed = loadFormSeed(seedPath)
         const payload = buildCreateFormDefinitionPayload('Tenant SOD Form', 'owner-abc', seed)
@@ -154,3 +163,4 @@ describe('isc/forms error-formatting', () => {
         expect(error.message).toContain('form definition is invalid')
     })
 })
+

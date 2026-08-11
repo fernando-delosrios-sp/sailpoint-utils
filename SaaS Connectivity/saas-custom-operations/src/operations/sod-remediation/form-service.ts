@@ -1,4 +1,3 @@
-import { resolve } from 'path'
 import {
     buildCreateFormDefinitionPayload,
     createStandaloneFormInstance,
@@ -6,8 +5,7 @@ import {
     FormsApiLike,
     loadFormSeed,
 } from '../../isc/forms'
-
-const SOD_SEED_PATH = resolve(__dirname, 'seed/sod-violation-remediation.seed.json')
+import sodViolationRemediationSeed from './seed/sod-violation-remediation.seed.json'
 
 export interface FormInputSelectOption {
     label: string
@@ -41,7 +39,7 @@ export interface CreateRemediationInstanceParams {
 
 /** Ensures the SOD remediation form definition exists, creating from the operation-local seed when absent. */
 export async function ensureSodFormDefinition(forms: FormsApiLike, formName: string, ownerId: string): Promise<string> {
-    const seed = loadFormSeed(SOD_SEED_PATH)
+    const seed = loadFormSeed(sodViolationRemediationSeed)
     const template = buildCreateFormDefinitionPayload(formName, ownerId, seed, seed.description)
     return ensureFormDefinitionByName(forms, { name: formName, ownerId, template })
 }
@@ -60,4 +58,5 @@ export async function createSodRemediationInstance(params: CreateRemediationInst
         },
     })
 }
+
 

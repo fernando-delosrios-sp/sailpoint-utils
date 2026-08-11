@@ -5,6 +5,7 @@ import {
     logSodRemediationFormDefinition,
     logSodRemediationFormInput,
     logSodRemediationOutput,
+    logSodRemediationViolation,
 } from './logging'
 
 describe('sod-remediation logging', () => {
@@ -66,16 +67,50 @@ describe('sod-remediation logging', () => {
             'token-identity'
         )
 
-        expect(logSpy).toHaveBeenCalledWith(
-            '[req-log-2] sod-remediation form-definition',
-            expect.objectContaining({
-                formName: 'SOD Remediation',
-                formDefinitionId: 'def-1',
-                definitionOwnerId: 'token-owner-id',
-                definitionOwnerSource: 'token-identity',
-            })
+        const formDefinitionLog = logSpy.mock.calls.find((call) => String(call[0]).includes('form-definition'))
+        expect(formDefinitionLog).toBeDefined()
+        expect(String(formDefinitionLog?.[1])).toContain("formName: 'SOD Remediation'")
+        expect(String(formDefinitionLog?.[1])).toContain("formDefinitionId: 'def-1'")
+        expect(String(formDefinitionLog?.[1])).toContain("definitionOwnerId: 'token-owner-id'")
+        expect(String(formDefinitionLog?.[1])).toContain("definitionOwnerSource: 'token-identity'")
+
+        logSpy.mockRestore()
+    })
+
+    it('logs nested violation entitlements with full inspect depth', () => {
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+        logSodRemediationViolation(
+            'req-log-3',
+            {
+                id: 'vio-1',
+                owner: { id: 'owner-1', name: 'Owner' },
+                identity: { id: 'ident-1', name: 'Alice' },
+                policy: { id: 'pol-1', name: 'Policy' },
+                leftSide: {
+                    name: 'Buyer',
+                    entitlements: [{ id: 'ent-a', name: 'Ent A', type: 'ENTITLEMENT' }],
+                },
+                rightSide: {
+                    name: 'Payments',
+                    entitlements: [
+                        { id: 'ent-b', name: 'Ent B', type: 'ENTITLEMENT' },
+                        { id: 'ent-c', name: 'Ent C', type: 'ENTITLEMENT' },
+                    ],
+                },
+            },
+            'isc'
         )
+
+        const violationLog = logSpy.mock.calls.find((call) => String(call[0]).includes('violation'))
+        expect(violationLog).toBeDefined()
+        const output = String(violationLog?.[1])
+        expect(output).toContain("id: 'ent-a'")
+        expect(output).toContain("name: 'Ent A'")
+        expect(output).toContain("id: 'ent-b'")
+        expect(output).not.toContain('[Object]')
 
         logSpy.mockRestore()
     })
 })
+

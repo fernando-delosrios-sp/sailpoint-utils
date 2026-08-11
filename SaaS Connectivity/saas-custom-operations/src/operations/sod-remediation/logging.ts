@@ -1,11 +1,19 @@
+import { inspect } from 'node:util'
 import { IdentityAccessItem } from '../../isc/identity-access'
 import { CompensatingControlV1 } from '../../isc/controls'
 import { ViolationV1 } from '../../isc/violations'
 import { ResolvedAccessSide } from './access-path-resolver'
 import { SodFormInputValues } from './form-service'
 
+function logInspectOptions(): inspect.Options {
+    return {
+        depth: null,
+        colors: Boolean(process.stdout.isTTY && !process.env.NO_COLOR),
+    }
+}
+
 function logStep(requestId: string, step: string, detail: Record<string, unknown>): void {
-    console.log(`[${requestId}] sod-remediation ${step}`, detail)
+    console.log(`[${requestId}] sod-remediation ${step}`, inspect(detail, logInspectOptions()))
 }
 
 /** Logs invocation input (never logs tokens). */
@@ -141,5 +149,6 @@ export function logSodRemediationOutput(requestId: string, formUrl: string, situ
 export function logSodRemediationComplete(requestId: string): void {
     console.log(`[${requestId}] sod-remediation finished`)
 }
+
 
 

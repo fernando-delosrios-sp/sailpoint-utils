@@ -17,19 +17,29 @@ export interface CreateFormDefinitionPayload {
     formConditions?: Array<Record<string, unknown>>
 }
 
-/** Loads a form definition seed template JSON file from disk. */
-export function loadFormSeed(seedPath: string): FormDefinitionSeed {
-    const resolvedPath = resolve(seedPath)
+function validateFormSeed(seed: FormDefinitionSeed, sourceLabel: string): FormDefinitionSeed {
+    if (!seed.formElements?.length) {
+        throw new Error(`Form seed is missing formElements: ${sourceLabel}`)
+    }
+    return seed
+}
+
+/** Loads a form definition seed from disk or validates a bundled seed object. */
+export function loadFormSeed(seedPath: string): FormDefinitionSeed
+export function loadFormSeed(seed: FormDefinitionSeed): FormDefinitionSeed
+export function loadFormSeed(seedOrPath: string | FormDefinitionSeed): FormDefinitionSeed {
+    if (typeof seedOrPath !== 'string') {
+        return validateFormSeed(seedOrPath, 'bundled seed')
+    }
+
+    const resolvedPath = resolve(seedOrPath)
     if (!existsSync(resolvedPath)) {
         throw new Error(`Form seed not found: ${resolvedPath}`)
     }
 
     const raw = readFileSync(resolvedPath, 'utf-8')
     const parsed = JSON.parse(raw) as FormDefinitionSeed
-    if (!parsed.formElements?.length) {
-        throw new Error(`Form seed is missing formElements: ${resolvedPath}`)
-    }
-    return parsed
+    return validateFormSeed(parsed, resolvedPath)
 }
 
 /** Builds a create-form-definition payload from a caller-supplied seed and runtime metadata. */
@@ -48,3 +58,4 @@ export function buildCreateFormDefinitionPayload(
         formConditions: seed.formConditions,
     }
 }
+
