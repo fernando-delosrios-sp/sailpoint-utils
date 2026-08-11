@@ -1,5 +1,15 @@
 import { CommandHandler, ConnectorError, Context, Response } from '@sailpoint/connector-sdk'
 import { toConnectorError } from './connector-error'
+import {
+    clearInFlightInvocation,
+    getInFlightInvocation,
+    invocationDedupeKey,
+    isFailedCommandOutput,
+    startKeepAlive,
+    stopKeepAlive,
+    trackInFlightInvocation,
+    type InvocationOutcome,
+} from './invocation-guard'
 import { InferOperationInput, InferOperationOutput, OperationSignature } from './output-schema'
 import { getOperationSchema } from './operation-schema-registry'
 import { createRequestContext, RequestContextDependencies } from './request-context'
@@ -104,10 +114,32 @@ export function customOperation<T extends OperationSignature>(
     deps: CustomOperationOptions = {}
 ): CommandHandler {
     return async (context: Context, input: Record<string, unknown>, res: Response<any>) => {
+        const dedupeKey = invocationDedupeKey(context.commandType, input)
+        if (dedupeKey) {
+            const inFlight = getInFlightInvocation(dedupeKey)
+            if (inFlight) {
+                const requestId = String(input.requestId).trim()
+                console.log(
+                    `[${requestId}] duplicate invoke — awaiting in-flight ${context.commandType ?? 'custom operation'}`
+                )
+                const outcome = await inFlight
+                res.send(
+                    outcome.status === 'success'
+                        ? { status: 'success' }
+                        : { status: 'failed', error: outcome.error ?? 'Operation failed' }
+                )
+                return
+            }
+        }
+
         let responseSent = false
+        let outcome: InvocationOutcome = { status: 'success' }
         const trackedRes: Response<any> = {
             send(output: unknown) {
                 responseSent = true
+                outcome = isFailedCommandOutput(output)
+                    ? { status: 'failed', error: output.error }
+                    : { status: 'success' }
                 res.send(output)
             },
             saveState: (state) => res.saveState(state),
@@ -115,13 +147,35 @@ export function customOperation<T extends OperationSignature>(
             patchConfig: (patches) => res.patchConfig(patches),
         }
 
+        let keepAliveTimer: ReturnType<typeof setInterval> | undefined
+
+        const invocation = (async (): Promise<InvocationOutcome> => {
+            keepAliveTimer = startKeepAlive(trackedRes)
+
+            try {
+                await runCustomOperation(context, input, trackedRes, handler, deps)
+                return outcome
+            } catch (e) {
+                const error = toConnectorError(e, context.commandType)
+                console.error(error.message)
+                if (!responseSent) {
+                    trackedRes.send({ status: 'failed', error: error.message })
+                }
+                return outcome
+            } finally {
+                stopKeepAlive(keepAliveTimer)
+            }
+        })()
+
+        if (dedupeKey) {
+            trackInFlightInvocation(dedupeKey, invocation)
+        }
+
         try {
-            await runCustomOperation(context, input, trackedRes, handler, deps)
-        } catch (e) {
-            const error = toConnectorError(e, context.commandType)
-            console.error(error.message)
-            if (!responseSent) {
-                trackedRes.send({ status: 'failed', error: error.message })
+            await invocation
+        } finally {
+            if (dedupeKey) {
+                clearInFlightInvocation(dedupeKey)
             }
         }
     }

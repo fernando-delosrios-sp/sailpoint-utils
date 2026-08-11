@@ -7,6 +7,8 @@ import {
     registerOperationSchema,
 } from './operation-schema-registry'
 import { createRequestContext } from './request-context'
+import { clearInFlightInvocationsForTests } from './invocation-guard'
+import { KEEP_ALIVE_INTERVAL_MS } from './invocation-guard'
 import { customOperation, normalizeAccessToken, parseStandardInput } from './with-custom-operation'
 
 const testConfig = {
@@ -153,8 +155,21 @@ describe('createRequestContext', () => {
 })
 
 describe('customOperation', () => {
+    afterEach(() => {
+        clearInFlightInvocationsForTests()
+    })
+
+    function mockResponse() {
+        return {
+            send: vi.fn(),
+            keepAlive: vi.fn(),
+            saveState: vi.fn(),
+            patchConfig: vi.fn(),
+        }
+    }
+
     it('provides parsed standard input and res on context to the handler', async () => {
-        const res = { send: vi.fn() }
+        const res = mockResponse()
         const handler = vi.fn(async (ctx) => {
             ctx.res.send({ status: 'success' })
         })
@@ -184,8 +199,89 @@ describe('customOperation', () => {
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
     })
 
+    it('deduplicates concurrent invokes with the same command and requestId', async () => {
+        let releaseHandler!: () => void
+        const handlerGate = new Promise<void>((resolve) => {
+            releaseHandler = resolve
+        })
+
+        const handler = vi.fn(async (ctx) => {
+            await handlerGate
+            ctx.res.send({ status: 'success' })
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: testConfig,
+            sourceId: 'source-123',
+        })
+
+        const res1 = mockResponse()
+        const res2 = mockResponse()
+        const first = wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-dup' }, res1 as any)
+        await Promise.resolve()
+        const second = wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-dup' }, res2 as any)
+
+        releaseHandler()
+        await Promise.all([first, second])
+
+        expect(handler).toHaveBeenCalledTimes(1)
+        expect(res1.send).toHaveBeenCalledWith({ status: 'success' })
+        expect(res2.send).toHaveBeenCalledWith({ status: 'success' })
+    })
+
+    it('mirrors failed outcome to duplicate concurrent invokes', async () => {
+        let releaseHandler!: () => void
+        const handlerGate = new Promise<void>((resolve) => {
+            releaseHandler = resolve
+        })
+
+        const handler = vi.fn(async (ctx) => {
+            await handlerGate
+            ctx.res.send({ status: 'failed', error: 'form create failed' })
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: testConfig,
+            sourceId: 'source-123',
+        })
+
+        const res1 = mockResponse()
+        const res2 = mockResponse()
+        const first = wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-fail-dup' }, res1 as any)
+        await Promise.resolve()
+        const second = wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-fail-dup' }, res2 as any)
+
+        releaseHandler()
+        await Promise.all([first, second])
+
+        expect(handler).toHaveBeenCalledTimes(1)
+        expect(res2.send).toHaveBeenCalledWith({ status: 'failed', error: 'form create failed' })
+    })
+
+    it('sends keepAlive while the handler is running', async () => {
+        vi.useFakeTimers()
+        try {
+            const handler = vi.fn(async (ctx) => {
+                await new Promise((resolve) => setTimeout(resolve, KEEP_ALIVE_INTERVAL_MS + 1_000))
+                ctx.res.send({ status: 'success' })
+            })
+            const res = mockResponse()
+            const wrapped = customOperation<TestOperation>(handler, {
+                config: testConfig,
+                sourceId: 'source-123',
+            })
+
+            const invocation = wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-keepalive' }, res as any)
+            await vi.advanceTimersByTimeAsync(KEEP_ALIVE_INTERVAL_MS)
+            expect(res.keepAlive).toHaveBeenCalled()
+
+            await vi.advanceTimersByTimeAsync(1_000)
+            await invocation
+        } finally {
+            vi.useRealTimers()
+        }
+    })
+
     it('resolves source by name when sourceId is not provided', async () => {
-        const res = { send: vi.fn() }
+        const res = mockResponse()
         const handler = vi.fn(async () => {})
         const sourcesApi = {
             listSourcesV1: vi.fn().mockResolvedValue({
