@@ -2,7 +2,7 @@ import { ConnectorError, Response } from '@sailpoint/connector-sdk'
 import { AccountsApi, CustomFormsApi, SourcesApi } from 'sailpoint-api-client'
 import { createPersist, createVerifyPersisted, findAccountOnSource, upsertSourceAccount } from './persist-result'
 import { createSailPointClients } from './sdk-factory'
-import { ensureSourceSchema } from './source-provisioning'
+import { ensureSourceSchema } from './result-source'
 import { createTestModePersist } from './test-mode-persist'
 import {
     OperationSchemaContract,
@@ -130,3 +130,4 @@ function createOfflineSdkStub(): SailPointClients {
         roles: { getRoleEntitlementsV1: stub } as unknown as SailPointClients['roles'],
     }
 }
+

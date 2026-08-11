@@ -20,13 +20,13 @@ export { createRequestContext } from './request-context'
 export { createSailPointClients } from './sdk-factory'
 export { inferFromTsType, inferSchemaAttribute } from './schema-inference'
 export {
-    createDelimitedFileSource,
+    createDelimitedFileResultSource,
     ensureSourceSchema,
     resolveSourceByName,
     resolveSourceByNameReadOnly,
-    resolveTokenIdentity,
-    verifyIscStatus,
-} from './source-provisioning'
+} from './result-source'
+export { resolveTokenIdentity } from '../isc/token-identity'
+export { verifyIscStatus } from '../isc/sources/source-client'
 export { isTestMode, resolveInvocationConfig, TEST_MODE_PLACEHOLDER_SOURCE_ID } from './test-mode'
 export type { ResolvedInvocationConfig } from './test-mode'
 export { createTestModePersist } from './test-mode-persist'
@@ -49,3 +49,4 @@ export { formatIncomingRequest, printIncomingRequest, resolveConfigForRequestLog
 export { toConnectorError } from './connector-error'
 export { customOperation, normalizeAccessToken, parseStandardInput } from './with-custom-operation'
 export type { CustomOperationHandler, CustomOperationOptions } from './with-custom-operation'
+

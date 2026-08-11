@@ -3,8 +3,17 @@ import {
     IdentityHistoryApi,
     RolesApi,
 } from 'sailpoint-api-client'
-import { IdentityAccessItem } from './access-path-resolver'
-import { EXPERIMENTAL_HEADER } from './experimental-client'
+import { EXPERIMENTAL_HEADER } from './isc-client'
+
+export type AccessPathType = 'ENTITLEMENT' | 'ACCESS_PROFILE' | 'ROLE'
+
+export interface IdentityAccessItem {
+    type: AccessPathType
+    id: string
+    name: string
+    /** Entitlement IDs granted through this access profile or role. */
+    grantedEntitlementIds?: string[]
+}
 
 export interface IdentityAccessSdk {
     identityHistory: IdentityHistoryApi
@@ -76,9 +85,23 @@ export async function fetchIdentityAccessItemsFromSdk(
 }
 
 /** Offline/test fallback when ISC credentials are unavailable. */
-export async function fetchIdentityAccessItemsOffline(_identityId: string): Promise<IdentityAccessItem[]> {
-    return []
+export async function fetchIdentityAccessItemsOffline(identityId: string): Promise<IdentityAccessItem[]> {
+    return OFFLINE_IDENTITY_ACCESS_FIXTURES[identityId] ?? []
+}
+
+/** Deterministic access items for offline SOD remediation and local operation tests. */
+const OFFLINE_IDENTITY_ACCESS_FIXTURES: Record<string, IdentityAccessItem[]> = {
+    'offline-identity': [
+        {
+            type: 'ACCESS_PROFILE',
+            id: 'offline-ap-a',
+            name: 'Offline Finance AP',
+            grantedEntitlementIds: ['offline-ent-a'],
+        },
+    ],
 }
 
 export { EXPERIMENTAL_HEADER }
+
+
 

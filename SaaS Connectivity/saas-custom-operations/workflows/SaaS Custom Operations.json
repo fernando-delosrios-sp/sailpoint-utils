@@ -111,15 +111,6 @@
                 },
                 "method": "post",
                 "param_authenticationRef": "basic",
-                "param_basic": {
-                  "mapping": {
-                    "auth_password": "password",
-                    "auth_username": "username"
-                  },
-                  "paramID": "06484d5d-98e6-44c6-8de0-3f7f855bf888",
-                  "paramType": "1.1",
-                  "refID": "cfefeca4-9db2-4356-8630-c814739e6bbb"
-                },
                 "requestContentType": "form",
                 "url": "{{$.configuration.aPIURL}}/oauth/token"
               },
@@ -168,4 +159,3 @@
     }
   ]
 }
-

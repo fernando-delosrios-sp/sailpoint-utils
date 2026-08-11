@@ -13,7 +13,7 @@ const COMMAND_PATTERN = /\.command\s*\(\s*['"](custom:[^'"]+)['"]\s*,\s*(\w+)\s*
 const IMPORT_PATTERN = /import\s+\{([^}]+)\}\s+from\s+['"](\.[^'"]+)['"]/g
 const CUSTOM_COMMAND_PREFIX = 'custom:'
 
-const EXCLUDED_OPERATION_FILES = new Set(['_template.ts', 'index.ts', 'auto-registry.ts'])
+const EXCLUDED_OPERATION_DIRS = new Set(['_template'])
 
 export class DiscoveryError extends Error {
     constructor(message: string) {
@@ -187,17 +187,25 @@ export function loadOperationMeta(indexPath: string): OperationMeta[] {
     })
 }
 
-function isExcludedOperationFile(filename: string): boolean {
-    return EXCLUDED_OPERATION_FILES.has(filename) || filename.endsWith('.schema.ts')
-}
-
-/** Returns absolute paths to operation modules eligible for auto-discovery scanning. */
+/** Returns absolute paths to operation entry modules eligible for auto-discovery scanning. */
 export function scanOperationModules(operationsDir: string): string[] {
-    return fs
-        .readdirSync(operationsDir)
-        .filter((filename) => filename.endsWith('.ts') && !isExcludedOperationFile(filename))
-        .map((filename) => path.join(operationsDir, filename))
-        .sort((a, b) => a.localeCompare(b))
+    const modules: string[] = []
+
+    for (const entry of fs.readdirSync(operationsDir, { withFileTypes: true })) {
+        if (!entry.isDirectory()) {
+            continue
+        }
+        if (EXCLUDED_OPERATION_DIRS.has(entry.name)) {
+            continue
+        }
+
+        const indexPath = path.join(operationsDir, entry.name, 'index.ts')
+        if (fs.existsSync(indexPath)) {
+            modules.push(indexPath)
+        }
+    }
+
+    return modules.sort((a, b) => a.localeCompare(b))
 }
 
 function extractStringLiteralFromType(typeNode: ts.TypeNode | undefined): string | undefined {
@@ -355,3 +363,4 @@ export function discoverAllOperations(operationsDir: string, indexPath: string):
 
     return result.sort((a, b) => a.command.localeCompare(b.command))
 }
+

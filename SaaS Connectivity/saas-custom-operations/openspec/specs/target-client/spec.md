@@ -28,26 +28,43 @@ The connector SHALL NOT require a separate target-application HTTP client for cu
 - **WHEN** a developer inspects target integration code
 - **THEN** src/my-client.ts SHALL NOT exist and custom operations SHALL use ctx.sdk exclusively
 
-### Requirement: Custom Forms API error surfacing
+### Requirement: Access token identity resolution
 
-The connector SHALL surface Custom Forms API failures used by sod remediation as `ConnectorError` with a message describing the operation context and HTTP status when available.
+The connector SHALL provide a generic JWT helper under `src/isc/token-identity.ts` for resolving the invoking identity id from an access token. The helper SHALL NOT encode result-source or operation-specific provisioning policy.
 
-#### Scenario: Form definition create failure
+#### Scenario: identity_id claim preferred
 
-- **GIVEN** `createFormDefinitionV1` rejects or returns no definition id
-- **WHEN** `ensureFormDefinition` is invoked
-- **THEN** the function SHALL throw `ConnectorError` describing the form definition failure
+- **GIVEN** a JWT with `identity_id` and `sub` claims
+- **WHEN** `resolveTokenIdentity` is invoked
+- **THEN** the function SHALL return the `identity_id` value
 
-#### Scenario: Form instance create failure
+#### Scenario: Invalid token rejected
 
-- **GIVEN** `createFormInstanceV1` rejects with an HTTP error or returns no `standAloneFormUrl`
-- **WHEN** `createRemediationInstance` is invoked
-- **THEN** the function SHALL throw `ConnectorError` describing the form instance failure
-- **AND** SHALL include the HTTP status in the message when the underlying client exposes it
+- **GIVEN** a string that is not a decodable JWT
+- **WHEN** `resolveTokenIdentity` is invoked
+- **THEN** the function SHALL throw `ConnectorError`
 
-#### Scenario: Form search SDK rejection
+### Requirement: Pre-SDK HTTP transport
 
-- **GIVEN** `searchFormDefinitionsByTenantV1` rejects with an axios or SDK error
-- **WHEN** `ensureFormDefinition` performs the search step
-- **THEN** the function SHALL throw `ConnectorError` rather than propagating a raw axios error
+The connector SHALL provide generic HTTP clients under `src/isc/` for ISC APIs not yet exposed on bundled `sailpoint-api-client`, sending header `X-SailPoint-Experimental: true` where required. These clients SHALL NOT reference custom command names or operation-specific form field keys in their public API or requirements.
+
+#### Scenario: Violation fetched by ID
+
+- **GIVEN** a valid access token with violation read scope or ownership
+- **WHEN** a caller invokes the violations client with a violation ID
+- **THEN** the client SHALL call `GET /violations/v1/{violationId}` with the experimental header
+- **AND** SHALL parse owner, target identity, policy, and conflicting access criteria from the response
+
+#### Scenario: Violation fetch failure surfaces error
+
+- **GIVEN** the violations API returns 404 or 403
+- **WHEN** a caller requests the violation
+- **THEN** the client SHALL fail with a ConnectorError describing the HTTP status
+
+#### Scenario: Controls listed
+
+- **WHEN** a caller invokes the controls client
+- **THEN** the client SHALL call `GET /controls/v1` with the experimental header
+- **AND** SHALL return tenant compensating control records with id, name, and optional description
+
 

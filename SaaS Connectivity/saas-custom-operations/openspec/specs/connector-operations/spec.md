@@ -20,24 +20,24 @@ The connector SHALL register custom command handlers and SHALL NOT register any 
 
 ### Requirement: Operations registry pattern
 
-The connector SHALL provide an operations module where authors register custom commands. Operations that declare a `command` string literal on their `OperationSignature` interface SHALL be auto-registered at build time via a generated registry. Operations without `command` SHALL remain manually registrable in `src/operations/index.ts`.
+The connector SHALL provide an operations module where authors register custom commands. Each custom operation SHALL live in its own subdirectory under `src/operations/<slug>/` with entry module `index.ts`. Operations that declare a `command` string literal on their `OperationSignature` interface in `index.ts` SHALL be auto-registered at build time via a generated registry. Operations without `command` SHALL remain manually registrable in `src/operations/index.ts`. Flat handler files directly under `src/operations/` (other than `index.ts` and generated `auto-registry.ts`) SHALL NOT be used for operation implementations.
 
 #### Scenario: Auto-discovered operation registered
 
-- **GIVEN** an operation module declares `command: 'custom:example'` on its `OperationSignature` interface and exports exactly one `customOperation` handler
+- **GIVEN** `src/operations/example/index.ts` declares `command: 'custom:example'` on its `OperationSignature` interface and exports exactly one `customOperation` handler
 - **WHEN** the connector initializes
-- **THEN** `custom:example` SHALL be registered without a manual `.command()` line in `index.ts`
+- **THEN** `custom:example` SHALL be registered without a manual `.command()` line in `operations/index.ts`
 
 #### Scenario: Manual operation still supported
 
 - **GIVEN** an operation module has no `command` on its `OperationSignature` interface
-- **WHEN** the author registers the handler via `.command('custom:legacy', legacyOperation)` in `index.ts`
+- **WHEN** the author registers the handler via `.command('custom:legacy', legacyOperation)` in `operations/index.ts`
 - **THEN** `custom:legacy` SHALL be registered at connector initialization
 
 #### Scenario: Duplicate command fails build
 
 - **GIVEN** an auto-discovered operation declares `command: 'custom:example'`
-- **AND** `index.ts` also registers `.command('custom:example', …)` manually
+- **AND** `operations/index.ts` also registers `.command('custom:example', …)` manually
 - **WHEN** codegen runs
 - **THEN** the build SHALL fail with a descriptive error
 
@@ -45,79 +45,12 @@ The connector SHALL provide an operations module where authors register custom c
 
 - **GIVEN** the foundation template is built
 - **WHEN** a developer inspects `src/operations/`
-- **THEN** an example custom operation SHALL be present demonstrating auto-discovery with `command` on `OperationSignature`
+- **THEN** an example custom operation SHALL be present at `src/operations/example/index.ts` demonstrating auto-discovery with `command` on `OperationSignature`
 
-### Requirement: SOD remediation launch operation
+#### Scenario: Subdirectory entry is index.ts
 
-The connector SHALL register a custom command `custom:sod-remediation` that prepares an ISC form instance for SOD violation remediation and SHALL NOT execute corrective revokes or mitigating-control application.
-
-#### Scenario: Operation invoked with required inputs
-
-- **GIVEN** `custom:sod-remediation` is declared in connector-spec.json and registered
-- **WHEN** ISC invokes the command with input containing `violationId`, `formName`, and standard `requestId`
-- **THEN** the handler SHALL fetch the violation, ensure the form definition identified by `formName` exists, create a standalone form instance, and respond with output fields `formUrl` and `situationSummary`
-
-#### Scenario: Recipient defaults to violation owner
-
-- **GIVEN** a violation whose owner identity ID is `owner-a`
-- **AND** input does not include `owner`
-- **WHEN** `custom:sod-remediation` creates a form instance
-- **THEN** the form instance recipient SHALL be identity `owner-a`
-
-#### Scenario: Recipient override via owner input
-
-- **GIVEN** input includes `owner` set to identity ID `owner-b`
-- **WHEN** `custom:sod-remediation` creates a form instance
-- **THEN** the form instance recipient SHALL be identity `owner-b` regardless of the violation owner
-
-#### Scenario: Form definition created once by name
-
-- **GIVEN** no form definition named `{formName}` exists in the tenant
-- **WHEN** `custom:sod-remediation` is invoked with that `formName`
-- **THEN** the handler SHALL create a form definition from the bundled seed template using `{formName}` as the definition name
-- **AND** subsequent invocations with the same `formName` SHALL reuse the existing definition without patching it
-
-#### Scenario: Form definition owner is access token identity
-
-- **GIVEN** connector config includes a valid access token whose resolved identity ID is `token-owner-id`
-- **AND** no form definition named `{formName}` exists in the tenant
-- **AND** the violation owner identity ID is `violation-owner-id` where `violation-owner-id` differs from `token-owner-id`
-- **WHEN** `custom:sod-remediation` creates the form definition from seed
-- **THEN** the form definition owner SHALL be identity `token-owner-id`
-- **AND** SHALL NOT use `violation-owner-id` as the form definition owner
-
-#### Scenario: Form definition owner offline fallback
-
-- **GIVEN** invoke runs in offline mode without `apiUrl` and without `token`
-- **AND** no form definition named `{formName}` exists
-- **WHEN** `custom:sod-remediation` creates the form definition from seed
-- **THEN** the form definition owner SHALL use the connector's offline canned owner identity
-- **AND** SHALL NOT attempt JWT token identity resolution
-
-#### Scenario: Output contract is minimal
-
-- **GIVEN** a successful launch
-- **WHEN** the handler completes
-- **THEN** operation output persisted and returned via `ctx.res.send` SHALL include only `formUrl` and `situationSummary` as typed output fields
-- **AND** SHALL NOT require output fields `formInstanceId`, `violationId`, `formName`, `formDefinitionId`, or `recipientName`
-
-#### Scenario: Workflow-friendly form keys
-
-- **GIVEN** the seed form definition used for SOD remediation
-- **WHEN** a recipient submits the form
-- **THEN** submitted `formData` SHALL expose user keys `action`, `remediationSide`, `policyControl`, and `comments`
-- **AND** SHALL include hidden launch-populated keys `violationId`, `targetIdentityId`, `groupARevokePayload`, and `groupBRevokePayload` suitable for downstream workflow JSONPath access
-
-#### Scenario: Single-side corrective selection
-
-- **GIVEN** the user selects `action` value `Correct`
-- **WHEN** the form is submitted
-- **THEN** `formData.remediationSide` SHALL be exactly one of `groupA` or `groupB`
-
-#### Scenario: Auto-discovery registration
-
-- **GIVEN** `sod-remediation-operation.ts` declares `command: 'custom:sod-remediation'` on its OperationSignature interface
-- **WHEN** codegen runs
-- **THEN** `custom:sod-remediation` SHALL be registered in auto-registry.ts and listed in connector-spec.json commands
-
+- **GIVEN** a new auto-discovered operation with slug `my-op`
+- **WHEN** the author adds the operation
+- **THEN** the handler entry module SHALL be `src/operations/my-op/index.ts`
+- **AND** domain helper modules MAY live alongside it in the same subdirectory
 

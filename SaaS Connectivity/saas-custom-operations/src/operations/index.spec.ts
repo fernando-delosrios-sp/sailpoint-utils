@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { customOperation, OperationSignature } from '../framework'
-import { exampleOperation } from './example-operation'
+import { exampleOperation } from './example/index'
 import { registerCommands } from './index'
 
 interface ManualOperation extends OperationSignature {
@@ -47,5 +47,6 @@ describe('registerCommands manual chaining', () => {
         expect(handlers.get('custom:manual')).not.toBe(manualOperation)
     })
 })
+
 
 

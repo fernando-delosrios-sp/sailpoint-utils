@@ -1,0 +1,358 @@
+{
+    "description": "SOD violation remediation — launch form for corrective removal or compensating control mitigation.",
+    "formInput": [
+        { "id": "targetIdentityName", "type": "STRING", "label": "Target Identity Name", "description": "Display name of the violating identity" },
+        { "id": "policyName", "type": "STRING", "label": "Policy Name", "description": "SOD policy that was violated" },
+        { "id": "situationSummaryHtml", "type": "STRING", "label": "Situation Summary", "description": "HTML summary for form context" },
+        { "id": "groupAContents", "type": "STRING", "label": "Group A Contents", "description": "Newline-separated access path labels for group A display" },
+        { "id": "groupBContents", "type": "STRING", "label": "Group B Contents", "description": "Newline-separated access path labels for group B display" },
+        { "id": "groupAWarning", "type": "STRING", "label": "Group A Warning", "description": "Help text when group A includes AP/role paths" },
+        { "id": "groupBWarning", "type": "STRING", "label": "Group B Warning", "description": "Help text when group B includes AP/role paths" },
+        { "id": "hasControls", "type": "STRING", "label": "Has Controls", "description": "Whether tenant compensating controls exist (true/false)" },
+        { "id": "controlOptions", "type": "ARRAY", "label": "Control Options", "description": "Compensating control labels for mitigate select options" },
+        { "id": "violationId", "type": "STRING", "label": "Violation ID", "description": "Hidden workflow key" },
+        { "id": "targetIdentityId", "type": "STRING", "label": "Target Identity ID", "description": "Hidden workflow key" },
+        { "id": "groupARevokePayload", "type": "STRING", "label": "Group A Revoke Payload", "description": "Hidden JSON revoke payload for group A" },
+        { "id": "groupBRevokePayload", "type": "STRING", "label": "Group B Revoke Payload", "description": "Hidden JSON revoke payload for group B" }
+    ],
+    "formElements": [
+        {
+            "id": "ctx-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Violation Context",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "ctx-identity",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Target Identity",
+                            "showLabel": true,
+                            "description": "<p><strong>Identity:</strong> {{$.form.input.targetIdentityName}}</p><p><strong>Policy:</strong> {{$.form.input.policyName}}</p>"
+                        },
+                        "validations": []
+                    },
+                    {
+                        "id": "ctx-summary",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Situation",
+                            "showLabel": true,
+                            "description": "{{$.form.input.situationSummaryHtml}}"
+                        },
+                        "validations": []
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "action-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Remediation Action",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "action-select",
+                        "elementType": "SELECT",
+                        "key": "action",
+                        "config": {
+                            "label": "Action",
+                            "required": true,
+                            "forceSelect": true,
+                            "maximum": 1,
+                            "dataSource": {
+                                "dataSourceType": "STATIC",
+                                "config": {
+                                    "options": [
+                                        { "label": "Correct", "value": "Correct", "sublabel": "Remove conflicting access" },
+                                        { "label": "Mitigate", "value": "Mitigate", "sublabel": "Apply compensating control" }
+                                    ]
+                                }
+                            }
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }, { "validationType": "DATA_SOURCE" }]
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "correct-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "Select the side whose access should be removed to resolve this violation.",
+                "label": "Correct Violation",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "remediation-side-select",
+                        "elementType": "SELECT",
+                        "key": "remediationSide",
+                        "config": {
+                            "label": "Side to remediate",
+                            "required": true,
+                            "forceSelect": true,
+                            "maximum": 1,
+                            "dataSource": {
+                                "dataSourceType": "STATIC",
+                                "config": {
+                                    "options": [
+                                        { "label": "Group A", "value": "groupA", "sublabel": "Remove access from group A" },
+                                        { "label": "Group B", "value": "groupB", "sublabel": "Remove access from group B" }
+                                    ]
+                                }
+                            }
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }, { "validationType": "DATA_SOURCE" }]
+                    },
+                    {
+                        "id": "toxic-column-set",
+                        "elementType": "COLUMN_SET",
+                        "key": "",
+                        "config": {
+                            "label": "Toxic Combination",
+                            "labelStyle": "h5",
+                            "showLabel": true,
+                            "columnCount": 2,
+                            "columns": [
+                                [
+                                    {
+                                        "id": "group-a-warning",
+                                        "elementType": "DESCRIPTION",
+                                        "key": "",
+                                        "config": {
+                                            "label": "Group A Warning",
+                                            "showLabel": false,
+                                            "description": "<p><em>{{$.form.input.groupAWarning}}</em></p>"
+                                        },
+                                        "validations": []
+                                    },
+                                    {
+                                        "id": "group-a-contents",
+                                        "elementType": "TEXTAREA",
+                                        "key": "groupA",
+                                        "config": {
+                                            "label": "Group A",
+                                            "required": false,
+                                            "rows": 3,
+                                            "resize": false
+                                        },
+                                        "validations": []
+                                    }
+                                ],
+                                [
+                                    {
+                                        "id": "group-b-warning",
+                                        "elementType": "DESCRIPTION",
+                                        "key": "",
+                                        "config": {
+                                            "label": "Group B Warning",
+                                            "showLabel": false,
+                                            "description": "<p><em>{{$.form.input.groupBWarning}}</em></p>"
+                                        },
+                                        "validations": []
+                                    },
+                                    {
+                                        "id": "group-b-contents",
+                                        "elementType": "TEXTAREA",
+                                        "key": "groupB",
+                                        "config": {
+                                            "label": "Group B",
+                                            "required": false,
+                                            "rows": 3,
+                                            "resize": false
+                                        },
+                                        "validations": []
+                                    }
+                                ]
+                            ]
+                        },
+                        "validations": []
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "mitigate-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Mitigate Violation",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "policy-control",
+                        "elementType": "SELECT",
+                        "key": "policyControl",
+                        "config": {
+                            "label": "Compensating Control",
+                            "required": true,
+                            "forceSelect": true,
+                            "maximum": 1,
+                            "dataSource": {
+                                "dataSourceType": "FORM_INPUT",
+                                "config": {
+                                    "formInputId": "controlOptions",
+                                    "sortBy": "ASC"
+                                }
+                            }
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }, { "validationType": "DATA_SOURCE" }]
+                    },
+                    {
+                        "id": "comments",
+                        "elementType": "TEXTAREA",
+                        "key": "comments",
+                        "config": {
+                            "label": "Comments",
+                            "required": true,
+                            "rows": 3,
+                            "resize": false
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }]
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "hidden-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Workflow Keys",
+                "labelStyle": "h6",
+                "showLabel": false,
+                "formElements": [
+                    {
+                        "id": "hidden-violation-id",
+                        "elementType": "TEXT",
+                        "key": "violationId",
+                        "config": { "label": "Violation ID", "required": false },
+                        "validations": []
+                    },
+                    {
+                        "id": "hidden-target-id",
+                        "elementType": "TEXT",
+                        "key": "targetIdentityId",
+                        "config": { "label": "Target Identity ID", "required": false },
+                        "validations": []
+                    },
+                    {
+                        "id": "hidden-group-a-payload",
+                        "elementType": "TEXT",
+                        "key": "groupARevokePayload",
+                        "config": { "label": "Group A Revoke Payload", "required": false },
+                        "validations": []
+                    },
+                    {
+                        "id": "hidden-group-b-payload",
+                        "elementType": "TEXT",
+                        "key": "groupBRevokePayload",
+                        "config": { "label": "Group B Revoke Payload", "required": false },
+                        "validations": []
+                    }
+                ]
+            },
+            "validations": []
+        }
+    ],
+    "formConditions": [
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "ELEMENT", "source": "action", "operator": "EQ", "valueType": "STRING", "value": "Correct" }],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "correct-section" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [
+                { "sourceType": "ELEMENT", "source": "action", "operator": "EQ", "valueType": "STRING", "value": "Mitigate" },
+                { "sourceType": "INPUT", "source": "hasControls", "operator": "EQ", "valueType": "STRING", "value": "true" }
+            ],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "mitigate-section" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "INPUT", "source": "groupAContents", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
+            "effects": [
+                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "groupAContents", "element": "group-a-contents" } },
+                { "effectType": "DISABLE", "config": { "element": "group-a-contents" } }
+            ]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "INPUT", "source": "groupBContents", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
+            "effects": [
+                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "groupBContents", "element": "group-b-contents" } },
+                { "effectType": "DISABLE", "config": { "element": "group-b-contents" } }
+            ]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "INPUT", "source": "groupAWarning", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "group-a-warning" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "INPUT", "source": "groupBWarning", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "group-b-warning" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "INPUT", "source": "violationId", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
+            "effects": [
+                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "violationId", "element": "hidden-violation-id" } },
+                { "effectType": "DISABLE", "config": { "element": "hidden-violation-id" } }
+            ]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "INPUT", "source": "targetIdentityId", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
+            "effects": [
+                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "targetIdentityId", "element": "hidden-target-id" } },
+                { "effectType": "DISABLE", "config": { "element": "hidden-target-id" } }
+            ]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "INPUT", "source": "groupARevokePayload", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
+            "effects": [
+                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "groupARevokePayload", "element": "hidden-group-a-payload" } },
+                { "effectType": "DISABLE", "config": { "element": "hidden-group-a-payload" } }
+            ]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "INPUT", "source": "groupBRevokePayload", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
+            "effects": [
+                { "effectType": "SET_DEFAULT_VALUE", "config": { "defaultValueLabel": "groupBRevokePayload", "element": "hidden-group-b-payload" } },
+                { "effectType": "DISABLE", "config": { "element": "hidden-group-b-payload" } }
+            ]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "INPUT", "source": "violationId", "operator": "NOT_EM", "valueType": "STRING", "value": "" }],
+            "effects": [{ "effectType": "HIDE", "config": { "element": "hidden-section" } }]
+        }
+    ]
+}
+
+
+

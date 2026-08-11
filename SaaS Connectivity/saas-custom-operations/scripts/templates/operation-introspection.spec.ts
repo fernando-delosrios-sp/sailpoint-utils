@@ -20,17 +20,23 @@ describe('scanOperationModules', () => {
         }
     })
 
-    it('excludes _template.ts, index.ts, schema sidecars, and auto-registry.ts', () => {
+    it('discovers operations/<slug>/index.ts and excludes _template/index.ts', () => {
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'op-scan-'))
-        fs.writeFileSync(path.join(tempDir, 'example-operation.ts'), 'export const x = 1')
-        fs.writeFileSync(path.join(tempDir, '_template.ts'), 'export const x = 1')
+        fs.mkdirSync(path.join(tempDir, 'example'))
+        fs.mkdirSync(path.join(tempDir, '_template'))
+        fs.mkdirSync(path.join(tempDir, 'sod-remediation'))
+        fs.writeFileSync(path.join(tempDir, 'example', 'index.ts'), 'export const x = 1')
+        fs.writeFileSync(path.join(tempDir, '_template', 'index.ts'), 'export const x = 1')
+        fs.writeFileSync(path.join(tempDir, 'sod-remediation', 'index.ts'), 'export const y = 1')
         fs.writeFileSync(path.join(tempDir, 'index.ts'), 'export const x = 1')
-        fs.writeFileSync(path.join(tempDir, 'example-operation.schema.ts'), 'export const x = 1')
         fs.writeFileSync(path.join(tempDir, 'auto-registry.ts'), 'export const x = 1')
 
         const modules = scanOperationModules(tempDir)
-        expect(modules).toHaveLength(1)
-        expect(path.basename(modules[0])).toBe('example-operation.ts')
+        expect(modules).toHaveLength(2)
+        expect(modules.map((modulePath) => path.basename(path.dirname(modulePath))).sort()).toEqual([
+            'example',
+            'sod-remediation',
+        ])
     })
 })
 
@@ -134,8 +140,10 @@ describe('discoverAutoOperations', () => {
 
     it('discovers auto operations with command literal and single export', () => {
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'op-discover-'))
+        fs.mkdirSync(path.join(tempDir, 'example'))
+        fs.mkdirSync(path.join(tempDir, '_template'))
         fs.writeFileSync(
-            path.join(tempDir, 'example-operation.ts'),
+            path.join(tempDir, 'example', 'index.ts'),
             `import { customOperation, OperationSignature } from '../framework'
 
 export interface ExampleOperation extends OperationSignature {
@@ -147,7 +155,7 @@ export interface ExampleOperation extends OperationSignature {
 export const exampleOperation = customOperation<ExampleOperation>(async () => {})
 `
         )
-        fs.writeFileSync(path.join(tempDir, '_template.ts'), 'export const template = 1')
+        fs.writeFileSync(path.join(tempDir, '_template', 'index.ts'), 'export const template = 1')
 
         const discoveries = discoverAutoOperations(tempDir)
         expect(discoveries).toHaveLength(1)
@@ -169,16 +177,19 @@ export interface ExampleOperation extends OperationSignature {
 
 export const exampleOperation = customOperation<ExampleOperation>(async () => {})
 `
-        fs.writeFileSync(path.join(tempDir, 'first-operation.ts'), moduleBody)
-        fs.writeFileSync(path.join(tempDir, 'second-operation.ts'), moduleBody)
+        fs.mkdirSync(path.join(tempDir, 'first'))
+        fs.mkdirSync(path.join(tempDir, 'second'))
+        fs.writeFileSync(path.join(tempDir, 'first', 'index.ts'), moduleBody)
+        fs.writeFileSync(path.join(tempDir, 'second', 'index.ts'), moduleBody)
 
         expect(() => discoverAutoOperations(tempDir)).toThrow(/Duplicate command "custom:duplicate"/)
     })
 
     it('throws when command prefix is not custom:', () => {
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'op-discover-'))
+        fs.mkdirSync(path.join(tempDir, 'bad'))
         fs.writeFileSync(
-            path.join(tempDir, 'bad-operation.ts'),
+            path.join(tempDir, 'bad', 'index.ts'),
             `import { customOperation, OperationSignature } from '../framework'
 
 export interface BadOperation extends OperationSignature {
@@ -196,8 +207,9 @@ export const badOperation = customOperation<BadOperation>(async () => {})
 
     it('throws when command is declared but module has no customOperation export', () => {
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'op-discover-'))
+        fs.mkdirSync(path.join(tempDir, 'orphan'))
         fs.writeFileSync(
-            path.join(tempDir, 'orphan-operation.ts'),
+            path.join(tempDir, 'orphan', 'index.ts'),
             `import { OperationSignature } from '../framework'
 
 export interface OrphanOperation extends OperationSignature {
@@ -223,8 +235,10 @@ describe('discoverAllOperations', () => {
 
     it('merges auto and manual registrations without collisions', () => {
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'op-all-'))
+        fs.mkdirSync(path.join(tempDir, 'example'))
+        fs.mkdirSync(path.join(tempDir, 'manual'))
         fs.writeFileSync(
-            path.join(tempDir, 'example-operation.ts'),
+            path.join(tempDir, 'example', 'index.ts'),
             `import { customOperation, OperationSignature } from '../framework'
 
 export interface ExampleOperation extends OperationSignature {
@@ -237,7 +251,7 @@ export const exampleOperation = customOperation<ExampleOperation>(async () => {}
 `
         )
         fs.writeFileSync(
-            path.join(tempDir, 'manual-operation.ts'),
+            path.join(tempDir, 'manual', 'index.ts'),
             `import { customOperation, OperationSignature } from '../framework'
 
 export interface ManualOperation extends OperationSignature {
@@ -250,7 +264,7 @@ export const manualOperation = customOperation<ManualOperation>(async () => {})
         )
         fs.writeFileSync(
             path.join(tempDir, 'index.ts'),
-            `import { manualOperation } from './manual-operation'
+            `import { manualOperation } from './manual/index'
 
 export function registerCommands(connector: unknown) {
     return connector.command('custom:manual', manualOperation)
@@ -266,8 +280,9 @@ export function registerCommands(connector: unknown) {
 
     it('throws when the same command is auto-discovered and manually registered', () => {
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'op-all-'))
+        fs.mkdirSync(path.join(tempDir, 'example'))
         fs.writeFileSync(
-            path.join(tempDir, 'example-operation.ts'),
+            path.join(tempDir, 'example', 'index.ts'),
             `import { customOperation, OperationSignature } from '../framework'
 
 export interface ExampleOperation extends OperationSignature {
@@ -281,7 +296,7 @@ export const exampleOperation = customOperation<ExampleOperation>(async () => {}
         )
         fs.writeFileSync(
             path.join(tempDir, 'index.ts'),
-            `import { exampleOperation } from './example-operation'
+            `import { exampleOperation } from './example/index'
 
 export function registerCommands(connector: unknown) {
     return connector.command('custom:example', exampleOperation)
@@ -294,4 +309,5 @@ export function registerCommands(connector: unknown) {
         )
     })
 })
+
 

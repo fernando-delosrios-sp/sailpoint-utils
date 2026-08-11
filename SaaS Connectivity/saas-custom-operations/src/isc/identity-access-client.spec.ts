@@ -52,7 +52,19 @@ describe('identity-access-client', () => {
         ])
     })
 
-    it('fetchIdentityAccessItemsOffline returns empty list', async () => {
-        await expect(fetchIdentityAccessItemsOffline('ident-1')).resolves.toEqual([])
+    it('fetchIdentityAccessItemsOffline returns deterministic fixtures for known offline identities', async () => {
+        await expect(fetchIdentityAccessItemsOffline('offline-identity')).resolves.toEqual([
+            {
+                type: 'ACCESS_PROFILE',
+                id: 'offline-ap-a',
+                name: 'Offline Finance AP',
+                grantedEntitlementIds: ['offline-ent-a'],
+            },
+        ])
+    })
+
+    it('fetchIdentityAccessItemsOffline returns empty list for unknown identities', async () => {
+        await expect(fetchIdentityAccessItemsOffline('unknown-identity')).resolves.toEqual([])
     })
 })
+

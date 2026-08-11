@@ -10,6 +10,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🔧 Improvements
 
+- **Operation layer boundaries** — Custom operations now live in mandatory `src/operations/<slug>/index.ts` subdirectories. Generic Custom Forms helpers moved to `src/isc/forms/`; SOD domain modules co-locate under `src/operations/sod-remediation/`. `src/isc/sources/` exposes generic SourcesApi wrappers only; result source auto-provision and schema reconciliation remain in `src/framework/result-source.ts`. Codegen discovers subdirectory entries and emits nested auto-registry imports. `custom:example` and `custom:sod-remediation` input/output contracts are unchanged.
 - **Local invoke output** — Runner summary sections renamed to **Local invoke** and **Simulated persist (testMode=true)**.
 
 ### 🐛 Bug Fixes
@@ -156,3 +157,4 @@ All notable changes to **saas-custom-operations** are documented here.
 ### 🗑️ Removed
 
 -   **Standard aggregation scaffold** — Standard command handlers and mock aggregation client removed.
+

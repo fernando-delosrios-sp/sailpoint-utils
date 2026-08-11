@@ -280,12 +280,14 @@ The reference workflow export demonstrates this pattern in the **Read SaaS Custo
 
 ### 1. Add an operation handler
 
-Copy `src/operations/_template.ts` to a new file under `src/operations/` and implement your handler. Declare `input` and `output` on an `OperationSignature` interface — the build generates a matching schema sidecar.
+Copy `src/operations/_template/` to `src/operations/<slug>/` and implement your handler in `index.ts`. Declare `input` and `output` on an `OperationSignature` interface — the build generates a matching schema sidecar at `index.schema.ts`.
+
+**Layout:** every custom operation lives in `src/operations/<slug>/index.ts`. Domain modules, seeds, and operation-specific tests stay in the same folder. Generic ISC helpers (SDK factory, identity access, sources API wrappers, token identity, experimental HTTP, Custom Forms primitives) live under `src/isc/` — generic API calls only. Framework orchestration (result source auto-provision, persist schema reconciliation) stays in `src/framework/`.
 
 **Auto-discovery (recommended):** add a `command` string literal to your interface. Codegen registers the handler, syncs `connector-spec.json`, and wires the schema registry — no manual `index.ts` entry required.
 
 ```typescript
-import { customOperation, OperationSignature } from '../framework'
+import { customOperation, OperationSignature } from '../../framework'
 
 export interface MyOperation extends OperationSignature {
     command: 'custom:my-operation'
@@ -310,12 +312,12 @@ export const myOperation = customOperation<MyOperation>(
 )
 ```
 
-Run `npm run codegen:schemas` (also runs on `npm run build`) to generate `my-operation.schema.ts`, update `auto-registry.ts`, and sync `connector-spec.json`.
+Run `npm run codegen:schemas` (also runs on `npm run build`) to generate `<slug>/index.schema.ts`, update `auto-registry.ts`, and sync `connector-spec.json`.
 
 **Manual registration:** omit `command` from the interface, register in `index.ts`, import the generated sidecar, and pass it explicitly:
 
 ```typescript
-import { myOperationSchema } from './my-operation.schema'
+import { myOperationSchema } from './my-slug/index.schema'
 
 export const myOperation = customOperation<MyOperation>(
     async (ctx, input) => { /* ... */ },
@@ -405,11 +407,19 @@ Re-run whenever you add an operation or change an operation's `OperationSignatur
 ```
 src/
   framework/          # RequestContext, persist, source provisioning, schema inference, SDK factory
+  isc/                # ISC SDK loopback helpers (identity access, experimental HTTP, generic forms)
+    forms/            # Parameterized Custom Forms primitives (seed load, ensure definition, create instance)
+    sources/          # Generic SourcesApi wrappers (find, create, schema read/patch)
   operations/         # Custom operation handlers (add yours here)
-    _template.ts      # Authoring template — copy when adding operations
-    example-operation.ts
-    example-operation.schema.ts  # Auto-generated — do not edit manually
-    auto-registry.ts        # Auto-generated command + schema registration
+    _template/        # Authoring scaffold — copy directory when adding operations
+      index.ts
+    example/
+      index.ts
+      index.schema.ts # Auto-generated — do not edit manually
+    sod-remediation/  # Example domain-heavy operation layout
+      index.ts
+      index.schema.ts # Auto-generated — do not edit manually
+    auto-registry.ts  # Auto-generated command + schema registration
     index.ts          # Calls registerAutoOperations; append manual .command() as needed
   index.ts            # Connector entry point
 scripts/
