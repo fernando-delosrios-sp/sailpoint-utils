@@ -3,10 +3,10 @@ import { customOperation, OperationSignature } from '../../framework'
 // import { templateOperationSchema } from './index.schema'
 
 /**
- * Copy this directory when adding a new custom operation.
+ * Copy this directory when adding a new custom operation (including README.md).
  *
  * Layout: `src/operations/<slug>/index.ts` (this file) is the auto-discovered entry.
- * Add domain modules, seeds, and tests alongside index.ts inside the same folder.
+ * Add domain modules, seeds, README.md, and tests alongside index.ts inside the same folder.
  *
  * Auto-discovery (recommended): add `command: 'custom:your-command'` to the interface below.
  * Codegen registers the handler in auto-registry.ts and syncs connector-spec.json.

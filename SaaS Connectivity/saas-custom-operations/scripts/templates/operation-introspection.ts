@@ -225,6 +225,19 @@ export function scanOperationModules(operationsDir: string): string[] {
     return modules.sort((a, b) => a.localeCompare(b))
 }
 
+/** Throws when a scanned operation subdirectory is missing README.md. */
+export function assertOperationReadmesExist(operationsDir: string): void {
+    for (const modulePath of scanOperationModules(operationsDir)) {
+        const slug = path.basename(path.dirname(modulePath))
+        const readmePath = path.join(operationsDir, slug, 'README.md')
+        if (!fs.existsSync(readmePath)) {
+            throw new DiscoveryError(
+                `Missing README.md for operation "${slug}": expected ${readmePath}`
+            )
+        }
+    }
+}
+
 function extractStringLiteralFromType(typeNode: ts.TypeNode | undefined): string | undefined {
     if (!typeNode) {
         return undefined

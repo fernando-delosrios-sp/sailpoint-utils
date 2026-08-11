@@ -13,6 +13,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🔧 Improvements
 
+- **Per-operation README docs** — Each custom operation subdirectory now includes a co-located `README.md` for invoke payloads and workflow integration. The root README links to each operation doc and no longer inlines operation-specific workflow steps. Codegen fails when a discovered operation is missing its README.
 - **SOD remediation violation context** — Violation ID is shown in the form context block via `formInput.violationId` interpolation.
 - **Account schema attribute value limits** — Persist truncates identity values to 128 characters and STRING attribute values to 256 characters (per ISC storage limits), logging a `[persist] truncated …` warning when shortening occurs. Prevents DelimitedFile aggregation and provisioning failures on oversized values.
 - **Base schema on result source create** — Auto-provisioned DelimitedFile result sources now receive the full base account schema (core attrs plus union of all registered operation output fields) immediately after source creation, replacing or aligning any ISC-discovered schema. Persist-time reconciliation remains add-only for attributes introduced after create.

@@ -136,6 +136,7 @@ export interface ExampleOperation extends OperationSignature {
 export const exampleOperation = customOperation<ExampleOperation>(async () => {})
 `
         )
+        fs.writeFileSync(path.join(operationsDir, 'example', 'README.md'), '# custom:example\n')
 
         fs.writeFileSync(
             path.join(operationsDir, 'index.ts'),
@@ -196,6 +197,7 @@ export interface ExampleOperation extends OperationSignature {
 export const exampleOperation = customOperation<ExampleOperation>(async () => {})
 `
         )
+        fs.writeFileSync(path.join(operationsDir, 'example', 'README.md'), '# custom:example\n')
 
         fs.writeFileSync(
             path.join(operationsDir, 'index.ts'),

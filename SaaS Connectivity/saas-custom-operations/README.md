@@ -119,6 +119,17 @@ Workflow-ready examples under `payloads/*-workflow.json` use ISC template variab
 
 The framework strips `requestId` from operation input and exposes it on `ctx.requestId`. All other `input` fields are passed to your handler.
 
+### Custom operations
+
+Each registered command documents its invoke contract, payloads, and workflow integration in a co-located README under `src/operations/<slug>/`:
+
+| Command | Documentation |
+|---|---|
+| `custom:example` | [src/operations/example/README.md](src/operations/example/README.md) |
+| `custom:sod-remediation` | [src/operations/sod-remediation/README.md](src/operations/sod-remediation/README.md) |
+
+When you add a new operation, copy `src/operations/_template/` (including `README.md`), implement the handler, and add a row to this table.
+
 ### Local development
 
 ```bash
@@ -201,67 +212,6 @@ Partial config (e.g. `{ "testMode": true }` only) is rejected — provide full c
 
 The local runner resolves operations from a static registry in `scripts/call-op.ts`. When you add a new custom operation, register its handler in `OPERATION_HANDLERS` alongside `custom:example`.
 
-```bash
-npm run call:op -- payloads/sod-remediation-offline.json
-```
-
-### `custom:sod-remediation`
-
-Launch-only operation that fetches an SOD violation, ensures a named form definition exists (owned by the access-token identity on first create), creates a standalone remediation form for the violation owner (or override recipient), and persists `formUrl` plus `situationSummary` for downstream workflow steps.
-
-**Invoke payload:** See `payloads/sod-remediation-workflow.json` for a workflow-ready example aligned with `workflows/SOD Remediation - Violation Response.json`. Use `payloads/sod-remediation-offline.json` or `payloads/sod-remediation.json` for local `call:op` runs.
-
-```json
-{
-    "connectorRef": "{{$.defineVariable.saaSCustomOperationsConnectorID}}",
-    "tag": "latest",
-    "type": "custom:sod-remediation",
-    "input": {
-        "requestId": "req-sod-001",
-        "violationId": "00000000-0000-0000-0000-000000000001",
-        "formName": "SOD Violation Remediation",
-        "owner": "optional-recipient-identity-id"
-    },
-    "config": {
-        "apiUrl": "{{$.defineVariable.aPIURL}}",
-        "token": "{{$.getAccessToken.body.access_token}}",
-        "sourceName": "{{$.defineVariable.saaSCustomOperationsSourceName}}"
-    }
-}
-```
-
-| Input field | Required | Description |
-|---|---|---|
-| `violationId` | Yes | SOD violation ID (`GET /violations/v1/:id`, experimental API) |
-| `formName` | Yes | Tenant form definition name — created from bundled seed on first use; **owner on create** is the access-token identity (not the violation owner) |
-| `owner` | No | Form instance recipient override; defaults to violation owner |
-
-| Output field (persisted) | Description |
-|---|---|
-| `sod-remediation:form-url` | Standalone form URL (`standAloneFormUrl`) for email deep links |
-| `sod-remediation:situation-summary` | HTML summary for workflow email bodies |
-| `sod-remediation:situation-header` | Plain-text email subject |
-| `sod-remediation:owner-email` | Recipient email for notifications |
-
-**Workflow integration pattern:**
-
-1. Invoke `custom:sod-remediation` with violation ID and form name.
-2. Read persisted output via **Get Accounts** filtered by `requestId` (`form-url`, email fields).
-3. Send email to recipient with `situation-summary` as the HTML body and link to `form-url`.
-4. Wait for form submission; read **user decisions** from submitted `formData`: `action`, `remediationSide`, `control`, `comments`.
-5. Read **launch-time workflow keys** from the completed form instance **`formInput`** (not `formData`):
-   - `violationId`, `targetIdentityId`, `groupAAccessSearch`, `groupBAccessSearch`
-   - Access search strings include **revocable** access path ids only (`id:x OR id:y`); non-revocable entitlements granted via role or access profile on the same side are omitted from the filter
-   - Workflow JSONPath example after a Wait for Form / Get Form Instance step: `{{$.form.formInput.groupAAccessSearch}}`
-6. Select the access-search string for the chosen side using `formData.remediationSide`.
-7. Execute corrective revoke or apply compensating control in separate workflow HTTP actions (not handled by the connector).
-
-Workflow keys are declared in the form definition `formInput` schema and populated at instance create. They do **not** need hidden form elements and do **not** round-trip through `formData`.
-
-After upgrading the connector, re-invoke `custom:sod-remediation` so the form-definition watermark patches the tenant form definition before creating a new instance. Each invoke creates a **new** form instance; re-opening a URL from an already-submitted instance shows "already submitted".
-
-Experimental APIs require header `X-SailPoint-Experimental: true` (handled internally). Offline payload runs use canned violation data when no `config` is provided.
-
 ### Invoke against a deployed connector
 
 With the SailPoint CLI:
@@ -293,9 +243,9 @@ The reference workflow export demonstrates this pattern in the **Read SaaS Custo
 
 ### 1. Add an operation handler
 
-Copy `src/operations/_template/` to `src/operations/<slug>/` and implement your handler in `index.ts`. Declare `input` and `output` on an `OperationSignature` interface — the build generates a matching schema sidecar at `index.schema.ts`.
+Copy `src/operations/_template/` to `src/operations/<slug>/` and implement your handler in `index.ts`. Copy and fill in `README.md` for invoke payloads and workflow integration. Declare `input` and `output` on an `OperationSignature` interface — the build generates a matching schema sidecar at `index.schema.ts`.
 
-**Layout:** every custom operation lives in `src/operations/<slug>/index.ts`. Domain modules, seeds, and operation-specific tests stay in the same folder. Generic ISC helpers live under `src/isc/<api-grouping>/` — one subdirectory per ISC API surface (forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity). Account **schemas** are managed via `sources/` (SourcesApi); account **instances** via `accounts/` (AccountsApi). Each API folder MUST include an `index.ts` that exports its public API; consumers import from the folder entry (e.g. `../../isc/violations`). Shared pre-SDK HTTP transport lives in `src/isc/http/`. Cross-API orchestration belongs in identity-access only. Framework orchestration stays in `src/framework/`.
+**Layout:** every custom operation lives in `src/operations/<slug>/index.ts` with a co-located `README.md`. Domain modules, seeds, and operation-specific tests stay in the same folder. See [Custom operations](#custom-operations) for links to each operation's README. Generic ISC helpers live under `src/isc/<api-grouping>/` — one subdirectory per ISC API surface (forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity). Account **schemas** are managed via `sources/` (SourcesApi); account **instances** via `accounts/` (AccountsApi). Each API folder MUST include an `index.ts` that exports its public API; consumers import from the folder entry (e.g. `../../isc/violations`). Shared pre-SDK HTTP transport lives in `src/isc/http/`. Cross-API orchestration belongs in identity-access only. Framework orchestration stays in `src/framework/`.
 
 **Auto-discovery (recommended):** add a `command` string literal to your interface. Codegen registers the handler, syncs `connector-spec.json`, and wires the schema registry — no manual `index.ts` entry required.
 
@@ -428,11 +378,14 @@ src/
   operations/         # Custom operation handlers (add yours here)
     _template/        # Authoring scaffold — copy directory when adding operations
       index.ts
+      README.md
     example/
       index.ts
+      README.md
       index.schema.ts # Auto-generated — do not edit manually
     sod-remediation/  # Example domain-heavy operation layout
       index.ts
+      README.md
       index.schema.ts # Auto-generated — do not edit manually
     auto-registry.ts  # Auto-generated command + schema registration
     index.ts          # Calls registerAutoOperations; append manual .command() as needed

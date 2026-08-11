@@ -10,6 +10,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import {
     AutoOperationDiscovery,
+    assertOperationReadmesExist,
     discoverAllOperations,
     extractOperationSignature,
     hasOperationSignature,
@@ -133,6 +134,8 @@ export function generateOperationSchemas(options?: {
     const indexPath = options?.indexPath ?? INDEX_PATH
     const operationsDir = options?.operationsDir ?? path.dirname(indexPath)
     const specPath = options?.specPath ?? CONNECTOR_SPEC_PATH
+
+    assertOperationReadmesExist(operationsDir)
 
     const discoveries = discoverAllOperations(operationsDir, indexPath)
     const autoOps = discoveries.filter((operation) => operation.source === 'auto')

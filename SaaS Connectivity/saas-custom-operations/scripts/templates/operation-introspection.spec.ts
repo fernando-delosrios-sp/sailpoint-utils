@@ -3,6 +3,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+    assertOperationReadmesExist,
     discoverAllOperations,
     discoverAutoOperations,
     extractCommandLiteral,
@@ -37,6 +38,40 @@ describe('scanOperationModules', () => {
             'example',
             'sod-remediation',
         ])
+    })
+})
+
+describe('assertOperationReadmesExist', () => {
+    let tempDir: string
+
+    afterEach(() => {
+        if (tempDir && fs.existsSync(tempDir)) {
+            fs.rmSync(tempDir, { recursive: true, force: true })
+        }
+    })
+
+    it('passes when every scanned operation has README.md', () => {
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'op-readme-'))
+        fs.mkdirSync(path.join(tempDir, 'example'))
+        fs.writeFileSync(path.join(tempDir, 'example', 'index.ts'), 'export const x = 1')
+        fs.writeFileSync(path.join(tempDir, 'example', 'README.md'), '# example')
+
+        expect(() => assertOperationReadmesExist(tempDir)).not.toThrow()
+    })
+
+    it('throws with descriptive error when README.md is missing', () => {
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'op-readme-missing-'))
+        fs.mkdirSync(path.join(tempDir, 'example'))
+        fs.writeFileSync(path.join(tempDir, 'example', 'index.ts'), 'export const x = 1')
+
+        expect(() => assertOperationReadmesExist(tempDir)).toThrow(
+            /Missing README\.md for operation "example"/
+        )
+    })
+
+    it('every discovered operation in src/operations has README.md', () => {
+        const operationsDir = path.resolve(__dirname, '../../src/operations')
+        assertOperationReadmesExist(operationsDir)
     })
 })
 
