@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { CommandHandler } from '@sailpoint/connector-sdk'
+import '../src/operations/auto-registry'
 import { beginPayloadOutputCapture, endPayloadOutputCapture } from '../src/framework/payload-persist-collector'
 import { exampleOperation } from '../src/operations/example/index'
 import { sodRemediationOperation } from '../src/operations/sod-remediation/index'
@@ -25,6 +26,15 @@ export function normalizePayloadConfig(config?: Record<string, unknown>): Record
     if ((normalized.apiUrl == null || normalized.apiUrl === '') && typeof normalized.url === 'string') {
         normalized.apiUrl = normalized.url
         delete normalized.url
+    }
+    if (
+        (normalized.token == null ||
+            normalized.token === '' ||
+            normalized.token === '<access-token>' ||
+            normalized.token === '__SET_VIA_ISC_TOKEN_ENV__') &&
+        process.env.ISC_TOKEN
+    ) {
+        normalized.token = process.env.ISC_TOKEN
     }
     return normalized
 }
