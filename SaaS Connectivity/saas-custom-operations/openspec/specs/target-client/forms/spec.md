@@ -1,7 +1,8 @@
 # target-client/forms Specification
 
 ## Purpose
-TBD - created by archiving change operation-layer-boundaries. Update Purpose after archive.
+
+Documents ISC Custom Forms integration helpers and empirically verified form-definition authoring constraints for the connector's generic forms client and seed templates.
 ## Requirements
 ### Requirement: Generic form definition seed loading
 
@@ -81,4 +82,56 @@ The connector SHALL expose configured CustomFormsApi methods on `RequestContext.
 - **GIVEN** a custom operation receives valid apiUrl and token in its input envelope
 - **WHEN** the handler accesses ctx.sdk.forms
 - **THEN** the client SHALL be configured for search/create form definitions and create form instances
+
+### Requirement: DESCRIPTION element HTML rendering
+
+ISC Custom Forms DESCRIPTION elements SHALL render `config.description` as HTML. Authors MAY combine static HTML fragments with `{{$.form.input.<key>}}` interpolation in the same description string. Verified against ISC tenant rendering (Aug 2026).
+
+#### Scenario: formInput interpolation in description
+
+- **GIVEN** a DESCRIPTION element with `description` set to `{{$.form.input.situationSummaryHtml}}`
+- **AND** launch-time formInput supplies a value for that key
+- **WHEN** the form instance is rendered
+- **THEN** ISC SHALL substitute the formInput value into the description
+- **AND** SHALL render the result as HTML
+
+#### Scenario: Static HTML block elements
+
+- **GIVEN** a DESCRIPTION element whose description contains static HTML using block elements `<p>`, `<ul>`, `<ol>`, and `<li>`
+- **WHEN** the form instance is rendered
+- **THEN** ISC SHALL preserve those block elements in the rendered output
+
+#### Scenario: Inline emphasis and styling
+
+- **GIVEN** a DESCRIPTION element whose description contains `<strong>`, `<em>`, `<s>`, `<span style="...">`, and nested combinations thereof
+- **WHEN** the form instance is rendered
+- **THEN** ISC SHALL preserve inline tags and inline `style` attributes including `text-decoration`, `font-size`, `color`, and `background-color`
+
+#### Scenario: Code and links
+
+- **GIVEN** a DESCRIPTION element whose description contains `<code>` and `<a href="..." target="..." rel="..." title="...">`
+- **WHEN** the form instance is rendered
+- **THEN** ISC SHALL preserve `<code>` formatting
+- **AND** SHALL preserve link `href`, `target`, `rel`, and `title` attributes
+
+#### Scenario: List item alignment and styling
+
+- **GIVEN** a DESCRIPTION element whose description contains list items with inline styles `text-align`, `list-style-type`, and `line-height`
+- **WHEN** the form instance is rendered
+- **THEN** ISC SHALL preserve those inline styles on the corresponding elements
+
+#### Scenario: Nested ordered lists
+
+- **GIVEN** a DESCRIPTION element whose description contains nested `<ol>` elements including a parent `<li style="list-style-type: none;">` wrapping a child list
+- **WHEN** the form instance is rendered
+- **THEN** ISC SHALL preserve the nested list structure
+
+#### Scenario: Avoid double paragraph wrapping on interpolated HTML
+
+- **GIVEN** a formInput value that already contains a top-level `<p>...</p>` wrapper
+- **AND** the DESCRIPTION template wraps the same interpolation in an outer `<p>{{$.form.input.<key>}}</p>`
+- **WHEN** the form instance is rendered
+- **THEN** browsers SHALL normalize invalid nested `<p>` markup into sibling paragraphs including empty `<p></p>` elements
+- **AND** form seed authors SHALL NOT wrap interpolations that already supply block-level HTML in an additional `<p>` element
+
 

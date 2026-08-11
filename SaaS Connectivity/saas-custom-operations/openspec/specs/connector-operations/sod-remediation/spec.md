@@ -116,3 +116,27 @@ The sod-remediation operation SHALL fetch violation details and tenant compensat
 - **THEN** form input SHALL indicate mitigation is unavailable
 - **AND** the situation summary SHALL note that no compensating controls are configured
 
+### Requirement: Situation summary HTML form input format
+
+The sod-remediation operation SHALL populate `situationSummaryHtml` formInput as escaped plain text with newline breaks suitable for DESCRIPTION rendering, and SHALL NOT embed unescaped rich HTML from violation or identity data.
+
+#### Scenario: Dynamic summary escaped and line-broken
+
+- **WHEN** `custom:sod-remediation` assembles form input
+- **THEN** `situationSummaryHtml` SHALL escape `&`, `<`, and `>` characters from violation-derived text
+- **AND** SHALL convert newlines to `<br/>` elements
+- **AND** SHALL wrap the result in a single top-level `<p>...</p>` element
+
+#### Scenario: Seed interpolates summary without extra wrapper
+
+- **GIVEN** the bundled SOD remediation seed template
+- **WHEN** the ctx-summary DESCRIPTION element is inspected
+- **THEN** its `description` SHALL be exactly `{{$.form.input.situationSummaryHtml}}` without an additional surrounding `<p>` wrapper
+
+#### Scenario: Plain-text summary separate from HTML form input
+
+- **WHEN** `custom:sod-remediation` completes successfully
+- **THEN** operation output `situationSummary` SHALL remain plain text for workflow email use
+- **AND** `situationSummaryHtml` formInput SHALL be used only for in-form DESCRIPTION rendering
+
+
