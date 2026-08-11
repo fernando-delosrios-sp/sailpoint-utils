@@ -1,10 +1,8 @@
-# target-client/identity-access Specification
+## ADDED Requirements
 
-## Purpose
+_(none)_
 
-Orchestration helpers under `src/isc/identity-access/` that compose identity-history, access-profiles, and roles modules into unified identity access items for custom operations. This module SHALL NOT call SDK APIs directly except by delegating to per-API isc modules.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Identity access item listing
 
@@ -31,4 +29,12 @@ The isc identity-access module SHALL list access items assigned to an identity f
 - **WHEN** a developer locates the offline lookup map or canned access items
 - **THEN** the data SHALL reside in `src/isc/identity-access/offline-data.ts`
 - **AND** orchestration logic SHALL reside in a separate implementation file (for example `fetch-identity-access-items.ts`)
+
+## REMOVED Requirements
+
+_(none)_
+
+## RENAMED Requirements
+
+_(none)_
 

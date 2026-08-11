@@ -1,6 +1,6 @@
 import { customOperation, OperationSignature } from '../../framework'
 import { resolveTokenIdentity } from '../../isc/token-identity'
-import { getViolationV1 } from '../../isc/violations'
+import { getViolationV1, type ViolationV1 } from '../../isc/violations'
 import { listControlsV1 } from '../../isc/controls'
 import {
     fetchIdentityAccessItemsFromSdk,
@@ -12,7 +12,6 @@ import {
     resolveViolationAccessPaths,
 } from './context'
 import { createSodRemediationInstance, ensureSodFormDefinition } from './form-service'
-import { OFFLINE_VIOLATION } from './offline-data'
 import {
     logSodRemediationAccessPaths,
     logSodRemediationComplete,
@@ -25,6 +24,16 @@ import {
     logSodRemediationRecipient,
     logSodRemediationViolation,
 } from './logging'
+
+/** Canned violation for offline invokes without ISC credentials. */
+const OFFLINE_VIOLATION: ViolationV1 = {
+    id: 'offline-violation',
+    owner: { id: 'offline-owner', name: 'Offline Owner' },
+    identity: { id: 'offline-identity', name: 'Offline User' },
+    policy: { id: 'offline-policy', name: 'Offline SOD Policy' },
+    leftSide: { entitlements: [{ id: 'offline-ent-a', name: 'Offline Entitlement A' }] },
+    rightSide: { entitlements: [{ id: 'offline-ent-b', name: 'Offline Entitlement B' }] },
+}
 
 export interface SodRemediationOperation extends OperationSignature {
     command: 'custom:sod-remediation'
@@ -96,4 +105,5 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
         ctx.res.send({ status: 'success' })
     }
 )
+
 

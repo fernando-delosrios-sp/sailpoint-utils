@@ -1,3 +1,3 @@
-export { fetchIdentityAccessItemsFromSdk, type IdentityAccessSdk } from './fetch-from-sdk'
+export { fetchIdentityAccessItemsFromSdk } from './fetch-identity-access-items'
 export { fetchIdentityAccessItemsOffline } from './offline-data'
-export { type AccessPathType, type IdentityAccessItem } from './types'
+export { type AccessPathType, type IdentityAccessItem, type IdentityAccessSdk } from './types'

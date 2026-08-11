@@ -1,14 +1,7 @@
-import { AccessProfilesApi, IdentityHistoryApi, RolesApi } from 'sailpoint-api-client'
 import { listAccessProfileEntitlementIds } from '../access-profiles'
 import { listAssignedAccessItems } from '../identity-history'
 import { listRoleEntitlementIds } from '../roles'
-import type { IdentityAccessItem } from './types'
-
-export interface IdentityAccessSdk {
-    identityHistory: IdentityHistoryApi
-    accessProfiles: AccessProfilesApi
-    roles: RolesApi
-}
+import type { IdentityAccessItem, IdentityAccessSdk } from './types'
 
 /** Lists access profiles and roles on an identity with entitlement IDs each grants. */
 export async function fetchIdentityAccessItemsFromSdk(
