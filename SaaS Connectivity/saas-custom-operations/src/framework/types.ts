@@ -4,10 +4,15 @@ import {
     AccessRequestsApi,
     AccountsApi,
     CustomFormsApi,
+    EntitlementsApi,
     GovernanceGroupsApi,
+    IAIOutliersApi,
+    IAIRecommendationsApi,
+    IdentitiesApi,
     IdentityHistoryApi,
     RolesApi,
     SearchApi,
+    SODPoliciesApi,
     SODViolationsApi,
     SourcesApi,
     TaskManagementApi,
@@ -35,12 +40,17 @@ export interface SailPointClients {
     forms: CustomFormsApi
     identityHistory: IdentityHistoryApi
     accessProfiles: AccessProfilesApi
+    entitlements: EntitlementsApi
     roles: RolesApi
+    identities: IdentitiesApi
     tasks: TaskManagementApi
     governanceGroups: GovernanceGroupsApi
     accessRequests: AccessRequestsApi
     search: SearchApi
+    sodPolicies: SODPoliciesApi
     sodViolations: SODViolationsApi
+    iaiRecommendations: IAIRecommendationsApi
+    iaiOutliers: IAIOutliersApi
 }
 
 /** Options for {@link PersistFn}. Verification runs by default; set verify to false to defer. */

@@ -4,6 +4,9 @@ import { CommandHandler } from '@sailpoint/connector-sdk'
 import '../src/operations/auto-registry'
 import { beginPayloadOutputCapture, endPayloadOutputCapture } from '../src/framework/payload-persist-collector'
 import { exampleOperation } from '../src/operations/example/index'
+import { accessRequestStatusOperation } from '../src/operations/access-request-status/index'
+import { accessRequestThresholdOperation } from '../src/operations/access-request-threshold/index'
+import { checkSodPendingOperation } from '../src/operations/check-sod-pending/index'
 import { governanceGroupEmailsOperation } from '../src/operations/governance-group-emails/index'
 import { preventiveSodCheckOperation } from '../src/operations/preventive-sod-check/index'
 import { sodRemediationOperation } from '../src/operations/sod-remediation/index'
@@ -43,6 +46,9 @@ export function normalizePayloadConfig(config?: Record<string, unknown>): Record
 
 const OPERATION_HANDLERS: Record<string, CommandHandler> = {
     'custom:example': exampleOperation,
+    'custom:access-request-status': accessRequestStatusOperation,
+    'custom:access-request-threshold': accessRequestThresholdOperation,
+    'custom:check-sod-pending': checkSodPendingOperation,
     'custom:governance-group-emails': governanceGroupEmailsOperation,
     'custom:preventive-sod-check': preventiveSodCheckOperation,
     'custom:sod-remediation': sodRemediationOperation,

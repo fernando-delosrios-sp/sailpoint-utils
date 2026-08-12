@@ -148,8 +148,16 @@ function createOfflineSdkStub(): SailPointClients {
         } as unknown as SourcesApi,
         forms: offlineFormsStub as unknown as CustomFormsApi,
         identityHistory: { listIdentityAccessItemsV1: stub } as unknown as SailPointClients['identityHistory'],
-        accessProfiles: { getAccessProfileEntitlementsV1: stub } as unknown as SailPointClients['accessProfiles'],
-        roles: { getRoleEntitlementsV1: stub } as unknown as SailPointClients['roles'],
+        accessProfiles: {
+            getAccessProfileEntitlementsV1: stub,
+            getAccessProfileV1: stub,
+        } as unknown as SailPointClients['accessProfiles'],
+        entitlements: { getEntitlementV1: stub } as unknown as SailPointClients['entitlements'],
+        roles: { getRoleEntitlementsV1: stub, getRoleV1: stub } as unknown as SailPointClients['roles'],
+        identities: {
+            getIdentityV1: stub,
+            listEntitlementsByIdentityV1: stub,
+        } as unknown as SailPointClients['identities'],
         tasks: { getTaskStatusV1: stub } as unknown as TaskManagementApi,
         governanceGroups: {
             listWorkgroupsV1: stub,
@@ -157,7 +165,10 @@ function createOfflineSdkStub(): SailPointClients {
         } as unknown as SailPointClients['governanceGroups'],
         accessRequests: { listAccessRequestStatusV1: stub } as unknown as SailPointClients['accessRequests'],
         search: { searchPostV1: stub } as unknown as SailPointClients['search'],
+        sodPolicies: { listSodPoliciesV1: stub } as unknown as SailPointClients['sodPolicies'],
         sodViolations: { startPredictSodViolationsV1: stub } as unknown as SailPointClients['sodViolations'],
+        iaiRecommendations: { getRecommendationsV1: stub } as unknown as SailPointClients['iaiRecommendations'],
+        iaiOutliers: { getIdentityOutliersV1: stub } as unknown as SailPointClients['iaiOutliers'],
     }
 }
 
