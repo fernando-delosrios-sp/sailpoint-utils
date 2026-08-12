@@ -2,6 +2,8 @@
 	"name": "saas-custom-operations",
 	"commands": [
 		"custom:example",
+		"custom:governance-group-emails",
+		"custom:preventive-sod-check",
 		"custom:sod-remediation"
 	],
 	"sourceConfig": [

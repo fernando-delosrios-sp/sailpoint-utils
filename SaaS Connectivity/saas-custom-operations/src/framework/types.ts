@@ -1,5 +1,17 @@
 import { Response } from '@sailpoint/connector-sdk'
-import { AccountsApi, AccessProfilesApi, CustomFormsApi, IdentityHistoryApi, RolesApi, SourcesApi, TaskManagementApi } from 'sailpoint-api-client'
+import {
+    AccessProfilesApi,
+    AccessRequestsApi,
+    AccountsApi,
+    CustomFormsApi,
+    GovernanceGroupsApi,
+    IdentityHistoryApi,
+    RolesApi,
+    SearchApi,
+    SODViolationsApi,
+    SourcesApi,
+    TaskManagementApi,
+} from 'sailpoint-api-client'
 import { OperationField } from './schema-inference'
 
 /** Standard fields resolved from an invoke payload: config + input. */
@@ -25,6 +37,10 @@ export interface SailPointClients {
     accessProfiles: AccessProfilesApi
     roles: RolesApi
     tasks: TaskManagementApi
+    governanceGroups: GovernanceGroupsApi
+    accessRequests: AccessRequestsApi
+    search: SearchApi
+    sodViolations: SODViolationsApi
 }
 
 /** Options for {@link PersistFn}. Verification runs by default; set verify to false to defer. */

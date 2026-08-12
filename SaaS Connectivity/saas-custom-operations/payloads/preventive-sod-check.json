@@ -1,0 +1,7 @@
+{
+    "type": "custom:preventive-sod-check",
+    "input": {
+        "requestId": "offline-preventive-001",
+        "identityId": "offline-preventive-identity"
+    }
+}

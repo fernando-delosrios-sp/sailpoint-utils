@@ -4,6 +4,8 @@ import { CommandHandler } from '@sailpoint/connector-sdk'
 import '../src/operations/auto-registry'
 import { beginPayloadOutputCapture, endPayloadOutputCapture } from '../src/framework/payload-persist-collector'
 import { exampleOperation } from '../src/operations/example/index'
+import { governanceGroupEmailsOperation } from '../src/operations/governance-group-emails/index'
+import { preventiveSodCheckOperation } from '../src/operations/preventive-sod-check/index'
 import { sodRemediationOperation } from '../src/operations/sod-remediation/index'
 import { formatPayloadOutputSummary, printPayloadOutputSummary } from './payload-output'
 
@@ -41,6 +43,8 @@ export function normalizePayloadConfig(config?: Record<string, unknown>): Record
 
 const OPERATION_HANDLERS: Record<string, CommandHandler> = {
     'custom:example': exampleOperation,
+    'custom:governance-group-emails': governanceGroupEmailsOperation,
+    'custom:preventive-sod-check': preventiveSodCheckOperation,
     'custom:sod-remediation': sodRemediationOperation,
 }
 

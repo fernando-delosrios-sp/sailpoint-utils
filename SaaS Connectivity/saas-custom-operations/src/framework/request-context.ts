@@ -151,6 +151,13 @@ function createOfflineSdkStub(): SailPointClients {
         accessProfiles: { getAccessProfileEntitlementsV1: stub } as unknown as SailPointClients['accessProfiles'],
         roles: { getRoleEntitlementsV1: stub } as unknown as SailPointClients['roles'],
         tasks: { getTaskStatusV1: stub } as unknown as TaskManagementApi,
+        governanceGroups: {
+            listWorkgroupsV1: stub,
+            listWorkgroupMembersV1: stub,
+        } as unknown as SailPointClients['governanceGroups'],
+        accessRequests: { listAccessRequestStatusV1: stub } as unknown as SailPointClients['accessRequests'],
+        search: { searchPostV1: stub } as unknown as SailPointClients['search'],
+        sodViolations: { startPredictSodViolationsV1: stub } as unknown as SailPointClients['sodViolations'],
     }
 }
 

@@ -18,10 +18,12 @@
 
 ## Output (persisted)
 
+Persist keys use the `{slug}:` prefix where `slug` is the command name without `custom:` (e.g. `custom:my-op` → `my-op:result`).
+
 | Field | Required | Description |
 |---|---|---|
-| `result` | Yes | <!-- describe --> |
-| `detail` | No | <!-- describe --> |
+| `template:result` | Yes | <!-- describe --> |
+| `template:detail` | No | <!-- describe --> |
 
 ## Invoke examples
 
