@@ -247,7 +247,9 @@ The reference workflow export demonstrates this pattern in the **Read SaaS Custo
 
 Copy `src/operations/_template/` to `src/operations/<slug>/` and implement your handler in `index.ts`. Copy and fill in `README.md` for invoke payloads and workflow integration. Declare `input` and `output` on an `OperationSignature` interface — the build generates a matching schema sidecar at `index.schema.ts`.
 
-**Layout:** every custom operation lives in `src/operations/<slug>/index.ts` with a co-located `README.md`. Domain modules, seeds, and operation-specific tests stay in the same folder. See [Custom operations](#custom-operations) for links to each operation's README. Generic ISC helpers live under `src/isc/<api-grouping>/` — one subdirectory per ISC API surface (forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity). Account **schemas** are managed via `sources/` (SourcesApi); account **instances** via `accounts/` (AccountsApi). Each API folder MUST include an `index.ts` that exports its public API; consumers import from the folder entry (e.g. `../../isc/violations`). Shared pre-SDK HTTP transport lives in `src/isc/http/`. Cross-API orchestration belongs in identity-access only. Framework orchestration stays in `src/framework/`.
+**Layout:** every custom operation lives in `src/operations/<slug>/index.ts` with a co-located `README.md`. Domain modules, seeds, and operation-specific tests stay in the same folder. See [Custom operations](#custom-operations) for links to each operation's README. Generic ISC helpers live under `src/isc/<api-grouping>/` — one subdirectory per ISC API surface (forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, public-identities, recommendations, governance-groups, access-requests, events-search, sod-prediction). Account **schemas** are managed via `sources/` (SourcesApi); account **instances** via `accounts/` (AccountsApi). Each API folder MUST include an `index.ts` that exports its public API; consumers import from the folder entry (e.g. `../../isc/violations`). Shared pre-SDK HTTP transport lives in `src/isc/http/`. Cross-API orchestration belongs in identity-access only. Framework orchestration stays in `src/framework/`.
+
+Persist output attribute names MUST use the `{slug}:` prefix where `slug` is the command without `custom:` (e.g. `custom:my-operation` → `my-operation:result`).
 
 **Auto-discovery (recommended):** add a `command` string literal to your interface. Codegen registers the handler, syncs `connector-spec.json`, and wires the schema registry — no manual `index.ts` entry required.
 
@@ -260,8 +262,8 @@ export interface MyOperation extends OperationSignature {
         accountId?: string
     }
     output: {
-        result: string
-        detail?: string
+        'my-operation:result': string
+        'my-operation:detail'?: string
     }
 }
 
@@ -269,8 +271,8 @@ export const myOperation = customOperation<MyOperation>(
     async (ctx, input) => {
         console.log(`[${ctx.requestId}] starting`, input)
 
-        await ctx.persist(ctx.requestId, { result: 'result-value' })
-        await ctx.persist(`${ctx.requestId}:detail`, { detail: 'step-output' }, 'success')
+        await ctx.persist(ctx.requestId, { 'my-operation:result': 'result-value' })
+        await ctx.persist(`${ctx.requestId}:detail`, { 'my-operation:detail': 'step-output' }, 'success')
 
         ctx.res.send({ status: 'success' })
     }
@@ -305,24 +307,46 @@ Rebuild, repackage, and redeploy. Invoke with `"type": "custom:my-operation"` an
 
 ### RequestContext API
 
+Volatile context assembled per invocation by `customOperation`. Typed handlers receive `ctx` inferred from `OperationSignature.output`.
+
+**Context fields**
+
 | Member | Description |
 |---|---|
 | `ctx.requestId` | Correlation id from invoke `input` |
+| `ctx.apiUrl` | ISC API base URL from invoke `config` |
+| `ctx.token` | Access token from invoke `config` (Bearer prefix stripped) |
 | `ctx.sourceName` | Configured result source name (resolved/created at runtime) |
-| `ctx.sourceId` | Resolved ISC source ID after sourceName lookup |
-| `ctx.sdk.accounts` | ISC loopback client for account create, update, and read used by `ctx.persist` |
-| `ctx.sdk.sources` | ISC loopback client for result source lookup, creation, and schema management |
-| `ctx.sdk.forms` | ISC Custom Forms API for form definition search/create and form instance create |
+| `ctx.sourceId` | Resolved ISC source ID after `sourceName` lookup |
+| `ctx.operationSchema` | Current command output field contract used for schema reconciliation |
 | `ctx.persist(...)` | Write results to the result source (auto-provisioned DelimitedFile) |
 | `ctx.verifyPersisted(...)` | Batch verify deferred writes |
 | `ctx.res` | Connector SDK response object — call `ctx.res.send(...)` |
+
+**`ctx.sdk` clients** (pre-configured `sailpoint-api-client` instances)
+
+| Member | Description |
+|---|---|
+| `ctx.sdk.accounts` | Account create, update, and read used by `ctx.persist` |
+| `ctx.sdk.sources` | Result source lookup, creation, and schema management |
+| `ctx.sdk.forms` | Custom Forms definition search/create and form instance create |
+| `ctx.sdk.identityHistory` | Identity assigned access / entitlement history |
+| `ctx.sdk.accessProfiles` | Access profile entitlement expansion |
+| `ctx.sdk.roles` | Role entitlement expansion |
+| `ctx.sdk.tasks` | Async task status polling (used by persist provisioning wait) |
+| `ctx.sdk.governanceGroups` | Workgroup lookup and member listing |
+| `ctx.sdk.accessRequests` | Access request status listing |
+| `ctx.sdk.search` | ISC Search API (events index) |
+| `ctx.sdk.sodViolations` | SoD violation prediction |
+
+Prefer thin wrappers under `src/isc/<api-grouping>/` over calling SDK methods directly from handlers when the helper is reusable.
 
 ### Persist API
 
 ```typescript
 interface MyOperation extends OperationSignature {
     input: { ... }
-    output: { fieldName: string, ... }
+    output: { 'my-operation:fieldName': string, ... }  // namespaced with operation slug
 }
 
 customOperation<MyOperation>(async (ctx, input) => { ... })
@@ -331,6 +355,7 @@ ctx.verifyPersisted(ids)
 ```
 
 - **`OperationSignature`** — one interface with `input` and `output` using inline TypeScript type literals (aliases and imported types are not parsed by codegen)
+- **Output keys** — persist attribute names use `{slug}:` prefix matching the command (without `custom:`)
 - **`customOperation<T>(handler, options?)`** — types `input` and `ctx.persist` from `T`; pass the generated `{handler}Schema` sidecar for schema reconciliation
 - **`ctx.persist`** — formats values using typed inference (numbers/booleans native, objects JSON-serialized); reconciles schema before write
 - **`id`** — native account identity (often `ctx.requestId` or a derived child id like `` `${ctx.requestId}:detail` ``)
