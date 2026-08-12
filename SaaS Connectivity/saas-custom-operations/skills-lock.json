@@ -73,6 +73,18 @@
       "skillPath": "skills/engineering/git-commit/SKILL.md",
       "computedHash": "329e0021ebebec843aab1e0af878d88a6b2e0ba61bde241c08990aae046aae40"
     },
+    "grill-me": {
+      "source": "fernando-delosrios-sp/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/grill-me/SKILL.md",
+      "computedHash": "f361db4e15e6bfd562a9282b1dccda513910a50061f9e838ce017be9c69dde3f"
+    },
+    "grill-with-docs": {
+      "source": "fernando-delosrios-sp/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/grill-with-docs/SKILL.md",
+      "computedHash": "9c460cbd94fd3c63cdef967dbdb6e66ca687103cdc380cd37834e4d10b738f78"
+    },
     "grilling": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
@@ -156,6 +168,12 @@
       "sourceType": "github",
       "skillPath": "skills/verification-before-completion/SKILL.md",
       "computedHash": "b529822bdac4b197b180fe12225cff86b930b65910435103c10622df7f041651"
+    },
+    "writing-for-agents": {
+      "source": "fernando-delosrios-sp/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/writing-for-agents/SKILL.md",
+      "computedHash": "ccfa1e94d8f6ab5c6a1edd55293ca477faf93c39207771331efdb1e798ed21d6"
     },
     "writing-plans": {
       "source": "obra/superpowers",
