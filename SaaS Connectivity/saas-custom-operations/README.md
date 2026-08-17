@@ -35,14 +35,14 @@ Each invocation receives a standard envelope (`config` + `input`), resolves the 
 Configure a **source name** in connector config (`sourceName`). On each invocation the framework:
 
 1. Looks up an ISC source with that name
-2. Creates a DelimitedFile source with CSV provisioning if missing (owner = token identity), applying the **base account schema** (core attrs plus union of all registered operation output fields)
-3. Reconciles the account schema before each `ctx.persist` for the current operation's output fields (add-only for attributes added after source create)
+2. Creates a DelimitedFile source with CSV provisioning if missing (owner = token identity), applying the **base account schema** (core attrs plus the **invoking operation's** output fields)
+3. Reconciles the account schema before each `ctx.persist` for the current operation's output fields (add-only for attributes from other operations on first use)
 
 Core attributes are always ensured on the schema: `id` (identity), `status`, `date`, and `details` (human-readable outcome text).
 
 **Token scopes:** The access token must allow source read/create/update and account create on the result source. PAT or OAuth client credentials used in workflows need `sp:manage:source`, `sp:manage:source-schema`, and account provisioning scopes for the tenant.
 
-Manual source setup is not required. `npm run templates` generates `account-schema.json` as reference documentation for the attributes operations persist; auto-created result sources receive the same base schema at runtime, with per-persist reconciliation for any later additions.
+Manual source setup is not required. `npm run templates` generates `account-schema.json` as reference documentation showing the union of all operation output fields; at runtime, auto-created result sources receive core attrs plus the invoking operation's fields, with per-persist reconciliation when other operations write attributes.
 
 ## Workflow export
 
@@ -391,7 +391,7 @@ Run `npm run templates` after adding or modifying operations under `src/operatio
 
 | File | Purpose |
 |---|---|
-| `account-schema.json` | Reference account schema — core attrs (`id`, `status`, `date`, `details`) plus union of operation output fields |
+| `account-schema.json` | Reference account schema — core attrs plus union of all operation output fields (runtime auto-create is operation-scoped) |
 | `access-token.md` | Shared OAuth client-credentials guide with tenant placeholders |
 | `workflow-invocation.md` | Per-operation invoke body, read-result, and child-identity steps |
 

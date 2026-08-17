@@ -29,7 +29,7 @@ function toAttributeDefinition(attr: InferredSchemaAttribute): SchemaAttribute {
     }
 }
 
-/** Collects union attribute definitions for a base account schema from operation output fields. */
+/** Collects attribute definitions for a base account schema from operation output fields. */
 export function collectBaseSchemaAttributes(outputFields: OperationField[]): Map<string, InferredSchemaAttribute> {
     const required = new Map<string, InferredSchemaAttribute>()
 

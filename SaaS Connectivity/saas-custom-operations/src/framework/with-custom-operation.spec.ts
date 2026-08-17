@@ -281,6 +281,110 @@ describe('customOperation', () => {
         }
     })
 
+    it('passes invoking operation output fields when auto-creating result source', async () => {
+        clearOperationSchemaRegistry()
+        registerOperationSchema(
+            'custom:example',
+            defineOperationSchema({ summary: 'string', step: 'string' }, { command: 'custom:example' })
+        )
+        registerOperationSchema(
+            'custom:other',
+            defineOperationSchema({ violationId: 'string' }, { command: 'custom:other' })
+        )
+
+        const header = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url')
+        const body = Buffer.from(JSON.stringify({ identity_id: 'owner-id' })).toString('base64url')
+        const token = `${header}.${body}.signature`
+
+        const res = mockResponse()
+        const handler = vi.fn(async () => {})
+        const sourcesApi = {
+            listSourcesV1: vi
+                .fn()
+                .mockResolvedValueOnce({ data: [] })
+                .mockResolvedValueOnce({ data: [] }),
+            createSourceV1: vi.fn().mockResolvedValue({ data: { id: 'new-source-id' } }),
+            getSourceSchemasV1: vi.fn().mockResolvedValue({ data: [] }),
+            createSourceSchemaV1: vi.fn().mockResolvedValue({ data: { id: 'schema-id', name: 'account' } }),
+        } as any
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { ...testConfig, token },
+            sdk: {
+                sources: sourcesApi,
+                accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() },
+            } as any,
+        })
+
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(sourcesApi.createSourceSchemaV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                schema: expect.objectContaining({
+                    attributes: expect.arrayContaining([
+                        expect.objectContaining({ name: 'summary', type: 'STRING' }),
+                        expect.objectContaining({ name: 'step', type: 'STRING' }),
+                    ]),
+                }),
+            })
+        )
+
+        const createCall = sourcesApi.createSourceSchemaV1.mock.calls[0]?.[0]
+        const attributeNames = createCall.schema.attributes.map((attr: { name: string }) => attr.name)
+        expect(attributeNames).not.toContain('violationId')
+        expect(handler).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 'new-source-id' }), {})
+    })
+
+    it('auto-creates core-only base schema when operationSchema is absent', async () => {
+        clearOperationSchemaRegistry()
+
+        const header = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url')
+        const body = Buffer.from(JSON.stringify({ identity_id: 'owner-id' })).toString('base64url')
+        const token = `${header}.${body}.signature`
+
+        const res = mockResponse()
+        const handler = vi.fn(async (ctx) => {
+            expect(ctx.operationSchema).toBeUndefined()
+        })
+        const sourcesApi = {
+            listSourcesV1: vi
+                .fn()
+                .mockResolvedValueOnce({ data: [] })
+                .mockResolvedValueOnce({ data: [] }),
+            createSourceV1: vi.fn().mockResolvedValue({ data: { id: 'new-source-id' } }),
+            getSourceSchemasV1: vi.fn().mockResolvedValue({ data: [] }),
+            createSourceSchemaV1: vi.fn().mockResolvedValue({ data: { id: 'schema-id', name: 'account' } }),
+        } as any
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { ...testConfig, token },
+            sdk: {
+                sources: sourcesApi,
+                accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() },
+            } as any,
+        })
+
+        await wrapped({ commandType: 'custom:manual' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(sourcesApi.createSourceSchemaV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sourceId: 'new-source-id',
+                schema: expect.objectContaining({
+                    identityAttribute: 'id',
+                    attributes: expect.arrayContaining([
+                        expect.objectContaining({ name: 'id', type: 'STRING' }),
+                        expect.objectContaining({ name: 'status', type: 'STRING' }),
+                        expect.objectContaining({ name: 'date', type: 'STRING' }),
+                        expect.objectContaining({ name: 'details', type: 'STRING' }),
+                    ]),
+                }),
+            })
+        )
+
+        const createCall = sourcesApi.createSourceSchemaV1.mock.calls[0]?.[0]
+        const attributeNames = createCall.schema.attributes.map((attr: { name: string }) => attr.name)
+        expect(attributeNames).toEqual(['id', 'status', 'date', 'details'])
+        expect(handler).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 'new-source-id' }), {})
+    })
+
     it('resolves source by name when sourceId is not provided', async () => {
         const res = mockResponse()
         const handler = vi.fn(async () => {})

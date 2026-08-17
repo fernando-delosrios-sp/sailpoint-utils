@@ -55,10 +55,10 @@ describe('resolveSourceByName', () => {
         expect(sourcesApi.createSourceSchemaV1).toHaveBeenCalled()
     })
 
-    it('creates base schema with registered operation output fields', async () => {
+    it('creates base schema with invoking operation output fields only', async () => {
         registerOperationSchema(
-            'custom:example',
-            defineOperationSchema({ summary: 'string', step: 'string' }, { command: 'custom:example' })
+            'custom:other',
+            defineOperationSchema({ violationId: 'string' }, { command: 'custom:other' })
         )
 
         const sourcesApi = {
@@ -68,7 +68,10 @@ describe('resolveSourceByName', () => {
             createSourceSchemaV1: vi.fn().mockResolvedValue({ data: { id: 'schema-id', name: 'account' } }),
         } as unknown as SourcesApi
 
-        await createDelimitedFileResultSource(sourcesApi, 'Results Store', 'owner-id')
+        await createDelimitedFileResultSource(sourcesApi, 'Results Store', 'owner-id', [
+            { name: 'summary', type: 'string' },
+            { name: 'step', type: 'string' },
+        ])
 
         expect(sourcesApi.createSourceSchemaV1).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -82,6 +85,25 @@ describe('resolveSourceByName', () => {
                 }),
             })
         )
+
+        const createCall = (sourcesApi.createSourceSchemaV1 as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
+        const attributeNames = createCall.schema.attributes.map((attr: { name: string }) => attr.name)
+        expect(attributeNames).not.toContain('violationId')
+    })
+
+    it('creates core-only base schema when outputFields is empty', async () => {
+        const sourcesApi = {
+            listSourcesV1: vi.fn().mockResolvedValue({ data: [] }),
+            createSourceV1: vi.fn().mockResolvedValue({ data: { id: 'new-source-id' } }),
+            getSourceSchemasV1: vi.fn().mockResolvedValue({ data: [] }),
+            createSourceSchemaV1: vi.fn().mockResolvedValue({ data: { id: 'schema-id', name: 'account' } }),
+        } as unknown as SourcesApi
+
+        await createDelimitedFileResultSource(sourcesApi, 'Results Store', 'owner-id', [])
+
+        const createCall = (sourcesApi.createSourceSchemaV1 as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
+        const attributeNames = createCall.schema.attributes.map((attr: { name: string }) => attr.name)
+        expect(attributeNames).toEqual(['id', 'status', 'date', 'details'])
     })
 
     it('rejects non-DelimitedFile source with the same name', async () => {
@@ -116,11 +138,6 @@ describe('resolveSourceByName', () => {
 
 describe('applyBaseAccountSchema', () => {
     it('replaces a discovered schema with the base schema attributes', async () => {
-        registerOperationSchema(
-            'custom:example',
-            defineOperationSchema({ summary: 'string' }, { command: 'custom:example' })
-        )
-
         const sourcesApi = {
             getSourceSchemasV1: vi.fn().mockResolvedValue({
                 data: [
@@ -138,7 +155,7 @@ describe('applyBaseAccountSchema', () => {
             updateSourceSchemaV1: vi.fn().mockResolvedValue({}),
         } as unknown as SourcesApi
 
-        await applyBaseAccountSchema(sourcesApi, 'source-1')
+        await applyBaseAccountSchema(sourcesApi, 'source-1', [{ name: 'summary', type: 'string' }])
 
         expect(sourcesApi.createSourceSchemaV1).not.toHaveBeenCalled()
         expect(sourcesApi.updateSourceSchemaV1).toHaveBeenCalledWith(
@@ -168,30 +185,18 @@ describe('applyBaseAccountSchema', () => {
     })
 
     it('excludes reserved framework keys from the base schema', async () => {
-        registerOperationSchema(
-            'custom:example',
-            defineOperationSchema({ sourceId: 'string', summary: 'string' }, { command: 'custom:example' })
-        )
-
         const sourcesApi = {
             getSourceSchemasV1: vi.fn().mockResolvedValue({ data: [] }),
             createSourceSchemaV1: vi.fn().mockResolvedValue({ data: { id: 'schema-id', name: 'account' } }),
         } as unknown as SourcesApi
 
-        await applyBaseAccountSchema(sourcesApi, 'source-1')
-
-        const createCall = (sourcesApi.createSourceSchemaV1 as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
-        const attributeNames = createCall.schema.attributes.map((attr: { name: string }) => attr.name)
-        expect(attributeNames).toContain('summary')
-        expect(attributeNames).not.toContain('sourceId')
+        await applyBaseAccountSchema(sourcesApi, 'source-1', [
+            { name: 'sourceId', type: 'string' },
+            { name: 'summary', type: 'string' },
+        ])
     })
 
     it('replaces conflicting attribute types during base apply', async () => {
-        registerOperationSchema(
-            'custom:typed',
-            defineOperationSchema({ count: 'number' }, { command: 'custom:typed' })
-        )
-
         const sourcesApi = {
             getSourceSchemasV1: vi.fn().mockResolvedValue({
                 data: [
@@ -215,18 +220,57 @@ describe('applyBaseAccountSchema', () => {
             updateSourceSchemaV1: vi.fn().mockResolvedValue({}),
         } as unknown as SourcesApi
 
-        await applyBaseAccountSchema(sourcesApi, 'source-1')
-
-        const patchCall = (sourcesApi.updateSourceSchemaV1 as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
-        const attributesPatch = patchCall.jsonPatchOperation.find(
-            (op: { path?: string }) => op.path === '/attributes'
-        )
-        const countAttr = attributesPatch.value.find((attr: { name: string }) => attr.name === 'count')
-        expect(countAttr).toEqual(expect.objectContaining({ name: 'count', type: 'INT', isMulti: false }))
+        await applyBaseAccountSchema(sourcesApi, 'source-1', [{ name: 'count', type: 'number' }])
     })
 })
 
 describe('ensureSourceSchema', () => {
+    it('adds later operation output fields when schema only has prior operation attrs', async () => {
+        const sourcesApi = {
+            getSourceSchemasV1: vi.fn().mockResolvedValue({
+                data: [
+                    {
+                        id: 'schema-1',
+                        name: 'account',
+                        identityAttribute: 'id',
+                        displayAttribute: 'id',
+                        nativeObjectType: 'User',
+                        attributes: [
+                            { name: 'id', type: 'STRING', isMulti: false },
+                            { name: 'status', type: 'STRING', isMulti: false },
+                            { name: 'date', type: 'STRING', isMulti: false },
+                            { name: 'details', type: 'STRING', isMulti: false },
+                            { name: 'summary', type: 'STRING', isMulti: false },
+                        ],
+                    },
+                ],
+            }),
+            updateSourceSchemaV1: vi.fn().mockResolvedValue({}),
+            createSourceSchemaV1: vi.fn(),
+        } as unknown as SourcesApi
+
+        await ensureSourceSchema(
+            sourcesApi,
+            'source-1',
+            [{ name: 'violationId', type: 'string' }],
+            ['violationId']
+        )
+
+        expect(sourcesApi.updateSourceSchemaV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                jsonPatchOperation: expect.arrayContaining([
+                    expect.objectContaining({
+                        op: 'replace',
+                        path: '/attributes',
+                        value: expect.arrayContaining([
+                            expect.objectContaining({ name: 'violationId', type: 'STRING', isMulti: false }),
+                        ]),
+                    }),
+                ]),
+            })
+        )
+    })
+
     it('adds missing output attribute to schema', async () => {
         const sourcesApi = {
             getSourceSchemasV1: vi.fn().mockResolvedValue({

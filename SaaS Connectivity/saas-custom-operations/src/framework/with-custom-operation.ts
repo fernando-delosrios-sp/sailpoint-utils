@@ -205,6 +205,11 @@ async function runCustomOperation<T extends OperationSignature>(
         const testMode = configProvided ? isTestMode(config) : isTestMode({})
         const { standard, operationInput } = parseStandardInput(config, input, { testMode, configProvided })
 
+        const resolvedSchema =
+            deps.operationSchema ??
+            (context.commandType ? getOperationSchema(context.commandType) : undefined)
+        const outputFields = resolvedSchema?.outputFields ?? []
+
         let sdk = deps.sdk
         let sourceId = deps.sourceId
         let inhibitedPersistCount = 0
@@ -234,12 +239,11 @@ async function runCustomOperation<T extends OperationSignature>(
             }
         } else {
             sdk = sdk ?? createSailPointClients(standard.apiUrl, standard.token)
-            sourceId = sourceId ?? (await resolveSourceByName(sdk.sources, standard.sourceName, standard.token))
+            sourceId =
+                sourceId ??
+                (await resolveSourceByName(sdk.sources, standard.sourceName, standard.token, outputFields))
         }
 
-        const resolvedSchema =
-            deps.operationSchema ??
-            (context.commandType ? getOperationSchema(context.commandType) : undefined)
         const operationSchema: OperationSchemaContract | undefined = resolvedSchema
             ? {
                   command: resolvedSchema.command ?? context.commandType,

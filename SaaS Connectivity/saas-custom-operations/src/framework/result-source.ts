@@ -17,7 +17,6 @@ import {
     baseSchemaAttributeDefinition,
     buildBaseAccountSchema,
 } from './base-account-schema'
-import { listRegisteredOperationSchemas } from './operation-schema-registry'
 import { RESERVED_OUTPUT_KEYS } from './output-schema'
 import {
     IscAttributeType,
@@ -50,10 +49,6 @@ export async function resolveSourceByNameReadOnly(
         return existing.id
     }
     return undefined
-}
-
-function registeredOutputFields(): OperationField[] {
-    return listRegisteredOperationSchemas().flatMap((schema) => schema.outputFields)
 }
 
 function buildMetadataPatches(schema: SchemaPayload): Array<{ op: string; path: string; value?: unknown }> {
@@ -154,9 +149,13 @@ function buildBaseSchemaAlignmentPatches(
     return patches
 }
 
-/** Applies the base account schema (union of registered operation outputs) on a newly created result source. */
-export async function applyBaseAccountSchema(sourcesApi: SourcesApi, sourceId: string): Promise<void> {
-    const baseSchema = buildBaseAccountSchema(registeredOutputFields())
+/** Applies the base account schema for the invoking operation on a newly created result source. */
+export async function applyBaseAccountSchema(
+    sourcesApi: SourcesApi,
+    sourceId: string,
+    outputFields: OperationField[] = []
+): Promise<void> {
+    const baseSchema = buildBaseAccountSchema(outputFields)
     let schema = await getAccountSchema(sourcesApi, sourceId)
 
     if (!schema?.id) {
@@ -172,7 +171,8 @@ export async function applyBaseAccountSchema(sourcesApi: SourcesApi, sourceId: s
 export async function createDelimitedFileResultSource(
     sourcesApi: SourcesApi,
     sourceName: string,
-    ownerId: string
+    ownerId: string,
+    outputFields: OperationField[] = []
 ): Promise<string> {
     const sourceId = await createSource(
         sourcesApi,
@@ -190,7 +190,7 @@ export async function createDelimitedFileResultSource(
         { provisionAsCsv: true }
     )
 
-    await applyBaseAccountSchema(sourcesApi, sourceId)
+    await applyBaseAccountSchema(sourcesApi, sourceId, outputFields)
     return sourceId
 }
 
@@ -198,7 +198,8 @@ export async function createDelimitedFileResultSource(
 export async function resolveSourceByName(
     sourcesApi: SourcesApi,
     sourceName: string,
-    token: string
+    token: string,
+    outputFields: OperationField[] = []
 ): Promise<string> {
     const existing = await findSourceByName(sourcesApi, sourceName)
     if (existing?.id) {
@@ -208,7 +209,7 @@ export async function resolveSourceByName(
 
     try {
         const ownerId = resolveTokenIdentity(token)
-        return await createDelimitedFileResultSource(sourcesApi, sourceName, ownerId)
+        return await createDelimitedFileResultSource(sourcesApi, sourceName, ownerId, outputFields)
     } catch (error) {
         const retried = await findSourceByName(sourcesApi, sourceName)
         if (retried?.id) {
