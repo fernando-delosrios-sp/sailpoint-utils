@@ -11,12 +11,16 @@ description: >
   Platform: subagent-capable runtime required (Claude Code, Codex, etc.).
   No executing-plans fallback — use spec-driven schema instead.
 
-  Required skills: brainstorming, writing-plans, using-git-worktrees,
-  subagent-driven-development (transitive: test-driven-development,
-  requesting-code-review), finishing-a-development-branch. Each artifact/apply
+  Required skills: brainstorming, writing-plans, subagent-driven-development
+  (transitive: test-driven-development, requesting-code-review),
+  finishing-a-development-branch. using-git-worktrees is required only when
+  the user chooses the worktree path at apply step 1. Each artifact/apply
   step PRECHECKs skills before invoking; STOP with clear error if missing.
 
-  Apply runs autonomous verify-fix until verify.md shows PASS before done.
+  Apply prompts for workspace choice (local branch vs isolated worktree) before
+  any executor dispatch. Worktree path squash-merges back to the original
+  branch before verify. Apply runs autonomous verify-fix until verify.md shows
+  PASS before handoff.
   design reorganizes raw brainstorm into Context / Goals / Decisions / Risks /
   Migration for tasks and plan guidance.
 
@@ -329,10 +333,13 @@ artifacts:
 
       ## STEPS
       1. **PRECHECK — apply completion gate** (apply step 2b MUST have passed;
-         if any fail, apply loops in step 3 — do NOT hand off to user):
+         worktree path: apply step 2 merge gate MUST have passed first; if any
+         fail, apply loops in step 3 — do NOT hand off to user):
+         - On original branch (worktree path: after squash merge in apply step 2)
          - No unchecked tasks: `! grep -q '^- \[ \]' openspec/changes/<change-name>/tasks.md`
          - Tests green: `<project test command from plan.md>` exit code 0
          - Structural validation: `openspec validate --all --json` — every item `"valid": true`
+         - Design/specs coherence and deferred-dogfood checks from step 2b already PASS
       2. Invoke **openspec-verify-change** via Skill tool (or `/opsx:verify`).
          If unavailable, run checks 3–7 manually.
       3. **Structural validation**: `openspec validate --all --json` at repo
@@ -352,18 +359,20 @@ artifacts:
          Overwrite on each apply loop iteration until Overall Decision is ✅ PASS.
 
       **Timing**: verify.md is produced inside apply step 3 (verify-fix loop),
-      NOT after apply "finishes". Standalone `/opsx:verify` is for interruption
-      re-runs only; failures route back to apply step 3.
+      NOT after apply "finishes". Standalone `/opsx:verify` after a completed
+      apply should be a no-op confirmation — if it warns or FAILs, apply step 2b
+      was incomplete. Interruption re-runs route failures back to apply step 3.
 
       ## EXPECTATIONS
-      - Deliverable: verify.md with Overall Decision ✅ PASS before apply done.
+      - Deliverable: verify.md with Overall Decision ✅ PASS before apply handoff.
       - Apply owns verify-fix autonomously — never defer blocking items to user.
-      - Normal apply cycle must not end with ❌ FAIL.
+      - A completed apply cycle must not end with ❌ FAIL or surprise standalone warnings.
 
       ## NARROWING
       - Do not re-check git status, commit counts, or delta-spec sync here.
       - Do not hand off verify failures to the user.
       - Do not treat verify as optional post-apply chore.
+      - Do not run verify on a worktree before squash merge to the original branch.
     requires:
       - plan
 
@@ -434,9 +443,9 @@ apply:
   tracks: tasks.md
   instruction: |
     ## Role
-    Apply-phase orchestrator. Execute plan.md via subagent-driven-development,
-    run autonomous verify-fix until PASS, write retrospective, archive with
-    commit, then open PR last.
+    Apply-phase orchestrator. Prompt for workspace choice, execute plan.md via
+    subagent-driven-development, run autonomous verify-fix until PASS, write
+    retrospective, archive with commit, then open PR last.
 
     ## INPUT
     | Priority | Source | Purpose |
@@ -444,31 +453,42 @@ apply:
     | HIGH | plan.md | Micro-task executor input |
     | HIGH | tasks.md | Checkbox progress (tracked) |
     | HIGH | specs/**/*.md | Scenario → test coverage gate |
-    | MED | using-git-worktrees skill | Isolated workspace (apply step 1) |
-    | MED | design.md | Implementation guidance |
+    | MED | design.md | Implementation + coherence gate |
     | MED | verify artifact instruction | Verify-fix loop checks |
     | MED | retrospective artifact instruction | Post-verify analysis |
     | MED | git-commit skill | Archive step 5d (manual fallback if missing) |
+    | LOW | using-git-worktrees skill | Worktree path only (apply step 2) |
     | LOW | changelog-generator skill | Changelog task in step 2b |
 
     ## STEPS
     0. **Pre-flight — skills and tooling**
        Required skills (STOP if missing — no silent fallback):
-       - using-git-worktrees
        - subagent-driven-development (transitive: test-driven-development,
          requesting-code-review)
        - finishing-a-development-branch
-       Optional: changelog-generator, openspec-verify-change
+       Optional path-specific: using-git-worktrees (worktree path only — step 1
+       will STOP if user chooses worktree and skill is missing)
+       Optional helpers: changelog-generator, openspec-verify-change
        Confirm project CLI tools from plan.md on PATH. If missing, STOP.
        (`git-commit` is invoked in archive step 5d — manual fallback if absent.)
 
-    1. **Workspace — using-git-worktrees**
-       Invoke via Skill tool to create an isolated git worktree for this change.
+    1. **Workspace choice — user gate (BLOCKING)**
+       Record `ORIGINAL_BRANCH=$(git branch --show-current)`.
+       Explain the context switch: an isolated git worktree moves implementation
+       to a separate checkout and later squash-merges back; staying local keeps
+       all work on `$ORIGINAL_BRANCH` in this session.
+       Ask ONE question — wait for explicit answer before step 2:
+       - **Worktree** — isolated checkout via using-git-worktrees; executor runs
+         in the worktree; commits squash-merge back to `$ORIGINAL_BRANCH`
+       - **Local** — continue on `$ORIGINAL_BRANCH` (default when user has no
+         preference — offer both; do not auto-create a worktree)
+       Do NOT invoke using-git-worktrees or dispatch a worktree-bound subagent
+       until the user chooses Worktree.
 
     2. **Executor — subagent-driven-development**
-       Invoke via Skill tool. Tell executor:
+       Shared executor brief (both paths):
        - Read plan.md micro-tasks; update tasks.md checkboxes as coarse tasks complete
-       - Work within the created worktree; do NOT mark `[x]` until tests pass and lint clean
+       - Do NOT mark `[x]` until tests pass and lint clean
        - Complete Documentation and Changelog groups last
        - Every `#### Scenario:` maps to passing automated test before reporting done
        - Run `openspec validate --all --json`; fix `"valid": false` items
@@ -476,20 +496,44 @@ apply:
        REFACTOR); requesting-code-review (per-task + final review).
        No `executing-plans` fallback — use spec-driven schema on non-subagent platforms.
 
-    2b. **Completion gate** (re-run after every fix in step 3):
+       **Local path** (user chose Local):
+       - Invoke subagent-driven-development on `$ORIGINAL_BRANCH` in the current checkout.
+
+       **Worktree path** (user chose Worktree):
+       a. **PRECHECK** — Confirm `using-git-worktrees` in available skills. If
+          missing, STOP (offer Local path or install Superpowers).
+       b. Invoke **using-git-worktrees** via Skill tool for this change.
+       c. Invoke **subagent-driven-development** bound to the created worktree.
+          Tell executor: all implementation commits happen inside the worktree;
+          stage and commit all work before reporting done; working tree clean in
+          the worktree when finished.
+       d. **Merge gate** (BLOCKING before step 2b — worktree path only):
+          - Squash-merge worktree commits into `$ORIGINAL_BRANCH` (single commit
+            on the original branch preferred; follow using-git-worktrees skill)
+          - Return session context to `$ORIGINAL_BRANCH` in the original checkout
+          - `git branch --show-current` equals `$ORIGINAL_BRANCH`
+          - `git status --porcelain` empty on `$ORIGINAL_BRANCH`
+          Do NOT enter step 2b or step 3 while still on the worktree branch/path.
+
+    2b. **Completion gate — verify-aligned** (re-run after every fix in step 3):
+       Run on `$ORIGINAL_BRANCH`. Every row must PASS before step 3:
        - All tasks.md checkboxes `[x]` (including Documentation/Changelog)
-       - Tests: plan.md canonical command exit 0; every scenario has passing test
+       - Tests: plan.md canonical command exit 0; every `#### Scenario:` has passing test
        - Lint/format: plan.md commands; zero new warnings from this change
        - `openspec validate --all --json` — all `"valid": true`
+       - **Design/specs coherence**: each design.md decision has a corresponding
+         requirement/scenario; material drift is FAIL — fix before step 3
+       - **Deferred dogfood** (when plan.md has `[~]` rows): each deferred manual
+         check has an equivalent automated test, or record true gap for retro §2
+         (blocks if §5 would be empty while `[~]` rows exist)
        - Documentation tasks reflect actual behavior
        - Changelog: changelog-generator if available, else manual
-       - Commits: stage and commit all implementation work; working tree clean
-         (`git status --porcelain` empty) before step 3
+       - Commits: all implementation work committed; `git status --porcelain` empty
 
-    3. **Verify-fix loop** (BLOCKING — apply NOT complete until ✅ PASS):
-       Repeat: (a) invoke openspec-verify-change or manual verify checks →
-       verify.md; (b) on ❌ FAIL fix immediately — do NOT ask user, do NOT open PR;
-       (c) re-run 2b, return to (a). Proceed to step 4 only on ✅ PASS.
+    3. **Verify-fix loop** (BLOCKING — apply handoff NOT allowed until ✅ PASS):
+       Repeat on `$ORIGINAL_BRANCH`: (a) invoke openspec-verify-change or manual
+       verify checks → verify.md; (b) on ❌ FAIL fix immediately — do NOT ask user,
+       do NOT open PR; (c) re-run 2b, return to (a). Proceed to step 4 only on ✅ PASS.
 
     4. **Retrospective** (while context is hot, BEFORE PR):
        Produce retrospective artifact (own PRECHECK). Part of same PR deliverables.
@@ -532,15 +576,19 @@ apply:
 
     ## EXPECTATIONS
     - Deliverable: branch PR with all artifacts, synced specs, archived change,
-      retrospective, verify PASS, changelog, updated docs.
-    - Apply owns verify end-to-end in one session.
+      retrospective, verify PASS, changelog, updated docs — all on `$ORIGINAL_BRANCH`.
+    - Apply owns verify end-to-end; handoff only after verify.md ✅ PASS.
+    - Standalone `/opsx:verify` after apply should confirm PASS, not surface new FAILs.
+    - Worktree path: implementation commits squash-merged to original branch before verify.
     - Archive incomplete until post-commit gate (5e) passes — including 5d commit.
     - No skipping archive commit because git-commit skill is missing — use manual fallback.
 
     ## NARROWING
     - No silent fallback for missing required skills.
+    - No auto-worktree without user choice at step 1.
     - No executing-plans on non-subagent platforms.
     - No PR before retrospective + archive commit.
     - No deferring verify failures to the user (schema violation).
     - No reporting apply complete with ❌ FAIL in verify.md.
+    - No verify or handoff while still on a worktree checkout (worktree path).
 

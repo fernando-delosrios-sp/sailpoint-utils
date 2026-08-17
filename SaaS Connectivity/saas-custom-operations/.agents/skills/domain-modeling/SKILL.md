@@ -1,6 +1,6 @@
 ---
 name: domain-modeling
-description: Build and sharpen a project's domain model. Use when pinning down domain terminology or ubiquitous language, recording architectural decisions (or capability specs when OpenSpec is present), or when another skill needs to maintain the domain model.
+description: Build and sharpen a project's domain model. Use when pinning down domain terminology or ubiquitous language, recording architectural decisions (ADRs plus capability specs when OpenSpec is present), or when another skill needs to maintain the domain model.
 ---
 
 # Domain Modeling
@@ -20,26 +20,30 @@ When OpenSpec is absent and the user needs to initialize it, suggest the `opensp
 
 ## OpenSpec mode
 
-See [OPENSPEC-MODE.md](./OPENSPEC-MODE.md) for detection, flat capability naming, ubiquitous language, decision routing, and spec format.
+See [OPENSPEC-MODE.md](./OPENSPEC-MODE.md) for detection, flat capability naming, ubiquitous language, spec/ADR routing, and cross-linking.
 
-Do **not** use `CONTEXT.md`, `CONTEXT-MAP.md`, or `docs/adr/` in OpenSpec mode.
+Do **not** use `CONTEXT.md` or `CONTEXT-MAP.md` in OpenSpec mode.
+
+**Specs and ADRs coexist:** capability specs encode *what*; ADRs in `docs/adr/` encode *why*. ferspec and similar schemas delegate ADR creation here.
 
 ### File structure
 
 ```
-openspec/
-├── config.yaml
-├── specs/
-│   ├── ubiquitous-language/spec.md       ← replaces CONTEXT.md
-│   ├── module-ordering/spec.md           ← flat; category in slug
-│   ├── service-auth/spec.md
-│   └── use-case-cancel-order/spec.md
-└── changes/<change-name>/specs/          ← pending decision/spec deltas
+/
+├── docs/
+│   └── adr/                              ← rationale (why)
+└── openspec/
+    ├── config.yaml
+    ├── specs/
+    │   ├── ubiquitous-language/spec.md   ← replaces CONTEXT.md
+    │   ├── module-ordering/spec.md       ← flat; category in slug
+    │   └── service-auth/spec.md
+    └── changes/<change-name>/specs/      ← pending spec deltas
 ```
 
 Category is a kebab-case prefix on the capability slug (`<category>-<name>`). No nested folders like `specs/modules/<name>/spec.md`.
 
-Create capability folders lazily — only when you have something to write.
+Create capability folders and `docs/adr/` lazily — only when you have something to write.
 
 ### During the session
 
@@ -67,7 +71,7 @@ When usage is **mixed or conflicting**, surface the conflict and **propose align
 
 The ubiquitous-language spec is a glossary only. No implementation details, no scratch-pad content.
 
-#### Offer spec updates sparingly
+#### Offer specs and ADRs sparingly
 
 Only offer to record an architectural decision when all three are true:
 
@@ -77,8 +81,13 @@ Only offer to record an architectural decision when all three are true:
 
 If any of the three is missing, skip it.
 
-- **Already implemented** → add ADDED/MODIFIED requirements to the most relevant existing capability spec
-- **Change required** → route through OpenSpec change workflow (`openspec/changes/<name>/specs/<capability>/spec.md`; suggest `/opsx:propose`)
+- **Behavioral contract** → ADDED/MODIFIED requirements in the most relevant capability spec (canonical if already implemented; delta under `openspec/changes/<name>/specs/<capability>/spec.md` if change is required — suggest `/opsx:propose`)
+- **Non-obvious rationale** → ADR in `docs/adr/` using [ADR-FORMAT.md](./ADR-FORMAT.md)
+- **Both apply** → write both; cross-link per [OPENSPEC-MODE.md](./OPENSPEC-MODE.md)
+
+When working inside a ferspec change, `discovery.md` and `design.md` Decisions are working docs — distill durable decisions into ADRs as they crystallise or during apply Documentation tasks.
+
+For complex ADRs (MADR, supersession chains), suggest the `architecture-decision-records` skill.
 
 See [OPENSPEC-MODE.md](./OPENSPEC-MODE.md) for what qualifies and how to name capability specs.
 
@@ -149,3 +158,5 @@ Only offer to create an ADR when all three are true:
 3. **The result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
 
 If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md).
+
+For complex ADRs (MADR, supersession chains), suggest the `architecture-decision-records` skill.

@@ -1,6 +1,6 @@
 # Verification Report
 
-> Generated inside apply step 2 (verify-fix loop). Apply must not report done until Overall Decision is ✅ PASS — fix blocking items autonomously; do not hand verify failures to the user. Standalone `/opsx:verify` is for re-runs after interruption.
+> Generated inside apply step 3 (verify-fix loop) on the original branch. Apply must not hand off until Overall Decision is ✅ PASS — fix blocking items autonomously in step 3; do not hand verify failures to the user. Worktree path: squash merge to the original branch before step 3. Standalone `/opsx:verify` after a completed apply should confirm PASS; new FAILs mean apply step 2b was incomplete.
 
 **Change**: `<change-name>`
 **Verified at**: `YYYY-MM-DD HH:mm`
@@ -86,4 +86,5 @@ For manual dogfood / smoke tasks marked as `[~]` deferred in plan.md, list the e
 **Next Step**:
 
 <Explain the next action>
+
 

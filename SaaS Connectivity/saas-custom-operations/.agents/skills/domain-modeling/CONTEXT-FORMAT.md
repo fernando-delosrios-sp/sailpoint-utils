@@ -1,6 +1,6 @@
-# CONTEXT.md Format
+**Legacy mode only.** When `openspec/config.yaml` or `openspec/specs/` exists, maintain vocabulary in `openspec/specs/ubiquitous-language/spec.md` per [OPENSPEC-MODE.md](./OPENSPEC-MODE.md) instead of CONTEXT.md.
 
-> **Legacy mode only.** When `openspec/config.yaml` or `openspec/specs/` exists, maintain vocabulary in `openspec/specs/ubiquitous-language/spec.md` per [OPENSPEC-MODE.md](./OPENSPEC-MODE.md) instead of CONTEXT.md.
+# CONTEXT.md Format
 
 ## Structure
 
@@ -60,4 +60,3 @@ The skill infers which structure applies:
 - If neither exists, create a root `CONTEXT.md` lazily when the first term is resolved
 
 When multiple contexts exist, infer which one the current topic relates to. If unclear, ask.
-
