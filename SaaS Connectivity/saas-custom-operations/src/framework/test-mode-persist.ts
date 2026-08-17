@@ -1,6 +1,6 @@
-import { buildAccountAttributes, PersistVerificationError } from './persist-result'
+import { buildAccountAttributes, mergePersistAttributes, PersistVerificationError } from './persist-result'
 import { recordInhibitedPersist } from './payload-persist-collector'
-import { OperationSchemaContract, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
+import { OperationSchemaContract, PersistFn, PersistOptions, VerifyPersistedFn, WriteRegistry } from './types'
 
 export interface TestModePersistOptions {
     sourceId: string
@@ -16,8 +16,9 @@ export function createTestModePersist<TOutput extends object>(
 ): { persist: PersistFn<TOutput>; verifyPersisted: VerifyPersistedFn } {
     const log = options.log ?? console.log
 
-    const persist: PersistFn<TOutput> = async (id, attributes, status) => {
-        const attributeKeys = attributes ? Object.keys(attributes) : []
+    const persist: PersistFn<TOutput> = async (id, attributes, status, persistOptions?: PersistOptions) => {
+        const mergedAttributes = mergePersistAttributes(attributes, persistOptions)
+        const attributeKeys = mergedAttributes ? Object.keys(mergedAttributes) : []
         if (attributeKeys.length > 0) {
             log(`[test-mode] inhibited ensureSourceSchema keys=${attributeKeys.join(',')}`)
         }
@@ -25,7 +26,7 @@ export function createTestModePersist<TOutput extends object>(
         const built = buildAccountAttributes(
             options.sourceId,
             id,
-            attributes,
+            mergedAttributes,
             status,
             options.operationSchema?.outputFields
         )

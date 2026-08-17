@@ -38,7 +38,7 @@ Configure a **source name** in connector config (`sourceName`). On each invocati
 2. Creates a DelimitedFile source with CSV provisioning if missing (owner = token identity), applying the **base account schema** (core attrs plus union of all registered operation output fields)
 3. Reconciles the account schema before each `ctx.persist` for the current operation's output fields (add-only for attributes added after source create)
 
-Core attributes are always ensured on the schema: `id` (identity), `status`, and `date`.
+Core attributes are always ensured on the schema: `id` (identity), `status`, `date`, and `details` (human-readable outcome text).
 
 **Token scopes:** The access token must allow source read/create/update and account create on the result source. PAT or OAuth client credentials used in workflows need `sp:manage:source`, `sp:manage:source-schema`, and account provisioning scopes for the tenant.
 
@@ -127,6 +127,7 @@ Each registered command documents its invoke contract, payloads, and workflow in
 |---|---|
 | `custom:example` | [src/operations/example/README.md](src/operations/example/README.md) |
 | `custom:governance-group-emails` | [src/operations/governance-group-emails/README.md](src/operations/governance-group-emails/README.md) |
+| `custom:access-sod-remediation` | [src/operations/access-sod-remediation/README.md](src/operations/access-sod-remediation/README.md) |
 | `custom:preventive-sod-check` | [src/operations/preventive-sod-check/README.md](src/operations/preventive-sod-check/README.md) |
 | `custom:sod-remediation` | [src/operations/sod-remediation/README.md](src/operations/sod-remediation/README.md) |
 
@@ -237,7 +238,8 @@ Content-Type: application/json
 After invoke, read persisted output from the result source using **Get Accounts** filtered by native identity:
 
 - Filter: `nativeIdentity eq "{requestId}"` (or a child id such as `{requestId}:detail`)
-- Map operation output attributes, `status`, and `date` from account attributes
+- Map operation output attributes, `status`, `date`, and optional `details` from account attributes
+- On failure, the framework upserts a result account with `status: failed` and `details` set to the error message (same text as invoke `{ error }`), so Get Accounts works for failed invocations too
 
 The reference workflow export demonstrates this pattern in the **Read SaaS Custom Operation Result** step.
 
@@ -361,6 +363,7 @@ ctx.verifyPersisted(ids)
 - **`id`** — native account identity (often `ctx.requestId` or a derived child id like `` `${ctx.requestId}:detail` ``)
 - **`attributes`** — only keys declared in the operation output schema; typed per `OperationSignature.output`
 - **`status`** — optional, defaults to `"success"`
+- **`details`** — optional STRING on success persists for informative text; on terminal failure the framework sets `details` to the normalized error message automatically
 - **`date`** — always set automatically to the current timestamp
 - **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
 
@@ -388,7 +391,7 @@ Run `npm run templates` after adding or modifying operations under `src/operatio
 
 | File | Purpose |
 |---|---|
-| `account-schema.json` | Reference account schema — core attrs (`id`, `status`, `date`) plus union of operation output fields |
+| `account-schema.json` | Reference account schema — core attrs (`id`, `status`, `date`, `details`) plus union of operation output fields |
 | `access-token.md` | Shared OAuth client-credentials guide with tenant placeholders |
 | `workflow-invocation.md` | Per-operation invoke body, read-result, and child-identity steps |
 

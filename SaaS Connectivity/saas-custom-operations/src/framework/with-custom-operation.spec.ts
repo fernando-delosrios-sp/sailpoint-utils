@@ -8,6 +8,7 @@ import {
 } from './operation-schema-registry'
 import { createRequestContext } from './request-context'
 import { clearInFlightInvocationsForTests } from './invocation-guard'
+import { beginPayloadOutputCapture, endPayloadOutputCapture } from './payload-persist-collector'
 import { KEEP_ALIVE_INTERVAL_MS } from './invocation-guard'
 import { customOperation, normalizeAccessToken, parseStandardInput } from './with-custom-operation'
 
@@ -365,9 +366,18 @@ describe('customOperation', () => {
     it('sends status failed for persist verification failure instead of throwing', async () => {
         vi.useFakeTimers()
         try {
-            const res = { send: vi.fn() }
+            const res = mockResponse()
+            const upsertAttributes: Record<string, unknown>[] = []
             const accountsApi = {
-                createAccountV1: vi.fn().mockResolvedValue({}),
+                createAccountV1: vi.fn().mockImplementation(async (req: {
+                    accountAttributesCreate?: { attributes?: Record<string, unknown> }
+                }) => {
+                    const attributes = req.accountAttributesCreate?.attributes
+                    if (attributes) {
+                        upsertAttributes.push(attributes)
+                    }
+                    return {}
+                }),
                 putAccountV1: vi.fn().mockResolvedValue({}),
                 deleteAccountAsyncV1: vi.fn().mockResolvedValue({}),
                 listAccountsV1: vi.fn().mockResolvedValue({ data: [] }),
@@ -398,12 +408,67 @@ describe('customOperation', () => {
                         error: expect.stringMatching(/account not found after retries/),
                     })
                 )
+                expect(
+                    upsertAttributes.some(
+                        (attributes) =>
+                            attributes.status === 'failed' &&
+                            String(attributes.details).match(/account not found after retries/)
+                    )
+                ).toBe(true)
             })
             await vi.runAllTimersAsync()
             await assertion
         } finally {
             vi.useRealTimers()
         }
+    })
+
+    it('persists failed account with details when handler throws in test mode', async () => {
+        process.env.SPCX_TEST_MODE = '1'
+        const res = mockResponse()
+        const wrapped = customOperation<TestOperation>(
+            async () => {
+                throw new Error('operation failed')
+            },
+            { sourceId: 'source-1' }
+        )
+
+        beginPayloadOutputCapture()
+        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-fail-details' }, res as any)
+        const inhibited = endPayloadOutputCapture()
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({ status: 'failed', error: expect.stringMatching(/operation failed/) })
+        )
+        expect(inhibited).toEqual([
+            expect.objectContaining({
+                identity: 'req-fail-details',
+                status: 'failed',
+                attributes: expect.objectContaining({
+                    details: expect.stringMatching(/operation failed/),
+                }),
+            }),
+        ])
+    })
+
+    it('persists failed account with details when handler sends failed response', async () => {
+        process.env.SPCX_TEST_MODE = '1'
+        const res = mockResponse()
+        const wrapped = customOperation<TestOperation>(async (ctx) => {
+            ctx.res.send({ status: 'failed', error: 'form create failed' })
+        })
+
+        beginPayloadOutputCapture()
+        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-send-failed' }, res as any)
+        const inhibited = endPayloadOutputCapture()
+
+        expect(inhibited).toEqual([
+            expect.objectContaining({
+                identity: 'req-send-failed',
+                status: 'failed',
+                attributes: expect.objectContaining({ details: 'form create failed' }),
+            }),
+        ])
     })
 })
 

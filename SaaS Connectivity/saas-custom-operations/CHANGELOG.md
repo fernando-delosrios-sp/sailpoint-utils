@@ -4,13 +4,19 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ## Unreleased
 
+### 🔧 Improvements
+
+- **Failed result accounts with `details`** — Terminal custom operation failures upsert a result-source account for `requestId` with `status: failed` and mandatory schema attribute `details` carrying the error message, so workflows can read failures via Get Accounts as well as invoke `{ status, error }`. Handlers may set optional informative `details` on success persists.
+
 ### ✨ New Features
 
+- **`custom:access-sod-remediation`** — Scans enabled roles and access profiles in scope for intrinsic SoD policy violations (via `policyQuery` intersection, not predict), creates policy-owner remediation forms per (access item, policy) pair, and persists parent rollup on `requestId` plus per-form child accounts at `{requestId}:{accessItemId}:{policyId}`. Adds `src/isc/sod-policies/` and offline invoke via `payloads/access-sod-remediation-offline.json`.
 - **`custom:preventive-sod-check`** — Evaluates executing GRANT_ACCESS requests for an identity via ISC SoD prediction and persists `preventive-sod-check:situation-summary` and `preventive-sod-check:violated-policy-names` for workflow branching. Adds ISC helpers under `src/isc/access-requests/`, `src/isc/events-search/`, and `src/isc/sod-prediction/`; offline invoke via `payloads/preventive-sod-check.json`.
 - **`custom:governance-group-emails`** — Resolves a governance group (workgroup) by display name and persists member email addresses as `governance-group-emails:emails: string[]` for workflow BCC and distribution use. Adds `src/isc/governance-groups/` ISC client wrappers (`listWorkgroupsV1`, paginated `listWorkgroupMembersV1`) and offline invoke support via `payloads/governance-group-emails-offline.json`.
 
 ### 💥 Breaking Changes
 
+- **`custom:sod-remediation` persist keys** — Renames `sod-remediation:situation-summary` to `sod-remediation:form-email-body`, `sod-remediation:situation-header` to `sod-remediation:form-email-header`, and `sod-remediation:owner-email` to `sod-remediation:form-email-recipient`. `sod-remediation:form-url` is unchanged. Downstream workflows must update Get Accounts / Send Email JSONPath. Bundled `workflows/SOD Remediation - Violation Response.json` is updated.
 - **`custom:preventive-sod-check` input semantics** — `identityId` is optional. Provide `identityId` alone for identity mode, or `accessRequestId` for request mode (identity resolved from the access request). When both are supplied, `accessRequestId` wins and `identityId` is ignored with a logged warning.
 - **`custom:preventive-sod-check` output semantics** — Adds `preventive-sod-check:has-violation` (boolean). When `accessRequestId` is provided, `has-violation` and `violated-policy-names` reflect violations **introduced by that request** (predict delta), not the full identity state. Identity-only invoke (no `accessRequestId`) unions active violations with inflight predict results. Request mode returns `has-violation: false` when the identity already violates SoD but the target request adds no new violation.
 - **Local invoke rename** — `npm run test:operation` is now `npm run call:op`. Invoke payloads live under `payloads/` and use `type` (matching spcx/workflow invoke shape) instead of `command`.

@@ -1,5 +1,6 @@
 import { CommandHandler, ConnectorError, Context, Response } from '@sailpoint/connector-sdk'
 import { toConnectorError } from './connector-error'
+import { persistFailedResult } from './failure-persist'
 import {
     clearInFlightInvocation,
     getInFlightInvocation,
@@ -108,6 +109,7 @@ export interface CustomOperationOptions extends RequestContextDependencies {
  * Auto-discovered operations resolve `operationSchema` from the build-time registry when omitted.
  * Failures are normalized via {@link toConnectorError} and returned as `{ status: 'failed', error }`
  * (HTTP 200) so calling workflows do not retry on spcx/platform 500s — unless the handler already sent a response.
+ * Terminal failures also upsert a result account with `status: failed` and `details` when request context is available.
  */
 export function customOperation<T extends OperationSignature>(
     handler: CustomOperationHandler<T>,
@@ -134,12 +136,18 @@ export function customOperation<T extends OperationSignature>(
 
         let responseSent = false
         let outcome: InvocationOutcome = { status: 'success' }
+        let activeCtx: RequestContext<InferOperationOutput<T>> | undefined
+        let pendingFailurePersist: Promise<void> | undefined
+
         const trackedRes: Response<any> = {
             send(output: unknown) {
                 responseSent = true
-                outcome = isFailedCommandOutput(output)
-                    ? { status: 'failed', error: output.error }
-                    : { status: 'success' }
+                if (isFailedCommandOutput(output)) {
+                    outcome = { status: 'failed', error: output.error }
+                    pendingFailurePersist = persistFailedResult(activeCtx?.requestId, output.error, activeCtx)
+                } else {
+                    outcome = { status: 'success' }
+                }
                 res.send(output)
             },
             saveState: (state) => res.saveState(state),
@@ -153,7 +161,10 @@ export function customOperation<T extends OperationSignature>(
             keepAliveTimer = startKeepAlive(trackedRes)
 
             try {
-                await runCustomOperation(context, input, trackedRes, handler, deps)
+                await runCustomOperation(context, input, trackedRes, handler, deps, (ctx) => {
+                    activeCtx = ctx
+                })
+                await pendingFailurePersist
                 return outcome
             } catch (e) {
                 const error = toConnectorError(e, context.commandType)
@@ -161,6 +172,7 @@ export function customOperation<T extends OperationSignature>(
                 if (!responseSent) {
                     trackedRes.send({ status: 'failed', error: error.message })
                 }
+                await pendingFailurePersist
                 return outcome
             } finally {
                 stopKeepAlive(keepAliveTimer)
@@ -186,7 +198,8 @@ async function runCustomOperation<T extends OperationSignature>(
     input: Record<string, unknown>,
     res: Response<any>,
     handler: CustomOperationHandler<T>,
-    deps: CustomOperationOptions
+    deps: CustomOperationOptions,
+    onContext?: (ctx: RequestContext<InferOperationOutput<T>>) => void
 ): Promise<void> {
         const { config, configProvided } = await resolveInvocationConfig(deps, context as ContextWithConfig)
         const testMode = configProvided ? isTestMode(config) : isTestMode({})
@@ -242,6 +255,8 @@ async function runCustomOperation<T extends OperationSignature>(
             testMode,
             onTestModePersist: testMode ? () => inhibitedPersistCount++ : undefined,
         })
+
+        onContext?.(requestContext)
 
         console.log(`[${standard.requestId}] custom operation started: ${context.commandType}`)
 

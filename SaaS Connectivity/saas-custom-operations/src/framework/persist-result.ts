@@ -7,7 +7,7 @@ import {
 } from './attribute-limits'
 import { RESERVED_OUTPUT_KEYS } from './output-schema'
 import { inferFromTsType, OperationField } from './schema-inference'
-import { PersistDependencies, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
+import { PersistDependencies, PersistFn, PersistOptions, VerifyPersistedFn, WriteRegistry } from './types'
 
 const DEFAULT_STATUS = 'success'
 /** ISC account indexing can take several seconds after createAccountV1. */
@@ -486,12 +486,24 @@ export async function upsertSourceAccount(
  * Persists operation output to the result source via account upsert (create or put by native identity).
  * Reconciles source schema before write. Verification runs by default.
  */
+export function mergePersistAttributes<TOutput extends object>(
+    attributes: Partial<TOutput> | undefined,
+    options?: PersistOptions
+): Partial<TOutput> | undefined {
+    const merged = attributes ? { ...attributes } : {}
+    if (options?.details !== undefined) {
+        ;(merged as Record<string, unknown>).details = options.details
+    }
+    return Object.keys(merged).length > 0 ? merged : undefined
+}
+
 export function createPersist<TOutput extends object>(
     deps: PersistDependencies,
     registry: WriteRegistry
 ): PersistFn<TOutput> {
-    return async (id: string, attributes?: Partial<TOutput>, status?: string, options?: { verify?: boolean }) => {
-        const attributeKeys = attributes ? Object.keys(attributes) : []
+    return async (id: string, attributes?: Partial<TOutput>, status?: string, options?: PersistOptions) => {
+        const mergedAttributes = mergePersistAttributes(attributes, options)
+        const attributeKeys = mergedAttributes ? Object.keys(mergedAttributes) : []
         if (deps.ensureSourceSchema) {
             await deps.ensureSourceSchema(attributeKeys)
         }
@@ -499,7 +511,7 @@ export function createPersist<TOutput extends object>(
         const built = buildAccountAttributes(
             deps.sourceId,
             id,
-            attributes,
+            mergedAttributes,
             status,
             deps.operationSchema?.outputFields
         )

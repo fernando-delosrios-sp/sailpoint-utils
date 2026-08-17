@@ -2,6 +2,7 @@ import { describe, expect, it, vi, afterEach } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { loadPayload, normalizePayloadConfig, runPayload, runPayloadFromPath } from './call-op'
+import { customOperation } from '../src/framework/with-custom-operation'
 import { writeFileSync, unlinkSync } from 'fs'
 import { tmpdir } from 'os'
 
@@ -139,6 +140,50 @@ describe('call-op', () => {
             unlinkSync(path)
             errorSpy.mockRestore()
         }
+    })
+
+    it('returns exit code 1 when handler response has failed status', async () => {
+        delete process.env.SPCX_TEST_MODE
+        const path = join(tmpdir(), `payload-failed-status-${Date.now()}.json`)
+        writeFileSync(
+            path,
+            JSON.stringify({
+                type: 'custom:governance-group-emails',
+                input: { requestId: 'exit-fail-001' },
+            })
+        )
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+        try {
+            expect(await runPayloadFromPath(path)).toBe(1)
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringMatching(/Missing required input field: groupName/))
+        } finally {
+            unlinkSync(path)
+            errorSpy.mockRestore()
+        }
+    })
+
+    it('returns failed inhibited persist with details for customOperation failed response', async () => {
+        delete process.env.SPCX_TEST_MODE
+        const failedOperation = customOperation(async (ctx) => {
+            ctx.res.send({ status: 'failed', error: 'operation failed' })
+        })
+
+        const { response, inhibitedPersists } = await runPayload(
+            {
+                type: 'custom:probe-failed',
+                input: { requestId: 'offline-fail-001' },
+            },
+            { 'custom:probe-failed': failedOperation }
+        )
+
+        expect(response).toEqual({ status: 'failed', error: 'operation failed' })
+        expect(inhibitedPersists).toEqual([
+            expect.objectContaining({
+                identity: 'offline-fail-001',
+                status: 'failed',
+                attributes: expect.objectContaining({ details: 'operation failed' }),
+            }),
+        ])
     })
 
     it('documents npm call:op script in package.json', () => {

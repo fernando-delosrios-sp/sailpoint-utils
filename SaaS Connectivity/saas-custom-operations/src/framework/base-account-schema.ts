@@ -7,12 +7,13 @@ import {
     OperationField,
 } from './schema-inference'
 
-const CORE_ATTRIBUTE_NAMES = ['id', 'status', 'date'] as const
+const CORE_ATTRIBUTE_NAMES = ['id', 'status', 'date', 'details'] as const
 
 const CORE_ATTRIBUTES: SchemaAttribute[] = [
     { name: 'id', type: 'STRING', isMulti: false },
     { name: 'status', type: 'STRING', isMulti: false },
     { name: 'date', type: 'STRING', isMulti: false },
+    { name: 'details', type: 'STRING', isMulti: false },
 ]
 
 function toAttributeDefinition(attr: InferredSchemaAttribute): SchemaAttribute {
@@ -41,7 +42,7 @@ export function collectBaseSchemaAttributes(outputFields: OperationField[]): Map
     }
 
     for (const field of outputFields) {
-        if (RESERVED_OUTPUT_KEYS.has(field.name)) {
+        if (RESERVED_OUTPUT_KEYS.has(field.name) || field.name === 'details') {
             continue
         }
 

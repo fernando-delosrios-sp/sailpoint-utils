@@ -8,6 +8,7 @@ import {
     IdentityHistoryApi,
     RolesApi,
     SearchApi,
+    SODPoliciesApi,
     SODViolationsApi,
     SourcesApi,
     TaskManagementApi,
@@ -40,12 +41,15 @@ export interface SailPointClients {
     governanceGroups: GovernanceGroupsApi
     accessRequests: AccessRequestsApi
     search: SearchApi
+    sodPolicies: SODPoliciesApi
     sodViolations: SODViolationsApi
 }
 
 /** Options for {@link PersistFn}. Verification runs by default; set verify to false to defer. */
 export interface PersistOptions {
     verify?: boolean
+    /** Human-readable outcome text (framework core attribute). Used by automatic failure persist. */
+    details?: string
 }
 
 /** Callback that persists operation output as an account on the result source. */

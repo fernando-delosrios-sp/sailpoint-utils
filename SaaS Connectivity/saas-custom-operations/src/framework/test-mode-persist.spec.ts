@@ -41,6 +41,25 @@ describe('createTestModePersist', () => {
         )
     })
 
+    it('records inhibited failed persist with details in attributes', async () => {
+        const lines: string[] = []
+        const registry = new Map<string, Record<string, unknown>>()
+        const { persist } = createTestModePersist(
+            { sourceId: 'test-mode-local', log: (line) => lines.push(line) },
+            registry
+        )
+
+        await persist('req-fail', undefined, 'failed', { verify: false, details: 'form create failed' })
+
+        expect(lines.some((line) => line.includes('[test-mode] inhibited persist identity=req-fail status=failed'))).toBe(
+            true
+        )
+        expect(registry.get('req-fail')).toMatchObject({
+            status: 'failed',
+            details: 'form create failed',
+        })
+    })
+
     it('does not log token values in persist output', async () => {
         const lines: string[] = []
         const { persist } = createTestModePersist(

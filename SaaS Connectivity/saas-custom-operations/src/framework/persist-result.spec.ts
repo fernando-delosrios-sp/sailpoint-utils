@@ -456,6 +456,52 @@ function createTestDeps(overrides: Partial<Parameters<typeof createPersist>[0]> 
 }
 
 describe('createPersist', () => {
+    it('stores optional details on success persist', async () => {
+        const deps = createTestDeps({
+            operationSchema: { outputFields: [{ name: 'outcome', type: 'string' }] },
+        })
+        const persist = createPersist<{ outcome: string }>(deps, new Map())
+
+        await persist('req-001', { outcome: 'done', details: 'Processed 3 of 5 items' } as never)
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                outcome: 'done',
+                details: 'Processed 3 of 5 items',
+                status: 'success',
+            })
+        )
+    })
+
+    it('stores details from persist options on failure', async () => {
+        const deps = createTestDeps()
+        const persist = createPersist<{ outcome: string }>(deps, new Map())
+
+        await persist('req-001', undefined, 'failed', { verify: false, details: 'operation failed' })
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                details: 'operation failed',
+            })
+        )
+        expect(deps.readAccount).not.toHaveBeenCalled()
+    })
+
+    it('truncates details longer than STRING limit', async () => {
+        const deps = createTestDeps()
+        const persist = createPersist(deps, new Map())
+        const longDetails = 'd'.repeat(300)
+
+        await persist('req-001', undefined, 'failed', { verify: false, details: longDetails })
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                details: 'd'.repeat(256),
+            })
+        )
+    })
+
     it('calls ensureSourceSchema before account create', async () => {
         const deps = createTestDeps()
         const persist = createPersist<{ errorCode: string }>(deps, new Map())

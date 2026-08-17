@@ -18,6 +18,29 @@ describe('formatSpreadJson', () => {
 })
 
 describe('formatPayloadOutputSummary', () => {
+    it('includes failed inhibited persist details in payload output summary', () => {
+        const formatted = formatPayloadOutputSummary({
+            type: 'custom:example',
+            requestId: 'offline-fail',
+            testMode: true,
+            inhibitedPersists: [
+                {
+                    identity: 'offline-fail',
+                    status: 'failed',
+                    attributes: {
+                        id: 'offline-fail',
+                        status: 'failed',
+                        details: 'operation failed',
+                    },
+                },
+            ],
+            response: { status: 'failed', error: 'operation failed' },
+        })
+
+        expect(formatted).toContain('"details": "operation failed"')
+        expect(formatted).toContain('"status": "failed"')
+    })
+
     it('includes invoke header, simulated persist, response, and primary output sections', () => {
         process.env.NO_COLOR = '1'
         const formatted = formatPayloadOutputSummary({
