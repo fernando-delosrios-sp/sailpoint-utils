@@ -130,6 +130,7 @@ function createOfflineSdkStub(): SailPointClients {
         createFormInstanceV1: async () => ({
             data: { standAloneFormUrl: 'https://offline.example.com/form/offline-instance' },
         }),
+        searchFormInstancesByTenantV1: async () => ({ data: [] }),
     }
     return {
         accounts: {
@@ -157,6 +158,10 @@ function createOfflineSdkStub(): SailPointClients {
         } as unknown as SailPointClients['governanceGroups'],
         accessRequests: { listAccessRequestStatusV1: stub } as unknown as SailPointClients['accessRequests'],
         search: { searchPostV1: stub } as unknown as SailPointClients['search'],
+        sodPolicies: {
+            listSodPoliciesV1: async () => ({ data: [] }),
+            getSodPolicyV1: async () => ({ data: {} }),
+        } as unknown as SailPointClients['sodPolicies'],
         sodViolations: { startPredictSodViolationsV1: stub } as unknown as SailPointClients['sodViolations'],
     }
 }

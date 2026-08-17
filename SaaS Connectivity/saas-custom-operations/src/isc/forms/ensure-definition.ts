@@ -10,6 +10,7 @@ export interface FormsApiLike {
     createFormDefinitionV1: CustomFormsApi['createFormDefinitionV1']
     patchFormDefinitionV1: CustomFormsApi['patchFormDefinitionV1']
     createFormInstanceV1: CustomFormsApi['createFormInstanceV1']
+    searchFormInstancesByTenantV1: CustomFormsApi['searchFormInstancesByTenantV1']
 }
 
 export interface EnsureFormDefinitionParams {

@@ -44,4 +44,17 @@ describe('toConnectorError', () => {
 
         expect(result.message).toBe('custom:example: boom')
     })
+
+    it('appends API response detail when available', () => {
+        const result = toConnectorError(
+            {
+                message: 'Request failed with status code 400',
+                status: 400,
+                data: { detailCode: '400.1 Bad Request', message: 'Invalid filter field enabled' },
+            },
+            'Failed to list roles'
+        )
+
+        expect(result.message).toContain('Invalid filter field enabled')
+    })
 })

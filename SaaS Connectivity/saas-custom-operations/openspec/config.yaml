@@ -1,4 +1,4 @@
-schema: superpowers-bridge
+schema: ferspec
 
 context: |
   Project: saas-custom-operations — a SailPoint Identity Security Cloud (ISC) SaaS connector
@@ -34,27 +34,25 @@ rules:
     - Always use the `changelog-generator` skill to maintain and enforce a changelog for all changes.
     - Preserve SailPoint connector-sdk patterns — do not deviate from std command handler signatures.
     - All new std operations must be declared in connector-spec.json before implementation.
-  brainstorm:
+  discovery:
     - Focus on connector operation scope, target API constraints, and ISC integration points.
-    - Do not write to docs/superpowers/specs/ — output stays in the change directory.
+    - Output stays in the change's discovery.md — not repo-root CONTEXT.md.
+    - Mark domain terms draft/conflicts-with-canonical/promote; conflict-check openspec/specs/ubiquitous-language/spec.md.
   proposal:
     - Keep proposals under 2 pages; emphasize Why and Capabilities over implementation detail.
     - Reuse existing openspec/specs/ capability names before proposing new ones.
   design:
     - Document authentication strategy, error handling, and account/entitlement mapping decisions.
     - Include rollback/migration notes when changing connector-spec.json or account schema.
+    - Invoke c4-diagram when the change touches 3+ containers (apps, services, databases, queues, external systems).
   specs:
     - Write requirements with GIVEN/WHEN/THEN scenarios for each std command behavior.
     - Use SHALL/MUST for normative connector contract language.
     - Map scenarios to Vitest test cases in src/*.spec.ts.
+    - Promote discovery Language terms marked `promote` into ubiquitous-language delta specs.
   tasks:
     - Include connector-spec.json updates when adding or modifying std commands.
     - Break tasks into chunks completable in one session; cover all spec scenarios with tests.
-  plan:
     - Record `npm test` as the canonical test command.
     - Include spcx run/pack-zip validation for integration-sensitive changes.
-  verify:
-    - Confirm connector-spec.json commands align with registered handlers in src/index.ts.
-    - Ensure Vitest coverage thresholds (60% statements, 50% branches) are met.
-  retrospective:
-    - Compare plan-vs-actual for connector operation additions and schema changes.
+    - Include mandatory Documentation and Changelog task groups per ferspec template.

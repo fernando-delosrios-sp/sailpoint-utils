@@ -90,6 +90,22 @@ describe('isc/forms seed-loader', () => {
         expect(picked.controlOptions).toEqual([{ label: 'Control 1', value: 'ctrl-1' }])
     })
 
+    it('pickDeclaredFormInputValues passes STRING group id fields through for access-sod-remediation seed', () => {
+        const seed = loadFormSeed(
+            resolve(__dirname, '../../operations/access-sod-remediation/seed/access-sod-remediation.seed.json')
+        )
+        const picked = pickDeclaredFormInputValues(seed, {
+            accessItemId: 'role-1',
+            groupAIds: '["ent-a","ent-b"]',
+            groupBIds: '["ent-c"]',
+            extraKey: 'ignored',
+        })
+
+        expect(picked.groupAIds).toBe('["ent-a","ent-b"]')
+        expect(picked.groupBIds).toBe('["ent-c"]')
+        expect(picked).not.toHaveProperty('extraKey')
+    })
+
     it('buildCreateFormDefinitionPayload applies runtime form name, owner, and watermark', () => {
         const seed = loadFormSeed(seedPath)
         const payload = buildCreateFormDefinitionPayload('Tenant SOD Form', 'owner-abc', seed)

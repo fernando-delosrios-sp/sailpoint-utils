@@ -16,6 +16,8 @@ describe('sdk-factory', () => {
         expect(typeof clients.governanceGroups.listWorkgroupMembersV1).toBe('function')
         expect(typeof clients.accessRequests.listAccessRequestStatusV1).toBe('function')
         expect(typeof clients.search.searchPostV1).toBe('function')
+        expect(typeof clients.sodPolicies.listSodPoliciesV1).toBe('function')
+        expect(typeof clients.sodPolicies.getSodPolicyV1).toBe('function')
         expect(typeof clients.sodViolations.startPredictSodViolationsV1).toBe('function')
     })
 })

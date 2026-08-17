@@ -1,0 +1,128 @@
+{
+    "description": "Access catalog SoD remediation — policy owner selects side to remove from role or access profile.",
+    "formInput": [
+        { "id": "accessItemId", "type": "STRING", "label": "Access Item ID", "description": "Role or access profile under review" },
+        { "id": "accessItemType", "type": "STRING", "label": "Access Item Type", "description": "ROLE or ACCESS_PROFILE" },
+        { "id": "accessItemName", "type": "STRING", "label": "Access Item Name", "description": "Display name of the access item" },
+        { "id": "policyId", "type": "STRING", "label": "Policy ID", "description": "Violated SoD policy id" },
+        { "id": "policyName", "type": "STRING", "label": "Policy Name", "description": "Violated SoD policy name" },
+        { "id": "groupAIds", "type": "STRING", "label": "Group A Entitlement IDs", "description": "JSON array of entitlement ids on group A side (launch-time workflow key)" },
+        { "id": "groupBIds", "type": "STRING", "label": "Group B Entitlement IDs", "description": "JSON array of entitlement ids on group B side (launch-time workflow key)" },
+        { "id": "groupAContentsHtml", "type": "STRING", "label": "Group A Contents HTML", "description": "HTML entitlement list for group A" },
+        { "id": "groupBContentsHtml", "type": "STRING", "label": "Group B Contents HTML", "description": "HTML entitlement list for group B" }
+    ],
+    "formElements": [
+        {
+            "id": "ctx-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Access Catalog Context",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "ctx-item",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Access Item",
+                            "showLabel": true,
+                            "description": "<p><strong>Item:</strong> <strong style=\"color:#1565c0;\">{{$.form.input.accessItemName}}</strong> <span style=\"color:#546e7a; font-size:90%; background-color:#eceff1; padding:2px 6px; border-radius:4px;\">{{$.form.input.accessItemType}}</span></p><p><strong>Policy:</strong> {{$.form.input.policyName}}</p>"
+                        },
+                        "validations": []
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "correct-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "Select the side whose entitlements should be removed from this access item definition.",
+                "label": "Correct Access Definition",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "remediation-side-select",
+                        "elementType": "SELECT",
+                        "key": "remediationSide",
+                        "config": {
+                            "label": "Side to remediate",
+                            "required": true,
+                            "forceSelect": true,
+                            "maximum": 1,
+                            "dataSource": {
+                                "dataSourceType": "STATIC",
+                                "config": {
+                                    "options": [
+                                        { "label": "Group A", "value": "groupA", "sublabel": "Remove group A entitlements" },
+                                        { "label": "Group B", "value": "groupB", "sublabel": "Remove group B entitlements" }
+                                    ]
+                                }
+                            }
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }, { "validationType": "DATA_SOURCE" }]
+                    },
+                    {
+                        "id": "group-columns",
+                        "elementType": "COLUMN_SET",
+                        "key": "",
+                        "config": {
+                            "label": "",
+                            "showLabel": false,
+                            "description": "",
+                            "columnCount": 2,
+                            "columns": [
+                                [
+                                    {
+                                        "id": "group-a-contents",
+                                        "elementType": "DESCRIPTION",
+                                        "key": "",
+                                        "config": {
+                                            "label": "Group A",
+                                            "showLabel": true,
+                                            "description": "{{$.form.input.groupAContentsHtml}}"
+                                        },
+                                        "validations": []
+                                    }
+                                ],
+                                [
+                                    {
+                                        "id": "group-b-contents",
+                                        "elementType": "DESCRIPTION",
+                                        "key": "",
+                                        "config": {
+                                            "label": "Group B",
+                                            "showLabel": true,
+                                            "description": "{{$.form.input.groupBContentsHtml}}"
+                                        },
+                                        "validations": []
+                                    }
+                                ]
+                            ]
+                        },
+                        "validations": []
+                    },
+                    {
+                        "id": "comments",
+                        "elementType": "TEXTAREA",
+                        "key": "comments",
+                        "config": {
+                            "label": "Comments",
+                            "required": false,
+                            "placeholder": "Optional notes for the remediation workflow"
+                        },
+                        "validations": []
+                    }
+                ]
+            },
+            "validations": []
+        }
+    ],
+    "formConditions": []
+}

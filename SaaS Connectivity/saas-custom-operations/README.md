@@ -378,9 +378,10 @@ ISC enforces account value storage limits on result sources: **128 characters** 
 ```bash
 npm install          # install dependencies
 npm test             # run Vitest suite with coverage
-npm run build        # codegen sidecars, then compile to dist/ via ncc
+npm run build        # codegen sidecars, then bundle to dist/ via ncc (packaging)
 npm run codegen:schemas  # regenerate *.schema.ts sidecars from OperationSignature
-npm run dev          # run locally with spcx
+npm run dev          # run locally with spcx (tsc watch → .dev-dist/)
+npm run debug        # same as dev without source maps
 npm run pack-zip     # build deployable connector package
 npm run templates    # generate operator artifacts (see below)
 ```

@@ -25,6 +25,27 @@ function extractMessage(error: unknown): string {
     return String(error)
 }
 
+function formatApiErrorDetail(error: unknown): string | undefined {
+    if (!isRecord(error)) {
+        return undefined
+    }
+
+    const data = error.data ?? (isRecord(error.response) ? error.response.data : undefined)
+    if (data === undefined || data === null) {
+        return undefined
+    }
+
+    if (typeof data === 'string') {
+        return data.trim() || undefined
+    }
+
+    try {
+        return JSON.stringify(data)
+    } catch {
+        return String(data)
+    }
+}
+
 /** Converts unknown errors into ConnectorError for ISC platform signaling. */
 export function toConnectorError(err: unknown, context?: string): ConnectorError {
     if (err instanceof ConnectorError) {
@@ -36,10 +57,12 @@ export function toConnectorError(err: unknown, context?: string): ConnectorError
     const status = extractHttpStatus(err)
     const type = status === 404 ? ConnectorErrorType.NotFound : ConnectorErrorType.Generic
     const statusSuffix = status !== undefined ? ` (HTTP ${status})` : ''
+    const detail = formatApiErrorDetail(err)
+    const detailSuffix = detail ? `: ${detail}` : ''
 
     if (err instanceof PersistVerificationError) {
-        return new ConnectorError(`${prefix}${message}${statusSuffix}`, ConnectorErrorType.Generic)
+        return new ConnectorError(`${prefix}${message}${statusSuffix}${detailSuffix}`, ConnectorErrorType.Generic)
     }
 
-    return new ConnectorError(`${prefix}${message}${statusSuffix}`, type)
+    return new ConnectorError(`${prefix}${message}${statusSuffix}${detailSuffix}`, type)
 }

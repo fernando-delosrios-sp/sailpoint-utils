@@ -1,0 +1,3 @@
+interface:
+  display_name: Apply Code Changes
+  short_description: Execute planned changes from tasks.md through completion gate — OpenSpec or direct folder path

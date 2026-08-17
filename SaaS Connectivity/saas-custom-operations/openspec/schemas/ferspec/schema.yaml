@@ -1,0 +1,178 @@
+name: ferspec
+version: 1
+description: |
+  Lean OpenSpec workflow — discovery, proposal, design, Gherkin specs, tasks, apply.
+  Matt Pocock skills for execution. Direct PR for bug fixes and typos.
+artifacts:
+  - id: discovery
+    generates: discovery.md
+    description: Thought process — scope, language, decisions, open questions, scenarios discussed
+    template: discovery.md
+    instruction: |
+      Write discovery.md using @./templates/discovery.md.
+
+      Scope not locked → invoke **grill-with-docs** (routes **grilling** + **domain-modeling**).
+      Output stays in this change's discovery.md — not repo-root CONTEXT.md.
+
+      Scope locked → write discovery.md manually; skip grilling.
+
+      **Language**: CONTEXT-FORMAT style (@domain-modeling CONTEXT-FORMAT.md). Mark each term
+      `draft`, `conflicts-with-canonical`, or `promote`. Conflict-check
+      `openspec/specs/ubiquitous-language/spec.md`.
+
+      Terms marked `promote` → ubiquitous-language delta during specs phase — not here
+      (canonical merge at archive).
+
+      Done when every section has content or an explicit deferral before proposal.
+    requires: []
+
+  - id: proposal
+    generates: proposal.md
+    description: Why, capabilities, impact — extracted from discovery
+    template: proposal.md
+    instruction: |
+      Extract from discovery.md — do not re-grill.
+
+      Write proposal.md using @./templates/proposal.md: Why, What Changes, Capabilities, Impact.
+      Resolve discovery Open questions or carry them forward explicitly.
+
+      Done when Capabilities lists every spec the specs phase will create or modify.
+    requires:
+      - discovery
+
+  - id: design
+    generates: design.md
+    description: Structured architecture from discovery; optional C4 when 3+ containers
+    template: design.md
+    instruction: |
+      Extract from discovery.md — do not re-grill or re-explore.
+
+      Write design.md using @./templates/design.md: Context, Goals/Non-Goals, Decisions,
+      Risks/Trade-offs, Migration Plan, Open Questions.
+
+      **C4 diagram (conditional)** — change touches 3+ containers (apps, services, databases,
+      queues, external systems):
+      - Invoke **c4-diagram** via Skill tool when present.
+      - Write `diagrams/<change-name>.drawio` in this change directory.
+      - Link from design.md §Architecture.
+      - Skill absent → skip diagram; do not block design.
+
+      Fewer than 3 containers or no structural change → omit §Architecture link.
+
+      Done when design.md reflects discovery decisions without re-opening settled forks.
+    requires:
+      - discovery
+
+  - id: specs
+    generates: "specs/**/*.md"
+    description: Gherkin-style delta specs; promote discovery Language terms
+    template: spec.md
+    instruction: |
+      Write one delta spec per capability in proposal Capabilities using @./templates/spec.md.
+
+      Invoke **gherkin-authoring** via Skill tool when present.
+
+      **Promote Language**: terms marked `promote` in discovery.md → ADDED or MODIFIED entries
+      in `specs/ubiquitous-language/spec.md` (or the project's ubiquitous-language spec).
+
+      OpenSpec wrapper: `### Requirement:` + `#### Scenario:` (exact four hashes).
+      Scenario steps: **GIVEN** / **WHEN** / **THEN** (+ **AND**). Requirements use SHALL or MUST.
+
+      MODIFIED: copy the full requirement block from `openspec/specs/<capability>/spec.md`, edit,
+      paste under `## MODIFIED Requirements`. Partial diffs fail at archive.
+
+      Done when every proposal capability has a delta spec and every requirement has ≥1 scenario.
+    requires:
+      - proposal
+
+  - id: tasks
+    generates: tasks.md
+    description: Checkbox tasks with mandatory Documentation and Changelog groups
+    template: tasks.md
+    instruction: |
+      Write tasks.md using @./templates/tasks.md exactly — apply parses `- [ ]` checkboxes.
+
+      Group implementation work under numbered ## headings. Each task: `- [ ] X.Y description`.
+
+      **Mandatory closing groups** (never omit):
+      - **Documentation** — concrete doc files from proposal Impact
+      - **Changelog** — entry created during apply via **changelog-generator**
+
+      Include a task to record the project's canonical test command when not obvious from the repo.
+
+      Done when every spec scenario and design decision maps to at least one task.
+    requires:
+      - specs
+      - design
+
+apply:
+  requires: [tasks]
+  tracks: tasks.md
+  instruction: |
+    Invoke **apply-code-changes** via Skill tool when present (OpenSpec adapter — default
+    for `/opsx:apply`; skill also supports Direct adapter for explicit task folders).
+
+    Pre-flight: resolve paths from CLI — never assume repo-local `openspec/changes/<name>/`. A
+    hint-derived `--store` is only a probe; an explicit store overrides feature-branch tracking.
+    When no hint is available before the first status call, load tracking from that resolved root
+    and re-run the CLI once if it names a store. A store in an otherwise unreachable tree requires
+    an explicit `--store` or OpenSpec declared/default store. Run
+    `openspec status --change "<name>" --json` and `openspec instructions apply --change "<name>" --json`
+    (append `--store` when applicable) for `changeRoot`, `planningHome`, `artifactPaths`, and
+    `contextFiles`. Adapter output is planning-only; after apply-code-changes **bind** (step 2),
+    all artifact reads and edits use `ACTIVE_CHANGE_ROOT = WORK_CHECKOUT + CHANGE_ROOT_REL` on the
+    bound checkout — see skill workspace matrix. Never edit artifacts via pre-bind `changeRoot` after bind.
+
+    **Fallback** (skill absent): resolve paths as above; read tasks.md, specs, design from bound
+    checkout when resuming on the feature branch; execute tasks in order; invoke **tdd** when present;
+    delegate commits to **git-commit**; run **changelog-generator** for the Changelog group.
+
+    **Completion gate** (blocking — all must pass):
+    1. All tasks.md checkboxes `[x]`
+    2. Canonical test command exit 0
+    3. Every `#### Scenario:` in delta specs → named automated test
+    4. `openspec validate --all --json` (from `planningHome.root`, with `--store` when set) — all `"valid": true`
+    5. design.md decisions reflected in specs — material drift = FAIL
+    6. Changelog task complete (generated during apply, not archive)
+
+    **Branch resolution** (both modes): when FEATURE_BRANCH exists only on origin (not locally —
+    e.g. CI resume or fresh clone), check it out as a local tracking branch; never recreate it from
+    ORIGINAL_BRANCH, which would discard remote commits. Only create fresh from ORIGINAL_BRANCH when
+    the branch exists nowhere. **Exception — worktree + single:** resolve the branch as a ref only
+    (`git branch`/`git branch --track`, no checkout) in both cases above; checking it out on main
+    would block bind's worktree creation, which needs ORIGINAL_BRANCH still active there.
+
+    **Interactive**: dialog (workspace: local | worktree × parallelism: single | subagent per
+    task group) — record both in TRACKING Presets and current-run preset overrides before bind;
+    complete worktree PRECHECK and explicit-store preset-override lock (setup steps 4–5) before
+    bind, not just the workspace/parallelism dialog; preserve those choices through the
+    feature-branch field-level merge → execute (incl. Changelog group) → gate → STOP.
+    Worktree + single: worktree on FEATURE_BRANCH; main stays on ORIGINAL_BRANCH; remove worktree
+    after gate report (no PR). Worktree + subagent-per-group: main on FEATURE_BRANCH for
+    orchestrator merges and artifact edits; one worktree per group on group branches. Local: main
+    on FEATURE_BRANCH. Subagent-per-group: sequential dispatch — never concurrent subagents on
+    shared git state.
+
+    **Autonomous**: change adapter (step 0) — use an explicit/preloaded store when present, otherwise
+    re-probe once from the first resolved tracking.md;
+    always prepare a complete TRACKING baseline (`workspace: local` and `parallelism: single`),
+    then overlay non-empty hint values and set Change to the current adapter path — except Branch,
+    Issue, PR, and Presets keys, which only overlay when the hint's own Change matches the current
+    adapter path (otherwise a stale hint could name an unrelated branch, link the wrong tracker entry,
+    attach a previous change's pull request, or force unchecked worktree presets); hint Issue selects
+    autonomous mode only on a trusted hint (Change
+    matches the current adapter path); snapshot TRACKING_SETUP after setup; find the feature branch's
+    tracking.md by change name (not the current, possibly wrong-store, relative path) before
+    pre-bind merge; when a hint-derived store is unconfirmed, skip the field merge and re-resolve
+    store adoption first — restore TRACKING_SETUP before the restart — since an old-store root
+    naturally mismatches a correct-store Change; run the field merge only after Change aligns (or
+    STOP once store re-resolution has run for explicit store); add workspace and parallelism to the
+    current-run preset overrides so the setup-time (PRECHECK'd) workspace choice survives the merge —
+    bind must wait for this preset-override + PRECHECK step, never proceed on the bare step-1 baseline;
+    bind ACTIVE_CHANGE_ROOT per workspace matrix; PR via gh with --base ORIGINAL_BRANCH + issue link
+    → STOP.
+
+    **Never in apply**: archive, spec sync, archive commit, `/opsx-archive`.
+
+    Done when the gate passes and mode handoff completes (interactive: clean branch;
+    autonomous: PR open + issue linked).
