@@ -40,15 +40,15 @@ describe('renderOperationSchemaSidecar', () => {
             'sodRemediationOperation',
             [
                 { name: 'sod-remediation:form-url', optional: false, type: 'string' },
-                { name: 'sod-remediation:owner-email', optional: false, type: 'string' },
-                { name: 'sod-remediation:situation-summary', optional: false, type: 'string' },
+                { name: 'sod-remediation:form-email-body', optional: false, type: 'string' },
+                { name: 'sod-remediation:form-email-recipient', optional: false, type: 'string' },
             ],
             '/tmp/operations/sod-remediation/index.ts'
         )
 
         expect(content).toContain("'sod-remediation:form-url': 'string',")
-        expect(content).toContain("'sod-remediation:owner-email': 'string',")
-        expect(content).toContain("'sod-remediation:situation-summary': 'string',")
+        expect(content).toContain("'sod-remediation:form-email-body': 'string',")
+        expect(content).toContain("'sod-remediation:form-email-recipient': 'string',")
     })
 })
 

@@ -65,7 +65,7 @@ function remediationFormLink(formUrl: string): string {
 }
 
 /**
- * Compact HTML for persisted `sod-remediation:situation-summary`.
+ * Compact HTML for persisted `sod-remediation:form-email-body`.
  * Fits ISC STRING storage (256 chars); access-path detail lives in the remediation form.
  */
 export function buildPersistedSituationSummary(

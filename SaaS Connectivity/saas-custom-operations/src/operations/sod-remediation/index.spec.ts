@@ -18,9 +18,9 @@ const workflowConfig = {
 
 const sodRemediationPersistAttributes = [
     { name: 'sod-remediation:form-url', type: 'STRING', isMulti: false },
-    { name: 'sod-remediation:situation-header', type: 'STRING', isMulti: false },
-    { name: 'sod-remediation:situation-summary', type: 'STRING', isMulti: false },
-    { name: 'sod-remediation:owner-email', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:form-email-header', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:form-email-body', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:form-email-recipient', type: 'STRING', isMulti: false },
 ]
 
 const mockViolation = {
@@ -271,16 +271,16 @@ describe('sodRemediationOperation', () => {
                 accountAttributesCreate: expect.objectContaining({
                     attributes: expect.objectContaining({
                         'sod-remediation:form-url': 'https://tenant.identitynow.com/form/instance-1',
-                        'sod-remediation:situation-header':
+                        'sod-remediation:form-email-header':
                             '⚠️ SOD Violation Remediation Required — Alice Example',
-                        'sod-remediation:situation-summary': expect.stringMatching(/Alice Example/),
-                        'sod-remediation:owner-email': 'owner-default@example.com',
+                        'sod-remediation:form-email-body': expect.stringMatching(/Alice Example/),
+                        'sod-remediation:form-email-recipient': 'owner-default@example.com',
                     }),
                 }),
             })
         )
         const persistedSummary = createAccountV1.mock.calls[0][0].accountAttributesCreate.attributes[
-            'sod-remediation:situation-summary'
+            'sod-remediation:form-email-body'
         ] as string
         expect(persistedSummary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
         expect(persistedSummary).not.toContain('<ul>')
@@ -441,13 +441,13 @@ describe('sodRemediationOperation', () => {
             expect.objectContaining({
                 accountAttributesCreate: expect.objectContaining({
                         attributes: expect.objectContaining({
-                            'sod-remediation:situation-summary': expect.stringMatching(/Alice Example/),
+                            'sod-remediation:form-email-body': expect.stringMatching(/Alice Example/),
                         }),
                 }),
             })
         )
         const zeroControlsSummary = createAccountV1.mock.calls[0][0].accountAttributesCreate.attributes[
-            'sod-remediation:situation-summary'
+            'sod-remediation:form-email-body'
         ] as string
         expect(zeroControlsSummary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
         expect(zeroControlsSummary).toMatch(/Alice Example/)

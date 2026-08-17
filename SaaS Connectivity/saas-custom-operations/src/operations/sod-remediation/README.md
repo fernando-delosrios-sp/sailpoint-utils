@@ -21,9 +21,9 @@ Launch-only operation that fetches an SOD violation, ensures a named form defini
 | Field | Description |
 |---|---|
 | `sod-remediation:form-url` | Standalone form URL (`standAloneFormUrl`) for email deep links |
-| `sod-remediation:situation-summary` | HTML summary for workflow email bodies |
-| `sod-remediation:situation-header` | Plain-text email subject |
-| `sod-remediation:owner-email` | Recipient email for notifications |
+| `sod-remediation:form-email-body` | HTML summary for workflow email bodies |
+| `sod-remediation:form-email-header` | Plain-text email subject |
+| `sod-remediation:form-email-recipient` | Recipient email for notifications |
 
 ## Invoke examples
 
@@ -64,7 +64,7 @@ Related workflow exports:
 
 1. Invoke `custom:sod-remediation` with violation ID and form name.
 2. Read persisted output via **Get Accounts** filtered by `requestId` (`form-url`, email fields).
-3. Send email to recipient with `situation-summary` as the HTML body and link to `form-url`.
+3. Send email to `form-email-recipient` with `form-email-body` as the HTML body, `form-email-header` as the subject, and a link to `form-url`.
 4. Wait for form submission; read **user decisions** from submitted `formData`: `action`, `remediationSide`, `control`, `comments`.
 5. Read **launch-time workflow keys** from the completed form instance **`formInput`** (not `formData`):
    - `violationId`, `targetIdentityId`, `groupAAccessSearch`, `groupBAccessSearch`

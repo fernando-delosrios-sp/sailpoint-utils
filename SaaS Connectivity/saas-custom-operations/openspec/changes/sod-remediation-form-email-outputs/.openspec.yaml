@@ -1,0 +1,5 @@
+schema: superpowers-bridge
+created: 2026-08-17
+goal: "Hard-rename sod-remediation persist keys:
+  situation-summary→form-email-body, situation-header→form-email-header,
+  owner-email→form-email-recipient; keep form-url"

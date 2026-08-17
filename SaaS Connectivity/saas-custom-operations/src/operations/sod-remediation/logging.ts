@@ -153,9 +153,9 @@ export function logSodRemediationOutput(
 ): void {
     logStep(requestId, 'output', {
         'sod-remediation:form-url': output.formUrl,
-        'sod-remediation:situation-header': output.situationHeader,
-        'sod-remediation:situation-summary': output.situationSummary,
-        'sod-remediation:owner-email': output.ownerEmail,
+        'sod-remediation:form-email-header': output.situationHeader,
+        'sod-remediation:form-email-body': output.situationSummary,
+        'sod-remediation:form-email-recipient': output.ownerEmail,
         situationSummaryLength: output.situationSummary.length,
     })
 }

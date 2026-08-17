@@ -160,12 +160,12 @@
       "Send Email": {
         "actionId": "sp:send-email",
         "attributes": {
-          "body.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:situation-summary']",
+          "body.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:form-email-body']",
           "context": {},
           "from": null,
-          "recipientEmailList.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:owner-email']",
+          "recipientEmailList.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:form-email-recipient']",
           "replyTo.$": "",
-          "subject.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:situation-header']"
+          "subject.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:form-email-header']"
         },
         "displayName": "",
         "nextStep": "End Step - Success",

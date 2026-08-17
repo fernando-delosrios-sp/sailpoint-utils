@@ -51,9 +51,9 @@ export interface SodRemediationOperation extends OperationSignature {
     }
     output: {
         'sod-remediation:form-url': string
-        'sod-remediation:situation-summary': string
-        'sod-remediation:situation-header': string
-        'sod-remediation:owner-email': string
+        'sod-remediation:form-email-body': string
+        'sod-remediation:form-email-header': string
+        'sod-remediation:form-email-recipient': string
     }
 }
 
@@ -172,9 +172,9 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
         })
         await ctx.persist(ctx.requestId, {
             'sod-remediation:form-url': formUrl,
-            'sod-remediation:situation-header': situationHeader,
-            'sod-remediation:situation-summary': situationSummary,
-            'sod-remediation:owner-email': ownerEmail,
+            'sod-remediation:form-email-header': situationHeader,
+            'sod-remediation:form-email-body': situationSummary,
+            'sod-remediation:form-email-recipient': ownerEmail,
         })
 
         logSodRemediationComplete(ctx.requestId)
