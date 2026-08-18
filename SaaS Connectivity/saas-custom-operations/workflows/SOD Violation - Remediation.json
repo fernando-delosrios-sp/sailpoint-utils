@@ -1,7 +1,14 @@
 {
   "id": "c4b3b425-8a75-465d-bc73-dacff7b6c125",
-  "name": "SOD Remediation - Action",
-  "description": "",
+  "name": "SOD Violation - Remediation",
+  "description": "SOD Violation - Remediation",
+  "created": "2026-08-11T13:44:48.24316682Z",
+  "modified": "2026-08-18T11:08:40.75040114Z",
+  "modifiedBy": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
   "definition": {
     "start": "Define Variable 1",
     "steps": {
@@ -174,11 +181,20 @@
       }
     }
   },
-  "enabled": false,
-  "executionCount": 6,
-  "failureCount": 1,
+  "enabled": true,
+  "creator": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
+  "owner": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
   "trigger": {
     "type": "EVENT",
+    "mode": "advanced",
     "attributes": {
       "filter.$": "$[?(@.formDefinitionId == '1774adfd-b8cf-4cd1-8263-933787aacf8b')]",
       "formDefinitionId": "1774adfd-b8cf-4cd1-8263-933787aacf8b",

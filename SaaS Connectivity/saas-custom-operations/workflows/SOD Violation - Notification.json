@@ -1,7 +1,14 @@
 {
   "id": "2b42bda9-df9a-478f-88f2-9f0d88bba893",
-  "name": "SOD Remediation - Violation Response",
-  "description": "SOD Remediation - Violation Response",
+  "name": "SOD Violation - Notification",
+  "description": "SOD Violation - Notification",
+  "created": "2026-08-11T09:29:14.035521017Z",
+  "modified": "2026-08-18T18:11:49.202315147Z",
+  "modifiedBy": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -17,7 +24,7 @@
             "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
             "input": {
               "formName": "{{$.configuration.formName}}",
-              "owner": "{{$.configuration.overrideOwnerID}}",
+              "owner": "49d1b304294449769e5551c8ece08896",
               "requestId": "{{$.configuration.requestID}}",
               "violationId": "{{$.configuration.violationID}}"
             },
@@ -37,9 +44,9 @@
           "requestHeaders": {
             "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
           },
-          "url": "https://6xiluv-ip-3-20-200-208.tunnelmole.net"
+          "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke"
         },
-        "description": "https://bgst6z-ip-3-20-200-208.tunnelmole.net\n{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke",
+        "description": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke",
         "displayName": "Call SaaS Custom Operation",
         "nextStep": "Read SaaS Custom Operation Result",
         "type": "action",
@@ -72,7 +79,7 @@
               "description": "",
               "name": "Violation ID",
               "transforms": [],
-              "variableA.$": "$.trigger.violationId"
+              "variableA.$": "$.trigger.id"
             },
             {
               "description": "",
@@ -81,7 +88,7 @@
                 {
                   "id": "sp:transform:concatenate:string",
                   "input": {
-                    "variableB.$": "$.trigger.violationId"
+                    "variableB.$": "$.trigger.id"
                   }
                 }
               ],
@@ -175,12 +182,20 @@
     }
   },
   "enabled": false,
-  "executionCount": 37,
-  "failureCount": 22,
+  "creator": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
+  "owner": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
   "trigger": {
-    "type": "EXTERNAL",
+    "type": "EVENT",
     "attributes": {
-      "id": "idn:external-http",
+      "id": "idn:sod-violation-created",
       "integrationId": null
     }
   }
