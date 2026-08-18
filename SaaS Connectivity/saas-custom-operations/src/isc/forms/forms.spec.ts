@@ -166,15 +166,32 @@ describe('isc/forms seed-loader', () => {
         expect(picked).not.toHaveProperty('extraKey')
     })
 
-    it('access-model-sod-remediation seed context panel uses pre-rendered type tag HTML', () => {
+    it('access-model-sod-remediation seed context panel interpolates situationSummaryHtml', () => {
         const seed = loadFormSeed(accessModelSodSeedPath)
-        const ctxItem = findFormElementById(seed.formElements as Array<Record<string, unknown>>, 'ctx-item')
-        const description = (ctxItem?.config as { description?: string })?.description ?? ''
+        const ctxSummary = findFormElementById(seed.formElements as Array<Record<string, unknown>>, 'ctx-summary')
+        const ctxSection = findFormElementById(seed.formElements as Array<Record<string, unknown>>, 'ctx-section')
+        const description = (ctxSummary?.config as { description?: string })?.description ?? ''
 
-        expect(seed.formInput?.some((field) => field.id === 'accessItemTypeTagHtml')).toBe(true)
-        expect(description).toContain('{{$.form.input.accessItemTypeTagHtml}}')
-        expect(description).not.toContain('#546e7a')
-        expect(description).not.toContain('accessItemType}}')
+        expect(findFormElementById(seed.formElements as Array<Record<string, unknown>>, 'ctx-item')).toBeUndefined()
+        expect(seed.formInput?.some((field) => field.id === 'situationSummaryHtml')).toBe(true)
+        expect(description).toBe('{{$.form.input.situationSummaryHtml}}')
+        expect((ctxSection?.config as { label?: string })?.label).not.toContain('policy violation detection')
+    })
+
+    it('access-model-sod-remediation seed remediation section heading uses DESCRIPTION interpolation', () => {
+        const seed = loadFormSeed(accessModelSodSeedPath)
+        const correctSection = findFormElementById(seed.formElements as Array<Record<string, unknown>>, 'correct-section')
+        const heading = findFormElementById(
+            (correctSection?.config as { formElements?: Array<Record<string, unknown>> })?.formElements ?? [],
+            'remediation-section-heading'
+        )
+        const description = (heading?.config as { description?: string })?.description ?? ''
+        const sectionLabel = (correctSection?.config as { label?: string; showLabel?: boolean })?.label ?? ''
+
+        expect(seed.formInput?.some((field) => field.id === 'remediationSectionLabel')).toBe(true)
+        expect(description).toContain('{{$.form.input.remediationSectionLabel}}')
+        expect(sectionLabel).not.toContain('{{$.form.input.remediationSectionLabel}}')
+        expect((correctSection?.config as { showLabel?: boolean })?.showLabel).toBe(false)
     })
 
     it('access-model-sod-remediation seed swaps column previews via ELEMENT SHOW conditions on remediationSide', () => {
@@ -205,8 +222,8 @@ describe('isc/forms seed-loader', () => {
         ])
 
         const eqValues = conditions.flatMap((condition) =>
-            ((condition.rules as Array<{ operator?: string; value?: string }>) ?? [])
-                .filter((rule) => rule.operator === 'EQ')
+            ((condition.rules as Array<{ operator?: string; value?: string; source?: string }>) ?? [])
+                .filter((rule) => rule.operator === 'EQ' && rule.source === 'remediationSide')
                 .map((rule) => rule.value)
         )
         expect(eqValues).toEqual(['Group A', 'Group B'])

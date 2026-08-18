@@ -25,9 +25,9 @@ describe('buildGroupContentsHtml', () => {
         expect(html.groupColumnsHtmlPlain).toContain('Group B')
         expect(html.groupColumnsHtmlPlain).toContain('Accounts Receivable')
         expect(html.groupColumnsHtmlPlain).toContain('Accounts Payable')
-        expect(html.groupColumnsHtmlPlain).toContain('— offending:')
+        expect(html.groupColumnsHtmlPlain).toContain('— Contains:')
         expect(html.groupColumnsHtmlPlain).toContain('SAP Suite')
-        expect(html.groupColumnsHtmlPlain).not.toMatch(/SAP Suite[\s\S]*<ul>/)
+        expect(html.groupColumnsHtmlPlain).toMatch(/SAP Suite[\s\S]*<ul[\s\S]*Accounts Payable/)
         expect(html.groupColumnsHtmlPlain).not.toContain('#e8f5e9')
         expect(html.groupColumnsHtmlPlain).not.toContain('#ffebee')
 
@@ -45,5 +45,17 @@ describe('buildGroupContentsHtml', () => {
         })
 
         expect(html.groupColumnsHtmlPlain).toContain('ent-unknown')
+    })
+
+    it('Linked column line names when online', () => {
+        const uiOrigin = 'https://tenant.example.com'
+        const html = buildGroupContentsHtml(['ent-a'], ['ent-c'], expanded, uiOrigin)
+
+        expect(html.groupColumnsHtmlPlain).toContain(
+            '/ui/a/admin/access/entitlements/landing-page/details/ent-a'
+        )
+        expect(html.groupColumnsHtmlPlain).toContain(
+            '/ui/a/admin/access/access-profiles/landing-page/details/ap-1'
+        )
     })
 })

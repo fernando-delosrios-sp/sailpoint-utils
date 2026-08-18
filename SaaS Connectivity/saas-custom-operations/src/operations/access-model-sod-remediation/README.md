@@ -146,12 +146,14 @@ Manual or custom orchestration follows the same contract as the bundled exports:
 
 | Layer | Fields |
 |---|---|
-| `formInput` (launch) | `parentRequestId` (scan invoke `requestId`), `accessItemId`, `accessItemType`, `accessItemName`, `policyId`, `policyName`, `groupAIds`, `groupBIds` (JSON arrays), six HTML column fields (see below) |
+| `formInput` (launch) | `parentRequestId` (scan invoke `requestId`), `accessItemId`, `accessItemType`, `accessItemName`, `policyId`, `policyName`, `situationSummaryHtml`, `groupAIds`, `groupBIds` (JSON arrays), three HTML column fields (see below) |
 | `formData` (submit) | `remediationSide`, optional `comments` |
 
 No action selector or Mitigate path.
 
-## Form HTML (group columns)
+## Form HTML (context panel and group columns)
+
+The upper **context panel** is a single `situationSummaryHtml` DESCRIPTION with **What we found** / **What we need from you** blocks and ⚠️/ℹ️ signposting. When `config.apiUrl` is present, access item and policy display names link to ISC admin UI routes; offline invoke uses plain escaped text. See `src/lib/sod-form-html/README.md` for admin path templates.
 
 Launch-time `formInput` carries **three** composite side-by-side column HTML fields (each embeds plain or outcome variants for both groups):
 
@@ -161,9 +163,9 @@ Launch-time `formInput` carries **three** composite side-by-side column HTML fie
 | `groupColumnsHtmlWhenGroupARemoved` | Group A red / Group B green outcome panels — when Group A is selected for removal |
 | `groupColumnsHtmlWhenGroupBRemoved` | Group B red / Group A green outcome panels — when Group B is selected for removal |
 
-Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when the recipient changes `remediationSide`. Direct role entitlements render as single flat lines. Nested access profiles render as **flat access profile lines** with an **offending entitlement mention** (for example `— offending: payment_issue`) so policy owners see the whole AP as the removable unit on roles. **No** revocability emojis or legend.
+Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when the recipient changes `remediationSide`. Direct role entitlements render as single flat lines. Nested access profiles render as **flat access profile lines** with an **offending entitlement mention** (for example `— offending: payment_issue`) so policy owners see the whole AP as the removable unit on roles. When online, entitlement and access profile display names in columns link to ISC admin UI routes. **No** revocability emojis or legend.
 
-**Form definition migration:** Updated seeds change the form fingerprint. Tenants only receive the new layout (including `parentRequestId` on `formInput`) when they use a **new** `formName` (ensure-by-name does not patch existing definitions). Reuse an existing name to keep the prior layout until you adopt a new form name. Scan retries with the same `requestId` skip violations that already have a child persist account regardless of form instance state.
+**Form definition migration:** Updated seeds change the form fingerprint. After deploying this connector version, re-invoke the scan with the **same** `formName` — `ensureFormDefinitionByName` detects a stale watermark and patches the existing definition in place. New form instances then get the unified context panel, admin links, and column layout. Already-assigned instances keep their launch-time HTML until recreated. Use a **new** `formName` only when you want to keep the prior definition unchanged alongside the updated one. Scan retries with the same `requestId` skip violations that already have a child persist account regardless of form instance state.
 
 ## Token scope requirements
 

@@ -5,9 +5,10 @@ import { ExpandedAccessItemEntitlements } from './expand-access-item-entitlement
 export function buildGroupContentsHtml(
     groupAIds: string[],
     groupBIds: string[],
-    expanded: ExpandedAccessItemEntitlements
+    expanded: ExpandedAccessItemEntitlements,
+    uiOrigin?: string
 ): GroupColumnLayoutHtml {
-    const groupAVariants = renderEntitlementTree(groupAIds, expanded)
-    const groupBVariants = renderEntitlementTree(groupBIds, expanded)
+    const groupAVariants = renderEntitlementTree(groupAIds, expanded, { uiOrigin })
+    const groupBVariants = renderEntitlementTree(groupBIds, expanded, { uiOrigin })
     return buildGroupColumnLayouts(groupAVariants, groupBVariants)
 }

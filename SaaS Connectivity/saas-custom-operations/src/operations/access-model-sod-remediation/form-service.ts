@@ -9,14 +9,18 @@ import {
 import { logIscDebug } from '../../isc/debug/log-isc-request'
 import accessModelSodRemediationSeedJson from './seed/access-model-sod-remediation.seed.json'
 
+export type AccessModelSodAccessItemType = 'ROLE' | 'ACCESS_PROFILE'
+
 export interface AccessModelSodFormInputValues {
     parentRequestId: string
     accessItemId: string
     accessItemType: string
     accessItemTypeTagHtml: string
+    remediationSectionLabel: string
     accessItemName: string
     policyId: string
     policyName: string
+    situationSummaryHtml: string
     groupAIds: string[]
     groupBIds: string[]
     groupColumnsHtmlPlain: string
@@ -33,6 +37,11 @@ export interface CreateAccessModelSodInstanceParams {
 }
 
 const accessModelSodRemediationSeed = loadFormSeed(accessModelSodRemediationSeedJson)
+
+/** Resolves the remediation section heading for role vs access profile violations. */
+export function resolveRemediationSectionLabel(accessItemType: AccessModelSodAccessItemType): string {
+    return accessItemType === 'ACCESS_PROFILE' ? 'Access Profile Remediation' : 'Role Composition Remediation'
+}
 
 /** Ensures the access model SoD remediation form definition exists for the tenant. */
 export async function ensureAccessModelSodFormDefinition(

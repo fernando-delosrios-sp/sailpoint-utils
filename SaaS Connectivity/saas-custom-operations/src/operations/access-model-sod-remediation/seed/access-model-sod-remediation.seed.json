@@ -3,10 +3,12 @@
     "formInput": [
         { "id": "accessItemId", "type": "STRING", "label": "Access Item ID", "description": "Role or access profile under review" },
         { "id": "accessItemType", "type": "STRING", "label": "Access Item Type", "description": "ROLE or ACCESS_PROFILE" },
-        { "id": "accessItemTypeTagHtml", "type": "STRING", "label": "Access Item Type Tag HTML", "description": "Pre-rendered type pill HTML for the policy violation detection panel" },
+        { "id": "accessItemTypeTagHtml", "type": "STRING", "label": "Access Item Type Tag HTML", "description": "Pre-rendered type pill HTML for access item display" },
+        { "id": "remediationSectionLabel", "type": "STRING", "label": "Remediation Section Label", "description": "Role Composition Remediation or Access Profile Remediation" },
         { "id": "accessItemName", "type": "STRING", "label": "Access Item Name", "description": "Display name of the access item" },
         { "id": "policyId", "type": "STRING", "label": "Policy ID", "description": "Violated SoD policy id" },
         { "id": "policyName", "type": "STRING", "label": "Policy Name", "description": "Violated SoD policy name" },
+        { "id": "situationSummaryHtml", "type": "STRING", "label": "Situation Summary", "description": "HTML context panel for the violation situation" },
         { "id": "parentRequestId", "type": "STRING", "label": "Parent Request ID", "description": "Scan invoke requestId that launched this form (workflow correlation key)" },
         { "id": "groupAIds", "type": "STRING", "label": "Group A Entitlement IDs", "description": "JSON array of entitlement ids on group A side (launch-time workflow key)" },
         { "id": "groupBIds", "type": "STRING", "label": "Group B Entitlement IDs", "description": "JSON array of entitlement ids on group B side (launch-time workflow key)" },
@@ -21,18 +23,18 @@
             "config": {
                 "alignment": "LEFT",
                 "description": "",
-                "label": "Access model policy violation detection",
+                "label": "Situation",
                 "labelStyle": "h2",
                 "showLabel": true,
                 "formElements": [
                     {
-                        "id": "ctx-item",
+                        "id": "ctx-summary",
                         "elementType": "DESCRIPTION",
                         "key": "",
                         "config": {
-                            "label": "Access Item",
-                            "showLabel": true,
-                            "description": "<p><strong>Item:</strong> <strong>{{$.form.input.accessItemName}}</strong> {{$.form.input.accessItemTypeTagHtml}}</p><p><strong>Policy:</strong> {{$.form.input.policyName}}</p>"
+                            "label": "Situation",
+                            "showLabel": false,
+                            "description": "{{$.form.input.situationSummaryHtml}}"
                         },
                         "validations": []
                     }
@@ -46,10 +48,21 @@
             "config": {
                 "alignment": "LEFT",
                 "description": "Select the side whose entitlements should be removed from this access item definition. Green = kept, red = removed.",
-                "label": "Correct Access Definition",
+                "label": "Remediation",
                 "labelStyle": "h2",
-                "showLabel": true,
+                "showLabel": false,
                 "formElements": [
+                    {
+                        "id": "remediation-section-heading",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Remediation section heading",
+                            "showLabel": false,
+                            "description": "<h2 style='margin:0 0 12px; font-size:1.25rem; font-weight:600;'>{{$.form.input.remediationSectionLabel}}</h2>"
+                        },
+                        "validations": []
+                    },
                     {
                         "id": "remediation-side-select",
                         "elementType": "SELECT",

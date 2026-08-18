@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createAccessModelSodRemediationInstance, serializeAccessModelSodFormInputForCreate } from './form-service'
+import {
+    createAccessModelSodRemediationInstance,
+    resolveRemediationSectionLabel,
+    serializeAccessModelSodFormInputForCreate,
+} from './form-service'
 
 const baseFormInput = {
     parentRequestId: 'scan-parent-1',
@@ -7,6 +11,7 @@ const baseFormInput = {
     accessItemType: 'ROLE',
     accessItemTypeTagHtml:
         "<span style='color:#1d4ed8; font-size:90%; background-color:#dbeafe; padding:2px 6px; border-radius:4px;'>role</span>",
+    remediationSectionLabel: 'Role Composition Remediation',
     accessItemName: 'Finance Role',
     policyId: 'policy-1',
     policyName: 'AP/AR Separation',
@@ -15,7 +20,18 @@ const baseFormInput = {
     groupColumnsHtmlPlain: '<p>plain</p>',
     groupColumnsHtmlWhenGroupARemoved: '<p>A removed</p>',
     groupColumnsHtmlWhenGroupBRemoved: '<p>B removed</p>',
+    situationSummaryHtml: '<p>summary</p>',
 }
+
+describe('resolveRemediationSectionLabel', () => {
+    it('returns Role Composition Remediation for roles', () => {
+        expect(resolveRemediationSectionLabel('ROLE')).toBe('Role Composition Remediation')
+    })
+
+    it('returns Access Profile Remediation for access profiles', () => {
+        expect(resolveRemediationSectionLabel('ACCESS_PROFILE')).toBe('Access Profile Remediation')
+    })
+})
 
 describe('serializeAccessModelSodFormInputForCreate', () => {
     it('JSON-stringifies entitlement id lists for ISC STRING formInput fields', () => {

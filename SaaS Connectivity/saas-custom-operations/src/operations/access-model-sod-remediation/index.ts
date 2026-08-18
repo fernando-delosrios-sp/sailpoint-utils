@@ -23,12 +23,17 @@ import {
 } from './constants'
 import { detectAccessItemViolations } from './detect-violations'
 import { ExpandedAccessItemEntitlements, expandAccessItemEntitlements } from './expand-access-item-entitlements'
-import { createAccessModelSodRemediationInstance, ensureAccessModelSodFormDefinition } from './form-service'
+import {
+    createAccessModelSodRemediationInstance,
+    ensureAccessModelSodFormDefinition,
+    resolveRemediationSectionLabel,
+} from './form-service'
 import { buildFormEmailBody, buildFormEmailHeader } from './form-email'
 import { buildGroupContentsHtml } from './group-html'
+import { buildSituationSummaryHtml } from './situation-summary'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
 import { accessModelSodRemediationOperationSchema } from './index.schema'
-import { renderTypeTag } from '../../lib/sod-form-html'
+import { renderTypeTag, resolveUiOrigin } from '../../lib/sod-form-html'
 import {
     AccessModelSodSkippedFormInstance,
     buildSkippedFormInstance,
@@ -202,7 +207,16 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                         : await resolveIdentityEmail({ apiUrl: ctx.apiUrl, token: ctx.token }, ownerId)
                     ownerEmailById.set(ownerId, ownerEmail)
                 }
-                const html = buildGroupContentsHtml(violation.groupAIds, violation.groupBIds, expanded)
+                const uiOrigin = offline ? undefined : resolveUiOrigin(ctx.apiUrl)
+                const html = buildGroupContentsHtml(violation.groupAIds, violation.groupBIds, expanded, uiOrigin)
+                const situationSummaryHtml = buildSituationSummaryHtml({
+                    uiOrigin,
+                    accessItemId: violation.accessItem.id,
+                    accessItemType: violation.accessItem.type,
+                    accessItemName: violation.accessItem.name,
+                    policyId: violation.policy.id,
+                    policyName: violation.policy.name,
+                })
                 const emailInput = {
                     accessItem: violation.accessItem,
                     policy: violation.policy,
@@ -222,9 +236,11 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                             accessItemId: violation.accessItem.id,
                             accessItemType: violation.accessItem.type,
                             accessItemTypeTagHtml: renderTypeTag(violation.accessItem.type),
+                            remediationSectionLabel: resolveRemediationSectionLabel(violation.accessItem.type),
                             accessItemName: violation.accessItem.name,
                             policyId: violation.policy.id,
                             policyName: violation.policy.name,
+                            situationSummaryHtml,
                             groupAIds: violation.groupAIds,
                             groupBIds: violation.groupBIds,
                             ...html,

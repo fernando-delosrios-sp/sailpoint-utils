@@ -342,7 +342,20 @@ describe('accessModelSodRemediationOperation', () => {
         expect(res.send.mock.calls[0]?.[0]).not.toHaveProperty(
             'access-model-sod-remediation:forms-skipped-instances'
         )
-        expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalled()
+        expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalledWith(
+            expect.objectContaining({
+                formInput: expect.objectContaining({
+                    situationSummaryHtml: expect.stringMatching(/What we found[\s\S]*What we need from you/),
+                }),
+            })
+        )
+        const launchFormInput = vi.mocked(createAccessModelSodRemediationInstance).mock.calls[0]?.[0]?.formInput
+        expect(launchFormInput?.situationSummaryHtml).toContain(
+            '/ui/a/admin/access/roles/landing-page/details/role-offline-1'
+        )
+        expect(launchFormInput?.situationSummaryHtml).toContain(
+            '/ui/sod/policy-management/policy-offline-1/details'
+        )
     })
 
     it('does not search form instances for idempotency', async () => {
