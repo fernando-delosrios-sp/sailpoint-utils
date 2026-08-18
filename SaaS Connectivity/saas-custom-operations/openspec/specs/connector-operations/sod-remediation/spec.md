@@ -11,7 +11,7 @@ The connector SHALL register a custom command `custom:sod-remediation` that prep
 
 - **GIVEN** `custom:sod-remediation` is declared in connector-spec.json and registered
 - **WHEN** ISC invokes the command with input containing `violationId`, `formName`, and standard `requestId`
-- **THEN** the handler SHALL fetch the violation, ensure the form definition identified by `formName` exists, create a standalone form instance, and persist namespaced output fields `sod-remediation:form-url`, `sod-remediation:situation-header`, `sod-remediation:situation-summary`, and `sod-remediation:owner-email`
+- **THEN** the handler SHALL fetch the violation, ensure the form definition identified by `formName` exists, create a standalone form instance, and persist namespaced output fields `sod-remediation:form-url`, `sod-remediation:form-email-header`, `sod-remediation:form-email-body`, and `sod-remediation:form-email-recipients`
 
 #### Scenario: Recipient defaults to violation owner
 
@@ -55,27 +55,27 @@ The connector SHALL register a custom command `custom:sod-remediation` that prep
 - **GIVEN** the resolved form instance recipient identity ID is `owner-a`
 - **AND** the public identity record for `owner-a` has email `owner-a@example.com`
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** persisted output `sod-remediation:owner-email` SHALL be `owner-a@example.com`
+- **THEN** persisted output `sod-remediation:form-email-recipients` SHALL be `['owner-a@example.com']`
 
 #### Scenario: Email subject header output
 
 - **GIVEN** a violation for identity `Alice Example`
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** persisted output `sod-remediation:situation-header` SHALL be plain text suitable for workflow email subject lines
+- **THEN** persisted output `sod-remediation:form-email-header` SHALL be plain text suitable for workflow email subject lines
 - **AND** SHALL include the violating identity display name
 
 #### Scenario: Email summary includes remediation form link
 
 - **GIVEN** a successful launch producing form URL `https://tenant.example/form/1`
 - **WHEN** the handler persists operation output
-- **THEN** `sod-remediation:situation-summary` SHALL include an HTML link to the remediation form URL
+- **THEN** `sod-remediation:form-email-body` SHALL include an HTML link to the remediation form URL
 - **AND** form launch input `situationSummaryHtml` SHALL NOT include the remediation form link
 
 #### Scenario: Output contract is minimal
 
 - **GIVEN** a successful launch
 - **WHEN** the handler completes
-- **THEN** operation output persisted via `ctx.persist` SHALL include only `sod-remediation:form-url`, `sod-remediation:situation-header`, `sod-remediation:situation-summary`, and `sod-remediation:owner-email` as typed output fields
+- **THEN** operation output persisted via `ctx.persist` SHALL include only `sod-remediation:form-url`, `sod-remediation:form-email-header`, `sod-remediation:form-email-body`, and `sod-remediation:form-email-recipients` as typed output fields
 - **AND** SHALL NOT require output fields `formInstanceId`, `violationId`, `formName`, `formDefinitionId`, or `recipientName`
 
 #### Scenario: Workflow-friendly form keys
@@ -162,24 +162,24 @@ The sod-remediation operation SHALL fetch violation details and tenant compensat
 
 ### Requirement: Situation summary HTML format
 
-The sod-remediation operation SHALL build `sod-remediation:situation-summary` as HTML suitable for workflow email bodies. The same HTML SHALL populate `situationSummaryHtml` formInput for in-form DESCRIPTION rendering. Violation-derived dynamic text SHALL be HTML-escaped and SHALL NOT embed unescaped user-controlled markup. The in-form `situationSummaryHtml` SHALL append a single emoji legend footer decoding icon suffix meanings.
+The sod-remediation operation SHALL build `sod-remediation:form-email-body` as HTML suitable for workflow email bodies. The same HTML SHALL populate `situationSummaryHtml` formInput for in-form DESCRIPTION rendering. Violation-derived dynamic text SHALL be HTML-escaped and SHALL NOT embed unescaped user-controlled markup. The in-form `situationSummaryHtml` SHALL append a single emoji legend footer decoding icon suffix meanings.
 
 #### Scenario: Email-oriented HTML structure
 
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** operation output `sod-remediation:situation-summary` SHALL include a top-level heading, labeled identity/policy/violation fields, grouped access-path lists, and an optional note when no compensating controls exist
+- **THEN** operation output `sod-remediation:form-email-body` SHALL include a top-level heading, labeled identity/policy/violation fields, grouped access-path lists, and an optional note when no compensating controls exist
 - **AND** SHALL use semantic HTML elements such as `h2`, `h3`, `p`, `strong`, `ul`, `li`, and `em`
 
 #### Scenario: Dynamic values escaped
 
 - **WHEN** `custom:sod-remediation` assembles the situation summary
-- **THEN** violation-derived text in both `sod-remediation:situation-summary` and `situationSummaryHtml` SHALL escape `&`, `<`, `>`, and `"` characters
+- **THEN** violation-derived text in both `sod-remediation:form-email-body` and `situationSummaryHtml` SHALL escape `&`, `<`, `>`, and `"` characters
 
 #### Scenario: Form input reuses operation summary without email-only link
 
 - **WHEN** `custom:sod-remediation` assembles form input
 - **THEN** `situationSummaryHtml` SHALL equal the shared situation summary HTML without the remediation form link
-- **AND** persisted output `sod-remediation:situation-summary` SHALL equal that same HTML plus the remediation form link
+- **AND** persisted output `sod-remediation:form-email-body` SHALL equal that same HTML plus the remediation form link
 
 #### Scenario: Seed interpolates summary without extra wrapper
 
@@ -255,7 +255,7 @@ When keep recommendations exist on exactly one violation group, the sod-remediat
 
 - **GIVEN** a side correction recommendation is computed
 - **WHEN** form input and operation output are produced
-- **THEN** the side hint SHALL appear in group column DESCRIPTION HTML and in `situationSummaryHtml` and `sod-remediation:situation-summary`
+- **THEN** the side hint SHALL appear in group column DESCRIPTION HTML and in `situationSummaryHtml` and `sod-remediation:form-email-body`
 
 ### Requirement: Privileged access indicator
 
@@ -352,7 +352,7 @@ The sod-remediation operation SHALL pre-render three HTML variants per policy si
 
 ### Requirement: Revocability HTML display with emojis
 
-The sod-remediation operation SHALL render access path annotations in HTML using space-separated UTF-8 emoji icon suffixes on each line in group column form input and in operation `sod-remediation:situation-summary` output. Lines SHALL use shared type tags for access kind. Inline revocability and keep recommendation text labels SHALL NOT appear on lines; meanings SHALL be conveyed by the situation summary legend footer only.
+The sod-remediation operation SHALL render access path annotations in HTML using space-separated UTF-8 emoji icon suffixes on each line in group column form input and in operation `sod-remediation:form-email-body` output. Lines SHALL use shared type tags for access kind. Inline revocability and keep recommendation text labels SHALL NOT appear on lines; meanings SHALL be conveyed by the situation summary legend footer only.
 
 #### Scenario: Group column HTML form input
 
@@ -378,7 +378,7 @@ The sod-remediation operation SHALL render access path annotations in HTML using
 #### Scenario: Email summary parity
 
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** persisted output `sod-remediation:situation-summary` SHALL include the same access path icon suffixes and side correction hint as the group column HTML line content
+- **THEN** persisted output `sod-remediation:form-email-body` SHALL include the same access path icon suffixes and side correction hint as the group column HTML line content
 - **AND** `situationSummaryHtml` SHALL additionally include the emoji legend footer
 
 

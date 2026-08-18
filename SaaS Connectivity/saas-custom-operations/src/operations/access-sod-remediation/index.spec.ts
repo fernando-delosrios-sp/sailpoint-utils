@@ -9,7 +9,7 @@ const persistAttributes = [
     { name: 'access-sod-remediation:form-url', type: 'STRING', isMulti: false },
     { name: 'access-sod-remediation:form-email-header', type: 'STRING', isMulti: false },
     { name: 'access-sod-remediation:form-email-body', type: 'STRING', isMulti: false },
-    { name: 'access-sod-remediation:form-email-recipient', type: 'STRING', isMulti: false },
+    { name: 'access-sod-remediation:form-email-recipients', type: 'STRING', isMulti: true },
 ]
 
 const persistedAccounts = new Map<string, Record<string, unknown>>()
@@ -64,7 +64,7 @@ describe('accessSodRemediationOperation', () => {
                 { commandType: 'custom:access-sod-remediation' } as never,
                 {
                     requestId: 'req-access-sod-offline',
-                    formName: 'Access Catalog SOD Remediation',
+                    formName: 'Access Model SOD Remediation',
                 },
                 res as never
             )
@@ -89,7 +89,7 @@ describe('accessSodRemediationOperation', () => {
                 { commandType: 'custom:access-sod-remediation' } as never,
                 {
                     requestId: 'req-invalid',
-                    formName: 'Access Catalog SOD Remediation',
+                    formName: 'Access Model SOD Remediation',
                     searchIndices: ['identities'] as never,
                 },
                 res as never

@@ -56,7 +56,7 @@ The connector SHALL register a custom command `custom:access-sod-remediation` th
 - **GIVEN** role `role-a` violates policy `policy-p` and a form is created
 - **WHEN** the handler persists per-form output
 - **THEN** it SHALL call persist with identity `` `${requestId}:role-a:policy-p` ``
-- **AND** child output SHALL include `access-sod-remediation:form-url`, `access-sod-remediation:access-item-id`, `access-sod-remediation:access-item-type`, `access-sod-remediation:access-item-name`, `access-sod-remediation:policy-id`, `access-sod-remediation:policy-name`, and `access-sod-remediation:recipient-id`
+- **AND** child output SHALL include `access-sod-remediation:form-url`, `access-sod-remediation:access-item-id`, `access-sod-remediation:access-item-type`, `access-sod-remediation:access-item-name`, `access-sod-remediation:policy-id`, `access-sod-remediation:policy-name`, `access-sod-remediation:recipient-id`, `access-sod-remediation:form-email-header`, `access-sod-remediation:form-email-body`, and `access-sod-remediation:form-email-recipients`
 
 #### Scenario: Form cap per invocation
 
@@ -70,6 +70,28 @@ The connector SHALL register a custom command `custom:access-sod-remediation` th
 - **GIVEN** `src/operations/access-sod-remediation/index.ts` declares `command: 'custom:access-sod-remediation'` on its OperationSignature interface
 - **WHEN** codegen runs
 - **THEN** `custom:access-sod-remediation` SHALL be registered in auto-registry.ts and listed in connector-spec.json commands
+
+### Requirement: Access SOD remediation form email notification outputs
+
+The access-sod-remediation operation SHALL persist workflow-oriented email fields on each child result-source identity when a remediation form is created. Recipient emails SHALL be persisted as a multi-value string array suitable for ISC Send Email `recipientEmailList` consumption.
+
+#### Scenario: Child persist includes form email fields
+
+- **GIVEN** role `role-a` violates policy `policy-p` and a form is created
+- **WHEN** the handler persists per-form output on child identity `` `${requestId}:role-a:policy-p` ``
+- **THEN** child output SHALL include `access-sod-remediation:form-email-header`, `access-sod-remediation:form-email-body`, and `access-sod-remediation:form-email-recipients`
+
+#### Scenario: Policy owner email as recipients array
+
+- **GIVEN** policy `policy-p` owner identity `owner-z` resolves to email `owner-z@example.com`
+- **WHEN** a form is created for a violation of `policy-p`
+- **THEN** persisted output `access-sod-remediation:form-email-recipients` SHALL be `['owner-z@example.com']`
+
+#### Scenario: Recipients attribute is multi-value string
+
+- **GIVEN** a successful child persist for access-sod-remediation
+- **WHEN** operation output schema is inferred for account aggregation
+- **THEN** `access-sod-remediation:form-email-recipients` SHALL be typed `string[]` with account schema `STRING` and `isMulti: true`
 
 ### Requirement: Intrinsic policy violation detection
 

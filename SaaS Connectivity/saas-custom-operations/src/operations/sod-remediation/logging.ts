@@ -155,7 +155,7 @@ export function logSodRemediationOutput(
         'sod-remediation:form-url': output.formUrl,
         'sod-remediation:form-email-header': output.situationHeader,
         'sod-remediation:form-email-body': output.situationSummary,
-        'sod-remediation:form-email-recipient': output.ownerEmail,
+        'sod-remediation:form-email-recipients': [output.ownerEmail],
         situationSummaryLength: output.situationSummary.length,
     })
 }

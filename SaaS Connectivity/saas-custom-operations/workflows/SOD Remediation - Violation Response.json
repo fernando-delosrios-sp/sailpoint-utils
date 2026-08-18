@@ -163,7 +163,7 @@
           "body.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:form-email-body']",
           "context": {},
           "from": null,
-          "recipientEmailList.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:form-email-recipient']",
+          "recipientEmailList.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:form-email-recipients']",
           "replyTo.$": "",
           "subject.$": "$.readSaaSCustomOperationResult.accounts[0].attributes['sod-remediation:form-email-header']"
         },

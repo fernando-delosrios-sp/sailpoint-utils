@@ -84,6 +84,34 @@ The glossary SHALL define logUrl as the optional invoke-config URL that receives
 - **THEN** the preferred spelling SHALL be logUrl
 - **AND** aliases log endpoint or remote logger URL SHALL NOT be used in normative text without an alias entry
 
+### Requirement: operationName core attribute term
+
+The glossary SHALL define **operationName core attribute** as the framework-managed STRING account attribute on the DelimitedFile result source that stores the custom command name (`context.commandType`) that last wrote the account.
+
+#### Scenario: operationName used in specs and persist output
+
+- **GIVEN** documentation or specs refer to the invoking custom command on a result account
+- **WHEN** naming the persisted account attribute or related framework types
+- **THEN** the preferred spelling SHALL be operationName
+- **AND** aliases commandType attribute or operation field SHALL NOT be used in normative text without an alias entry
+
+### Requirement: Form email recipients term
+
+The glossary SHALL define **form email recipients** as the multi-value persist output listing email addresses for ISC workflow Send Email `recipientEmailList` after SOD form launch operations.
+
+#### Scenario: Preferred persist key spelling
+
+- **GIVEN** specs or code name the recipient email persist output on `custom:sod-remediation` or `custom:access-sod-remediation`
+- **WHEN** the ubiquitous language spec is read
+- **THEN** the preferred attribute suffix SHALL be `form-email-recipients` (plural)
+- **AND** the deprecated singular `form-email-recipient` SHALL NOT appear in normative text without a migration note
+
+#### Scenario: Type is string array
+
+- **GIVEN** documentation describes the form email recipients persist field
+- **WHEN** the type is stated
+- **THEN** it SHALL be described as `string[]` suitable for multi-value STRING account attributes with `isMulti: true`
+
 ## Term entries
 
 ### Term: SoD form HTML
@@ -110,11 +138,23 @@ The glossary SHALL define logUrl as the optional invoke-config URL that receives
 **Aliases**: none
 **Notes**: Rendered via `renderTypeTag`; labels are lowercase (`role`, `access profile`, `entitlement`).
 
+### Term: Form email recipients
+**Context**: connector-operations
+**Definition**: Multi-value persist output listing email addresses for ISC workflow Send Email `recipientEmailList` after SOD form launch operations.
+**Aliases**: none
+**Notes**: Persist key suffix `form-email-recipients` (`string[]`, `isMulti: true`) on `custom:sod-remediation` and `custom:access-sod-remediation`.
+
 ### Term: logUrl
 **Context**: custom-operation-framework / connector-config
 **Definition**: Optional invoke-config string URL. When non-empty, the framework POSTs one JSON log event per logger call to that URL in addition to writing human-readable lines to stdout.
 **Aliases**: none
 **Notes**: Not declared in connector-spec.json sourceConfig in v1; supplied at invoke time via config.logUrl on workflow or spcx payloads.
+
+### Term: operationName core attribute
+**Context**: custom-operation-framework
+**Definition**: Mandatory framework-managed STRING attribute on the result source account schema; populated automatically on persist with the full custom command name (e.g. `custom:sod-remediation`).
+**Aliases**: none
+**Notes**: Not part of `OperationSignature.output`; distinct from prefixed operation output keys such as `sod-remediation:formUrl`.
 
 <!-- Add terms using this pattern:
 

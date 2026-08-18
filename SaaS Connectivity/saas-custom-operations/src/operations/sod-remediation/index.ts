@@ -53,7 +53,7 @@ export interface SodRemediationOperation extends OperationSignature {
         'sod-remediation:form-url': string
         'sod-remediation:form-email-body': string
         'sod-remediation:form-email-header': string
-        'sod-remediation:form-email-recipient': string
+        'sod-remediation:form-email-recipients': string[]
     }
 }
 
@@ -174,7 +174,7 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
             'sod-remediation:form-url': formUrl,
             'sod-remediation:form-email-header': situationHeader,
             'sod-remediation:form-email-body': situationSummary,
-            'sod-remediation:form-email-recipient': ownerEmail,
+            'sod-remediation:form-email-recipients': [ownerEmail],
         })
 
         logSodRemediationComplete(ctx.requestId)

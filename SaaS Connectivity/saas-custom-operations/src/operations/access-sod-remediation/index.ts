@@ -49,7 +49,7 @@ export interface AccessSodRemediationOperation extends OperationSignature {
         'access-sod-remediation:form-url'?: string
         'access-sod-remediation:form-email-header'?: string
         'access-sod-remediation:form-email-body'?: string
-        'access-sod-remediation:form-email-recipient'?: string
+        'access-sod-remediation:form-email-recipients'?: string[]
     }
 }
 
@@ -213,7 +213,7 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
                             'access-sod-remediation:form-url': formUrl,
                             'access-sod-remediation:form-email-header': buildFormEmailHeader(emailInput),
                             'access-sod-remediation:form-email-body': buildFormEmailBody(emailInput, formUrl),
-                            'access-sod-remediation:form-email-recipient': ownerEmail,
+                            'access-sod-remediation:form-email-recipients': [ownerEmail],
                         },
                         undefined,
                         { verify: false }

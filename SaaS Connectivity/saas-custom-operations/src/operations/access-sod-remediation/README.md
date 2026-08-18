@@ -36,7 +36,7 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 | `access-sod-remediation:form-url` | Standalone form URL |
 | `access-sod-remediation:form-email-header` | Plain-text email subject for workflow Send Email |
 | `access-sod-remediation:form-email-body` | HTML email body with remediation link |
-| `access-sod-remediation:form-email-recipient` | Policy owner email address |
+| `access-sod-remediation:form-email-recipients` | Policy owner email addresses (`string[]`) |
 
 ## Invoke example
 
@@ -45,7 +45,7 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
     "type": "custom:access-sod-remediation",
     "input": {
         "requestId": "req-access-sod-001",
-        "formName": "Access Catalog SOD Remediation",
+        "formName": "Access Model SOD Remediation",
         "scope": "*",
         "searchIndices": ["roles", "accessprofiles"]
     },
@@ -63,7 +63,7 @@ Offline: [`payloads/access-sod-remediation-offline.json`](../../../payloads/acce
 
 1. Invoke scan; read **parent** account by `requestId` for rollup counts.
 2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields.
-3. Notify policy owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipient`.
+3. Notify policy owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).
 5. Downstream workflow removes entitlements on the chosen side from the role or access profile definition.
 

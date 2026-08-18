@@ -20,7 +20,7 @@ const sodRemediationPersistAttributes = [
     { name: 'sod-remediation:form-url', type: 'STRING', isMulti: false },
     { name: 'sod-remediation:form-email-header', type: 'STRING', isMulti: false },
     { name: 'sod-remediation:form-email-body', type: 'STRING', isMulti: false },
-    { name: 'sod-remediation:form-email-recipient', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:form-email-recipients', type: 'STRING', isMulti: true },
 ]
 
 const mockViolation = {
@@ -274,7 +274,7 @@ describe('sodRemediationOperation', () => {
                         'sod-remediation:form-email-header':
                             '⚠️ SOD Violation Remediation Required — Alice Example',
                         'sod-remediation:form-email-body': expect.stringMatching(/Alice Example/),
-                        'sod-remediation:form-email-recipient': 'owner-default@example.com',
+                        'sod-remediation:form-email-recipients': ['owner-default@example.com'],
                     }),
                 }),
             })
