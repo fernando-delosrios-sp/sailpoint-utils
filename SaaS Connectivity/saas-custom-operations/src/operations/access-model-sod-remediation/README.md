@@ -30,6 +30,7 @@ On success, `ctx.res.send` returns rollup counters alongside `status: 'success'`
 | `access-model-sod-remediation:access-items-scanned` | Count of roles/APs evaluated |
 | `access-model-sod-remediation:violations-found` | Count of (access item × policy) hits |
 | `access-model-sod-remediation:forms-skipped` | Optional; violations skipped because the child persist account at `{requestId}:{accessItemId}:{policyId}` already exists |
+| `access-model-sod-remediation:forms-skipped-instances` | Optional; global invoke-only list of skipped violations (child identity plus access item and policy context). Form URLs and email fields are **not** on `res.send` — read them from the existing child account at `{requestId}:{accessItemId}:{policyId}` |
 | `access-model-sod-remediation:forms-launch-failed` | Optional; form instance creation failures during the scan |
 | `access-model-sod-remediation:forms-persist-failed` | Optional; child persist failures after a form was created |
 
@@ -37,7 +38,7 @@ These fields are **not** persisted on result-source identity `{requestId}`.
 
 ### Scan idempotency and performance
 
-Before launching a form for each violation, the scan checks whether a child result-source account already exists at `{requestId}:{accessItemId}:{policyId}`. When found, the handler skips form creation and child persist (no overwrite) and increments `forms-skipped`. Form instance state is not queried for idempotency. Policy-owner email resolution and access-item entitlement expansion are **memoized within the scan** to avoid repeated ISC calls on large catalogs.
+Before launching a form for each violation, the scan checks whether a child result-source account already exists at `{requestId}:{accessItemId}:{policyId}`. When found, the handler skips form creation and child persist (no overwrite), increments `forms-skipped`, and appends an entry to `forms-skipped-instances` on **`ctx.res.send` only** (never persisted). Per-form outputs (`form-url`, email fields) for created or prior forms remain on child accounts via `ctx.persist` only — the invoke response carries rollup counters plus this skipped list, not individual form payloads. Form instance state is not queried for idempotency. Policy-owner email resolution and access-item entitlement expansion are **memoized within the scan** to avoid repeated ISC calls on large catalogs.
 
 ### Child account (persisted) — `{requestId}:{accessItemId}:{policyId}` (one per form)
 
@@ -73,7 +74,7 @@ Offline: [`payloads/access-model-sod-remediation-offline.json`](../../../payload
 
 ## Workflow integration
 
-1. Invoke scan; read rollup counts from the **invoke response** (`access-model-sod-remediation:access-items-scanned`, `violations-found`, optional `forms-skipped`, `forms-launch-failed`, and `forms-persist-failed`).
+1. Invoke scan; read rollup counts and optional `forms-skipped-instances` from the **invoke response** (`access-model-sod-remediation:access-items-scanned`, `violations-found`, optional `forms-skipped`, `forms-skipped-instances`, `forms-launch-failed`, and `forms-persist-failed`).
 2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields.
 3. Notify policy owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).

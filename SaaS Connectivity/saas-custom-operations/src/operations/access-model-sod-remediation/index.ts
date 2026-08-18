@@ -29,6 +29,10 @@ import { buildGroupContentsHtml } from './group-html'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
 import { accessModelSodRemediationOperationSchema } from './index.schema'
 import { renderTypeTag } from '../../lib/sod-form-html'
+import {
+    AccessModelSodSkippedFormInstance,
+    buildSkippedFormInstance,
+} from './skipped-form-instance'
 
 export interface AccessModelSodRemediationOperation extends OperationSignature {
     command: 'custom:access-model-sod-remediation'
@@ -42,6 +46,7 @@ export interface AccessModelSodRemediationOperation extends OperationSignature {
         'access-model-sod-remediation:access-items-scanned': number
         'access-model-sod-remediation:violations-found': number
         'access-model-sod-remediation:forms-skipped'?: number
+        'access-model-sod-remediation:forms-skipped-instances'?: AccessModelSodSkippedFormInstance[]
         'access-model-sod-remediation:forms-launch-failed'?: number
         'access-model-sod-remediation:forms-persist-failed'?: number
         'access-model-sod-remediation:form-url'?: string
@@ -136,6 +141,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
 
         let violationsFound = 0
         let formsSkipped = 0
+        const skippedFormInstances: AccessModelSodSkippedFormInstance[] = []
         let formsLaunchFailed = 0
         let formsPersistFailed = 0
         let formsCreated = 0
@@ -177,6 +183,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                         `[${ctx.requestId}] access-model-sod-remediation skipping violation accessItem=${violation.accessItem.id} policy=${violation.policy.id}: child persist account already exists identity=${childId}`
                     )
                     formsSkipped += 1
+                    skippedFormInstances.push(buildSkippedFormInstance(childId, violation))
                     continue
                 }
 
@@ -258,6 +265,9 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
             'access-model-sod-remediation:access-items-scanned': accessItems.length,
             'access-model-sod-remediation:violations-found': violationsFound,
             ...(formsSkipped > 0 ? { 'access-model-sod-remediation:forms-skipped': formsSkipped } : {}),
+            ...(skippedFormInstances.length > 0
+                ? { 'access-model-sod-remediation:forms-skipped-instances': skippedFormInstances }
+                : {}),
             ...(formsLaunchFailed > 0
                 ? { 'access-model-sod-remediation:forms-launch-failed': formsLaunchFailed }
                 : {}),

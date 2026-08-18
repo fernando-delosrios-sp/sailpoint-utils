@@ -264,9 +264,20 @@ describe('accessModelSodRemediationOperation', () => {
                 'access-model-sod-remediation:access-items-scanned': 1,
                 'access-model-sod-remediation:violations-found': 1,
                 'access-model-sod-remediation:forms-skipped': 1,
+                'access-model-sod-remediation:forms-skipped-instances': [
+                    {
+                        childIdentity: 'req-access-model-sod-skipped:role-offline-1:policy-offline-1',
+                        accessItemId: 'role-offline-1',
+                        accessItemType: 'ROLE',
+                        accessItemName: 'Finance Role',
+                        policyId: 'policy-offline-1',
+                        policyName: 'AP/AR Separation',
+                    },
+                ],
             })
         )
         expect(vi.mocked(createAccessModelSodRemediationInstance)).not.toHaveBeenCalled()
+        expect(persistedIdentities).not.toContain('req-access-model-sod-skipped:role-offline-1:policy-offline-1')
     })
 
     it('Different parent request does not skip child account from prior scan', async () => {
@@ -294,6 +305,9 @@ describe('accessModelSodRemediationOperation', () => {
             })
         )
         expect(res.send.mock.calls[0]?.[0]).not.toHaveProperty('access-model-sod-remediation:forms-skipped')
+        expect(res.send.mock.calls[0]?.[0]).not.toHaveProperty(
+            'access-model-sod-remediation:forms-skipped-instances'
+        )
         expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalled()
     })
 

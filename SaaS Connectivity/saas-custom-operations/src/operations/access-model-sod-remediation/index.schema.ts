@@ -10,5 +10,6 @@ export const accessModelSodRemediationOperationSchema = defineOperationSchema({
     'access-model-sod-remediation:forms-launch-failed': { type: 'number', optional: true },
     'access-model-sod-remediation:forms-persist-failed': { type: 'number', optional: true },
     'access-model-sod-remediation:forms-skipped': { type: 'number', optional: true },
+    'access-model-sod-remediation:forms-skipped-instances': { type: 'AccessModelSodSkippedFormInstance[]', optional: true },
     'access-model-sod-remediation:violations-found': 'number',
 })
