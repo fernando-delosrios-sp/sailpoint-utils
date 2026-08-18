@@ -122,7 +122,7 @@ function buildSchemaReconciliationPatches(
 }
 
 function buildSchemaPayloadFromRequired(required: Map<string, InferredSchemaAttribute>): SchemaPayload {
-    const coreNames = ['id', 'status', 'date', 'details'] as const
+    const coreNames = ['id', 'status', 'date', 'details', 'operationName'] as const
     const dynamicNames = [...required.keys()]
         .filter((name) => !coreNames.includes(name as (typeof coreNames)[number]))
         .sort((a, b) => a.localeCompare(b))
@@ -235,7 +235,7 @@ function collectRequiredAttributes(
     }
 
     for (const field of outputFields) {
-        if (RESERVED_OUTPUT_KEYS.has(field.name) || field.name === 'details') {
+        if (RESERVED_OUTPUT_KEYS.has(field.name) || field.name === 'details' || field.name === 'operationName') {
             continue
         }
         required.set(field.name, inferSchemaAttribute(field))

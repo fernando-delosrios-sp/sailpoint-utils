@@ -10,6 +10,7 @@ import { OperationSchemaContract, PersistFn, PersistOptions, VerifyPersistedFn, 
 
 export interface TestModePersistOptions {
     sourceId: string
+    command?: string
     operationSchema?: OperationSchemaContract
     onPersist?: () => void
     logger?: FrameworkLogger
@@ -34,7 +35,8 @@ export function createTestModePersist<TOutput extends object>(
             id,
             mergedAttributes,
             status,
-            options.operationSchema?.outputFields
+            options.operationSchema?.outputFields,
+            options.command
         )
         registry.set(id, built)
         recordInhibitedPersist({ identity: id, status: String(built.status ?? 'success'), attributes: built })

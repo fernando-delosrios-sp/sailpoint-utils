@@ -89,6 +89,8 @@ export interface RequestContext<TOutput extends object = Record<string, unknown>
 
 export interface PersistDependencies {
     sourceId: string
+    /** Invoking custom command name (e.g. custom:example) for framework operationName attribute. */
+    command?: string
     log?: FrameworkLogger
     operationSchema?: OperationSchemaContract
     ensureSourceSchema?: (attributeKeys: string[]) => Promise<void>

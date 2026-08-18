@@ -55,11 +55,11 @@ describe('createTestModePersist', () => {
         )
     })
 
-    it('records inhibited failed persist with details in attributes', async () => {
+    it('records inhibited failed persist with details and operationName in attributes', async () => {
         const { lines, logger } = captureLogger()
         const registry = new Map<string, Record<string, unknown>>()
         const { persist } = createTestModePersist(
-            { sourceId: 'test-mode-local', logger },
+            { sourceId: 'test-mode-local', command: 'custom:example', logger },
             registry
         )
 
@@ -71,6 +71,7 @@ describe('createTestModePersist', () => {
         expect(registry.get('req-fail')).toMatchObject({
             status: 'failed',
             details: 'form create failed',
+            operationName: 'custom:example',
         })
     })
 

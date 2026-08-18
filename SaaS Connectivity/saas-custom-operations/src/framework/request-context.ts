@@ -66,6 +66,7 @@ export function createRequestContext<TOutput extends object>(
 
     const persistDeps: PersistDependencies = {
         sourceId,
+        command: deps.command,
         log,
         operationSchema: deps.operationSchema,
         ensureSourceSchema: deps.operationSchema
@@ -102,6 +103,7 @@ export function createRequestContext<TOutput extends object>(
         ? createTestModePersist<TOutput>(
               {
                   sourceId,
+                  command: deps.command,
                   operationSchema: deps.operationSchema,
                   onPersist: deps.onTestModePersist,
                   logger: log,

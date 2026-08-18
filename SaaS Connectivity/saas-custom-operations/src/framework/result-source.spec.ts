@@ -103,7 +103,7 @@ describe('resolveSourceByName', () => {
 
         const createCall = (sourcesApi.createSourceSchemaV1 as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
         const attributeNames = createCall.schema.attributes.map((attr: { name: string }) => attr.name)
-        expect(attributeNames).toEqual(['id', 'status', 'date', 'details'])
+        expect(attributeNames).toEqual(['id', 'status', 'date', 'details', 'operationName'])
     })
 
     it('rejects non-DelimitedFile source with the same name', async () => {
@@ -211,6 +211,7 @@ describe('applyBaseAccountSchema', () => {
                             { name: 'status', type: 'STRING', isMulti: false },
                             { name: 'date', type: 'STRING', isMulti: false },
                             { name: 'details', type: 'STRING', isMulti: false },
+                            { name: 'operationName', type: 'STRING', isMulti: false },
                             { name: 'count', type: 'STRING', isMulti: false },
                         ],
                     },
@@ -240,6 +241,7 @@ describe('ensureSourceSchema', () => {
                             { name: 'status', type: 'STRING', isMulti: false },
                             { name: 'date', type: 'STRING', isMulti: false },
                             { name: 'details', type: 'STRING', isMulti: false },
+                            { name: 'operationName', type: 'STRING', isMulti: false },
                             { name: 'summary', type: 'STRING', isMulti: false },
                         ],
                     },
@@ -271,6 +273,49 @@ describe('ensureSourceSchema', () => {
         )
     })
 
+    it('adds missing operationName core attribute to existing schema', async () => {
+        const sourcesApi = {
+            getSourceSchemasV1: vi.fn().mockResolvedValue({
+                data: [
+                    {
+                        id: 'schema-1',
+                        name: 'account',
+                        identityAttribute: 'id',
+                        displayAttribute: 'id',
+                        nativeObjectType: 'User',
+                        attributes: [
+                            { name: 'id', type: 'STRING', isMulti: false },
+                            { name: 'status', type: 'STRING', isMulti: false },
+                            { name: 'date', type: 'STRING', isMulti: false },
+                            { name: 'details', type: 'STRING', isMulti: false },
+                        ],
+                    },
+                ],
+            }),
+            updateSourceSchemaV1: vi.fn().mockResolvedValue({}),
+            createSourceSchemaV1: vi.fn(),
+        } as unknown as SourcesApi
+
+        await ensureSourceSchema(sourcesApi, 'source-1', [{ name: 'summary', type: 'string' }], ['summary'])
+
+        expect(sourcesApi.updateSourceSchemaV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sourceId: 'source-1',
+                schemaId: 'schema-1',
+                jsonPatchOperation: expect.arrayContaining([
+                    expect.objectContaining({
+                        op: 'replace',
+                        path: '/attributes',
+                        value: expect.arrayContaining([
+                            expect.objectContaining({ name: 'operationName', type: 'STRING', isMulti: false }),
+                            expect.objectContaining({ name: 'summary', type: 'STRING', isMulti: false }),
+                        ]),
+                    }),
+                ]),
+            })
+        )
+    })
+
     it('adds missing output attribute to schema', async () => {
         const sourcesApi = {
             getSourceSchemasV1: vi.fn().mockResolvedValue({
@@ -286,6 +331,7 @@ describe('ensureSourceSchema', () => {
                             { name: 'status', type: 'STRING', isMulti: false },
                             { name: 'date', type: 'STRING', isMulti: false },
                             { name: 'details', type: 'STRING', isMulti: false },
+                            { name: 'operationName', type: 'STRING', isMulti: false },
                         ],
                     },
                 ],
@@ -352,6 +398,7 @@ describe('ensureSourceSchema', () => {
                             { name: 'status', type: 'STRING', isMulti: false },
                             { name: 'date', type: 'STRING', isMulti: false },
                             { name: 'details', type: 'STRING', isMulti: false },
+                            { name: 'operationName', type: 'STRING', isMulti: false },
                             { name: 'count', type: 'STRING', isMulti: false },
                         ],
                     },
@@ -384,6 +431,7 @@ describe('ensureSourceSchema', () => {
                             { name: 'status', type: 'STRING', isMulti: false },
                             { name: 'date', type: 'STRING', isMulti: false },
                             { name: 'details', type: 'STRING', isMulti: false },
+                            { name: 'operationName', type: 'STRING', isMulti: false },
                         ],
                     },
                 ],

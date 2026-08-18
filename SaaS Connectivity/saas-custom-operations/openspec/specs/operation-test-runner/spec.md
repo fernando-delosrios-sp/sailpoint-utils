@@ -67,5 +67,5 @@ The local operation runner (`npm run call:op`) SHALL exit with code 1 when the h
 
 - **GIVEN** test mode inhibits ISC writes and an operation terminates with status failed
 - **WHEN** `runPayloadFromPath` runs with config-less or testMode payload
-- **THEN** the payload output summary or test-mode inhibited persist log SHALL include the failed account identity, status failed, and details attribute when automatic failure persist ran
+- **THEN** the payload output summary or test-mode inhibited persist log SHALL include the failed account identity, status failed, details attribute, and operationName attribute when automatic failure persist ran
 

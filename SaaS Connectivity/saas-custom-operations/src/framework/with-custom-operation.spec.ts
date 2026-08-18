@@ -402,6 +402,7 @@ describe('customOperation', () => {
                         expect.objectContaining({ name: 'status', type: 'STRING' }),
                         expect.objectContaining({ name: 'date', type: 'STRING' }),
                         expect.objectContaining({ name: 'details', type: 'STRING' }),
+                        expect.objectContaining({ name: 'operationName', type: 'STRING' }),
                     ]),
                 }),
             })
@@ -409,7 +410,7 @@ describe('customOperation', () => {
 
         const createCall = sourcesApi.createSourceSchemaV1.mock.calls[0]?.[0]
         const attributeNames = createCall.schema.attributes.map((attr: { name: string }) => attr.name)
-        expect(attributeNames).toEqual(['id', 'status', 'date', 'details'])
+        expect(attributeNames).toEqual(['id', 'status', 'date', 'details', 'operationName'])
         expect(handler).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 'new-source-id' }), {})
     })
 
@@ -566,7 +567,7 @@ describe('customOperation', () => {
         )
 
         beginPayloadOutputCapture()
-        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-fail-details' }, res as any)
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'req-fail-details' }, res as any)
         const inhibited = endPayloadOutputCapture()
 
         expect(res.send).toHaveBeenCalledWith(
@@ -578,6 +579,7 @@ describe('customOperation', () => {
                 status: 'failed',
                 attributes: expect.objectContaining({
                     details: expect.stringMatching(/operation failed/),
+                    operationName: 'custom:example',
                 }),
             }),
         ])
@@ -591,14 +593,17 @@ describe('customOperation', () => {
         })
 
         beginPayloadOutputCapture()
-        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-send-failed' }, res as any)
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'req-send-failed' }, res as any)
         const inhibited = endPayloadOutputCapture()
 
         expect(inhibited).toEqual([
             expect.objectContaining({
                 identity: 'req-send-failed',
                 status: 'failed',
-                attributes: expect.objectContaining({ details: 'form create failed' }),
+                attributes: expect.objectContaining({
+                    details: 'form create failed',
+                    operationName: 'custom:example',
+                }),
             }),
         ])
     })

@@ -92,6 +92,7 @@ describe('buildAccountAttributes', () => {
             { outcome: 'processed', count: 42 },
             undefined,
             outputFields,
+            undefined,
             now
         )
 
@@ -110,6 +111,7 @@ describe('buildAccountAttributes', () => {
             { errorCode: 'timeout' },
             'failed',
             [{ name: 'errorCode', type: 'string' }],
+            undefined,
             now
         )
 
@@ -127,6 +129,7 @@ describe('buildAccountAttributes', () => {
                 { name: 'name', type: 'string' },
                 { name: 'emails', type: 'string[]' },
             ],
+            undefined,
             now
         )
 
@@ -138,14 +141,16 @@ describe('buildAccountAttributes', () => {
         const attributes = buildAccountAttributes(
             'source-1',
             'req-001',
-            { outcome: 'ok', id: 'override', status: 'override' },
+            { outcome: 'ok', id: 'override', status: 'override', operationName: 'custom:other' },
             undefined,
             [{ name: 'outcome', type: 'string' }],
+            'custom:example',
             now
         )
 
         expect(attributes.id).toBe('req-001')
         expect(attributes.status).toBe('success')
+        expect(attributes.operationName).toBe('custom:example')
         expect(attributes.outcome).toBe('ok')
     })
 
@@ -153,13 +158,56 @@ describe('buildAccountAttributes', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
         const longId = 'r'.repeat(ISC_IDENTITY_MAX_LENGTH + 10)
 
-        const attributes = buildAccountAttributes('source-1', longId, undefined, undefined, undefined, now)
+        const attributes = buildAccountAttributes('source-1', longId, undefined, undefined, undefined, undefined, now)
 
         expect(attributes.id).toHaveLength(ISC_IDENTITY_MAX_LENGTH)
         expect(attributes.id).toBe(longId.slice(0, ISC_IDENTITY_MAX_LENGTH))
         expect(warn).toHaveBeenCalledWith(
             expect.stringContaining(`[persist] truncated identity from ${longId.length} to ${ISC_IDENTITY_MAX_LENGTH} chars`)
         )
+    })
+
+    it('sets operationName from command context', () => {
+        const attributes = buildAccountAttributes(
+            'source-1',
+            'req-001',
+            { outcome: 'done' },
+            undefined,
+            [{ name: 'outcome', type: 'string' }],
+            'custom:example',
+            now
+        )
+
+        expect(attributes.operationName).toBe('custom:example')
+    })
+
+    it('ignores author-supplied operationName in attributes', () => {
+        const attributes = buildAccountAttributes(
+            'source-1',
+            'req-001',
+            { outcome: 'ok', operationName: 'custom:other' },
+            undefined,
+            [{ name: 'outcome', type: 'string' }],
+            'custom:example',
+            now
+        )
+
+        expect(attributes.operationName).toBe('custom:example')
+        expect(attributes.outcome).toBe('ok')
+    })
+
+    it('omits operationName when command is undefined', () => {
+        const attributes = buildAccountAttributes(
+            'source-1',
+            'req-001',
+            { outcome: 'done' },
+            undefined,
+            [{ name: 'outcome', type: 'string' }],
+            undefined,
+            now
+        )
+
+        expect(attributes.operationName).toBeUndefined()
     })
 })
 
@@ -474,8 +522,25 @@ describe('createPersist', () => {
         )
     })
 
+    it('stores operationName from persist command on success persist', async () => {
+        const deps = createTestDeps({
+            command: 'custom:example',
+            operationSchema: { outputFields: [{ name: 'outcome', type: 'string' }] },
+        })
+        const persist = createPersist<{ outcome: string }>(deps, new Map())
+
+        await persist('req-001', { outcome: 'done' })
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                outcome: 'done',
+                operationName: 'custom:example',
+            })
+        )
+    })
+
     it('stores details from persist options on failure', async () => {
-        const deps = createTestDeps()
+        const deps = createTestDeps({ command: 'custom:example' })
         const persist = createPersist<{ outcome: string }>(deps, new Map())
 
         await persist('req-001', undefined, 'failed', { verify: false, details: 'operation failed' })
@@ -484,6 +549,7 @@ describe('createPersist', () => {
             expect.objectContaining({
                 status: 'failed',
                 details: 'operation failed',
+                operationName: 'custom:example',
             })
         )
         expect(deps.readAccount).not.toHaveBeenCalled()

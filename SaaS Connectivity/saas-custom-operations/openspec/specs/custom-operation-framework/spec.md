@@ -32,7 +32,7 @@ The framework SHALL pre-configure sailpoint-api-client instances on the request 
 
 ### Requirement: Result persistence helper
 
-The framework SHALL provide persist(id, attributes?, status?, options?) on a RequestContext typed to the operation output signature. Before writing the account, the framework SHALL reconcile the result source schema for the current operation. The attributes parameter SHALL accept Partial of the operation output type. The framework SHALL always set id, sourceId, date, and status; author-supplied keys matching those names SHALL be ignored. The framework SHALL format attribute values for ISC storage using typed inference: strings booleans numbers bigint and Date stored as native values matching their ISC types, objects and unknown values JSON-serialized to STRING, arrays stored per element type rules with isMulti true on schema. Before writing, the framework SHALL enforce ISC account value limits: the persist identity (account id / nativeIdentity) SHALL NOT exceed 128 characters, and each STRING attribute value (including each element of a STRING array and JSON-serialized object values) SHALL NOT exceed 256 characters. Values exceeding a limit SHALL be truncated to the limit and the framework SHALL log a warning naming the attribute or identity context. The options parameter SHALL accept verify boolean where verify defaults to true. When no account exists for the identity on the result source, the framework SHALL create the account via createAccountV1, wait for the provisioning task to complete, and read the account back. When an account already exists for the identity, the framework SHALL update the account via putAccountV1, wait for the provisioning task when one is returned, and read the account back. The framework SHALL NOT remove existing accounts via deleteAccountAsyncV1 before writing. When verify is true, the framework SHALL read the account back and verify persisted attributes match written values with type-aware comparison before returning control. When verify is false, the framework SHALL skip inline read-back but SHALL record written attributes for later batch verification.
+The framework SHALL provide persist(id, attributes?, status?, options?) on a RequestContext typed to the operation output signature. Before writing the account, the framework SHALL reconcile the result source schema for the current operation. The attributes parameter SHALL accept Partial of the operation output type. The framework SHALL always set id, sourceId, date, and status; when the invocation command is known, the framework SHALL always set operationName from that command; author-supplied keys matching id, status, date, or operationName SHALL be ignored. The framework SHALL format attribute values for ISC storage using typed inference: strings booleans numbers bigint and Date stored as native values matching their ISC types, objects and unknown values JSON-serialized to STRING, arrays stored per element type rules with isMulti true on schema. Before writing, the framework SHALL enforce ISC account value limits: the persist identity (account id / nativeIdentity) SHALL NOT exceed 128 characters, and each STRING attribute value (including each element of a STRING array and JSON-serialized object values) SHALL NOT exceed 256 characters. Values exceeding a limit SHALL be truncated to the limit and the framework SHALL log a warning naming the attribute or identity context. The options parameter SHALL accept verify boolean where verify defaults to true. When no account exists for the identity on the result source, the framework SHALL create the account via createAccountV1, wait for the provisioning task to complete, and read the account back. When an account already exists for the identity, the framework SHALL update the account via putAccountV1, wait for the provisioning task when one is returned, and read the account back. The framework SHALL NOT remove existing accounts via deleteAccountAsyncV1 before writing. When verify is true, the framework SHALL read the account back and verify persisted attributes match written values with type-aware comparison before returning control. When verify is false, the framework SHALL skip inline read-back but SHALL record written attributes for later batch verification.
 
 #### Scenario: Persist stores typed number value
 
@@ -115,8 +115,8 @@ The framework SHALL provide persist(id, attributes?, status?, options?) on a Req
 #### Scenario: Persist ignores reserved framework keys in attributes
 
 - **GIVEN** a request context typed to an output with outcome string
-- **WHEN** ctx.persist('req-001', { id: 'override', status: 'override', outcome: 'ok' }) is called
-- **THEN** the framework SHALL set id and status from framework logic
+- **WHEN** ctx.persist('req-001', { id: 'override', status: 'override', operationName: 'custom:other', outcome: 'ok' }) is called
+- **THEN** the framework SHALL set id, status, and operationName from framework logic
 - **AND** the framework SHALL persist outcome ok
 
 #### Scenario: Positional param mapping
@@ -377,7 +377,7 @@ The framework SHALL attach an OperationSchemaContract to the request context con
 
 ### Requirement: Base account schema on result source create
 
-When the framework auto-provisions a new DelimitedFile result source, it SHALL apply the **base account schema** immediately after source creation. The base schema SHALL include core framework attributes (`id`, `status`, `date`, `details`) plus the **output fields of the invoking custom operation** (from `operationSchema.outputFields` on the current invocation), excluding reserved framework keys, with typed inference matching templates generator and persist-time reconciliation rules.
+When the framework auto-provisions a new DelimitedFile result source, it SHALL apply the **base account schema** immediately after source creation. The base schema SHALL include core framework attributes (`id`, `status`, `date`, `details`, `operationName`) plus the **output fields of the invoking custom operation** (from `operationSchema.outputFields` on the current invocation), excluding reserved framework keys, with typed inference matching templates generator and persist-time reconciliation rules.
 
 If an account schema already exists on the newly created source (for example from ISC schema discovery), the framework SHALL align that schema to the base schema by adding missing attributes and correcting schema metadata (`identityAttribute`, `displayAttribute`, `nativeObjectType`, `name`) when absent or incorrect. The framework SHALL NOT remove existing attributes. Type and isMulti conflicts SHALL follow the same warn-only policy as persist-time schema reconciliation.
 
@@ -389,7 +389,7 @@ When `operationSchema` is unavailable at source create, the framework SHALL appl
 - **AND** the invoking operation declares output fields `summary` and `step`
 - **AND** other registered operations declare output field `violationId`
 - **WHEN** a custom operation invocation auto-creates the result source
-- **THEN** the framework SHALL create or align the account schema to include `id`, `status`, `date`, `details`, `summary`, and `step`
+- **THEN** the framework SHALL create or align the account schema to include `id`, `status`, `date`, `details`, `operationName`, `summary`, and `step`
 - **AND** the account schema SHALL NOT include `violationId` from other registered operations
 - **AND** SHALL set `identityAttribute` to `id`
 
@@ -397,7 +397,7 @@ When `operationSchema` is unavailable at source create, the framework SHALL appl
 
 - **GIVEN** source create completes and ISC has already materialized an account schema with only discovered CSV columns
 - **WHEN** the framework applies the base account schema for the invoking operation
-- **THEN** the framework SHALL patch the existing account schema to add core attributes and the invoking operation's output fields including `details`
+- **THEN** the framework SHALL patch the existing account schema to add core attributes and the invoking operation's output fields including `details` and `operationName`
 - **AND** SHALL NOT fail with a duplicate schema create error
 
 #### Scenario: Base schema excludes reserved framework keys
@@ -425,7 +425,7 @@ When `operationSchema` is unavailable at source create, the framework SHALL appl
 - **GIVEN** no ISC source exists with the configured sourceName
 - **AND** the invoking handler has no resolvable `operationSchema`
 - **WHEN** a custom operation invocation auto-creates the result source
-- **THEN** the applied base account schema SHALL include only `id`, `status`, `date`, and `details`
+- **THEN** the applied base account schema SHALL include only `id`, `status`, `date`, `details`, and `operationName`
 
 ---
 
@@ -470,7 +470,7 @@ The framework SHALL reconcile the result source account schema before each ctx.p
 
 - **GIVEN** a newly created result source with base schema applied
 - **WHEN** ctx.persist is called for any operation
-- **THEN** the account schema SHALL include id status and date attributes
+- **THEN** the account schema SHALL include id, status, date, details, and operationName attributes
 - **AND** identityAttribute SHALL be id
 
 #### Scenario: Type conflict warns and keeps existing
@@ -807,24 +807,63 @@ The framework SHALL include a mandatory STRING attribute named `details` on the 
 - **THEN** attribute `details` SHALL come only from framework core attributes
 - **AND** SHALL NOT be duplicated from operation output field definitions
 
+### Requirement: Operation name core account attribute
+
+The framework SHALL include a mandatory STRING attribute named `operationName` on the result source base account schema alongside core attributes `id`, `status`, `date`, and `details`. Schema reconciliation at persist time SHALL ensure `operationName` exists on the account schema before writing any account. The `operationName` attribute SHALL NOT be generated from `OperationSignature.output` fields or operation schema sidecars.
+
+#### Scenario: Base schema includes operationName on new source
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **WHEN** a custom operation invocation auto-creates the result source
+- **THEN** the applied base account schema SHALL include attribute `operationName` with type STRING and isMulti false
+- **AND** SHALL include attributes `id`, `status`, `date`, and `details`
+
+#### Scenario: Persist reconciles missing operationName on existing source
+
+- **GIVEN** a result source account schema lacks attribute `operationName`
+- **WHEN** ctx.persist is called for any operation
+- **THEN** the framework SHALL add `operationName` to the account schema before writing the account
+
+#### Scenario: OperationName excluded from operation output codegen union
+
+- **GIVEN** an operation declares output fields in its OperationSignature interface
+- **WHEN** the templates generator builds reference account schema from the union of registered operation outputs
+- **THEN** attribute `operationName` SHALL come only from framework core attributes
+- **AND** SHALL NOT be duplicated from operation output field definitions
+
+#### Scenario: Success persist sets operationName from command
+
+- **GIVEN** a custom operation invoked with commandType `custom:example`
+- **WHEN** ctx.persist('req-001', { outcome: 'done' }) is called
+- **THEN** the written account SHALL include operationName `custom:example`
+
+#### Scenario: Handler-supplied operationName ignored
+
+- **GIVEN** a custom operation invoked with commandType `custom:example`
+- **WHEN** ctx.persist('req-001', { outcome: 'done', operationName: 'custom:other' }) is called
+- **THEN** the written account SHALL include operationName `custom:example`
+- **AND** SHALL NOT store `custom:other`
+
 ### Requirement: Automatic failed account persist on terminal failure
 
-The framework SHALL upsert a result source account for the invoke `requestId` with `status` failed and `details` set to the normalized failure message whenever a `customOperation`-wrapped invocation terminates with `{ status: 'failed', error }` on the command response and a request context with persist was initialized. This SHALL apply to handler throws normalized by `toConnectorError`, initialization failures before the handler completes, persist verification failures, and handler-initiated `res.send({ status: 'failed', error })` payloads. The framework SHALL perform this persist before or together with sending the failed invoke response. If failure persist itself errors, the framework SHALL log the error and SHALL still send the failed invoke response without throwing.
+The framework SHALL upsert a result source account for the invoke `requestId` with `status` failed, `details` set to the normalized failure message, and `operationName` set from the invocation command when known whenever a `customOperation`-wrapped invocation terminates with `{ status: 'failed', error }` on the command response and a request context with persist was initialized. This SHALL apply to handler throws normalized by `toConnectorError`, initialization failures before the handler completes, persist verification failures, and handler-initiated `res.send({ status: 'failed', error })` payloads. The framework SHALL perform this persist before or together with sending the failed invoke response. If failure persist itself errors, the framework SHALL log the error and SHALL still send the failed invoke response without throwing.
 
 #### Scenario: Handler throw persists failed account
 
 - **GIVEN** a custom operation handler throws `new Error('operation failed')`
 - **AND** invoke input contains requestId `wf-run-001`
+- **AND** the invocation commandType is `custom:example`
 - **WHEN** ISC invokes the custom command via `customOperation`
-- **THEN** the framework SHALL upsert an account with identity `wf-run-001`, status failed, and details containing `operation failed`
+- **THEN** the framework SHALL upsert an account with identity `wf-run-001`, status failed, details containing `operation failed`, and operationName `custom:example`
 - **AND** the invoke response SHALL include status failed and error containing `operation failed`
 
 #### Scenario: Handler sends failed response persists account
 
 - **GIVEN** a handler calls `ctx.res.send({ status: 'failed', error: 'form create failed' })`
 - **AND** invoke input contains requestId `wf-run-002`
+- **AND** the invocation commandType is `custom:example`
 - **WHEN** the custom command completes
-- **THEN** the framework SHALL upsert an account with identity `wf-run-002`, status failed, and details `form create failed`
+- **THEN** the framework SHALL upsert an account with identity `wf-run-002`, status failed, details `form create failed`, and operationName `custom:example`
 
 #### Scenario: Initialization failure persists failed account
 

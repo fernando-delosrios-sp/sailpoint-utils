@@ -143,6 +143,7 @@ export function buildAccountAttributes<TOutput extends object>(
     attributes: Partial<TOutput> | undefined,
     status: string | undefined,
     outputFields: OperationField[] | undefined,
+    command?: string,
     now: () => Date = () => new Date()
 ): Record<string, unknown> {
     const result: Record<string, unknown> = {
@@ -150,6 +151,10 @@ export function buildAccountAttributes<TOutput extends object>(
         id: truncateForIscStorage(id, ISC_IDENTITY_MAX_LENGTH, 'identity'),
         date: now().toISOString(),
         status: status ?? DEFAULT_STATUS,
+    }
+
+    if (command) {
+        result.operationName = truncateForIscStorage(command, ISC_STRING_ATTRIBUTE_MAX_LENGTH, 'operationName')
     }
 
     if (!attributes) {
@@ -540,7 +545,8 @@ export function createPersist<TOutput extends object>(
             id,
             mergedAttributes,
             status,
-            deps.operationSchema?.outputFields
+            deps.operationSchema?.outputFields,
+            deps.command
         )
         registry.set(id, built)
         logPersistAccountContents(deps.log, 'account contents', id, built)

@@ -18,7 +18,7 @@ describe('formatSpreadJson', () => {
 })
 
 describe('formatPayloadOutputSummary', () => {
-    it('includes failed inhibited persist details in payload output summary', () => {
+    it('includes failed inhibited persist details and operationName in payload output summary', () => {
         const formatted = formatPayloadOutputSummary({
             type: 'custom:example',
             requestId: 'offline-fail',
@@ -31,6 +31,7 @@ describe('formatPayloadOutputSummary', () => {
                         id: 'offline-fail',
                         status: 'failed',
                         details: 'operation failed',
+                        operationName: 'custom:example',
                     },
                 },
             ],
@@ -38,6 +39,7 @@ describe('formatPayloadOutputSummary', () => {
         })
 
         expect(formatted).toContain('"details": "operation failed"')
+        expect(formatted).toContain('"operationName": "custom:example"')
         expect(formatted).toContain('"status": "failed"')
     })
 

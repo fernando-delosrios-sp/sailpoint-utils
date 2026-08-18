@@ -38,7 +38,7 @@ Configure a **source name** in connector config (`sourceName`). On each invocati
 2. Creates a DelimitedFile source with CSV provisioning if missing (owner = token identity), applying the **base account schema** (core attrs plus the **invoking operation's** output fields)
 3. Reconciles the account schema before each `ctx.persist` for the current operation's output fields (add-only for attributes from other operations on first use)
 
-Core attributes are always ensured on the schema: `id` (identity), `status`, `date`, and `details` (human-readable outcome text).
+Core attributes are always ensured on the schema: `id` (identity), `status`, `date`, `details` (human-readable outcome text), and `operationName` (invoking custom command, e.g. `custom:sod-remediation`).
 
 **Token scopes:** The access token must allow source read/create/update and account create on the result source. PAT or OAuth client credentials used in workflows need `sp:manage:source`, `sp:manage:source-schema`, and account provisioning scopes for the tenant.
 
@@ -238,8 +238,8 @@ Content-Type: application/json
 After invoke, read persisted output from the result source using **Get Accounts** filtered by native identity:
 
 - Filter: `nativeIdentity eq "{requestId}"` (or a child id such as `{requestId}:detail`)
-- Map operation output attributes, `status`, `date`, and optional `details` from account attributes
-- On failure, the framework upserts a result account with `status: failed` and `details` set to the error message (same text as invoke `{ error }`), so Get Accounts works for failed invocations too
+- Map operation output attributes, `status`, `date`, `operationName`, and optional `details` from account attributes
+- On failure, the framework upserts a result account with `status: failed`, `operationName`, and `details` set to the error message (same text as invoke `{ error }`), so Get Accounts works for failed invocations too
 
 The reference workflow export demonstrates this pattern in the **Read SaaS Custom Operation Result** step.
 
@@ -364,6 +364,7 @@ ctx.verifyPersisted(ids)
 - **`attributes`** — only keys declared in the operation output schema; typed per `OperationSignature.output`
 - **`status`** — optional, defaults to `"success"`
 - **`details`** — optional STRING on success persists for informative text; on terminal failure the framework sets `details` to the normalized error message automatically
+- **`operationName`** — framework-managed STRING set on every persist to the invoking custom command (`context.commandType`); handlers cannot override
 - **`date`** — always set automatically to the current timestamp
 - **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
 

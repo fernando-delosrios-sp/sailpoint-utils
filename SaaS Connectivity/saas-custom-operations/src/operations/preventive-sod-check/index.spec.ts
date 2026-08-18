@@ -378,6 +378,7 @@ describe('preventiveSodCheckOperation', () => {
             expect(Object.keys(attributes).sort()).toEqual([
                 'date',
                 'id',
+                'operationName',
                 'preventive-sod-check:has-violation',
                 'preventive-sod-check:situation-summary',
                 'preventive-sod-check:violated-policy-names',

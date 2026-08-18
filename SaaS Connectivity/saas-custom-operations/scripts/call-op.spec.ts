@@ -181,7 +181,10 @@ describe('call-op', () => {
             expect.objectContaining({
                 identity: 'offline-fail-001',
                 status: 'failed',
-                attributes: expect.objectContaining({ details: 'operation failed' }),
+                attributes: expect.objectContaining({
+                    details: 'operation failed',
+                    operationName: 'custom:probe-failed',
+                }),
             }),
         ])
     })
