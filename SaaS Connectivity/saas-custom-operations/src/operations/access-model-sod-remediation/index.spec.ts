@@ -240,18 +240,9 @@ describe('accessModelSodRemediationOperation', () => {
         }
     })
 
-    it('includes forms-skipped on res.send when duplicate form exists for same parent request', async () => {
-        searchFormInstancesByTenantV1.mockResolvedValue({
-            data: [
-                {
-                    state: 'ASSIGNED',
-                    formInput: {
-                        parentRequestId: 'req-access-model-sod-skipped',
-                        accessItemId: 'role-offline-1',
-                        policyId: 'policy-offline-1',
-                    },
-                },
-            ],
+    it('includes forms-skipped on res.send when child persist account already exists', async () => {
+        persistedAccounts.set('req-access-model-sod-skipped:role-offline-1:policy-offline-1', {
+            id: 'req-access-model-sod-skipped:role-offline-1:policy-offline-1',
         })
         const res = { send: vi.fn() }
 
@@ -275,20 +266,12 @@ describe('accessModelSodRemediationOperation', () => {
                 'access-model-sod-remediation:forms-skipped': 1,
             })
         )
+        expect(vi.mocked(createAccessModelSodRemediationInstance)).not.toHaveBeenCalled()
     })
 
-    it('Different parent request does not skip pending form from prior scan', async () => {
-        searchFormInstancesByTenantV1.mockResolvedValue({
-            data: [
-                {
-                    state: 'ASSIGNED',
-                    formInput: {
-                        parentRequestId: 'req-access-model-sod-prior',
-                        accessItemId: 'role-offline-1',
-                        policyId: 'policy-offline-1',
-                    },
-                },
-            ],
+    it('Different parent request does not skip child account from prior scan', async () => {
+        persistedAccounts.set('req-access-model-sod-prior:role-offline-1:policy-offline-1', {
+            id: 'req-access-model-sod-prior:role-offline-1:policy-offline-1',
         })
         const res = { send: vi.fn() }
 
@@ -314,7 +297,7 @@ describe('accessModelSodRemediationOperation', () => {
         expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalled()
     })
 
-    it('Form instance search bounded per scan', async () => {
+    it('does not search form instances for idempotency', async () => {
         searchFormInstancesByTenantV1.mockClear()
         vi.mocked(listEnabledRoles).mockResolvedValueOnce([
             { id: 'role-offline-1', name: 'Finance Role', type: 'ROLE' },
@@ -334,7 +317,7 @@ describe('accessModelSodRemediationOperation', () => {
             await accessModelSodRemediationOperation(
                 { commandType: 'custom:access-model-sod-remediation' } as never,
                 {
-                    requestId: 'req-access-model-sod-bounded-search',
+                    requestId: 'req-access-model-sod-no-form-search',
                     formName: 'Access Model SOD Remediation',
                     searchIndices: ['roles'],
                 },
@@ -342,7 +325,7 @@ describe('accessModelSodRemediationOperation', () => {
             )
         })
 
-        expect(searchFormInstancesByTenantV1).toHaveBeenCalledTimes(1)
+        expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 status: 'success',

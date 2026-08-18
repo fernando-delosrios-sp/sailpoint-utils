@@ -8,6 +8,7 @@ import {
     resolvePolicyOwnerId,
     SodPolicySummary,
 } from '../../isc/sod-policies'
+import { findAccountOnSource } from '../../isc/accounts'
 import { resolveIdentityEmail } from '../../isc/public-identities'
 import { resolveIdentityEmailOffline } from '../../isc/public-identities/offline-data'
 import { resolveTokenIdentity } from '../../isc/token-identity'
@@ -22,13 +23,7 @@ import {
 } from './constants'
 import { detectAccessItemViolations } from './detect-violations'
 import { ExpandedAccessItemEntitlements, expandAccessItemEntitlements } from './expand-access-item-entitlements'
-import {
-    AssignedRemediationInstanceCache,
-    createAccessModelSodRemediationInstance,
-    createAssignedRemediationInstanceCache,
-    ensureAccessModelSodFormDefinition,
-    hasAssignedRemediationInstance,
-} from './form-service'
+import { createAccessModelSodRemediationInstance, ensureAccessModelSodFormDefinition } from './form-service'
 import { buildFormEmailBody, buildFormEmailHeader } from './form-email'
 import { buildGroupContentsHtml } from './group-html'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
@@ -145,9 +140,6 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
         let formsPersistFailed = 0
         let formsCreated = 0
 
-        const assignedInstanceCache: AssignedRemediationInstanceCache | undefined = offline
-            ? undefined
-            : createAssignedRemediationInstanceCache(formDefinitionId)
         const expandedByAccessItemId = new Map<string, ExpandedAccessItemEntitlements>()
         const ownerEmailById = new Map<string, string>()
 
@@ -175,18 +167,15 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     break
                 }
 
-                const alreadyAssigned = offline
-                    ? false
-                    : await hasAssignedRemediationInstance(
-                          ctx.sdk.forms,
-                          formDefinitionId,
-                          ctx.requestId,
-                          violation.accessItem.id,
-                          violation.policy.id,
-                          assignedInstanceCache
-                      )
+                const childId = childPersistIdentity(ctx.requestId, violation.accessItem.id, violation.policy.id)
+                const existingChildAccount = offline
+                    ? undefined
+                    : await findAccountOnSource(ctx.sdk.accounts, ctx.sourceId, childId)
 
-                if (alreadyAssigned) {
+                if (existingChildAccount) {
+                    console.log(
+                        `[${ctx.requestId}] access-model-sod-remediation skipping violation accessItem=${violation.accessItem.id} policy=${violation.policy.id}: child persist account already exists identity=${childId}`
+                    )
                     formsSkipped += 1
                     continue
                 }
@@ -236,7 +225,6 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     continue
                 }
 
-                const childId = childPersistIdentity(ctx.requestId, violation.accessItem.id, violation.policy.id)
                 try {
                     await ctx.persist(
                         childId,

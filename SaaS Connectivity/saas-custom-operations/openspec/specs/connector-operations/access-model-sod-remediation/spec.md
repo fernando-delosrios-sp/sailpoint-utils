@@ -166,46 +166,39 @@ The access-model-sod-remediation operation SHALL detect violations by expanding 
 - **THEN** each access item SHALL be evaluated independently
 - **AND** separate forms MAY be created for role and AP violations of the same policy
 
-### Requirement: Request-scoped pending form dedupe
+### Requirement: Child persist account idempotency
 
-The access-model-sod-remediation operation SHALL treat a remediation form instance as pending when its state is `ASSIGNED`. Before creating a form for a violation, the handler SHALL search instances of the remediation form definition and skip creation when an ASSIGNED instance exists with matching `formInput.parentRequestId`, `formInput.accessItemId`, and `formInput.policyId` for the current scan invoke. Dedupe SHALL NOT consider ASSIGNED instances from other parent request ids or instances missing `formInput.parentRequestId`.
+The access-model-sod-remediation operation SHALL skip form launch and child persist for a violation when a result-source account already exists on the operation source for child persist identity `` `${requestId}:{accessItemId}:{policyId}` ``. The handler SHALL NOT search form instances for scan idempotency. When skipping, the handler SHALL increment `access-model-sod-remediation:forms-skipped` in the final `ctx.res.send` summary and SHALL NOT overwrite the existing child account.
 
-#### Scenario: Same parent request skips duplicate pending form
+#### Scenario: Existing child account skips form and persist
 
 - **GIVEN** invoke `requestId` `scan-001` detects violation for access item `role-r` and policy `policy-p`
-- **AND** an ASSIGNED standalone form instance already exists for form definition `{formName}` with `formInput.parentRequestId` `scan-001`, `formInput.accessItemId` `role-r`, and `formInput.policyId` `policy-p`
-- **WHEN** the scan detects the same violation again on the same invoke or a retry with `requestId` `scan-001`
-- **THEN** the handler SHALL NOT create a duplicate form instance
+- **AND** a result-source account already exists with native identity `scan-001:role-r:policy-p`
+- **WHEN** the scan evaluates that violation on the same invoke or a retry with `requestId` `scan-001`
+- **THEN** the handler SHALL NOT create a form instance for that violation
+- **AND** SHALL NOT call persist for identity `scan-001:role-r:policy-p`
 - **AND** SHALL increment `access-model-sod-remediation:forms-skipped` in the final `ctx.res.send` summary
 
 #### Scenario: Different parent request does not skip
 
 - **GIVEN** invoke `requestId` `scan-002` detects violation for access item `role-r` and policy `policy-p`
-- **AND** an ASSIGNED standalone form instance exists for form definition `{formName}` with `formInput.parentRequestId` `scan-001`, `formInput.accessItemId` `role-r`, and `formInput.policyId` `policy-p`
+- **AND** a result-source account exists with native identity `scan-001:role-r:policy-p`
 - **WHEN** the scan runs with `requestId` `scan-002`
 - **THEN** the handler SHALL create a new form instance for the violation
-- **AND** SHALL NOT increment `access-model-sod-remediation:forms-skipped` for that violation solely because of the `scan-001` instance
+- **AND** SHALL NOT increment `access-model-sod-remediation:forms-skipped` for that violation solely because of the `scan-001` child account
 
-#### Scenario: Legacy instance without parentRequestId does not skip
+#### Scenario: No form instance search for idempotency
 
-- **GIVEN** invoke `requestId` `scan-003` detects violation for access item `role-r` and policy `policy-p`
-- **AND** an ASSIGNED standalone form instance exists for form definition `{formName}` with `formInput.accessItemId` `role-r` and `formInput.policyId` `policy-p` but no `formInput.parentRequestId`
-- **WHEN** the scan runs
-- **THEN** the handler SHALL create a new form instance with `formInput.parentRequestId` `scan-003`
+- **GIVEN** a connected scan evaluates one or more violations
+- **WHEN** child persist account idempotency runs
+- **THEN** the handler SHALL NOT call `searchFormInstancesByTenantV1` for dedupe purposes
 
-#### Scenario: Non-assigned instance does not skip
+#### Scenario: Offline bypass unchanged
 
-- **GIVEN** invoke `requestId` `scan-004` detects violation for access item `role-r` and policy `policy-p`
-- **AND** a SUBMITTED or COMPLETED form instance exists with matching `formInput.parentRequestId`, `formInput.accessItemId`, and `formInput.policyId`
-- **WHEN** the scan runs
-- **THEN** the handler SHALL create a new form instance
-
-#### Scenario: One search per scan for pending instances
-
-- **GIVEN** a connected scan evaluates multiple violations
-- **WHEN** pending-form dedupe runs
-- **THEN** the handler SHALL load assigned remediation instances for the form definition at most once per scan invocation
-- **AND** SHALL reuse that data for each violation's request-scoped dedupe check
+- **GIVEN** invoke runs in offline or test mode without live account lookup
+- **WHEN** the scan evaluates violations
+- **THEN** the handler SHALL NOT perform child persist account lookup for idempotency
+- **AND** SHALL follow existing offline fixture behavior
 
 ### Requirement: Access model SOD remediation form launch
 
@@ -249,8 +242,8 @@ The access-model-sod-remediation operation SHALL ensure a shared form definition
 
 #### Scenario: Idempotent form creation
 
-- **GIVEN** invoke `requestId` `scan-parent-1`
-- **AND** an ASSIGNED standalone form instance already exists for form definition `{formName}` with `formInput.parentRequestId` `scan-parent-1`, `formInput.accessItemId` `role-r`, and `formInput.policyId` `policy-p`
+- **GIVEN** invoke `requestId` `scan-parent-1` detects violation for access item `role-r` and policy `policy-p`
+- **AND** a result-source account already exists with native identity `scan-parent-1:role-r:policy-p`
 - **WHEN** the scan detects the same violation again for `scan-parent-1`
 - **THEN** the handler SHALL NOT create a duplicate form instance
 - **AND** SHALL increment `access-model-sod-remediation:forms-skipped` in the final `ctx.res.send` summary

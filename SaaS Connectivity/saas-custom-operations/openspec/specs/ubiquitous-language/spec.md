@@ -127,7 +127,7 @@ The glossary SHALL define **form email recipients** as the multi-value persist o
 
 ### Requirement: Access model scan summary term
 
-The glossary SHALL define **scan summary** as the rollup counters returned on the successful `custom:access-model-sod-remediation` invoke response via `ctx.res.send`, comprising `access-model-sod-remediation:access-items-scanned`, `access-model-sod-remediation:violations-found`, and optional `access-model-sod-remediation:forms-skipped` and `access-model-sod-remediation:forms-persist-failed`. The scan summary SHALL NOT be persisted as a result-source account on `requestId`.
+The glossary SHALL define **scan summary** as the rollup counters returned on the successful `custom:access-model-sod-remediation` invoke response via `ctx.res.send`, comprising `access-model-sod-remediation:access-items-scanned`, `access-model-sod-remediation:violations-found`, and optional `access-model-sod-remediation:forms-skipped` and `access-model-sod-remediation:forms-persist-failed`. Optional `forms-skipped` SHALL count violations skipped because the child persist account already exists. The scan summary SHALL NOT be persisted as a result-source account on `requestId`.
 
 #### Scenario: Scan summary term
 
@@ -163,7 +163,7 @@ The glossary SHALL define **access model SoD remediation** as the proactive cata
 
 ### Requirement: Parent request id term
 
-The glossary SHALL define **parent request id** as the `requestId` supplied on a `custom:access-model-sod-remediation` invoke. It scopes child result-source identities `` `${requestId}:{accessItemId}:{policyId}` `` and, when stored on form instances as `formInput.parentRequestId`, scopes pending-form dedupe for that scan run.
+The glossary SHALL define **parent request id** as the `requestId` supplied on a `custom:access-model-sod-remediation` invoke. It prefixes child persist identities `` `${requestId}:{accessItemId}:{policyId}` `` and is stored on form instances as `formInput.parentRequestId` for traceability.
 
 #### Scenario: Parent request id naming
 
@@ -172,15 +172,26 @@ The glossary SHALL define **parent request id** as the `requestId` supplied on a
 - **THEN** it SHALL use **parent request id** for the scan `requestId` concept
 - **AND** the form field SHALL be spelled `parentRequestId`
 
-### Requirement: Request-scoped form dedupe term
+### Requirement: Child persist account idempotency term
 
-The glossary SHALL define **request-scoped form dedupe** as skipping launch of an access-model SoD remediation form when an ASSIGNED instance already exists for the same form definition, parent request id, access item id, and policy id — rather than matching tenant-wide on access item and policy alone.
+The glossary SHALL define **child persist account idempotency** as skipping launch of an access-model SoD remediation form and skipping child persist when a result-source account already exists for child persist identity `` `${requestId}:{accessItemId}:{policyId}` `` on the operation source — without querying form instance state.
 
-#### Scenario: Request-scoped dedupe naming
+#### Scenario: Child persist idempotency naming
 
-- **GIVEN** specs describe access-model scan idempotency for pending forms
-- **WHEN** normative text contrasts tenant-wide versus per-scan dedupe
-- **THEN** it SHALL use **request-scoped form dedupe** for the per-parent-request-id behavior
+- **GIVEN** specs describe access-model scan idempotency on retry or concurrent invoke
+- **WHEN** normative text names the skip signal
+- **THEN** it SHALL use **child persist account idempotency**
+- **AND** SHALL NOT describe idempotency as dependent on ASSIGNED form instance state
+
+### Requirement: Child persist identity term
+
+The glossary SHALL define **child persist identity** as the result-source native identity `` `${requestId}:{accessItemId}:{policyId}` `` where per-violation access-model SoD remediation outputs are persisted after form launch.
+
+#### Scenario: Child persist identity naming
+
+- **GIVEN** specs or code refer to per-violation result-source account keys for the access-model scan
+- **WHEN** normative text names that key pattern
+- **THEN** it SHALL use **child persist identity**
 
 ### Requirement: Access model SoD remediation apply term
 
@@ -245,7 +256,7 @@ The glossary SHALL define **access model SoD remediation apply** as the custom o
 
 ### Term: Scan summary
 **Context**: connector-operations / access-model-sod-remediation
-**Definition**: Rollup counters returned on the successful `custom:access-model-sod-remediation` invoke response via `ctx.res.send` (`access-items-scanned`, `violations-found`, optional `forms-skipped` and `forms-persist-failed`).
+**Definition**: Rollup counters returned on the successful `custom:access-model-sod-remediation` invoke response via `ctx.res.send` (`access-items-scanned`, `violations-found`, optional `forms-skipped` and `forms-persist-failed`). Optional `forms-skipped` counts violations skipped because the child persist account already exists.
 **Aliases**: none
 **Notes**: Not persisted on result-source identity `requestId`; child accounts at `{requestId}:{accessItemId}:{policyId}` hold per-form workflow outputs.
 
