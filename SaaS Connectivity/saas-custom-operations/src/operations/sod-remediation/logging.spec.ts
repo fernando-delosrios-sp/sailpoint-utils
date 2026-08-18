@@ -8,10 +8,20 @@ import {
     logSodRemediationViolation,
 } from './logging'
 
-describe('sod-remediation logging', () => {
-    it('logs structured operation steps without throwing', () => {
-        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+const { mockLogger } = vi.hoisted(() => ({
+    mockLogger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+    },
+}))
 
+vi.mock('../../framework/logger', () => ({
+    getActiveFrameworkLogger: vi.fn(() => mockLogger),
+}))
+
+describe('sod-remediation logging', () => {
+    it('logs structured operation steps through the framework logger', () => {
         logSodRemediationControls('req-log-1', [{ id: 'ctrl-1', name: 'Control 1' }])
         logSodRemediationAccessPaths(
             'req-log-1',
@@ -98,16 +108,12 @@ describe('sod-remediation logging', () => {
             ownerEmail: 'owner@example.com',
         })
 
-        expect(logSpy).toHaveBeenCalled()
-        expect(logSpy.mock.calls.some((call) => String(call[0]).includes('controls'))).toBe(true)
-        expect(logSpy.mock.calls.some((call) => String(call[0]).includes('output'))).toBe(true)
-
-        logSpy.mockRestore()
+        expect(mockLogger.info).toHaveBeenCalled()
+        expect(mockLogger.info.mock.calls.some((call) => String(call[0]).includes('controls'))).toBe(true)
+        expect(mockLogger.info.mock.calls.some((call) => String(call[0]).includes('output'))).toBe(true)
     })
 
-    it('logs situationSummary as a single string without inspect concatenation breaks', () => {
-        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
+    it('logs situationSummary as a single string in output detail', () => {
         const situationSummary = [
             '<h2>⚠️ SOD Violation Remediation Required</h2>',
             '<p><strong>Identity:</strong> Amanda.Ross</p>',
@@ -121,19 +127,13 @@ describe('sod-remediation logging', () => {
             ownerEmail: 'owner@example.com',
         })
 
-        const outputLog = logSpy.mock.calls.find((call) => String(call[0]).includes('output'))
-        expect(outputLog).toBeDefined()
-        const logged = String(outputLog?.[1])
-        expect(logged).toContain('<h2>⚠️ SOD Violation Remediation Required</h2>')
-        expect(logged).toContain('<p><strong>Identity:</strong> Amanda.Ross</p>')
-        expect(logged).not.toMatch(/'\s*\+\s*\n/)
-
-        logSpy.mockRestore()
+        const outputCall = mockLogger.info.mock.calls.find((call) => String(call[0]).includes('output'))
+        expect(outputCall).toBeDefined()
+        const detail = outputCall?.[1] as Record<string, unknown>
+        expect(detail['sod-remediation:form-email-body']).toBe(situationSummary)
     })
 
     it('logs form definition owner id and resolution source', () => {
-        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
         logSodRemediationFormDefinition(
             'req-log-2',
             'SOD Remediation',
@@ -142,19 +142,19 @@ describe('sod-remediation logging', () => {
             'token-identity'
         )
 
-        const formDefinitionLog = logSpy.mock.calls.find((call) => String(call[0]).includes('form-definition'))
-        expect(formDefinitionLog).toBeDefined()
-        expect(String(formDefinitionLog?.[1])).toContain("formName: 'SOD Remediation'")
-        expect(String(formDefinitionLog?.[1])).toContain("formDefinitionId: 'def-1'")
-        expect(String(formDefinitionLog?.[1])).toContain("definitionOwnerId: 'token-owner-id'")
-        expect(String(formDefinitionLog?.[1])).toContain("definitionOwnerSource: 'token-identity'")
-
-        logSpy.mockRestore()
+        const formDefinitionCall = mockLogger.info.mock.calls.find((call) =>
+            String(call[0]).includes('form-definition')
+        )
+        expect(formDefinitionCall).toBeDefined()
+        expect(formDefinitionCall?.[1]).toMatchObject({
+            formName: 'SOD Remediation',
+            formDefinitionId: 'def-1',
+            definitionOwnerId: 'token-owner-id',
+            definitionOwnerSource: 'token-identity',
+        })
     })
 
-    it('logs nested violation entitlements with full inspect depth', () => {
-        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
+    it('logs nested violation entitlements in detail', () => {
         logSodRemediationViolation(
             'req-log-3',
             {
@@ -177,15 +177,13 @@ describe('sod-remediation logging', () => {
             'isc'
         )
 
-        const violationLog = logSpy.mock.calls.find((call) => String(call[0]).includes('violation'))
-        expect(violationLog).toBeDefined()
-        const output = String(violationLog?.[1])
-        expect(output).toContain("id: 'ent-a'")
-        expect(output).toContain("name: 'Ent A'")
-        expect(output).toContain("id: 'ent-b'")
-        expect(output).not.toContain('[Object]')
-
-        logSpy.mockRestore()
+        const violationCall = mockLogger.info.mock.calls.find((call) => String(call[0]).includes('violation'))
+        expect(violationCall).toBeDefined()
+        const detail = violationCall?.[1] as {
+            leftSide?: { entitlements?: Array<{ id: string }> }
+            rightSide?: { entitlements?: Array<{ id: string }> }
+        }
+        expect(detail.leftSide?.entitlements?.[0]?.id).toBe('ent-a')
+        expect(detail.rightSide?.entitlements?.some((item) => item.id === 'ent-b')).toBe(true)
     })
 })
-

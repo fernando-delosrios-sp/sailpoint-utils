@@ -210,6 +210,40 @@ describe('accessModelSodRemediationOperation', () => {
         }
     })
 
+    it('routes discover and policy step logs through ctx.log to logUrl', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue({ ok: true })
+        vi.stubGlobal('fetch', fetchImpl)
+        const res = { send: vi.fn() }
+
+        try {
+            await _withConfig(
+                { ...workflowConfig, logUrl: 'https://logs.example.com/ingest' },
+                async () => {
+                    await accessModelSodRemediationOperation(
+                        { commandType: 'custom:access-model-sod-remediation' } as never,
+                        {
+                            requestId: 'req-access-model-logurl',
+                            formName: 'Access Model SOD Remediation',
+                            searchIndices: ['roles'],
+                        },
+                        res as never
+                    )
+                }
+            )
+
+            await Promise.resolve()
+
+            const postedMessages = fetchImpl.mock.calls.map((call) =>
+                JSON.parse(String(call[1]?.body)).message
+            )
+            expect(postedMessages).toContain('discoverAccessItems')
+            expect(postedMessages).toContain('access-model-sod-remediation start')
+            expect(postedMessages).toContain('loadPolicies')
+        } finally {
+            vi.unstubAllGlobals()
+        }
+    })
+
     it('returns zero-violation scan summary without child persist in offline mode', async () => {
         const previousTestMode = process.env.SPCX_TEST_MODE
         process.env.SPCX_TEST_MODE = '1'

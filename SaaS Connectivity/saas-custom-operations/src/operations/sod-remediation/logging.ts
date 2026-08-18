@@ -1,20 +1,12 @@
-import { inspect, InspectOptions } from 'node:util'
+import { getActiveFrameworkLogger } from '../../framework/logger'
 import { IdentityAccessItem } from '../../isc/identity-access'
 import { CompensatingControlV1 } from '../../isc/controls'
 import { ViolationV1 } from '../../isc/violations'
 import { ResolvedAccessSide } from './access-path-resolver'
 import { SodFormInputValues } from './form-service'
 
-function logInspectOptions(): InspectOptions {
-    return {
-        depth: null,
-        breakLength: Infinity,
-        colors: Boolean(process.stdout.isTTY && !process.env.NO_COLOR),
-    }
-}
-
 function logStep(requestId: string, step: string, detail: Record<string, unknown>): void {
-    console.log(`[${requestId}] sod-remediation ${step}`, inspect(detail, logInspectOptions()))
+    getActiveFrameworkLogger(requestId).info(`sod-remediation ${step}`, detail)
 }
 
 /** Logs invocation input (never logs tokens). */
@@ -162,9 +154,5 @@ export function logSodRemediationOutput(
 
 /** Logs successful completion. */
 export function logSodRemediationComplete(requestId: string): void {
-    console.log(`[${requestId}] sod-remediation finished`)
+    getActiveFrameworkLogger(requestId).info('sod-remediation finished')
 }
-
-
-
-

@@ -291,6 +291,43 @@ describe('sodRemediationOperation', () => {
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
     })
 
+    it('POSTs sod-remediation step logs to logUrl when configured', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue({ ok: true })
+        vi.stubGlobal('fetch', fetchImpl)
+        const res = { send: vi.fn() }
+
+        try {
+            await _withConfig(
+                { ...workflowConfig, logUrl: 'https://logs.example.com/ingest' },
+                async () => {
+                    await sodRemediationOperation(
+                        { commandType: 'custom:sod-remediation' } as never,
+                        {
+                            requestId: 'req-sod-logurl',
+                            violationId: 'vio-1',
+                            formName: 'SOD Remediation',
+                        },
+                        res as never
+                    )
+                }
+            )
+
+            const postedEvents = fetchImpl.mock.calls.map((call) =>
+                JSON.parse(String(call[1]?.body))
+            )
+            const violationEvent = postedEvents.find((event) => event.message === 'sod-remediation violation')
+
+            expect(violationEvent).toMatchObject({
+                level: 'info',
+                requestId: 'req-sod-logurl',
+                message: 'sod-remediation violation',
+            })
+            expect(violationEvent.detail).toMatchObject({ id: 'vio-1' })
+        } finally {
+            vi.unstubAllGlobals()
+        }
+    })
+
     it('reconciles schema from operation sidecar without auto-registry lookup', async () => {
         clearOperationSchemaRegistry()
         getSourceSchemasV1.mockResolvedValue({

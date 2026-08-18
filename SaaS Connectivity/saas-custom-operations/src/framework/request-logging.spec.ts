@@ -6,6 +6,7 @@ import {
     withRequestLogging,
     wrapConnectorWithRequestLogging,
 } from './request-logging'
+import type { CommandHandler } from '@sailpoint/connector-sdk'
 
 describe('redactConfigForLogging', () => {
     it('redacts token while preserving other config fields', () => {
@@ -123,7 +124,10 @@ describe('withRequestLogging', () => {
         )
         const body = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body))
         expect(body.message).toBe('Incoming request')
+        expect(body.detail.command).toBe('custom:example')
+        expect(body.detail.input).toEqual({ requestId: 'req-001', message: 'hello' })
         expect(body.detail.config.token).toBe('[REDACTED]')
+        expect(body.detail.config.apiUrl).toBe('https://tenant.api.identitynow.com')
 
         vi.unstubAllGlobals()
         delete process.env.NO_COLOR
@@ -148,6 +152,40 @@ describe('wrapConnectorWithRequestLogging', () => {
 
         expect(handlers.get('custom:example')).toBeDefined()
         expect(handler).not.toBe(handlers.get('custom:example'))
+    })
+
+    it('logs incoming requests when a wrapped handler is invoked', async () => {
+        process.env.NO_COLOR = '1'
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+        const handlers = new Map<string, CommandHandler>()
+        const connector = wrapConnectorWithRequestLogging({
+            command: vi.fn((command: string, handler: CommandHandler) => {
+                handlers.set(command, handler)
+                return connector
+            }),
+        } as never)
+
+        connector.command('custom:example', vi.fn(async () => {}))
+        const wrapped = handlers.get('custom:example')
+        expect(wrapped).toBeDefined()
+
+        await wrapped!(
+            {
+                commandType: 'custom:example',
+                config: {
+                    apiUrl: 'https://tenant.api.identitynow.com',
+                    token: 'secret-token',
+                    sourceName: 'SaaS Custom Operations',
+                },
+            } as never,
+            { requestId: 'req-wrap-1', message: 'hello' },
+            { send: vi.fn() } as never
+        )
+
+        expect(logSpy.mock.calls[0]?.[0]).toContain('Incoming request')
+        expect(logSpy.mock.calls[0]?.[0]).toContain('req-wrap-1')
+        logSpy.mockRestore()
+        delete process.env.NO_COLOR
     })
 })
 

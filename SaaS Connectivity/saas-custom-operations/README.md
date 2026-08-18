@@ -434,15 +434,22 @@ External log events use this JSON shape:
 
 Token, bearer, and other sensitive keys in `detail` are redacted before POST. Whitespace-only `logUrl` values are treated as unset.
 
+Before emit, the framework JSON-safe-normalizes `detail`: omits keys whose values are `undefined`, functions, or symbols; replaces circular references with `"[Circular]"`; serializes `Error` instances as `{ name, message, stack }`; converts `bigint` to decimal strings. Console and POST receive the same normalized map after redaction.
+
 ### Operation logging (`ctx.log`)
 
-Handlers wrapped with `customOperation` receive `ctx.log` with `info`, `warn`, and `error(message, detail?)`. Every line is prefixed with `[requestId]` on stdout. When `config.logUrl` is set, the same calls also fire-and-forget POST the JSON event above.
+Handlers wrapped with `customOperation` receive `ctx.log` with `info`, `warn`, and `error(message, detail?)`. The optional second argument is a **named detail map** — values may be objects, arrays, or scalars (for example `{ violation, controls, count: 3 }`).
+
+Stdout uses a headline line `[requestId] message`, then labeled blocks per detail key: scalars inline (`  count: 3`), objects and arrays as indented `inspect` output. When `config.logUrl` is set, the same calls fire-and-forget POST the JSON event above with the identical normalized `detail`.
 
 ```typescript
 ctx.log.info('discovered policies', { count: policies.length })
 ctx.log.warn('source missing — using placeholder')
 ctx.log.error('form create failed', { formName: input.formName })
+ctx.log.info('violation loaded', { violation: { id: 'v-1' }, count: 2 })
 ```
+
+Operation-local helpers should use `ctx.log` or `getActiveFrameworkLogger()` — not direct `console.log` / `console.warn` — so step traces reach `logUrl` when configured.
 
 See `payloads/custom-example.json` for a connected dry-run payload that includes optional `logUrl`.
 

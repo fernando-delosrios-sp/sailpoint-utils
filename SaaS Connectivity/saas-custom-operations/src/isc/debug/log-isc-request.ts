@@ -2,13 +2,13 @@ import { getActiveFrameworkLogger, sanitizeForLog } from '../../framework/logger
 
 /** Emits structured ISC request debug lines to connector stdout. */
 export function logIscDebug(label: string, details: Record<string, unknown>): void {
-    getActiveFrameworkLogger().info(`[isc-debug] ${label}`, sanitizeForLog(details))
+    getActiveFrameworkLogger().info(`[isc-debug] ${label}`, sanitizeForLog(details) as Record<string, unknown>)
 }
 
 /** Logs axios/SDK API failures with response payload when present. */
 export function logIscRequestFailure(label: string, error: unknown): void {
     if (typeof error !== 'object' || error === null) {
-        getActiveFrameworkLogger().info(`[isc-debug] ${label} failed`, String(error))
+        getActiveFrameworkLogger().info(`[isc-debug] ${label} failed`, { error: String(error) })
         return
     }
 

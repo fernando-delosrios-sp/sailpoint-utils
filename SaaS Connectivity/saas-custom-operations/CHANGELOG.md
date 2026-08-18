@@ -6,6 +6,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🔧 Improvements
 
+- **Framework logging sync** — Unified emit pipeline for all invoke-scoped logs: redact → JSON-safe normalize → pretty multiline console → optional `config.logUrl` POST. Console shows `[requestId] message` plus labeled per-key detail blocks; POST uses the same normalized `detail` map. Incoming request logging routes through the shared path with full `sanitizeForLog` on config. SOD operation step logs (`sod-remediation`, `access-model-sod-remediation`, `preventive-sod-check`) now use `ctx.log` / `getActiveFrameworkLogger()` instead of direct `console` calls so remote collectors receive the same traces as stdout.
 - **Bundle verification** — `npm run verify:bundle` (also runs as `postbuild`) loads `dist/index.js` and fails when any `connector-spec.json` command is missing from the handler map, catching codegen/build drift before `pack-zip` upload.
 - **Dev compile hooks** — `npm run dev` and `npm run debug` run `compile:dev` (`codegen:schemas` + `tsc`) via `predev` / `predebug` so `.dev-dist/` stays aligned with source without a manual build step.
 - **CI verification baseline** — Parent repo workflow `.github/workflows/saas-custom-operations-ci.yml` runs `npm ci`, `npm run typecheck`, `npm test`, and `npm run build` on PR/push when files under `SaaS Connectivity/saas-custom-operations/` change.

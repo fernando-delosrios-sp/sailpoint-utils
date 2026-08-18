@@ -76,32 +76,34 @@ async function discoverAccessItems(
 ): Promise<CatalogAccessItem[]> {
     const items: CatalogAccessItem[] = []
 
-    console.log(
-        `[access-model-sod-remediation] discoverAccessItems offline=${offline} scope=${JSON.stringify(scope)} indices=${JSON.stringify(searchIndices)}`
-    )
+    ctx.log.info('discoverAccessItems', {
+        offline,
+        scope,
+        searchIndices,
+    })
 
     if (offline) {
-        console.log('[access-model-sod-remediation] discoverAccessItems using offline fixtures')
+        ctx.log.info('discoverAccessItems using offline fixtures')
         if (searchIndices.includes('roles')) {
             items.push(...listEnabledRolesOffline())
         }
         if (searchIndices.includes('accessprofiles')) {
             items.push(...listEnabledAccessProfilesOffline())
         }
-        console.log(`[access-model-sod-remediation] discoverAccessItems offline count=${items.length}`)
+        ctx.log.info('discoverAccessItems offline count', { count: items.length })
         return items
     }
 
     if (searchIndices.includes('roles')) {
-        console.log('[access-model-sod-remediation] discoverAccessItems listing roles')
+        ctx.log.info('discoverAccessItems listing roles')
         items.push(...(await listEnabledRoles(ctx.sdk.roles, scope, ctx.sdk.search)))
     }
     if (searchIndices.includes('accessprofiles')) {
-        console.log('[access-model-sod-remediation] discoverAccessItems listing access profiles')
+        ctx.log.info('discoverAccessItems listing access profiles')
         items.push(...(await listEnabledAccessProfiles(ctx.sdk.accessProfiles, scope, ctx.sdk.search)))
     }
 
-    console.log(`[access-model-sod-remediation] discoverAccessItems live count=${items.length}`)
+    ctx.log.info('discoverAccessItems live count', { count: items.length })
     return items
 }
 
@@ -110,14 +112,14 @@ async function loadPolicies(
     policyScope: string,
     ctx: RequestContext<AccessModelSodRemediationOperation['output']>
 ): Promise<SodPolicySummary[]> {
-    console.log(`[access-model-sod-remediation] loadPolicies offline=${offline} policyScope=${JSON.stringify(policyScope)}`)
+    ctx.log.info('loadPolicies', { offline, policyScope })
 
     if (offline) {
         return listSodPoliciesOffline()
     }
 
     const policies = await listSodPolicies(ctx.sdk.sodPolicies, policyScope)
-    console.log(`[access-model-sod-remediation] loadPolicies count=${policies.length}`)
+    ctx.log.info('loadPolicies count', { count: policies.length })
     return policies
 }
 
@@ -129,9 +131,12 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
         const searchIndices = validateSearchIndices(input.searchIndices)
         const policyScope = input.policyScope ?? DEFAULT_POLICY_SCOPE
 
-        console.log(
-            `[access-model-sod-remediation] start requestId=${ctx.requestId} offline=${offline} apiUrl=${ctx.apiUrl || '<empty>'} scope=${JSON.stringify(scope)} searchIndices=${JSON.stringify(searchIndices)}`
-        )
+        ctx.log.info('access-model-sod-remediation start', {
+            offline,
+            apiUrl: ctx.apiUrl || '<empty>',
+            scope,
+            searchIndices,
+        })
 
         const accessItems = await discoverAccessItems(offline, searchIndices, scope, ctx)
         const policies = await loadPolicies(offline, policyScope, ctx)
@@ -167,9 +172,9 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                 violationsFound += 1
 
                 if (formsCreated >= MAX_FORMS_PER_RUN) {
-                    console.warn(
-                        `[${ctx.requestId}] access-model-sod-remediation form cap ${MAX_FORMS_PER_RUN} reached; skipping remaining forms`
-                    )
+                    ctx.log.warn('access-model-sod-remediation form cap reached; skipping remaining forms', {
+                        cap: MAX_FORMS_PER_RUN,
+                    })
                     break
                 }
 
@@ -179,9 +184,11 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     : await findAccountOnSource(ctx.sdk.accounts, ctx.sourceId, childId)
 
                 if (existingChildAccount) {
-                    console.log(
-                        `[${ctx.requestId}] access-model-sod-remediation skipping violation accessItem=${violation.accessItem.id} policy=${violation.policy.id}: child persist account already exists identity=${childId}`
-                    )
+                    ctx.log.info('access-model-sod-remediation skipping violation: child persist account already exists', {
+                        accessItemId: violation.accessItem.id,
+                        policyId: violation.policy.id,
+                        identityId: childId,
+                    })
                     formsSkipped += 1
                     skippedFormInstances.push(buildSkippedFormInstance(childId, violation))
                     continue
@@ -226,9 +233,11 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                 } catch (error) {
                     formsLaunchFailed += 1
                     const detail = error instanceof Error ? error.message : String(error)
-                    console.warn(
-                        `[${ctx.requestId}] access-model-sod-remediation form launch failed accessItem=${violation.accessItem.id} policy=${violation.policy.id}: ${detail}`
-                    )
+                    ctx.log.warn('access-model-sod-remediation form launch failed', {
+                        accessItemId: violation.accessItem.id,
+                        policyId: violation.policy.id,
+                        detail,
+                    })
                     continue
                 }
 
@@ -247,9 +256,10 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                 } catch (error) {
                     formsPersistFailed += 1
                     const detail = error instanceof Error ? error.message : String(error)
-                    console.warn(
-                        `[${ctx.requestId}] access-model-sod-remediation child persist failed identity=${childId}: ${detail}`
-                    )
+                    ctx.log.warn('access-model-sod-remediation child persist failed', {
+                        identityId: childId,
+                        detail,
+                    })
                 }
 
                 formsCreated += 1

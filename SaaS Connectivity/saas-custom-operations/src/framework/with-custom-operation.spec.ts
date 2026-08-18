@@ -206,7 +206,7 @@ describe('customOperation', () => {
         const res = mockResponse()
         const handler = vi.fn(async (ctx) => {
             expect(ctx.log.info).toEqual(expect.any(Function))
-            ctx.log.info('handler step')
+            ctx.log.info('violation loaded', { violation: { id: 'v-1' }, count: 2 })
             ctx.res.send({ status: 'success' })
         })
         const wrapped = customOperation<TestOperation>(handler, {
@@ -225,6 +225,13 @@ describe('customOperation', () => {
             'https://logs.example.com/ingest',
             expect.objectContaining({ method: 'POST' })
         )
+        const body = fetchImpl.mock.calls
+            .map((call) => JSON.parse(String(call[1]?.body)))
+            .find((event) => event.message === 'violation loaded')
+        expect(body).toMatchObject({
+            message: 'violation loaded',
+            detail: { violation: { id: 'v-1' }, count: 2 },
+        })
         vi.unstubAllGlobals()
     })
 
