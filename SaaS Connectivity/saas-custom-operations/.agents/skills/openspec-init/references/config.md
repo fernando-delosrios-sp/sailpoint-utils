@@ -20,7 +20,17 @@ rules:
     - <Rule 2>
   tasks:
     - <Rule 1>
+operations:
+  archive:
+    guidance:
+      - "Archive is incomplete until synced specs and the moved change folder are committed. The built-in /opsx:archive workflow syncs and moves but does NOT commit."
+      - "After sync and archive move: run git status --porcelain. If non-empty, stage openspec/specs/ and openspec/changes/ (plus any paths touched during sync), then invoke git-commit via Skill tool with change name and archive context."
+      - "Fallback when git-commit skill is absent: conventional commit manually, e.g. docs(openspec): archive <change-name> and sync specs — do not skip when porcelain is non-empty."
+      - "Post-commit gate (blocking): git status --porcelain must be empty; when the change is under openspec/changes/archive/, confirm the latest commit includes synced specs and the archive folder via git log -1 --name-only -- openspec/specs/ openspec/changes/archive/."
+      - "Do not report archive complete until the post-commit gate passes."
 ```
+
+For **ferspec** projects, include the `operations.archive` block above (or equivalent prose). Other schemas may omit it or customize guidance. `openspec instructions archive --change "<name>" --json` surfaces this as `operationGuidance` for `/opsx:archive`.
 
 ### Context Building
 To build a meaningful `context` section:

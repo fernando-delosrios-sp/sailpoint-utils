@@ -1,13 +1,15 @@
 ---
 name: apply-code-changes
-description: Execute a planned change from tasks.md through completion gate and handoff — OpenSpec ferspec apply via /opsx:apply, or any folder with tasks.md (Direct adapter). TDD, commits, changelog; venue gate (local, worktree, remote).
+description: Execute a planned change from tasks.md through verify-aligned gate, verify-fix loop, and handoff — OpenSpec ferspec apply via /opsx:apply, or any folder with tasks.md (Direct adapter). TDD, commits, changelog; venue gate (local, worktree, remote).
 ---
 
 # Apply Code Changes
 
-Orchestrate **apply**: execute `tasks.md` in order (Changelog group last), run the completion gate, and hand off per **venue**.
+Orchestrate **apply**: execute `tasks.md` in order (Changelog group last), run the **verify-aligned** gate and **verify-fix** loop, then hand off per **venue**.
 
-**Core** = steps 0–5. **Change adapter** = pre-flight path resolution — [change-adapters.md](references/change-adapters.md).
+**Core** = steps 0–7. **Change adapter** = pre-flight path resolution — [change-adapters.md](references/change-adapters.md).
+
+**Verification ref** — branch where gate and verify-fix run: `ORIGINAL_BRANCH` (local/worktree); `FEATURE_BRANCH` (remote).
 
 **Never in apply:** archive, spec sync, archive commit, `/opsx:archive`.
 
@@ -143,33 +145,58 @@ Per implementation task:
 **Parallelism `subagent-per-group`:**
 
 - **`local`:** subagents read `ACTIVE_CHANGE_ROOT`; no git; orchestrator commits on `ORIGINAL_BRANCH`.
-- **`worktree`:** optional group worktrees on `apply-<name>-<slug>`; orchestrator merges into `APPLY_REF`, then handoff squashes to `ORIGINAL_BRANCH`.
+- **`worktree`:** optional group worktrees on `apply-<name>-<slug>`; orchestrator merges into `APPLY_REF`; merge gate (step 4) squash-merges to `ORIGINAL_BRANCH` before verify.
 - **`remote`:** subagents on runner checkout; orchestrator commits on `FEATURE_BRANCH`.
 
 Documentation group: update files from proposal Impact and tasks. Changelog group: invoke **changelog-generator**.
 
-### 4. Completion gate (blocking)
+### 4. Merge gate (worktree only — blocking)
 
-Re-run at `ACTIVE_CHANGE_ROOT` until every row passes:
+When `venue` is **`worktree`**, squash to **`ORIGINAL_BRANCH`** before step 5. Do not run verify-aligned or verify-fix on the worktree checkout.
 
-1. All `tasks.md` checkboxes `[x]`
-2. Canonical test command — exit 0
-3. Every `#### Scenario:` has a named automated test
+1. Checkout main repo → **`ORIGINAL_BRANCH`**
+2. Squash merge **`APPLY_REF`** → **`ORIGINAL_BRANCH`** (one commit preferred)
+3. `git branch --show-current` equals **`ORIGINAL_BRANCH`**
+4. `git status --porcelain` empty on main repo
+
+**Done when:** implementation commits live on **`ORIGINAL_BRANCH`** and the session is on main repo — not the worktree path.
+
+### 5. Completion gate — verify-aligned (blocking)
+
+Re-run on the **verification ref** at `ACTIVE_CHANGE_ROOT` until every row passes:
+
+1. All `tasks.md` checkboxes `[x]` (including Documentation and Changelog)
+2. Canonical test command from `tasks.md` — exit 0; every `#### Scenario:` has a passing named automated test
+3. Lint/format when `tasks.md` or repo docs name commands — zero new warnings from this change
 4. **Adapter validator** — OpenSpec: `openspec validate --all --json` from `PLANNING_HOME` with `--store` when set; Direct: skip unless user requests
-5. Material `design.md` decisions reflected in specs
-6. Changelog task complete
+5. Material `design.md` decisions reflected in specs — material drift = FAIL
+6. Documentation tasks reflect actual behavior
+7. Changelog task complete
+8. `git status --porcelain` empty on the **verification ref**
 
-On FAIL: fix immediately; do not hand off.
+On FAIL: fix immediately; do not enter verify-fix or hand off.
 
-### 5. Handoff
+### 6. Verify-fix loop (blocking)
 
-**Done when:** gate passes and the venue handoff row below completes.
+Apply owns verification on the **verification ref**. Repeat until **`openspec-verify-change`** (or `/opsx:verify`) reports ✅ PASS with no unresolved warnings:
+
+1. Invoke **openspec-verify-change** via Skill tool, or run `/opsx:verify`
+2. On ❌ FAIL or new warnings: fix immediately; re-run step 5; return to (1)
+3. Proceed to handoff only on ✅ PASS
+
+**Done when:** a standalone `/opsx:verify` after this step would confirm PASS — not surface new FAILs or warnings. Interruption re-runs route failures back here.
+
+Verify-fix checks implementation vs specs, design, and tasks — beyond structural `openspec validate`. Step 5 owns git housekeeping and lint; verify-fix does not re-check a dirty tree.
+
+### 7. Handoff
+
+**Done when:** verify-fix PASS and the venue handoff row below completes.
 
 | Venue | Parallelism | Handoff |
 |---|---|---|
 | **`local`** | `single` | Report gate PASS. Main on **`ORIGINAL_BRANCH`**. Return control — no squash. PR only when user asks. Update **Issue** when linked. |
 | **`local`** | `subagent-per-group` | Squash merge integrated commits onto **`ORIGINAL_BRANCH`**. Delete ephemeral group refs. Return control. |
-| **`worktree`** | either | Checkout main → **`ORIGINAL_BRANCH`**. Squash merge **`APPLY_REF`** → **`ORIGINAL_BRANCH`** (one commit preferred). `git worktree remove`; `git branch -D APPLY_REF`. Return control. |
+| **`worktree`** | either | Merge gate (step 4) already squash-merged **`APPLY_REF`** → **`ORIGINAL_BRANCH`**. `git worktree remove`; `git branch -D APPLY_REF`. Return control on **`ORIGINAL_BRANCH`**. |
 | **`remote`** | either | Push **`FEATURE_BRANCH`**. `gh pr create --base ORIGINAL_BRANCH --head FEATURE_BRANCH`. Set `TRACKING` → PR; write `tracking.md`; commit and push. Link PR on **Issue**. |
 
 ## Delegation
@@ -181,6 +208,7 @@ On FAIL: fix immediately; do not hand off.
 | Commits | git-commit | Preferred |
 | Changelog | changelog-generator | Changelog group |
 | Review | code-review | Optional |
+| Verify-fix | openspec-verify-change (`/opsx:verify`) | Blocking before handoff |
 | PR / issue | gh + issue-tracker doc | Remote handoff |
 | Cloud dispatch | SDK / Task `environment: cloud` | Remote when available |
 
@@ -188,7 +216,11 @@ On FAIL: fix immediately; do not hand off.
 
 - No archive or spec sync inside apply.
 - No marking tasks `[x]` before tests pass.
-- No PR before gate passes (**remote**).
+- No PR before verify-fix PASS (**remote**).
+- No handoff before verify-fix PASS.
+- No verify-fix or verify-aligned gate on a worktree checkout — merge gate (step 4) first.
+- No treating `openspec validate` alone as sufficient — verify-fix is mandatory for OpenSpec apply.
+- No deferring verify FAILs or warnings to the user.
 - No durable feature branch on **local** or **worktree** — only `ORIGINAL_BRANCH` (+ ephemeral `apply-<name>`).
 - No skipping the interactive **venue** gate because Issue or Presets are prefilled.
 - No `FEATURE_BRANCH` on local/worktree bind.
@@ -202,5 +234,5 @@ On FAIL: fix immediately; do not hand off.
 - No inheritance of `Change` from a tracking file — always current adapter `CHANGE_ROOT`.
 - No post-bind artifact I/O via pre-bind `CHANGE_ROOT`.
 - No `gh pr create` without `--base ORIGINAL_BRANCH`.
-- No worktree handoff before squash merge completes.
+- No worktree handoff before merge gate (step 4) completes.
 - No mixing superpowers-bridge apply with this skill on the same change.

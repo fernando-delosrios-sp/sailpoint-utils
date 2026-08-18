@@ -28,6 +28,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `docs/agents/` — does this skill's prior output already exist?
 - `.scratch/` — sign that a local-markdown issue tracker convention is already in use
 - Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.
+- Is the `structured-choices` skill installed? When it is, step 4 runs its **Install** path to wire User gates into `AGENTS.md` / `CLAUDE.md`.
 - Monorepo signals — a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. Present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
 
 ### 2. Present findings and ask
@@ -112,6 +113,8 @@ Then write the docs files using the seed templates in this skill folder as a sta
 - **Domain docs:** [domain-openspec.md](./domain-openspec.md) when OpenSpec mode; [domain.md](./domain.md) when legacy mode
 
 For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
+
+When `structured-choices` is installed, run its [**Install**](../structured-choices/SKILL.md#install) path after the docs files and AGENTS block are written — it owns User gates in `AGENTS.md` / `CLAUDE.md`.
 
 ### 5. Done
 

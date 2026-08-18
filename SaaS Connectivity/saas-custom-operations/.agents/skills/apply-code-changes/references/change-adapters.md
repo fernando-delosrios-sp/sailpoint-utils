@@ -50,7 +50,9 @@ Match `/opsx-apply`: paths from CLI, not repo guesses.
 
 **Default feature branch (remote venue only):** `TRACKING` → Branch at bind, else `openspec/<name>`.
 
-**Gate validator:** `openspec validate --all --json` from `PLANNING_HOME` with `--store` when set.
+**Gate validator:** `openspec validate --all --json` from `PLANNING_HOME` with `--store` when set (step 5 row 4).
+
+**Verify-fix:** invoke **openspec-verify-change** or `/opsx:verify` on the verification ref until ✅ PASS (step 6). Structural validate alone is insufficient.
 
 **Never:** hardcode `openspec/changes/<name>/`; create on-disk `tracking.md`.
 

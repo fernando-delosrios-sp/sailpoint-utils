@@ -30,7 +30,7 @@ Block update when `openspec --version` is below the minimum above.
 | Path | Action | Gate |
 |---|---|---|
 | `openspec/schemas/ferspec/` | Full replace from bundled copy | Diff + ack before overwrite |
-| `openspec/config.yaml` | Refresh rules; preserve `context:` and custom rules | Diff + ack |
+| `openspec/config.yaml` | Refresh rules and `operations.archive`; preserve `context:` and custom rules | Diff + ack |
 | `AGENTS.md` / `CLAUDE.md` (project root) | Section diff/replace or append from `templates/adopters/AGENTS.md.fragment.md` | Diff + ack; never whole-file replace |
 | Companion skills | Full `INSTALL.md` Skills list (idempotent) | Gate once before commands |
 | `openspec/specs/**` | Never modify existing content | — |

@@ -127,13 +127,23 @@ apply:
     checkout; execute tasks in order; invoke **tdd** when present; delegate commits to
     **git-commit**; run **changelog-generator** for the Changelog group.
 
-    **Completion gate** (blocking — all must pass):
-    1. All tasks.md checkboxes `[x]`
-    2. Canonical test command exit 0
-    3. Every `#### Scenario:` in delta specs → named automated test
+    **Completion gate — verify-aligned** (blocking — re-run after every verify-fix iteration):
+    1. All tasks.md checkboxes `[x]` (including Documentation and Changelog)
+    2. Canonical test command from tasks.md exit 0; every `#### Scenario:` → passing named test
+    3. Lint/format when tasks.md or repo docs name commands — zero new warnings from this change
     4. `openspec validate --all --json` (from `planningHome.root`, with `--store` when set) — all `"valid": true`
     5. design.md decisions reflected in specs — material drift = FAIL
-    6. Changelog task complete (generated during apply, not archive)
+    6. Documentation tasks reflect actual behavior
+    7. Changelog task complete (generated during apply, not archive)
+    8. `git status --porcelain` empty on verification ref (`ORIGINAL_BRANCH` local/worktree; `FEATURE_BRANCH` remote)
+
+    **Worktree merge gate** (blocking before verify-aligned): squash `apply-<name>` → `ORIGINAL_BRANCH`;
+    session on main repo — never run verify on the worktree checkout.
+
+    **Verify-fix loop** (blocking before handoff): invoke **openspec-verify-change** or `/opsx:verify`
+    on the verification ref; fix FAILs and warnings; re-run verify-aligned; repeat until ✅ PASS.
+    Done when standalone `/opsx:verify` would confirm PASS — not surface new FAILs or warnings.
+    Apply owns verify-fix autonomously — never defer to the user.
 
     **Invariant**: ORIGINAL_BRANCH is durable for local/worktree — no feature branch on those venues.
     Worktree uses ephemeral `apply-<name>` squash-merged at handoff. FEATURE_BRANCH exists for
@@ -151,4 +161,4 @@ apply:
 
     **Never in apply**: archive, spec sync, archive commit, `/opsx-archive`.
 
-    Done when the gate passes and venue handoff completes.
+    Done when verify-fix PASS and venue handoff completes.

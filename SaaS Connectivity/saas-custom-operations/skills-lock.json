@@ -5,7 +5,7 @@
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/apply-code-changes/SKILL.md",
-      "computedHash": "483ab27527fe44d7297907f08504354cb85aee79c0f9fab36f5aa0bfd16c5f8a"
+      "computedHash": "a1aad612ef0fad337d7f12dd06849e50d0a85dfbef1d43ec5dba9d75b8047503"
     },
     "architecture-decision-records": {
       "source": "fernando-delosrios-sp/skills",
@@ -65,7 +65,7 @@
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/git-commit/SKILL.md",
-      "computedHash": "329e0021ebebec843aab1e0af878d88a6b2e0ba61bde241c08990aae046aae40"
+      "computedHash": "2e3d757693013afd1a9bf8ec2ad7c7a1f174590cf36b469525a69879bb46a502"
     },
     "grill-me": {
       "source": "fernando-delosrios-sp/skills",
@@ -107,7 +107,7 @@
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/openspec-init/SKILL.md",
-      "computedHash": "2f05d7cfcb26c213227390113528c72b8bf4d62cb300d67688f19e3e421ea156"
+      "computedHash": "457f029402260c91be0145b77401f2c70b7855400885732b0f906e517d3b18cb"
     },
     "search": {
       "source": "fernando-delosrios-sp/skills",
@@ -119,13 +119,13 @@
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
-      "computedHash": "79423a11b94652d6cef219953212df4b0a71e80ad466ecc28a8d2550bc9e3511"
+      "computedHash": "2192405ff8dbce2133ac7a1670b8bd2af9ddc79d28ca893c8d802315e8593bff"
     },
     "structured-choices": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/productivity/structured-choices/SKILL.md",
-      "computedHash": "ece69a28c39b6fe71e78f9e3a93ce230fb8ef2e32d7814ac632d22acd31ecc30"
+      "computedHash": "19849c427a258043a36df30063c3ae5f9435b28612008e3df473a6d7e60be91f"
     },
     "tdd": {
       "source": "fernando-delosrios-sp/skills",
