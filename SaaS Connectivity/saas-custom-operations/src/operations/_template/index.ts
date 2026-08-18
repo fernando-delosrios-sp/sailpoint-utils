@@ -28,7 +28,7 @@ export interface TemplateOperation extends OperationSignature {
 
 export const templateOperation = customOperation<TemplateOperation>(
     async (ctx, input) => {
-        console.log(`[${ctx.requestId}] template operation invoked`, input)
+        ctx.log.info('template operation invoked', input)
 
         await ctx.persist(ctx.requestId, { result: 'example-value' })
 

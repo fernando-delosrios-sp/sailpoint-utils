@@ -100,9 +100,27 @@ The project documentation SHALL describe offline invoke payloads without a confi
 - **AND** config apiUrl token and sourceName SHALL use ISC workflow variables rather than hardcoded tenant values
 - **AND** tag SHALL be the literal string `latest`
 
+### Requirement: Optional logUrl invoke config documentation
+
+The project documentation SHALL describe optional invoke config field logUrl for external structured log delivery. The documentation SHALL state that logUrl is optional, that console logging always occurs, and that when logUrl is set the framework POSTs JSON log events to that URL.
+
+#### Scenario: logUrl documented in README
+
+- **GIVEN** a developer reads the Development or invoke config section of README
+- **WHEN** they configure local or workflow invoke payloads
+- **THEN** the documentation SHALL describe optional config.logUrl
+- **AND** SHALL explain that log events are POSTed as JSON when logUrl is present
+
+#### Scenario: JSON log event shape documented
+
+- **GIVEN** a developer configuring logUrl for workflow troubleshooting
+- **WHEN** they read the invoke config documentation
+- **THEN** the documentation SHALL list the external log event fields timestamp level requestId command message and optional detail
+- **AND** SHALL note that config.token is redacted in logged payloads
+
 ### Requirement: Local debug invoke envelope documentation
 
-The project documentation SHALL describe the spcx local debug invoke POST body shape including type config and input fields. The documentation SHALL note that default incoming request logging prints the resolved envelope to stdout during npm run debug.
+The project documentation SHALL describe the spcx local debug invoke POST body shape including type config and input fields. The documentation SHALL note that default incoming request logging prints the resolved envelope to stdout during npm run debug. The documentation SHALL note that optional config.logUrl enables additional JSON log POSTs to an external URL.
 
 #### Scenario: spcx invoke shape documented
 

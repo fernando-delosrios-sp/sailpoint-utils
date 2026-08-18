@@ -13,6 +13,7 @@ import {
     SourcesApi,
     TaskManagementApi,
 } from 'sailpoint-api-client'
+import { FrameworkLogger } from './logger'
 import { OperationField } from './schema-inference'
 
 /** Standard fields resolved from an invoke payload: config + input. */
@@ -80,12 +81,15 @@ export interface RequestContext<TOutput extends object = Record<string, unknown>
     sdk: SailPointClients
     persist: PersistFn<TOutput>
     verifyPersisted: VerifyPersistedFn
+    /** Correlated dual-sink logger for this invocation. */
+    log: FrameworkLogger
     /** SDK response object for sending command output back to ISC. */
     res: Response<any>
 }
 
 export interface PersistDependencies {
     sourceId: string
+    log?: FrameworkLogger
     operationSchema?: OperationSchemaContract
     ensureSourceSchema?: (attributeKeys: string[]) => Promise<void>
     /** Returns the ISC account UUID when an existing account was updated via put. */

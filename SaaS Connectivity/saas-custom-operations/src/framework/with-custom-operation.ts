@@ -1,5 +1,6 @@
 import { CommandHandler, ConnectorError, Context, Response } from '@sailpoint/connector-sdk'
 import { toConnectorError } from './connector-error'
+import { createFrameworkLogger, getActiveFrameworkLogger, resolveLogUrlFromConfig, setActiveFrameworkLogger } from './logger'
 import { persistFailedResult } from './failure-persist'
 import {
     clearInFlightInvocation,
@@ -121,8 +122,8 @@ export function customOperation<T extends OperationSignature>(
             const inFlight = getInFlightInvocation(dedupeKey)
             if (inFlight) {
                 const requestId = String(input.requestId).trim()
-                console.log(
-                    `[${requestId}] duplicate invoke — awaiting in-flight ${context.commandType ?? 'custom operation'}`
+                getActiveFrameworkLogger(requestId).info(
+                    `duplicate invoke — awaiting in-flight ${context.commandType ?? 'custom operation'}`
                 )
                 const outcome = await inFlight
                 res.send(
@@ -168,7 +169,7 @@ export function customOperation<T extends OperationSignature>(
                 return outcome
             } catch (e) {
                 const error = toConnectorError(e, context.commandType)
-                console.error(error.message)
+                getActiveFrameworkLogger(String(input.requestId ?? 'unknown')).error(error.message)
                 if (!responseSent) {
                     trackedRes.send({ status: 'failed', error: error.message })
                 }
@@ -176,6 +177,7 @@ export function customOperation<T extends OperationSignature>(
                 return outcome
             } finally {
                 stopKeepAlive(keepAliveTimer)
+                setActiveFrameworkLogger(undefined)
             }
         })()
 
@@ -204,6 +206,13 @@ async function runCustomOperation<T extends OperationSignature>(
         const { config, configProvided } = await resolveInvocationConfig(deps, context as ContextWithConfig)
         const testMode = configProvided ? isTestMode(config) : isTestMode({})
         const { standard, operationInput } = parseStandardInput(config, input, { testMode, configProvided })
+        const logUrl = resolveLogUrlFromConfig(config)
+        const log = createFrameworkLogger({
+            requestId: standard.requestId,
+            command: context.commandType,
+            logUrl,
+        })
+        setActiveFrameworkLogger(log)
 
         const resolvedSchema =
             deps.operationSchema ??
@@ -215,26 +224,26 @@ async function runCustomOperation<T extends OperationSignature>(
         let inhibitedPersistCount = 0
 
         if (testMode) {
-            console.log(`[test-mode] active command=${context.commandType} requestId=${standard.requestId}`)
+            log.info(`[test-mode] active command=${context.commandType} requestId=${standard.requestId}`)
 
             if (configProvided) {
                 sdk = sdk ?? createSailPointClients(standard.apiUrl, standard.token)
                 await verifyIscStatus(sdk.sources)
-                console.log(`[test-mode] ISC status check succeeded`)
+                log.info(`[test-mode] ISC status check succeeded`)
 
                 if (!sourceId) {
                     const resolved = await resolveSourceByNameReadOnly(sdk.sources, standard.sourceName)
                     if (resolved) {
                         sourceId = resolved
                     } else {
-                        console.warn(
+                        log.warn(
                             `[test-mode] source "${standard.sourceName}" not found — using placeholder ${TEST_MODE_PLACEHOLDER_SOURCE_ID}`
                         )
                         sourceId = TEST_MODE_PLACEHOLDER_SOURCE_ID
                     }
                 }
             } else {
-                console.log(`[test-mode] no config — skipping ISC`)
+                log.info(`[test-mode] no config — skipping ISC`)
                 sourceId = sourceId ?? TEST_MODE_PLACEHOLDER_SOURCE_ID
             }
         } else {
@@ -258,21 +267,22 @@ async function runCustomOperation<T extends OperationSignature>(
             operationSchema,
             testMode,
             onTestModePersist: testMode ? () => inhibitedPersistCount++ : undefined,
+            logger: log,
+            logUrl,
+            command: context.commandType,
         })
 
         onContext?.(requestContext)
 
-        console.log(`[${standard.requestId}] custom operation started: ${context.commandType}`)
+        log.info(`custom operation started: ${context.commandType}`)
 
         await handler(requestContext, operationInput as InferOperationInput<T>)
 
         if (testMode) {
-            console.log(
-                `[test-mode] completed requestId=${standard.requestId} inhibitedPersists=${inhibitedPersistCount}`
-            )
+            log.info(`[test-mode] completed requestId=${standard.requestId} inhibitedPersists=${inhibitedPersistCount}`)
         }
 
-        console.log(`[${standard.requestId}] custom operation completed`)
+        log.info('custom operation completed')
 }
 
 

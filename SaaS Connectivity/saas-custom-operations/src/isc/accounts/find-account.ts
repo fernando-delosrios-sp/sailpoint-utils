@@ -1,4 +1,5 @@
 import { AccountsApi } from 'sailpoint-api-client'
+import { getActiveFrameworkLogger } from '../../framework/logger'
 import { listAccounts } from './account-client'
 import { SourceAccountMatch } from './types'
 
@@ -148,9 +149,9 @@ export async function findAccountOnSource(
 
         if (match) {
             if (filters.startsWith('nativeIdentity eq') && !filters.includes('sourceId eq')) {
-                console.log(`[persist] located identity=${nativeIdentity} via nativeIdentity filter`)
+                getActiveFrameworkLogger().info(`[persist] located identity=${nativeIdentity} via nativeIdentity filter`)
             } else if (filters.startsWith('name eq')) {
-                console.log(`[persist] located identity=${nativeIdentity} via name filter`)
+                getActiveFrameworkLogger().info(`[persist] located identity=${nativeIdentity} via name filter`)
             }
             return match
         }
@@ -158,7 +159,7 @@ export async function findAccountOnSource(
 
     const byScan = await scanAccountsOnSourceForIdentity(accounts, sourceId, nativeIdentity)
     if (byScan) {
-        console.log(`[persist] located identity=${nativeIdentity} via source scan`)
+        getActiveFrameworkLogger().info(`[persist] located identity=${nativeIdentity} via source scan`)
     }
     return byScan
 }

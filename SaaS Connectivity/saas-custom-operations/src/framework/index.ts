@@ -23,6 +23,14 @@ export {
     registerOperationSchema,
 } from './operation-schema-registry'
 export { buildBaseAccountSchema } from './base-account-schema'
+export {
+    createFrameworkLogger,
+    getActiveFrameworkLogger,
+    postFrameworkLogEvent,
+    resolveLogUrlFromConfig,
+    sanitizeForLog,
+} from './logger'
+export type { CreateFrameworkLoggerOptions, FrameworkLogger, FrameworkLogEvent, LogLevel } from './logger'
 export { createRequestContext } from './request-context'
 export { createSailPointClients } from './sdk-factory'
 export { inferFromTsType, inferSchemaAttribute } from './schema-inference'
