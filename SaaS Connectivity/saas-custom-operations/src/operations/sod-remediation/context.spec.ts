@@ -117,19 +117,20 @@ describe('sod-remediation context', () => {
         )
     })
 
-    it('buildSituationSummary returns HTML with keep and revocability emoji labels', () => {
+    it('buildSituationSummary returns HTML with icon suffixes and emoji legend', () => {
         const summary = buildSituationSummary(summaryInput)
 
         expect(summary).toContain('⚠️ SOD Violation Remediation Required')
         expect(summary).toContain('<strong>Identity:</strong> Alice Example')
-        expect(summary).toContain('✅')
-        expect(summary).toContain('Revocable')
-        expect(summary).toContain('⭐ Recommended to keep')
-        expect(summary).toContain('🔐 Privileged')
+        expect(summary).toContain('🔐 ✅')
+        expect(summary).toContain('⭐ ✅')
         expect(summary).toContain('🚫')
-        expect(summary).toContain('Not directly revocable')
-        expect(summary).toContain('(granted via Finance Role role)')
+        expect(summary).not.toContain('Revocable')
+        expect(summary).not.toContain('Recommended to keep')
+        expect(summary).toContain('(via Finance Role role)')
         expect(summary).toContain('Recommended to correct Group A')
+        expect(summary).toContain('Legend:')
+        expect(summary).toContain('privileged')
     })
 
     it('buildSituationSummary escapes HTML in dynamic values', () => {
@@ -155,8 +156,8 @@ describe('sod-remediation context', () => {
         const summary = buildSituationSummary(summaryInput)
 
         expect(summary).not.toContain('\n')
-        expect(summary).not.toMatch(/(?:href|style)=/)
-        expect(summary).not.toMatch(/['"]/)
+        expect(summary).not.toMatch(/href=/)
+        expect(summary).not.toContain('"')
     })
 
     const sampleFormUrl = 'https://tenant.identitynow.com/form/instance-1'
@@ -229,7 +230,8 @@ describe('sod-remediation context', () => {
 
         expect(html).toContain('Recommended to correct Group A')
         expect(html).toContain('Ent A')
-        expect(html).toContain('Privileged')
+        expect(html).toContain('🔐')
+        expect(html).toContain('entitlement')
     })
 
     it('assembleFormInput reuses HTML summary without remediation form link', () => {
@@ -237,9 +239,9 @@ describe('sod-remediation context', () => {
 
         expect(formInput.situationSummaryHtml).toBe(buildSituationSummary(summaryInput))
         expect(formInput.situationSummaryHtml).not.toContain('Remediation form:')
-        expect(formInput.groupAContentsHtml).toContain('Ent A')
-        expect(formInput.groupBContentsHtml).toContain('Not directly revocable')
-        expect(formInput.groupAContentsHtml).toContain('Recommended to correct Group A')
+        expect(formInput.groupColumnsHtmlWhenGroupARemoved).toContain('#ffebee')
+        expect(formInput.groupColumnsHtmlWhenGroupARemoved).toContain('Ent A')
+        expect(formInput.groupColumnsHtmlWhenGroupBRemoved).toContain('#e8f5e9')
     })
 
     it('buildControlOptions maps tenant controls to select options', () => {

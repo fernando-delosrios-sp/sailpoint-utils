@@ -18,8 +18,9 @@ export interface SodFormInputValues {
     targetIdentityName: string
     policyName: string
     situationSummaryHtml: string
-    groupAContentsHtml: string
-    groupBContentsHtml: string
+    groupColumnsHtmlPlain: string
+    groupColumnsHtmlWhenGroupARemoved: string
+    groupColumnsHtmlWhenGroupBRemoved: string
     hasControls: boolean
     violationId: string
     targetIdentityId: string

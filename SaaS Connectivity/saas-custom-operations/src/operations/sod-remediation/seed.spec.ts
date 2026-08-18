@@ -76,8 +76,8 @@ describe('sod-remediation seed', () => {
         expect(keys).not.toContain('removeGroupBAccess')
         expect(keys).not.toContain('groupA')
         expect(keys).not.toContain('groupB')
-        expect(seed.formInput?.some((input) => input.id === 'groupAContentsHtml' && input.type === 'STRING')).toBe(true)
-        expect(seed.formInput?.some((input) => input.id === 'groupBContentsHtml' && input.type === 'STRING')).toBe(true)
+        expect(seed.formInput?.some((input) => input.id === 'groupColumnsHtmlWhenGroupARemoved' && input.type === 'STRING')).toBe(true)
+        expect(seed.formInput?.some((input) => input.id === 'groupColumnsHtmlWhenGroupBRemoved' && input.type === 'STRING')).toBe(true)
         expect(seed.formInput?.some((input) => input.id === 'controlOptions' && input.type === 'ARRAY')).toBe(true)
         expect(seed.formInput?.some((input) => input.id === 'hasControls' && input.type === 'STRING')).toBe(true)
     })
@@ -91,31 +91,26 @@ describe('sod-remediation seed', () => {
         )
     })
 
-    it('renders group access paths as DESCRIPTION elements with HTML formInput interpolation', () => {
+    it('renders static dual group-column previews inside correct-section', () => {
         const seed = loadFormSeed(seedPath)
 
-        const groupA = findFormElementById(seed.formElements, 'group-a-contents')
-        const groupB = findFormElementById(seed.formElements, 'group-b-contents')
+        const preview = findFormElementById(seed.formElements, 'group-columns-preview')
         const toxicHeader = findFormElementById(seed.formElements, 'toxic-combination-header')
-        const toxic = findFormElementById(seed.formElements, 'toxic-column-set')
 
-        expect(groupA?.elementType).toBe('DESCRIPTION')
-        expect(groupB?.elementType).toBe('DESCRIPTION')
+        expect(preview?.elementType).toBe('DESCRIPTION')
         expect(toxicHeader?.elementType).toBe('DESCRIPTION')
-        expect((groupA?.config as { description?: string })?.description).toBe('{{$.form.input.groupAContentsHtml}}')
-        expect((groupB?.config as { description?: string })?.description).toBe('{{$.form.input.groupBContentsHtml}}')
+        expect(findFormElementById(seed.formElements, 'group-columns-plain-section')).toBeUndefined()
         expect((toxicHeader?.config as { description?: string })?.description).toContain(ELEVATED_WARNING)
-        expect((toxic?.config as { description?: string })?.description).toBe('')
-        expect(findFormElementById(seed.formElements, 'group-a-warning')).toBeUndefined()
-        expect(findFormElementById(seed.formElements, 'group-b-warning')).toBeUndefined()
+        expect((preview?.config as { description?: string })?.description).toContain('groupColumnsHtmlPlain')
+        expect((preview?.config as { description?: string })?.description).toContain('groupColumnsHtmlWhenGroupARemoved')
+        expect((preview?.config as { description?: string })?.description).toContain('groupColumnsHtmlWhenGroupBRemoved')
 
-        const conditionSources = (seed.formConditions ?? []).flatMap((condition) =>
-            ((condition.rules as Array<{ source?: string }>) ?? []).map((rule) => rule.source)
+        const columnLayoutEffects = (seed.formConditions ?? []).flatMap((condition) =>
+            ((condition.effects as Array<{ effectType?: string; config?: { element?: string } }>) ?? []).filter((effect) =>
+                String(effect.config?.element).includes('group-columns')
+            )
         )
-        expect(conditionSources).not.toContain('groupAContents')
-        expect(conditionSources).not.toContain('groupBContents')
-        expect(conditionSources).not.toContain('groupAWarning')
-        expect(conditionSources).not.toContain('groupBWarning')
+        expect(columnLayoutEffects).toEqual([])
     })
 
     it('buildCreateFormDefinitionPayload applies runtime formName and watermarked description', () => {

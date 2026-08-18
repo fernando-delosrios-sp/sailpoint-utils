@@ -77,6 +77,22 @@ Workflow keys are declared in the form definition `formInput` schema and populat
 
 After upgrading the connector, re-invoke `custom:sod-remediation` so the form-definition watermark patches the tenant form definition before creating a new instance. Each invoke creates a **new** form instance; re-opening a URL from an already-submitted instance shows "already submitted".
 
+## Form HTML (group columns and situation summary)
+
+Launch-time `formInput` carries **six** STRING HTML fields for the Correct section columns:
+
+| Field | When shown |
+|---|---|
+| `groupAContentsHtml`, `groupBContentsHtml` | Plain flat access-path lists with type tags and icon suffixes — before `remediationSide` is selected |
+| `groupAContentsHtmlAsKept`, `groupBContentsHtmlAsKept` | Green keep outcome panel — after the opposite side is selected for removal |
+| `groupAContentsHtmlAsRemoved`, `groupBContentsHtmlAsRemoved` | Red remove outcome panel — after that side is selected for removal |
+
+Bundled seed `formConditions` swap DESCRIPTION elements on `remediationSide` selection (live visual update).
+
+`situationSummaryHtml` reuses the same access-path rendering (flat lists, icon-only suffixes) and appends a single **emoji legend** footer decoding privileged, keep, and revocability icons. Group column variants do not include the legend. Persisted `form-email-body` remains the compact summary without legend or full path lists.
+
+**Form definition migration:** Updated seeds change the form fingerprint. Tenants only receive the new six-field layout and outcome-panel conditions when they use a **new** `formName`. Reusing an existing definition name keeps the prior two-field layout until you adopt a new form name.
+
 ## Local development
 
 ```bash

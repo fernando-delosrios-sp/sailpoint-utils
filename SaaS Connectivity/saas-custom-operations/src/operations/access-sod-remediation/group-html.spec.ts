@@ -18,22 +18,20 @@ describe('buildGroupContentsHtml', () => {
         ],
     }
 
-    it('renders entitlement names instead of raw ids', () => {
+    it('builds composite side-by-side column layouts for each remediation selection state', () => {
         const html = buildGroupContentsHtml(['ent-a'], ['ent-c'], expanded)
 
-        expect(html.groupAContentsHtml).toContain('Accounts Receivable')
-        expect(html.groupAContentsHtml).not.toContain('6684f7f2')
-        expect(html.groupBContentsHtml).toContain('Accounts Payable')
-        expect(html.groupBContentsHtml).toContain('SAP Suite')
-    })
+        expect(html.groupColumnsHtmlPlain).toContain('Group A')
+        expect(html.groupColumnsHtmlPlain).toContain('Group B')
+        expect(html.groupColumnsHtmlPlain).toContain('Accounts Receivable')
+        expect(html.groupColumnsHtmlPlain).toContain('Accounts Payable')
+        expect(html.groupColumnsHtmlPlain).not.toContain('#e8f5e9')
+        expect(html.groupColumnsHtmlPlain).not.toContain('#ffebee')
 
-    it('applies distinct side colors to group column html', () => {
-        const html = buildGroupContentsHtml(['ent-a'], ['ent-c'], expanded)
-
-        expect(html.groupAContentsHtml).toContain('color:#1565c0')
-        expect(html.groupAContentsHtml).toContain('background-color:#e3f2fd')
-        expect(html.groupBContentsHtml).toContain('color:#7b1fa2')
-        expect(html.groupBContentsHtml).toContain('background-color:#f3e5f5')
+        expect(html.groupColumnsHtmlWhenGroupARemoved).toContain('#ffebee')
+        expect(html.groupColumnsHtmlWhenGroupARemoved).toContain('#e8f5e9')
+        expect(html.groupColumnsHtmlWhenGroupBRemoved).toContain('#e8f5e9')
+        expect(html.groupColumnsHtmlWhenGroupBRemoved).toContain('#ffebee')
     })
 
     it('falls back to id when name is unavailable', () => {
@@ -43,6 +41,6 @@ describe('buildGroupContentsHtml', () => {
             nestedProfiles: [],
         })
 
-        expect(html.groupAContentsHtml).toContain('ent-unknown')
+        expect(html.groupColumnsHtmlPlain).toContain('ent-unknown')
     })
 })

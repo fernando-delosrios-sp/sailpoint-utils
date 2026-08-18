@@ -3,13 +3,15 @@
     "formInput": [
         { "id": "accessItemId", "type": "STRING", "label": "Access Item ID", "description": "Role or access profile under review" },
         { "id": "accessItemType", "type": "STRING", "label": "Access Item Type", "description": "ROLE or ACCESS_PROFILE" },
+        { "id": "accessItemTypeTagHtml", "type": "STRING", "label": "Access Item Type Tag HTML", "description": "Pre-rendered type pill HTML for the context panel" },
         { "id": "accessItemName", "type": "STRING", "label": "Access Item Name", "description": "Display name of the access item" },
         { "id": "policyId", "type": "STRING", "label": "Policy ID", "description": "Violated SoD policy id" },
         { "id": "policyName", "type": "STRING", "label": "Policy Name", "description": "Violated SoD policy name" },
         { "id": "groupAIds", "type": "STRING", "label": "Group A Entitlement IDs", "description": "JSON array of entitlement ids on group A side (launch-time workflow key)" },
         { "id": "groupBIds", "type": "STRING", "label": "Group B Entitlement IDs", "description": "JSON array of entitlement ids on group B side (launch-time workflow key)" },
-        { "id": "groupAContentsHtml", "type": "STRING", "label": "Group A Contents HTML", "description": "HTML entitlement list for group A" },
-        { "id": "groupBContentsHtml", "type": "STRING", "label": "Group B Contents HTML", "description": "HTML entitlement list for group B" }
+        { "id": "groupColumnsHtmlPlain", "type": "STRING", "label": "Group Columns HTML (Plain)", "description": "Side-by-side plain group columns before side selection" },
+        { "id": "groupColumnsHtmlWhenGroupARemoved", "type": "STRING", "label": "Group Columns HTML (Group A Removed)", "description": "Side-by-side columns when group A is selected for removal" },
+        { "id": "groupColumnsHtmlWhenGroupBRemoved", "type": "STRING", "label": "Group Columns HTML (Group B Removed)", "description": "Side-by-side columns when group B is selected for removal" }
     ],
     "formElements": [
         {
@@ -29,7 +31,7 @@
                         "config": {
                             "label": "Access Item",
                             "showLabel": true,
-                            "description": "<p><strong>Item:</strong> <strong style=\"color:#1565c0;\">{{$.form.input.accessItemName}}</strong> <span style=\"color:#546e7a; font-size:90%; background-color:#eceff1; padding:2px 6px; border-radius:4px;\">{{$.form.input.accessItemType}}</span></p><p><strong>Policy:</strong> {{$.form.input.policyName}}</p>"
+                            "description": "<p><strong>Item:</strong> <strong>{{$.form.input.accessItemName}}</strong> {{$.form.input.accessItemTypeTagHtml}}</p><p><strong>Policy:</strong> {{$.form.input.policyName}}</p>"
                         },
                         "validations": []
                     }
@@ -42,7 +44,7 @@
             "elementType": "SECTION",
             "config": {
                 "alignment": "LEFT",
-                "description": "Select the side whose entitlements should be removed from this access item definition.",
+                "description": "Select the side whose entitlements should be removed from this access item definition. Green = kept, red = removed.",
                 "label": "Correct Access Definition",
                 "labelStyle": "h2",
                 "showLabel": true,
@@ -54,7 +56,7 @@
                         "config": {
                             "label": "Side to remediate",
                             "required": true,
-                            "forceSelect": true,
+                            "forceSelect": false,
                             "maximum": 1,
                             "dataSource": {
                                 "dataSourceType": "STATIC",
@@ -69,42 +71,46 @@
                         "validations": [{ "validationType": "REQUIRED" }, { "validationType": "DATA_SOURCE" }]
                     },
                     {
-                        "id": "group-columns",
-                        "elementType": "COLUMN_SET",
+                        "id": "group-columns-preview-intro",
+                        "elementType": "DESCRIPTION",
                         "key": "",
                         "config": {
-                            "label": "",
+                            "label": "Entitlement comparison preview",
                             "showLabel": false,
-                            "description": "",
-                            "columnCount": 2,
-                            "columns": [
-                                [
-                                    {
-                                        "id": "group-a-contents",
-                                        "elementType": "DESCRIPTION",
-                                        "key": "",
-                                        "config": {
-                                            "label": "Group A",
-                                            "showLabel": true,
-                                            "description": "{{$.form.input.groupAContentsHtml}}"
-                                        },
-                                        "validations": []
-                                    }
-                                ],
-                                [
-                                    {
-                                        "id": "group-b-contents",
-                                        "elementType": "DESCRIPTION",
-                                        "key": "",
-                                        "config": {
-                                            "label": "Group B",
-                                            "showLabel": true,
-                                            "description": "{{$.form.input.groupBContentsHtml}}"
-                                        },
-                                        "validations": []
-                                    }
-                                ]
-                            ]
+                            "description": "<p><em>Compare both outcomes below, then select the side to remove above. Green = kept, red = removed.</em></p>"
+                        },
+                        "validations": []
+                    },
+                    {
+                        "id": "group-columns-plain",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Entitlement comparison preview",
+                            "showLabel": false,
+                            "description": "{{$.form.input.groupColumnsHtmlPlain}}"
+                        },
+                        "validations": []
+                    },
+                    {
+                        "id": "group-columns-when-a-removed",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Entitlement comparison preview",
+                            "showLabel": false,
+                            "description": "{{$.form.input.groupColumnsHtmlWhenGroupARemoved}}"
+                        },
+                        "validations": []
+                    },
+                    {
+                        "id": "group-columns-when-b-removed",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Entitlement comparison preview",
+                            "showLabel": false,
+                            "description": "{{$.form.input.groupColumnsHtmlWhenGroupBRemoved}}"
                         },
                         "validations": []
                     },
@@ -124,5 +130,45 @@
             "validations": []
         }
     ],
-    "formConditions": []
+    "formConditions": [
+        {
+            "ruleOperator": "AND",
+            "rules": [
+                {
+                    "sourceType": "ELEMENT",
+                    "source": "remediationSide",
+                    "operator": "EM",
+                    "valueType": "STRING",
+                    "value": ""
+                }
+            ],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "group-columns-plain" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [
+                {
+                    "sourceType": "ELEMENT",
+                    "source": "remediationSide",
+                    "operator": "EQ",
+                    "valueType": "STRING",
+                    "value": "Group A"
+                }
+            ],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "group-columns-when-a-removed" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [
+                {
+                    "sourceType": "ELEMENT",
+                    "source": "remediationSide",
+                    "operator": "EQ",
+                    "valueType": "STRING",
+                    "value": "Group B"
+                }
+            ],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "group-columns-when-b-removed" } }]
+        }
+    ]
 }

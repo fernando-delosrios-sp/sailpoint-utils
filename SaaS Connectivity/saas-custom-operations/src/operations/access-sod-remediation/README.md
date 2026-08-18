@@ -71,10 +71,24 @@ Offline: [`payloads/access-sod-remediation-offline.json`](../../../payloads/acce
 
 | Layer | Fields |
 |---|---|
-| `formInput` (launch) | `accessItemId`, `accessItemType`, `accessItemName`, `policyId`, `policyName`, `groupAIds`, `groupBIds` (JSON arrays), HTML columns |
+| `formInput` (launch) | `accessItemId`, `accessItemType`, `accessItemName`, `policyId`, `policyName`, `groupAIds`, `groupBIds` (JSON arrays), six HTML column fields (see below) |
 | `formData` (submit) | `remediationSide`, optional `comments` |
 
 No action selector or Mitigate path.
+
+## Form HTML (group columns)
+
+Launch-time `formInput` carries **six** STRING HTML fields per side column set:
+
+| Field | When shown |
+|---|---|
+| `groupAContentsHtml`, `groupBContentsHtml` | Plain lists with type tags — before `remediationSide` is selected |
+| `groupAContentsHtmlAsKept`, `groupBContentsHtmlAsKept` | Green keep outcome panel — after the opposite side is selected for removal |
+| `groupAContentsHtmlAsRemoved`, `groupBContentsHtmlAsRemoved` | Red remove outcome panel — after that side is selected for removal |
+
+Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when the recipient changes `remediationSide`. Entitlements render in a nested access-profile tree with type tags; **no** revocability emojis or legend.
+
+**Form definition migration:** Updated seeds change the form fingerprint. Tenants only receive the new six-field layout when they use a **new** `formName` (ensure-by-name does not patch existing definitions). Reuse an existing name to keep the prior two-field layout until you adopt a new form name.
 
 ## Token scope requirements
 

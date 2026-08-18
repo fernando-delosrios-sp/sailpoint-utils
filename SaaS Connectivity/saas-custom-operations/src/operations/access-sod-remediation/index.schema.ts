@@ -7,6 +7,7 @@ export const accessSodRemediationOperationSchema = defineOperationSchema({
     'access-sod-remediation:form-email-header': { type: 'string', optional: true },
     'access-sod-remediation:form-email-recipient': { type: 'string', optional: true },
     'access-sod-remediation:form-url': { type: 'string', optional: true },
+    'access-sod-remediation:forms-persist-failed': { type: 'number', optional: true },
     'access-sod-remediation:forms-skipped': { type: 'number', optional: true },
     'access-sod-remediation:violations-found': 'number',
 })
