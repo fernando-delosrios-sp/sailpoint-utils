@@ -58,4 +58,4 @@
 
 - [x] 10.1 Update root README with `custom:access-sod-remediation` summary and link to operation README
 - [x] 10.2 Update CHANGELOG via changelog-generator skill for new operation
-- [ ] 10.3 Update OpenSpec main specs on archive (connector-operations/access-sod-remediation, target-client/sod-policies, roles, access-profiles deltas)
+- [x] 10.3 Update OpenSpec main specs on archive (connector-operations/access-sod-remediation, target-client/sod-policies, roles, access-profiles deltas)
