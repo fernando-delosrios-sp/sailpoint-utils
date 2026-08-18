@@ -169,13 +169,39 @@ describe('sod-form-html renderEntitlementTree', () => {
         ],
     }
 
-    it('preserves nested access profile tree with type tags', () => {
+    it('renders flat access profile lines with offending entitlement mentions', () => {
         const variants = renderEntitlementTree(['ent-a', 'ent-c'], expanded)
 
         expect(variants.plain).toContain('Accounts Receivable')
         expect(variants.plain).toContain('SAP Suite')
         expect(variants.plain).toContain('access profile')
         expect(variants.plain).toContain('entitlement')
+        expect(variants.plain).toContain('— offending:')
+        expect(variants.plain).toContain('Accounts Payable')
+        expect(variants.plain).not.toMatch(/SAP Suite[\s\S]*<ul>/)
+    })
+
+    it('comma-separates multiple offending entitlements on one access profile line', () => {
+        const multiExpanded = {
+            entitlements: [{ id: 'ent-1', name: 'Ent One' }, { id: 'ent-2', name: 'Ent Two' }],
+            nestedProfiles: [
+                {
+                    id: 'ap-1',
+                    name: 'Shared AP',
+                    entitlements: [
+                        { id: 'ent-1', name: 'Ent One' },
+                        { id: 'ent-2', name: 'Ent Two' },
+                    ],
+                },
+            ],
+        }
+        const variants = renderEntitlementTree(['ent-1', 'ent-2'], multiExpanded)
+
+        expect(variants.plain).toContain('Shared AP')
+        expect(variants.plain).toContain('Ent One')
+        expect(variants.plain).toContain('Ent Two')
+        expect(variants.plain).toMatch(/Ent One[\s\S]*,[\s\S]*Ent Two/)
+        expect(variants.plain.match(/Shared AP/g)?.length).toBe(1)
     })
 
     it('plain variant has no side-identity colored panel backgrounds', () => {

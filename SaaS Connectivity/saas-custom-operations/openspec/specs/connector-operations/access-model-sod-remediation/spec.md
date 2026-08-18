@@ -234,12 +234,21 @@ The access-model-sod-remediation operation SHALL render group A and group B enti
 - **THEN** formInput SHALL include `groupAContentsHtml`, `groupAContentsHtmlAsKept`, `groupAContentsHtmlAsRemoved`, `groupBContentsHtml`, `groupBContentsHtmlAsKept`, and `groupBContentsHtmlAsRemoved`
 - **AND** plain variants SHALL NOT include outcome panel wrappers
 
-#### Scenario: Nested access profile tree preserved
+#### Scenario: Flat access profile lines with offending entitlement mention
 
-- **GIVEN** a violating role with entitlements grouped under nested access profile labels
+- **GIVEN** a violating role with entitlements granted via nested access profiles on a policy side
 - **WHEN** group column HTML is rendered
-- **THEN** entitlements SHALL appear nested under their access profile name
-- **AND** each line SHALL include a type tag for entitlement or access profile as appropriate
+- **THEN** each nested access profile on that side SHALL appear as a single flat list row
+- **AND** the row SHALL include an offending entitlement mention naming the side-matching entitlement display names
+- **AND** nested entitlement bullets under the access profile SHALL NOT be used
+- **AND** direct role entitlements on that side SHALL remain single flat entitlement rows with type tags
+
+#### Scenario: Outcome panels apply to whole access profile rows
+
+- **GIVEN** group column HTML includes a flat access profile line on Group B
+- **WHEN** the recipient selects `remediationSide` value `groupA`
+- **THEN** the entire Group B access profile row SHALL appear in the green kept outcome panel variant
+- **AND** SHALL NOT apply outcome styling only to a nested entitlement sub-row
 
 #### Scenario: Plain variants before selection
 

@@ -25,6 +25,9 @@ describe('buildGroupContentsHtml', () => {
         expect(html.groupColumnsHtmlPlain).toContain('Group B')
         expect(html.groupColumnsHtmlPlain).toContain('Accounts Receivable')
         expect(html.groupColumnsHtmlPlain).toContain('Accounts Payable')
+        expect(html.groupColumnsHtmlPlain).toContain('— offending:')
+        expect(html.groupColumnsHtmlPlain).toContain('SAP Suite')
+        expect(html.groupColumnsHtmlPlain).not.toMatch(/SAP Suite[\s\S]*<ul>/)
         expect(html.groupColumnsHtmlPlain).not.toContain('#e8f5e9')
         expect(html.groupColumnsHtmlPlain).not.toContain('#ffebee')
 

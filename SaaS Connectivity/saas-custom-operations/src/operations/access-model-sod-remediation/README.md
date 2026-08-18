@@ -45,11 +45,13 @@ These fields are **not** persisted on result-source identity `{requestId}`.
 
 ## Invoke example
 
+Use a stable `requestId` prefix (for example `access-model-sod`) — only **child** accounts are persisted at `{requestId}:{accessItemId}:{policyId}`. No account is written on bare `requestId`, including on terminal failure.
+
 ```json
 {
     "type": "custom:access-model-sod-remediation",
     "input": {
-        "requestId": "req-access-model-sod-001",
+        "requestId": "access-model-sod-001",
         "formName": "Access Model SOD Remediation",
         "scope": "*",
         "searchIndices": ["roles", "accessprofiles"]
@@ -83,15 +85,15 @@ No action selector or Mitigate path.
 
 ## Form HTML (group columns)
 
-Launch-time `formInput` carries **six** STRING HTML fields per side column set:
+Launch-time `formInput` carries **three** composite side-by-side column HTML fields (each embeds plain or outcome variants for both groups):
 
 | Field | When shown |
 |---|---|
-| `groupAContentsHtml`, `groupBContentsHtml` | Plain lists with type tags — before `remediationSide` is selected |
-| `groupAContentsHtmlAsKept`, `groupBContentsHtmlAsKept` | Green keep outcome panel — after the opposite side is selected for removal |
-| `groupAContentsHtmlAsRemoved`, `groupBContentsHtmlAsRemoved` | Red remove outcome panel — after that side is selected for removal |
+| `groupColumnsHtmlPlain` | Plain lists with type tags — before `remediationSide` is selected |
+| `groupColumnsHtmlWhenGroupARemoved` | Group A red / Group B green outcome panels — when Group A is selected for removal |
+| `groupColumnsHtmlWhenGroupBRemoved` | Group B red / Group A green outcome panels — when Group B is selected for removal |
 
-Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when the recipient changes `remediationSide`. Entitlements render in a nested access-profile tree with type tags; **no** revocability emojis or legend.
+Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when the recipient changes `remediationSide`. Direct role entitlements render as single flat lines. Nested access profiles render as **flat access profile lines** with an **offending entitlement mention** (for example `— offending: payment_issue`) so policy owners see the whole AP as the removable unit on roles. **No** revocability emojis or legend.
 
 **Form definition migration:** Updated seeds change the form fingerprint. Tenants only receive the new six-field layout when they use a **new** `formName` (ensure-by-name does not patch existing definitions). Reuse an existing name to keep the prior two-field layout until you adopt a new form name.
 

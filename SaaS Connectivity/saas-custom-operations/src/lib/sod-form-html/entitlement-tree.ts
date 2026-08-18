@@ -18,10 +18,24 @@ export interface EntitlementTreeExpansion {
     nestedProfiles: NestedAccessProfileBundle[]
 }
 
-function renderEntitlementLine(id: string, name: string | undefined): string {
+function entitlementDisplayLabel(id: string, name: string | undefined): string {
     const displayName = name?.trim()
-    const label = escapeHtml(displayName && displayName !== id ? displayName : (displayName ?? id))
-    return `<li><strong>${label}</strong> ${renderTypeTag('ENTITLEMENT')}</li>`
+    return escapeHtml(displayName && displayName !== id ? displayName : (displayName ?? id))
+}
+
+function renderEntitlementLine(id: string, name: string | undefined): string {
+    return `<li><strong>${entitlementDisplayLabel(id, name)}</strong> ${renderTypeTag('ENTITLEMENT')}</li>`
+}
+
+function renderOffendingEntitlementMention(matching: EntitlementRef[]): string {
+    const labels = matching
+        .map((ent) => `<strong>${entitlementDisplayLabel(ent.id, ent.name)}</strong>`)
+        .join(', ')
+    return ` — offending: ${labels} ${renderTypeTag('ENTITLEMENT')}`
+}
+
+function renderFlatAccessProfileLine(profile: NestedAccessProfileBundle, matching: EntitlementRef[]): string {
+    return `<li><strong>${escapeHtml(profile.name)}</strong> ${renderTypeTag('ACCESS_PROFILE')}${renderOffendingEntitlementMention(matching)}</li>`
 }
 
 function renderTreeBody(entitlementIds: string[], expanded: EntitlementTreeExpansion): string {
@@ -39,14 +53,10 @@ function renderTreeBody(entitlementIds: string[], expanded: EntitlementTreeExpan
             continue
         }
 
-        lines.push(
-            `<li><strong>${escapeHtml(profile.name)}</strong> ${renderTypeTag('ACCESS_PROFILE')}<ul>`
-        )
+        lines.push(renderFlatAccessProfileLine(profile, matching))
         for (const ent of matching) {
-            lines.push(renderEntitlementLine(ent.id, ent.name))
             rendered.add(ent.id)
         }
-        lines.push('</ul></li>')
     }
 
     for (const ent of expanded.entitlements) {
@@ -58,7 +68,7 @@ function renderTreeBody(entitlementIds: string[], expanded: EntitlementTreeExpan
     return lines.join('')
 }
 
-/** Renders access-model-sod-remediation entitlement tree HTML with plain and outcome variants. */
+/** Renders access-model-sod-remediation group column HTML with flat access profile lines and outcome variants. */
 export function renderEntitlementTree(
     entitlementIds: string[],
     expanded: EntitlementTreeExpansion
