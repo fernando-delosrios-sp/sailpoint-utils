@@ -31,6 +31,7 @@ import { buildFormEmailBody, buildFormEmailHeader } from './form-email'
 import { buildGroupContentsHtml } from './group-html'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
 import { accessSodRemediationOperationSchema } from './index.schema'
+import { renderTypeTag } from '../../lib/sod-form-html'
 
 export interface AccessSodRemediationOperation extends OperationSignature {
     command: 'custom:access-sod-remediation'
@@ -44,6 +45,7 @@ export interface AccessSodRemediationOperation extends OperationSignature {
         'access-sod-remediation:access-items-scanned': number
         'access-sod-remediation:violations-found': number
         'access-sod-remediation:forms-skipped'?: number
+        'access-sod-remediation:forms-persist-failed'?: number
         'access-sod-remediation:form-url'?: string
         'access-sod-remediation:form-email-header'?: string
         'access-sod-remediation:form-email-body'?: string
@@ -136,6 +138,7 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
 
         let violationsFound = 0
         let formsSkipped = 0
+        let formsPersistFailed = 0
         let formsCreated = 0
 
         for (const accessItem of accessItems) {
@@ -192,23 +195,36 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
                     formInput: {
                         accessItemId: violation.accessItem.id,
                         accessItemType: violation.accessItem.type,
+                        accessItemTypeTagHtml: renderTypeTag(violation.accessItem.type),
                         accessItemName: violation.accessItem.name,
                         policyId: violation.policy.id,
                         policyName: violation.policy.name,
                         groupAIds: violation.groupAIds,
                         groupBIds: violation.groupBIds,
-                        groupAContentsHtml: html.groupAContentsHtml,
-                        groupBContentsHtml: html.groupBContentsHtml,
+                        ...html,
                     },
                 })
 
                 const childId = childPersistIdentity(ctx.requestId, violation.accessItem.id, violation.policy.id)
-                await ctx.persist(childId, {
-                    'access-sod-remediation:form-url': formUrl,
-                    'access-sod-remediation:form-email-header': buildFormEmailHeader(emailInput),
-                    'access-sod-remediation:form-email-body': buildFormEmailBody(emailInput, formUrl),
-                    'access-sod-remediation:form-email-recipient': ownerEmail,
-                })
+                try {
+                    await ctx.persist(
+                        childId,
+                        {
+                            'access-sod-remediation:form-url': formUrl,
+                            'access-sod-remediation:form-email-header': buildFormEmailHeader(emailInput),
+                            'access-sod-remediation:form-email-body': buildFormEmailBody(emailInput, formUrl),
+                            'access-sod-remediation:form-email-recipient': ownerEmail,
+                        },
+                        undefined,
+                        { verify: false }
+                    )
+                } catch (error) {
+                    formsPersistFailed += 1
+                    const detail = error instanceof Error ? error.message : String(error)
+                    console.warn(
+                        `[${ctx.requestId}] access-sod-remediation child persist failed identity=${childId}: ${detail}`
+                    )
+                }
 
                 formsCreated += 1
             }
@@ -222,6 +238,9 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
             'access-sod-remediation:access-items-scanned': accessItems.length,
             'access-sod-remediation:violations-found': violationsFound,
             ...(formsSkipped > 0 ? { 'access-sod-remediation:forms-skipped': formsSkipped } : {}),
+            ...(formsPersistFailed > 0
+                ? { 'access-sod-remediation:forms-persist-failed': formsPersistFailed }
+                : {}),
         })
 
         ctx.res.send({ status: 'success' })

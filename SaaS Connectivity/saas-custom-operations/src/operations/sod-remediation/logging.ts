@@ -123,14 +123,14 @@ export function logSodRemediationFormInput(requestId: string, formInput: SodForm
         hasControls: formInput.hasControls,
         violationId: formInput.violationId,
         targetIdentityId: formInput.targetIdentityId,
-        groupAContentsHtmlPreview:
-            formInput.groupAContentsHtml.length > 160
-                ? `${formInput.groupAContentsHtml.slice(0, 160)}…`
-                : formInput.groupAContentsHtml,
-        groupBContentsHtmlPreview:
-            formInput.groupBContentsHtml.length > 160
-                ? `${formInput.groupBContentsHtml.slice(0, 160)}…`
-                : formInput.groupBContentsHtml,
+        groupColumnsHtmlWhenGroupARemovedPreview:
+            formInput.groupColumnsHtmlWhenGroupARemoved.length > 160
+                ? `${formInput.groupColumnsHtmlWhenGroupARemoved.slice(0, 160)}…`
+                : formInput.groupColumnsHtmlWhenGroupARemoved,
+        groupColumnsHtmlWhenGroupBRemovedPreview:
+            formInput.groupColumnsHtmlWhenGroupBRemoved.length > 160
+                ? `${formInput.groupColumnsHtmlWhenGroupBRemoved.slice(0, 160)}…`
+                : formInput.groupColumnsHtmlWhenGroupBRemoved,
         groupAAccessSearch: formInput.groupAAccessSearch,
         groupBAccessSearch: formInput.groupBAccessSearch,
         controlOptions: formInput.controlOptions,

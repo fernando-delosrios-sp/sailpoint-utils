@@ -12,13 +12,15 @@ import accessSodRemediationSeedJson from './seed/access-sod-remediation.seed.jso
 export interface AccessSodFormInputValues {
     accessItemId: string
     accessItemType: string
+    accessItemTypeTagHtml: string
     accessItemName: string
     policyId: string
     policyName: string
     groupAIds: string[]
     groupBIds: string[]
-    groupAContentsHtml: string
-    groupBContentsHtml: string
+    groupColumnsHtmlPlain: string
+    groupColumnsHtmlWhenGroupARemoved: string
+    groupColumnsHtmlWhenGroupBRemoved: string
 }
 
 export interface CreateAccessSodInstanceParams {

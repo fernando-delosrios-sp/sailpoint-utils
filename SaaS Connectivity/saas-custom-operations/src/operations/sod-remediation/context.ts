@@ -3,16 +3,20 @@ import { CompensatingControlV1 } from '../../isc/controls'
 import { ViolationV1, extractSideEntitlements, resolveViolationSides } from '../../isc/violations'
 import { IdentityAccessItem } from '../../isc/identity-access'
 import {
+    escapeHtml,
+    buildGroupColumnLayouts,
+    renderEmojiLegend,
+    renderFlatAccessPathList,
+    renderFlatAccessPathListBody,
+    SideVariants,
+} from '../../lib/sod-form-html'
+import {
     RecommendedSideToCorrect,
     sideCorrectionLabel,
 } from './access-path-enrichment'
 import { buildRevocableAccessSearchString, ResolvedAccessSide, resolveAccessSide } from './access-path-resolver'
 import { FormInputSelectOption, SodFormInputValues } from './form-service'
-import {
-    REVOCABILITY_EMOJI,
-    renderAccessPathListHtml,
-    renderSideCorrectionHtml,
-} from './revocability-labels'
+import { REVOCABILITY_EMOJI, renderSideCorrectionHtml } from './revocability-labels'
 
 export interface SituationSummaryInput {
     violation: ViolationV1
@@ -20,14 +24,6 @@ export interface SituationSummaryInput {
     groupB: ResolvedAccessSide
     controls: CompensatingControlV1[]
     recommendedSideToCorrect?: RecommendedSideToCorrect
-}
-
-function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
 }
 
 /** Builds a plain-text email subject for workflow notifications. */
@@ -109,8 +105,7 @@ export function buildPersistedSituationSummary(
     return truncated.length <= maxLength ? truncated : truncated.slice(0, maxLength)
 }
 
-/** Builds full HTML for in-form DESCRIPTION rendering (includes access-path lists). */
-export function buildSituationSummary(input: SituationSummaryInput): string {
+function buildSituationSummaryCore(input: SituationSummaryInput): string {
     const { violation, groupA, groupB, controls, recommendedSideToCorrect = null } = input
     const targetName = escapeHtml(violation.identity.name ?? violation.identity.id)
     const policyName = escapeHtml(violation.policy?.name ?? 'Unknown policy')
@@ -124,9 +119,9 @@ export function buildSituationSummary(input: SituationSummaryInput): string {
         `<p><strong>Violation ID:</strong> ${violationId}</p>`,
         sideHint,
         '<h3>Group A access paths</h3>',
-        renderAccessPathListHtml(groupA.accessPaths, escapeHtml),
+        renderFlatAccessPathListBody(groupA.accessPaths),
         '<h3>Group B access paths</h3>',
-        renderAccessPathListHtml(groupB.accessPaths, escapeHtml),
+        renderFlatAccessPathListBody(groupB.accessPaths),
     ].filter(Boolean)
 
     if (controls.length === 0) {
@@ -135,22 +130,39 @@ export function buildSituationSummary(input: SituationSummaryInput): string {
         )
     }
 
-    // Single-line HTML: DelimitedFile provisionAsCsv breaks on embedded newlines in attribute values.
     return parts.join('')
 }
 
-/** Builds HTML for a resolved access side form column. */
-export function buildAccessContentsHtml(
+/** Builds full HTML for in-form DESCRIPTION rendering (includes access-path lists and emoji legend). */
+export function buildSituationSummary(input: SituationSummaryInput): string {
+    return `${buildSituationSummaryCore(input)}${renderEmojiLegend()}`
+}
+
+/** Builds HTML summary without emoji legend (for persisted output parity). */
+export function buildSituationSummaryWithoutLegend(input: SituationSummaryInput): string {
+    return buildSituationSummaryCore(input)
+}
+
+function buildAccessContentsVariants(
     side: ResolvedAccessSide,
     recommendedSideToCorrect?: RecommendedSideToCorrect,
     sideKey?: 'groupA' | 'groupB'
-): string {
+): SideVariants {
     const sideHint =
         sideKey && recommendedSideToCorrect === sideKey
             ? renderSideCorrectionHtml(sideCorrectionLabel(recommendedSideToCorrect), escapeHtml)
             : ''
 
-    return `${sideHint}${renderAccessPathListHtml(side.accessPaths, escapeHtml)}`
+    return renderFlatAccessPathList(side.accessPaths, { sideHintHtml: sideHint })
+}
+
+/** Builds HTML for a resolved access side form column (plain variant). */
+export function buildAccessContentsHtml(
+    side: ResolvedAccessSide,
+    recommendedSideToCorrect?: RecommendedSideToCorrect,
+    sideKey?: 'groupA' | 'groupB'
+): string {
+    return buildAccessContentsVariants(side, recommendedSideToCorrect, sideKey).plain
 }
 
 /** Builds FORM_INPUT select options for tenant compensating controls. */
@@ -179,13 +191,15 @@ export interface AssembleFormInputParams {
 export function assembleFormInput(params: AssembleFormInputParams): SodFormInputValues {
     const { violation, groupA, groupB, controls, recommendedSideToCorrect = null } = params
     const summary = buildSituationSummary({ violation, groupA, groupB, controls, recommendedSideToCorrect })
+    const groupAVariants = buildAccessContentsVariants(groupA, recommendedSideToCorrect, 'groupA')
+    const groupBVariants = buildAccessContentsVariants(groupB, recommendedSideToCorrect, 'groupB')
+    const layouts = buildGroupColumnLayouts(groupAVariants, groupBVariants)
 
     return {
         targetIdentityName: violation.identity.name ?? violation.identity.id,
         policyName: violation.policy?.name ?? 'Unknown policy',
         situationSummaryHtml: summary,
-        groupAContentsHtml: buildAccessContentsHtml(groupA, recommendedSideToCorrect, 'groupA'),
-        groupBContentsHtml: buildAccessContentsHtml(groupB, recommendedSideToCorrect, 'groupB'),
+        ...layouts,
         hasControls: controls.length > 0,
         violationId: violation.id,
         targetIdentityId: violation.identity.id,

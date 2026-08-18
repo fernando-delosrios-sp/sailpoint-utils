@@ -162,7 +162,7 @@ The sod-remediation operation SHALL fetch violation details and tenant compensat
 
 ### Requirement: Situation summary HTML format
 
-The sod-remediation operation SHALL build `sod-remediation:situation-summary` as HTML suitable for workflow email bodies. The same HTML SHALL populate `situationSummaryHtml` formInput for in-form DESCRIPTION rendering. Violation-derived dynamic text SHALL be HTML-escaped and SHALL NOT embed unescaped user-controlled markup.
+The sod-remediation operation SHALL build `sod-remediation:situation-summary` as HTML suitable for workflow email bodies. The same HTML SHALL populate `situationSummaryHtml` formInput for in-form DESCRIPTION rendering. Violation-derived dynamic text SHALL be HTML-escaped and SHALL NOT embed unescaped user-controlled markup. The in-form `situationSummaryHtml` SHALL append a single emoji legend footer decoding icon suffix meanings.
 
 #### Scenario: Email-oriented HTML structure
 
@@ -187,9 +187,15 @@ The sod-remediation operation SHALL build `sod-remediation:situation-summary` as
 - **WHEN** the ctx-summary DESCRIPTION element is inspected
 - **THEN** its `description` SHALL be exactly `{{$.form.input.situationSummaryHtml}}` without an additional surrounding wrapper element
 
+#### Scenario: Situation summary includes emoji legend
+
+- **WHEN** `situationSummaryHtml` is assembled
+- **THEN** it SHALL append one emoji legend footer decoding revocability, keep recommendation, and privileged icons
+- **AND** group column HTML variants SHALL NOT include the legend footer
+
 ### Requirement: ISC keep recommendation annotation
 
-The sod-remediation operation SHALL fetch ISC keep recommendations for each resolved access path item on the violation target identity at launch using the Recommendations API. Items whose recommendation is `YES` SHALL be annotated for display as recommended to keep. Items whose recommendation is `MAYBE`, `NO`, or `NOT_FOUND` SHALL NOT receive a keep star.
+The sod-remediation operation SHALL fetch ISC keep recommendations for each resolved access path item on the violation target identity at launch using the Recommendations API. Items whose recommendation is `YES` SHALL be annotated for display as recommended to keep using a keep star icon suffix. Items whose recommendation is `MAYBE`, `NO`, or `NOT_FOUND` SHALL NOT receive a keep star.
 
 #### Scenario: Batch keep recommendations at launch
 
@@ -202,7 +208,8 @@ The sod-remediation operation SHALL fetch ISC keep recommendations for each reso
 
 - **GIVEN** the Recommendations API returns `YES` for a role on Group B
 - **WHEN** form input and situation summary HTML are rendered
-- **THEN** that role line SHALL include a keep star with label Recommended to keep
+- **THEN** that role line SHALL include a keep star icon suffix without inline explanatory text on the line
+- **AND** the situation summary legend SHALL decode the keep star meaning
 - **AND** SHALL NOT include a connector revoke recommendation star
 
 #### Scenario: MAYBE does not show keep star
@@ -258,7 +265,8 @@ The sod-remediation operation SHALL annotate entitlement access path lines with 
 
 - **GIVEN** entitlement metadata indicates an entitlement is privileged
 - **WHEN** access path HTML is rendered
-- **THEN** that entitlement line SHALL include a privileged badge using UTF-8 emoji
+- **THEN** that entitlement line SHALL include a privileged icon suffix without inline explanatory text on the line
+- **AND** the situation summary legend SHALL decode the privileged icon meaning
 
 #### Scenario: Missing privileged metadata
 
@@ -305,21 +313,73 @@ The sod-remediation operation SHALL annotate each resolved access path with work
 - **THEN** each side revoke payload item SHALL include `revocable`, optional `reason`, optional `grantedVia`, and optional `keepRecommendation`
 - **AND** `recommendedRevoke` MAY remain for workflow use without owner-visible star
 
+### Requirement: Group column outcome panel variants
+
+The sod-remediation operation SHALL pre-render three HTML variants per policy side at form launch and populate corresponding formInput STRING fields. Outcome panels SHALL appear only after the recipient selects a remediation side.
+
+#### Scenario: Six group HTML formInput fields
+
+- **WHEN** `custom:sod-remediation` assembles form input
+- **THEN** formInput SHALL include `groupAContentsHtml`, `groupAContentsHtmlAsKept`, `groupAContentsHtmlAsRemoved`, `groupBContentsHtml`, `groupBContentsHtmlAsKept`, and `groupBContentsHtmlAsRemoved`
+- **AND** the plain variants SHALL NOT include outcome panel wrappers
+
+#### Scenario: Plain variants shown before selection
+
+- **GIVEN** the bundled seed form definition with formConditions for group column DESCRIPTION elements
+- **WHEN** the recipient has not selected `remediationSide`
+- **THEN** the seed SHALL show plain `groupAContentsHtml` and `groupBContentsHtml` DESCRIPTION elements
+- **AND** SHALL NOT show `AsKept` or `AsRemoved` variants
+
+#### Scenario: Outcome variants shown after Group A selection
+
+- **GIVEN** the recipient selects `remediationSide` value `groupA`
+- **WHEN** formConditions evaluate
+- **THEN** Group A column SHALL show `groupAContentsHtmlAsRemoved` with red outcome panel styling
+- **AND** Group B column SHALL show `groupBContentsHtmlAsKept` with green outcome panel styling
+- **AND** plain variants SHALL be hidden
+
+#### Scenario: Outcome variants shown after Group B selection
+
+- **GIVEN** the recipient selects `remediationSide` value `groupB`
+- **WHEN** formConditions evaluate
+- **THEN** Group B column SHALL show `groupBContentsHtmlAsRemoved` with red outcome panel styling
+- **AND** Group A column SHALL show `groupAContentsHtmlAsKept` with green outcome panel styling
+
+#### Scenario: Flat horizontal list topology preserved
+
+- **WHEN** group column HTML is rendered for any variant
+- **THEN** access paths on each side SHALL render as a flat unordered list without nested access-profile grouping
+
 ### Requirement: Revocability HTML display with emojis
 
-The sod-remediation operation SHALL render access path annotations in HTML using UTF-8 emojis alongside text labels in group column form input and in operation `sod-remediation:situation-summary` output. Keep recommendation stars SHALL use distinct copy from revocability labels.
+The sod-remediation operation SHALL render access path annotations in HTML using space-separated UTF-8 emoji icon suffixes on each line in group column form input and in operation `sod-remediation:situation-summary` output. Lines SHALL use shared type tags for access kind. Inline revocability and keep recommendation text labels SHALL NOT appear on lines; meanings SHALL be conveyed by the situation summary legend footer only.
 
 #### Scenario: Group column HTML form input
 
 - **WHEN** `custom:sod-remediation` assembles form input
-- **THEN** `groupAContentsHtml` and `groupBContentsHtml` SHALL contain HTML list items with revocability emoji and text labels
-- **AND** keep recommendation stars SHALL appear only for `YES` responses with label Recommended to keep
-- **AND** the bundled seed SHALL render those keys in DESCRIPTION elements for group A and group B columns
+- **THEN** each group side SHALL produce plain, asKept, and asRemoved HTML variants in `groupAContentsHtml`, `groupAContentsHtmlAsKept`, `groupAContentsHtmlAsRemoved`, and B equivalents
+- **AND** plain variants SHALL contain type tags and icon suffixes without outcome panel wrappers
+- **AND** asKept and asRemoved variants SHALL wrap the same line content in green and red outcome panels respectively
+- **AND** the bundled seed SHALL render those keys in conditional DESCRIPTION elements for group A and group B columns
+
+#### Scenario: Group column HTML form input variants
+
+- **WHEN** `custom:sod-remediation` assembles form input
+- **THEN** formInput SHALL include six group HTML STRING fields covering plain, asKept, and asRemoved for each side
+- **AND** seed formConditions SHALL swap visible DESCRIPTION elements when `remediationSide` changes
+
+#### Scenario: Icon suffixes on lines
+
+- **GIVEN** a revocable access path line with keep recommendation `YES`
+- **WHEN** HTML is rendered
+- **THEN** the line SHALL include space-separated `⭐` and `✅` icon suffixes
+- **AND** SHALL NOT include inline text `Revocable` or `Recommended to keep` on the line
 
 #### Scenario: Email summary parity
 
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** persisted output `sod-remediation:situation-summary` SHALL include the same access path annotations and side correction hint as the group column HTML
+- **THEN** persisted output `sod-remediation:situation-summary` SHALL include the same access path icon suffixes and side correction hint as the group column HTML line content
+- **AND** `situationSummaryHtml` SHALL additionally include the emoji legend footer
 
 
 

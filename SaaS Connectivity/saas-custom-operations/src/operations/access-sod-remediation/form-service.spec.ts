@@ -7,13 +7,15 @@ describe('serializeAccessSodFormInputForCreate', () => {
             serializeAccessSodFormInputForCreate({
                 accessItemId: 'role-1',
                 accessItemType: 'ROLE',
+                accessItemTypeTagHtml: "<span style='color:#1d4ed8; font-size:90%; background-color:#dbeafe; padding:2px 6px; border-radius:4px;'>role</span>",
                 accessItemName: 'Finance Role',
                 policyId: 'policy-1',
                 policyName: 'AP/AR Separation',
                 groupAIds: ['ent-a', 'ent-b'],
                 groupBIds: ['ent-c'],
-                groupAContentsHtml: '<p>A</p>',
-                groupBContentsHtml: '<p>B</p>',
+                groupColumnsHtmlPlain: '<p>plain</p>',
+                groupColumnsHtmlWhenGroupARemoved: '<p>A removed</p>',
+                groupColumnsHtmlWhenGroupBRemoved: '<p>B removed</p>',
             })
         ).toMatchObject({
             groupAIds: '["ent-a","ent-b"]',
@@ -37,13 +39,15 @@ describe('createAccessSodRemediationInstance', () => {
             formInput: {
                 accessItemId: 'role-1',
                 accessItemType: 'ROLE',
+                accessItemTypeTagHtml: "<span style='color:#1d4ed8; font-size:90%; background-color:#dbeafe; padding:2px 6px; border-radius:4px;'>role</span>",
                 accessItemName: 'Finance Role',
                 policyId: 'policy-1',
                 policyName: 'AP/AR Separation',
                 groupAIds: ['ent-a'],
                 groupBIds: ['ent-c'],
-                groupAContentsHtml: '<p>A</p>',
-                groupBContentsHtml: '<p>B</p>',
+                groupColumnsHtmlPlain: '<p>plain</p>',
+                groupColumnsHtmlWhenGroupARemoved: '<p>A removed</p>',
+                groupColumnsHtmlWhenGroupBRemoved: '<p>B removed</p>',
             },
         })
 

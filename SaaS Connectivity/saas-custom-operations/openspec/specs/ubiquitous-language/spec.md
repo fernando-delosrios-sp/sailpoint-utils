@@ -44,7 +44,59 @@ listed as a separate entry with its bounded context noted.
 - **WHEN** both meanings appear in specs or code
 - **THEN** each meaning MUST have its own glossary entry naming the bounded context
 
+### Requirement: SoD form HTML vocabulary
+
+The project glossary SHALL include terms for unified SoD remediation form HTML styling introduced by the sod-form-html library and consuming operations.
+
+#### Scenario: SoD form HTML term
+
+- **GIVEN** specs or code refer to shared HTML builders for SoD remediation forms
+- **WHEN** the ubiquitous language spec is read
+- **THEN** it SHALL define **SoD form HTML** as HTML string assembly for ISC form DESCRIPTION content under `src/lib/sod-form-html/`
+
+#### Scenario: Outcome panel term
+
+- **GIVEN** specs describe green or red group column backgrounds after side selection
+- **WHEN** the ubiquitous language spec is read
+- **THEN** it SHALL define **outcome panel** as the keep/remove fate wrapper applied after remediation side selection
+
+#### Scenario: Side HTML variant term
+
+- **GIVEN** specs describe pre-rendered group column HTML strings
+- **WHEN** the ubiquitous language spec is read
+- **THEN** it SHALL define **side HTML variant** as one of `plain`, `asKept`, or `asRemoved` for a policy side at form launch
+
+#### Scenario: Type tag term
+
+- **GIVEN** specs describe inline access kind pills on list lines
+- **WHEN** the ubiquitous language spec is read
+- **THEN** it SHALL define **type tag** as the pill span denoting role, access profile, or entitlement on a line
+
 ## Term entries
+
+### Term: SoD form HTML
+**Context**: sod-form-html
+**Definition**: HTML string assembly for ISC form DESCRIPTION content under `src/lib/sod-form-html/`.
+**Aliases**: none
+**Notes**: Shared by `custom:sod-remediation` and `custom:access-sod-remediation`.
+
+### Term: Outcome panel
+**Context**: sod-form-html
+**Definition**: The keep/remove fate wrapper applied after remediation side selection, using green for kept and red for removed.
+**Aliases**: none
+**Notes**: Appears only in `asKept` and `asRemoved` side HTML variants.
+
+### Term: Side HTML variant
+**Context**: sod-form-html
+**Definition**: One of `plain`, `asKept`, or `asRemoved` for a policy side at form launch.
+**Aliases**: none
+**Notes**: Pre-rendered into formInput STRING fields; seed formConditions swap visibility on selection.
+
+### Term: Type tag
+**Context**: sod-form-html
+**Definition**: The pill span denoting role, access profile, or entitlement on a line.
+**Aliases**: none
+**Notes**: Rendered via `renderTypeTag`; labels are lowercase (`role`, `access profile`, `entitlement`).
 
 <!-- Add terms using this pattern:
 

@@ -14,6 +14,68 @@ import {
 } from './seed-watermark'
 
 const seedPath = resolve(__dirname, '../../operations/sod-remediation/seed/sod-violation-remediation.seed.json')
+const accessSodSeedPath = resolve(
+    __dirname,
+    '../../operations/access-sod-remediation/seed/access-sod-remediation.seed.json'
+)
+
+function collectDescriptionElements(elements: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
+    const descriptions: Array<Record<string, unknown>> = []
+    for (const element of elements) {
+        if (element.elementType === 'DESCRIPTION') {
+            descriptions.push(element)
+        }
+        const config = element.config as Record<string, unknown> | undefined
+        const nested = (config?.formElements ?? config?.columns) as Array<Record<string, unknown>> | undefined
+        if (Array.isArray(nested)) {
+            descriptions.push(...collectDescriptionElements(nested))
+        }
+        if (Array.isArray(config?.columns)) {
+            for (const column of config.columns as Array<Array<Record<string, unknown>>>) {
+                descriptions.push(...collectDescriptionElements(column))
+            }
+        }
+    }
+    return descriptions
+}
+
+function findFormElementById(
+    elements: Array<Record<string, unknown>>,
+    id: string
+): Record<string, unknown> | undefined {
+    for (const element of elements) {
+        if (element.id === id) {
+            return element
+        }
+        const config = element.config as Record<string, unknown> | undefined
+        const nested = config?.formElements as Array<Record<string, unknown>> | undefined
+        if (Array.isArray(nested)) {
+            const match = findFormElementById(nested, id)
+            if (match) {
+                return match
+            }
+        }
+    }
+    return undefined
+}
+
+function collectNestedSectionViolations(elements: Array<Record<string, unknown>>): string[] {
+    const violations: string[] = []
+    for (const element of elements) {
+        if (element.elementType !== 'SECTION') {
+            continue
+        }
+        const config = element.config as Record<string, unknown> | undefined
+        const nested = (config?.formElements ?? []) as Array<Record<string, unknown>>
+        for (const child of nested) {
+            if (child.elementType === 'SECTION') {
+                violations.push(`${String(element.id)} contains nested SECTION ${String(child.id)}`)
+            }
+        }
+        violations.push(...collectNestedSectionViolations(nested))
+    }
+    return violations
+}
 
 function createFormsStub(overrides: Record<string, unknown> = {}) {
     return {
@@ -91,9 +153,7 @@ describe('isc/forms seed-loader', () => {
     })
 
     it('pickDeclaredFormInputValues passes STRING group id fields through for access-sod-remediation seed', () => {
-        const seed = loadFormSeed(
-            resolve(__dirname, '../../operations/access-sod-remediation/seed/access-sod-remediation.seed.json')
-        )
+        const seed = loadFormSeed(accessSodSeedPath)
         const picked = pickDeclaredFormInputValues(seed, {
             accessItemId: 'role-1',
             groupAIds: '["ent-a","ent-b"]',
@@ -104,6 +164,85 @@ describe('isc/forms seed-loader', () => {
         expect(picked.groupAIds).toBe('["ent-a","ent-b"]')
         expect(picked.groupBIds).toBe('["ent-c"]')
         expect(picked).not.toHaveProperty('extraKey')
+    })
+
+    it('access-sod-remediation seed context panel uses pre-rendered type tag HTML', () => {
+        const seed = loadFormSeed(accessSodSeedPath)
+        const ctxItem = findFormElementById(seed.formElements as Array<Record<string, unknown>>, 'ctx-item')
+        const description = (ctxItem?.config as { description?: string })?.description ?? ''
+
+        expect(seed.formInput?.some((field) => field.id === 'accessItemTypeTagHtml')).toBe(true)
+        expect(description).toContain('{{$.form.input.accessItemTypeTagHtml}}')
+        expect(description).not.toContain('#546e7a')
+        expect(description).not.toContain('accessItemType}}')
+    })
+
+    it('access-sod-remediation seed swaps column previews via ELEMENT SHOW conditions on remediationSide', () => {
+        const seed = loadFormSeed(accessSodSeedPath)
+
+        expect(findFormElementById(seed.formElements, 'group-columns-plain')?.elementType).toBe('DESCRIPTION')
+        expect(findFormElementById(seed.formElements, 'group-columns-when-a-removed')?.elementType).toBe('DESCRIPTION')
+        expect(findFormElementById(seed.formElements, 'group-columns-when-b-removed')?.elementType).toBe('DESCRIPTION')
+        expect(findFormElementById(seed.formElements, 'group-columns-preview')).toBeUndefined()
+
+        const conditions = seed.formConditions ?? []
+        expect(conditions).toHaveLength(3)
+
+        for (const condition of conditions) {
+            const rules = (condition.rules as Array<Record<string, unknown>>) ?? []
+            expect(rules.every((rule) => rule.sourceType === 'ELEMENT' && rule.source === 'remediationSide')).toBe(true)
+            const effects = (condition.effects as Array<Record<string, unknown>>) ?? []
+            expect(effects.every((effect) => effect.effectType === 'SHOW')).toBe(true)
+        }
+
+        const showTargets = conditions.flatMap((condition) =>
+            ((condition.effects as Array<{ config?: { element?: string } }>) ?? []).map((effect) => effect.config?.element)
+        )
+        expect(showTargets).toEqual([
+            'group-columns-plain',
+            'group-columns-when-a-removed',
+            'group-columns-when-b-removed',
+        ])
+
+        const eqValues = conditions.flatMap((condition) =>
+            ((condition.rules as Array<{ operator?: string; value?: string }>) ?? [])
+                .filter((rule) => rule.operator === 'EQ')
+                .map((rule) => rule.value)
+        )
+        expect(eqValues).toEqual(['Group A', 'Group B'])
+    })
+
+    it.each([
+        ['sod-remediation', seedPath],
+        ['access-sod-remediation', accessSodSeedPath],
+    ])('%s seed wraps all root form elements in SECTION', (_name, path) => {
+        const seed = loadFormSeed(path)
+
+        for (const element of seed.formElements ?? []) {
+            expect(element.elementType, String(element.id)).toBe('SECTION')
+        }
+    })
+
+    it.each([
+        ['sod-remediation', seedPath],
+        ['access-sod-remediation', accessSodSeedPath],
+    ])('%s seed does not nest SECTION inside SECTION', (_name, path) => {
+        const seed = loadFormSeed(path)
+        expect(collectNestedSectionViolations(seed.formElements as Array<Record<string, unknown>>)).toEqual([])
+    })
+
+    it.each([
+        ['sod-remediation', seedPath],
+        ['access-sod-remediation', accessSodSeedPath],
+    ])('%s seed DESCRIPTION elements require non-empty labels', (_name, path) => {
+        const seed = loadFormSeed(path)
+        const descriptions = collectDescriptionElements(seed.formElements as Array<Record<string, unknown>>)
+
+        expect(descriptions.length).toBeGreaterThan(0)
+        for (const element of descriptions) {
+            const label = (element.config as { label?: string })?.label
+            expect(label, String(element.id)).toBeTruthy()
+        }
     })
 
     it('buildCreateFormDefinitionPayload applies runtime form name, owner, and watermark', () => {
