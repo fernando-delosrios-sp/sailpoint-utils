@@ -24,7 +24,7 @@ describe('truncateForIscStorage', () => {
         expect(result).toHaveLength(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
         expect(result).toBe(value.slice(0, ISC_STRING_ATTRIBUTE_MAX_LENGTH))
         expect(warn).toHaveBeenCalledWith(
-            `[persist] truncated summary from ${value.length} to ${ISC_STRING_ATTRIBUTE_MAX_LENGTH} chars`
+            expect.stringContaining(`[persist] truncated summary from ${value.length} to ${ISC_STRING_ATTRIBUTE_MAX_LENGTH} chars`)
         )
     })
 
@@ -37,7 +37,7 @@ describe('truncateForIscStorage', () => {
         expect(result).toHaveLength(ISC_IDENTITY_MAX_LENGTH)
         expect(result).toBe(value.slice(0, ISC_IDENTITY_MAX_LENGTH))
         expect(warn).toHaveBeenCalledWith(
-            `[persist] truncated identity from ${value.length} to ${ISC_IDENTITY_MAX_LENGTH} chars`
+            expect.stringContaining(`[persist] truncated identity from ${value.length} to ${ISC_IDENTITY_MAX_LENGTH} chars`)
         )
     })
 
@@ -48,7 +48,7 @@ describe('truncateForIscStorage', () => {
         truncateForIscStorage(value, ISC_STRING_ATTRIBUTE_MAX_LENGTH)
 
         expect(warn).toHaveBeenCalledWith(
-            `[persist] truncated value from ${value.length} to ${ISC_STRING_ATTRIBUTE_MAX_LENGTH} chars`
+            expect.stringContaining(`[persist] truncated value from ${value.length} to ${ISC_STRING_ATTRIBUTE_MAX_LENGTH} chars`)
         )
     })
 })

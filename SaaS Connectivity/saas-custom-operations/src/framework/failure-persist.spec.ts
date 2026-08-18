@@ -25,16 +25,18 @@ describe('persistFailedResult', () => {
     })
 
     it('logs warning and does not throw when persist rejects', async () => {
-        const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const log = { info: vi.fn(), warn: vi.fn(), error: vi.fn() }
         const persist = vi.fn().mockRejectedValue(new Error('ISC unavailable'))
 
         await expect(
-            persistFailedResult('req-001', 'operation failed', { persist } as never)
+            persistFailedResult('req-001', 'operation failed', {
+                persist,
+                log,
+            } as never)
         ).resolves.toBeUndefined()
 
-        expect(warnSpy).toHaveBeenCalledWith(
+        expect(log.warn).toHaveBeenCalledWith(
             expect.stringMatching(/failed to write failure account for req-001.*ISC unavailable/)
         )
-        warnSpy.mockRestore()
     })
 })

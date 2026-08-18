@@ -4,7 +4,8 @@
     "apiUrl": "https://your-tenant.api.identitynow.com",
     "token": "<access-token>",
     "sourceName": "SaaS Custom Operations",
-    "testMode": true
+    "testMode": true,
+    "logUrl": "https://your-log-collector.example.com/ingest"
   },
   "input": {
     "requestId": "payload-001",

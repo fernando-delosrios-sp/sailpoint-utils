@@ -386,6 +386,42 @@ npm run pack-zip     # build deployable connector package
 npm run templates    # generate operator artifacts (see below)
 ```
 
+### Invoke config
+
+Custom operation invokes accept optional fields on the `config` object alongside `apiUrl`, `token`, and `sourceName`:
+
+| Field | Required | Description |
+|---|---|---|
+| `logUrl` | No | When set, the framework POSTs one JSON log event per `ctx.log` call (and at incoming request logging) to this URL. Console output is always emitted. Failures to POST do not fail the operation. |
+| `testMode` | No | When true, persist and schema writes are inhibited (see test mode behavior elsewhere in this doc). |
+
+External log events use this JSON shape:
+
+```json
+{
+  "timestamp": "2026-08-18T10:00:00.000Z",
+  "level": "info",
+  "requestId": "wf-run-8842",
+  "command": "custom:example",
+  "message": "step complete",
+  "detail": { "optional": "structured payload" }
+}
+```
+
+Token, bearer, and other sensitive keys in `detail` are redacted before POST. Whitespace-only `logUrl` values are treated as unset.
+
+### Operation logging (`ctx.log`)
+
+Handlers wrapped with `customOperation` receive `ctx.log` with `info`, `warn`, and `error(message, detail?)`. Every line is prefixed with `[requestId]` on stdout. When `config.logUrl` is set, the same calls also fire-and-forget POST the JSON event above.
+
+```typescript
+ctx.log.info('discovered policies', { count: policies.length })
+ctx.log.warn('source missing — using placeholder')
+ctx.log.error('form create failed', { formName: input.formName })
+```
+
+See `payloads/custom-example.json` for a connected dry-run payload that includes optional `logUrl`.
+
 ### Operator templates
 
 Run `npm run templates` after adding or modifying operations under `src/operations/`. The generator introspects auto-discovered and manually registered handlers and writes local-only artifacts to `./templates/` (gitignored). Markdown guides follow the step structure of the **SaaS Custom Operations Call** workflow embedded in `workflows/SaaS Custom Operations.json`:

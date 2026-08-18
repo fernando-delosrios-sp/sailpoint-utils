@@ -200,6 +200,34 @@ describe('customOperation', () => {
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
     })
 
+    it('exposes ctx.log and POSTs when logUrl is configured', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue({ ok: true })
+        vi.stubGlobal('fetch', fetchImpl)
+        const res = mockResponse()
+        const handler = vi.fn(async (ctx) => {
+            expect(ctx.log.info).toEqual(expect.any(Function))
+            ctx.log.info('handler step')
+            ctx.res.send({ status: 'success' })
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { ...testConfig, logUrl: 'https://logs.example.com/ingest' },
+            sourceId: 'source-123',
+        })
+
+        await wrapped(
+            { commandType: 'custom:test' } as any,
+            { requestId: 'req-log', payload: 'data' },
+            res as any
+        )
+
+        expect(handler).toHaveBeenCalled()
+        expect(fetchImpl).toHaveBeenCalledWith(
+            'https://logs.example.com/ingest',
+            expect.objectContaining({ method: 'POST' })
+        )
+        vi.unstubAllGlobals()
+    })
+
     it('deduplicates concurrent invokes with the same command and requestId', async () => {
         let releaseHandler!: () => void
         const handlerGate = new Promise<void>((resolve) => {

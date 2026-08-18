@@ -24,10 +24,10 @@ describe('redactConfigForLogging', () => {
 })
 
 describe('formatIncomingRequest', () => {
-    it('formats command, config, and input like payload output', () => {
+    it('formats type, config, and input like payload output', () => {
         process.env.NO_COLOR = '1'
         const formatted = formatIncomingRequest({
-            command: 'custom:example',
+            type: 'custom:example',
             config: {
                 apiUrl: 'https://tenant.api.identitynow.com',
                 token: 'secret-token',
@@ -41,7 +41,7 @@ describe('formatIncomingRequest', () => {
         })
 
         expect(formatted).toContain('Incoming request')
-        expect(formatted).toContain('command=custom:example')
+        expect(formatted).toContain('type=custom:example')
         expect(formatted).toContain('requestId=req-001')
         expect(formatted).toContain('testMode=true')
         expect(formatted).toContain('"message": "hello"')
@@ -91,6 +91,41 @@ describe('withRequestLogging', () => {
         expect(logSpy.mock.calls[0]?.[0]).toContain('"sourceName": "SaaS Custom Operations"')
         expect(logSpy.mock.calls[0]?.[0]).not.toContain('secret-token')
         logSpy.mockRestore()
+        delete process.env.NO_COLOR
+    })
+
+    it('POSTs incoming request detail when logUrl is configured', async () => {
+        process.env.NO_COLOR = '1'
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        const fetchImpl = vi.fn().mockResolvedValue({ ok: true })
+        vi.stubGlobal('fetch', fetchImpl)
+
+        const handler = vi.fn(async () => {})
+        const wrapped = withRequestLogging('custom:example', handler)
+
+        await wrapped(
+            {
+                commandType: 'custom:example',
+                config: {
+                    apiUrl: 'https://tenant.api.identitynow.com',
+                    token: 'secret-token',
+                    sourceName: 'SaaS Custom Operations',
+                    logUrl: 'https://logs.example.com/ingest',
+                },
+            } as never,
+            { requestId: 'req-001', message: 'hello' },
+            { send: vi.fn() } as never
+        )
+
+        expect(fetchImpl).toHaveBeenCalledWith(
+            'https://logs.example.com/ingest',
+            expect.objectContaining({ method: 'POST' })
+        )
+        const body = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body))
+        expect(body.message).toBe('Incoming request')
+        expect(body.detail.config.token).toBe('[REDACTED]')
+
+        vi.unstubAllGlobals()
         delete process.env.NO_COLOR
     })
 })

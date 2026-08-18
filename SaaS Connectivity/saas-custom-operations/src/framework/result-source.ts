@@ -12,6 +12,7 @@ import {
     SourcePayload,
 } from '../isc/sources'
 import { resolveTokenIdentity } from '../isc/token-identity'
+import { getActiveFrameworkLogger } from './logger'
 import {
     BASE_CORE_ATTRIBUTES,
     baseSchemaAttributeDefinition,
@@ -87,7 +88,7 @@ function mergeSchemaAttributes(
         }
 
         if (existing.type && existing.type !== inferred.type) {
-            console.warn(
+            getActiveFrameworkLogger().warn(
                 `[schema] Type conflict for ${name}: existing ${existing.type}, inferred ${inferred.type} — keeping existing`
             )
             continue
@@ -96,7 +97,7 @@ function mergeSchemaAttributes(
         if (existing.isMulti === false && inferred.isMulti) {
             const index = merged.findIndex((attr) => attr.name === name)
             if (index >= 0) {
-                console.warn(`[schema] isMulti conflict for ${name}: patching to true`)
+                getActiveFrameworkLogger().warn(`[schema] isMulti conflict for ${name}: patching to true`)
                 merged[index] = { ...merged[index], isMulti: true }
                 changed = true
             }
@@ -268,7 +269,7 @@ export async function ensureSourceSchema(
             return
         } catch (error) {
             if (isHttpNotFound(error)) {
-                console.warn(
+                getActiveFrameworkLogger().warn(
                     `[schema] account schema unavailable for source ${sourceId} (404 on create) — skipping reconciliation`
                 )
                 return
@@ -283,7 +284,7 @@ export async function ensureSourceSchema(
         await patchAccountSchema(sourcesApi, sourceId, schema.id!, patches)
     } catch (error) {
         if (isHttpNotFound(error)) {
-            console.warn(
+            getActiveFrameworkLogger().warn(
                 `[schema] account schema patch unavailable for source ${sourceId} (404) — continuing persist`
             )
             return

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Response } from '@sailpoint/connector-sdk'
+import { createFrameworkLogger } from './logger'
 import { createRequestContext } from './request-context'
 
 describe('createRequestContext persist wiring', () => {
@@ -76,5 +77,29 @@ describe('createRequestContext persist wiring', () => {
             })
         )
         expect(createAccountV1).not.toHaveBeenCalled()
+    })
+
+    it('exposes ctx.log backed by the framework logger', () => {
+        const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+        const logger = createFrameworkLogger({ requestId: 'req-001' })
+        const ctx = createRequestContext(input, {} as Response<any>, {
+            sourceId: 'source-1',
+            logger,
+            sdk: {
+                accounts: {} as never,
+                sources: {} as never,
+                forms: {} as never,
+                identityHistory: {} as never,
+                accessProfiles: {} as never,
+                roles: {} as never,
+                tasks: {} as never,
+            },
+        })
+
+        ctx.log.info('persist wiring check')
+
+        expect(ctx.log).toBe(logger)
+        expect(logSpy).toHaveBeenCalledWith('[req-001] persist wiring check')
+        logSpy.mockRestore()
     })
 })

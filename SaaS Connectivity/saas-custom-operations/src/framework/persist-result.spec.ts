@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createFrameworkLogger } from './logger'
 import {
     ISC_IDENTITY_MAX_LENGTH,
     ISC_STRING_ATTRIBUTE_MAX_LENGTH,
@@ -51,7 +52,7 @@ describe('formatAttributeValue', () => {
 
         expect(result).toHaveLength(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
         expect(warn).toHaveBeenCalledWith(
-            `[persist] truncated summary from ${longValue.length} to ${ISC_STRING_ATTRIBUTE_MAX_LENGTH} chars`
+            expect.stringContaining(`[persist] truncated summary from ${longValue.length} to ${ISC_STRING_ATTRIBUTE_MAX_LENGTH} chars`)
         )
     })
 
@@ -157,7 +158,7 @@ describe('buildAccountAttributes', () => {
         expect(attributes.id).toHaveLength(ISC_IDENTITY_MAX_LENGTH)
         expect(attributes.id).toBe(longId.slice(0, ISC_IDENTITY_MAX_LENGTH))
         expect(warn).toHaveBeenCalledWith(
-            `[persist] truncated identity from ${longId.length} to ${ISC_IDENTITY_MAX_LENGTH} chars`
+            expect.stringContaining(`[persist] truncated identity from ${longId.length} to ${ISC_IDENTITY_MAX_LENGTH} chars`)
         )
     })
 })
@@ -568,13 +569,24 @@ describe('createPersist', () => {
     })
 
     it('skips inline read when verify is false', async () => {
-        const deps = createTestDeps()
+        const lines: string[] = []
+        const log = createFrameworkLogger({
+            requestId: 'req-001',
+            consoleImpl: {
+                log: (line) => lines.push(line),
+                warn: (line) => lines.push(line),
+                error: (line) => lines.push(line),
+            },
+        })
+        const deps = createTestDeps({ log })
         const registry = new Map()
         const persist = createPersist<{ outcome: string }>(deps, registry)
 
         await persist('req-001', { outcome: 'value' }, undefined, { verify: false })
 
         expect(deps.readAccount).not.toHaveBeenCalled()
+        expect(lines.some((line) => line.includes('[persist] account contents identity=req-001'))).toBe(true)
+        expect(lines.some((line) => line.includes('outcome') && line.includes('value'))).toBe(true)
         expect(registry.get('req-001')).toMatchObject({ outcome: 'value', status: 'success' })
     })
 

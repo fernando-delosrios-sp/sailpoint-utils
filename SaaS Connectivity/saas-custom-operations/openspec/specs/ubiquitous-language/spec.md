@@ -1,9 +1,10 @@
-# Ubiquitous Language
+# Ubiquitous Language Specification
 
+## Purpose
 Shared domain vocabulary for this project. All specs, design docs, code identifiers,
 and user-facing copy MUST align with the terms defined here.
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Glossary maintenance
 
@@ -72,6 +73,17 @@ The project glossary SHALL include terms for unified SoD remediation form HTML s
 - **WHEN** the ubiquitous language spec is read
 - **THEN** it SHALL define **type tag** as the pill span denoting role, access profile, or entitlement on a line
 
+### Requirement: logUrl term
+
+The glossary SHALL define logUrl as the optional invoke-config URL that receives structured JSON log events from the custom-operation framework when set.
+
+#### Scenario: logUrl used in specs and config
+
+- **GIVEN** documentation or specs refer to external log delivery configuration
+- **WHEN** naming the invoke config field or related types
+- **THEN** the preferred spelling SHALL be logUrl
+- **AND** aliases log endpoint or remote logger URL SHALL NOT be used in normative text without an alias entry
+
 ## Term entries
 
 ### Term: SoD form HTML
@@ -97,6 +109,12 @@ The project glossary SHALL include terms for unified SoD remediation form HTML s
 **Definition**: The pill span denoting role, access profile, or entitlement on a line.
 **Aliases**: none
 **Notes**: Rendered via `renderTypeTag`; labels are lowercase (`role`, `access profile`, `entitlement`).
+
+### Term: logUrl
+**Context**: custom-operation-framework / connector-config
+**Definition**: Optional invoke-config string URL. When non-empty, the framework POSTs one JSON log event per logger call to that URL in addition to writing human-readable lines to stdout.
+**Aliases**: none
+**Notes**: Not declared in connector-spec.json sourceConfig in v1; supplied at invoke time via config.logUrl on workflow or spcx payloads.
 
 <!-- Add terms using this pattern:
 

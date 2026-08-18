@@ -14,6 +14,6 @@ export async function persistFailedResult(
         await ctx.persist(requestId, undefined, 'failed', { verify: false, details: message })
     } catch (error) {
         const detail = error instanceof Error ? error.message : String(error)
-        console.warn(`[persist] failed to write failure account for ${requestId}: ${detail}`)
+        ctx.log.warn(`[persist] failed to write failure account for ${requestId}: ${detail}`)
     }
 }
