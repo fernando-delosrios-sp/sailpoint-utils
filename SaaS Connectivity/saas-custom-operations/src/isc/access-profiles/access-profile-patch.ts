@@ -1,4 +1,5 @@
-import { AccessProfilesApi, JsonPatchOperation } from 'sailpoint-api-client'
+import { AccessProfilesApi } from 'sailpoint-api-client'
+import { JsonPatchOperation } from 'sailpoint-api-client/dist/access_profiles/api'
 import { listAccessProfileEntitlements } from './access-profile-entitlements'
 
 function buildReplacePatch(path: string, value: unknown): JsonPatchOperation {

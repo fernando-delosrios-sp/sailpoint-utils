@@ -1,4 +1,5 @@
-import { JsonPatchOperation, RolesApi } from 'sailpoint-api-client'
+import { RolesApi } from 'sailpoint-api-client'
+import { JsonPatchOperation } from 'sailpoint-api-client/dist/roles/api'
 import { listRoleEntitlements } from './role-entitlements'
 
 function buildReplacePatch(path: string, value: unknown): JsonPatchOperation {

@@ -6,6 +6,9 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🔧 Improvements
 
+- **CI verification baseline** — Parent repo workflow `.github/workflows/saas-custom-operations-ci.yml` runs `npm ci`, `npm run typecheck`, `npm test`, and `npm run build` on PR/push when files under `SaaS Connectivity/saas-custom-operations/` change.
+- **Standalone typecheck** — `npm run typecheck` typechecks `src/` and `scripts/` via separate tsconfigs without emit.
+- **Dev toolchain upgrades** — Vitest 4.x and TypeScript 5.x stable; `@vitest/coverage-v8` aligned to Vitest 4.
 - **Access-model SoD scan performance** — `custom:access-model-sod-remediation` loads assigned form instances once per scan, memoizes policy-owner email resolution, and caches access-item entitlement expansion within the scan loop to reduce ISC API volume on large catalogs. Form creation and skip behavior are unchanged.
 - **Access-model SoD apply idempotency** — `custom:access-model-sod-remediation-apply` skips duplicate catalog PATCH when a prior apply persist exists for the same `formInstanceId` (`skipped-already-applied`). Concurrent applies dedupe in-flight on `formInstanceId` instead of `requestId`.
 - **Access-model SoD scan failure counters** — Adds `access-model-sod-remediation:forms-launch-failed` on the invoke response; `forms-persist-failed` now counts child persist failures only (not form launch errors).
@@ -56,6 +59,11 @@ All notable changes to **saas-custom-operations** are documented here.
 - **ISC accounts module** — `AccountsApi` wrappers and native-identity lookup live in `src/isc/accounts/`; account schemas remain in `src/isc/sources/` (SourcesApi). Framework persist delegates to the accounts module; runtime persist behavior is unchanged.
 - **Operation layer boundaries** — Custom operations now live in mandatory `src/operations/<slug>/index.ts` subdirectories. Generic Custom Forms helpers moved to `src/isc/forms/`; SOD domain modules co-locate under `src/operations/sod-remediation/`. `src/isc/sources/` exposes generic SourcesApi wrappers only; result source auto-provision and schema reconciliation remain in `src/framework/result-source.ts`. Codegen discovers subdirectory entries and emits nested auto-registry imports. `custom:example` and `custom:sod-remediation` input/output contracts are unchanged.
 - **Local invoke output** — Runner summary sections renamed to **Local invoke** and **Simulated persist (testMode=true)**.
+
+### 📚 Documentation
+
+- **Connected local invoke (`ISC_TOKEN`)** — README Development section and `.env.example` document supplying an access token via `ISC_TOKEN` when payload `config.token` is a placeholder.
+- **Agent guidance refresh** — `AGENTS.md` and `openspec/config.yaml` describe the custom-operations-only architecture (auto-registry, six custom commands, ISC loopback helpers) and no longer reference removed std-command handlers or `my-client.ts`.
 
 ### 🐛 Bug Fixes
 

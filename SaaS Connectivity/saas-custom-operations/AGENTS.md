@@ -4,12 +4,16 @@ SailPoint ISC SaaS connector scaffold for custom operations. OpenSpec governs ch
 
 ## Project context
 
--   **Stack:** TypeScript, Node.js, `@sailpoint/connector-sdk`, Vitest, ncc, spcx
--   **Entry:** `src/index.ts` — registers std command handlers
--   **Client:** `src/my-client.ts` — target application integration (currently mock)
--   **Manifest:** `connector-spec.json` — commands, sourceConfig, accountSchema
--   **Std commands:** `std:test-connection`, `std:account:list`, `std:account:read`
--   **Build/test:** `npm run build`, `npm test`, `npm run codegen:schemas`
+-   **Stack:** TypeScript 5.x, Node.js, `@sailpoint/connector-sdk`, `sailpoint-api-client`, Vitest 4, ncc, spcx
+-   **Entry:** `src/index.ts` — exports connector; `src/operations/index.ts` registers custom commands via auto-registry
+-   **Framework:** `src/framework/` — `customOperation`, RequestContext, persist, result-source provisioning, test mode
+-   **Operations:** `src/operations/<slug>/` — custom handlers; `auto-registry.ts` (codegen) wires commands and schemas
+-   **ISC loopback:** `src/isc/<api-grouping>/` — thin SDK wrappers used from handlers via `ctx.sdk`
+-   **Manifest:** `connector-spec.json` — custom commands and invoke `sourceConfig` (apiUrl, token, sourceName)
+-   **Custom commands:** `custom:example`, `custom:governance-group-emails`, `custom:access-model-sod-remediation`, `custom:access-model-sod-remediation-apply`, `custom:preventive-sod-check`, `custom:sod-remediation`
+-   **Build/test:** `npm run typecheck`, `npm test`, `npm run build`, `npm run codegen:schemas`
+-   **Local invoke:** `npm run call:op` (payload JSON); `ISC_TOKEN` env var supplies token when payload uses a placeholder
+-   **CI:** parent repo workflow `.github/workflows/saas-custom-operations-ci.yml` (path-filtered to this package)
 -   **Schema codegen:** `OperationSignature.output` inline type literals → `*.schema.ts` sidecars; optional `command` literal → auto-registry + manifest sync (prebuild)
 -   **Spec domains:** `connector-operations`, `target-client`, `connector-config` under `openspec/specs/`
 

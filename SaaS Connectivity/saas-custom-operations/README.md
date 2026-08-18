@@ -383,11 +383,24 @@ npm install          # install dependencies
 npm test             # run Vitest suite with coverage
 npm run build        # codegen sidecars, then bundle to dist/ via ncc (packaging)
 npm run codegen:schemas  # regenerate *.schema.ts sidecars from OperationSignature
-npm run dev          # run locally with spcx (tsc watch → .dev-dist/)
+npm run dev          # run locally with spcx against .dev-dist/ (build first)
 npm run debug        # same as dev without source maps
 npm run pack-zip     # build deployable connector package
 npm run templates    # generate operator artifacts (see below)
 ```
+
+### Connected local invoke (`ISC_TOKEN`)
+
+For `npm run call:op` against a live tenant, payloads can keep a placeholder in `config.token` instead of committing secrets. The local runner substitutes `process.env.ISC_TOKEN` when `config.token` is empty, `<access-token>`, or `__SET_VIA_ISC_TOKEN_ENV__` (see `scripts/call-op.ts`).
+
+Copy `.env.example` to `.env`, set your access token, and export it before invoking:
+
+```bash
+export ISC_TOKEN=your-access-token
+npm run call:op -- payloads/custom-example.json
+```
+
+Payloads such as `payloads/governance-group-emails.json` use the `__SET_VIA_ISC_TOKEN_ENV__` placeholder by default. The token needs the same ISC scopes described under [Prerequisites](#prerequisites) (source read/create/update and account provisioning on the result source).
 
 ### Invoke config
 
