@@ -1,4 +1,4 @@
-import { customOperation, OperationSignature } from '../../framework'
+import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
 import { sodRemediationOperationSchema } from './index.schema'
 import { listAssignedEntitlements, listAssignedEntitlementsOffline } from '../../isc/identity-history'
 import {
@@ -76,7 +76,7 @@ function collectKeepRecommendationRequests(
 /** Launch-only SOD remediation operation — prepares form instance and returns URL + summary. */
 export const sodRemediationOperation = customOperation<SodRemediationOperation>(
     async (ctx, input) => {
-        const offline = !ctx.apiUrl && !ctx.token
+        const offline = isOfflineContext(ctx)
         const clientConfig = { apiUrl: ctx.apiUrl, token: ctx.token }
 
         logSodRemediationInput(ctx.requestId, input, offline)

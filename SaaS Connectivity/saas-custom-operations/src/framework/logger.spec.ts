@@ -84,4 +84,47 @@ describe('createFrameworkLogger', () => {
         await Promise.resolve()
         expect(fetchImpl).toHaveBeenCalled()
     })
+
+    it('redacts token in console log detail', () => {
+        const consoleImpl = {
+            log: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        }
+        const logger = createFrameworkLogger({
+            requestId: 'req-001',
+            consoleImpl,
+        })
+
+        logger.info('auth context', { token: 'secret-token-value' })
+
+        const consoleLine = String(consoleImpl.log.mock.calls[0]?.[0])
+        expect(consoleLine).toContain('[REDACTED]')
+        expect(consoleLine).not.toContain('secret-token-value')
+    })
+
+    it('applies the same detail redaction to console and logUrl', () => {
+        const fetchImpl = vi.fn().mockResolvedValue({ ok: true })
+        const consoleImpl = {
+            log: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        }
+        const detail = { token: 'secret-token-value', status: 'ok' }
+        const logger = createFrameworkLogger({
+            requestId: 'req-001',
+            logUrl: 'https://logs.example.com/ingest',
+            fetchImpl,
+            consoleImpl,
+        })
+
+        logger.info('step complete', detail)
+
+        const consoleLine = String(consoleImpl.log.mock.calls[0]?.[0])
+        const body = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body))
+
+        expect(consoleLine).toContain('[REDACTED]')
+        expect(consoleLine).not.toContain('secret-token-value')
+        expect(body.detail).toEqual({ token: '[REDACTED]', status: 'ok' })
+    })
 })

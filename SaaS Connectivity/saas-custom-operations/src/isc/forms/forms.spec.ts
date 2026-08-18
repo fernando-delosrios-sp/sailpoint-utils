@@ -270,6 +270,22 @@ describe('isc/forms seed-loader', () => {
 })
 
 describe('isc/forms ensure-definition', () => {
+    it('ensureFormDefinitionByName escapes double quotes in form name for OData filter', async () => {
+        const forms = createFormsStub({
+            searchFormDefinitionsByTenantV1: vi.fn().mockResolvedValue({ data: { results: [] } }),
+            createFormDefinitionV1: vi.fn().mockResolvedValue({ data: { id: 'def-new' } }),
+        })
+        const formName = 'Team "Alpha"'
+        const seed = loadFormSeed(seedPath)
+        const template = buildCreateFormDefinitionPayload(formName, 'owner-1', seed)
+
+        await ensureFormDefinitionByName(forms, { name: formName, ownerId: 'owner-1', template })
+
+        expect(forms.searchFormDefinitionsByTenantV1).toHaveBeenCalledWith({
+            filters: 'name eq "Team ""Alpha"""',
+        })
+    })
+
     it('ensureFormDefinitionByName searches tenant and creates from template when missing', async () => {
         const forms = createFormsStub({
             searchFormDefinitionsByTenantV1: vi.fn().mockResolvedValue({ data: { results: [] } }),

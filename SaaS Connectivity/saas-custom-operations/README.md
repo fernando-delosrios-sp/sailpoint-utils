@@ -179,6 +179,7 @@ Set `config.testMode: true` (or export `SPCX_TEST_MODE=1` for config-less runs) 
 | Config provided | ISC behavior | Writes |
 |---|---|---|
 | Yes (full `apiUrl`, `token`, `sourceName`) | Read-only status check + list-only source lookup; fails on missing/invalid token | Inhibited (logged) |
+| Partial (`apiUrl` without `token`, or the reverse) | Rejected with incomplete connection config — no offline fallback | N/A (invoke fails) |
 | No | All ISC calls skipped | Inhibited (logged) |
 
 Run from an invoke payload:

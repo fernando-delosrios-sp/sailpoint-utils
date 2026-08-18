@@ -1,5 +1,5 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
-import { customOperation, OperationSignature, RequestContext } from '../../framework'
+import { customOperation, isOfflineContext, OperationSignature, RequestContext } from '../../framework'
 import { listEnabledAccessProfiles, listEnabledAccessProfilesOffline } from '../../isc/access-profiles'
 import { listEnabledRoles, listEnabledRolesOffline, CatalogAccessItem } from '../../isc/roles'
 import {
@@ -121,7 +121,7 @@ async function loadPolicies(
 /** Scans catalog access items for intrinsic SoD violations and launches policy-owner remediation forms. */
 export const accessModelSodRemediationOperation = customOperation<AccessModelSodRemediationOperation>(
     async (ctx, input) => {
-        const offline = !ctx.apiUrl || !ctx.token
+        const offline = isOfflineContext(ctx)
         const scope = input.scope ?? DEFAULT_SCOPE
         const searchIndices = validateSearchIndices(input.searchIndices)
         const policyScope = input.policyScope ?? DEFAULT_POLICY_SCOPE

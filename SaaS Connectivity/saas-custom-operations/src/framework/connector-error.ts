@@ -22,10 +22,13 @@ function extractMessage(error: unknown): string {
     if (error instanceof Error) {
         return error.message
     }
+    if (isRecord(error) && typeof error.message === 'string') {
+        return error.message
+    }
     return String(error)
 }
 
-function formatApiErrorDetail(error: unknown): string | undefined {
+function extractResponseData(error: unknown): unknown {
     if (!isRecord(error)) {
         return undefined
     }
@@ -35,18 +38,45 @@ function formatApiErrorDetail(error: unknown): string | undefined {
         return undefined
     }
 
-    if (typeof data === 'string') {
-        return data.trim() || undefined
-    }
-
-    try {
-        return JSON.stringify(data)
-    } catch {
-        return String(data)
-    }
+    return data
 }
 
-/** Converts unknown errors into ConnectorError for ISC platform signaling. */
+/**
+ * Builds sanitized log detail for operator diagnostics.
+ * Includes HTTP status and ISC response bodies for operators; {@link createFrameworkLogger} redacts
+ * sensitive fields before emission. Use with `ctx.log.error` — not for workflow-visible messages.
+ */
+export function buildErrorLogDetail(err: unknown): Record<string, unknown> {
+    if (err instanceof ConnectorError) {
+        return { message: err.message, type: err.type }
+    }
+
+    const detail: Record<string, unknown> = {
+        message: extractMessage(err),
+    }
+
+    const status = extractHttpStatus(err)
+    if (status !== undefined) {
+        detail.status = status
+    }
+
+    const responseData = extractResponseData(err)
+    if (responseData !== undefined) {
+        detail.responseData = responseData
+    }
+
+    if (err instanceof PersistVerificationError) {
+        detail.identity = err.identity
+    }
+
+    return detail
+}
+
+/**
+ * Converts unknown errors into {@link ConnectorError} for ISC platform signaling.
+ * Caller-visible messages use the stable error prefix plus HTTP status when available; raw ISC API
+ * response bodies are omitted from the message and should be logged via {@link buildErrorLogDetail}.
+ */
 export function toConnectorError(err: unknown, context?: string): ConnectorError {
     if (err instanceof ConnectorError) {
         return err
@@ -57,12 +87,6 @@ export function toConnectorError(err: unknown, context?: string): ConnectorError
     const status = extractHttpStatus(err)
     const type = status === 404 ? ConnectorErrorType.NotFound : ConnectorErrorType.Generic
     const statusSuffix = status !== undefined ? ` (HTTP ${status})` : ''
-    const detail = formatApiErrorDetail(err)
-    const detailSuffix = detail ? `: ${detail}` : ''
 
-    if (err instanceof PersistVerificationError) {
-        return new ConnectorError(`${prefix}${message}${statusSuffix}${detailSuffix}`, ConnectorErrorType.Generic)
-    }
-
-    return new ConnectorError(`${prefix}${message}${statusSuffix}${detailSuffix}`, type)
+    return new ConnectorError(`${prefix}${message}${statusSuffix}`, type)
 }

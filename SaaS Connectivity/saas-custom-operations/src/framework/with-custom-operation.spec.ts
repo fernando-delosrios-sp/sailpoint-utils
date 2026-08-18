@@ -685,6 +685,37 @@ describe('customOperation test mode', () => {
         )
     })
 
+    it('preserves existing ConnectorError message without double-wrapping', async () => {
+        const res = { send: vi.fn() }
+        const wrapped = customOperation<TestOperation>(
+            async () => {
+                throw new ConnectorError('missing field')
+            },
+            {
+                config: testConfig,
+                sourceId: 'source-1',
+                sdk: {
+                    sources: { listSourcesV1: vi.fn(), createSourceV1: vi.fn() } as any,
+                    accounts: {
+                        createAccountV1: vi.fn(),
+                        putAccountV1: vi.fn(),
+                        deleteAccountAsyncV1: vi.fn(),
+                        listAccountsV1: vi.fn(),
+                    } as any,
+                },
+            }
+        )
+
+        await wrapped({ commandType: 'custom:test', config: testConfig } as any, { requestId: 'req-001' }, res as any)
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                error: 'missing field',
+            })
+        )
+    })
+
     it('sends status failed for handler plain Error instead of throwing', async () => {
         const res = { send: vi.fn() }
         const wrapped = customOperation<TestOperation>(

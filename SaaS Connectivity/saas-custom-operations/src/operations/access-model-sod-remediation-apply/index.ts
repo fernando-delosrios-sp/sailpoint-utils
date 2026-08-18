@@ -1,5 +1,5 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
-import { customOperation, OperationSignature } from '../../framework'
+import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
 import { getFormInstanceById } from '../../isc/forms'
 import { CatalogAccessItem } from '../../isc/roles'
 import { expandAccessItemEntitlements } from '../access-model-sod-remediation/expand-access-item-entitlements'
@@ -59,7 +59,7 @@ export const accessModelSodRemediationApplyOperation = customOperation<AccessMod
             throw new ConnectorError('Missing required input field: formInstanceId')
         }
 
-        const offline = !ctx.apiUrl || !ctx.token
+        const offline = isOfflineContext(ctx)
 
         const instance = offline
             ? getFormInstanceByIdOffline(formInstanceId)

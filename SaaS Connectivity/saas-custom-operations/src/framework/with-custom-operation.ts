@@ -1,5 +1,5 @@
 import { CommandHandler, ConnectorError, Context, Response } from '@sailpoint/connector-sdk'
-import { toConnectorError } from './connector-error'
+import { buildErrorLogDetail, toConnectorError } from './connector-error'
 import { createFrameworkLogger, getActiveFrameworkLogger, resolveLogUrlFromConfig, setActiveFrameworkLogger } from './logger'
 import { persistFailedResult } from './failure-persist'
 import {
@@ -169,7 +169,10 @@ export function customOperation<T extends OperationSignature>(
                 return outcome
             } catch (e) {
                 const error = toConnectorError(e, context.commandType)
-                getActiveFrameworkLogger(String(input.requestId ?? 'unknown')).error(error.message)
+                getActiveFrameworkLogger(String(input.requestId ?? 'unknown')).error(
+                    error.message,
+                    buildErrorLogDetail(e)
+                )
                 if (!responseSent) {
                     trackedRes.send({ status: 'failed', error: error.message })
                 }

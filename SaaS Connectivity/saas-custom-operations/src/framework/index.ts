@@ -62,6 +62,8 @@ export type {
 export { formatSpreadJson } from './pretty-json'
 export { readExternalInvokeConfig, readInvokeConfig } from './invoke-config'
 export { formatIncomingRequest, printIncomingRequest, resolveConfigForRequestLogging, withRequestLogging, wrapConnectorWithRequestLogging } from './request-logging'
+export { isOfflineContext } from './offline-context'
+export type { ConnectionFields } from './offline-context'
 export { toConnectorError } from './connector-error'
 export { customOperation, normalizeAccessToken, parseStandardInput } from './with-custom-operation'
 export type { CustomOperationHandler, CustomOperationOptions } from './with-custom-operation'

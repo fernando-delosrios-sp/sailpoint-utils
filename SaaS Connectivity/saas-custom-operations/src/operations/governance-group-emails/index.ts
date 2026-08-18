@@ -1,5 +1,5 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
-import { customOperation, OperationSignature } from '../../framework'
+import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
 import {
     resolveGovernanceGroupEmails,
     resolveGovernanceGroupEmailsOffline,
@@ -24,7 +24,7 @@ export const governanceGroupEmailsOperation = customOperation<GovernanceGroupEma
             throw new ConnectorError('Missing required input field: groupName')
         }
 
-        const offline = !ctx.apiUrl && !ctx.token
+        const offline = isOfflineContext(ctx)
         const emails = offline
             ? resolveGovernanceGroupEmailsOffline(groupName)
             : await resolveGovernanceGroupEmails(ctx.sdk.governanceGroups, groupName)

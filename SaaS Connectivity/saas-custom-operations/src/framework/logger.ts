@@ -142,7 +142,8 @@ export function createFrameworkLogger(options: CreateFrameworkLoggerOptions): Fr
     } = options
 
     const emit = (level: LogLevel, message: string, detail?: unknown): void => {
-        const consoleLine = formatConsoleLine(requestId, message, detail)
+        const sanitizedDetail = detail !== undefined ? sanitizeForLog(detail) : undefined
+        const consoleLine = formatConsoleLine(requestId, message, sanitizedDetail)
         if (level === 'warn') {
             consoleImpl.warn(consoleLine)
         } else if (level === 'error') {
@@ -161,8 +162,8 @@ export function createFrameworkLogger(options: CreateFrameworkLoggerOptions): Fr
             if (command) {
                 event.command = command
             }
-            if (detail !== undefined) {
-                event.detail = sanitizeForLog(detail)
+            if (sanitizedDetail !== undefined) {
+                event.detail = sanitizedDetail
             }
             postLogEvent(logUrl, event, fetchImpl)
         }

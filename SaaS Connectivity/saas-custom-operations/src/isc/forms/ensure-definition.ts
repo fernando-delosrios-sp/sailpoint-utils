@@ -1,5 +1,6 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
 import { CustomFormsApi } from 'sailpoint-api-client'
+import { escapeODataString } from '../accounts'
 import { callFormsApi } from './error-formatting'
 import { CreateFormDefinitionPayload } from './seed-loader'
 import { computeFormSeedFingerprint, parseFormSeedWatermark } from './seed-watermark'
@@ -48,9 +49,10 @@ export async function ensureFormDefinitionByName(
     const { name, template } = params
     const expectedFingerprint = templateFingerprint(template)
 
+    const escapedName = escapeODataString(name)
     const searchResponse = await callFormsApi('Form definition search', () =>
         forms.searchFormDefinitionsByTenantV1({
-            filters: `name eq "${name}"`,
+            filters: `name eq "${escapedName}"`,
         })
     )
 
