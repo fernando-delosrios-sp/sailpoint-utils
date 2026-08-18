@@ -194,8 +194,9 @@ The access-model-sod-remediation operation SHALL ensure a shared form definition
 #### Scenario: Form submit returns remediation side
 
 - **GIVEN** a submitted form with `formData.remediationSide` set to `groupA`
-- **WHEN** a downstream workflow reads the form instance
-- **THEN** it SHALL use `groupAIds` from `formInput` to determine entitlements to remove from the access item definition
+- **WHEN** a downstream workflow applies the decision
+- **THEN** it SHALL invoke `custom:access-model-sod-remediation-apply` with `formInstanceId` only
+- **AND** the correct operation SHALL interpret `groupAIds` from `formInput` to detach nested access profiles or remove direct role entitlements per side entitlement ids
 - **AND** the form SHALL NOT include `formData.action` or Mitigate fields
 
 #### Scenario: Idempotent form creation

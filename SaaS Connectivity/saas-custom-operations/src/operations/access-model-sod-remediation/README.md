@@ -72,7 +72,7 @@ Offline: [`payloads/access-model-sod-remediation-offline.json`](../../../payload
 2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields.
 3. Notify policy owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).
-5. Downstream workflow removes entitlements on the chosen side from the role or access profile definition.
+5. Invoke `custom:access-model-sod-remediation-apply` with `formInstanceId` from the form trigger to apply the catalog correction (detach nested APs from roles or remove direct entitlements; remove entitlements from AP definitions when the access item is an AP).
 
 ## Form submit contract
 

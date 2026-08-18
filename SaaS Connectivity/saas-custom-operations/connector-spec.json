@@ -2,6 +2,7 @@
 	"name": "saas-custom-operations",
 	"commands": [
 		"custom:access-model-sod-remediation",
+		"custom:access-model-sod-remediation-apply",
 		"custom:example",
 		"custom:governance-group-emails",
 		"custom:preventive-sod-check",

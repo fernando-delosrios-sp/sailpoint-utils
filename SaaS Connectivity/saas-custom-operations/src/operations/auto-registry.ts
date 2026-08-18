@@ -2,22 +2,25 @@
 import { Connector } from '@sailpoint/connector-sdk'
 import { registerOperationSchema } from '../framework'
 import { accessModelSodRemediationOperation } from './access-model-sod-remediation/index'
+import { accessModelSodRemediationApplyOperation } from './access-model-sod-remediation-apply/index'
 import { exampleOperation } from './example/index'
 import { governanceGroupEmailsOperation } from './governance-group-emails/index'
 import { preventiveSodCheckOperation } from './preventive-sod-check/index'
 import { sodRemediationOperation } from './sod-remediation/index'
 import { accessModelSodRemediationOperationSchema } from './access-model-sod-remediation/index.schema'
+import { accessModelSodRemediationApplyOperationSchema } from './access-model-sod-remediation-apply/index.schema'
 import { exampleOperationSchema } from './example/index.schema'
 import { governanceGroupEmailsOperationSchema } from './governance-group-emails/index.schema'
 import { preventiveSodCheckOperationSchema } from './preventive-sod-check/index.schema'
 import { sodRemediationOperationSchema } from './sod-remediation/index.schema'
 
 registerOperationSchema('custom:access-model-sod-remediation', accessModelSodRemediationOperationSchema)
+registerOperationSchema('custom:access-model-sod-remediation-apply', accessModelSodRemediationApplyOperationSchema)
 registerOperationSchema('custom:example', exampleOperationSchema)
 registerOperationSchema('custom:governance-group-emails', governanceGroupEmailsOperationSchema)
 registerOperationSchema('custom:preventive-sod-check', preventiveSodCheckOperationSchema)
 registerOperationSchema('custom:sod-remediation', sodRemediationOperationSchema)
 
 export function registerAutoOperations(connector: Connector): Connector {
-    return connector.command('custom:access-model-sod-remediation', accessModelSodRemediationOperation).command('custom:example', exampleOperation).command('custom:governance-group-emails', governanceGroupEmailsOperation).command('custom:preventive-sod-check', preventiveSodCheckOperation).command('custom:sod-remediation', sodRemediationOperation)
+    return connector.command('custom:access-model-sod-remediation', accessModelSodRemediationOperation).command('custom:access-model-sod-remediation-apply', accessModelSodRemediationApplyOperation).command('custom:example', exampleOperation).command('custom:governance-group-emails', governanceGroupEmailsOperation).command('custom:preventive-sod-check', preventiveSodCheckOperation).command('custom:sod-remediation', sodRemediationOperation)
 }
