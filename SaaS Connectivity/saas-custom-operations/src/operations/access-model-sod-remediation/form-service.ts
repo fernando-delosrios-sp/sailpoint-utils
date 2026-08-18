@@ -7,9 +7,9 @@ import {
     pickDeclaredFormInputValues,
 } from '../../isc/forms'
 import { logIscDebug, logIscRequestFailure } from '../../isc/debug/log-isc-request'
-import accessSodRemediationSeedJson from './seed/access-sod-remediation.seed.json'
+import accessModelSodRemediationSeedJson from './seed/access-model-sod-remediation.seed.json'
 
-export interface AccessSodFormInputValues {
+export interface AccessModelSodFormInputValues {
     accessItemId: string
     accessItemType: string
     accessItemTypeTagHtml: string
@@ -23,18 +23,18 @@ export interface AccessSodFormInputValues {
     groupColumnsHtmlWhenGroupBRemoved: string
 }
 
-export interface CreateAccessSodInstanceParams {
+export interface CreateAccessModelSodInstanceParams {
     forms: FormsApiLike
     formDefinitionId: string
     recipientId: string
     createdBySourceId: string
-    formInput: AccessSodFormInputValues
+    formInput: AccessModelSodFormInputValues
 }
 
-const accessSodRemediationSeed = loadFormSeed(accessSodRemediationSeedJson)
+const accessModelSodRemediationSeed = loadFormSeed(accessModelSodRemediationSeedJson)
 
-/** Ensures the access SoD remediation form definition exists for the tenant. */
-export async function ensureAccessSodFormDefinition(
+/** Ensures the access model SoD remediation form definition exists for the tenant. */
+export async function ensureAccessModelSodFormDefinition(
     forms: FormsApiLike,
     formName: string,
     ownerId: string
@@ -42,8 +42,8 @@ export async function ensureAccessSodFormDefinition(
     const template = buildCreateFormDefinitionPayload(
         formName,
         ownerId,
-        accessSodRemediationSeed,
-        accessSodRemediationSeed.description
+        accessModelSodRemediationSeed,
+        accessModelSodRemediationSeed.description
     )
     return ensureFormDefinitionByName(forms, { name: formName, ownerId, template })
 }
@@ -86,7 +86,7 @@ export async function hasAssignedRemediationInstance(
 }
 
 /** Serializes entitlement id lists to JSON strings for ISC STRING formInput fields. */
-export function serializeAccessSodFormInputForCreate(formInput: AccessSodFormInputValues): Record<string, unknown> {
+export function serializeAccessModelSodFormInputForCreate(formInput: AccessModelSodFormInputValues): Record<string, unknown> {
     return {
         ...formInput,
         groupAIds: JSON.stringify(formInput.groupAIds),
@@ -94,14 +94,14 @@ export function serializeAccessSodFormInputForCreate(formInput: AccessSodFormInp
     }
 }
 
-/** Creates a standalone access SoD remediation form instance for the policy owner. */
-export async function createAccessSodRemediationInstance(params: CreateAccessSodInstanceParams): Promise<string> {
+/** Creates a standalone access model SoD remediation form instance for the policy owner. */
+export async function createAccessModelSodRemediationInstance(params: CreateAccessModelSodInstanceParams): Promise<string> {
     const { forms, formDefinitionId, recipientId, createdBySourceId, formInput } = params
     const instanceFormInput = pickDeclaredFormInputValues(
-        accessSodRemediationSeed,
-        serializeAccessSodFormInputForCreate(formInput)
+        accessModelSodRemediationSeed,
+        serializeAccessModelSodFormInputForCreate(formInput)
     )
-    logIscDebug('createAccessSodRemediationInstance formInput', {
+    logIscDebug('createAccessModelSodRemediationInstance formInput', {
         keys: Object.keys(instanceFormInput),
         groupAIds: instanceFormInput.groupAIds,
         groupBIds: instanceFormInput.groupBIds,
@@ -116,6 +116,6 @@ export async function createAccessSodRemediationInstance(params: CreateAccessSod
     })
 }
 
-export function buildAccessSodFormInput(values: AccessSodFormInputValues): AccessSodFormInputValues {
+export function buildAccessModelSodFormInput(values: AccessModelSodFormInputValues): AccessModelSodFormInputValues {
     return values
 }

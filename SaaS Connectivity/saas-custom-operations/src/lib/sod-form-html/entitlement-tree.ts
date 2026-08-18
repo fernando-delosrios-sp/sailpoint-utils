@@ -58,7 +58,7 @@ function renderTreeBody(entitlementIds: string[], expanded: EntitlementTreeExpan
     return lines.join('')
 }
 
-/** Renders access-sod-remediation entitlement tree HTML with plain and outcome variants. */
+/** Renders access-model-sod-remediation entitlement tree HTML with plain and outcome variants. */
 export function renderEntitlementTree(
     entitlementIds: string[],
     expanded: EntitlementTreeExpansion

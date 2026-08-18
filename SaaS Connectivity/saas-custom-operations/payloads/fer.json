@@ -1,0 +1,17 @@
+{
+    "type": "custom:access-model-sod-remediation",
+    "input": {
+        "formName": "Access Composition SOD Violation Remediation",
+        "requestId": "access-model-sod-1",
+        "scope": "*",
+        "searchIndices": [
+            "roles"
+        ]
+    },
+    "config": {
+        "apiUrl": "https://company23429-poc.api.identitynow-demo.com",
+        "sourceName": "SaaS Custom Operations",
+        "token": "eyJ0eXAiOiJKV1QiLCJqa3UiOiJodHRwczovL2NvbXBhbnkyMzQyOS1wb2MuYXBpLmlkZW50aXR5bm93LWRlbW8uY29tL29hdXRoL2p3a3MiLCJhbGciOiJFUzI1NiIsImtpZCI6ImYzZDU3Yjc0LWM3NDItNjkwYi1kYmQ5LTkyNzQ5NjQ2OGUyZiJ9.eyJ0ZW5hbnRfaWQiOiI1Mzg1MjhhYS1hZmM1LTRkZGQtYjYzMS1jMzk2N2NiNjYzNmIiLCJzdWIiOiI5MTYwOTE5YmU4MzU0ODUwOWI1NWM3MjljODRhYmFkZiIsInBvZCI6InNlMDEtdXNlYXN0MSIsIm9yZyI6ImNvbXBhbnkyMzQyOS1wb2MiLCJpZGVudGl0eV9pZCI6IjQ5ZDFiMzA0Mjk0NDQ5NzY5ZTU1NTFjOGVjZTA4ODk2IiwidXNlcl9uYW1lIjoiZmVybmFuZG8uZGVsb3NyaW9zIiwic3Ryb25nX2F1dGgiOnRydWUsImlzcyI6Imh0dHBzOi8vd3d3LnNhaWxwb2ludC5jb20iLCJjbGllbnRfaWQiOiI5MTYwOTE5YmU4MzU0ODUwOWI1NWM3MjljODRhYmFkZiIsImF1dGhvcml0aWVzIjpbInNwOnVzZXIiLCJPUkdfQURNSU4iXSwic3Ryb25nX2F1dGhfc3VwcG9ydGVkIjpmYWxzZSwic2NvcGUiOlsiQmc9PSJdLCJleHAiOjE3ODcwODAzODcsImp0aSI6ImI2OGMxOWVlLTkzOWItNDE2NC1hZjMzLTQ1NzMzNDhjN2JjMCJ9.rPDbKV7X2JsTD7A6KOIO9qr6CC9r_fInHyNQ3WLDUEGk-_LwfkrOegM84HXE3oEMiSHSaABURHErmH_PuX3tNw",
+        "logUrl": "https://webhook.site/f3ee805d-eb78-47e5-9788-a163f276f777"
+    }
+}

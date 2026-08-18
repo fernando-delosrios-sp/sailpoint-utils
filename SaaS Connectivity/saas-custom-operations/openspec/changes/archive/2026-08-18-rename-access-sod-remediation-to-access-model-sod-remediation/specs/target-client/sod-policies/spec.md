@@ -1,10 +1,4 @@
-# target-client/sod-policies Specification
-
-## Purpose
-
-Generic SoD policy helpers under `src/isc/sod-policies/` for listing and fetching policies and resolving conflicting access sides. This module SHALL NOT encode operation-specific form or persist logic.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: SoD policies client module
 

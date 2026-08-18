@@ -85,10 +85,10 @@ The connector SHALL pre-configure `sailpoint-api-client` instances from operatio
 - **THEN** `ctx.sdk` SHALL expose configured `AccessRequestsApi`, `SearchApi`, and `SODViolationsApi` instances
 - **AND** SHALL reuse existing `RolesApi` and `AccessProfilesApi` clients for entitlement expansion
 
-#### Scenario: Access SOD remediation clients available on context
+#### Scenario: Access model SOD remediation clients available on context
 
 - **GIVEN** a custom operation receives valid apiUrl and token in its input envelope
-- **WHEN** the access-sod-remediation handler accesses ISC APIs
+- **WHEN** the access-model-sod-remediation handler accesses ISC APIs
 - **THEN** `ctx.sdk` SHALL expose configured SodPolicies (or equivalent), RolesApi, AccessProfilesApi, and CustomFormsApi instances
 - **AND** SHALL reuse existing entitlement expansion helpers under roles and access-profiles modules
 

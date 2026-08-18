@@ -53,7 +53,7 @@ export function buildFormEmailHeader(input: Pick<FormEmailInput, 'accessItem' | 
 }
 
 /**
- * Compact HTML for persisted `access-sod-remediation:form-email-body`.
+ * Compact HTML for persisted `access-model-sod-remediation:form-email-body`.
  * Fits ISC STRING storage (256 chars); entitlement detail lives in the remediation form.
  */
 export function buildFormEmailBody(
@@ -70,7 +70,7 @@ export function buildFormEmailBody(
     const pathPhrase = pathConflictPhrase(groupAIds.length, groupBIds.length)
 
     const render = (itemValue: string, policyValue: string): string =>
-        `<p>Please review an intrinsic SOD violation on access item ${itemValue} (${itemType}) for policy ${policyValue}. ${pathPhrase}. ${formLink}.</p>`
+        `<p>Please review an access model policy violation on ${itemValue} (${itemType}) for policy ${policyValue}. ${pathPhrase}. ${formLink}.</p>`
 
     if (render(itemName, policyName).length <= maxLength) {
         return render(itemName, policyName)

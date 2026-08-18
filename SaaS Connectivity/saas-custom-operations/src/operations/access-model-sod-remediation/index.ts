@@ -23,18 +23,18 @@ import {
 import { detectAccessItemViolations } from './detect-violations'
 import { expandAccessItemEntitlements } from './expand-access-item-entitlements'
 import {
-    createAccessSodRemediationInstance,
-    ensureAccessSodFormDefinition,
+    createAccessModelSodRemediationInstance,
+    ensureAccessModelSodFormDefinition,
     hasAssignedRemediationInstance,
 } from './form-service'
 import { buildFormEmailBody, buildFormEmailHeader } from './form-email'
 import { buildGroupContentsHtml } from './group-html'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
-import { accessSodRemediationOperationSchema } from './index.schema'
+import { accessModelSodRemediationOperationSchema } from './index.schema'
 import { renderTypeTag } from '../../lib/sod-form-html'
 
-export interface AccessSodRemediationOperation extends OperationSignature {
-    command: 'custom:access-sod-remediation'
+export interface AccessModelSodRemediationOperation extends OperationSignature {
+    command: 'custom:access-model-sod-remediation'
     input: {
         formName: string
         scope?: string
@@ -42,14 +42,14 @@ export interface AccessSodRemediationOperation extends OperationSignature {
         policyScope?: string
     }
     output: {
-        'access-sod-remediation:access-items-scanned': number
-        'access-sod-remediation:violations-found': number
-        'access-sod-remediation:forms-skipped'?: number
-        'access-sod-remediation:forms-persist-failed'?: number
-        'access-sod-remediation:form-url'?: string
-        'access-sod-remediation:form-email-header'?: string
-        'access-sod-remediation:form-email-body'?: string
-        'access-sod-remediation:form-email-recipients'?: string[]
+        'access-model-sod-remediation:access-items-scanned': number
+        'access-model-sod-remediation:violations-found': number
+        'access-model-sod-remediation:forms-skipped'?: number
+        'access-model-sod-remediation:forms-persist-failed'?: number
+        'access-model-sod-remediation:form-url'?: string
+        'access-model-sod-remediation:form-email-header'?: string
+        'access-model-sod-remediation:form-email-body'?: string
+        'access-model-sod-remediation:form-email-recipients'?: string[]
     }
 }
 
@@ -69,57 +69,57 @@ async function discoverAccessItems(
     offline: boolean,
     searchIndices: SearchIndex[],
     scope: string,
-    ctx: RequestContext<AccessSodRemediationOperation['output']>
+    ctx: RequestContext<AccessModelSodRemediationOperation['output']>
 ): Promise<CatalogAccessItem[]> {
     const items: CatalogAccessItem[] = []
 
     console.log(
-        `[access-sod-remediation] discoverAccessItems offline=${offline} scope=${JSON.stringify(scope)} indices=${JSON.stringify(searchIndices)}`
+        `[access-model-sod-remediation] discoverAccessItems offline=${offline} scope=${JSON.stringify(scope)} indices=${JSON.stringify(searchIndices)}`
     )
 
     if (offline) {
-        console.log('[access-sod-remediation] discoverAccessItems using offline fixtures')
+        console.log('[access-model-sod-remediation] discoverAccessItems using offline fixtures')
         if (searchIndices.includes('roles')) {
             items.push(...listEnabledRolesOffline())
         }
         if (searchIndices.includes('accessprofiles')) {
             items.push(...listEnabledAccessProfilesOffline())
         }
-        console.log(`[access-sod-remediation] discoverAccessItems offline count=${items.length}`)
+        console.log(`[access-model-sod-remediation] discoverAccessItems offline count=${items.length}`)
         return items
     }
 
     if (searchIndices.includes('roles')) {
-        console.log('[access-sod-remediation] discoverAccessItems listing roles')
+        console.log('[access-model-sod-remediation] discoverAccessItems listing roles')
         items.push(...(await listEnabledRoles(ctx.sdk.roles, scope, ctx.sdk.search)))
     }
     if (searchIndices.includes('accessprofiles')) {
-        console.log('[access-sod-remediation] discoverAccessItems listing access profiles')
+        console.log('[access-model-sod-remediation] discoverAccessItems listing access profiles')
         items.push(...(await listEnabledAccessProfiles(ctx.sdk.accessProfiles, scope, ctx.sdk.search)))
     }
 
-    console.log(`[access-sod-remediation] discoverAccessItems live count=${items.length}`)
+    console.log(`[access-model-sod-remediation] discoverAccessItems live count=${items.length}`)
     return items
 }
 
 async function loadPolicies(
     offline: boolean,
     policyScope: string,
-    ctx: RequestContext<AccessSodRemediationOperation['output']>
+    ctx: RequestContext<AccessModelSodRemediationOperation['output']>
 ): Promise<SodPolicySummary[]> {
-    console.log(`[access-sod-remediation] loadPolicies offline=${offline} policyScope=${JSON.stringify(policyScope)}`)
+    console.log(`[access-model-sod-remediation] loadPolicies offline=${offline} policyScope=${JSON.stringify(policyScope)}`)
 
     if (offline) {
         return listSodPoliciesOffline()
     }
 
     const policies = await listSodPolicies(ctx.sdk.sodPolicies, policyScope)
-    console.log(`[access-sod-remediation] loadPolicies count=${policies.length}`)
+    console.log(`[access-model-sod-remediation] loadPolicies count=${policies.length}`)
     return policies
 }
 
 /** Scans catalog access items for intrinsic SoD violations and launches policy-owner remediation forms. */
-export const accessSodRemediationOperation = customOperation<AccessSodRemediationOperation>(
+export const accessModelSodRemediationOperation = customOperation<AccessModelSodRemediationOperation>(
     async (ctx, input) => {
         const offline = !ctx.apiUrl || !ctx.token
         const scope = input.scope ?? DEFAULT_SCOPE
@@ -127,14 +127,14 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
         const policyScope = input.policyScope ?? DEFAULT_POLICY_SCOPE
 
         console.log(
-            `[access-sod-remediation] start requestId=${ctx.requestId} offline=${offline} apiUrl=${ctx.apiUrl || '<empty>'} scope=${JSON.stringify(scope)} searchIndices=${JSON.stringify(searchIndices)}`
+            `[access-model-sod-remediation] start requestId=${ctx.requestId} offline=${offline} apiUrl=${ctx.apiUrl || '<empty>'} scope=${JSON.stringify(scope)} searchIndices=${JSON.stringify(searchIndices)}`
         )
 
         const accessItems = await discoverAccessItems(offline, searchIndices, scope, ctx)
         const policies = await loadPolicies(offline, policyScope, ctx)
 
         const tokenOwnerId = offline ? 'offline-token-owner' : await resolveTokenIdentity(ctx.token)
-        const formDefinitionId = await ensureAccessSodFormDefinition(ctx.sdk.forms, input.formName, tokenOwnerId)
+        const formDefinitionId = await ensureAccessModelSodFormDefinition(ctx.sdk.forms, input.formName, tokenOwnerId)
 
         let violationsFound = 0
         let formsSkipped = 0
@@ -156,7 +156,7 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
 
                 if (formsCreated >= MAX_FORMS_PER_RUN) {
                     console.warn(
-                        `[${ctx.requestId}] access-sod-remediation form cap ${MAX_FORMS_PER_RUN} reached; skipping remaining forms`
+                        `[${ctx.requestId}] access-model-sod-remediation form cap ${MAX_FORMS_PER_RUN} reached; skipping remaining forms`
                     )
                     break
                 }
@@ -187,7 +187,7 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
                     groupBIds: violation.groupBIds,
                 }
 
-                const formUrl = await createAccessSodRemediationInstance({
+                const formUrl = await createAccessModelSodRemediationInstance({
                     forms: ctx.sdk.forms,
                     formDefinitionId,
                     recipientId: ownerId,
@@ -210,10 +210,10 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
                     await ctx.persist(
                         childId,
                         {
-                            'access-sod-remediation:form-url': formUrl,
-                            'access-sod-remediation:form-email-header': buildFormEmailHeader(emailInput),
-                            'access-sod-remediation:form-email-body': buildFormEmailBody(emailInput, formUrl),
-                            'access-sod-remediation:form-email-recipients': [ownerEmail],
+                            'access-model-sod-remediation:form-url': formUrl,
+                            'access-model-sod-remediation:form-email-header': buildFormEmailHeader(emailInput),
+                            'access-model-sod-remediation:form-email-body': buildFormEmailBody(emailInput, formUrl),
+                            'access-model-sod-remediation:form-email-recipients': [ownerEmail],
                         },
                         undefined,
                         { verify: false }
@@ -222,7 +222,7 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
                     formsPersistFailed += 1
                     const detail = error instanceof Error ? error.message : String(error)
                     console.warn(
-                        `[${ctx.requestId}] access-sod-remediation child persist failed identity=${childId}: ${detail}`
+                        `[${ctx.requestId}] access-model-sod-remediation child persist failed identity=${childId}: ${detail}`
                     )
                 }
 
@@ -235,15 +235,15 @@ export const accessSodRemediationOperation = customOperation<AccessSodRemediatio
         }
 
         await ctx.persist(ctx.requestId, {
-            'access-sod-remediation:access-items-scanned': accessItems.length,
-            'access-sod-remediation:violations-found': violationsFound,
-            ...(formsSkipped > 0 ? { 'access-sod-remediation:forms-skipped': formsSkipped } : {}),
+            'access-model-sod-remediation:access-items-scanned': accessItems.length,
+            'access-model-sod-remediation:violations-found': violationsFound,
+            ...(formsSkipped > 0 ? { 'access-model-sod-remediation:forms-skipped': formsSkipped } : {}),
             ...(formsPersistFailed > 0
-                ? { 'access-sod-remediation:forms-persist-failed': formsPersistFailed }
+                ? { 'access-model-sod-remediation:forms-persist-failed': formsPersistFailed }
                 : {}),
         })
 
         ctx.res.send({ status: 'success' })
     },
-    { operationSchema: accessSodRemediationOperationSchema }
+    { operationSchema: accessModelSodRemediationOperationSchema }
 )

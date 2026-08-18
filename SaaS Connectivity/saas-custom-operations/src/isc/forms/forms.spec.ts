@@ -14,9 +14,9 @@ import {
 } from './seed-watermark'
 
 const seedPath = resolve(__dirname, '../../operations/sod-remediation/seed/sod-violation-remediation.seed.json')
-const accessSodSeedPath = resolve(
+const accessModelSodSeedPath = resolve(
     __dirname,
-    '../../operations/access-sod-remediation/seed/access-sod-remediation.seed.json'
+    '../../operations/access-model-sod-remediation/seed/access-model-sod-remediation.seed.json'
 )
 
 function collectDescriptionElements(elements: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
@@ -152,8 +152,8 @@ describe('isc/forms seed-loader', () => {
         expect(picked.controlOptions).toEqual([{ label: 'Control 1', value: 'ctrl-1' }])
     })
 
-    it('pickDeclaredFormInputValues passes STRING group id fields through for access-sod-remediation seed', () => {
-        const seed = loadFormSeed(accessSodSeedPath)
+    it('pickDeclaredFormInputValues passes STRING group id fields through for access-model-sod-remediation seed', () => {
+        const seed = loadFormSeed(accessModelSodSeedPath)
         const picked = pickDeclaredFormInputValues(seed, {
             accessItemId: 'role-1',
             groupAIds: '["ent-a","ent-b"]',
@@ -166,8 +166,8 @@ describe('isc/forms seed-loader', () => {
         expect(picked).not.toHaveProperty('extraKey')
     })
 
-    it('access-sod-remediation seed context panel uses pre-rendered type tag HTML', () => {
-        const seed = loadFormSeed(accessSodSeedPath)
+    it('access-model-sod-remediation seed context panel uses pre-rendered type tag HTML', () => {
+        const seed = loadFormSeed(accessModelSodSeedPath)
         const ctxItem = findFormElementById(seed.formElements as Array<Record<string, unknown>>, 'ctx-item')
         const description = (ctxItem?.config as { description?: string })?.description ?? ''
 
@@ -177,8 +177,8 @@ describe('isc/forms seed-loader', () => {
         expect(description).not.toContain('accessItemType}}')
     })
 
-    it('access-sod-remediation seed swaps column previews via ELEMENT SHOW conditions on remediationSide', () => {
-        const seed = loadFormSeed(accessSodSeedPath)
+    it('access-model-sod-remediation seed swaps column previews via ELEMENT SHOW conditions on remediationSide', () => {
+        const seed = loadFormSeed(accessModelSodSeedPath)
 
         expect(findFormElementById(seed.formElements, 'group-columns-plain')?.elementType).toBe('DESCRIPTION')
         expect(findFormElementById(seed.formElements, 'group-columns-when-a-removed')?.elementType).toBe('DESCRIPTION')
@@ -214,7 +214,7 @@ describe('isc/forms seed-loader', () => {
 
     it.each([
         ['sod-remediation', seedPath],
-        ['access-sod-remediation', accessSodSeedPath],
+        ['access-model-sod-remediation', accessModelSodSeedPath],
     ])('%s seed wraps all root form elements in SECTION', (_name, path) => {
         const seed = loadFormSeed(path)
 
@@ -225,7 +225,7 @@ describe('isc/forms seed-loader', () => {
 
     it.each([
         ['sod-remediation', seedPath],
-        ['access-sod-remediation', accessSodSeedPath],
+        ['access-model-sod-remediation', accessModelSodSeedPath],
     ])('%s seed does not nest SECTION inside SECTION', (_name, path) => {
         const seed = loadFormSeed(path)
         expect(collectNestedSectionViolations(seed.formElements as Array<Record<string, unknown>>)).toEqual([])
@@ -233,7 +233,7 @@ describe('isc/forms seed-loader', () => {
 
     it.each([
         ['sod-remediation', seedPath],
-        ['access-sod-remediation', accessSodSeedPath],
+        ['access-model-sod-remediation', accessModelSodSeedPath],
     ])('%s seed DESCRIPTION elements require non-empty labels', (_name, path) => {
         const seed = loadFormSeed(path)
         const descriptions = collectDescriptionElements(seed.formElements as Array<Record<string, unknown>>)

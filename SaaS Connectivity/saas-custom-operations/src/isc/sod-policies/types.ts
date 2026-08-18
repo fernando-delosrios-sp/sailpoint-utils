@@ -1,4 +1,4 @@
-/** Minimal SoD policy shape used by access-sod-remediation evaluation. */
+/** Minimal SoD policy shape used by access-model-sod-remediation evaluation. */
 export interface SodPolicySummary {
     id: string
     name: string

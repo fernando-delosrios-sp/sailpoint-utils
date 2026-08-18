@@ -1,4 +1,4 @@
-# custom:access-sod-remediation
+# custom:access-model-sod-remediation
 
 ## Purpose
 
@@ -8,7 +8,7 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 
 ## Command
 
-`custom:access-sod-remediation`
+`custom:access-model-sod-remediation`
 
 ## Input
 
@@ -25,26 +25,26 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 
 | Field | Description |
 |---|---|
-| `access-sod-remediation:access-items-scanned` | Count of roles/APs evaluated |
-| `access-sod-remediation:violations-found` | Count of (access item × policy) hits |
-| `access-sod-remediation:forms-skipped` | Optional; ASSIGNED duplicate forms skipped |
+| `access-model-sod-remediation:access-items-scanned` | Count of roles/APs evaluated |
+| `access-model-sod-remediation:violations-found` | Count of (access item × policy) hits |
+| `access-model-sod-remediation:forms-skipped` | Optional; ASSIGNED duplicate forms skipped |
 
 ### Child account — `{requestId}:{accessItemId}:{policyId}` (one per form)
 
 | Field | Description |
 |---|---|
-| `access-sod-remediation:form-url` | Standalone form URL |
-| `access-sod-remediation:form-email-header` | Plain-text email subject for workflow Send Email |
-| `access-sod-remediation:form-email-body` | HTML email body with remediation link |
-| `access-sod-remediation:form-email-recipients` | Policy owner email addresses (`string[]`) |
+| `access-model-sod-remediation:form-url` | Standalone form URL |
+| `access-model-sod-remediation:form-email-header` | Plain-text email subject for workflow Send Email |
+| `access-model-sod-remediation:form-email-body` | HTML email body with remediation link |
+| `access-model-sod-remediation:form-email-recipients` | Policy owner email addresses (`string[]`) |
 
 ## Invoke example
 
 ```json
 {
-    "type": "custom:access-sod-remediation",
+    "type": "custom:access-model-sod-remediation",
     "input": {
-        "requestId": "req-access-sod-001",
+        "requestId": "req-access-model-sod-001",
         "formName": "Access Model SOD Remediation",
         "scope": "*",
         "searchIndices": ["roles", "accessprofiles"]
@@ -57,7 +57,7 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 }
 ```
 
-Offline: [`payloads/access-sod-remediation-offline.json`](../../../payloads/access-sod-remediation-offline.json)
+Offline: [`payloads/access-model-sod-remediation-offline.json`](../../../payloads/access-model-sod-remediation-offline.json)
 
 ## Workflow integration
 
@@ -100,5 +100,5 @@ Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when th
 ## Local development
 
 ```bash
-npm run call:op payloads/access-sod-remediation-offline.json
+npm run call:op payloads/access-model-sod-remediation-offline.json
 ```

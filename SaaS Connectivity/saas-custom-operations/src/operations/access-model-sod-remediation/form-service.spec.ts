@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createAccessSodRemediationInstance, hasAssignedRemediationInstance, serializeAccessSodFormInputForCreate } from './form-service'
+import { createAccessModelSodRemediationInstance, hasAssignedRemediationInstance, serializeAccessModelSodFormInputForCreate } from './form-service'
 
-describe('serializeAccessSodFormInputForCreate', () => {
+describe('serializeAccessModelSodFormInputForCreate', () => {
     it('JSON-stringifies entitlement id lists for ISC STRING formInput fields', () => {
         expect(
-            serializeAccessSodFormInputForCreate({
+            serializeAccessModelSodFormInputForCreate({
                 accessItemId: 'role-1',
                 accessItemType: 'ROLE',
                 accessItemTypeTagHtml: "<span style='color:#1d4ed8; font-size:90%; background-color:#dbeafe; padding:2px 6px; border-radius:4px;'>role</span>",
@@ -24,14 +24,14 @@ describe('serializeAccessSodFormInputForCreate', () => {
     })
 })
 
-describe('createAccessSodRemediationInstance', () => {
+describe('createAccessModelSodRemediationInstance', () => {
     it('sends JSON-string group ids to createFormInstanceV1', async () => {
         const createFormInstanceV1 = vi.fn().mockResolvedValue({
             data: { standAloneFormUrl: 'https://tenant.identitynow.com/form/abc', state: 'ASSIGNED' },
         })
         const forms = { createFormInstanceV1 } as never
 
-        await createAccessSodRemediationInstance({
+        await createAccessModelSodRemediationInstance({
             forms,
             formDefinitionId: 'def-1',
             recipientId: 'owner-1',

@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import '../auto-registry'
-import { accessSodRemediationOperation } from './index'
+import { accessModelSodRemediationOperation } from './index'
 
 const persistAttributes = [
-    { name: 'access-sod-remediation:access-items-scanned', type: 'INT', isMulti: false },
-    { name: 'access-sod-remediation:violations-found', type: 'INT', isMulti: false },
-    { name: 'access-sod-remediation:forms-skipped', type: 'INT', isMulti: false },
-    { name: 'access-sod-remediation:form-url', type: 'STRING', isMulti: false },
-    { name: 'access-sod-remediation:form-email-header', type: 'STRING', isMulti: false },
-    { name: 'access-sod-remediation:form-email-body', type: 'STRING', isMulti: false },
-    { name: 'access-sod-remediation:form-email-recipients', type: 'STRING', isMulti: true },
+    { name: 'access-model-sod-remediation:access-items-scanned', type: 'INT', isMulti: false },
+    { name: 'access-model-sod-remediation:violations-found', type: 'INT', isMulti: false },
+    { name: 'access-model-sod-remediation:forms-skipped', type: 'INT', isMulti: false },
+    { name: 'access-model-sod-remediation:form-url', type: 'STRING', isMulti: false },
+    { name: 'access-model-sod-remediation:form-email-header', type: 'STRING', isMulti: false },
+    { name: 'access-model-sod-remediation:form-email-body', type: 'STRING', isMulti: false },
+    { name: 'access-model-sod-remediation:form-email-recipients', type: 'STRING', isMulti: true },
 ]
 
 const persistedAccounts = new Map<string, Record<string, unknown>>()
@@ -29,12 +29,12 @@ vi.mock('../../isc/token-identity', () => ({
 }))
 
 vi.mock('./form-service', () => ({
-    ensureAccessSodFormDefinition: vi.fn().mockResolvedValue('form-def-1'),
+    ensureAccessModelSodFormDefinition: vi.fn().mockResolvedValue('form-def-1'),
     hasAssignedRemediationInstance: vi.fn().mockResolvedValue(false),
-    createAccessSodRemediationInstance: vi.fn().mockResolvedValue('https://tenant.example/form/1'),
+    createAccessModelSodRemediationInstance: vi.fn().mockResolvedValue('https://tenant.example/form/1'),
 }))
 
-describe('accessSodRemediationOperation', () => {
+describe('accessModelSodRemediationOperation', () => {
     beforeEach(() => {
         persistedAccounts.clear()
         resolveSourceByName.mockResolvedValue('source-123')
@@ -60,10 +60,10 @@ describe('accessSodRemediationOperation', () => {
         const res = { send: vi.fn() }
 
         try {
-            await accessSodRemediationOperation(
-                { commandType: 'custom:access-sod-remediation' } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
                 {
-                    requestId: 'req-access-sod-offline',
+                    requestId: 'req-access-model-sod-offline',
                     formName: 'Access Model SOD Remediation',
                 },
                 res as never
@@ -85,8 +85,8 @@ describe('accessSodRemediationOperation', () => {
         const res = { send: vi.fn() }
 
         try {
-            await accessSodRemediationOperation(
-                { commandType: 'custom:access-sod-remediation' } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
                 {
                     requestId: 'req-invalid',
                     formName: 'Access Model SOD Remediation',
