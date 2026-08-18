@@ -25,6 +25,7 @@ const persistAttributes = [
 ]
 
 const createAccountV1 = vi.fn().mockResolvedValue({})
+const putAccountV1 = vi.fn().mockResolvedValue({ data: { id: 'task-put-1' } })
 const resolveSourceByName = vi.fn()
 const getSourceSchemasV1 = vi.fn()
 const persistedAccounts = new Map<string, Record<string, unknown>>()
@@ -63,7 +64,7 @@ vi.mock('../../framework/sdk-factory', () => ({
                     data: [{ id: `isc-${id}`, sourceId: 'source-123', attributes: persistedAccounts.get(id) }],
                 }
             }),
-            putAccountV1: vi.fn(),
+            putAccountV1: (...args: unknown[]) => putAccountV1(...args),
             getAccountV1: vi.fn(),
         },
         tasks: {
@@ -92,6 +93,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
         resetOfflineCatalogState()
         persistedAccounts.clear()
         createAccountV1.mockClear()
+        putAccountV1.mockClear()
         patchRoleV1.mockClear()
         patchAccessProfileV1.mockClear()
         resolveSourceByName.mockResolvedValue('source-123')
@@ -114,6 +116,12 @@ describe('accessModelSodRemediationApplyOperation', () => {
             const id = String(attributes.id)
             persistedAccounts.set(id, attributes)
             return { data: { id: 'task-create-1' } }
+        })
+        putAccountV1.mockImplementation(async ({ accountAttributes }) => {
+            const attributes = accountAttributes.attributes as Record<string, unknown>
+            const id = String(attributes.id)
+            persistedAccounts.set(id, attributes)
+            return { data: { id: 'task-put-1' } }
         })
 
         getRoleV1.mockResolvedValue({
@@ -266,6 +274,45 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 process.env.SPCX_TEST_MODE = previousTestMode
             }
         }
+    })
+
+    it('Duplicate apply after prior applied status', async () => {
+        const resFirst = { send: vi.fn() }
+        const resSecond = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-first',
+                    formInstanceId: 'fi-role-group-a-direct',
+                },
+                resFirst as never
+            )
+        })
+
+        expect(patchRoleV1).toHaveBeenCalledTimes(1)
+        patchRoleV1.mockClear()
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-second',
+                    formInstanceId: 'fi-role-group-a-direct',
+                },
+                resSecond as never
+            )
+        })
+
+        expect(patchRoleV1).not.toHaveBeenCalled()
+        expect(resSecond.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'success',
+                'access-model-sod-remediation-apply:status': 'skipped-already-applied',
+                'access-model-sod-remediation-apply:access-item-id': 'role-offline-1',
+            })
+        )
     })
 
     it('Workflow invoke binding applies live role patch for nested access profile detach', async () => {

@@ -12,6 +12,7 @@ import {
     getFormInstanceByIdOffline,
 } from './offline-data'
 import { parseFormInstance } from './parse-form-instance'
+import { readPriorTerminalApplyOutputs } from './prior-apply-status'
 
 export interface AccessModelSodRemediationApplyOperation extends OperationSignature {
     command: 'custom:access-model-sod-remediation-apply'
@@ -29,7 +30,7 @@ export interface AccessModelSodRemediationApplyOperation extends OperationSignat
 }
 
 function buildOutputs(
-    status: 'applied' | 'skipped-already-clean',
+    status: 'applied' | 'skipped-already-clean' | 'skipped-already-applied',
     parsed: ReturnType<typeof parseFormInstance>,
     plan: ReturnType<typeof buildCorrectionPlan>,
     auditLine?: string
@@ -60,6 +61,15 @@ export const accessModelSodRemediationApplyOperation = customOperation<AccessMod
         }
 
         const offline = isOfflineContext(ctx)
+
+        if (!offline) {
+            const priorOutputs = await readPriorTerminalApplyOutputs(ctx, formInstanceId)
+            if (priorOutputs) {
+                await ctx.persist(formInstanceId, priorOutputs)
+                ctx.res.send({ status: 'success', ...priorOutputs })
+                return
+            }
+        }
 
         const instance = offline
             ? getFormInstanceByIdOffline(formInstanceId)

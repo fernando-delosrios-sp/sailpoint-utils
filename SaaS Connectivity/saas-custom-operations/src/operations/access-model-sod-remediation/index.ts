@@ -21,9 +21,11 @@ import {
     VALID_SEARCH_INDICES,
 } from './constants'
 import { detectAccessItemViolations } from './detect-violations'
-import { expandAccessItemEntitlements } from './expand-access-item-entitlements'
+import { ExpandedAccessItemEntitlements, expandAccessItemEntitlements } from './expand-access-item-entitlements'
 import {
+    AssignedRemediationInstanceCache,
     createAccessModelSodRemediationInstance,
+    createAssignedRemediationInstanceCache,
     ensureAccessModelSodFormDefinition,
     hasAssignedRemediationInstance,
 } from './form-service'
@@ -45,6 +47,7 @@ export interface AccessModelSodRemediationOperation extends OperationSignature {
         'access-model-sod-remediation:access-items-scanned': number
         'access-model-sod-remediation:violations-found': number
         'access-model-sod-remediation:forms-skipped'?: number
+        'access-model-sod-remediation:forms-launch-failed'?: number
         'access-model-sod-remediation:forms-persist-failed'?: number
         'access-model-sod-remediation:form-url'?: string
         'access-model-sod-remediation:form-email-header'?: string
@@ -138,16 +141,27 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
 
         let violationsFound = 0
         let formsSkipped = 0
+        let formsLaunchFailed = 0
         let formsPersistFailed = 0
         let formsCreated = 0
 
+        const assignedInstanceCache: AssignedRemediationInstanceCache | undefined = offline
+            ? undefined
+            : createAssignedRemediationInstanceCache(formDefinitionId)
+        const expandedByAccessItemId = new Map<string, ExpandedAccessItemEntitlements>()
+        const ownerEmailById = new Map<string, string>()
+
         for (const accessItem of accessItems) {
-            const expanded = offline
-                ? expandAccessItemEntitlementsOffline(accessItem)
-                : await expandAccessItemEntitlements(
-                      { roles: ctx.sdk.roles, accessProfiles: ctx.sdk.accessProfiles },
-                      accessItem
-                  )
+            let expanded = expandedByAccessItemId.get(accessItem.id)
+            if (!expanded) {
+                expanded = offline
+                    ? expandAccessItemEntitlementsOffline(accessItem)
+                    : await expandAccessItemEntitlements(
+                          { roles: ctx.sdk.roles, accessProfiles: ctx.sdk.accessProfiles },
+                          accessItem
+                      )
+                expandedByAccessItemId.set(accessItem.id, expanded)
+            }
 
             const violations = detectAccessItemViolations(accessItem, expanded, policies)
 
@@ -167,7 +181,8 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                           ctx.sdk.forms,
                           formDefinitionId,
                           violation.accessItem.id,
-                          violation.policy.id
+                          violation.policy.id,
+                          assignedInstanceCache
                       )
 
                 if (alreadyAssigned) {
@@ -176,9 +191,13 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                 }
 
                 const ownerId = resolvePolicyOwnerId(violation.policy)
-                const ownerEmail = offline
-                    ? resolveIdentityEmailOffline(ownerId)
-                    : await resolveIdentityEmail({ apiUrl: ctx.apiUrl, token: ctx.token }, ownerId)
+                let ownerEmail = ownerEmailById.get(ownerId)
+                if (ownerEmail === undefined) {
+                    ownerEmail = offline
+                        ? resolveIdentityEmailOffline(ownerId)
+                        : await resolveIdentityEmail({ apiUrl: ctx.apiUrl, token: ctx.token }, ownerId)
+                    ownerEmailById.set(ownerId, ownerEmail)
+                }
                 const html = buildGroupContentsHtml(violation.groupAIds, violation.groupBIds, expanded)
                 const emailInput = {
                     accessItem: violation.accessItem,
@@ -187,23 +206,33 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     groupBIds: violation.groupBIds,
                 }
 
-                const formUrl = await createAccessModelSodRemediationInstance({
-                    forms: ctx.sdk.forms,
-                    formDefinitionId,
-                    recipientId: ownerId,
-                    createdBySourceId: ctx.sourceId,
-                    formInput: {
-                        accessItemId: violation.accessItem.id,
-                        accessItemType: violation.accessItem.type,
-                        accessItemTypeTagHtml: renderTypeTag(violation.accessItem.type),
-                        accessItemName: violation.accessItem.name,
-                        policyId: violation.policy.id,
-                        policyName: violation.policy.name,
-                        groupAIds: violation.groupAIds,
-                        groupBIds: violation.groupBIds,
-                        ...html,
-                    },
-                })
+                let formUrl: string
+                try {
+                    formUrl = await createAccessModelSodRemediationInstance({
+                        forms: ctx.sdk.forms,
+                        formDefinitionId,
+                        recipientId: ownerId,
+                        createdBySourceId: ctx.sourceId,
+                        formInput: {
+                            accessItemId: violation.accessItem.id,
+                            accessItemType: violation.accessItem.type,
+                            accessItemTypeTagHtml: renderTypeTag(violation.accessItem.type),
+                            accessItemName: violation.accessItem.name,
+                            policyId: violation.policy.id,
+                            policyName: violation.policy.name,
+                            groupAIds: violation.groupAIds,
+                            groupBIds: violation.groupBIds,
+                            ...html,
+                        },
+                    })
+                } catch (error) {
+                    formsLaunchFailed += 1
+                    const detail = error instanceof Error ? error.message : String(error)
+                    console.warn(
+                        `[${ctx.requestId}] access-model-sod-remediation form launch failed accessItem=${violation.accessItem.id} policy=${violation.policy.id}: ${detail}`
+                    )
+                    continue
+                }
 
                 const childId = childPersistIdentity(ctx.requestId, violation.accessItem.id, violation.policy.id)
                 try {
@@ -239,6 +268,9 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
             'access-model-sod-remediation:access-items-scanned': accessItems.length,
             'access-model-sod-remediation:violations-found': violationsFound,
             ...(formsSkipped > 0 ? { 'access-model-sod-remediation:forms-skipped': formsSkipped } : {}),
+            ...(formsLaunchFailed > 0
+                ? { 'access-model-sod-remediation:forms-launch-failed': formsLaunchFailed }
+                : {}),
             ...(formsPersistFailed > 0
                 ? { 'access-model-sod-remediation:forms-persist-failed': formsPersistFailed }
                 : {}),

@@ -15,7 +15,7 @@ Runs after `custom:access-model-sod-remediation` form submit in the access-model
 | Field | Required | Description |
 |---|---|---|
 | `formInstanceId` | Yes | Completed form instance id from the form trigger or Get Form Instance step |
-| `requestId` | Yes | Standard invoke id for logging only; persist key is `formInstanceId` |
+| `requestId` | Yes | Standard invoke id for logging; persist key is `formInstanceId`. In-flight dedupe also keys on `formInstanceId` for this command |
 
 ## Output
 
@@ -23,7 +23,7 @@ Persisted on result-source identity `{formInstanceId}` and returned on successfu
 
 | Field | Description |
 |---|---|
-| `access-model-sod-remediation-apply:status` | `applied` or `skipped-already-clean` |
+| `access-model-sod-remediation-apply:status` | `applied`, `skipped-already-clean`, or `skipped-already-applied` |
 | `access-model-sod-remediation-apply:access-item-id` | Corrected role or access profile id |
 | `access-model-sod-remediation-apply:access-item-type` | `ROLE` or `ACCESS_PROFILE` |
 | `access-model-sod-remediation-apply:removed-entitlement-ids` | Optional; direct entitlements removed from role or AP |
@@ -39,6 +39,16 @@ Persisted on result-source identity `{formInstanceId}` and returned on successfu
 | `ACCESS_PROFILE` | AP under review | Remove entitlement ids from AP definition |
 
 Never patches entitlement lists on nested access profiles when correcting a role.
+
+## Idempotency
+
+Before catalog PATCH, the handler checks the result-source account at `{formInstanceId}` for a prior terminal apply (`applied` or `skipped-already-applied`). When found, it skips PATCH and returns `skipped-already-applied`. Concurrent invokes for the same `formInstanceId` dedupe in-flight via a framework key that includes `formInstanceId` (not `requestId`).
+
+| Status | Meaning |
+|---|---|
+| `applied` | Catalog correction PATCH executed |
+| `skipped-already-clean` | Catalog already matched the form decision; no PATCH needed |
+| `skipped-already-applied` | Prior successful apply persist found for this form instance; no duplicate PATCH |
 
 ## Invoke example
 
@@ -63,7 +73,7 @@ Offline: [`payloads/access-model-sod-remediation-apply-offline.json`](../../../p
 
 1. After access-model SoD form completion (Wait for Form / trigger), invoke this command with `formInstanceId` only.
 2. Read `access-model-sod-remediation-apply:status` from the invoke response or Get Accounts on `{formInstanceId}`.
-3. Branch on `applied` vs `skipped-already-clean` as needed.
+3. Branch on `applied`, `skipped-already-clean`, or `skipped-already-applied`. Retries and parallel workflow branches are safe — duplicate applies for the same form instance do not double-PATCH.
 
 ## Token scope requirements
 

@@ -6,6 +6,9 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🔧 Improvements
 
+- **Access-model SoD scan performance** — `custom:access-model-sod-remediation` loads assigned form instances once per scan, memoizes policy-owner email resolution, and caches access-item entitlement expansion within the scan loop to reduce ISC API volume on large catalogs. Form creation and skip behavior are unchanged.
+- **Access-model SoD apply idempotency** — `custom:access-model-sod-remediation-apply` skips duplicate catalog PATCH when a prior apply persist exists for the same `formInstanceId` (`skipped-already-applied`). Concurrent applies dedupe in-flight on `formInstanceId` instead of `requestId`.
+- **Access-model SoD scan failure counters** — Adds `access-model-sod-remediation:forms-launch-failed` on the invoke response; `forms-persist-failed` now counts child persist failures only (not form launch errors).
 - **Auto-wired local invoke** — `npm run call:op` resolves operation handlers from the codegen-exported `OPERATION_HANDLERS` map in `auto-registry.ts`. New auto-discovered custom operations work locally after `npm run build` without manually registering handlers in `scripts/call-op.ts`.
 - **Framework security hardening** — Custom operation framework logging now redacts sensitive `detail` fields on both stdout and optional `config.logUrl` POSTs (previously console skipped redaction). Caller-visible failed invoke messages and automatic failure persist `details` no longer include raw ISC API response bodies; full context is logged at error level with `requestId` correlation. Form definition search by name escapes embedded quotes and backslashes via `escapeODataString`. Operations share `isOfflineContext` for offline vs live branching; partial connection config (`apiUrl` without `token`, or the reverse) fails with incomplete connection config instead of silently choosing offline or live behavior.
 - **Access-model SoD flat access profile lines** — `custom:access-model-sod-remediation` group column HTML now renders nested access profiles as a single flat row with an offending entitlement mention (for example `— offending: payment_issue`) instead of a nested entitlement bullet tree. Outcome panels apply to the whole access profile row. New form instances pick this up at launch; existing ASSIGNED instances keep prior HTML until recreated. Prepares for a follow-on catalog correct operation that detaches whole access profiles from roles.
@@ -56,6 +59,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🐛 Bug Fixes
 
+- **Access-model SoD policyScope safety** — Compound `policyScope` filters that include `state` but are not exact `state eq "ENFORCED"` or `state eq "NOT_ENFORCED"` now fail with ConnectorError instead of silently listing all policies unfiltered.
 - **Operation errors stop workflow retries** — Failures escaping `customOperation` now send `{ status: 'failed', error }` on the command response (HTTP 200) instead of throwing `ConnectorError` (spcx HTTP 500). Calling workflows receive the error and do not keep retrying.
 - **Persist upsert** — Existing result accounts are updated via `putAccountV1`; new identities use `createAccountV1`. Both paths wait for the async provisioning task and read the account back before verification.
 

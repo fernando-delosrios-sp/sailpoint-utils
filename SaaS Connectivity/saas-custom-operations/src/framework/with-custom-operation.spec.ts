@@ -285,6 +285,51 @@ describe('customOperation', () => {
         expect(res2.send).toHaveBeenCalledWith({ status: 'failed', error: 'form create failed' })
     })
 
+    it('Concurrent apply deduped', async () => {
+        let releaseHandler!: () => void
+        const handlerGate = new Promise<void>((resolve) => {
+            releaseHandler = resolve
+        })
+
+        const handler = vi.fn(async (ctx) => {
+            await handlerGate
+            ctx.res.send({
+                status: 'success',
+                'access-model-sod-remediation-apply:status': 'applied',
+            })
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: testConfig,
+            sourceId: 'source-123',
+        })
+
+        const res1 = mockResponse()
+        const res2 = mockResponse()
+        const first = wrapped(
+            { commandType: 'custom:access-model-sod-remediation-apply' } as any,
+            { requestId: 'req-a', formInstanceId: 'fi-dup' },
+            res1 as any
+        )
+        await Promise.resolve()
+        const second = wrapped(
+            { commandType: 'custom:access-model-sod-remediation-apply' } as any,
+            { requestId: 'req-b', formInstanceId: 'fi-dup' },
+            res2 as any
+        )
+
+        releaseHandler()
+        await Promise.all([first, second])
+
+        expect(handler).toHaveBeenCalledTimes(1)
+        expect(res1.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'success',
+                'access-model-sod-remediation-apply:status': 'applied',
+            })
+        )
+        expect(res2.send).toHaveBeenCalledWith({ status: 'success' })
+    })
+
     it('sends keepAlive while the handler is running', async () => {
         vi.useFakeTimers()
         try {

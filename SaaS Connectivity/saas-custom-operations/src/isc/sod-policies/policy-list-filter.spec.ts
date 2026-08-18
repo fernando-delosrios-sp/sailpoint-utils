@@ -1,5 +1,10 @@
+import { ConnectorError } from '@sailpoint/connector-sdk'
 import { describe, expect, it } from 'vitest'
-import { parseStatePolicyFilter, resolveSodPolicyListFilters } from './policy-list-filter'
+import {
+    parseStatePolicyFilter,
+    resolveSodPolicyListFilters,
+    UNSUPPORTED_POLICY_SCOPE_MESSAGE,
+} from './policy-list-filter'
 
 describe('resolveSodPolicyListFilters', () => {
     it('routes state-only scope to client-side filtering', () => {
@@ -8,10 +13,19 @@ describe('resolveSodPolicyListFilters', () => {
         })
     })
 
-    it('passes id and name filters to the list API', () => {
+    it('Non-state filters pass to API', () => {
         expect(resolveSodPolicyListFilters('name eq "Finance SOD"')).toEqual({
             apiFilters: 'name eq "Finance SOD"',
         })
+    })
+
+    it('Unsupported compound state scope rejected', () => {
+        expect(() => resolveSodPolicyListFilters('state eq "ENFORCED" and name sw "Finance"')).toThrow(
+            ConnectorError
+        )
+        expect(() => resolveSodPolicyListFilters('state eq "ENFORCED" and name sw "Finance"')).toThrow(
+            UNSUPPORTED_POLICY_SCOPE_MESSAGE
+        )
     })
 
     it('parses NOT_ENFORCED state filters', () => {

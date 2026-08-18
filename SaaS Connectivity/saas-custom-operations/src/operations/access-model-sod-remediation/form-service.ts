@@ -48,13 +48,93 @@ export async function ensureAccessModelSodFormDefinition(
     return ensureFormDefinitionByName(forms, { name: formName, ownerId, template })
 }
 
+export interface AssignedRemediationInstanceCache {
+    formDefinitionId: string
+    assignedPairs: Set<string>
+    loadPromise?: Promise<void>
+}
+
+function assignedRemediationPairKey(accessItemId: string, policyId: string): string {
+    return `${accessItemId}:${policyId}`
+}
+
+/** Creates an empty scan-scoped cache for assigned remediation form instances. */
+export function createAssignedRemediationInstanceCache(formDefinitionId: string): AssignedRemediationInstanceCache {
+    return {
+        formDefinitionId,
+        assignedPairs: new Set(),
+    }
+}
+
+async function populateAssignedRemediationInstanceCache(
+    forms: FormsApiLike,
+    cache: AssignedRemediationInstanceCache
+): Promise<void> {
+    const filters = `formDefinitionId eq "${cache.formDefinitionId}"`
+    logIscDebug('loadAssignedRemediationInstances searchFormInstancesByTenantV1 request', {
+        filters,
+    })
+
+    try {
+        const response = await forms.searchFormInstancesByTenantV1({
+            filters,
+            limit: 250,
+        })
+
+        const instances = response.data ?? []
+        const assigned = instances.filter((instance) => instance.state === 'ASSIGNED')
+        logIscDebug('loadAssignedRemediationInstances response', {
+            totalInstances: instances.length,
+            assignedInstances: assigned.length,
+        })
+
+        for (const instance of assigned) {
+            const input = instance.formInput as Record<string, unknown> | undefined
+            const accessItemId = input?.accessItemId
+            const policyId = input?.policyId
+            if (typeof accessItemId === 'string' && typeof policyId === 'string') {
+                cache.assignedPairs.add(assignedRemediationPairKey(accessItemId, policyId))
+            }
+        }
+    } catch (error) {
+        logIscRequestFailure('loadAssignedRemediationInstances searchFormInstancesByTenantV1', error)
+        throw error
+    }
+}
+
+async function ensureAssignedRemediationInstanceCacheLoaded(
+    forms: FormsApiLike,
+    cache: AssignedRemediationInstanceCache
+): Promise<void> {
+    if (!cache.loadPromise) {
+        cache.loadPromise = populateAssignedRemediationInstanceCache(forms, cache)
+    }
+    await cache.loadPromise
+}
+
+/** Loads assigned remediation instances once for reuse during a scan. */
+export async function loadAssignedRemediationInstances(
+    forms: FormsApiLike,
+    formDefinitionId: string
+): Promise<AssignedRemediationInstanceCache> {
+    const cache = createAssignedRemediationInstanceCache(formDefinitionId)
+    await ensureAssignedRemediationInstanceCacheLoaded(forms, cache)
+    return cache
+}
+
 /** Returns true when an ASSIGNED instance already exists for the same access item and policy. */
 export async function hasAssignedRemediationInstance(
     forms: FormsApiLike,
     formDefinitionId: string,
     accessItemId: string,
-    policyId: string
+    policyId: string,
+    cache?: AssignedRemediationInstanceCache
 ): Promise<boolean> {
+    if (cache) {
+        await ensureAssignedRemediationInstanceCacheLoaded(forms, cache)
+        return cache.assignedPairs.has(assignedRemediationPairKey(accessItemId, policyId))
+    }
+
     const filters = `formDefinitionId eq "${formDefinitionId}"`
     logIscDebug('hasAssignedRemediationInstance searchFormInstancesByTenantV1 request', {
         filters,

@@ -416,6 +416,33 @@ describe('sodRemediationOperation', () => {
         }
     })
 
+    it('continues launch when access path enrichment fails', async () => {
+        fetchKeepRecommendations.mockRejectedValue(new Error('recommendations unavailable'))
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await sodRemediationOperation(
+                { commandType: 'custom:sod-remediation' } as never,
+                {
+                    requestId: 'req-sod-enrichment-failure',
+                    violationId: 'vio-1',
+                    formName: 'SOD Remediation',
+                },
+                res as never
+            )
+        })
+
+        expect(createSodRemediationInstance).toHaveBeenCalledWith(
+            expect.objectContaining({
+                formInput: expect.objectContaining({
+                    violationId: 'vio-1',
+                    targetIdentityId: 'ident-1',
+                }),
+            })
+        )
+        expect(res.send).toHaveBeenCalledWith({ status: 'success' })
+    })
+
     it('sets hasControls false and notes summary when zero controls', async () => {
         listControlsV1.mockResolvedValue([])
         const res = { send: vi.fn() }

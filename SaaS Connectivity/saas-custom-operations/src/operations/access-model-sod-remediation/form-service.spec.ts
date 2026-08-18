@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createAccessModelSodRemediationInstance, hasAssignedRemediationInstance, serializeAccessModelSodFormInputForCreate } from './form-service'
+import {
+    createAccessModelSodRemediationInstance,
+    createAssignedRemediationInstanceCache,
+    hasAssignedRemediationInstance,
+    loadAssignedRemediationInstances,
+    serializeAccessModelSodFormInputForCreate,
+} from './form-service'
 
 describe('serializeAccessModelSodFormInputForCreate', () => {
     it('JSON-stringifies entitlement id lists for ISC STRING formInput fields', () => {
@@ -103,5 +109,53 @@ describe('hasAssignedRemediationInstance', () => {
         const result = await hasAssignedRemediationInstance(forms, 'form-def-1', 'role-1', 'policy-1')
 
         expect(result).toBe(false)
+    })
+
+    it('reuses scan cache without repeated searchFormInstancesByTenantV1 calls', async () => {
+        const searchFormInstancesByTenantV1 = vi.fn().mockResolvedValue({
+            data: [
+                {
+                    state: 'ASSIGNED',
+                    formInput: { accessItemId: 'role-1', policyId: 'policy-1' },
+                },
+                {
+                    state: 'ASSIGNED',
+                    formInput: { accessItemId: 'role-2', policyId: 'policy-2' },
+                },
+            ],
+        })
+        const forms = { searchFormInstancesByTenantV1 } as never
+        const cache = createAssignedRemediationInstanceCache('form-def-1')
+
+        await expect(hasAssignedRemediationInstance(forms, 'form-def-1', 'role-1', 'policy-1', cache)).resolves.toBe(
+            true
+        )
+        await expect(hasAssignedRemediationInstance(forms, 'form-def-1', 'role-2', 'policy-2', cache)).resolves.toBe(
+            true
+        )
+        await expect(hasAssignedRemediationInstance(forms, 'form-def-1', 'role-3', 'policy-3', cache)).resolves.toBe(
+            false
+        )
+
+        expect(searchFormInstancesByTenantV1).toHaveBeenCalledTimes(1)
+    })
+})
+
+describe('loadAssignedRemediationInstances', () => {
+    it('loads assigned access item and policy pairs once', async () => {
+        const searchFormInstancesByTenantV1 = vi.fn().mockResolvedValue({
+            data: [
+                {
+                    state: 'ASSIGNED',
+                    formInput: { accessItemId: 'role-1', policyId: 'policy-1' },
+                },
+            ],
+        })
+        const forms = { searchFormInstancesByTenantV1 } as never
+
+        const cache = await loadAssignedRemediationInstances(forms, 'form-def-1')
+
+        expect(searchFormInstancesByTenantV1).toHaveBeenCalledTimes(1)
+        expect(cache.assignedPairs.has('role-1:policy-1')).toBe(true)
     })
 })

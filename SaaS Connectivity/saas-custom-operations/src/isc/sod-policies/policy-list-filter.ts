@@ -1,4 +1,9 @@
+import { ConnectorError } from '@sailpoint/connector-sdk'
+
 export type SodPolicyState = 'ENFORCED' | 'NOT_ENFORCED'
+
+export const UNSUPPORTED_POLICY_SCOPE_MESSAGE =
+    'Unsupported policyScope filter. Supported forms: state eq "ENFORCED", state eq "NOT_ENFORCED", or API pass-through filters without state (e.g. name eq "...").'
 
 /** Parses `state eq "ENFORCED"` / `state eq "NOT_ENFORCED"` policy scope filters. */
 export function parseStatePolicyFilter(filters?: string): SodPolicyState | undefined {
@@ -28,7 +33,7 @@ export function resolveSodPolicyListFilters(filters?: string): {
     }
 
     if (filters && /\bstate\b/i.test(filters)) {
-        return { clientState: undefined, apiFilters: undefined }
+        throw new ConnectorError(UNSUPPORTED_POLICY_SCOPE_MESSAGE)
     }
 
     return filters ? { apiFilters: filters } : {}
