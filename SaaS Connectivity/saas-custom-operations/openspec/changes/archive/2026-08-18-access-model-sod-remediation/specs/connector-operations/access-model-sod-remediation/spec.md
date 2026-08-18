@@ -1,10 +1,4 @@
-# connector-operations/access-model-sod-remediation Specification
-
-## Purpose
-
-Proactive catalog hygiene: scan enabled roles and/or access profiles in scope, detect intrinsic SoD policy violations by entitlement intersection, and create standalone remediation forms for policy owners. Distinct from `custom:sod-remediation`, which remediates existing identity violations.
-
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Access model scan summary on invoke response
 
@@ -34,6 +28,10 @@ The access-model-sod-remediation operation SHALL return scan rollup counters on 
 - **WHEN** the handler completes successfully
 - **THEN** `ctx.res.send` SHALL include `access-model-sod-remediation:forms-persist-failed` equal to the failure count
 - **AND** SHALL omit `access-model-sod-remediation:forms-persist-failed` when the count is zero
+
+---
+
+## MODIFIED Requirements
 
 ### Requirement: Access model SOD remediation scan operation
 
@@ -71,6 +69,16 @@ The connector SHALL register a custom command `custom:access-model-sod-remediati
 - **WHEN** the handler loads SoD policies
 - **THEN** policies SHALL be filtered with `state eq "ENFORCED"`
 
+#### Scenario: Scan summary on invoke response
+
+- **GIVEN** a scan evaluates 50 access items and finds 3 violations creating 3 forms (2 skipped by idempotency)
+- **WHEN** the handler completes
+- **THEN** `ctx.res.send` SHALL include `access-model-sod-remediation:access-items-scanned` equal to 50
+- **AND** `access-model-sod-remediation:violations-found` equal to 3
+- **AND** `access-model-sod-remediation:forms-skipped` equal to 2
+- **AND** SHALL NOT persist rollup counters on identity `requestId`
+- **AND** SHALL NOT persist `access-model-sod-remediation:forms-created`
+
 #### Scenario: Parent persist rollup
 
 - **GIVEN** a scan evaluates 50 access items and finds 3 violations creating 3 forms (2 skipped by idempotency)
@@ -100,71 +108,6 @@ The connector SHALL register a custom command `custom:access-model-sod-remediati
 - **GIVEN** `src/operations/access-model-sod-remediation/index.ts` declares `command: 'custom:access-model-sod-remediation'` on its OperationSignature interface
 - **WHEN** codegen runs
 - **THEN** `custom:access-model-sod-remediation` SHALL be registered in auto-registry.ts and listed in connector-spec.json commands
-
-### Requirement: Access model SOD remediation form email notification outputs
-
-The access-model-sod-remediation operation SHALL persist workflow-oriented email fields on each child result-source identity when a remediation form is created. Recipient emails SHALL be persisted as a multi-value string array suitable for ISC Send Email `recipientEmailList` consumption.
-
-#### Scenario: Child persist includes form email fields
-
-- **GIVEN** role `role-a` violates policy `policy-p` and a form is created
-- **WHEN** the handler persists per-form output on child identity `` `${requestId}:role-a:policy-p` ``
-- **THEN** child output SHALL include `access-model-sod-remediation:form-email-header`, `access-model-sod-remediation:form-email-body`, and `access-model-sod-remediation:form-email-recipients`
-
-#### Scenario: Policy owner email as recipients array
-
-- **GIVEN** policy `policy-p` owner identity `owner-z` resolves to email `owner-z@example.com`
-- **WHEN** a form is created for a violation of `policy-p`
-- **THEN** persisted output `access-model-sod-remediation:form-email-recipients` SHALL be `['owner-z@example.com']`
-
-#### Scenario: Recipients attribute is multi-value string
-
-- **GIVEN** a successful child persist for access-model-sod-remediation
-- **WHEN** operation output schema is inferred for account aggregation
-- **THEN** `access-model-sod-remediation:form-email-recipients` SHALL be typed `string[]` with account schema `STRING` and `isMulti: true`
-
-### Requirement: Intrinsic policy violation detection
-
-The access-model-sod-remediation operation SHALL detect violations by expanding each access item to entitlement ids and testing intersection with both sides of each policy definition. Side membership SHALL be resolved from `policyQuery` when parseable, with fallback to `conflictingAccessCriteria`.
-
-#### Scenario: policyQuery AND separates sides
-
-- **GIVEN** a policy with `policyQuery` `@access(id:ent-a OR id:ent-b) AND @access(id:ent-c OR id:ent-d)`
-- **AND** access item entitlements include `ent-a` and `ent-c`
-- **WHEN** violation detection runs
-- **THEN** the item SHALL be flagged as violating that policy
-- **AND** `groupAIds` SHALL include `ent-a`
-- **AND** `groupBIds` SHALL include `ent-c`
-
-#### Scenario: No violation when only one side matches
-
-- **GIVEN** a policy with sides `{ent-a}` and `{ent-c}`
-- **AND** access item entitlements include only `ent-a`
-- **WHEN** violation detection runs
-- **THEN** the item SHALL NOT be flagged as violating that policy
-
-#### Scenario: conflictingAccessCriteria fallback
-
-- **GIVEN** a policy with missing or unparseable `policyQuery`
-- **AND** `conflictingAccessCriteria.leftCriteria` entitlements `{ent-a}` and `conflictingAccessCriteria.rightCriteria` entitlements `{ent-c}`
-- **WHEN** violation detection runs
-- **THEN** sides SHALL be resolved from structured criteria
-
-#### Scenario: Role expansion includes nested AP entitlements
-
-- **GIVEN** role `role-r` contains access profile `ap-x` whose entitlements include `ent-c`
-- **AND** role direct entitlements include `ent-a`
-- **AND** a policy requires `ent-a` on side A and `ent-c` on side B
-- **WHEN** role `role-r` is evaluated
-- **THEN** the role SHALL be flagged as violating that policy
-
-#### Scenario: Independent role and AP evaluation
-
-- **GIVEN** role `role-r` contains access profile `ap-x`
-- **AND** both `role-r` and `ap-x` are in scope via `searchIndices`
-- **WHEN** the scan completes
-- **THEN** each access item SHALL be evaluated independently
-- **AND** separate forms MAY be created for role and AP violations of the same policy
 
 ### Requirement: Access model SOD remediation form launch
 
@@ -224,51 +167,8 @@ The access-model-sod-remediation operation SHALL support offline/testMode invoca
 - **AND** SHALL persist at least one child form output without live ISC API calls when violations are detected
 - **AND** SHALL NOT persist rollup counters on identity `requestId`
 
-### Requirement: Access model SOD group column HTML styling
+---
 
-The access-model-sod-remediation operation SHALL render group A and group B entitlement columns using shared sod-form-html builders. Columns SHALL use type tags and selection-gated outcome panels. The operation SHALL NOT render revocability emojis or an emoji legend.
+## REMOVED Requirements
 
-#### Scenario: Six group HTML formInput fields
-
-- **WHEN** `custom:access-model-sod-remediation` assembles form input for a violation
-- **THEN** formInput SHALL include `groupAContentsHtml`, `groupAContentsHtmlAsKept`, `groupAContentsHtmlAsRemoved`, `groupBContentsHtml`, `groupBContentsHtmlAsKept`, and `groupBContentsHtmlAsRemoved`
-- **AND** plain variants SHALL NOT include outcome panel wrappers
-
-#### Scenario: Nested access profile tree preserved
-
-- **GIVEN** a violating role with entitlements grouped under nested access profile labels
-- **WHEN** group column HTML is rendered
-- **THEN** entitlements SHALL appear nested under their access profile name
-- **AND** each line SHALL include a type tag for entitlement or access profile as appropriate
-
-#### Scenario: Plain variants before selection
-
-- **GIVEN** the bundled access-model-sod-remediation seed with formConditions for group columns
-- **WHEN** the recipient has not selected `remediationSide`
-- **THEN** plain `groupAContentsHtml` and `groupBContentsHtml` SHALL be visible
-- **AND** outcome panel variants SHALL be hidden
-
-#### Scenario: Outcome panels after side selection
-
-- **GIVEN** the recipient selects `remediationSide` value `groupA`
-- **WHEN** formConditions evaluate
-- **THEN** Group A SHALL display `groupAContentsHtmlAsRemoved` with red outcome panel styling
-- **AND** Group B SHALL display `groupBContentsHtmlAsKept` with green outcome panel styling
-
-#### Scenario: No side-identity colored panels
-
-- **WHEN** group column HTML is rendered for access-model-sod-remediation
-- **THEN** the output SHALL NOT use always-on blue or purple side-identity panel backgrounds
-- **AND** colored backgrounds SHALL appear only in asKept or asRemoved variants after selection
-
-#### Scenario: No emojis on access catalog form
-
-- **WHEN** access-model-sod-remediation group HTML is rendered
-- **THEN** lines SHALL NOT include revocability, keep, or privileged emoji suffixes
-- **AND** SHALL NOT include an emoji legend footer
-
-#### Scenario: Side-by-side column layout preserved
-
-- **GIVEN** the bundled access-model-sod-remediation seed
-- **WHEN** the Correct section is inspected
-- **THEN** Group A and Group B contents SHALL remain in a two-column COLUMN_SET layout
+_(none)_

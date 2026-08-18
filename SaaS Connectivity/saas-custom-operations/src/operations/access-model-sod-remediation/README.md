@@ -19,17 +19,22 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 | `searchIndices` | No | `["accessprofiles","roles"]` | Catalogs to scan; only `accessprofiles` and `roles` allowed |
 | `policyScope` | No | `state eq "ENFORCED"` | Filter for SoD policies to evaluate |
 
-## Output (persisted)
+## Output
 
-### Parent account — `{requestId}`
+### Invoke response (scan summary)
+
+On success, `ctx.res.send` returns rollup counters alongside `status: 'success'`:
 
 | Field | Description |
 |---|---|
 | `access-model-sod-remediation:access-items-scanned` | Count of roles/APs evaluated |
 | `access-model-sod-remediation:violations-found` | Count of (access item × policy) hits |
 | `access-model-sod-remediation:forms-skipped` | Optional; ASSIGNED duplicate forms skipped |
+| `access-model-sod-remediation:forms-persist-failed` | Optional; child persist failures during the scan |
 
-### Child account — `{requestId}:{accessItemId}:{policyId}` (one per form)
+These fields are **not** persisted on result-source identity `{requestId}`.
+
+### Child account (persisted) — `{requestId}:{accessItemId}:{policyId}` (one per form)
 
 | Field | Description |
 |---|---|
@@ -61,7 +66,7 @@ Offline: [`payloads/access-model-sod-remediation-offline.json`](../../../payload
 
 ## Workflow integration
 
-1. Invoke scan; read **parent** account by `requestId` for rollup counts.
+1. Invoke scan; read rollup counts from the **invoke response** (`access-model-sod-remediation:access-items-scanned`, `violations-found`, optional `forms-skipped` / `forms-persist-failed`).
 2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields.
 3. Notify policy owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).

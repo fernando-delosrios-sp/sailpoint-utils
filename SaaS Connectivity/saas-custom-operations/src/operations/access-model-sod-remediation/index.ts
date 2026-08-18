@@ -234,7 +234,8 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
             }
         }
 
-        await ctx.persist(ctx.requestId, {
+        ctx.res.send({
+            status: 'success',
             'access-model-sod-remediation:access-items-scanned': accessItems.length,
             'access-model-sod-remediation:violations-found': violationsFound,
             ...(formsSkipped > 0 ? { 'access-model-sod-remediation:forms-skipped': formsSkipped } : {}),
@@ -242,8 +243,6 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                 ? { 'access-model-sod-remediation:forms-persist-failed': formsPersistFailed }
                 : {}),
         })
-
-        ctx.res.send({ status: 'success' })
     },
     { operationSchema: accessModelSodRemediationOperationSchema }
 )

@@ -112,6 +112,17 @@ The glossary SHALL define **form email recipients** as the multi-value persist o
 - **WHEN** the type is stated
 - **THEN** it SHALL be described as `string[]` suitable for multi-value STRING account attributes with `isMulti: true`
 
+### Requirement: Access model scan summary term
+
+The glossary SHALL define **scan summary** as the rollup counters returned on the successful `custom:access-model-sod-remediation` invoke response via `ctx.res.send`, comprising `access-model-sod-remediation:access-items-scanned`, `access-model-sod-remediation:violations-found`, and optional `access-model-sod-remediation:forms-skipped` and `access-model-sod-remediation:forms-persist-failed`. The scan summary SHALL NOT be persisted as a result-source account on `requestId`.
+
+#### Scenario: Scan summary term
+
+- **GIVEN** specs or code refer to rollup counts from an access-model scan invoke
+- **WHEN** normative text names the delivery mechanism
+- **THEN** it SHALL use **scan summary** for the invoke response payload
+- **AND** SHALL NOT describe rollup counters as a parent or summary result-source account on `requestId`
+
 ### Requirement: Access model SoD remediation term
 
 The glossary SHALL define **access model SoD remediation** as the proactive catalog scan custom operation that detects intrinsic SoD violations on enabled roles and access profiles and creates policy-owner remediation forms via `custom:access-model-sod-remediation`.
@@ -127,7 +138,8 @@ The glossary SHALL define **access model SoD remediation** as the proactive cata
 
 - **GIVEN** documentation names persist output keys for the access-model scan operation
 - **WHEN** the prefix is stated
-- **THEN** it SHALL be `access-model-sod-remediation:`
+- **THEN** child per-form keys SHALL use prefix `access-model-sod-remediation:`
+- **AND** scan rollup counters SHALL be described as **scan summary** on the invoke response, not as persisted attributes on `requestId`
 - **AND** the deprecated prefix `access-sod-remediation:` SHALL NOT appear in normative text without a migration note
 
 #### Scenario: SoD form HTML shared usage
@@ -161,6 +173,12 @@ The glossary SHALL define **access model SoD remediation** as the proactive cata
 **Definition**: The pill span denoting role, access profile, or entitlement on a line.
 **Aliases**: none
 **Notes**: Rendered via `renderTypeTag`; labels are lowercase (`role`, `access profile`, `entitlement`).
+
+### Term: Scan summary
+**Context**: connector-operations / access-model-sod-remediation
+**Definition**: Rollup counters returned on the successful `custom:access-model-sod-remediation` invoke response via `ctx.res.send` (`access-items-scanned`, `violations-found`, optional `forms-skipped` and `forms-persist-failed`).
+**Aliases**: none
+**Notes**: Not persisted on result-source identity `requestId`; child accounts at `{requestId}:{accessItemId}:{policyId}` hold per-form workflow outputs.
 
 ### Term: Form email recipients
 **Context**: connector-operations
