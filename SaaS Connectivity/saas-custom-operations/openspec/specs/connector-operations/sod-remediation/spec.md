@@ -352,12 +352,12 @@ The sod-remediation operation SHALL pre-render three HTML variants per policy si
 
 ### Requirement: Revocability HTML display with emojis
 
-The sod-remediation operation SHALL render access path annotations in HTML using space-separated UTF-8 emoji icon suffixes on each line in group column form input and in operation `sod-remediation:form-email-body` output. Lines SHALL use shared type tags for access kind. Inline revocability and keep recommendation text labels SHALL NOT appear on lines; meanings SHALL be conveyed by the situation summary legend footer only.
+The sod-remediation operation SHALL render access path annotations in HTML using space-separated UTF-8 emoji icon suffixes on each line in group column form input and in operation `sod-remediation:form-email-body` output. Lines SHALL use shared type tags for access kind. When UI origin is available, access path display names in group column HTML SHALL link to the corresponding ISC admin UI routes. Inline revocability and keep recommendation text labels SHALL NOT appear on lines; meanings SHALL be conveyed by the situation summary legend footer only.
 
 #### Scenario: Group column HTML form input
 
 - **WHEN** `custom:sod-remediation` assembles form input
-- **THEN** each group side SHALL produce plain, asKept, and asRemoved HTML variants in `groupAContentsHtml`, `groupAContentsHtmlAsKept`, `groupAContentsHtmlAsRemoved`, and B equivalents
+- **THEN** each group side SHALL produce plain, asKept, and asRemoved HTML variants in `groupColumnsHtmlPlain`, `groupColumnsHtmlWhenGroupARemoved`, `groupColumnsHtmlWhenGroupBRemoved`, and B-side equivalents
 - **AND** plain variants SHALL contain type tags and icon suffixes without outcome panel wrappers
 - **AND** asKept and asRemoved variants SHALL wrap the same line content in green and red outcome panels respectively
 - **AND** the bundled seed SHALL render those keys in conditional DESCRIPTION elements for group A and group B columns
@@ -365,7 +365,7 @@ The sod-remediation operation SHALL render access path annotations in HTML using
 #### Scenario: Group column HTML form input variants
 
 - **WHEN** `custom:sod-remediation` assembles form input
-- **THEN** formInput SHALL include six group HTML STRING fields covering plain, asKept, and asRemoved for each side
+- **THEN** formInput SHALL include group column HTML STRING fields covering plain and outcome variants for each side
 - **AND** seed formConditions SHALL swap visible DESCRIPTION elements when `remediationSide` changes
 
 #### Scenario: Icon suffixes on lines
@@ -375,11 +375,39 @@ The sod-remediation operation SHALL render access path annotations in HTML using
 - **THEN** the line SHALL include space-separated `⭐` and `✅` icon suffixes
 - **AND** SHALL NOT include inline text `Revocable` or `Recommended to keep` on the line
 
+#### Scenario: Linked path line names when online
+
+- **GIVEN** UI origin is available and a path line has id and type `ENTITLEMENT`
+- **WHEN** group column HTML is rendered
+- **THEN** the entitlement display name SHALL be wrapped in an entitlement admin UI link
+
 #### Scenario: Email summary parity
 
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** persisted output `sod-remediation:form-email-body` SHALL include the same access path icon suffixes and side correction hint as the group column HTML line content
+- **THEN** persisted output `sod-remediation:form-email-body` SHALL include the same access path icon suffixes and side correction hint as the group column HTML line content without entity admin deep links
 - **AND** `situationSummaryHtml` SHALL additionally include the emoji legend footer
 
+### Requirement: SOD remediation context panel layout
 
+The bundled sod-remediation form seed SHALL present a single upper context panel DESCRIPTION interpolating `situationSummaryHtml`. The panel SHALL use user-facing section copy structured as “What we found” and “What we need from you”. The seed SHALL NOT include a separate static identity/policy/violation metadata DESCRIPTION that duplicates content from `situationSummaryHtml`.
+
+#### Scenario: Single ctx-summary element
+
+- **GIVEN** the bundled sod-remediation seed template
+- **WHEN** the context section is inspected
+- **THEN** exactly one DESCRIPTION element SHALL interpolate `{{$.form.input.situationSummaryHtml}}`
+- **AND** the seed SHALL NOT define element id `ctx-identity`
+
+#### Scenario: User-facing section label
+
+- **GIVEN** the bundled sod-remediation seed context section
+- **WHEN** the section label is inspected
+- **THEN** it SHALL NOT contain the phrase `policy violation detection`
+
+#### Scenario: Call to action in summary
+
+- **WHEN** `situationSummaryHtml` is assembled for a violation with compensating controls available
+- **THEN** the “What we need from you” block SHALL instruct the recipient to choose Correct or Mitigate and select a remediation side
+
+---
 

@@ -3,9 +3,7 @@
 ## Purpose
 
 Proactive catalog hygiene: scan enabled roles and/or access profiles in scope, detect intrinsic SoD policy violations by entitlement intersection, and create standalone remediation forms for policy owners. Distinct from `custom:sod-remediation`, which remediates existing identity violations.
-
 ## Requirements
-
 ### Requirement: Access model scan summary on invoke response
 
 The access-model-sod-remediation operation SHALL return scan rollup counters on the successful command response via `ctx.res.send`. The handler SHALL NOT persist rollup counters on result-source identity `requestId`.
@@ -269,12 +267,12 @@ The access-model-sod-remediation operation SHALL support offline/testMode invoca
 
 ### Requirement: Access model SOD group column HTML styling
 
-The access-model-sod-remediation operation SHALL render group A and group B entitlement columns using shared sod-form-html builders. Columns SHALL use type tags and selection-gated outcome panels. The operation SHALL NOT render revocability emojis or an emoji legend.
+The access-model-sod-remediation operation SHALL render group A and group B entitlement columns using shared sod-form-html builders. Columns SHALL use type tags and selection-gated outcome panels. When UI origin is available, line display names SHALL link to ISC admin UI routes. The operation SHALL NOT render revocability emojis or an emoji legend in group column HTML.
 
 #### Scenario: Six group HTML formInput fields
 
 - **WHEN** `custom:access-model-sod-remediation` assembles form input for a violation
-- **THEN** formInput SHALL include `groupAContentsHtml`, `groupAContentsHtmlAsKept`, `groupAContentsHtmlAsRemoved`, `groupBContentsHtml`, `groupBContentsHtmlAsKept`, and `groupBContentsHtmlAsRemoved`
+- **THEN** formInput SHALL include `groupColumnsHtmlPlain`, `groupColumnsHtmlWhenGroupARemoved`, and `groupColumnsHtmlWhenGroupBRemoved`
 - **AND** plain variants SHALL NOT include outcome panel wrappers
 
 #### Scenario: Flat access profile lines with offending entitlement mention
@@ -297,15 +295,15 @@ The access-model-sod-remediation operation SHALL render group A and group B enti
 
 - **GIVEN** the bundled access-model-sod-remediation seed with formConditions for group columns
 - **WHEN** the recipient has not selected `remediationSide`
-- **THEN** plain `groupAContentsHtml` and `groupBContentsHtml` SHALL be visible
+- **THEN** plain group column HTML SHALL be visible
 - **AND** outcome panel variants SHALL be hidden
 
 #### Scenario: Outcome panels after side selection
 
 - **GIVEN** the recipient selects `remediationSide` value `groupA`
 - **WHEN** formConditions evaluate
-- **THEN** Group A SHALL display `groupAContentsHtmlAsRemoved` with red outcome panel styling
-- **AND** Group B SHALL display `groupBContentsHtmlAsKept` with green outcome panel styling
+- **THEN** Group A SHALL display removed outcome panel styling
+- **AND** Group B SHALL display kept outcome panel styling
 
 #### Scenario: No side-identity colored panels
 
@@ -315,12 +313,61 @@ The access-model-sod-remediation operation SHALL render group A and group B enti
 
 #### Scenario: No emojis on access catalog form
 
-- **WHEN** access-model-sod-remediation group HTML is rendered
+- **WHEN** access-model-sod-remediation group column HTML is rendered
 - **THEN** lines SHALL NOT include revocability, keep, or privileged emoji suffixes
-- **AND** SHALL NOT include an emoji legend footer
+- **AND** group column HTML SHALL NOT include an emoji legend footer
+
+#### Scenario: Linked column line names when online
+
+- **GIVEN** UI origin is available
+- **WHEN** group column HTML is rendered
+- **THEN** entitlement and access profile display names SHALL be wrapped in the corresponding ISC admin UI links
 
 #### Scenario: Side-by-side column layout preserved
 
 - **GIVEN** the bundled access-model-sod-remediation seed
 - **WHEN** the Correct section is inspected
-- **THEN** Group A and Group B contents SHALL remain in a two-column COLUMN_SET layout
+- **THEN** Group A and Group B contents SHALL remain in a side-by-side two-column layout
+
+### Requirement: Access model context panel HTML
+
+The access-model-sod-remediation operation SHALL assemble launch-time `situationSummaryHtml` for in-form DESCRIPTION rendering. The summary SHALL use the same “What we found” / “What we need from you” structure as sod-remediation context panels. When UI origin is available, the summary SHALL link the access item and policy display names to ISC admin UI routes. The bundled seed SHALL interpolate `situationSummaryHtml` in a single context-panel DESCRIPTION and SHALL NOT rely on static-only access item metadata for situation explanation.
+
+#### Scenario: Form input includes situationSummaryHtml
+
+- **WHEN** `custom:access-model-sod-remediation` creates a form instance
+- **THEN** `formInput` SHALL include `situationSummaryHtml` with HTML suitable for DESCRIPTION interpolation
+
+#### Scenario: Linked access item and policy
+
+- **GIVEN** UI origin is available, role id `role-r`, and policy id `policy-p`
+- **WHEN** `situationSummaryHtml` is assembled
+- **THEN** the access item display name SHALL link to the role admin UI route
+- **AND** the policy display name SHALL link to the SoD policy admin UI route
+
+#### Scenario: Access profile item links correctly
+
+- **GIVEN** UI origin is available and violating access item type is `ACCESS_PROFILE`
+- **WHEN** `situationSummaryHtml` is assembled
+- **THEN** the access item display name SHALL link to the access profile admin UI route
+
+#### Scenario: Call to action for policy owner
+
+- **WHEN** `situationSummaryHtml` is assembled
+- **THEN** the “What we need from you” block SHALL instruct the recipient to select which side’s entitlements to remove from the access item definition
+
+#### Scenario: Offline context panel omits links
+
+- **GIVEN** invoke runs without `apiUrl`
+- **WHEN** `situationSummaryHtml` is assembled
+- **THEN** names SHALL render as plain escaped text without admin links
+
+#### Scenario: Seed single context DESCRIPTION
+
+- **GIVEN** the bundled access-model-sod-remediation seed
+- **WHEN** the context section is inspected
+- **THEN** exactly one DESCRIPTION element SHALL interpolate `{{$.form.input.situationSummaryHtml}}`
+- **AND** the seed SHALL NOT define static-only element id `ctx-item` for situation content
+
+---
+
