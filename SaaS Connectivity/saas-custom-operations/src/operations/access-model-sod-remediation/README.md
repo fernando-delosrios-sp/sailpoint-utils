@@ -29,7 +29,7 @@ On success, `ctx.res.send` returns rollup counters alongside `status: 'success'`
 |---|---|
 | `access-model-sod-remediation:access-items-scanned` | Count of roles/APs evaluated |
 | `access-model-sod-remediation:violations-found` | Count of (access item × policy) hits |
-| `access-model-sod-remediation:forms-skipped` | Optional; ASSIGNED duplicate forms skipped |
+| `access-model-sod-remediation:forms-skipped` | Optional; ASSIGNED duplicate forms skipped **within the same parent `requestId`** |
 | `access-model-sod-remediation:forms-launch-failed` | Optional; form instance creation failures during the scan |
 | `access-model-sod-remediation:forms-persist-failed` | Optional; child persist failures after a form was created |
 
@@ -37,7 +37,7 @@ These fields are **not** persisted on result-source identity `{requestId}`.
 
 ### Scan performance
 
-The scan loads assigned form instances **once per invocation** and reuses that data for dedupe checks across all violations (no per-violation `searchFormInstancesByTenantV1` calls). Policy-owner email resolution and access-item entitlement expansion are **memoized within the scan** to avoid repeated ISC calls on large catalogs. Form creation and skip behavior are unchanged.
+The scan loads assigned form instances **once per invocation** and reuses that data for dedupe checks across all violations (no per-violation `searchFormInstancesByTenantV1` calls). Dedupe is **request-scoped**: an ASSIGNED instance is skipped only when `formInput.parentRequestId` matches the current invoke `requestId` together with the same `accessItemId` and `policyId`. Pending forms from a prior scan (different `requestId`) do not block new form creation. Policy-owner email resolution and access-item entitlement expansion are **memoized within the scan** to avoid repeated ISC calls on large catalogs.
 
 ### Child account (persisted) — `{requestId}:{accessItemId}:{policyId}` (one per form)
 
@@ -83,7 +83,7 @@ Offline: [`payloads/access-model-sod-remediation-offline.json`](../../../payload
 
 | Layer | Fields |
 |---|---|
-| `formInput` (launch) | `accessItemId`, `accessItemType`, `accessItemName`, `policyId`, `policyName`, `groupAIds`, `groupBIds` (JSON arrays), six HTML column fields (see below) |
+| `formInput` (launch) | `parentRequestId` (scan invoke `requestId`), `accessItemId`, `accessItemType`, `accessItemName`, `policyId`, `policyName`, `groupAIds`, `groupBIds` (JSON arrays), six HTML column fields (see below) |
 | `formData` (submit) | `remediationSide`, optional `comments` |
 
 No action selector or Mitigate path.
@@ -100,7 +100,7 @@ Launch-time `formInput` carries **three** composite side-by-side column HTML fie
 
 Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when the recipient changes `remediationSide`. Direct role entitlements render as single flat lines. Nested access profiles render as **flat access profile lines** with an **offending entitlement mention** (for example `— offending: payment_issue`) so policy owners see the whole AP as the removable unit on roles. **No** revocability emojis or legend.
 
-**Form definition migration:** Updated seeds change the form fingerprint. Tenants only receive the new six-field layout when they use a **new** `formName` (ensure-by-name does not patch existing definitions). Reuse an existing name to keep the prior two-field layout until you adopt a new form name.
+**Form definition migration:** Updated seeds change the form fingerprint. Tenants only receive the new layout (including `parentRequestId` on `formInput`) when they use a **new** `formName` (ensure-by-name does not patch existing definitions). Reuse an existing name to keep the prior layout until you adopt a new form name. Legacy ASSIGNED instances without `parentRequestId` neither block nor satisfy request-scoped dedupe for new scans.
 
 ## Token scope requirements
 

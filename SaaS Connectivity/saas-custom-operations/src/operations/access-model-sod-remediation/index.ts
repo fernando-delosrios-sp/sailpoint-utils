@@ -180,6 +180,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     : await hasAssignedRemediationInstance(
                           ctx.sdk.forms,
                           formDefinitionId,
+                          ctx.requestId,
                           violation.accessItem.id,
                           violation.policy.id,
                           assignedInstanceCache
@@ -214,6 +215,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                         recipientId: ownerId,
                         createdBySourceId: ctx.sourceId,
                         formInput: {
+                            parentRequestId: ctx.requestId,
                             accessItemId: violation.accessItem.id,
                             accessItemType: violation.accessItem.type,
                             accessItemTypeTagHtml: renderTypeTag(violation.accessItem.type),

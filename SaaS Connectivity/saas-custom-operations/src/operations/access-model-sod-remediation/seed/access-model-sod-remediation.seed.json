@@ -7,6 +7,7 @@
         { "id": "accessItemName", "type": "STRING", "label": "Access Item Name", "description": "Display name of the access item" },
         { "id": "policyId", "type": "STRING", "label": "Policy ID", "description": "Violated SoD policy id" },
         { "id": "policyName", "type": "STRING", "label": "Policy Name", "description": "Violated SoD policy name" },
+        { "id": "parentRequestId", "type": "STRING", "label": "Parent Request ID", "description": "Scan invoke requestId that launched this form (workflow correlation key)" },
         { "id": "groupAIds", "type": "STRING", "label": "Group A Entitlement IDs", "description": "JSON array of entitlement ids on group A side (launch-time workflow key)" },
         { "id": "groupBIds", "type": "STRING", "label": "Group B Entitlement IDs", "description": "JSON array of entitlement ids on group B side (launch-time workflow key)" },
         { "id": "groupColumnsHtmlPlain", "type": "STRING", "label": "Group Columns HTML (Plain)", "description": "Side-by-side plain group columns before side selection" },

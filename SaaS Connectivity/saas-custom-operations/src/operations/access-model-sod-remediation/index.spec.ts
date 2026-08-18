@@ -240,12 +240,16 @@ describe('accessModelSodRemediationOperation', () => {
         }
     })
 
-    it('includes forms-skipped on res.send when duplicate form exists', async () => {
+    it('includes forms-skipped on res.send when duplicate form exists for same parent request', async () => {
         searchFormInstancesByTenantV1.mockResolvedValue({
             data: [
                 {
                     state: 'ASSIGNED',
-                    formInput: { accessItemId: 'role-offline-1', policyId: 'policy-offline-1' },
+                    formInput: {
+                        parentRequestId: 'req-access-model-sod-skipped',
+                        accessItemId: 'role-offline-1',
+                        policyId: 'policy-offline-1',
+                    },
                 },
             ],
         })
@@ -271,6 +275,43 @@ describe('accessModelSodRemediationOperation', () => {
                 'access-model-sod-remediation:forms-skipped': 1,
             })
         )
+    })
+
+    it('Different parent request does not skip pending form from prior scan', async () => {
+        searchFormInstancesByTenantV1.mockResolvedValue({
+            data: [
+                {
+                    state: 'ASSIGNED',
+                    formInput: {
+                        parentRequestId: 'req-access-model-sod-prior',
+                        accessItemId: 'role-offline-1',
+                        policyId: 'policy-offline-1',
+                    },
+                },
+            ],
+        })
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
+                {
+                    requestId: 'req-access-model-sod-new',
+                    formName: 'Access Model SOD Remediation',
+                    searchIndices: ['roles'],
+                },
+                res as never
+            )
+        })
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'success',
+                'access-model-sod-remediation:violations-found': 1,
+            })
+        )
+        expect(res.send.mock.calls[0]?.[0]).not.toHaveProperty('access-model-sod-remediation:forms-skipped')
+        expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalled()
     })
 
     it('Form instance search bounded per scan', async () => {

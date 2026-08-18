@@ -10,6 +10,7 @@ import { logIscDebug, logIscRequestFailure } from '../../isc/debug/log-isc-reque
 import accessModelSodRemediationSeedJson from './seed/access-model-sod-remediation.seed.json'
 
 export interface AccessModelSodFormInputValues {
+    parentRequestId: string
     accessItemId: string
     accessItemType: string
     accessItemTypeTagHtml: string
@@ -54,8 +55,21 @@ export interface AssignedRemediationInstanceCache {
     loadPromise?: Promise<void>
 }
 
-function assignedRemediationPairKey(accessItemId: string, policyId: string): string {
-    return `${accessItemId}:${policyId}`
+function assignedRemediationPairKey(parentRequestId: string, accessItemId: string, policyId: string): string {
+    return `${parentRequestId}:${accessItemId}:${policyId}`
+}
+
+function matchesAssignedRemediationInstance(
+    input: Record<string, unknown> | undefined,
+    parentRequestId: string,
+    accessItemId: string,
+    policyId: string
+): boolean {
+    return (
+        input?.parentRequestId === parentRequestId &&
+        input?.accessItemId === accessItemId &&
+        input?.policyId === policyId
+    )
 }
 
 /** Creates an empty scan-scoped cache for assigned remediation form instances. */
@@ -90,10 +104,15 @@ async function populateAssignedRemediationInstanceCache(
 
         for (const instance of assigned) {
             const input = instance.formInput as Record<string, unknown> | undefined
+            const parentRequestId = input?.parentRequestId
             const accessItemId = input?.accessItemId
             const policyId = input?.policyId
-            if (typeof accessItemId === 'string' && typeof policyId === 'string') {
-                cache.assignedPairs.add(assignedRemediationPairKey(accessItemId, policyId))
+            if (
+                typeof parentRequestId === 'string' &&
+                typeof accessItemId === 'string' &&
+                typeof policyId === 'string'
+            ) {
+                cache.assignedPairs.add(assignedRemediationPairKey(parentRequestId, accessItemId, policyId))
             }
         }
     } catch (error) {
@@ -122,22 +141,24 @@ export async function loadAssignedRemediationInstances(
     return cache
 }
 
-/** Returns true when an ASSIGNED instance already exists for the same access item and policy. */
+/** Returns true when an ASSIGNED instance already exists for the same parent request, access item, and policy. */
 export async function hasAssignedRemediationInstance(
     forms: FormsApiLike,
     formDefinitionId: string,
+    parentRequestId: string,
     accessItemId: string,
     policyId: string,
     cache?: AssignedRemediationInstanceCache
 ): Promise<boolean> {
     if (cache) {
         await ensureAssignedRemediationInstanceCacheLoaded(forms, cache)
-        return cache.assignedPairs.has(assignedRemediationPairKey(accessItemId, policyId))
+        return cache.assignedPairs.has(assignedRemediationPairKey(parentRequestId, accessItemId, policyId))
     }
 
     const filters = `formDefinitionId eq "${formDefinitionId}"`
     logIscDebug('hasAssignedRemediationInstance searchFormInstancesByTenantV1 request', {
         filters,
+        parentRequestId,
         accessItemId,
         policyId,
     })
@@ -155,10 +176,14 @@ export async function hasAssignedRemediationInstance(
             assignedInstances: assigned.length,
         })
 
-        return assigned.some((instance) => {
-            const input = instance.formInput as Record<string, unknown> | undefined
-            return input?.accessItemId === accessItemId && input?.policyId === policyId
-        })
+        return assigned.some((instance) =>
+            matchesAssignedRemediationInstance(
+                instance.formInput as Record<string, unknown> | undefined,
+                parentRequestId,
+                accessItemId,
+                policyId
+            )
+        )
     } catch (error) {
         logIscRequestFailure('hasAssignedRemediationInstance searchFormInstancesByTenantV1', error)
         throw error
