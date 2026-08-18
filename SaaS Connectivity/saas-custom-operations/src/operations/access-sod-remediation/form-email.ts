@@ -49,7 +49,7 @@ function remediationFormLink(formUrl: string): string {
 /** Builds a plain-text email subject for workflow notifications. */
 export function buildFormEmailHeader(input: Pick<FormEmailInput, 'accessItem' | 'policy'>): string {
     const itemName = input.accessItem.name ?? input.accessItem.id
-    return `${WARNING_EMOJI} Access Catalog SOD Remediation Required — ${itemName}`
+    return `${WARNING_EMOJI} Access Model SOD Remediation Required — ${itemName}`
 }
 
 /**

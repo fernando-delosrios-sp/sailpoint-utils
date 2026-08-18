@@ -11,7 +11,7 @@ describe('access-sod-remediation/form-email', () => {
 
     it('builds a plain-text email header from access item name', () => {
         expect(buildFormEmailHeader(input)).toBe(
-            '⚠️ Access Catalog SOD Remediation Required — Finance Role'
+            '⚠️ Access Model SOD Remediation Required — Finance Role'
         )
     })
 

@@ -82,7 +82,7 @@ describe('sod-remediation seed', () => {
         expect(seed.formInput?.some((input) => input.id === 'hasControls' && input.type === 'STRING')).toBe(true)
     })
 
-    it('renders violation context from formInput interpolation', () => {
+    it('renders identity policy violation detection from formInput interpolation', () => {
         const seed = loadFormSeed(seedPath)
         const identityContext = findFormElementById(seed.formElements, 'ctx-identity')
 

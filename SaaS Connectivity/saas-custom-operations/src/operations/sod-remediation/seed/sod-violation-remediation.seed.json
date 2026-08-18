@@ -3,7 +3,7 @@
     "formInput": [
         { "id": "targetIdentityName", "type": "STRING", "label": "Target Identity Name", "description": "Display name of the violating identity" },
         { "id": "policyName", "type": "STRING", "label": "Policy Name", "description": "SOD policy that was violated" },
-        { "id": "situationSummaryHtml", "type": "STRING", "label": "Situation Summary", "description": "HTML summary for form context" },
+        { "id": "situationSummaryHtml", "type": "STRING", "label": "Situation Summary", "description": "HTML summary for policy violation detection" },
         { "id": "groupColumnsHtmlPlain", "type": "STRING", "label": "Group Columns HTML (Plain)", "description": "Side-by-side plain group columns before side selection" },
         { "id": "groupColumnsHtmlWhenGroupARemoved", "type": "STRING", "label": "Group Columns HTML (Group A Removed)", "description": "Side-by-side columns when group A is selected for removal" },
         { "id": "groupColumnsHtmlWhenGroupBRemoved", "type": "STRING", "label": "Group Columns HTML (Group B Removed)", "description": "Side-by-side columns when group B is selected for removal" },
@@ -21,7 +21,7 @@
             "config": {
                 "alignment": "LEFT",
                 "description": "",
-                "label": "Violation Context",
+                "label": "Identity policy violation detection",
                 "labelStyle": "h2",
                 "showLabel": true,
                 "formElements": [

@@ -1,9 +1,9 @@
 {
-    "description": "Access catalog SoD remediation — policy owner selects side to remove from role or access profile.",
+    "description": "Access model SoD remediation — policy owner selects side to remove from role or access profile.",
     "formInput": [
         { "id": "accessItemId", "type": "STRING", "label": "Access Item ID", "description": "Role or access profile under review" },
         { "id": "accessItemType", "type": "STRING", "label": "Access Item Type", "description": "ROLE or ACCESS_PROFILE" },
-        { "id": "accessItemTypeTagHtml", "type": "STRING", "label": "Access Item Type Tag HTML", "description": "Pre-rendered type pill HTML for the context panel" },
+        { "id": "accessItemTypeTagHtml", "type": "STRING", "label": "Access Item Type Tag HTML", "description": "Pre-rendered type pill HTML for the policy violation detection panel" },
         { "id": "accessItemName", "type": "STRING", "label": "Access Item Name", "description": "Display name of the access item" },
         { "id": "policyId", "type": "STRING", "label": "Policy ID", "description": "Violated SoD policy id" },
         { "id": "policyName", "type": "STRING", "label": "Policy Name", "description": "Violated SoD policy name" },
@@ -20,7 +20,7 @@
             "config": {
                 "alignment": "LEFT",
                 "description": "",
-                "label": "Access Catalog Context",
+                "label": "Access model policy violation detection",
                 "labelStyle": "h2",
                 "showLabel": true,
                 "formElements": [
