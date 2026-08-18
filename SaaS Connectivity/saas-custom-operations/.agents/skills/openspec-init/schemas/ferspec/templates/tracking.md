@@ -1,6 +1,6 @@
 ## Issue
 
-<!-- Tracker URL or ID — must resolve from either Issue or Change side -->
+<!-- Tracker URL or ID — link when issue tracker configured -->
 
 ## Change
 
@@ -8,7 +8,7 @@
 
 ## Branch
 
-<!-- feature branch; filled at apply start -->
+<!-- remote venue only — FEATURE_BRANCH for PR; empty for local/worktree -->
 
 ## PR
 
@@ -17,9 +17,9 @@
 ## Presets
 
 <!--
-Autonomous apply only — workspace, parallelism, store, and metadata from the issue.
+Apply resume / CI — venue, parallelism, store, base branch.
 Example:
-- workspace: local
+- venue: local
 - parallelism: single
 - base-branch: main
 - store: my-openspec-store

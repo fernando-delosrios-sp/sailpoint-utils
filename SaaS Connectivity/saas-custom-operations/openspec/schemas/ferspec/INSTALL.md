@@ -34,7 +34,7 @@ When a file exists:
 
 1. Ask the user for permission to append the routing fragment.
 2. Read `openspec/schemas/ferspec/templates/adopters/AGENTS.md.fragment.md`.
-3. Append as a new section at the end.
+3. Append fragment sections at the end (Agent communication and Workflow routing).
 
 ## Skills (openspec-init step 6)
 
@@ -61,7 +61,7 @@ npx skills add fernando-delosrios-sp/skills --skill setup-matt-pocock-skills
 
 | Skill | Phase | Invoked by |
 |---|---|---|
-| structured-choices | cross-cutting | model-invocation; user gates across workflow |
+| structured-choices | cross-cutting | model-invocation; user gates; **install** wires User gates into AGENTS.md |
 | grill-with-docs | discovery | schema.yaml |
 | grilling | discovery | grill-with-docs |
 | domain-modeling | discovery | grill-with-docs; Language format |
@@ -77,6 +77,8 @@ npx skills add fernando-delosrios-sp/skills --skill setup-matt-pocock-skills
 | setup-matt-pocock-skills | setup | user; once after skill install |
 
 If the user skips skills from this list, note which phases lose skill-backed behavior and which fallbacks apply.
+
+**User gates** — after **setup-matt-pocock-skills**, invoke **structured-choices install** (or say `install structured-choices`) to wire User gates into `AGENTS.md` / `CLAUDE.md`. The fragment does not include User gates; Install owns that content.
 
 **Post-install setup** — run once after all skills above are installed:
 
@@ -102,4 +104,4 @@ Run after ubiquitous-language and domain specs exist (openspec-init step 5):
 2. Installed skills appear in the agent's available skills list
 3. Confirm `openspec/specs/ubiquitous-language/spec.md` exists — terms marked `promote` in discovery become ubiquitous-language delta during specs phase; canonical merge at archive
 4. Smoke-test change: `/opsx:new test-ferspec --schema ferspec`
-5. Confirm `openspec/changes/test-ferspec/` exists with ferspec planning artifacts (proposal, discovery, design, specs, tasks). `tracking.md` is **not** created by `/opsx:new` — autonomous apply only. **Delete the smoke-test change** — `rm -rf openspec/changes/test-ferspec`. Do not archive; it has no spec deltas to merge.
+5. Confirm `openspec/changes/test-ferspec/` exists with ferspec planning artifacts (proposal, discovery, design, specs, tasks). `tracking.md` is **not** created by `/opsx:new` — apply bind writes it when needed. **Delete the smoke-test change** — `rm -rf openspec/changes/test-ferspec`. Do not archive; it has no spec deltas to merge.

@@ -8,6 +8,8 @@
 - When a topic could go deep, **offer to develop it further** — do not unprompted long dissertations or essay-length replies.
 - When you need input, **ask one question at a time** and wait for the answer before the next.
 
+<!-- User gates: structured-choices Install owns AGENTS.md / CLAUDE.md User gates (### under Agent skills, or ## standalone). Run install after setup-matt-pocock-skills. -->
+
 ## Workflow routing (read on session start)
 
 This repo uses the **ferspec** OpenSpec schema. Artifact instructions inject at each `/opsx:*` step; skills carry execution detail.

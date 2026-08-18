@@ -21,9 +21,9 @@ Every adapter sets:
 |---|---|
 | `CHANGE_ROOT` | Adapter `changeRoot` / user path — pre-flight planning reads only |
 | `CHANGE_ROOT_REL` | Repo-relative path from `CHANGE_ROOT` — skill computes `ACTIVE_CHANGE_ROOT` at bind |
-| `NAME` | Basename of the change |
+| `NAME` | Basename of the change — used in ephemeral `apply-<name>` |
 
-Post-bind artifact I/O uses **`ACTIVE_CHANGE_ROOT`** from the apply skill workspace matrix — never the pre-bind absolute `CHANGE_ROOT` when work runs on another checkout.
+Post-bind artifact I/O uses **`ACTIVE_CHANGE_ROOT`** from the apply skill **venue matrix** — never the pre-bind absolute `CHANGE_ROOT` when work runs on another checkout.
 
 Optional under the change folder:
 
@@ -32,7 +32,7 @@ Optional under the change folder:
 | `specs/**/*.md` | Scenario → test coverage gate |
 | `design.md` | Design/spec coherence gate |
 | `proposal.md` | Changelog scope |
-| `tracking.md` | Loaded into non-authoritative `TRACKING_HINT` at pre-flight; merged into `TRACKING` pre-bind from feature branch (apply skill step 2) |
+| `tracking.md` | Loaded into `TRACKING_HINT` at pre-flight; merged pre-bind (on-disk + remote-branch when venue is `remote`) |
 
 ## OpenSpec adapter
 
@@ -48,7 +48,7 @@ Match `/opsx-apply`: paths from CLI, not repo guesses.
 
 **Also sets:** `PLANNING_HOME`, `STORE`, `STORE_SOURCE` (when a store is used).
 
-**Default feature branch:** `TRACKING` → Branch at bind, else `openspec/<name>`.
+**Default feature branch (remote venue only):** `TRACKING` → Branch at bind, else `openspec/<name>`.
 
 **Gate validator:** `openspec validate --all --json` from `PLANNING_HOME` with `--store` when set.
 
@@ -62,7 +62,7 @@ Match `/opsx-apply`: paths from CLI, not repo guesses.
 
 **Does not set:** `PLANNING_HOME`, `STORE`, `artifactPaths`, `contextFiles`.
 
-**Default feature branch:** `TRACKING` → Branch at bind, else `feature/<name>`.
+**Default feature branch (remote venue only):** `TRACKING` → Branch at bind, else `feature/<name>`.
 
 **Gate validator:** skip OpenSpec validate unless user explicitly requests.
 
@@ -71,6 +71,6 @@ Match `/opsx-apply`: paths from CLI, not repo guesses.
 | | ferspec + apply-code-changes | superpowers-bridge |
 |---|---|---|
 | Apply skill | **apply-code-changes** | Schema-embedded executor |
-| Worktree | Workspace matrix in skill | User choice at apply step 1 |
+| Isolation | Venue matrix (`local` / `worktree` / `remote`) | User choice at apply step 1 |
 
 Use **apply-code-changes** for ferspec and Direct apply. Do not mix apply paths on one change.

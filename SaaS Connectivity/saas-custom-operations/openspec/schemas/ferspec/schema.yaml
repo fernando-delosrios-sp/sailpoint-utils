@@ -121,11 +121,11 @@ apply:
     (append `--store` when applicable) for `changeRoot`, `planningHome`, `artifactPaths`, and
     `contextFiles`. Adapter output is planning-only; after apply-code-changes **bind** (step 2),
     all artifact reads and edits use `ACTIVE_CHANGE_ROOT = WORK_CHECKOUT + CHANGE_ROOT_REL` on the
-    bound checkout — see skill workspace matrix. Never edit artifacts via pre-bind `changeRoot` after bind.
+    bound checkout — see skill venue matrix. Never edit artifacts via pre-bind `changeRoot` after bind.
 
     **Fallback** (skill absent): resolve paths as above; read tasks.md, specs, design from bound
-    checkout when resuming on the feature branch; execute tasks in order; invoke **tdd** when present;
-    delegate commits to **git-commit**; run **changelog-generator** for the Changelog group.
+    checkout; execute tasks in order; invoke **tdd** when present; delegate commits to
+    **git-commit**; run **changelog-generator** for the Changelog group.
 
     **Completion gate** (blocking — all must pass):
     1. All tasks.md checkboxes `[x]`
@@ -135,44 +135,20 @@ apply:
     5. design.md decisions reflected in specs — material drift = FAIL
     6. Changelog task complete (generated during apply, not archive)
 
-    **Branch resolution** (both modes): when FEATURE_BRANCH exists only on origin (not locally —
-    e.g. CI resume or fresh clone), check it out as a local tracking branch; never recreate it from
-    ORIGINAL_BRANCH, which would discard remote commits. Only create fresh from ORIGINAL_BRANCH when
-    the branch exists nowhere. **Exception — worktree + single:** resolve the branch as a ref only
-    (`git branch`/`git branch --track`, no checkout) in both cases above; checking it out on main
-    would block bind's worktree creation, which needs ORIGINAL_BRANCH still active there.
+    **Invariant**: ORIGINAL_BRANCH is durable for local/worktree — no feature branch on those venues.
+    Worktree uses ephemeral `apply-<name>` squash-merged at handoff. FEATURE_BRANCH exists for
+    **remote** only (PR head). When FEATURE_BRANCH exists on origin only, track it — never recreate
+    from ORIGINAL_BRANCH.
 
-    **Interactive**: dialog (workspace: local | worktree × parallelism: single | subagent per
-    task group) — record both in TRACKING Presets and current-run preset overrides before bind;
-    complete worktree PRECHECK and explicit-store preset-override lock (setup steps 4–5) before
-    bind, not just the workspace/parallelism dialog; preserve those choices through the
-    feature-branch field-level merge → execute (incl. Changelog group) → gate → STOP.
-    Worktree + single: worktree on FEATURE_BRANCH; main stays on ORIGINAL_BRANCH; remove worktree
-    after gate report (no PR). Worktree + subagent-per-group: main on FEATURE_BRANCH for
-    orchestrator merges and artifact edits; one worktree per group on group branches. Local: main
-    on FEATURE_BRANCH. Subagent-per-group: sequential dispatch — never concurrent subagents on
-    shared git state.
+    **Setup**: interactive hosts — structured-choices **venue** gate (`local` | `worktree` | `remote`);
+    never skip because Issue or Presets are prefilled. Agent picks **parallelism** (same criteria all
+    venues); lock `venue` and `parallelism` in Presets and preset overrides. Non-interactive (CI):
+    venue from Presets else `remote` when shipping else `local`.
 
-    **Autonomous**: change adapter (step 0) — use an explicit/preloaded store when present, otherwise
-    re-probe once from the first resolved tracking.md;
-    always prepare a complete TRACKING baseline (`workspace: local` and `parallelism: single`),
-    then overlay non-empty hint values and set Change to the current adapter path — except Branch,
-    Issue, PR, and Presets keys, which only overlay when the hint's own Change matches the current
-    adapter path (otherwise a stale hint could name an unrelated branch, link the wrong tracker entry,
-    attach a previous change's pull request, or force unchecked worktree presets); hint Issue selects
-    autonomous mode only on a trusted hint (Change
-    matches the current adapter path); snapshot TRACKING_SETUP after setup; find the feature branch's
-    tracking.md by change name (not the current, possibly wrong-store, relative path) before
-    pre-bind merge; when a hint-derived store is unconfirmed, skip the field merge and re-resolve
-    store adoption first — restore TRACKING_SETUP before the restart — since an old-store root
-    naturally mismatches a correct-store Change; run the field merge only after Change aligns (or
-    STOP once store re-resolution has run for explicit store); add workspace and parallelism to the
-    current-run preset overrides so the setup-time (PRECHECK'd) workspace choice survives the merge —
-    bind must wait for this preset-override + PRECHECK step, never proceed on the bare step-1 baseline;
-    bind ACTIVE_CHANGE_ROOT per workspace matrix; PR via gh with --base ORIGINAL_BRANCH + issue link
-    → STOP.
+    **Handoff**: local+single → return control on ORIGINAL_BRANCH; local+subagent and worktree →
+    squash merge onto ORIGINAL_BRANCH; remote → push FEATURE_BRANCH, PR with --base ORIGINAL_BRANCH,
+    link issue. Subagent-per-group: sequential only.
 
     **Never in apply**: archive, spec sync, archive commit, `/opsx-archive`.
 
-    Done when the gate passes and mode handoff completes (interactive: clean branch;
-    autonomous: PR open + issue linked).
+    Done when the gate passes and venue handoff completes.

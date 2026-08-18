@@ -83,21 +83,17 @@ Invoke **apply-code-changes** when installed; schema carries a minimal fallback.
 5. Design decisions reflected in specs (material drift = FAIL)
 6. Changelog task complete (during apply, not archive)
 
-### Interactive
+### Apply flow
 
 ```text
-dialog (workspace × parallelism) → execute (incl. Changelog) → gate → STOP
+venue gate (local | worktree | remote) → bind → execute (incl. Changelog) → gate → handoff
 ```
 
-Commits on branch; no PR unless the user asks.
+- **local** — work on `ORIGINAL_BRANCH`; return control (single) or squash merge (subagent-per-group)
+- **worktree** — ephemeral `apply-<name>`; squash merge to `ORIGINAL_BRANCH` at handoff
+- **remote** — `FEATURE_BRANCH` + PR + issue link
 
-### Autonomous
-
-```text
-tracking.md → execute (incl. Changelog) → gate → PR + issue link → STOP
-```
-
-PR is the handoff mechanism. Archive is **never** part of apply.
+Parallelism is agent-chosen (same criteria all venues). Archive is **never** part of apply.
 
 ### Archive (manual)
 
@@ -122,7 +118,7 @@ User runs `/opsx:archive` themselves.
 | TDD | tdd | Optional invoke; gate requires tests green |
 | Commits | git-commit | Spec drift warn + user ack |
 | Changelog | changelog-generator | During apply |
-| PR (autonomous) | gh / issue-tracker doc | Via apply-code-changes |
+| PR (remote venue) | gh / issue-tracker doc | Via apply-code-changes |
 
 ---
 
