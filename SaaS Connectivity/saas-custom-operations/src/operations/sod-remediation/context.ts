@@ -5,6 +5,7 @@ import { IdentityAccessItem } from '../../isc/identity-access'
 import {
     escapeHtml,
     buildGroupColumnLayouts,
+    buildIdentitySodContextPanelHtml,
     renderEmojiLegend,
     renderFlatAccessPathList,
     renderFlatAccessPathListBody,
@@ -105,64 +106,56 @@ export function buildPersistedSituationSummary(
     return truncated.length <= maxLength ? truncated : truncated.slice(0, maxLength)
 }
 
-function buildSituationSummaryCore(input: SituationSummaryInput): string {
+function buildSituationSummaryCore(input: SituationSummaryInput, uiOrigin?: string): string {
     const { violation, groupA, groupB, controls, recommendedSideToCorrect = null } = input
-    const targetName = escapeHtml(violation.identity.name ?? violation.identity.id)
-    const policyName = escapeHtml(violation.policy?.name ?? 'Unknown policy')
-    const violationId = escapeHtml(violation.id)
     const sideHint = renderSideCorrectionHtml(sideCorrectionLabel(recommendedSideToCorrect), escapeHtml)
 
-    const parts = [
-        `<h2>${REVOCABILITY_EMOJI.warning} SOD Violation Remediation Required</h2>`,
-        `<p><strong>Identity:</strong> ${targetName}</p>`,
-        `<p><strong>Policy:</strong> ${policyName}</p>`,
-        `<p><strong>Violation ID:</strong> ${violationId}</p>`,
-        sideHint,
-        '<h3>Group A access paths</h3>',
-        renderFlatAccessPathListBody(groupA.accessPaths),
-        '<h3>Group B access paths</h3>',
-        renderFlatAccessPathListBody(groupB.accessPaths),
-    ].filter(Boolean)
-
-    if (controls.length === 0) {
-        parts.push(
-            `<p><em>${REVOCABILITY_EMOJI.info} Note: No compensating controls are configured for this tenant.</em></p>`
-        )
-    }
-
-    return parts.join('')
+    return buildIdentitySodContextPanelHtml({
+        uiOrigin,
+        identityId: violation.identity.id,
+        identityName: violation.identity.name ?? violation.identity.id,
+        policyId: violation.policy?.id,
+        policyName: violation.policy?.name ?? 'Unknown policy',
+        violationId: violation.id,
+        groupAPathsHtml: renderFlatAccessPathListBody(groupA.accessPaths, { uiOrigin }),
+        groupBPathsHtml: renderFlatAccessPathListBody(groupB.accessPaths, { uiOrigin }),
+        hasControls: controls.length > 0,
+        sideHintHtml: sideHint || undefined,
+    })
 }
 
 /** Builds full HTML for in-form DESCRIPTION rendering (includes access-path lists and emoji legend). */
-export function buildSituationSummary(input: SituationSummaryInput): string {
-    return `${buildSituationSummaryCore(input)}${renderEmojiLegend()}`
+export function buildSituationSummary(input: SituationSummaryInput, uiOrigin?: string): string {
+    return `${buildSituationSummaryCore(input, uiOrigin)}${renderEmojiLegend()}`
 }
 
 /** Builds HTML summary without emoji legend (for persisted output parity). */
-export function buildSituationSummaryWithoutLegend(input: SituationSummaryInput): string {
-    return buildSituationSummaryCore(input)
+export function buildSituationSummaryWithoutLegend(input: SituationSummaryInput, uiOrigin?: string): string {
+    return buildSituationSummaryCore(input, uiOrigin)
 }
 
 function buildAccessContentsVariants(
     side: ResolvedAccessSide,
     recommendedSideToCorrect?: RecommendedSideToCorrect,
-    sideKey?: 'groupA' | 'groupB'
+    sideKey?: 'groupA' | 'groupB',
+    uiOrigin?: string
 ): SideVariants {
     const sideHint =
         sideKey && recommendedSideToCorrect === sideKey
             ? renderSideCorrectionHtml(sideCorrectionLabel(recommendedSideToCorrect), escapeHtml)
             : ''
 
-    return renderFlatAccessPathList(side.accessPaths, { sideHintHtml: sideHint })
+    return renderFlatAccessPathList(side.accessPaths, { sideHintHtml: sideHint, uiOrigin })
 }
 
 /** Builds HTML for a resolved access side form column (plain variant). */
 export function buildAccessContentsHtml(
     side: ResolvedAccessSide,
     recommendedSideToCorrect?: RecommendedSideToCorrect,
-    sideKey?: 'groupA' | 'groupB'
+    sideKey?: 'groupA' | 'groupB',
+    uiOrigin?: string
 ): string {
-    return buildAccessContentsVariants(side, recommendedSideToCorrect, sideKey).plain
+    return buildAccessContentsVariants(side, recommendedSideToCorrect, sideKey, uiOrigin).plain
 }
 
 /** Builds FORM_INPUT select options for tenant compensating controls. */
@@ -185,14 +178,18 @@ export interface AssembleFormInputParams {
     groupB: ResolvedAccessSide
     controls: CompensatingControlV1[]
     recommendedSideToCorrect?: RecommendedSideToCorrect
+    uiOrigin?: string
 }
 
 /** Assembles launch-time formInput values from violation context and resolved access paths. */
 export function assembleFormInput(params: AssembleFormInputParams): SodFormInputValues {
-    const { violation, groupA, groupB, controls, recommendedSideToCorrect = null } = params
-    const summary = buildSituationSummary({ violation, groupA, groupB, controls, recommendedSideToCorrect })
-    const groupAVariants = buildAccessContentsVariants(groupA, recommendedSideToCorrect, 'groupA')
-    const groupBVariants = buildAccessContentsVariants(groupB, recommendedSideToCorrect, 'groupB')
+    const { violation, groupA, groupB, controls, recommendedSideToCorrect = null, uiOrigin } = params
+    const summary = buildSituationSummary(
+        { violation, groupA, groupB, controls, recommendedSideToCorrect },
+        uiOrigin
+    )
+    const groupAVariants = buildAccessContentsVariants(groupA, recommendedSideToCorrect, 'groupA', uiOrigin)
+    const groupBVariants = buildAccessContentsVariants(groupB, recommendedSideToCorrect, 'groupB', uiOrigin)
     const layouts = buildGroupColumnLayouts(groupAVariants, groupBVariants)
 
     return {

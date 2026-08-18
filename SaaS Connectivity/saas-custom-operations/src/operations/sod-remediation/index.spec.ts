@@ -262,6 +262,12 @@ describe('sodRemediationOperation', () => {
                 }),
             })
         )
+        const launchFormInput = vi.mocked(createSodRemediationInstance).mock.calls[0]?.[0]?.formInput
+        expect(launchFormInput?.situationSummaryHtml).toContain('What we found')
+        expect(launchFormInput?.situationSummaryHtml).toContain(
+            '/ui/a/admin/identities/ident-1/details/attributes'
+        )
+        expect(launchFormInput?.situationSummaryHtml).toContain('/ui/sod/policy-management/pol-1/details')
         expect(resolveIdentityEmail).toHaveBeenCalledWith(
             expect.objectContaining({ apiUrl: workflowConfig.apiUrl }),
             'owner-default'

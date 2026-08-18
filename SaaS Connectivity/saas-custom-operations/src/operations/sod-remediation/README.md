@@ -122,21 +122,21 @@ Workflow keys are declared in the form definition `formInput` schema and populat
 
 After upgrading the connector, re-invoke `custom:sod-remediation` so the form-definition watermark patches the tenant form definition before creating a new instance. Each invoke creates a **new** form instance; re-opening a URL from an already-submitted instance shows "already submitted".
 
-## Form HTML (group columns and situation summary)
+## Form HTML (context panel, group columns, and ISC admin links)
 
-Launch-time `formInput` carries **six** STRING HTML fields for the Correct section columns:
+The upper **context panel** is a single `situationSummaryHtml` DESCRIPTION with **What we found** / **What we need from you** blocks, ⚠️ signposting, grouped access-path lists, and an emoji legend footer. When `config.apiUrl` is present, identity and policy display names, access-path line names, grantor references, and a **View SOD violations** list link use ISC admin UI deep links (`resolveUiOrigin` + `renderIscUiLink` in `src/lib/sod-form-html/`). Offline invoke renders plain escaped text only. Persisted `form-email-body` stays compact without entity deep links.
+
+Launch-time `formInput` carries **three** composite side-by-side column HTML fields:
 
 | Field | When shown |
 |---|---|
-| `groupAContentsHtml`, `groupBContentsHtml` | Plain flat access-path lists with type tags and icon suffixes — before `remediationSide` is selected |
-| `groupAContentsHtmlAsKept`, `groupBContentsHtmlAsKept` | Green keep outcome panel — after the opposite side is selected for removal |
-| `groupAContentsHtmlAsRemoved`, `groupBContentsHtmlAsRemoved` | Red remove outcome panel — after that side is selected for removal |
+| `groupColumnsHtmlPlain` | Plain flat access-path lists with type tags and icon suffixes — before `remediationSide` is selected |
+| `groupColumnsHtmlWhenGroupARemoved` | Group A red / Group B green outcome panels — when Group A is selected for removal |
+| `groupColumnsHtmlWhenGroupBRemoved` | Group B red / Group A green outcome panels — when Group B is selected for removal |
 
-Bundled seed `formConditions` swap DESCRIPTION elements on `remediationSide` selection (live visual update).
+Bundled seed `formConditions` swap DESCRIPTION elements on `remediationSide` selection (live visual update). Group column variants do not include the emoji legend.
 
-`situationSummaryHtml` reuses the same access-path rendering (flat lists, icon-only suffixes) and appends a single **emoji legend** footer decoding privileged, keep, and revocability icons. Group column variants do not include the legend. Persisted `form-email-body` remains the compact summary without legend or full path lists.
-
-**Form definition migration:** Updated seeds change the form fingerprint. Tenants only receive the new six-field layout and outcome-panel conditions when they use a **new** `formName`. Reusing an existing definition name keeps the prior two-field layout until you adopt a new form name.
+**Form definition migration:** Updated seeds change the form fingerprint. After deploying this connector version, re-invoke with the **same** `formName` — `ensureFormDefinitionByName` detects a stale watermark and patches the existing definition in place (`formInput`, `formElements`, `formConditions`, `description`). New form instances then get the unified context panel, admin links, and outcome-panel conditions. Already-assigned instances keep their launch-time HTML until recreated. Use a **new** `formName` only when you want to keep the prior definition unchanged alongside the updated one.
 
 ## Local development
 

@@ -21,6 +21,7 @@ import {
     enrichResolvedAccessSides,
 } from './access-path-enrichment'
 import { AccessPathLine } from './access-path-resolver'
+import { resolveUiOrigin } from '../../lib/sod-form-html'
 import {
     assembleFormInput,
     buildPersistedSituationSummary,
@@ -132,7 +133,8 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
             controls,
             recommendedSideToCorrect,
         }
-        const formInput = assembleFormInput(summaryInput)
+        const uiOrigin = offline ? undefined : resolveUiOrigin(ctx.apiUrl)
+        const formInput = assembleFormInput({ ...summaryInput, uiOrigin })
         logSodRemediationFormInput(ctx.requestId, formInput)
 
         const recipientId = input.owner ?? violation.owner.id

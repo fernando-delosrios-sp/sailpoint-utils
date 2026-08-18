@@ -121,16 +121,22 @@ describe('sod-remediation context', () => {
         const summary = buildSituationSummary(summaryInput)
 
         expect(summary).toContain('⚠️ SOD Violation Remediation Required')
+        expect(summary).toContain('What we found')
+        expect(summary).toContain('What we need from you')
         expect(summary).toContain('<strong>Identity:</strong> Alice Example')
         expect(summary).toContain('🔐 ✅')
         expect(summary).toContain('⭐ ✅')
         expect(summary).toContain('🚫')
         expect(summary).not.toContain('Revocable')
         expect(summary).not.toContain('Recommended to keep')
-        expect(summary).toContain('(via Finance Role role)')
+        expect(summary).toContain('— Contains:')
+        expect(summary).toMatch(/Finance Role[\s\S]*Ent B/)
+        expect(summary).not.toContain('(via Finance Role role)')
         expect(summary).toContain('Recommended to correct Group A')
         expect(summary).toContain('Legend:')
         expect(summary).toContain('privileged')
+        expect(summary).toContain('<strong>Violation:</strong> vio-1 · ')
+        expect(summary).toContain('View SOD violations')
     })
 
     it('buildSituationSummary escapes HTML in dynamic values', () => {
@@ -152,12 +158,26 @@ describe('sod-remediation context', () => {
         expect(summary).toContain('ℹ️ Note: No compensating controls are configured for this tenant.')
     })
 
-    it('buildSituationSummary omits CSV-unsafe characters for DelimitedFile form input', () => {
+    it('buildSituationSummary omits newlines for DelimitedFile form input', () => {
         const summary = buildSituationSummary(summaryInput)
 
         expect(summary).not.toContain('\n')
+    })
+
+    it('In-form summary allows quoted link attributes when uiOrigin is available', () => {
+        const uiOrigin = 'https://tenant.example.com'
+        const summary = buildSituationSummary(summaryInput, uiOrigin)
+
+        expect(summary).toContain('href="https://tenant.example.com/ui/a/admin/identities/ident-1/details/attributes"')
+        expect(summary).toContain('target="_blank"')
+        expect(summary).toContain('rel="noopener noreferrer"')
+    })
+
+    it('Offline summary omits admin links', () => {
+        const summary = buildSituationSummary(summaryInput, undefined)
+
+        expect(summary).toContain('Alice Example')
         expect(summary).not.toMatch(/href=/)
-        expect(summary).not.toContain('"')
     })
 
     const sampleFormUrl = 'https://tenant.identitynow.com/form/instance-1'
@@ -239,9 +259,27 @@ describe('sod-remediation context', () => {
 
         expect(formInput.situationSummaryHtml).toBe(buildSituationSummary(summaryInput))
         expect(formInput.situationSummaryHtml).not.toContain('Remediation form:')
+    })
+
+    it('Linked path line names when online', () => {
+        const uiOrigin = 'https://tenant.example.com'
+        const formInput = assembleFormInput({ ...summaryInput, uiOrigin })
+
+        expect(formInput.groupColumnsHtmlPlain).toContain(
+            '/ui/a/admin/access/entitlements/landing-page/details/ent-a'
+        )
+    })
+
+    it('assembleFormInput colors non-revocable lines green on removed side preview', () => {
+        const formInput = assembleFormInput(summaryInput)
+
+        expect(formInput.groupColumnsHtmlWhenGroupBRemoved).toContain('#ffebee')
+        expect(formInput.groupColumnsHtmlWhenGroupBRemoved).toContain('#e8f5e9')
+        expect(formInput.groupColumnsHtmlWhenGroupBRemoved).toContain('Ent B')
+        expect(formInput.groupColumnsHtmlWhenGroupBRemoved).toContain('Finance Role')
+        expect(formInput.groupColumnsHtmlWhenGroupBRemoved).toContain('— Contains:')
         expect(formInput.groupColumnsHtmlWhenGroupARemoved).toContain('#ffebee')
         expect(formInput.groupColumnsHtmlWhenGroupARemoved).toContain('Ent A')
-        expect(formInput.groupColumnsHtmlWhenGroupBRemoved).toContain('#e8f5e9')
     })
 
     it('buildControlOptions maps tenant controls to select options', () => {
