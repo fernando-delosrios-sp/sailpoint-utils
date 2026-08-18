@@ -51,7 +51,7 @@ All 5 must hold before promoting (any missing → keep grilling, **never** write
 1. **Scope locked** — one sentence describes what's in / out
 2. **Major design forks resolved** — alternatives weighed; remaining TBDs have an owner and impact-scope statement
 3. **Cross-system dependencies mapped** — ready / mockable / genuinely unknown — pick one per dep
-4. **Acceptance criteria stateable** — concrete pass conditions (e.g., `npm test` passes + N deliverables)
+4. **Acceptance criteria stateable** — concrete pass conditions (e.g., `./mvnw clean verify` passes + N deliverables)
 5. **Conversation converging** — recent turns are confirmations, not new alternatives
 
 When all 5 hold → proactively suggest "ready to `/opsx:propose`?" — wait for user ack. Never auto-trigger.
