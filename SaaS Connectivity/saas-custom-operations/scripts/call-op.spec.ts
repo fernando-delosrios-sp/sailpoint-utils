@@ -2,6 +2,8 @@ import { describe, expect, it, vi, afterEach } from 'vitest'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { loadPayload, normalizePayloadConfig, runPayload, runPayloadFromPath } from './call-op'
+import { OPERATION_HANDLERS } from '../src/operations/auto-registry'
+import connectorSpec from '../connector-spec.json'
 import { customOperation } from '../src/framework/with-custom-operation'
 import { writeFileSync, unlinkSync } from 'fs'
 import { tmpdir } from 'os'
@@ -192,5 +194,27 @@ describe('call-op', () => {
     it('documents npm call:op script in package.json', () => {
         const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf-8'))
         expect(pkg.scripts['call:op']).toContain('call-op')
+    })
+
+    it('documents call:op resolving handlers from codegen without manual call-op registration', () => {
+        const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf-8')
+        expect(readme).toMatch(/npm run call:op/)
+        expect(readme).toMatch(/OPERATION_HANDLERS/)
+        expect(readme).toMatch(/auto-registry/)
+        expect(readme).not.toMatch(/register its handler in `OPERATION_HANDLERS`/i)
+    })
+
+    it('resolves all connector commands from codegen OPERATION_HANDLERS', () => {
+        for (const command of connectorSpec.commands) {
+            expect(OPERATION_HANDLERS[command]).toBeTypeOf('function')
+        }
+    })
+
+    it('invokes every connector command via runPayload without manual handler map', async () => {
+        delete process.env.SPCX_TEST_MODE
+        for (const command of connectorSpec.commands) {
+            const result = await runPayload({ type: command, input: { requestId: `smoke-${command}` } })
+            expect(result).toHaveProperty('response')
+        }
     })
 })

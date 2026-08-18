@@ -215,7 +215,7 @@ Config-present dry-run payload:
 
 Partial config (e.g. `{ "testMode": true }` only) is rejected — provide full connection fields or omit config entirely.
 
-The local runner resolves operations from a static registry in `scripts/call-op.ts`. When you add a new custom operation, register its handler in `OPERATION_HANDLERS` alongside `custom:example`.
+The local runner (`npm run call:op`) resolves handlers from the codegen-exported `OPERATION_HANDLERS` map in `src/operations/auto-registry.ts`. After you add an auto-discovered custom operation and run `npm run build` (or `npm run codegen:schemas`), local invoke works without editing `scripts/call-op.ts`.
 
 ### Invoke against a deployed connector
 

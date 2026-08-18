@@ -74,7 +74,9 @@ ${fieldLines}
 export function renderAutoRegistry(autoOps: AutoOperationDiscovery[], operationsDir: string): string {
     if (autoOps.length === 0) {
         return `${BANNER}
-import { Connector } from '@sailpoint/connector-sdk'
+import { CommandHandler, Connector } from '@sailpoint/connector-sdk'
+
+export const OPERATION_HANDLERS: Record<string, CommandHandler> = {}
 
 export function registerAutoOperations(connector: Connector): Connector {
     return connector
@@ -98,14 +100,21 @@ export function registerAutoOperations(connector: Connector): Connector {
         .map((operation) => `registerOperationSchema('${operation.command}', ${operation.handlerName}Schema)`)
         .join('\n')
     const commands = autoOps.map((operation) => `.command('${operation.command}', ${operation.handlerName})`).join('')
+    const handlerMapEntries = autoOps
+        .map((operation) => `    '${operation.command}': ${operation.handlerName},`)
+        .join('\n')
 
     return `${BANNER}
-import { Connector } from '@sailpoint/connector-sdk'
+import { CommandHandler, Connector } from '@sailpoint/connector-sdk'
 import { registerOperationSchema } from '../framework'
 ${handlerImports}
 ${schemaImports}
 
 ${registrations}
+
+export const OPERATION_HANDLERS: Record<string, CommandHandler> = {
+${handlerMapEntries}
+}
 
 export function registerAutoOperations(connector: Connector): Connector {
     return connector${commands}

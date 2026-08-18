@@ -3,6 +3,7 @@ import * as os from 'os'
 import * as path from 'path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+    discoverAllOperations,
     extractOperationSignature,
     loadOperationMeta,
 } from './templates/operation-introspection'
@@ -70,6 +71,8 @@ describe('renderAutoRegistry', () => {
         expect(content).toContain(".command('custom:example', exampleOperation)")
         expect(content).toContain("import { exampleOperation } from './example/index'")
         expect(content).toContain("import { exampleOperationSchema } from './example/index.schema'")
+        expect(content).toContain('export const OPERATION_HANDLERS: Record<string, CommandHandler> = {')
+        expect(content).toContain("'custom:example': exampleOperation,")
     })
 
     it('emits a no-op registerAutoOperations when there are no auto ops', () => {
@@ -77,6 +80,7 @@ describe('renderAutoRegistry', () => {
         expect(content).toContain('export function registerAutoOperations(connector: Connector): Connector {')
         expect(content).toContain('return connector')
         expect(content).not.toContain('registerOperationSchema')
+        expect(content).toContain('export const OPERATION_HANDLERS: Record<string, CommandHandler> = {}')
     })
 })
 
@@ -165,6 +169,7 @@ export function registerCommands(connector: Connector): Connector {
         const autoRegistry = fs.readFileSync(autoRegistryPath, 'utf-8')
         expect(autoRegistry).toContain("registerOperationSchema('custom:example', exampleOperationSchema)")
         expect(autoRegistry).toContain("import { exampleOperation } from './example/index'")
+        expect(autoRegistry).toContain("'custom:example': exampleOperation,")
 
         const spec = JSON.parse(fs.readFileSync(specPath, 'utf-8'))
         expect(spec.commands).toEqual(['custom:example'])
@@ -249,6 +254,23 @@ export function registerCommands(connector: unknown) {
         const { output } = extractOperationSignature(examplePath)
 
         expect(meta?.output).toEqual(output)
+    })
+
+    it('emits OPERATION_HANDLERS keys matching discovered commands for the real project', () => {
+        const projectRoot = path.resolve(__dirname, '..')
+        const indexPath = path.join(projectRoot, 'src/operations/index.ts')
+        const specPath = path.join(projectRoot, 'connector-spec.json')
+        const operationsDir = path.dirname(indexPath)
+
+        const autoOps = discoverAllOperations(operationsDir, indexPath).filter((operation) => operation.source === 'auto')
+        const content = renderAutoRegistry(autoOps, operationsDir)
+
+        for (const operation of autoOps) {
+            expect(content).toContain(`'${operation.command}': ${operation.handlerName},`)
+        }
+
+        const spec = JSON.parse(fs.readFileSync(specPath, 'utf-8'))
+        expect(spec.commands.sort()).toEqual(autoOps.map((operation) => operation.command).sort())
     })
 })
 
