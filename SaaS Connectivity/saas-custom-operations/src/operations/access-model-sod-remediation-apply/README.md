@@ -69,6 +69,20 @@ Before catalog PATCH, the handler checks the result-source account at `{formInst
 
 Offline: [`payloads/access-model-sod-remediation-apply-offline.json`](../../../payloads/access-model-sod-remediation-apply-offline.json)
 
+## Bundled workflow
+
+[`workflows/Access Model SOD - Remediation.json`](../../../workflows/Access%20Model%20SOD%20-%20Remediation.json) is the post-submit handler for the access-model SoD lifecycle (see [`custom:access-model-sod-remediation`](../access-model-sod-remediation/README.md) for Analysis and Notification exports).
+
+| Step | Behavior |
+|---|---|
+| Trigger | `sp:form-submitted`, filtered by **Access Model SOD Remediation** form definition ID |
+| Invoke | `custom:access-model-sod-remediation-apply` with `formInstanceId: {{$.trigger.formInstanceId}}` |
+| Persist key | Result-source account at native identity `{formInstanceId}` |
+
+The workflow does not read `formData` or `formInput` — the apply handler loads the completed form instance via ISC Custom Forms API and derives the correction plan from stored launch inputs plus submitted `remediationSide`.
+
+> **Import note:** Update the form-submitted trigger filter to your tenant's form definition UUID after the scan operation creates or patches the form.
+
 ## Workflow integration
 
 1. After access-model SoD form completion (Wait for Form / trigger), invoke this command with `formInstanceId` only.

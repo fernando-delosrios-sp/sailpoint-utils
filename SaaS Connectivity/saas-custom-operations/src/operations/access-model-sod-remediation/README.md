@@ -72,10 +72,72 @@ Use a stable `requestId` prefix (for example `access-model-sod`) — only **chil
 
 Offline: [`payloads/access-model-sod-remediation-offline.json`](../../../payloads/access-model-sod-remediation-offline.json)
 
+## Bundled workflows
+
+Three ISC workflow exports under [`workflows/`](../../../workflows/) implement proactive access-model SoD remediation. Import all three and re-point **Configuration** variables to your tenant. Pair with [`custom:access-model-sod-remediation-apply`](../access-model-sod-remediation-apply/README.md) for the post-submit catalog correction step.
+
+| Export | Trigger | Role |
+|---|---|---|
+| [`workflows/Access Model SOD - Analysis.json`](../../../workflows/Access%20Model%20SOD%20-%20Analysis.json) | Scheduled (daily) | Invoke this scan operation |
+| [`workflows/Access Model SOD - Notification.json`](../../../workflows/Access%20Model%20SOD%20-%20Notification.json) | `idn:account-created` (filtered by `operationName`) | Email policy owner when a child persist account is created |
+| [`workflows/Access Model SOD - Remediation.json`](../../../workflows/Access%20Model%20SOD%20-%20Remediation.json) | `sp:form-submitted` (filtered by remediation form definition ID) | Invoke `custom:access-model-sod-remediation-apply` |
+
+End-to-end flow:
+
+```
+Scheduled / manual trigger
+        │
+        ▼
+Access Model SOD - Analysis
+  OAuth → invoke custom:access-model-sod-remediation
+  (rollup counters on invoke response only)
+        │
+        ▼
+Per violation: child account persisted at
+  {requestId}:{accessItemId}:{policyId}
+        │
+        ▼
+Access Model SOD - Notification (account-created event)
+  Send Email from trigger.account.attributes (form-email-*)
+        │
+        ▼
+Policy owner submits form (remediationSide)
+        │
+        ▼
+Access Model SOD - Remediation
+  OAuth → invoke custom:access-model-sod-remediation-apply
+```
+
+**Analysis workflow integration**
+
+1. **Configuration** sets API URL, connector ID, and result source name.
+2. **Call SaaS Custom Operation** invokes `custom:access-model-sod-remediation` with a stable scan `requestId` (export uses `access-model-sod-remediation`), `formName` `Access Model SOD Remediation`, and scan scope (`searchIndices`, `scope`).
+3. Read rollup fields from the **invoke HTTP response body** — not from Get Accounts on `requestId` (no parent account is persisted).
+
+**Notification workflow integration**
+
+Event-driven — no connector invoke in this workflow.
+
+1. Trigger: **Account Created** on the result source, advanced filter `operationName == custom:access-model-sod-remediation`.
+2. **Send Email** reads email fields directly from the created child account on the event payload:
+   - `access-model-sod-remediation:form-email-header` → subject
+   - `access-model-sod-remediation:form-email-body` → body
+   - `access-model-sod-remediation:form-email-recipients` → `recipientEmailList`
+
+Each child account creation fires one notification. Skipped violations (existing child persist) do not emit a new account and therefore do not re-trigger email.
+
+**Remediation workflow integration**
+
+Handled by [`custom:access-model-sod-remediation-apply`](../access-model-sod-remediation-apply/README.md) — see that README for apply semantics. The export invokes apply with `formInstanceId` from `$.trigger.formInstanceId` on form submit.
+
+> **Import note:** Re-point form-submitted trigger `formDefinitionId` to your tenant's **Access Model SOD Remediation** form definition (created or patched on first scan invoke). Connector IDs and OAuth refs are tenant-specific.
+
 ## Workflow integration
 
+Manual or custom orchestration follows the same contract as the bundled exports:
+
 1. Invoke scan; read rollup counts and optional `forms-skipped-instances` from the **invoke response** (`access-model-sod-remediation:access-items-scanned`, `violations-found`, optional `forms-skipped`, `forms-skipped-instances`, `forms-launch-failed`, and `forms-persist-failed`).
-2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields.
+2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields — or rely on an account-created event as the Notification export does.
 3. Notify policy owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).
 5. Invoke `custom:access-model-sod-remediation-apply` with `formInstanceId` from the form trigger to apply the catalog correction (detach nested APs from roles or remove direct entitlements; remove entitlements from AP definitions when the access item is an AP). Re-invokes for the same form instance are idempotent — expect `skipped-already-applied` when a prior apply persist exists, or `skipped-already-clean` when the catalog already matches the decision.

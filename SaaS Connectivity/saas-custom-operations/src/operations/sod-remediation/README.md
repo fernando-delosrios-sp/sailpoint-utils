@@ -29,7 +29,7 @@ Launch-only operation that fetches an SOD violation, ensures a named form defini
 
 | Payload | Use |
 |---|---|
-| [`payloads/sod-remediation-workflow.json`](../../../payloads/sod-remediation-workflow.json) | Workflow-ready invoke aligned with [`workflows/SOD Remediation - Violation Response.json`](../../../workflows/SOD%20Remediation%20-%20Violation%20Response.json) |
+| [`payloads/sod-remediation-workflow.json`](../../../payloads/sod-remediation-workflow.json) | Workflow-ready invoke aligned with [`workflows/SOD Violation - Notification.json`](../../../workflows/SOD%20Violation%20-%20Notification.json) |
 | [`payloads/sod-remediation-offline.json`](../../../payloads/sod-remediation-offline.json) | Offline local invoke (canned violation data) |
 | [`payloads/sod-remediation.json`](../../../payloads/sod-remediation.json) | Connected local dry-run |
 | [`payloads/sod-remediation-live.json`](../../../payloads/sod-remediation-live.json) | Connected invoke with persist enabled |
@@ -55,12 +55,57 @@ Workflow-ready example:
 }
 ```
 
-Related workflow exports:
+## Bundled workflows
 
-- [`workflows/SOD Remediation - Violation Response.json`](../../../workflows/SOD%20Remediation%20-%20Violation%20Response.json) — launch, email, wait for form
-- [`workflows/SOD Remediation - Action.json`](../../../workflows/SOD%20Remediation%20-%20Action.json) — post-submit revoke / compensating control
+Two ISC workflow exports under [`workflows/`](../../../workflows/) implement the violation remediation lifecycle. Import both and re-point **Configuration** variables (API URL, connector ID, source name, OAuth client) to your tenant.
+
+| Export | Trigger | Role |
+|---|---|---|
+| [`workflows/SOD Violation - Notification.json`](../../../workflows/SOD%20Violation%20-%20Notification.json) | `idn:sod-violation-created` | Invoke this operation, read persist output, email the violation owner |
+| [`workflows/SOD Violation - Remediation.json`](../../../workflows/SOD%20Violation%20-%20Remediation.json) | `sp:form-submitted` (filtered by remediation form definition ID) | Post-submit revoke or compensating-control apply |
+
+End-to-end flow:
+
+```
+SoD violation created (ISC event)
+        │
+        ▼
+SOD Violation - Notification
+  OAuth → invoke custom:sod-remediation
+  Get Accounts (requestId) → Send Email (form-email-*)
+        │
+        ▼
+Owner opens form-url, submits remediationSide + action
+        │
+        ▼
+SOD Violation - Remediation
+  action == Correct → revoke via groupAAccessSearch / groupBAccessSearch
+  action != Correct  → POST /violations/v1/{id}/controls (Mitigate)
+```
+
+**Notification workflow integration**
+
+1. **Configuration** sets `requestID` to `sod-remediation:` concatenated with the violation id from `$.trigger.id`, `violationID` from the same trigger, `formName` (default `SOD Violation Remediation`), and optional `overrideOwnerID`.
+2. **Get Access Token** → **Call SaaS Custom Operation** posts to `/beta/platform-connectors/{connectorId}/invoke` with `type: custom:sod-remediation` (see [`payloads/sod-remediation-workflow.json`](../../../payloads/sod-remediation-workflow.json)).
+3. **Read SaaS Custom Operation Result** (**Get Accounts**, `nativeIdentity eq requestID`) loads persisted `sod-remediation:form-email-header`, `form-email-body`, and `form-email-recipients`.
+4. **Send Email** binds those attributes to `subject`, `body`, and `recipientEmailList`. The HTML body already contains the standalone form link (`form-url` is not duplicated in the email step).
+
+**Remediation workflow integration**
+
+Runs on form submit — no connector invoke. Reads the bundled seed form definition by ID (re-point `formDefinitionId` in the trigger filter after import).
+
+1. Branch on `formData.action`: **Correct** vs **Mitigate** (compensating control).
+2. **Correct** path: branch on `formData.remediationSide`, set access search from launch-time keys on the form instance:
+   - `$.trigger.formInstanceInputs[0].groupAAccessSearch.value` or `groupBAccessSearch.value`
+   - These mirror `formInput` values set at instance create by this operation
+3. **Get Access** (search query) → **Manage Access** (`REVOKE_ACCESS`) removes revocable items from `targetIdentityId`.
+4. **Mitigate** path: **HTTP Request** POSTs to `/violations/v1/{violationId}/controls` with `control` and `comments` from `formData`.
+
+> **Import note:** Export snapshots embed tenant-specific connector IDs, OAuth parameter refs, form definition UUIDs, and owner identity IDs. Treat bundled JSON as templates — update Configuration and the form-submitted trigger filter to match your deployed form definition after the first `custom:sod-remediation` invoke creates or patches it.
 
 ## Workflow integration
+
+Manual or custom orchestration follows the same contract as the bundled exports:
 
 1. Invoke `custom:sod-remediation` with violation ID and form name.
 2. Read persisted output via **Get Accounts** filtered by `requestId` (`form-url`, email fields).
@@ -69,7 +114,7 @@ Related workflow exports:
 5. Read **launch-time workflow keys** from the completed form instance **`formInput`** (not `formData`):
    - `violationId`, `targetIdentityId`, `groupAAccessSearch`, `groupBAccessSearch`
    - Access search strings include **revocable** access path ids only (`id:x OR id:y`); non-revocable entitlements granted via role or access profile on the same side are omitted from the filter
-   - Workflow JSONPath example after a Wait for Form / Get Form Instance step: `{{$.form.formInput.groupAAccessSearch}}`
+   - On a **form-submitted** event trigger, ISC exposes the same values under `formInstanceInputs` (see Remediation export above). After a **Wait for Form** / **Get Form Instance** step, use `{{$.form.formInput.groupAAccessSearch}}`.
 6. Select the access-search string for the chosen side using `formData.remediationSide`.
 7. Execute corrective revoke or apply compensating control in separate workflow HTTP actions (not handled by the connector).
 

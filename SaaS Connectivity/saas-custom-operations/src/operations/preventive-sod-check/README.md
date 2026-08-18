@@ -74,6 +74,10 @@ Workflow-ready example:
 }
 ```
 
+## Bundled workflows
+
+No workflow exports are bundled for this operation. Wire it into approval or access-request workflows using the invoke contract below — typically as a gate before manager or SoD review.
+
 ## Workflow integration
 
 1. Invoke `custom:preventive-sod-check` with `identityId` for holistic checks, or with `accessRequestId` alone (or plus ignored `identityId`) to gate a specific approval.

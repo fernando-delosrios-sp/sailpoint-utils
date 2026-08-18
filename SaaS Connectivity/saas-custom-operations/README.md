@@ -44,34 +44,40 @@ Core attributes are always ensured on the schema: `id` (identity), `status`, `da
 
 Manual source setup is not required. `npm run templates` generates `account-schema.json` as reference documentation showing the union of all operation output fields; at runtime, auto-created result sources receive core attrs plus the invoking operation's fields, with per-persist reconciliation when other operations write attributes.
 
-## Workflow export
+## Workflow exports
 
-The `workflows/` directory contains an ISC **Export Job** snapshot you can import for the reference **SaaS Custom Operations Call** workflow:
+The `workflows/` directory contains ISC workflow snapshots you can import as templates. Each operation's co-located README documents how its exports integrate (triggers, JSONPaths, and end-to-end flow).
 
-| File | Contents |
-|---|---|
-| `workflows/SaaS Custom Operations.json` | Example **WORKFLOW** — invoke `custom:example`, then read results with **Get Accounts** |
+| File | Operation(s) | Trigger | Purpose |
+|---|---|---|---|
+| [`workflows/SaaS Custom Operations.json`](workflows/SaaS%20Custom%20Operations.json) | `custom:example` | Manual / external | Reference invoke → **Get Accounts** read-back |
+| [`workflows/SOD Violation - Notification.json`](workflows/SOD%20Violation%20-%20Notification.json) | `custom:sod-remediation` | `idn:sod-violation-created` | Launch remediation form and email owner |
+| [`workflows/SOD Violation - Remediation.json`](workflows/SOD%20Violation%20-%20Remediation.json) | — (post-submit) | `sp:form-submitted` | Revoke access or apply compensating control |
+| [`workflows/Access Model SOD - Analysis.json`](workflows/Access%20Model%20SOD%20-%20Analysis.json) | `custom:access-model-sod-remediation` | Scheduled | Catalog scan |
+| [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json) | — (event read-back) | `idn:account-created` | Email policy owner from child persist account |
+| [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json) | `custom:access-model-sod-remediation-apply` | `sp:form-submitted` | Apply catalog correction after form submit |
 
-The workflow demonstrates:
+Shared invoke pattern (all connector-call workflows):
 
-- Configuration variables → OAuth token → connector invoke → **Get Accounts** filtered by `requestId`
-- `config.sourceName` passed on invoke (the connector creates the DelimitedFile result source on first use)
+- **Configuration** variables → **Get Access Token** (OAuth) → HTTP POST `/beta/platform-connectors/{connectorId}/invoke` with `config.sourceName` (auto-provisions the DelimitedFile result source on first use)
+- Persisted outputs are read via **Get Accounts** or, for access-model notifications, from the **account-created** event payload
 
-No separate result source import is required. The framework resolves `sourceName` at runtime, creates the DelimitedFile source when missing, and reconciles account schema on each `ctx.persist`.
+`custom:preventive-sod-check` and `custom:governance-group-emails` have no bundled exports — see their READMEs for invoke and branching contracts.
 
-### Importing the workflow
+### Importing workflows
 
 1. In ISC Admin, open **Global → Import / Export → Import**.
-2. Upload `workflows/SaaS Custom Operations.json`.
-3. Review and confirm import of the workflow object.
-4. Update workflow **Configuration** step variables for your tenant:
+2. Upload one or more JSON files from `workflows/`.
+3. Review and confirm import of workflow objects.
+4. For each imported workflow, update **Configuration** step variables for your tenant:
    - **API URL** — e.g. `https://your-tenant.api.identitynow.com`
    - **SaaS Custom Operations Source Name** — name for the auto-provisioned result source (e.g. `SaaS Custom Operations`; passed as invoke `config.sourceName`)
    - **SaaS Custom Operations Connector ID** — your deployed custom connector ID
-5. Configure the **Get Access Token** step with a valid OAuth client (Basic auth reference).
-6. Enable the workflow and trigger it (external HTTP trigger) or run steps manually while testing.
+5. Configure **Get Access Token** with a valid OAuth client (Basic auth reference).
+6. For form-submitted triggers, re-point `formDefinitionId` filters to your tenant's remediation form definitions (created on first operation invoke).
+7. Enable workflows and verify triggers (SoD violation created, account created, schedule, or form submitted).
 
-> **Note:** Export files are tenant-specific snapshots. Object IDs, owners, and OAuth references in the JSON will differ after import — treat the workflow as a template and re-point configuration to your connector and credentials.
+> **Note:** Export files are tenant-specific snapshots. Object IDs, owners, OAuth references, and form definition UUIDs in the JSON will differ after import — treat exports as templates and re-point configuration to your connector, credentials, and forms.
 
 ## Build and deploy
 
@@ -497,9 +503,12 @@ connector-spec.json   # Declared commands and sourceConfig (ISC loopback setting
 invoke-payload.json   # Example invoke body for local / CLI testing
 payloads/             # Invoke payloads — local (`call:op`) and workflow-ready (`*-workflow.json`)
 workflows/
-  SaaS Custom Operations.json              # ISC export (example workflow)
-  SOD Remediation - Violation Response.json
-  SOD Remediation - Action.json
+  SaaS Custom Operations.json              # Reference invoke + Get Accounts
+  SOD Violation - Notification.json        # custom:sod-remediation launch + email
+  SOD Violation - Remediation.json         # Post-submit revoke / mitigate
+  Access Model SOD - Analysis.json         # custom:access-model-sod-remediation scan
+  Access Model SOD - Notification.json     # Child-account email on persist
+  Access Model SOD - Remediation.json      # custom:access-model-sod-remediation-apply
 templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```
 
