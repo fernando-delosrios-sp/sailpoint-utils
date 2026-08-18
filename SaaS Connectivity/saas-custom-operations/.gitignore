@@ -19,7 +19,7 @@ dist/
 .dev-dist/
 coverage/
 /templates/
-local/
+.local/
 
 .scratch/
 .claude/
