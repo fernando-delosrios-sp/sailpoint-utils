@@ -105,7 +105,35 @@ describe('sod-form-html renderFlatAccessPathList', () => {
         expect(variants.plain).toContain('entitlement')
     })
 
-    it('includes granted-via phrase on non-revocable lines', () => {
+    it('nests grantor-granted entitlements under role or access profile Contains lists', () => {
+        const variants = renderFlatAccessPathList([
+            {
+                id: 'ent-1',
+                type: 'ENTITLEMENT',
+                name: 'AccountingGeneral',
+                revocable: false,
+                reason: 'granted-via-access-profile',
+                grantedVia: { type: 'ACCESS_PROFILE', id: 'ap-1', name: 'T2.01 Accounting General' },
+            },
+            {
+                id: 'ap-1',
+                type: 'ACCESS_PROFILE',
+                name: 'T2.01 Accounting General',
+                revocable: true,
+            },
+        ])
+
+        expect(variants.plain).toContain('T2.01 Accounting General')
+        expect(variants.plain).toContain('AccountingGeneral')
+        expect(variants.plain).toContain('— Contains:')
+        expect(variants.plain).toMatch(/T2\.01 Accounting General[\s\S]*<ul[\s\S]*AccountingGeneral/)
+        expect(variants.plain).not.toContain('(via T2.01 Accounting General access profile)')
+        expect(variants.asRemoved).not.toContain('(via T2.01 Accounting General access profile)')
+        expect(variants.plain).toContain('🚫')
+        expect(variants.plain).toContain('✅')
+    })
+
+    it('includes granted-via phrase on standalone non-revocable lines without a same-side grantor', () => {
         const variants = renderFlatAccessPathList([
             {
                 type: 'ENTITLEMENT',
@@ -117,6 +145,115 @@ describe('sod-form-html renderFlatAccessPathList', () => {
 
         expect(variants.plain).toContain('🚫')
         expect(variants.plain).toContain('<em>(via Finance Role role)</em>')
+    })
+
+    it('links grantor reference in granted-via phrase when uiOrigin and grantor id are present', () => {
+        const uiOrigin = 'https://tenant.example.com'
+        const variants = renderFlatAccessPathList(
+            [
+                {
+                    type: 'ENTITLEMENT',
+                    name: 'Ent B',
+                    revocable: false,
+                    grantedVia: { type: 'ROLE', id: 'role-1', name: 'Finance Role' },
+                },
+            ],
+            { uiOrigin }
+        )
+
+        expect(variants.plain).toContain('/ui/a/admin/access/roles/landing-page/details/role-1')
+        expect(variants.plain).toContain('<em>(via ')
+        expect(variants.plain).toContain('Finance Role')
+        expect(variants.plain).toContain(' role)</em>')
+    })
+
+    it('asRemoved uses red panels for all lines under a revocable grantor on the removed side', () => {
+        const variants = renderFlatAccessPathList([
+            {
+                id: 'ent-1',
+                type: 'ENTITLEMENT',
+                name: 'AccountingGeneral',
+                revocable: false,
+                grantedVia: { type: 'ACCESS_PROFILE', id: 'ap-1', name: 'Finance AP' },
+            },
+            {
+                id: 'ap-1',
+                type: 'ACCESS_PROFILE',
+                name: 'Finance AP',
+                revocable: true,
+            },
+        ])
+
+        expect(variants.asRemoved).toContain('#ffebee')
+        expect(variants.asRemoved).not.toContain('#e8f5e9')
+        expect(variants.asRemoved).toContain('AccountingGeneral')
+        expect(variants.asRemoved).toContain('Finance AP')
+        const redPanels = variants.asRemoved.match(/#ffebee/g)?.length ?? 0
+        expect(redPanels).toBe(2)
+    })
+
+    it('asRemoved keeps non-revocable grantor green while revocable contained entitlements are red', () => {
+        const variants = renderFlatAccessPathList([
+            {
+                id: 'ent-revocable',
+                type: 'ENTITLEMENT',
+                name: 'Nested Revocable',
+                revocable: true,
+                grantedVia: { type: 'ACCESS_PROFILE', id: 'ap-1', name: 'Locked AP' },
+            },
+            {
+                id: 'ent-kept',
+                type: 'ENTITLEMENT',
+                name: 'Nested Not Revocable',
+                revocable: false,
+                grantedVia: { type: 'ACCESS_PROFILE', id: 'ap-1', name: 'Locked AP' },
+            },
+            {
+                id: 'ap-1',
+                type: 'ACCESS_PROFILE',
+                name: 'Locked AP',
+                revocable: false,
+            },
+        ])
+
+        expect(variants.asRemoved).toContain('#ffebee')
+        expect(variants.asRemoved).toContain('#e8f5e9')
+        const redPanels = variants.asRemoved.match(/#ffebee/g)?.length ?? 0
+        const greenPanels = variants.asRemoved.match(/#e8f5e9/g)?.length ?? 0
+        expect(redPanels).toBe(1)
+        expect(greenPanels).toBe(2)
+    })
+
+    it('asRemoved uses green panels for non-revocable lines and red for revocable lines', () => {
+        const variants = renderFlatAccessPathList([
+            {
+                type: 'ENTITLEMENT',
+                name: 'Ent Revocable',
+                revocable: true,
+            },
+            {
+                type: 'ENTITLEMENT',
+                name: 'Ent Not Revocable',
+                revocable: false,
+                grantedVia: { type: 'ACCESS_PROFILE', name: 'Finance AP' },
+            },
+        ])
+
+        expect(variants.asRemoved).toContain('#ffebee')
+        expect(variants.asRemoved).toContain('#e8f5e9')
+        expect(variants.asRemoved).toContain('Ent Revocable')
+        expect(variants.asRemoved).toContain('Ent Not Revocable')
+        const redPanels = variants.asRemoved.match(/#ffebee/g)?.length ?? 0
+        const greenPanels = variants.asRemoved.match(/#e8f5e9/g)?.length ?? 0
+        expect(redPanels).toBe(1)
+        expect(greenPanels).toBe(1)
+    })
+
+    it('asRemoved with all revocable lines uses only red panels', () => {
+        const variants = renderFlatAccessPathList([{ type: 'ROLE', name: 'Role A', revocable: true }])
+
+        expect(variants.asRemoved).toContain('#ffebee')
+        expect(variants.asRemoved).not.toContain('#e8f5e9')
     })
 
     it('prepends side hint to all variants', () => {
@@ -152,6 +289,40 @@ describe('sod-form-html renderFlatAccessPathList', () => {
         expect(variants.asKept).toContain('#e8f5e9')
         expect(variants.asRemoved).toContain('#ffebee')
     })
+
+    it('Linked flat access path line', () => {
+        const uiOrigin = 'https://tenant.example.com'
+        const variants = renderFlatAccessPathList(
+            [
+                {
+                    id: 'ent-a',
+                    type: 'ENTITLEMENT',
+                    name: 'Ent A',
+                    revocable: true,
+                },
+            ],
+            { uiOrigin }
+        )
+
+        expect(variants.plain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-a')
+        expect(variants.plain).toContain('entitlement')
+        expect(variants.plain).toContain('>Ent A</a></strong>')
+        expect(variants.plain).toContain('target="_blank"')
+    })
+
+    it('Offline flat access path line omits admin links', () => {
+        const variants = renderFlatAccessPathList([
+            {
+                id: 'ent-a',
+                type: 'ENTITLEMENT',
+                name: 'Ent A',
+                revocable: true,
+            },
+        ])
+
+        expect(variants.plain).toContain('Ent A')
+        expect(variants.plain).not.toMatch(/href=/)
+    })
 })
 
 describe('sod-form-html renderEntitlementTree', () => {
@@ -169,19 +340,19 @@ describe('sod-form-html renderEntitlementTree', () => {
         ],
     }
 
-    it('renders flat access profile lines with offending entitlement mentions', () => {
+    it('renders access profile lines with Contains list of side-matching entitlements', () => {
         const variants = renderEntitlementTree(['ent-a', 'ent-c'], expanded)
 
         expect(variants.plain).toContain('Accounts Receivable')
         expect(variants.plain).toContain('SAP Suite')
         expect(variants.plain).toContain('access profile')
         expect(variants.plain).toContain('entitlement')
-        expect(variants.plain).toContain('— offending:')
+        expect(variants.plain).toContain('— Contains:')
         expect(variants.plain).toContain('Accounts Payable')
-        expect(variants.plain).not.toMatch(/SAP Suite[\s\S]*<ul>/)
+        expect(variants.plain).toMatch(/SAP Suite[\s\S]*<ul[\s\S]*Accounts Payable/)
     })
 
-    it('comma-separates multiple offending entitlements on one access profile line', () => {
+    it('lists multiple side-matching entitlements under one access profile', () => {
         const multiExpanded = {
             entitlements: [{ id: 'ent-1', name: 'Ent One' }, { id: 'ent-2', name: 'Ent Two' }],
             nestedProfiles: [
@@ -200,7 +371,7 @@ describe('sod-form-html renderEntitlementTree', () => {
         expect(variants.plain).toContain('Shared AP')
         expect(variants.plain).toContain('Ent One')
         expect(variants.plain).toContain('Ent Two')
-        expect(variants.plain).toMatch(/Ent One[\s\S]*,[\s\S]*Ent Two/)
+        expect(variants.plain).toMatch(/Shared AP[\s\S]*<ul[\s\S]*Ent One[\s\S]*Ent Two/)
         expect(variants.plain.match(/Shared AP/g)?.length).toBe(1)
     })
 
@@ -228,5 +399,20 @@ describe('sod-form-html renderEntitlementTree', () => {
         expect(variants.asRemoved).toContain('#ffebee')
         expect(variants.asKept).toContain('No matching entitlements on this side')
         expect(variants.asRemoved).toContain('No matching entitlements on this side')
+    })
+
+    it('Linked entitlement tree line', () => {
+        const uiOrigin = 'https://tenant.example.com'
+        const variants = renderEntitlementTree(['ent-a'], expanded, { uiOrigin })
+
+        expect(variants.plain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-a')
+    })
+
+    it('Linked access profile and entitlement names when UI origin present', () => {
+        const uiOrigin = 'https://tenant.example.com'
+        const variants = renderEntitlementTree(['ent-c'], expanded, { uiOrigin })
+
+        expect(variants.plain).toContain('/ui/a/admin/access/access-profiles/landing-page/details/ap-1')
+        expect(variants.plain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-c')
     })
 })

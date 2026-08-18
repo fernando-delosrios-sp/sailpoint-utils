@@ -12,6 +12,7 @@ export { renderEmojiLegend } from './emoji-legend'
 export {
     renderFlatAccessPathList,
     renderFlatAccessPathListBody,
+    groupAccessPathLines,
     type FlatAccessPathLine,
     type RenderFlatAccessPathListOptions,
 } from './flat-access-path-list'
@@ -20,4 +21,17 @@ export {
     type EntitlementRef,
     type NestedAccessProfileBundle,
     type EntitlementTreeExpansion,
+    type RenderEntitlementTreeOptions,
 } from './entitlement-tree'
+export {
+    resolveUiOrigin,
+    renderIscUiLink,
+    accessKindToLinkKind,
+    type IscUiLinkKind,
+} from './isc-ui-links'
+export {
+    buildIdentitySodContextPanelHtml,
+    buildAccessModelSodContextPanelHtml,
+    type IdentitySodContextPanelInput,
+    type AccessModelSodContextPanelInput,
+} from './context-panel'

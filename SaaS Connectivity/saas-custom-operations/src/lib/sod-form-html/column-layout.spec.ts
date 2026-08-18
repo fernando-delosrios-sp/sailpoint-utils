@@ -21,6 +21,7 @@ describe('column-layout', () => {
         expect(html).toContain('Group B')
         expect(html).toContain('A plain')
         expect(html).toContain('B plain')
+        expect(html).toContain('margin-bottom:24px')
     })
 
     it('buildGroupColumnLayouts maps kept/removed variants per remediation side', () => {

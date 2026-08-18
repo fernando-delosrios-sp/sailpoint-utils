@@ -1,4 +1,4 @@
-import { escapeHtml } from './escape'
+import { renderIscUiLink } from './isc-ui-links'
 import { buildBlockSideVariants, buildSideVariants, SideVariants } from './outcome-panel'
 import { renderTypeTag } from './type-tag'
 
@@ -18,27 +18,44 @@ export interface EntitlementTreeExpansion {
     nestedProfiles: NestedAccessProfileBundle[]
 }
 
-function entitlementDisplayLabel(id: string, name: string | undefined): string {
+export interface RenderEntitlementTreeOptions {
+    uiOrigin?: string
+}
+
+function entitlementDisplayLabel(id: string, name: string | undefined, uiOrigin?: string): string {
     const displayName = name?.trim()
-    return escapeHtml(displayName && displayName !== id ? displayName : (displayName ?? id))
+    const label = displayName && displayName !== id ? displayName : (displayName ?? id)
+    return renderIscUiLink(uiOrigin, 'entitlement', label, id)
 }
 
-function renderEntitlementLine(id: string, name: string | undefined): string {
-    return `<li><strong>${entitlementDisplayLabel(id, name)}</strong> ${renderTypeTag('ENTITLEMENT')}</li>`
+function renderEntitlementLine(id: string, name: string | undefined, uiOrigin?: string): string {
+    return `<li><strong>${entitlementDisplayLabel(id, name, uiOrigin)}</strong> ${renderTypeTag('ENTITLEMENT')}</li>`
 }
 
-function renderOffendingEntitlementMention(matching: EntitlementRef[]): string {
-    const labels = matching
-        .map((ent) => `<strong>${entitlementDisplayLabel(ent.id, ent.name)}</strong>`)
-        .join(', ')
-    return ` — offending: ${labels} ${renderTypeTag('ENTITLEMENT')}`
+function renderContainedEntitlementsList(matching: EntitlementRef[], uiOrigin?: string): string {
+    const items = matching
+        .map(
+            (ent) =>
+                `<li><strong>${entitlementDisplayLabel(ent.id, ent.name, uiOrigin)}</strong> ${renderTypeTag('ENTITLEMENT')}</li>`
+        )
+        .join('')
+    return ` — Contains:<ul style='margin:4px 0 0; padding-left:20px;'>${items}</ul>`
 }
 
-function renderFlatAccessProfileLine(profile: NestedAccessProfileBundle, matching: EntitlementRef[]): string {
-    return `<li><strong>${escapeHtml(profile.name)}</strong> ${renderTypeTag('ACCESS_PROFILE')}${renderOffendingEntitlementMention(matching)}</li>`
+function renderFlatAccessProfileLine(
+    profile: NestedAccessProfileBundle,
+    matching: EntitlementRef[],
+    uiOrigin?: string
+): string {
+    const profileLabel = renderIscUiLink(uiOrigin, 'accessProfile', profile.name, profile.id)
+    return `<li><strong>${profileLabel}</strong> ${renderTypeTag('ACCESS_PROFILE')}${renderContainedEntitlementsList(matching, uiOrigin)}</li>`
 }
 
-function renderTreeBody(entitlementIds: string[], expanded: EntitlementTreeExpansion): string {
+function renderTreeBody(
+    entitlementIds: string[],
+    expanded: EntitlementTreeExpansion,
+    uiOrigin?: string
+): string {
     if (entitlementIds.length === 0) {
         return '<p><em>No matching entitlements on this side.</em></p>'
     }
@@ -53,7 +70,7 @@ function renderTreeBody(entitlementIds: string[], expanded: EntitlementTreeExpan
             continue
         }
 
-        lines.push(renderFlatAccessProfileLine(profile, matching))
+        lines.push(renderFlatAccessProfileLine(profile, matching, uiOrigin))
         for (const ent of matching) {
             rendered.add(ent.id)
         }
@@ -61,19 +78,20 @@ function renderTreeBody(entitlementIds: string[], expanded: EntitlementTreeExpan
 
     for (const ent of expanded.entitlements) {
         if (idSet.has(ent.id) && !rendered.has(ent.id)) {
-            lines.push(renderEntitlementLine(ent.id, ent.name))
+            lines.push(renderEntitlementLine(ent.id, ent.name, uiOrigin))
         }
     }
 
     return lines.join('')
 }
 
-/** Renders access-model-sod-remediation group column HTML with flat access profile lines and outcome variants. */
+/** Renders access-model-sod-remediation group column HTML with access profile lines and outcome variants. */
 export function renderEntitlementTree(
     entitlementIds: string[],
-    expanded: EntitlementTreeExpansion
+    expanded: EntitlementTreeExpansion,
+    options: RenderEntitlementTreeOptions = {}
 ): SideVariants {
-    const bodyHtml = renderTreeBody(entitlementIds, expanded)
+    const bodyHtml = renderTreeBody(entitlementIds, expanded, options.uiOrigin)
 
     if (entitlementIds.length === 0) {
         return buildBlockSideVariants(bodyHtml)
