@@ -29,6 +29,14 @@ describe('connector-config verification baseline', () => {
         )
         expect(existsSync(join(root, 'tsconfig.scripts.json'))).toBe(true)
     })
+
+    it('dev compile chain refreshes .dev-dist from source', () => {
+        const pkg = JSON.parse(readText('package.json'))
+        expect(pkg.scripts['compile:dev']).toMatch(/codegen:schemas/)
+        expect(pkg.scripts['compile:dev']).toMatch(/tsc -p tsconfig\.json/)
+        expect(pkg.scripts.predev).toBe('npm run compile:dev')
+        expect(pkg.scripts.predebug).toBe('npm run compile:dev')
+    })
 })
 
 describe('connector-config auto-provisioning documentation', () => {

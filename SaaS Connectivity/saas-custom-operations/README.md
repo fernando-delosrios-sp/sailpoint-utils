@@ -78,11 +78,19 @@ No separate result source import is required. The framework resolves `sourceName
 ```bash
 npm install
 npm test
-npm run build
-npm run pack-zip    # produces a deployable connector package via spcx
+npm run build       # codegen + ncc bundle; postbuild runs verify:bundle
+npm run pack-zip    # produces dist/saas-custom-operations-<version>.zip
 ```
 
-Upload the packaged connector to ISC and note the connector ID for workflow configuration and invoke calls.
+Upload the zip to ISC (**Connections → Custom Connectors**), then confirm the new package version is active:
+
+1. **Bump `version` in `package.json`** before `pack-zip` when redeploying — ISC keys packages by name + version; re-uploading the same version may not replace the runtime your workflow invokes.
+2. **Tag the upload `latest`** (or point workflow `tag` at the specific version you uploaded). Workflows using `"tag": "latest"` keep calling the previously tagged bundle until you retag.
+3. **Verify the running connector** — `std:spec:read` only reads `connector-spec.json` from the package; it does not prove handlers loaded. After deploy, invoke a smoke command (e.g. `custom:example`) or run `npm run verify:bundle` locally on the zip contents before upload.
+
+If you see `[ConnectorError] unsupported command: custom:…` after upload, the invoke reached a connector bundle that does not register that handler (stale `latest` tag, same-version re-upload, or workflow `connectorRef` pointing at a different connector object). Local `spcx run` against stale `.dev-dist/` causes the same error — use `npm run dev` (runs `compile:dev` first) or `npm run build && npx spcx run dist/index.js`.
+
+Note the connector ID for workflow configuration and invoke calls.
 
 ## Usage
 
@@ -137,7 +145,7 @@ When you add a new operation, copy `src/operations/_template/` (including `READM
 ### Local development
 
 ```bash
-npm run build && npm run dev
+npm run dev          # codegen + tsc to .dev-dist/, then spcx (see package.json predev)
 ```
 
 Post a test payload to the local connector runtime:
@@ -383,7 +391,7 @@ npm install          # install dependencies
 npm test             # run Vitest suite with coverage
 npm run build        # codegen sidecars, then bundle to dist/ via ncc (packaging)
 npm run codegen:schemas  # regenerate *.schema.ts sidecars from OperationSignature
-npm run dev          # run locally with spcx against .dev-dist/ (build first)
+npm run dev          # codegen + tsc to .dev-dist/, then spcx run (predev hook)
 npm run debug        # same as dev without source maps
 npm run pack-zip     # build deployable connector package
 npm run templates    # generate operator artifacts (see below)

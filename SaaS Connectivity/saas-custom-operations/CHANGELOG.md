@@ -6,6 +6,8 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🔧 Improvements
 
+- **Bundle verification** — `npm run verify:bundle` (also runs as `postbuild`) loads `dist/index.js` and fails when any `connector-spec.json` command is missing from the handler map, catching codegen/build drift before `pack-zip` upload.
+- **Dev compile hooks** — `npm run dev` and `npm run debug` run `compile:dev` (`codegen:schemas` + `tsc`) via `predev` / `predebug` so `.dev-dist/` stays aligned with source without a manual build step.
 - **CI verification baseline** — Parent repo workflow `.github/workflows/saas-custom-operations-ci.yml` runs `npm ci`, `npm run typecheck`, `npm test`, and `npm run build` on PR/push when files under `SaaS Connectivity/saas-custom-operations/` change.
 - **Standalone typecheck** — `npm run typecheck` typechecks `src/` and `scripts/` via separate tsconfigs without emit.
 - **Dev toolchain upgrades** — Vitest 4.x and TypeScript 5.x stable; `@vitest/coverage-v8` aligned to Vitest 4.
