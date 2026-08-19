@@ -29,12 +29,11 @@ import {
     buildSituationHeader,
     resolveViolationAccessPaths,
 } from './context'
-import { createSodRemediationInstance, ensureSodFormDefinition } from './form-service'
+import { launchSodRemediationForm } from './form-service'
 import {
     logSodRemediationAccessPaths,
     logSodRemediationComplete,
     logSodRemediationControls,
-    logSodRemediationFormDefinition,
     logSodRemediationFormInput,
     logSodRemediationIdentityAccess,
     logSodRemediationInput,
@@ -147,37 +146,25 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
             : await resolveIdentityEmail(clientConfig, recipientId)
 
         const definitionOwnerId = offline ? OFFLINE_VIOLATION.owner.id : resolveTokenIdentity(ctx.token)
-        const definitionOwnerSource = offline ? 'offline-fallback' : 'token-identity'
-        const formDefinitionId = await ensureSodFormDefinition(ctx.sdk.forms, input.formName, definitionOwnerId)
-        logSodRemediationFormDefinition(
-            ctx.requestId,
-            input.formName,
-            formDefinitionId,
-            definitionOwnerId,
-            definitionOwnerSource
-        )
-
-        const formUrl = await createSodRemediationInstance({
+        const situationHeader = buildSituationHeader(summaryInput)
+        const formNotification = await launchSodRemediationForm({
             forms: ctx.sdk.forms,
-            formDefinitionId,
+            formName: input.formName,
+            definitionOwnerId,
             recipientId,
             createdBySourceId: ctx.sourceId,
             formInput,
+            notification: {
+                emailHeader: situationHeader,
+                emailBody: ({ formUrl }) => buildPersistedSituationSummary(summaryInput, formUrl),
+                emailRecipients: [ownerEmail],
+            },
         })
 
-        const situationHeader = buildSituationHeader(summaryInput)
-        const situationSummary = buildPersistedSituationSummary(summaryInput, formUrl)
-
-        const formNotification = {
-            formUrl,
-            emailHeader: situationHeader,
-            emailBody: situationSummary,
-            emailRecipients: [ownerEmail],
-        }
         logSodRemediationOutput(ctx.requestId, {
-            formUrl,
-            situationHeader,
-            situationSummary,
+            formUrl: formNotification.formUrl,
+            situationHeader: formNotification.emailHeader,
+            situationSummary: formNotification.emailBody,
             ownerEmail,
         })
         await ctx.persist(ctx.requestId, toPersistAttributes('sod-remediation', formNotification))

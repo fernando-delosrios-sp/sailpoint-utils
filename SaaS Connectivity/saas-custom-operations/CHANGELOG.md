@@ -11,6 +11,7 @@ All notable changes to **saas-custom-operations** are documented here.
 ### 🔧 Improvements
 
 - **Persisted-only `OperationSignature.output`** — `output` is the sole feed for the result-source account schema. Codegen (`npm run codegen:schemas`) fails when an `output` field is never persisted (object-literal `ctx.persist` keys, `toPersistAttributes(prefix, …)` expansion, or `// persist-dynamic: <key>` markers). Access-model scan counters leave the account schema.
+- **Shared form launch facade** — Adds a non-breaking ensure → create → notify facade used by `custom:sod-remediation` and `custom:access-model-sod-remediation`. Form seeds, recipient policy, skip/cap handling, persist keys, and workflow JSONPaths remain unchanged.
 
 ---
 

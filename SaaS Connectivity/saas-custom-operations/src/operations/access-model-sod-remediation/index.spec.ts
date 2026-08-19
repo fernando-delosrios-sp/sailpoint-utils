@@ -4,7 +4,7 @@ import '../auto-registry'
 import { beginPayloadOutputCapture, endPayloadOutputCapture } from '../../framework/payload-persist-collector'
 import { accessModelSodRemediationOperation } from './index'
 import { MAX_FORMS_PER_RUN } from './constants'
-import { createAccessModelSodRemediationInstance } from './form-service'
+import { launchAccessModelSodRemediationForm } from './form-service'
 import { listEnabledRoles, resolveCatalogAccessItemOwnerId } from '../../isc/roles'
 import { expandAccessItemEntitlements } from './expand-access-item-entitlements'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
@@ -65,7 +65,12 @@ vi.mock('./form-service', async (importOriginal) => {
     return {
         ...actual,
         ensureAccessModelSodFormDefinition: vi.fn().mockResolvedValue('form-def-1'),
-        createAccessModelSodRemediationInstance: vi.fn().mockResolvedValue('https://tenant.example/form/1'),
+        launchAccessModelSodRemediationForm: vi.fn().mockResolvedValue({
+            formUrl: 'https://tenant.example/form/1',
+            emailHeader: 'Review required',
+            emailBody: 'Open the form',
+            emailRecipients: ['item-owner-1@example.com'],
+        }),
     }
 })
 
@@ -178,8 +183,19 @@ describe('accessModelSodRemediationOperation', () => {
         persistedAccounts.clear()
         persistedIdentities.length = 0
         createAccountV1.mockClear()
-        vi.mocked(createAccessModelSodRemediationInstance).mockClear()
-        vi.mocked(createAccessModelSodRemediationInstance).mockResolvedValue('https://tenant.example/form/1')
+        vi.mocked(launchAccessModelSodRemediationForm).mockClear()
+        vi.mocked(launchAccessModelSodRemediationForm).mockImplementation(async (params) => {
+            const formUrl = 'https://tenant.example/form/1'
+            return {
+                formUrl,
+                emailHeader: params.notification.emailHeader as string,
+                emailBody:
+                    typeof params.notification.emailBody === 'function'
+                        ? params.notification.emailBody({ formUrl })
+                        : params.notification.emailBody,
+                emailRecipients: params.notification.emailRecipients as string[],
+            }
+        })
         vi.mocked(resolveCatalogAccessItemOwnerId).mockReset()
         vi.mocked(resolveCatalogAccessItemOwnerId).mockResolvedValue('item-owner-1')
         vi.mocked(resolveIdentityEmail).mockReset()
@@ -353,7 +369,7 @@ describe('accessModelSodRemediationOperation', () => {
                 },
             ],
         })
-        expect(vi.mocked(createAccessModelSodRemediationInstance)).not.toHaveBeenCalled()
+        expect(vi.mocked(launchAccessModelSodRemediationForm)).not.toHaveBeenCalled()
         expect(persistedIdentities).not.toContain('req-access-model-sod-skipped:role-offline-1:policy-offline-1')
     })
 
@@ -380,7 +396,7 @@ describe('accessModelSodRemediationOperation', () => {
         })
         expect(sentSummary(res)).not.toHaveProperty('access-model-sod-remediation:forms-skipped')
         expect(sentSummary(res)).not.toHaveProperty('access-model-sod-remediation:forms-skipped-instances')
-        expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalledWith(
+        expect(vi.mocked(launchAccessModelSodRemediationForm)).toHaveBeenCalledWith(
             expect.objectContaining({
                 recipientId: 'item-owner-1',
                 formInput: expect.objectContaining({
@@ -388,7 +404,7 @@ describe('accessModelSodRemediationOperation', () => {
                 }),
             })
         )
-        const launchFormInput = vi.mocked(createAccessModelSodRemediationInstance).mock.calls[0]?.[0]?.formInput
+        const launchFormInput = vi.mocked(launchAccessModelSodRemediationForm).mock.calls[0]?.[0]?.formInput
         expect(launchFormInput?.situationSummaryHtml).toContain(
             '/ui/a/admin/access/roles/landing-page/details/role-offline-1'
         )
@@ -505,7 +521,7 @@ describe('accessModelSodRemediationOperation', () => {
         })
 
         expect(vi.mocked(resolveCatalogAccessItemOwnerId)).toHaveBeenCalled()
-        expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalledWith(
+        expect(vi.mocked(launchAccessModelSodRemediationForm)).toHaveBeenCalledWith(
             expect.objectContaining({ recipientId: 'item-owner-1' })
         )
         expect(vi.mocked(resolveIdentityEmail)).toHaveBeenCalledWith(expect.anything(), 'item-owner-1')
@@ -538,14 +554,14 @@ describe('accessModelSodRemediationOperation', () => {
             'access-model-sod-remediation:violations-found': 1,
             'access-model-sod-remediation:forms-launch-failed': 1,
         })
-        expect(vi.mocked(createAccessModelSodRemediationInstance)).not.toHaveBeenCalled()
+        expect(vi.mocked(launchAccessModelSodRemediationForm)).not.toHaveBeenCalled()
         expect(persistedIdentities).not.toContain(
             'req-access-model-sod-missing-owner:role-offline-1:policy-offline-1'
         )
     })
 
     it('Launch failure increments launch counter only', async () => {
-        vi.mocked(createAccessModelSodRemediationInstance).mockRejectedValueOnce(new Error('launch failed'))
+        vi.mocked(launchAccessModelSodRemediationForm).mockRejectedValueOnce(new Error('launch failed'))
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
@@ -583,7 +599,7 @@ describe('accessModelSodRemediationOperation', () => {
             ],
             nestedProfiles: [],
         }))
-        vi.mocked(createAccessModelSodRemediationInstance).mockClear()
+        vi.mocked(launchAccessModelSodRemediationForm).mockClear()
 
         const res = { send: vi.fn() }
 
@@ -599,7 +615,7 @@ describe('accessModelSodRemediationOperation', () => {
             )
         })
 
-        expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalledTimes(MAX_FORMS_PER_RUN)
+        expect(vi.mocked(launchAccessModelSodRemediationForm)).toHaveBeenCalledTimes(MAX_FORMS_PER_RUN)
         expectScanSummary(res, {
             'access-model-sod-remediation:access-items-scanned': MAX_FORMS_PER_RUN + 2,
             'access-model-sod-remediation:violations-found': MAX_FORMS_PER_RUN,
@@ -650,7 +666,7 @@ describe('accessModelSodRemediationOperation', () => {
     }
 
     function launchFormInput(): Record<string, unknown> | undefined {
-        return vi.mocked(createAccessModelSodRemediationInstance).mock.calls[0]?.[0]?.formInput as
+        return vi.mocked(launchAccessModelSodRemediationForm).mock.calls[0]?.[0]?.formInput as
             | Record<string, unknown>
             | undefined
     }

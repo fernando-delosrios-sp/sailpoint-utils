@@ -1,12 +1,13 @@
 import {
     buildCreateFormDefinitionPayload,
-    createStandaloneFormInstance,
     ensureFormDefinitionByName,
     FormsApiLike,
     loadFormSeed,
     pickDeclaredFormInputValues,
 } from '../../isc/forms'
 import { logIscDebug } from '../../isc/debug/log-isc-request'
+import { launchForm, FormLaunchNotification } from '../../lib/form-launch'
+import { FormNotification } from '../../lib/form-notification'
 import accessModelSodRemediationSeedJson from './seed/access-model-sod-remediation.seed.json'
 
 export type AccessModelSodAccessItemType = 'ROLE' | 'ACCESS_PROFILE'
@@ -28,12 +29,13 @@ export interface AccessModelSodFormInputValues {
     groupColumnsHtmlWhenGroupBRemoved: string
 }
 
-export interface CreateAccessModelSodInstanceParams {
+export interface LaunchAccessModelSodFormParams {
     forms: FormsApiLike
     formDefinitionId: string
     recipientId: string
     createdBySourceId: string
     formInput: AccessModelSodFormInputValues
+    notification: FormLaunchNotification
 }
 
 const accessModelSodRemediationSeed = loadFormSeed(accessModelSodRemediationSeedJson)
@@ -67,9 +69,11 @@ export function serializeAccessModelSodFormInputForCreate(formInput: AccessModel
     }
 }
 
-/** Creates a standalone access model SoD remediation form instance for the access item owner. */
-export async function createAccessModelSodRemediationInstance(params: CreateAccessModelSodInstanceParams): Promise<string> {
-    const { forms, formDefinitionId, recipientId, createdBySourceId, formInput } = params
+/** Supplies operation serialization and notification content to the shared form launch facade. */
+export async function launchAccessModelSodRemediationForm(
+    params: LaunchAccessModelSodFormParams
+): Promise<FormNotification> {
+    const { forms, formDefinitionId, recipientId, createdBySourceId, formInput, notification } = params
     const instanceFormInput = pickDeclaredFormInputValues(
         accessModelSodRemediationSeed,
         serializeAccessModelSodFormInputForCreate(formInput)
@@ -80,12 +84,13 @@ export async function createAccessModelSodRemediationInstance(params: CreateAcce
         groupBIds: instanceFormInput.groupBIds,
     })
 
-    return createStandaloneFormInstance({
+    return launchForm({
         forms,
-        formDefinitionId,
+        definition: { formDefinitionId },
         recipientId,
         createdBySourceId,
         formInput: instanceFormInput,
+        notification,
     })
 }
 

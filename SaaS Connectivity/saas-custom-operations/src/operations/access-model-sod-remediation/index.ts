@@ -25,8 +25,8 @@ import {
 import { detectAccessItemViolations } from './detect-violations'
 import { ExpandedAccessItemEntitlements, expandAccessItemEntitlements } from './expand-access-item-entitlements'
 import {
-    createAccessModelSodRemediationInstance,
     ensureAccessModelSodFormDefinition,
+    launchAccessModelSodRemediationForm,
     resolveRemediationSectionLabel,
 } from './form-service'
 import { buildFormEmailBody, buildFormEmailHeader } from './form-email'
@@ -34,7 +34,7 @@ import { buildGroupContentsHtml } from './group-html'
 import { buildSituationSummaryHtml } from './situation-summary'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
 import { accessModelSodRemediationOperationSchema } from './index.schema'
-import { toPersistAttributes } from '../../lib/form-notification'
+import { FormNotification, toPersistAttributes } from '../../lib/form-notification'
 import { renderTypeTag, resolveUiOrigin } from '../../lib/sod-form-html'
 import {
     AccessModelSodSkippedFormInstance,
@@ -230,7 +230,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
 
                 let ownerId = ownerIdByAccessItemId.get(violation.accessItem.id)
                 let ownerEmail: string | undefined
-                let formUrl: string
+                let formNotification: FormNotification
                 try {
                     if (ownerId === undefined) {
                         ownerId = offline
@@ -250,7 +250,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                         ownerEmailById.set(ownerId, ownerEmail)
                     }
 
-                    formUrl = await createAccessModelSodRemediationInstance({
+                    formNotification = await launchAccessModelSodRemediationForm({
                         forms: ctx.sdk.forms,
                         formDefinitionId,
                         recipientId: ownerId,
@@ -268,6 +268,11 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                             groupAIds: violation.groupAIds,
                             groupBIds: violation.groupBIds,
                             ...html,
+                        },
+                        notification: {
+                            emailHeader: buildFormEmailHeader(emailInput),
+                            emailBody: ({ formUrl }) => buildFormEmailBody(emailInput, formUrl),
+                            emailRecipients: [ownerEmail],
                         },
                     })
                 } catch (error) {
@@ -288,12 +293,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                 try {
                     await ctx.persist(
                         childId,
-                        toPersistAttributes('access-model-sod-remediation', {
-                            formUrl,
-                            emailHeader: buildFormEmailHeader(emailInput),
-                            emailBody: buildFormEmailBody(emailInput, formUrl),
-                            emailRecipients: [ownerEmail],
-                        }),
+                        toPersistAttributes('access-model-sod-remediation', formNotification),
                         undefined,
                         { verify: false }
                     )

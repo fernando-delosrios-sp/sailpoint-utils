@@ -1,22 +1,57 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createSodRemediationInstance, ensureSodFormDefinition } from './form-service'
+import { launchSodRemediationForm } from './form-service'
 
-describe('ensureSodFormDefinition', () => {
-    it('creates form definition from bundled seed when absent', async () => {
-        const searchFormDefinitionsByTenantV1 = vi.fn().mockResolvedValue({ data: { results: [] } })
-        const createFormDefinitionV1 = vi.fn().mockResolvedValue({ data: { id: 'def-created' } })
-        const forms = {
+const baseFormInput = {
+    targetIdentityName: 'Alice Example',
+    policyName: 'AP vs AP',
+    situationSummaryHtml: '<p>summary</p>',
+    groupColumnsHtmlPlain: '<p>plain</p>',
+    groupColumnsHtmlWhenGroupARemoved: '<p>A removed</p>',
+    groupColumnsHtmlWhenGroupBRemoved: '<p>B removed</p>',
+    hasControls: true,
+    violationId: 'vio-1',
+    targetIdentityId: 'ident-1',
+    groupAAccessSearch: 'id:ent-a',
+    groupBAccessSearch: 'id:ent-b',
+    controlOptions: [{ label: 'Control 1', value: 'ctrl-1' }],
+}
+
+function createFormsMock() {
+    const searchFormDefinitionsByTenantV1 = vi.fn().mockResolvedValue({ data: { results: [] } })
+    const createFormDefinitionV1 = vi.fn().mockResolvedValue({ data: { id: 'def-created' } })
+    const createFormInstanceV1 = vi.fn().mockResolvedValue({
+        data: { standAloneFormUrl: 'https://tenant.identitynow.com/form/abc', state: 'ASSIGNED' },
+    })
+    return {
+        forms: {
             searchFormDefinitionsByTenantV1,
             createFormDefinitionV1,
-        } as never
+            createFormInstanceV1,
+        } as never,
+        createFormDefinitionV1,
+        createFormInstanceV1,
+    }
+}
 
-        const formDefinitionId = await ensureSodFormDefinition(forms, 'SOD Remediation', 'owner-1')
+describe('launchSodRemediationForm', () => {
+    it('keeps the seed and formInput serialization operation-local', async () => {
+        const mocks = createFormsMock()
 
-        expect(formDefinitionId).toBe('def-created')
-        expect(searchFormDefinitionsByTenantV1).toHaveBeenCalledWith({
-            filters: 'name eq "SOD Remediation"',
+        const result = await launchSodRemediationForm({
+            forms: mocks.forms,
+            formName: 'SOD Remediation',
+            definitionOwnerId: 'owner-1',
+            recipientId: 'owner-1',
+            createdBySourceId: 'source-1',
+            formInput: baseFormInput,
+            notification: {
+                emailHeader: 'Review',
+                emailBody: ({ formUrl }) => `Open ${formUrl}`,
+                emailRecipients: ['owner@example.com'],
+            },
         })
-        expect(createFormDefinitionV1).toHaveBeenCalledWith(
+
+        expect(mocks.createFormDefinitionV1).toHaveBeenCalledWith(
             expect.objectContaining({
                 body: expect.objectContaining({
                     name: 'SOD Remediation',
@@ -28,85 +63,35 @@ describe('ensureSodFormDefinition', () => {
                 }),
             })
         )
-    })
-})
-
-describe('createSodRemediationInstance', () => {
-    it('coerces hasControls boolean to string for ISC STRING formInput field', async () => {
-        const createFormInstanceV1 = vi.fn().mockResolvedValue({
-            data: { standAloneFormUrl: 'https://tenant.identitynow.com/form/abc', state: 'ASSIGNED' },
+        expect(mocks.createFormInstanceV1).toHaveBeenCalledWith({
+            body: expect.objectContaining({
+                formInput: expect.objectContaining({ hasControls: 'true', violationId: 'vio-1' }),
+            }),
         })
-        const forms = { createFormInstanceV1 } as never
-
-        await createSodRemediationInstance({
-            forms,
-            formDefinitionId: 'def-1',
-            recipientId: 'owner-1',
-            createdBySourceId: 'source-1',
-            formInput: {
-                targetIdentityName: 'Alice Example',
-                policyName: 'AP vs AP',
-                situationSummaryHtml: '<p>summary</p>',
-                groupColumnsHtmlPlain: '<p>plain</p>',
-                groupColumnsHtmlWhenGroupARemoved: '<p>A removed</p>',
-                groupColumnsHtmlWhenGroupBRemoved: '<p>B removed</p>',
-                hasControls: true,
-                violationId: 'vio-1',
-                targetIdentityId: 'ident-1',
-                groupAAccessSearch: 'id:ent-a',
-                groupBAccessSearch: 'id:ent-b',
-                controlOptions: [{ label: 'Control 1', value: 'ctrl-1' }],
-            },
-        })
-
-        expect(createFormInstanceV1).toHaveBeenCalledWith(
-            expect.objectContaining({
-                body: expect.objectContaining({
-                    formInput: expect.objectContaining({
-                        hasControls: 'true',
-                        violationId: 'vio-1',
-                        targetIdentityId: 'ident-1',
-                    }),
-                }),
-            })
-        )
+        expect(result.emailBody).toContain(result.formUrl)
     })
 
     it('sends false hasControls as string false', async () => {
-        const createFormInstanceV1 = vi.fn().mockResolvedValue({
-            data: { standAloneFormUrl: 'https://tenant.identitynow.com/form/abc', state: 'ASSIGNED' },
-        })
-        const forms = { createFormInstanceV1 } as never
+        const mocks = createFormsMock()
 
-        await createSodRemediationInstance({
-            forms,
-            formDefinitionId: 'def-1',
+        await launchSodRemediationForm({
+            forms: mocks.forms,
+            formName: 'SOD Remediation',
+            definitionOwnerId: 'owner-1',
             recipientId: 'owner-1',
             createdBySourceId: 'source-1',
-            formInput: {
-                targetIdentityName: 'Alice Example',
-                policyName: 'AP vs AP',
-                situationSummaryHtml: '<p>summary</p>',
-                groupColumnsHtmlPlain: '<p>plain</p>',
-                groupColumnsHtmlWhenGroupARemoved: '<p>A removed</p>',
-                groupColumnsHtmlWhenGroupBRemoved: '<p>B removed</p>',
-                hasControls: false,
-                violationId: 'vio-1',
-                targetIdentityId: 'ident-1',
-                groupAAccessSearch: 'id:ent-a',
-                groupBAccessSearch: 'id:ent-b',
-                controlOptions: [],
+            formInput: { ...baseFormInput, hasControls: false, controlOptions: [] },
+            notification: {
+                emailHeader: 'Review',
+                emailBody: 'Open the form',
+                emailRecipients: ['owner@example.com'],
             },
         })
 
-        expect(createFormInstanceV1).toHaveBeenCalledWith(
-            expect.objectContaining({
-                body: expect.objectContaining({
-                    formInput: expect.objectContaining({
-                        hasControls: 'false',
-                    }),
-                }),
-            })
-        )
+        expect(mocks.createFormInstanceV1).toHaveBeenCalledWith({
+            body: expect.objectContaining({
+                formInput: expect.objectContaining({ hasControls: 'false' }),
+            }),
+        })
     })
 })
