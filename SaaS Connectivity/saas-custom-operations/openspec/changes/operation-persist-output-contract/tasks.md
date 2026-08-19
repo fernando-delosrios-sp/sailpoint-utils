@@ -21,17 +21,17 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Confirm canonical test command: `npm test`
-- [ ] 4.2 Run `npm run typecheck`, `npm test`, `npm run codegen:schemas` (guard passes), `npm run build`
-- [ ] 4.3 All delta spec scenarios covered by named automated tests across framework, codegen, and access-model operation specs
+- [x] 4.1 Confirm canonical test command: `npm test`
+- [x] 4.2 Run `npm run typecheck`, `npm test`, `npm run codegen:schemas` (guard passes), `npm run build`
+- [x] 4.3 All delta spec scenarios covered by named automated tests across framework, codegen, and access-model operation specs
 
 ## 5. Documentation
 
-- [ ] 5.1 Update `src/operations/_template/README.md` + `src/operations/_template/index.ts` to demonstrate persisted-only `output`, `response`, and `ctx.respond`
-- [ ] 5.2 Update the generated workflow-invocation guidance/README notes for the operation response envelope (`name`/`type`/`status`/`responses`/`summary`)
-- [ ] 5.3 Update JSDoc on `OperationSignature`, `OperationResponse`, `RequestContext`, and `ctx.respond` describing the output↔persist / response↔res.send split
+- [x] 5.1 Update `src/operations/_template/README.md` + `src/operations/_template/index.ts` to demonstrate persisted-only `output`, `response`, and `ctx.respond`
+- [x] 5.2 Update the generated workflow-invocation guidance/README notes for the operation response envelope (`name`/`type`/`status`/`responses`/`summary`)
+- [x] 5.3 Update JSDoc on `OperationSignature`, `OperationResponse`, `RequestContext`, and `ctx.respond` describing the output↔persist / response↔res.send split
 
 ## 6. Changelog
 
-- [ ] 6.1 Create or update the changelog entry for this change (persisted-output contract, response envelope, codegen guard, access-model remediation)
-- [ ] 6.2 Confirm the entry covers the user-visible contract change (account schema shrinks to persisted attributes; typed `ctx.res.send` envelope)
+- [x] 6.1 Create or update the changelog entry for this change (persisted-output contract, response envelope, codegen guard, access-model remediation)
+- [x] 6.2 Confirm the entry covers the user-visible contract change (account schema shrinks to persisted attributes; typed `ctx.res.send` envelope)

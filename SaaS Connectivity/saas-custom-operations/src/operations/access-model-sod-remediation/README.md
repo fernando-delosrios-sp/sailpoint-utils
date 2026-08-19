@@ -24,18 +24,26 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 
 ### Invoke response (scan summary)
 
-On success, `ctx.res.send` returns rollup counters alongside `status: 'success'`:
+On success, `ctx.respond(summary)` returns an **operation response** envelope:
 
-| Field | Description |
+| Envelope field | Meaning |
+|---|---|
+| `name` | `custom:access-model-sod-remediation` |
+| `type` | `custom` |
+| `status` | `success` |
+| `responses` | Native identities persisted this invoke |
+| `summary` | Scan rollup counters (below) |
+
+| Summary field | Description |
 |---|---|
 | `access-model-sod-remediation:access-items-scanned` | Count of roles/APs evaluated |
 | `access-model-sod-remediation:violations-found` | Count of (access item × policy) hits |
 | `access-model-sod-remediation:forms-skipped` | Optional; violations skipped because the child persist account at `{requestId}:{accessItemId}:{policyId}` already exists |
-| `access-model-sod-remediation:forms-skipped-instances` | Optional; global invoke-only list of skipped violations (child identity plus access item and policy context). Form URLs and email fields are **not** on `res.send` — read them from the existing child account at `{requestId}:{accessItemId}:{policyId}` |
+| `access-model-sod-remediation:forms-skipped-instances` | Optional; global invoke-only list of skipped violations (child identity plus access item and policy context). Form URLs and email fields are **not** on the envelope — read them from the existing child account at `{requestId}:{accessItemId}:{policyId}` |
 | `access-model-sod-remediation:forms-launch-failed` | Optional; form instance creation failures during the scan |
 | `access-model-sod-remediation:forms-persist-failed` | Optional; child persist failures after a form was created |
 
-These fields are **not** persisted on result-source identity `{requestId}`.
+These summary fields are declared under `OperationSignature.response`, **not** persisted on result-source identity `{requestId}`, and **not** account schema attributes.
 
 ### Scan idempotency and performance
 

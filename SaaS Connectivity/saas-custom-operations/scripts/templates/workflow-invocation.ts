@@ -92,6 +92,20 @@ Reference workflow: **${REFERENCE_WORKFLOW_NAME}** in \`${REFERENCE_WORKFLOW_PAT
 
 > **Authentication:** See [access-token.md](./access-token.md) for **${WORKFLOW_STEP_NAMES.configuration}** and **${WORKFLOW_STEP_NAMES.getAccessToken}** setup. Do not duplicate OAuth steps in each section below.
 
+## Operation response envelope
+
+Successful invokes return a typed **operation response** via \`ctx.res.send\` (prefer \`ctx.respond(summary)\` in handlers):
+
+| Field | Meaning |
+|---|---|
+| \`name\` | Operation/command name (e.g. \`custom:access-model-sod-remediation\`) |
+| \`type\` | Always \`custom\` |
+| \`status\` | Defaults to \`success\` |
+| \`responses\` | Native identities persisted during the invoke (response id list) |
+| \`summary\` | Per-operation rollup detail from \`OperationSignature.response\` |
+
+Workflow result reads should use **Get Accounts** on the result source (below). Do not treat response \`summary\` fields as account schema attributes — only \`OperationSignature.output\` (persisted) attributes appear on accounts.
+
 ${sections || '_No registered operations found._'}
 `
 }

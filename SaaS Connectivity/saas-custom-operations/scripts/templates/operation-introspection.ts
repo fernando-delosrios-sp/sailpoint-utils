@@ -231,6 +231,31 @@ function unwrapExpression(node: ts.Expression): ts.Expression {
     return current
 }
 
+const FORM_NOTIFICATION_PERSIST_SUFFIXES = [
+    'form-url',
+    'form-email-header',
+    'form-email-body',
+    'form-email-recipients',
+] as const
+
+function collectKeysFromToPersistAttributesCall(
+    node: ts.CallExpression,
+    sourceFile: ts.SourceFile
+): string[] {
+    const callee = node.expression
+    if (!ts.isIdentifier(callee) || callee.text !== 'toPersistAttributes') {
+        return []
+    }
+    if (node.arguments.length < 1) {
+        return []
+    }
+    const prefixArg = unwrapExpression(node.arguments[0])
+    if (!ts.isStringLiteral(prefixArg)) {
+        return []
+    }
+    return FORM_NOTIFICATION_PERSIST_SUFFIXES.map((suffix) => `${prefixArg.text}:${suffix}`)
+}
+
 /** Collects object-literal keys from `ctx.persist(...)` second arguments and `// persist-dynamic:` markers. */
 export function collectPersistedKeys(filePath: string): Set<string> {
     const source = fs.readFileSync(filePath, 'utf-8')
@@ -242,6 +267,10 @@ export function collectPersistedKeys(filePath: string): Set<string> {
             const attributesArg = unwrapExpression(node.arguments[1])
             if (ts.isObjectLiteralExpression(attributesArg)) {
                 for (const key of collectKeysFromObjectLiteral(attributesArg, sourceFile)) {
+                    keys.add(key)
+                }
+            } else if (ts.isCallExpression(attributesArg)) {
+                for (const key of collectKeysFromToPersistAttributesCall(attributesArg, sourceFile)) {
                     keys.add(key)
                 }
             }

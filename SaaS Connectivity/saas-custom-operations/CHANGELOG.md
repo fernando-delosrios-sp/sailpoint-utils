@@ -2,6 +2,18 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-08-19 · v0.3.4
+
+### 💥 Breaking Changes
+
+- **Typed operation response envelope** — Successful custom operation invokes now return `{ name, type, status, responses, summary }` via `ctx.respond(summary)` (preferred) instead of a flat `ctx.res.send` payload. Scan rollup counters for `custom:access-model-sod-remediation` move under `summary`. Workflows that read those counters from the invoke response body must update JSONPath to `summary.<field>`. Result-source **Get Accounts** reads are unchanged.
+
+### 🔧 Improvements
+
+- **Persisted-only `OperationSignature.output`** — `output` is the sole feed for the result-source account schema. Codegen (`npm run codegen:schemas`) fails when an `output` field is never persisted (object-literal `ctx.persist` keys, `toPersistAttributes(prefix, …)` expansion, or `// persist-dynamic: <key>` markers). Access-model scan counters leave the account schema.
+
+---
+
 ## 2026-08-19 · v0.3.3
 
 ### 🔧 Improvements
