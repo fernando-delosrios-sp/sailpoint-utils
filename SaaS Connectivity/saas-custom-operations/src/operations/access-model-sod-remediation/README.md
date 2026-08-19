@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Proactive catalog hygiene: scan enabled roles and/or access profiles in scope, detect intrinsic SoD policy violations by entitlement intersection (via `policyQuery` parsing), and create standalone remediation forms for each **(access item, policy)** pair targeted to the **policy owner**.
+Proactive catalog hygiene: scan enabled roles and/or access profiles in scope, detect intrinsic SoD policy violations by entitlement intersection (via `policyQuery` parsing), and create standalone remediation forms for each **(access item, policy)** pair targeted to the **access item owner**.
 
 Distinct from `custom:sod-remediation`, which remediates existing **identity violations**.
 
@@ -38,7 +38,7 @@ These fields are **not** persisted on result-source identity `{requestId}`.
 
 ### Scan idempotency and performance
 
-Before launching a form for each violation, the scan checks whether a child result-source account already exists at `{requestId}:{accessItemId}:{policyId}`. When found, the handler skips form creation and child persist (no overwrite), increments `forms-skipped`, and appends an entry to `forms-skipped-instances` on **`ctx.res.send` only** (never persisted). Per-form outputs (`form-url`, email fields) for created or prior forms remain on child accounts via `ctx.persist` only — the invoke response carries rollup counters plus this skipped list, not individual form payloads. Form instance state is not queried for idempotency. Policy-owner email resolution and access-item entitlement expansion are **memoized within the scan** to avoid repeated ISC calls on large catalogs.
+Before launching a form for each violation, the scan checks whether a child result-source account already exists at `{requestId}:{accessItemId}:{policyId}`. When found, the handler skips form creation and child persist (no overwrite), increments `forms-skipped`, and appends an entry to `forms-skipped-instances` on **`ctx.res.send` only** (never persisted). Per-form outputs (`form-url`, email fields) for created or prior forms remain on child accounts via `ctx.persist` only — the invoke response carries rollup counters plus this skipped list, not individual form payloads. Form instance state is not queried for idempotency. Access-item owner resolution (and email) and access-item entitlement expansion are **memoized within the scan** to avoid repeated ISC calls on large catalogs.
 
 ### Child account (persisted) — `{requestId}:{accessItemId}:{policyId}` (one per form)
 
@@ -47,7 +47,7 @@ Before launching a form for each violation, the scan checks whether a child resu
 | `access-model-sod-remediation:form-url` | Standalone form URL |
 | `access-model-sod-remediation:form-email-header` | Plain-text email subject for workflow Send Email |
 | `access-model-sod-remediation:form-email-body` | HTML email body with remediation link |
-| `access-model-sod-remediation:form-email-recipients` | Policy owner email addresses (`string[]`) |
+| `access-model-sod-remediation:form-email-recipients` | Access item owner email addresses (`string[]`) |
 
 ## Invoke example
 
@@ -79,7 +79,7 @@ Three ISC workflow exports under [`workflows/`](../../../workflows/) implement p
 | Export | Trigger | Role |
 |---|---|---|
 | [`workflows/Access Model SOD - Analysis.json`](../../../workflows/Access%20Model%20SOD%20-%20Analysis.json) | Scheduled (daily) | Invoke this scan operation |
-| [`workflows/Access Model SOD - Notification.json`](../../../workflows/Access%20Model%20SOD%20-%20Notification.json) | `idn:account-created` (filtered by `operationName`) | Email policy owner when a child persist account is created |
+| [`workflows/Access Model SOD - Notification.json`](../../../workflows/Access%20Model%20SOD%20-%20Notification.json) | `idn:account-created` (filtered by `operationName`) | Email access item owner when a child persist account is created |
 | [`workflows/Access Model SOD - Remediation.json`](../../../workflows/Access%20Model%20SOD%20-%20Remediation.json) | `sp:form-submitted` (filtered by remediation form definition ID) | Invoke `custom:access-model-sod-remediation-apply` |
 
 End-to-end flow:
@@ -101,7 +101,7 @@ Access Model SOD - Notification (account-created event)
   Send Email from trigger.account.attributes (form-email-*)
         │
         ▼
-Policy owner submits form (remediationSide)
+Access item owner submits form (remediationSide)
         │
         ▼
 Access Model SOD - Remediation
@@ -138,7 +138,7 @@ Manual or custom orchestration follows the same contract as the bundled exports:
 
 1. Invoke scan; read rollup counts and optional `forms-skipped-instances` from the **invoke response** (`access-model-sod-remediation:access-items-scanned`, `violations-found`, optional `forms-skipped`, `forms-skipped-instances`, `forms-launch-failed`, and `forms-persist-failed`).
 2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields — or rely on an account-created event as the Notification export does.
-3. Notify policy owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
+3. Notify access item owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).
 5. Invoke `custom:access-model-sod-remediation-apply` with `formInstanceId` from the form trigger to apply the catalog correction (detach nested APs from roles or remove direct entitlements; remove entitlements from AP definitions when the access item is an AP). Re-invokes for the same form instance are idempotent — expect `skipped-already-applied` when a prior apply persist exists, or `skipped-already-clean` when the catalog already matches the decision.
 
@@ -163,7 +163,7 @@ Launch-time `formInput` carries **three** composite side-by-side column HTML fie
 | `groupColumnsHtmlWhenGroupARemoved` | Group A red / Group B green outcome panels — when Group A is selected for removal |
 | `groupColumnsHtmlWhenGroupBRemoved` | Group B red / Group A green outcome panels — when Group B is selected for removal |
 
-Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when the recipient changes `remediationSide`. Direct role entitlements render as single flat lines. Nested access profiles render as **flat access profile lines** with an **offending entitlement mention** (for example `— offending: payment_issue`) so policy owners see the whole AP as the removable unit on roles. When online, entitlement and access profile display names in columns link to ISC admin UI routes. **No** revocability emojis or legend.
+Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when the recipient changes `remediationSide`. Direct role entitlements render as single flat lines. Nested access profiles render as **flat access profile lines** with an **offending entitlement mention** (for example `— offending: payment_issue`) so access item owners see the whole AP as the removable unit on roles. When online, entitlement and access profile display names in columns link to ISC admin UI routes. **No** revocability emojis or legend.
 
 **Form definition migration:** Updated seeds change the form fingerprint. After deploying this connector version, re-invoke the scan with the **same** `formName` — `ensureFormDefinitionByName` detects a stale watermark and patches the existing definition in place. New form instances then get the unified context panel, admin links, and column layout. Already-assigned instances keep their launch-time HTML until recreated. Use a **new** `formName` only when you want to keep the prior definition unchanged alongside the updated one. Scan retries with the same `requestId` skip violations that already have a child persist account regardless of form instance state.
 

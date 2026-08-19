@@ -67,7 +67,7 @@ export function serializeAccessModelSodFormInputForCreate(formInput: AccessModel
     }
 }
 
-/** Creates a standalone access model SoD remediation form instance for the policy owner. */
+/** Creates a standalone access model SoD remediation form instance for the access item owner. */
 export async function createAccessModelSodRemediationInstance(params: CreateAccessModelSodInstanceParams): Promise<string> {
     const { forms, formDefinitionId, recipientId, createdBySourceId, formInput } = params
     const instanceFormInput = pickDeclaredFormInputValues(

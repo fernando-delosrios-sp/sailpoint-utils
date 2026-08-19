@@ -54,7 +54,7 @@ The `workflows/` directory contains ISC workflow snapshots you can import as tem
 | [`workflows/SOD Violation - Notification.json`](workflows/SOD%20Violation%20-%20Notification.json) | `custom:sod-remediation` | `idn:sod-violation-created` | Launch remediation form and email owner |
 | [`workflows/SOD Violation - Remediation.json`](workflows/SOD%20Violation%20-%20Remediation.json) | — (post-submit) | `sp:form-submitted` | Revoke access or apply compensating control |
 | [`workflows/Access Model SOD - Analysis.json`](workflows/Access%20Model%20SOD%20-%20Analysis.json) | `custom:access-model-sod-remediation` | Scheduled | Catalog scan |
-| [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json) | — (event read-back) | `idn:account-created` | Email policy owner from child persist account |
+| [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json) | — (event read-back) | `idn:account-created` | Email access item owner from child persist account |
 | [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json) | `custom:access-model-sod-remediation-apply` | `sp:form-submitted` | Apply catalog correction after form submit |
 
 Shared invoke pattern (all connector-call workflows):

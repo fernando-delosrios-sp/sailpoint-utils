@@ -1,5 +1,5 @@
 {
-    "description": "Access model SoD remediation — policy owner selects side to remove from role or access profile.",
+    "description": "Access model SoD remediation — access item owner selects side to remove from role or access profile.",
     "formInput": [
         { "id": "accessItemId", "type": "STRING", "label": "Access Item ID", "description": "Role or access profile under review" },
         { "id": "accessItemType", "type": "STRING", "label": "Access Item Type", "description": "ROLE or ACCESS_PROFILE" },

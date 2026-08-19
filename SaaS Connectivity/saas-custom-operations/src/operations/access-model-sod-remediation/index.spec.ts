@@ -5,9 +5,10 @@ import { beginPayloadOutputCapture, endPayloadOutputCapture } from '../../framew
 import { accessModelSodRemediationOperation } from './index'
 import { MAX_FORMS_PER_RUN } from './constants'
 import { createAccessModelSodRemediationInstance } from './form-service'
-import { listEnabledRoles } from '../../isc/roles'
+import { listEnabledRoles, resolveCatalogAccessItemOwnerId } from '../../isc/roles'
 import { expandAccessItemEntitlements } from './expand-access-item-entitlements'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
+import { resolveIdentityEmail } from '../../isc/public-identities'
 
 const workflowConfig = {
     apiUrl: 'https://company22986-poc.api.identitynow.com',
@@ -58,6 +59,7 @@ vi.mock('../../isc/roles', async (importOriginal) => {
     return {
         ...actual,
         listEnabledRoles: vi.fn().mockImplementation(async () => actual.listEnabledRolesOffline()),
+        resolveCatalogAccessItemOwnerId: vi.fn().mockResolvedValue('item-owner-1'),
     }
 })
 
@@ -78,7 +80,7 @@ vi.mock('../../isc/sod-policies', async (importOriginal) => {
 })
 
 vi.mock('../../isc/public-identities', () => ({
-    resolveIdentityEmail: vi.fn().mockResolvedValue('owner@example.com'),
+    resolveIdentityEmail: vi.fn().mockResolvedValue('item-owner-1@example.com'),
 }))
 
 vi.mock('./constants', async (importOriginal) => {
@@ -132,8 +134,22 @@ vi.mock('../../framework/sdk-factory', () => ({
                 data: { completed: '2026-08-18T10:00:00Z', completionStatus: 'SUCCESS', messages: [] },
             }),
         },
-        roles: {},
-        accessProfiles: {},
+        roles: {
+            getRoleV1: vi.fn().mockImplementation(async ({ id }) => ({
+                data: {
+                    id,
+                    owner: { type: 'IDENTITY', id: 'item-owner-1' },
+                },
+            })),
+        },
+        accessProfiles: {
+            getAccessProfileV1: vi.fn().mockImplementation(async ({ id }) => ({
+                data: {
+                    id,
+                    owner: { type: 'IDENTITY', id: 'item-owner-1' },
+                },
+            })),
+        },
         forms: {
             searchFormInstancesByTenantV1: (...args: unknown[]) => searchFormInstancesByTenantV1(...args),
         },
@@ -147,6 +163,12 @@ describe('accessModelSodRemediationOperation', () => {
         persistedAccounts.clear()
         persistedIdentities.length = 0
         createAccountV1.mockClear()
+        vi.mocked(createAccessModelSodRemediationInstance).mockClear()
+        vi.mocked(createAccessModelSodRemediationInstance).mockResolvedValue('https://tenant.example/form/1')
+        vi.mocked(resolveCatalogAccessItemOwnerId).mockReset()
+        vi.mocked(resolveCatalogAccessItemOwnerId).mockResolvedValue('item-owner-1')
+        vi.mocked(resolveIdentityEmail).mockReset()
+        vi.mocked(resolveIdentityEmail).mockResolvedValue('item-owner-1@example.com')
         resolveSourceByName.mockResolvedValue('source-123')
         getSourceSchemasV1.mockResolvedValue({
             data: [
@@ -344,6 +366,7 @@ describe('accessModelSodRemediationOperation', () => {
         )
         expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalledWith(
             expect.objectContaining({
+                recipientId: 'item-owner-1',
                 formInput: expect.objectContaining({
                     situationSummaryHtml: expect.stringMatching(/What we found[\s\S]*What we need from you/),
                 }),
@@ -451,6 +474,64 @@ describe('accessModelSodRemediationOperation', () => {
                 process.env.SPCX_TEST_MODE = previousTestMode
             }
         }
+    })
+
+    it('Form recipient is access item owner and email recipients follow', async () => {
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
+                {
+                    requestId: 'req-access-model-sod-recipient',
+                    formName: 'Access Model SOD Remediation',
+                    searchIndices: ['roles'],
+                },
+                res as never
+            )
+        })
+
+        expect(vi.mocked(resolveCatalogAccessItemOwnerId)).toHaveBeenCalled()
+        expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalledWith(
+            expect.objectContaining({ recipientId: 'item-owner-1' })
+        )
+        expect(vi.mocked(resolveIdentityEmail)).toHaveBeenCalledWith(expect.anything(), 'item-owner-1')
+        expect(persistedAccounts.get('req-access-model-sod-recipient:role-offline-1:policy-offline-1')).toEqual(
+            expect.objectContaining({
+                'access-model-sod-remediation:form-email-recipients': ['item-owner-1@example.com'],
+            })
+        )
+    })
+
+    it('Missing access item owner fails form launch', async () => {
+        vi.mocked(resolveCatalogAccessItemOwnerId).mockRejectedValueOnce(
+            new Error('Role role-offline-1 has no owner.id')
+        )
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
+                {
+                    requestId: 'req-access-model-sod-missing-owner',
+                    formName: 'Access Model SOD Remediation',
+                    searchIndices: ['roles'],
+                },
+                res as never
+            )
+        })
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'success',
+                'access-model-sod-remediation:violations-found': 1,
+                'access-model-sod-remediation:forms-launch-failed': 1,
+            })
+        )
+        expect(vi.mocked(createAccessModelSodRemediationInstance)).not.toHaveBeenCalled()
+        expect(persistedIdentities).not.toContain(
+            'req-access-model-sod-missing-owner:role-offline-1:policy-offline-1'
+        )
     })
 
     it('Launch failure increments launch counter only', async () => {

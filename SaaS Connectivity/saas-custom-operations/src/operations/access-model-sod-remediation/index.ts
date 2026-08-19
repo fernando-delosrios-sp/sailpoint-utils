@@ -1,13 +1,14 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
 import { customOperation, isOfflineContext, OperationSignature, RequestContext } from '../../framework'
 import { listEnabledAccessProfiles, listEnabledAccessProfilesOffline } from '../../isc/access-profiles'
-import { listEnabledRoles, listEnabledRolesOffline, CatalogAccessItem } from '../../isc/roles'
 import {
-    listSodPolicies,
-    listSodPoliciesOffline,
-    resolvePolicyOwnerId,
-    SodPolicySummary,
-} from '../../isc/sod-policies'
+    listEnabledRoles,
+    listEnabledRolesOffline,
+    CatalogAccessItem,
+    resolveCatalogAccessItemOwnerId,
+    resolveCatalogAccessItemOwnerIdOffline,
+} from '../../isc/roles'
+import { listSodPolicies, listSodPoliciesOffline, SodPolicySummary } from '../../isc/sod-policies'
 import { findAccountOnSource } from '../../isc/accounts'
 import { resolveIdentityEmail } from '../../isc/public-identities'
 import { resolveIdentityEmailOffline } from '../../isc/public-identities/offline-data'
@@ -128,7 +129,7 @@ async function loadPolicies(
     return policies
 }
 
-/** Scans catalog access items for intrinsic SoD violations and launches policy-owner remediation forms. */
+/** Scans catalog access items for intrinsic SoD violations and launches access-item-owner remediation forms. */
 export const accessModelSodRemediationOperation = customOperation<AccessModelSodRemediationOperation>(
     async (ctx, input) => {
         const offline = isOfflineContext(ctx)
@@ -157,6 +158,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
         let formsCreated = 0
 
         const expandedByAccessItemId = new Map<string, ExpandedAccessItemEntitlements>()
+        const ownerIdByAccessItemId = new Map<string, string>()
         const ownerEmailById = new Map<string, string>()
 
         for (const accessItem of accessItems) {
@@ -199,14 +201,6 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     continue
                 }
 
-                const ownerId = resolvePolicyOwnerId(violation.policy)
-                let ownerEmail = ownerEmailById.get(ownerId)
-                if (ownerEmail === undefined) {
-                    ownerEmail = offline
-                        ? resolveIdentityEmailOffline(ownerId)
-                        : await resolveIdentityEmail({ apiUrl: ctx.apiUrl, token: ctx.token }, ownerId)
-                    ownerEmailById.set(ownerId, ownerEmail)
-                }
                 const uiOrigin = offline ? undefined : resolveUiOrigin(ctx.apiUrl)
                 const html = buildGroupContentsHtml(violation.groupAIds, violation.groupBIds, expanded, uiOrigin)
                 const situationSummaryHtml = buildSituationSummaryHtml({
@@ -224,8 +218,28 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     groupBIds: violation.groupBIds,
                 }
 
+                let ownerId = ownerIdByAccessItemId.get(violation.accessItem.id)
+                let ownerEmail: string | undefined
                 let formUrl: string
                 try {
+                    if (ownerId === undefined) {
+                        ownerId = offline
+                            ? resolveCatalogAccessItemOwnerIdOffline(violation.accessItem)
+                            : await resolveCatalogAccessItemOwnerId(
+                                  { roles: ctx.sdk.roles, accessProfiles: ctx.sdk.accessProfiles },
+                                  violation.accessItem
+                              )
+                        ownerIdByAccessItemId.set(violation.accessItem.id, ownerId)
+                    }
+
+                    ownerEmail = ownerEmailById.get(ownerId)
+                    if (ownerEmail === undefined) {
+                        ownerEmail = offline
+                            ? resolveIdentityEmailOffline(ownerId)
+                            : await resolveIdentityEmail({ apiUrl: ctx.apiUrl, token: ctx.token }, ownerId)
+                        ownerEmailById.set(ownerId, ownerEmail)
+                    }
+
                     formUrl = await createAccessModelSodRemediationInstance({
                         forms: ctx.sdk.forms,
                         formDefinitionId,
@@ -254,6 +268,10 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                         policyId: violation.policy.id,
                         detail,
                     })
+                    continue
+                }
+
+                if (ownerEmail === undefined) {
                     continue
                 }
 
