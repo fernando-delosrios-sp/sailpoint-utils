@@ -26,6 +26,8 @@ Launch-only operation that fetches an SOD violation, ensures a named form defini
 | `sod-remediation:form-email-header` | Plain-text email subject |
 | `sod-remediation:form-email-recipients` | Recipient emails for notifications (`string[]`) |
 
+Persisted form notification fields are built via the shared form notification envelope (`src/lib/form-notification/`).
+
 ## Invoke examples
 
 | Payload | Use |

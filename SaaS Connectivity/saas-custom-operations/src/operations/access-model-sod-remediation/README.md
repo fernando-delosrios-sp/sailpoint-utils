@@ -50,6 +50,8 @@ Before launching a form for each violation, the scan checks whether a child resu
 | `access-model-sod-remediation:form-email-body` | HTML email body with remediation link |
 | `access-model-sod-remediation:form-email-recipients` | Access item owner email addresses (`string[]`) |
 
+Child form notification fields are built via the shared form notification envelope (`src/lib/form-notification/`).
+
 ## Invoke example
 
 Use a stable `requestId` prefix (for example `access-model-sod`) — only **child** accounts are persisted at `{requestId}:{accessItemId}:{policyId}`. No account is written on bare `requestId`, including on terminal failure.

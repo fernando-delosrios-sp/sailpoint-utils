@@ -34,6 +34,7 @@ import { buildGroupContentsHtml } from './group-html'
 import { buildSituationSummaryHtml } from './situation-summary'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
 import { accessModelSodRemediationOperationSchema } from './index.schema'
+import { toPersistAttributes } from '../../lib/form-notification'
 import { renderTypeTag, resolveUiOrigin } from '../../lib/sod-form-html'
 import {
     AccessModelSodSkippedFormInstance,
@@ -282,12 +283,12 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                 try {
                     await ctx.persist(
                         childId,
-                        {
-                            'access-model-sod-remediation:form-url': formUrl,
-                            'access-model-sod-remediation:form-email-header': buildFormEmailHeader(emailInput),
-                            'access-model-sod-remediation:form-email-body': buildFormEmailBody(emailInput, formUrl),
-                            'access-model-sod-remediation:form-email-recipients': [ownerEmail],
-                        },
+                        toPersistAttributes('access-model-sod-remediation', {
+                            formUrl,
+                            emailHeader: buildFormEmailHeader(emailInput),
+                            emailBody: buildFormEmailBody(emailInput, formUrl),
+                            emailRecipients: [ownerEmail],
+                        }),
                         undefined,
                         { verify: false }
                     )

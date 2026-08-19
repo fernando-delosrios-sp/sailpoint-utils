@@ -21,6 +21,7 @@ import {
     enrichResolvedAccessSides,
 } from './access-path-enrichment'
 import { AccessPathLine } from './access-path-resolver'
+import { toPersistAttributes } from '../../lib/form-notification'
 import { resolveUiOrigin } from '../../lib/sod-form-html'
 import {
     assembleFormInput,
@@ -167,18 +168,19 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
         const situationHeader = buildSituationHeader(summaryInput)
         const situationSummary = buildPersistedSituationSummary(summaryInput, formUrl)
 
+        const formNotification = {
+            formUrl,
+            emailHeader: situationHeader,
+            emailBody: situationSummary,
+            emailRecipients: [ownerEmail],
+        }
         logSodRemediationOutput(ctx.requestId, {
             formUrl,
             situationHeader,
             situationSummary,
             ownerEmail,
         })
-        await ctx.persist(ctx.requestId, {
-            'sod-remediation:form-url': formUrl,
-            'sod-remediation:form-email-header': situationHeader,
-            'sod-remediation:form-email-body': situationSummary,
-            'sod-remediation:form-email-recipients': [ownerEmail],
-        })
+        await ctx.persist(ctx.requestId, toPersistAttributes('sod-remediation', formNotification))
 
         logSodRemediationComplete(ctx.requestId)
         ctx.res.send({ status: 'success' })

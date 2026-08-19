@@ -2,6 +2,14 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-08-19 · v0.3.3
+
+### 🔧 Improvements
+
+- **Form notification envelope** — Adds `src/lib/form-notification/` with a typed `FormNotification` envelope and `toPersistAttributes(prefix, envelope)` mapper for the four workflow companion fields (`form-url`, `form-email-header`, `form-email-body`, `form-email-recipients`). `custom:sod-remediation` and `custom:access-model-sod-remediation` persist via the mapper. Non-breaking — persist keys, types, and workflow JSONPaths are unchanged.
+
+---
+
 ## 2026-08-19 · v0.3.2
 
 ### 🔧 Improvements
