@@ -89,7 +89,7 @@ export interface RequestContext<
     verifyPersisted: VerifyPersistedFn
     /**
      * Builds the operation response envelope from the persist write registry and calls `res.send`.
-     * Authors supply only `summary`; `name`/`type`/`status`/`responses` are framework-populated.
+     * Authors supply only `summary`; `name`/`status`/`responses` are framework-populated.
      */
     respond: (summary: TSummary, status?: string) => void
     /** Correlated dual-sink logger for this invocation. */

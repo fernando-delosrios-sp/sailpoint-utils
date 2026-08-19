@@ -29,7 +29,6 @@ On success, `ctx.respond(summary)` returns an **operation response** envelope:
 | Envelope field | Meaning |
 |---|---|
 | `name` | `custom:access-model-sod-remediation` |
-| `type` | `custom` |
 | `status` | `success` |
 | `responses` | Native identities persisted this invoke |
 | `summary` | Scan rollup counters (below) |
@@ -147,7 +146,7 @@ Handled by [`custom:access-model-sod-remediation-apply`](../access-model-sod-rem
 
 Manual or custom orchestration follows the same contract as the bundled exports:
 
-1. Invoke scan; read rollup counts and optional `forms-skipped-instances` from the **invoke response** (`access-model-sod-remediation:access-items-scanned`, `violations-found`, optional `forms-skipped`, `forms-skipped-instances`, `forms-launch-failed`, and `forms-persist-failed`).
+1. Invoke scan; read rollup counts from the operation response **`summary`**: `summary['access-model-sod-remediation:access-items-scanned']`, `summary['access-model-sod-remediation:violations-found']`, and optional `summary['access-model-sod-remediation:forms-skipped']`, `summary['access-model-sod-remediation:forms-skipped-instances']`, `summary['access-model-sod-remediation:forms-launch-failed']`, and `summary['access-model-sod-remediation:forms-persist-failed']`.
 2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields — or rely on an account-created event as the Notification export does.
 3. Notify access item owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).

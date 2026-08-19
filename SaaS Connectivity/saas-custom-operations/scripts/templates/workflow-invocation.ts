@@ -99,7 +99,6 @@ Successful invokes return a typed **operation response** via \`ctx.res.send\` (p
 | Field | Meaning |
 |---|---|
 | \`name\` | Operation/command name (e.g. \`custom:access-model-sod-remediation\`) |
-| \`type\` | Always \`custom\` |
 | \`status\` | Defaults to \`success\` |
 | \`responses\` | Native identities persisted during the invoke (response id list) |
 | \`summary\` | Per-operation rollup detail from \`OperationSignature.response\` |

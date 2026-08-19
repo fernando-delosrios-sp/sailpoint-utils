@@ -1,9 +1,9 @@
 ## 1. Framework: response envelope + persisted-only output
 
-- [x] 1.1 Add optional `response?: object` to `OperationSignature` and export `OperationResponse<TSummary>` (`name`, `type`, `status`, `responses`, `summary`) in `src/framework/types.ts`; document `output` as persisted-attributes-only in `src/framework/output-schema.ts` / `types.ts` JSDoc
+- [x] 1.1 Add optional `response?: object` to `OperationSignature` and export `OperationResponse<TSummary>` (`name`, `status`, `responses`, `summary`) in `src/framework/output-schema.ts`; document `output` as persisted-attributes-only in `src/framework/output-schema.ts` / `types.ts` JSDoc
 - [x] 1.2 Extend `RequestContext<TOutput, TSummary = Record<string, unknown>>` and add `respond(summary: TSummary, status?: string): void` that builds the envelope from the persist write registry ids and calls `ctx.res.send` (`src/framework/types.ts`, `src/framework/request-context.ts`)
 - [x] 1.3 Expose persisted native ids from the persist write registry to `ctx.respond` (`src/framework/persist-result.ts`, `src/framework/request-context.ts`); ensure ids reflect all `ctx.persist` calls in the invoke
-- [x] 1.4 Tests (RED→GREEN) in `src/framework/request-context.spec.ts` / `src/framework/with-custom-operation.spec.ts`: `ctx.respond` emits `name`/`type`/`status`/`responses`/`summary`; `responses` matches persisted ids; `status` defaults to `success` — covers custom-operation-framework "Operation response envelope" scenarios
+- [x] 1.4 Tests (RED→GREEN) in `src/framework/request-context.spec.ts` / `src/framework/with-custom-operation.spec.ts`: `ctx.respond` emits `name`/`status`/`responses`/`summary`; `responses` matches persisted ids; `status` defaults to `success` — covers custom-operation-framework "Operation response envelope" scenarios
 
 ## 2. Codegen: persist-output guard + persisted-only derivation
 
@@ -28,7 +28,7 @@
 ## 5. Documentation
 
 - [x] 5.1 Update `src/operations/_template/README.md` + `src/operations/_template/index.ts` to demonstrate persisted-only `output`, `response`, and `ctx.respond`
-- [x] 5.2 Update the generated workflow-invocation guidance/README notes for the operation response envelope (`name`/`type`/`status`/`responses`/`summary`)
+- [x] 5.2 Update the generated workflow-invocation guidance/README notes for the operation response envelope (`name`/`status`/`responses`/`summary`)
 - [x] 5.3 Update JSDoc on `OperationSignature`, `OperationResponse`, `RequestContext`, and `ctx.respond` describing the output↔persist / response↔res.send split
 
 ## 6. Changelog

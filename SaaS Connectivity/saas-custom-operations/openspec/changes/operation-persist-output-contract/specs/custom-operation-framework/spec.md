@@ -2,13 +2,13 @@
 
 ### Requirement: Operation response envelope
 
-The framework SHALL provide a typed operation response envelope for the `ctx.res.send` payload that is distinct from the persisted-attribute `output`. The envelope SHALL carry `name` (the operation/command name), `type`, `status`, `responses` (the native identities persisted during the invoke), and `summary` (per-operation response detail typed from an optional `OperationSignature['response']`). The framework SHALL populate `name`, `type`, `status`, and `responses`; the handler SHALL supply only `summary`. Response envelope fields SHALL NOT be propagated to the result-source account schema.
+The framework SHALL provide a typed operation response envelope for the `ctx.res.send` payload that is distinct from the persisted-attribute `output`. The envelope SHALL carry `name` (the operation/command name), `status`, `responses` (the native identities persisted during the invoke), and `summary` (per-operation response detail typed from an optional `OperationSignature['response']`). The framework SHALL populate `name`, `status`, and `responses`; the handler SHALL supply only `summary`. Response envelope fields SHALL NOT be propagated to the result-source account schema.
 
 #### Scenario: Handler returns response via ctx.respond
 
 - **GIVEN** an operation declares `response` summary fields on its `OperationSignature` interface
 - **WHEN** the handler calls `ctx.respond(summary)` after persisting accounts
-- **THEN** the framework SHALL call `ctx.res.send` with an envelope containing `name`, `type`, `status`, `responses`, and the supplied `summary`
+- **THEN** the framework SHALL call `ctx.res.send` with an envelope containing `name`, `status`, `responses`, and the supplied `summary`
 - **AND** `summary` SHALL be typed as `OperationSignature['response']`
 
 #### Scenario: responses lists persisted native ids

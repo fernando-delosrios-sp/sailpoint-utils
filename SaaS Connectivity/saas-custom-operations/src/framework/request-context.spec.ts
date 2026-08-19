@@ -42,7 +42,7 @@ describe('operation response envelope via ctx.respond', () => {
         }
     }
 
-    it('emits name, type, status, responses, and summary on res.send', async () => {
+    it('emits name, status, responses, and summary on res.send', async () => {
         const send = vi.fn()
         const ctx = createRequestContext<{ formUrl: string }, { 'items-scanned': number }>(
             input,
@@ -55,7 +55,6 @@ describe('operation response envelope via ctx.respond', () => {
 
         expect(send).toHaveBeenCalledWith({
             name: 'custom:example',
-            type: 'custom',
             status: 'success',
             responses: ['req:child-a'],
             summary: { 'items-scanned': 50 },

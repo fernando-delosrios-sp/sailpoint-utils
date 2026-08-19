@@ -121,7 +121,6 @@ export function createRequestContext<
     const respond = (summary: TSummary, status = 'success'): void => {
         res.send({
             name: deps.command ?? '',
-            type: 'custom',
             status,
             responses: Array.from(writeRegistry.keys()),
             summary,

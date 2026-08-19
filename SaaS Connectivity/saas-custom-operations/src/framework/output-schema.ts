@@ -25,8 +25,6 @@ export interface OperationSignature {
 export interface OperationResponse<TSummary extends object = Record<string, unknown>> {
     /** Operation/command name (e.g. `custom:access-model-sod-remediation`). */
     name: string
-    /** Command family; always `custom` for custom operations. */
-    type: string
     /** Outcome status; defaults to `success` when omitted from `ctx.respond`. */
     status: string
     /** Native identities persisted during this invoke (response id list). */

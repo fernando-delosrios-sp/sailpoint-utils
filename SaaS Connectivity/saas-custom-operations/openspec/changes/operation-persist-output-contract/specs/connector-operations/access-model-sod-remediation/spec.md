@@ -9,25 +9,25 @@ The access-model-sod-remediation operation SHALL return scan rollup counters on 
 - **GIVEN** a scan evaluates 50 access items and finds 3 violations creating 3 forms (2 skipped by idempotency)
 - **WHEN** the handler completes successfully
 - **THEN** `ctx.res.send` SHALL be called with `status: 'success'`
-- **AND** the payload SHALL include `access-model-sod-remediation:access-items-scanned` equal to 50
-- **AND** `access-model-sod-remediation:violations-found` equal to 3
-- **AND** `access-model-sod-remediation:forms-skipped` equal to 2
+- **AND** `payload.summary['access-model-sod-remediation:access-items-scanned']` SHALL equal 50
+- **AND** `payload.summary['access-model-sod-remediation:violations-found']` SHALL equal 3
+- **AND** `payload.summary['access-model-sod-remediation:forms-skipped']` SHALL equal 2
 - **AND** the handler SHALL NOT call `ctx.persist` with identity `requestId` for rollup counters
 
 #### Scenario: Zero violations summary only
 
 - **GIVEN** a scan evaluates 10 access items and finds no violations
 - **WHEN** the handler completes successfully
-- **THEN** `ctx.res.send` SHALL include `access-model-sod-remediation:access-items-scanned` equal to 10
-- **AND** `access-model-sod-remediation:violations-found` equal to 0
+- **THEN** `payload.summary['access-model-sod-remediation:access-items-scanned']` SHALL equal 10
+- **AND** `payload.summary['access-model-sod-remediation:violations-found']` SHALL equal 0
 - **AND** SHALL NOT persist any result-source account on identity `requestId`
 
 #### Scenario: Optional failure counter on res.send
 
 - **GIVEN** a scan creates forms where at least one child persist fails
 - **WHEN** the handler completes successfully
-- **THEN** `ctx.res.send` SHALL include `access-model-sod-remediation:forms-persist-failed` equal to the failure count
-- **AND** SHALL omit `access-model-sod-remediation:forms-persist-failed` when the count is zero
+- **THEN** `payload.summary['access-model-sod-remediation:forms-persist-failed']` SHALL equal the failure count
+- **AND** SHALL omit `payload.summary['access-model-sod-remediation:forms-persist-failed']` when the count is zero
 
 #### Scenario: Scan-summary counters excluded from output and account schema
 

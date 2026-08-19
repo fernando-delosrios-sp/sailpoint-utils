@@ -18,7 +18,7 @@ All persist call sites in current handlers pass an inline object literal as the 
 
 **Goals:**
 - `OperationSignature.output` means persisted attributes only; it remains the sole feed for the account schema.
-- Give `ctx.res.send` a typed response envelope (`name`, `type`, `status`, `responses`, per-operation `summary`) that never reaches the account schema.
+- Give `ctx.res.send` a typed response envelope (`name`, `status`, `responses`, per-operation `summary`) that never reaches the account schema.
 - Fail the build (codegen) when an `output` field is not persisted.
 - Refactor every `main` violator to comply.
 
@@ -48,18 +48,17 @@ interface OperationSignature {
 
 interface OperationResponse<TSummary extends object> {
     name: string              // operation/command name, e.g. 'custom:access-model-sod-remediation'
-    type: string              // 'custom'
     status: string            // 'success' | 'error' | operation-defined
     responses: string[]       // native ids persisted this invoke
     summary: TSummary         // the operation's response detail
 }
 ```
 
-- **Reason**: Structurally separates res.send content from `output`, matching the requested `name`/`type`/`status`/`responses` + summary shape.
-- **Considered alternatives**: Leave res.send untyped — rejected; nothing then prevents authors from reaching back into `output`. Flatten summary fields at the envelope top level — rejected; nesting under `summary` keeps framework fields (`name`/`status`/`responses`) unambiguous.
+- **Reason**: Structurally separates res.send content from `output`, matching the requested `name`/`status`/`responses` + summary shape.
+- **Considered alternatives**: Leave res.send untyped — rejected; nothing then prevents authors from reaching back into `output`. Flatten summary fields at the envelope top level — rejected; nesting under `summary` keeps framework fields (`name`/`status`/`responses`) unambiguous. Include a constant `type: 'custom'` — rejected; `name` already identifies the command.
 
 ### D3: Framework builds the envelope; author supplies only summary
-- **Choice**: Add `ctx.respond(summary)` to `RequestContext`. It assembles `{ name: command, type: 'custom', status, responses, summary }` where `responses` comes from the persist `WriteRegistry` (ids written this invoke) and `status` defaults to `success`, then calls `ctx.res.send(envelope)`. `RequestContext` gains a second type param `TSummary` (default `Record<string, unknown>`), so `ctx.respond` is typed from `OperationSignature['response']`.
+- **Choice**: Add `ctx.respond(summary)` to `RequestContext`. It assembles `{ name: command, status, responses, summary }` where `responses` comes from the persist `WriteRegistry` (ids written this invoke) and `status` defaults to `success`, then calls `ctx.res.send(envelope)`. `RequestContext` gains a second type param `TSummary` (default `Record<string, unknown>`), so `ctx.respond` is typed from `OperationSignature['response']`.
 - **Reason**: `responses` is correct by construction (the framework already tracks persisted ids); authors cannot desync it.
 - **Considered alternatives**: Author-built envelope passed to `res.send` — rejected; reintroduces drift and manual id lists. Keep raw `ctx.res.send` only — rejected; loses typing and auto-`responses`.
 

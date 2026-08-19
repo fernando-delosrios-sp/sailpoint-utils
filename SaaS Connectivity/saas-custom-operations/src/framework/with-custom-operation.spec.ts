@@ -212,7 +212,6 @@ describe('customOperation', () => {
 
         expect(res.send).toHaveBeenCalledWith({
             name: 'custom:test',
-            type: 'custom',
             status: 'success',
             responses: ['req:child-a'],
             summary: { itemsScanned: 3 },

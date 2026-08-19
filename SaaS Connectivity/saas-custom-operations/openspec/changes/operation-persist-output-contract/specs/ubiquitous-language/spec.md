@@ -2,7 +2,7 @@
 
 ### Requirement: Operation response term
 
-The glossary SHALL define **operation response** as the typed payload a custom operation returns via `ctx.res.send`, an envelope comprising `name` (operation/command name), `type`, `status`, `responses` (the native identities persisted during the invoke), and `summary` (per-operation response detail typed from `OperationSignature['response']`). The operation response SHALL NOT be persisted and SHALL NOT contribute attributes to the result-source account schema.
+The glossary SHALL define **operation response** as the typed payload a custom operation returns via `ctx.res.send`, an envelope comprising `name` (operation/command name), `status`, `responses` (the native identities persisted during the invoke), and `summary` (per-operation response detail typed from `OperationSignature['response']`). The operation response SHALL NOT be persisted and SHALL NOT contribute attributes to the result-source account schema.
 
 #### Scenario: Operation response term
 

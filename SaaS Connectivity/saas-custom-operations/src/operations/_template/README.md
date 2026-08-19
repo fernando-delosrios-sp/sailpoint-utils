@@ -34,7 +34,6 @@ Return rollups with `ctx.respond(summary)` (not raw `ctx.res.send`). The framewo
 | Field | Source |
 |---|---|
 | `name` | Command name (e.g. `custom:template`) |
-| `type` | Always `custom` |
 | `status` | Defaults to `success` |
 | `responses` | Native identities persisted this invoke |
 | `summary` | Your `OperationSignature.response` fields |

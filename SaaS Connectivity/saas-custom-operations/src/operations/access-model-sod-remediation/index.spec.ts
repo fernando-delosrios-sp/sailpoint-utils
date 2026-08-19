@@ -30,7 +30,6 @@ function expectScanSummary(
     expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
             name: 'custom:access-model-sod-remediation',
-            type: 'custom',
             status: 'success',
             summary: expect.objectContaining(summary),
         })
@@ -246,7 +245,6 @@ describe('accessModelSodRemediationOperation', () => {
             expect(res.send).toHaveBeenCalledWith(
                 expect.objectContaining({
                     name: 'custom:access-model-sod-remediation',
-                    type: 'custom',
                     status: 'success',
                     summary: expect.objectContaining({
                         'access-model-sod-remediation:access-items-scanned': 2,
@@ -319,7 +317,6 @@ describe('accessModelSodRemediationOperation', () => {
 
             expect(res.send).toHaveBeenCalledWith({
                 name: 'custom:access-model-sod-remediation',
-                type: 'custom',
                 status: 'success',
                 responses: [],
                 summary: {

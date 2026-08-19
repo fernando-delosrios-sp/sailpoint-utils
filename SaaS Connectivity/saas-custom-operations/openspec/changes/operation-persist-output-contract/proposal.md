@@ -12,7 +12,7 @@
 
 **Typed operation response envelope**
 - From: `ctx.res.send({...})` payload is untyped and overlaps `output`.
-- To: a distinct typed contract on the signature — `name`/`type`, `status`, `responses` (the persisted native ids of the invoke), plus per-operation summary detail. Not propagated to the account schema.
+- To: a distinct typed contract on the signature — `name`, `status`, `responses` (the persisted native ids of the invoke), plus per-operation summary detail. Not propagated to the account schema.
 - Reason: give the res.send summary its own home so it cannot leak into `output`.
 - Impact: new signature surface; `status`/`responses` framework-populatable from the persist registry.
 

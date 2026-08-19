@@ -6,7 +6,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 💥 Breaking Changes
 
-- **Typed operation response envelope** — Successful custom operation invokes now return `{ name, type, status, responses, summary }` via `ctx.respond(summary)` (preferred) instead of a flat `ctx.res.send` payload. Scan rollup counters for `custom:access-model-sod-remediation` move under `summary`. Workflows that read those counters from the invoke response body must update JSONPath to `summary.<field>`. Result-source **Get Accounts** reads are unchanged.
+- **Typed operation response envelope** — Successful custom operation invokes now return `{ name, status, responses, summary }` via `ctx.respond(summary)` (preferred) instead of a flat `ctx.res.send` payload. Scan rollup counters for `custom:access-model-sod-remediation` move under `summary`. Workflows that read those counters from the invoke response body must update JSONPath to `summary.<field>`. Result-source **Get Accounts** reads are unchanged.
 
 ### 🔧 Improvements
 

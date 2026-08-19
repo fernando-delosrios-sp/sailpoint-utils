@@ -9,7 +9,7 @@ The set of account attributes an operation writes via `ctx.persist(id, attribute
 _Avoid_: "operation output" (ambiguous — conflated with the invoke response).
 
 **operation response** (`promote`):
-The typed payload an operation returns via `ctx.res.send(...)`. An envelope of `name`/`type`, `status`, `responses` (the persisted native ids written this invoke), and per-operation summary detail. Not persisted; never propagated to the account schema.
+The typed payload an operation returns via `ctx.res.send(...)`. An envelope of `name`, `status`, `responses` (the persisted native ids written this invoke), and per-operation summary detail. Not persisted; never propagated to the account schema.
 _Avoid_: "output", "result".
 
 **response id list** (`draft`):
@@ -28,7 +28,7 @@ Whether an operation persists one account (single), a parent plus children, or a
 - **Context:** `OperationSignature.output` drives two codegen outputs — the per-op `*.schema.ts` sidecar and the flattened ISC account schema (`buildAccountSchema`). Authors have been declaring `ctx.res.send` summary counters (e.g. `access-items-scanned`, `forms-created`) in `output`, so those never-persisted keys become account-schema attributes that appear on no account.
 - **Q: Should `output` describe persisted data or the res.send payload?** → Persisted data only. The account schema is the contract `output` feeds, so it must mirror `ctx.persist`.
 - **Q: Where does the res.send summary live?** → In its own typed contract on the signature (a `response`/summary field), structurally separate from `output`, so the two cannot be conflated.
-- **Q: What is in the response envelope?** → `name`/`type`, `status`, `responses` (persisted native ids), plus per-operation summary detail. `status`/`responses` are framework-populatable from the persist registry; summary detail is author-declared.
+- **Q: What is in the response envelope?** → `name`, `status`, `responses` (persisted native ids), plus per-operation summary detail. `status`/`responses` are framework-populatable from the persist registry; summary detail is author-declared.
 - **Q: How to prevent regressions?** → A codegen/lint guard fails the build when an `output` field is never persisted, or when a res.send-only key leaks into `output`/the account schema.
 - **Q: How far does remediation go?** → Audit all `main` operations; fix every violator. `access-model-sod-remediation` is the confirmed `main` violator; `access-expiration-reminders` (abb) is motivation only.
 
