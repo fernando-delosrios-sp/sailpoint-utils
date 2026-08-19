@@ -445,6 +445,31 @@ describe('isc/forms create-instance', () => {
         expect(url).toBe('https://tenant.identitynow.com/form/abc')
     })
 
+    it('createStandaloneFormInstance uses caller-supplied expire instead of default TTL', async () => {
+        const createFormInstanceV1 = vi.fn().mockResolvedValue({
+            data: { standAloneFormUrl: 'https://tenant.identitynow.com/form/abc' },
+        })
+        const forms = createFormsStub({ createFormInstanceV1 })
+        const expire = '2026-08-20T22:00:00Z'
+
+        await createStandaloneFormInstance({
+            forms,
+            formDefinitionId: 'def-1',
+            recipientId: 'owner-1',
+            createdBySourceId: 'source-1',
+            formInput: { summary: 'example' },
+            expire,
+        })
+
+        expect(createFormInstanceV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                body: expect.objectContaining({
+                    expire: '2026-08-20T22:00:00Z',
+                }),
+            })
+        )
+    })
+
     it('createStandaloneFormInstance rejects unexpected initial state', async () => {
         const forms = createFormsStub({
             createFormInstanceV1: vi.fn().mockResolvedValue({
