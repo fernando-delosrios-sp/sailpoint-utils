@@ -54,10 +54,25 @@ Exact UTC calendar-day difference between run date and `removeDate` must equal `
 
 Skip form launch when a notice account already exists at `{requestId}:{identityId}:{accessProfileId}`. Callers that need cross-run dedupe must reuse a stable `requestId`.
 
+## Cap and skips
+
+- At most **25** forms per invoke (`MAX_FORMS_PER_RUN`). Overflow is counted in `forms-overflow` and logged once.
+- Skip when manager id or public email is missing (counted; run continues).
+- Skip when notice account already exists (idempotency).
+
+## Workflows
+
+| Workflow | Trigger | Role |
+|---|---|---|
+| [`workflows/Access Expiration Reminders - Analysis.json`](../../../workflows/Access%20Expiration%20Reminders%20-%20Analysis.json) | Daily 00:00 UTC | Invokes this command with stable `requestId` `access-expiration-reminders`, `formName`, `expirationDays: 1` |
+| [`workflows/Access Expiration Reminders - Notification.json`](../../../workflows/Access%20Expiration%20Reminders%20-%20Notification.json) | `idn:account-created` filtered by `operationName` | Sends email from persisted `form-email-*` attributes |
+
+Import both workflows, set connector ID / source / OAuth, and ensure the form definition name matches Analysis `formName`. Keep `requestId` stable across scheduled runs for cross-day idempotency.
+
 ## Local development
 
 ```bash
 npm run call:op -- payloads/access-expiration-reminders-offline.json
 ```
 
-Offline payload and workflows are added in later tasks.
+Offline fixtures use `OFFLINE_REFERENCE_NOW` so the default `expirationDays: 1` matches without fake timers.

@@ -10,7 +10,7 @@ SailPoint ISC SaaS connector scaffold for custom operations. OpenSpec governs ch
 -   **Operations:** `src/operations/<slug>/` — custom handlers; `auto-registry.ts` (codegen) wires commands and schemas
 -   **ISC loopback:** `src/isc/<api-grouping>/` — thin SDK wrappers used from handlers via `ctx.sdk`
 -   **Manifest:** `connector-spec.json` — custom commands and invoke `sourceConfig` (apiUrl, token, sourceName)
--   **Custom commands:** `custom:example`, `custom:governance-group-emails`, `custom:access-model-sod-remediation`, `custom:access-model-sod-remediation-apply`, `custom:preventive-sod-check`, `custom:sod-remediation`
+-   **Custom commands:** `custom:example`, `custom:governance-group-emails`, `custom:access-expiration-reminders`, `custom:access-model-sod-remediation`, `custom:access-model-sod-remediation-apply`, `custom:preventive-sod-check`, `custom:sod-remediation`
 -   **Build/test:** `npm run typecheck`, `npm test`, `npm run build`, `npm run codegen:schemas`
 -   **Local invoke:** `npm run call:op` (payload JSON); `ISC_TOKEN` env var supplies token when payload uses a placeholder
 -   **CI:** parent repo workflow `.github/workflows/saas-custom-operations-ci.yml` (path-filtered to this package)

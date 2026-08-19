@@ -1,0 +1,56 @@
+{
+  "id": "b2c3d4e5-f6a7-4890-b123-456789abcdef",
+  "name": "Access Expiration Reminders - Notification",
+  "description": "Sends manager email when an access-expiration-reminders notice account is created on the result source.",
+  "created": "2026-08-19T14:00:00.000000000Z",
+  "modified": "2026-08-19T14:00:00.000000000Z",
+  "modifiedBy": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
+  "definition": {
+    "start": "Send Email",
+    "steps": {
+      "End Step - Success": {
+        "actionId": "sp:operator-success",
+        "displayName": "",
+        "type": "success"
+      },
+      "Send Email": {
+        "actionId": "sp:send-email",
+        "attributes": {
+          "body.$": "$.trigger.account.attributes['access-expiration-reminders:form-email-body']",
+          "context": {},
+          "recipientEmailList.$": "$.trigger.account.attributes['access-expiration-reminders:form-email-recipients']",
+          "replyTo.$": "",
+          "subject.$": "$.trigger.account.attributes['access-expiration-reminders:form-email-header']"
+        },
+        "displayName": "",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 2
+      }
+    }
+  },
+  "enabled": true,
+  "creator": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
+  "owner": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
+  "trigger": {
+    "type": "EVENT",
+    "mode": "advanced",
+    "attributes": {
+      "filter.$": "$.account.attributes[?(@.operationName == \"custom:access-expiration-reminders\")]",
+      "id": "idn:account-created",
+      "integrationId": null
+    }
+  }
+}

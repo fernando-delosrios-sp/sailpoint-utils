@@ -56,6 +56,8 @@ The `workflows/` directory contains ISC workflow snapshots you can import as tem
 | [`workflows/Access Model SOD - Analysis.json`](workflows/Access%20Model%20SOD%20-%20Analysis.json) | `custom:access-model-sod-remediation` | Scheduled | Catalog scan |
 | [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json) | — (event read-back) | `idn:account-created` | Email access item owner from child persist account |
 | [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json) | `custom:access-model-sod-remediation-apply` | `sp:form-submitted` | Apply catalog correction after form submit |
+| [`workflows/Access Expiration Reminders - Analysis.json`](workflows/Access%20Expiration%20Reminders%20-%20Analysis.json) | `custom:access-expiration-reminders` | Scheduled (daily 00:00 UTC) | Scan sunset ACCESS_PROFILE assignments |
+| [`workflows/Access Expiration Reminders - Notification.json`](workflows/Access%20Expiration%20Reminders%20-%20Notification.json) | — (event read-back) | `idn:account-created` | Email manager from notice account |
 
 Shared invoke pattern (all connector-call workflows):
 
@@ -141,6 +143,7 @@ Each registered command documents its invoke contract, payloads, and workflow in
 |---|---|
 | `custom:example` | [src/operations/example/README.md](src/operations/example/README.md) |
 | `custom:governance-group-emails` | [src/operations/governance-group-emails/README.md](src/operations/governance-group-emails/README.md) |
+| `custom:access-expiration-reminders` | [src/operations/access-expiration-reminders/README.md](src/operations/access-expiration-reminders/README.md) |
 | `custom:access-model-sod-remediation` | [src/operations/access-model-sod-remediation/README.md](src/operations/access-model-sod-remediation/README.md) |
 | `custom:access-model-sod-remediation-apply` | [src/operations/access-model-sod-remediation-apply/README.md](src/operations/access-model-sod-remediation-apply/README.md) |
 | `custom:preventive-sod-check` | [src/operations/preventive-sod-check/README.md](src/operations/preventive-sod-check/README.md) |
@@ -509,6 +512,8 @@ workflows/
   Access Model SOD - Analysis.json         # custom:access-model-sod-remediation scan
   Access Model SOD - Notification.json     # Child-account email on persist
   Access Model SOD - Remediation.json      # custom:access-model-sod-remediation-apply
+  Access Expiration Reminders - Analysis.json      # custom:access-expiration-reminders scan
+  Access Expiration Reminders - Notification.json  # Manager email on notice persist
 templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```
 

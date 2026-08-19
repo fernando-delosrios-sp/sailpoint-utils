@@ -30,24 +30,24 @@
 
 ## 6. Workflows
 
-- [ ] 6.1 Add `workflows/Access Expiration Reminders - Analysis.json` (daily 00:00 UTC, stable `requestId`, `formName`, `expirationDays: 1`) modeled on Access Model SOD Analysis
-- [ ] 6.2 Add `workflows/Access Expiration Reminders - Notification.json` (`idn:account-created`, filter `operationName` = `custom:access-expiration-reminders`, Send Email from form-email fields)
+- [x] 6.1 Add `workflows/Access Expiration Reminders - Analysis.json` (daily 00:00 UTC, stable `requestId`, `formName`, `expirationDays: 1`) modeled on Access Model SOD Analysis
+- [x] 6.2 Add `workflows/Access Expiration Reminders - Notification.json` (`idn:account-created`, filter `operationName` = `custom:access-expiration-reminders`, Send Email from form-email fields)
 
 ## 7. Verification
 
-- [ ] 7.1 Confirm canonical test command: `npm test`
-- [ ] 7.2 Run `npm run typecheck`
-- [ ] 7.3 All delta spec scenarios covered by named automated tests
-- [ ] 7.4 Run `npm run call:op` against the offline payload and confirm summary on `res.send`
-- [ ] 7.5 Run `npm run build` (or pack-zip) so codegen/registry/manifest stay in sync
+- [x] 7.1 Confirm canonical test command: `npm test`
+- [x] 7.2 Run `npm run typecheck`
+- [x] 7.3 All delta spec scenarios covered by named automated tests
+- [x] 7.4 Run `npm run call:op` against the offline payload and confirm summary on `res.send`
+- [x] 7.5 Run `npm run build` (or pack-zip) so codegen/registry/manifest stay in sync
 
 ## 8. Documentation
 
-- [ ] 8.1 Write `src/operations/access-expiration-reminders/README.md` (command, inputs/outputs, matching, idempotency/`requestId` stability, workflows, local invoke)
-- [ ] 8.2 Update root `README.md` supported-commands / workflow list for the new operation
-- [ ] 8.3 Update `openspec/config.yaml` context supported-commands list if it enumerates commands
+- [x] 8.1 Write `src/operations/access-expiration-reminders/README.md` (command, inputs/outputs, matching, idempotency/`requestId` stability, workflows, local invoke)
+- [x] 8.2 Update root `README.md` supported-commands / workflow list for the new operation
+- [x] 8.3 Update `openspec/config.yaml` context supported-commands list if it enumerates commands
 
 ## 9. Changelog
 
-- [ ] 9.1 Create changelog entry via changelog-generator skill during apply
-- [ ] 9.2 Confirm entry documents new `custom:access-expiration-reminders`, notice-account contract, and importable workflows
+- [x] 9.1 Create changelog entry via changelog-generator skill during apply
+- [x] 9.2 Confirm entry documents new `custom:access-expiration-reminders`, notice-account contract, and importable workflows

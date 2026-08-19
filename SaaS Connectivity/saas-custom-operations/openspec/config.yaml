@@ -22,8 +22,9 @@ context: |
   - connector-spec.json — declared custom:* commands and invoke sourceConfig
 
   Supported commands (custom only):
-  - custom:example, custom:governance-group-emails, custom:access-model-sod-remediation,
-    custom:access-model-sod-remediation-apply, custom:preventive-sod-check, custom:sod-remediation
+  - custom:example, custom:governance-group-emails, custom:access-expiration-reminders,
+    custom:access-model-sod-remediation, custom:access-model-sod-remediation-apply,
+    custom:preventive-sod-check, custom:sod-remediation
 
   Configuration:
   - Invoke config: apiUrl, token, sourceName (plus optional logUrl, testMode)
