@@ -4,6 +4,10 @@ import { ViolationV1, extractSideEntitlements, resolveViolationSides } from '../
 import { IdentityAccessItem } from '../../isc/identity-access'
 import {
     escapeHtml,
+    fitPersistableHtml,
+    renderUnquotedHrefCta,
+} from '../../lib/persistable-email'
+import {
     buildGroupColumnLayouts,
     buildIdentitySodContextPanelHtml,
     renderEmojiLegend,
@@ -33,18 +37,6 @@ export function buildSituationHeader(input: Pick<SituationSummaryInput, 'violati
     return `${REVOCABILITY_EMOJI.warning} SOD Violation Remediation Required — ${targetName}`
 }
 
-function truncateEscaped(text: string, maxLength: number): string {
-    if (text.length <= maxLength) {
-        return text
-    }
-
-    if (maxLength <= 1) {
-        return text.slice(0, maxLength)
-    }
-
-    return `${text.slice(0, maxLength - 1)}…`
-}
-
 function pathConflictPhrase(groupACount: number, groupBCount: number): string {
     const sideLabel = (count: number): string => (count === 1 ? 'access path' : 'access paths')
 
@@ -53,12 +45,6 @@ function pathConflictPhrase(groupACount: number, groupBCount: number): string {
     }
 
     return `${groupACount} and ${groupBCount} ${sideLabel(Math.max(groupACount, groupBCount))} are in conflict`
-}
-
-function remediationFormLink(formUrl: string): string {
-    const safeFormUrl = escapeHtml(formUrl)
-    // Unquoted href: no literal quote chars (DelimitedFile provisionAsCsv-safe); valid when URL has no spaces.
-    return `<a href=${safeFormUrl}>Remediate here</a>`
 }
 
 /**
@@ -72,38 +58,21 @@ export function buildPersistedSituationSummary(
 ): string {
     const { violation, groupA, groupB, controls } = input
 
-    let identity = escapeHtml(violation.identity.name ?? violation.identity.id)
-    let policy = escapeHtml(violation.policy?.name ?? 'Unknown policy')
-    const formLink = remediationFormLink(formUrl)
+    const formLink = renderUnquotedHrefCta(formUrl, 'Remediate here')
     const pathPhrase = pathConflictPhrase(groupA.accessPaths.length, groupB.accessPaths.length)
+    const controlsNote =
+        controls.length === 0 ? ' No compensating controls are available.' : undefined
 
-    const render = (identityValue: string, policyValue: string, includeControls: boolean): string => {
-        const controlsNote =
-            includeControls && controls.length === 0
-                ? ' No compensating controls are available.'
-                : ''
-        return `<p>Please review a SOD violation for ${identityValue} (${policyValue}). ${pathPhrase}.${controlsNote} ${formLink}.</p>`
-    }
-
-    if (render(identity, policy, true).length <= maxLength) {
-        return render(identity, policy, true)
-    }
-    if (render(identity, policy, false).length <= maxLength) {
-        return render(identity, policy, false)
-    }
-
-    const overhead = render('', '', false).length
-    const nameBudget = maxLength - overhead
-    if (nameBudget > 2) {
-        const combinedLength = identity.length + policy.length
-        const identityBudget = Math.max(1, Math.floor(nameBudget * (identity.length / combinedLength)))
-        const policyBudget = Math.max(1, nameBudget - identityBudget)
-        identity = truncateEscaped(identity, identityBudget)
-        policy = truncateEscaped(policy, policyBudget)
-    }
-
-    const truncated = render(identity, policy, false)
-    return truncated.length <= maxLength ? truncated : truncated.slice(0, maxLength)
+    return fitPersistableHtml({
+        slots: {
+            identity: escapeHtml(violation.identity.name ?? violation.identity.id),
+            policy: escapeHtml(violation.policy?.name ?? 'Unknown policy'),
+        },
+        optionalSuffixes: controlsNote !== undefined ? { controls: controlsNote } : undefined,
+        render: (s, suffixes) =>
+            `<p>Please review a SOD violation for ${s.identity} (${s.policy}). ${pathPhrase}.${suffixes.controls ?? ''} ${formLink}.</p>`,
+        maxLength,
+    })
 }
 
 function buildSituationSummaryCore(input: SituationSummaryInput, uiOrigin?: string): string {

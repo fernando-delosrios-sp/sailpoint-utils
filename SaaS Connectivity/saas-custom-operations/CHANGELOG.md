@@ -2,6 +2,14 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-08-19 · v0.3.2
+
+### 🔧 Improvements
+
+- **Shared persistable-email kit** — Adds `src/lib/persistable-email/` for compact STRING-safe workflow email HTML (escape, ellipsis truncation, unquoted href CTAs, and fit-to-budget with optional suffixes). `custom:access-model-sod-remediation` and `custom:sod-remediation` persistable email bodies use the kit; `sod-form-html` re-exports `escapeHtml` from it. Non-breaking — email body/subject behavior and persist keys are unchanged.
+
+---
+
 ## Unreleased
 
 ### 🔧 Improvements
