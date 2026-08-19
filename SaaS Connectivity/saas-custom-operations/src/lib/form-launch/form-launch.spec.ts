@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import { buildCreateFormDefinitionPayload, loadFormSeed } from '../../isc/forms'
 import { launchForm } from './index'
@@ -108,7 +110,7 @@ describe('launchForm', () => {
     it('Handler owns persist', async () => {
         const mocks = createFormsMock()
 
-        await launchForm({
+        const result = await launchForm({
             forms: mocks.forms,
             definition: { formDefinitionId: 'definition-1' },
             recipientId: 'recipient-1',
@@ -121,10 +123,16 @@ describe('launchForm', () => {
             },
         })
 
-        expect(Object.keys(mocks.forms)).toEqual([
-            'searchFormDefinitionsByTenantV1',
-            'createFormDefinitionV1',
-            'createFormInstanceV1',
-        ])
+        expect(result).toEqual({
+            formUrl: 'https://tenant.example/forms/instance-1',
+            emailHeader: 'Review required',
+            emailBody: 'Open the review form',
+            emailRecipients: ['recipient@example.com'],
+        })
+
+        const source = readFileSync(join(__dirname, 'index.ts'), 'utf8')
+        expect(source).not.toContain('ctx.persist')
+        expect(source).not.toMatch(/from ['"][^'"]*persist-result/)
+        expect(source).not.toMatch(/\bpersist\s*\(/)
     })
 })

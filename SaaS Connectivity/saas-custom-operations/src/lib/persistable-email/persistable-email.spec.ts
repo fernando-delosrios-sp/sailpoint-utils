@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ISC_STRING_ATTRIBUTE_MAX_LENGTH } from '../../framework/attribute-limits'
 import {
@@ -6,6 +8,14 @@ import {
     renderUnquotedHrefCta,
     truncateWithEllipsis,
 } from './index'
+
+const ISC_OR_FORMS_IMPORT = /from ['"][^'"]*\/isc\/|sailpoint-api-client|FormsApi|createFormInstance/
+
+function implementationSources(dir: string): string[] {
+    return readdirSync(dir)
+        .filter((name) => name.endsWith('.ts') && !name.endsWith('.spec.ts'))
+        .map((name) => join(dir, name))
+}
 
 describe('persistable-email escapeHtml', () => {
     it('HTML escape: replaces &, <, >, and " with entities', () => {
@@ -92,7 +102,6 @@ describe('persistable-email fitPersistableHtml', () => {
     })
 
     it('No ISC side effects: helpers are pure string transforms', () => {
-        // Pure functions — no SDK / Forms clients are imported or invoked by this module.
         expect(typeof escapeHtml('x')).toBe('string')
         expect(typeof truncateWithEllipsis('xy', 1)).toBe('string')
         expect(typeof renderUnquotedHrefCta('https://x', 'y')).toBe('string')
@@ -102,5 +111,10 @@ describe('persistable-email fitPersistableHtml', () => {
                 render: (s) => `<p>${s.a}</p>`,
             })
         ).toBe('string')
+
+        for (const file of implementationSources(__dirname)) {
+            const source = readFileSync(file, 'utf8')
+            expect(source, file).not.toMatch(ISC_OR_FORMS_IMPORT)
+        }
     })
 })

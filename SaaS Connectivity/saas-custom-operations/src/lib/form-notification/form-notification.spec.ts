@@ -1,5 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
 import { toPersistAttributes, type FormNotification } from './index'
+
+const ISC_OR_FORMS_IMPORT = /from ['"][^'"]*\/isc\/|sailpoint-api-client|FormsApi|createFormInstance/
 
 const sampleEnvelope = (): FormNotification => ({
     formUrl: 'https://tenant.identitynow.com/ui/a/admin/forms/new/form-instances/instance-1',
@@ -60,16 +64,10 @@ describe('form-notification toPersistAttributes', () => {
     })
 
     it('No ISC side effects: mapper does not call ISC or Forms APIs', () => {
-        const formsSpy = vi.fn()
-        const iscSpy = vi.fn()
-        // Guard against accidental imports that invoke network helpers at call time.
-        void formsSpy
-        void iscSpy
-
         const attrs = toPersistAttributes('sod-remediation', sampleEnvelope())
-
         expect(Object.keys(attrs)).toHaveLength(4)
-        expect(formsSpy).not.toHaveBeenCalled()
-        expect(iscSpy).not.toHaveBeenCalled()
+
+        const source = readFileSync(join(__dirname, 'index.ts'), 'utf8')
+        expect(source).not.toMatch(ISC_OR_FORMS_IMPORT)
     })
 })
