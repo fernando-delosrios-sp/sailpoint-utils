@@ -35,54 +35,68 @@ Each invocation receives a standard envelope (`config` + `input`), resolves the 
 Configure a **source name** in connector config (`sourceName`). On each invocation the framework:
 
 1. Looks up an ISC source with that name
-2. Creates a DelimitedFile source with CSV provisioning if missing (owner = token identity), applying the **base account schema** (core attrs plus union of all registered operation output fields)
-3. Reconciles the account schema before each `ctx.persist` for the current operation's output fields (add-only for attributes added after source create)
+2. Creates a DelimitedFile source with CSV provisioning if missing (owner = token identity), applying the **base account schema** (core attrs plus the **invoking operation's** output fields)
+3. Reconciles the account schema before each `ctx.persist` for the current operation's output fields (add-only for attributes from other operations on first use)
 
-Core attributes are always ensured on the schema: `id` (identity), `status`, and `date`.
+Core attributes are always ensured on the schema: `id` (identity), `status`, `date`, `details` (human-readable outcome text), and `operationName` (invoking custom command, e.g. `custom:sod-remediation`).
 
 **Token scopes:** The access token must allow source read/create/update and account create on the result source. PAT or OAuth client credentials used in workflows need `sp:manage:source`, `sp:manage:source-schema`, and account provisioning scopes for the tenant.
 
-Manual source setup is not required. `npm run templates` generates `account-schema.json` as reference documentation for the attributes operations persist; auto-created result sources receive the same base schema at runtime, with per-persist reconciliation for any later additions.
+Manual source setup is not required. `npm run templates` generates `account-schema.json` as reference documentation showing the union of all operation output fields; at runtime, auto-created result sources receive core attrs plus the invoking operation's fields, with per-persist reconciliation when other operations write attributes.
 
-## Workflow export
+## Workflow exports
 
-The `workflows/` directory contains an ISC **Export Job** snapshot you can import for the reference **SaaS Custom Operations Call** workflow:
+The `workflows/` directory contains ISC workflow snapshots you can import as templates. Each operation's co-located README documents how its exports integrate (triggers, JSONPaths, and end-to-end flow).
 
-| File | Contents |
-|---|---|
-| `workflows/SaaS Custom Operations.json` | Example **WORKFLOW** — invoke `custom:example`, then read results with **Get Accounts** |
+| File | Operation(s) | Trigger | Purpose |
+|---|---|---|---|
+| [`workflows/SaaS Custom Operations.json`](workflows/SaaS%20Custom%20Operations.json) | `custom:example` | Manual / external | Reference invoke → **Get Accounts** read-back |
+| [`workflows/SOD Violation - Notification.json`](workflows/SOD%20Violation%20-%20Notification.json) | `custom:sod-remediation` | `idn:sod-violation-created` | Launch remediation form and email owner |
+| [`workflows/SOD Violation - Remediation.json`](workflows/SOD%20Violation%20-%20Remediation.json) | — (post-submit) | `sp:form-submitted` | Revoke access or apply compensating control |
+| [`workflows/Access Model SOD - Analysis.json`](workflows/Access%20Model%20SOD%20-%20Analysis.json) | `custom:access-model-sod-remediation` | Scheduled | Catalog scan |
+| [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json) | — (event read-back) | `idn:account-created` | Email access item owner from child persist account |
+| [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json) | `custom:access-model-sod-remediation-apply` | `sp:form-submitted` | Apply catalog correction after form submit |
 
-The workflow demonstrates:
+Shared invoke pattern (all connector-call workflows):
 
-- Configuration variables → OAuth token → connector invoke → **Get Accounts** filtered by `requestId`
-- `config.sourceName` passed on invoke (the connector creates the DelimitedFile result source on first use)
+- **Configuration** variables → **Get Access Token** (OAuth) → HTTP POST `/beta/platform-connectors/{connectorId}/invoke` with `config.sourceName` (auto-provisions the DelimitedFile result source on first use)
+- Persisted outputs are read via **Get Accounts** or, for access-model notifications, from the **account-created** event payload
 
-No separate result source import is required. The framework resolves `sourceName` at runtime, creates the DelimitedFile source when missing, and reconciles account schema on each `ctx.persist`.
+`custom:preventive-sod-check` and `custom:governance-group-emails` have no bundled exports — see their READMEs for invoke and branching contracts.
 
-### Importing the workflow
+### Importing workflows
 
 1. In ISC Admin, open **Global → Import / Export → Import**.
-2. Upload `workflows/SaaS Custom Operations.json`.
-3. Review and confirm import of the workflow object.
-4. Update workflow **Configuration** step variables for your tenant:
+2. Upload one or more JSON files from `workflows/`.
+3. Review and confirm import of workflow objects.
+4. For each imported workflow, update **Configuration** step variables for your tenant:
    - **API URL** — e.g. `https://your-tenant.api.identitynow.com`
    - **SaaS Custom Operations Source Name** — name for the auto-provisioned result source (e.g. `SaaS Custom Operations`; passed as invoke `config.sourceName`)
    - **SaaS Custom Operations Connector ID** — your deployed custom connector ID
-5. Configure the **Get Access Token** step with a valid OAuth client (Basic auth reference).
-6. Enable the workflow and trigger it (external HTTP trigger) or run steps manually while testing.
+5. Configure **Get Access Token** with a valid OAuth client (Basic auth reference).
+6. For form-submitted triggers, re-point `formDefinitionId` filters to your tenant's remediation form definitions (created on first operation invoke).
+7. Enable workflows and verify triggers (SoD violation created, account created, schedule, or form submitted).
 
-> **Note:** Export files are tenant-specific snapshots. Object IDs, owners, and OAuth references in the JSON will differ after import — treat the workflow as a template and re-point configuration to your connector and credentials.
+> **Note:** Export files are tenant-specific snapshots. Object IDs, owners, OAuth references, and form definition UUIDs in the JSON will differ after import — treat exports as templates and re-point configuration to your connector, credentials, and forms.
 
 ## Build and deploy
 
 ```bash
 npm install
 npm test
-npm run build
-npm run pack-zip    # produces a deployable connector package via spcx
+npm run build       # codegen + ncc bundle; postbuild runs verify:bundle
+npm run pack-zip    # produces dist/saas-custom-operations-<version>.zip
 ```
 
-Upload the packaged connector to ISC and note the connector ID for workflow configuration and invoke calls.
+Upload the zip to ISC (**Connections → Custom Connectors**), then confirm the new package version is active:
+
+1. **Bump `version` in `package.json`** before `pack-zip` when redeploying — ISC keys packages by name + version; re-uploading the same version may not replace the runtime your workflow invokes.
+2. **Tag the upload `latest`** (or point workflow `tag` at the specific version you uploaded). Workflows using `"tag": "latest"` keep calling the previously tagged bundle until you retag.
+3. **Verify the running connector** — `std:spec:read` only reads `connector-spec.json` from the package; it does not prove handlers loaded. After deploy, invoke a smoke command (e.g. `custom:example`) or run `npm run verify:bundle` locally on the zip contents before upload.
+
+If you see `[ConnectorError] unsupported command: custom:…` after upload, the invoke reached a connector bundle that does not register that handler (stale `latest` tag, same-version re-upload, or workflow `connectorRef` pointing at a different connector object). Local `spcx run` against stale `.dev-dist/` causes the same error — use `npm run dev` (runs `compile:dev` first) or `npm run build && npx spcx run dist/index.js`.
+
+Note the connector ID for workflow configuration and invoke calls.
 
 ## Usage
 
@@ -127,6 +141,8 @@ Each registered command documents its invoke contract, payloads, and workflow in
 |---|---|
 | `custom:example` | [src/operations/example/README.md](src/operations/example/README.md) |
 | `custom:governance-group-emails` | [src/operations/governance-group-emails/README.md](src/operations/governance-group-emails/README.md) |
+| `custom:access-model-sod-remediation` | [src/operations/access-model-sod-remediation/README.md](src/operations/access-model-sod-remediation/README.md) |
+| `custom:access-model-sod-remediation-apply` | [src/operations/access-model-sod-remediation-apply/README.md](src/operations/access-model-sod-remediation-apply/README.md) |
 | `custom:preventive-sod-check` | [src/operations/preventive-sod-check/README.md](src/operations/preventive-sod-check/README.md) |
 | `custom:sod-remediation` | [src/operations/sod-remediation/README.md](src/operations/sod-remediation/README.md) |
 
@@ -135,7 +151,7 @@ When you add a new operation, copy `src/operations/_template/` (including `READM
 ### Local development
 
 ```bash
-npm run build && npm run dev
+npm run dev          # codegen + tsc to .dev-dist/, then spcx (see package.json predev)
 ```
 
 Post a test payload to the local connector runtime:
@@ -177,6 +193,7 @@ Set `config.testMode: true` (or export `SPCX_TEST_MODE=1` for config-less runs) 
 | Config provided | ISC behavior | Writes |
 |---|---|---|
 | Yes (full `apiUrl`, `token`, `sourceName`) | Read-only status check + list-only source lookup; fails on missing/invalid token | Inhibited (logged) |
+| Partial (`apiUrl` without `token`, or the reverse) | Rejected with incomplete connection config — no offline fallback | N/A (invoke fails) |
 | No | All ISC calls skipped | Inhibited (logged) |
 
 Run from an invoke payload:
@@ -212,7 +229,7 @@ Config-present dry-run payload:
 
 Partial config (e.g. `{ "testMode": true }` only) is rejected — provide full connection fields or omit config entirely.
 
-The local runner resolves operations from a static registry in `scripts/call-op.ts`. When you add a new custom operation, register its handler in `OPERATION_HANDLERS` alongside `custom:example`.
+The local runner (`npm run call:op`) resolves handlers from the codegen-exported `OPERATION_HANDLERS` map in `src/operations/auto-registry.ts`. After you add an auto-discovered custom operation and run `npm run build` (or `npm run codegen:schemas`), local invoke works without editing `scripts/call-op.ts`.
 
 ### Invoke against a deployed connector
 
@@ -237,7 +254,8 @@ Content-Type: application/json
 After invoke, read persisted output from the result source using **Get Accounts** filtered by native identity:
 
 - Filter: `nativeIdentity eq "{requestId}"` (or a child id such as `{requestId}:detail`)
-- Map operation output attributes, `status`, and `date` from account attributes
+- Map operation output attributes, `status`, `date`, `operationName`, and optional `details` from account attributes
+- On failure, the framework upserts a result account with `status: failed`, `operationName`, and `details` set to the error message (same text as invoke `{ error }`), so Get Accounts works for failed invocations too
 
 The reference workflow export demonstrates this pattern in the **Read SaaS Custom Operation Result** step.
 
@@ -361,6 +379,8 @@ ctx.verifyPersisted(ids)
 - **`id`** — native account identity (often `ctx.requestId` or a derived child id like `` `${ctx.requestId}:detail` ``)
 - **`attributes`** — only keys declared in the operation output schema; typed per `OperationSignature.output`
 - **`status`** — optional, defaults to `"success"`
+- **`details`** — optional STRING on success persists for informative text; on terminal failure the framework sets `details` to the normalized error message automatically
+- **`operationName`** — framework-managed STRING set on every persist to the invoking custom command (`context.commandType`); handlers cannot override
 - **`date`** — always set automatically to the current timestamp
 - **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
 
@@ -375,12 +395,69 @@ ISC enforces account value storage limits on result sources: **128 characters** 
 ```bash
 npm install          # install dependencies
 npm test             # run Vitest suite with coverage
-npm run build        # codegen sidecars, then compile to dist/ via ncc
+npm run build        # codegen sidecars, then bundle to dist/ via ncc (packaging)
 npm run codegen:schemas  # regenerate *.schema.ts sidecars from OperationSignature
-npm run dev          # run locally with spcx
+npm run dev          # codegen + tsc to .dev-dist/, then spcx run (predev hook)
+npm run debug        # same as dev without source maps
 npm run pack-zip     # build deployable connector package
 npm run templates    # generate operator artifacts (see below)
 ```
+
+### Connected local invoke (`ISC_TOKEN`)
+
+For `npm run call:op` against a live tenant, payloads can keep a placeholder in `config.token` instead of committing secrets. The local runner substitutes `process.env.ISC_TOKEN` when `config.token` is empty, `<access-token>`, or `__SET_VIA_ISC_TOKEN_ENV__` (see `scripts/call-op.ts`).
+
+Copy `.env.example` to `.env`, set your access token, and export it before invoking:
+
+```bash
+export ISC_TOKEN=your-access-token
+npm run call:op -- payloads/custom-example.json
+```
+
+Payloads such as `payloads/governance-group-emails.json` use the `__SET_VIA_ISC_TOKEN_ENV__` placeholder by default. The token needs the same ISC scopes described under [Prerequisites](#prerequisites) (source read/create/update and account provisioning on the result source).
+
+### Invoke config
+
+Custom operation invokes accept optional fields on the `config` object alongside `apiUrl`, `token`, and `sourceName`:
+
+| Field | Required | Description |
+|---|---|---|
+| `logUrl` | No | When set, the framework POSTs one JSON log event per `ctx.log` call (and at incoming request logging) to this URL. Console output is always emitted. Failures to POST do not fail the operation. |
+| `testMode` | No | When true, persist and schema writes are inhibited (see test mode behavior elsewhere in this doc). |
+
+External log events use this JSON shape:
+
+```json
+{
+  "timestamp": "2026-08-18T10:00:00.000Z",
+  "level": "info",
+  "requestId": "wf-run-8842",
+  "command": "custom:example",
+  "message": "step complete",
+  "detail": { "optional": "structured payload" }
+}
+```
+
+Token, bearer, and other sensitive keys in `detail` are redacted before POST. Whitespace-only `logUrl` values are treated as unset.
+
+Before emit, the framework JSON-safe-normalizes `detail`: omits keys whose values are `undefined`, functions, or symbols; replaces circular references with `"[Circular]"`; serializes `Error` instances as `{ name, message, stack }`; converts `bigint` to decimal strings. Console and POST receive the same normalized map after redaction.
+
+### Operation logging (`ctx.log`)
+
+Handlers wrapped with `customOperation` receive `ctx.log` with `info`, `warn`, and `error(message, detail?)`. The optional second argument is a **named detail map** — values may be objects, arrays, or scalars (for example `{ violation, controls, count: 3 }`).
+
+Stdout uses a headline line `[requestId] message`, then labeled blocks per detail key: scalars inline (`  count: 3`), objects and arrays as indented `inspect` output. When `config.logUrl` is set, the same calls fire-and-forget POST the JSON event above with the identical normalized `detail`.
+
+```typescript
+ctx.log.info('discovered policies', { count: policies.length })
+ctx.log.warn('source missing — using placeholder')
+ctx.log.error('form create failed', { formName: input.formName })
+ctx.log.info('violation loaded', { violation: { id: 'v-1' }, count: 2 })
+```
+
+Operation-local helpers should use `ctx.log` or `getActiveFrameworkLogger()` — not direct `console.log` / `console.warn` — so step traces reach `logUrl` when configured.
+
+See `payloads/custom-example.json` for a connected dry-run payload that includes optional `logUrl`.
 
 ### Operator templates
 
@@ -388,7 +465,7 @@ Run `npm run templates` after adding or modifying operations under `src/operatio
 
 | File | Purpose |
 |---|---|
-| `account-schema.json` | Reference account schema — core attrs (`id`, `status`, `date`) plus union of operation output fields |
+| `account-schema.json` | Reference account schema — core attrs plus union of all operation output fields (runtime auto-create is operation-scoped) |
 | `access-token.md` | Shared OAuth client-credentials guide with tenant placeholders |
 | `workflow-invocation.md` | Per-operation invoke body, read-result, and child-identity steps |
 
@@ -426,9 +503,12 @@ connector-spec.json   # Declared commands and sourceConfig (ISC loopback setting
 invoke-payload.json   # Example invoke body for local / CLI testing
 payloads/             # Invoke payloads — local (`call:op`) and workflow-ready (`*-workflow.json`)
 workflows/
-  SaaS Custom Operations.json              # ISC export (example workflow)
-  SOD Remediation - Violation Response.json
-  SOD Remediation - Action.json
+  SaaS Custom Operations.json              # Reference invoke + Get Accounts
+  SOD Violation - Notification.json        # custom:sod-remediation launch + email
+  SOD Violation - Remediation.json         # Post-submit revoke / mitigate
+  Access Model SOD - Analysis.json         # custom:access-model-sod-remediation scan
+  Access Model SOD - Notification.json     # Child-account email on persist
+  Access Model SOD - Remediation.json      # custom:access-model-sod-remediation-apply
 templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```
 

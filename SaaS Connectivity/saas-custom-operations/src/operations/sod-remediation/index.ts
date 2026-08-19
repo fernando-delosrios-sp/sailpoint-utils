@@ -1,4 +1,4 @@
-import { customOperation, OperationSignature } from '../../framework'
+import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
 import { sodRemediationOperationSchema } from './index.schema'
 import { listAssignedEntitlements, listAssignedEntitlementsOffline } from '../../isc/identity-history'
 import {
@@ -21,6 +21,7 @@ import {
     enrichResolvedAccessSides,
 } from './access-path-enrichment'
 import { AccessPathLine } from './access-path-resolver'
+import { resolveUiOrigin } from '../../lib/sod-form-html'
 import {
     assembleFormInput,
     buildPersistedSituationSummary,
@@ -48,12 +49,13 @@ export interface SodRemediationOperation extends OperationSignature {
         violationId: string
         formName: string
         owner?: string
+        disableLinks?: boolean
     }
     output: {
         'sod-remediation:form-url': string
-        'sod-remediation:situation-summary': string
-        'sod-remediation:situation-header': string
-        'sod-remediation:owner-email': string
+        'sod-remediation:form-email-body': string
+        'sod-remediation:form-email-header': string
+        'sod-remediation:form-email-recipients': string[]
     }
 }
 
@@ -76,7 +78,7 @@ function collectKeepRecommendationRequests(
 /** Launch-only SOD remediation operation — prepares form instance and returns URL + summary. */
 export const sodRemediationOperation = customOperation<SodRemediationOperation>(
     async (ctx, input) => {
-        const offline = !ctx.apiUrl && !ctx.token
+        const offline = isOfflineContext(ctx)
         const clientConfig = { apiUrl: ctx.apiUrl, token: ctx.token }
 
         logSodRemediationInput(ctx.requestId, input, offline)
@@ -132,7 +134,8 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
             controls,
             recommendedSideToCorrect,
         }
-        const formInput = assembleFormInput(summaryInput)
+        const uiOrigin = offline || input.disableLinks === true ? undefined : resolveUiOrigin(ctx.apiUrl)
+        const formInput = assembleFormInput({ ...summaryInput, uiOrigin })
         logSodRemediationFormInput(ctx.requestId, formInput)
 
         const recipientId = input.owner ?? violation.owner.id
@@ -172,9 +175,9 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
         })
         await ctx.persist(ctx.requestId, {
             'sod-remediation:form-url': formUrl,
-            'sod-remediation:situation-header': situationHeader,
-            'sod-remediation:situation-summary': situationSummary,
-            'sod-remediation:owner-email': ownerEmail,
+            'sod-remediation:form-email-header': situationHeader,
+            'sod-remediation:form-email-body': situationSummary,
+            'sod-remediation:form-email-recipients': [ownerEmail],
         })
 
         logSodRemediationComplete(ctx.requestId)

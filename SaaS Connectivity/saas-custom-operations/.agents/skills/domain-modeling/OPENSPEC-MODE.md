@@ -1,6 +1,8 @@
 # OpenSpec Mode
 
-Use this reference when `openspec/config.yaml` or `openspec/specs/` exists in the target repo. Do not use `CONTEXT.md`, `CONTEXT-MAP.md`, or `docs/adr/` in OpenSpec mode.
+Use this reference when `openspec/config.yaml` or `openspec/specs/` exists in the target repo. Do not use `CONTEXT.md` or `CONTEXT-MAP.md` in OpenSpec mode — use the ubiquitous-language spec instead.
+
+**Specs and ADRs coexist.** Capability specs encode *what* (testable requirements). ADRs in `docs/adr/` encode *why* (rationale, trade-offs, rejected alternatives). ferspec and other schemas delegate ADR creation to domain-modeling — there is no separate `adr` artifact in the change workflow.
 
 ## Detection
 
@@ -14,20 +16,24 @@ Otherwise use legacy mode ([CONTEXT-FORMAT.md](./CONTEXT-FORMAT.md), [ADR-FORMAT
 ## File structure
 
 ```
-openspec/
-├── config.yaml
-├── specs/
-│   ├── ubiquitous-language/spec.md       ← replaces CONTEXT.md
-│   ├── module-ordering/spec.md           ← flat; category in slug
-│   ├── service-auth/spec.md
-│   ├── component-checkout/spec.md
-│   └── use-case-cancel-order/spec.md
-└── changes/<change-name>/specs/          ← pending decision/spec deltas
+/
+├── docs/
+│   └── adr/                              ← rationale (why); same as legacy
+│       ├── 0001-event-sourced-orders.md
+│       └── 0002-postgres-for-write-model.md
+└── openspec/
+    ├── config.yaml
+    ├── specs/
+    │   ├── ubiquitous-language/spec.md   ← replaces CONTEXT.md
+    │   ├── module-ordering/spec.md         ← flat; category in slug
+    │   ├── service-auth/spec.md
+    │   └── use-case-cancel-order/spec.md
+    └── changes/<change-name>/specs/        ← pending spec deltas
 ```
 
 **Naming rule:** OpenSpec does not support nested category folders. Path is always `openspec/specs/<capability>/spec.md`. Encode category as a kebab-case prefix on the capability slug (`<category>-<name>`). Do not create paths like `specs/modules/<name>/spec.md`.
 
-Create capability folders lazily — only when you have something to write.
+Create capability folders and `docs/adr/` lazily — only when you have something to write.
 
 ## Spec naming
 
@@ -80,14 +86,50 @@ Apply the same three criteria as legacy ADRs — all must be true:
 
 If any criterion is missing, skip recording.
 
+### Specs vs ADRs
+
+| Artifact | Holds | Skip when |
+|----------|-------|-----------|
+| **Capability spec** requirement | Normative *what* — SHALL/MUST behavior, testable via scenarios | Decision is purely rationale with no behavioral contract |
+| **ADR** (`docs/adr/`) | Narrative *why* — context, trade-offs, rejected alternatives | Requirement text is self-explanatory and no one will wonder why |
+
+When both apply, write both and cross-link. Specs are the contract; ADRs are the memory.
+
 ### Where decisions land
 
-| Situation | Action |
-|-----------|--------|
-| Decision is **already implemented** | Add ADDED/MODIFIED requirements to the most relevant existing capability spec |
-| **Change is required** to implement | Route through OpenSpec change workflow: `openspec/changes/<name>/specs/<capability>/spec.md` (suggest `/opsx:propose`) |
+| Situation | Spec | ADR |
+|-----------|------|-----|
+| **Already implemented** | ADDED/MODIFIED requirements in the most relevant capability spec | Offer ADR when rationale is non-obvious; write to `docs/adr/` |
+| **Change required** to implement | Route through OpenSpec change workflow: `openspec/changes/<name>/specs/<capability>/spec.md` (suggest `/opsx:propose`) | Write ADR during apply or when the decision crystallises — distill from `design.md` Decisions when working inside a ferspec change |
+| **Behavioral only**, self-explanatory | Requirement only | Skip ADR |
+| **Rationale only**, no new behavior | Skip spec change | ADR only |
 
 Prefer enhancing an existing spec over creating a new one. Create a new capability spec only when no existing slug is a reasonable home.
+
+Use [ADR-FORMAT.md](./ADR-FORMAT.md) for ADR structure and numbering.
+
+### Cross-linking
+
+When a spec requirement and ADR cover the same decision:
+
+**In the spec requirement** — add a trailing rationale pointer:
+
+```md
+### Requirement: Order write model persistence
+The order write model SHALL persist events to PostgreSQL.
+
+_Rationale: ADR-0042_
+```
+
+**In the ADR** — add a trailing spec pointer:
+
+```md
+# Event-sourced orders with Postgres write model
+
+We chose event sourcing because partial cancellation requires an audit trail…
+
+_Spec: module-ordering — Requirement: Order write model persistence_
+```
 
 ### What qualifies
 
@@ -100,6 +142,16 @@ Same categories as legacy ADRs:
 - Deliberate deviations from the obvious path
 - Constraints not visible in code
 - Rejected alternatives when the rejection is non-obvious
+
+### ferspec and change workflows
+
+When invoked from grill-with-docs, ferspec discovery, or `/opsx:apply`:
+
+- `discovery.md` and `design.md` Decisions are **change-local working docs** — not durable ADRs.
+- Distill decisions that pass the 3 criteria into `docs/adr/` as the change progresses or during apply Documentation tasks.
+- Ensure related capability spec requirements exist (canonical or delta) so apply gate "design → specs" can pass.
+
+For complex ADRs needing full MADR format, supersession chains, or team process, suggest the `architecture-decision-records` skill. Default to lightweight [ADR-FORMAT.md](./ADR-FORMAT.md).
 
 ## Spec format
 
@@ -123,5 +175,4 @@ When editing canonical specs directly (implemented decisions), add requirements 
 ## Do not use in OpenSpec mode
 
 - `CONTEXT.md` / `CONTEXT-MAP.md` — use `ubiquitous-language` spec instead
-- `docs/adr/` — use capability specs instead
 - Nested spec paths like `specs/services/<name>/spec.md` — use flat `specs/service-<name>/spec.md`

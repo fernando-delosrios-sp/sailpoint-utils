@@ -2,6 +2,10 @@ export {
     createStandaloneFormInstance,
 } from './create-instance'
 export {
+    getFormInstanceById,
+    type NormalizedFormInstance,
+} from './get-form-instance'
+export {
     ensureFormDefinitionByName,
     type FormsApiLike,
 } from './ensure-definition'

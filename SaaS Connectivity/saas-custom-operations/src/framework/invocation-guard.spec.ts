@@ -15,6 +15,19 @@ describe('invocationDedupeKey', () => {
     it('returns undefined when requestId is missing', () => {
         expect(invocationDedupeKey('custom:example', {})).toBeUndefined()
     })
+
+    it('uses formInstanceId for apply command dedupe key', () => {
+        expect(
+            invocationDedupeKey('custom:access-model-sod-remediation-apply', {
+                requestId: 'req-1',
+                formInstanceId: '  fi-1  ',
+            })
+        ).toBe('custom:access-model-sod-remediation-apply:fi-1')
+    })
+
+    it('returns undefined for apply command when formInstanceId is missing', () => {
+        expect(invocationDedupeKey('custom:access-model-sod-remediation-apply', { requestId: 'req-1' })).toBeUndefined()
+    })
 })
 
 describe('isFailedCommandOutput', () => {

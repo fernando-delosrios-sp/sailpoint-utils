@@ -42,6 +42,8 @@ _N/A_
 
 ## Local development
 
+Auto-discovered operations (with a `command` literal on `OperationSignature`) are registered in the codegen `OPERATION_HANDLERS` map after `npm run build` — no manual edits to `scripts/call-op.ts`.
+
 ```bash
 npm run call:op -- payloads/<your-offline-payload>.json
 ```

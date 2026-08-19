@@ -32,7 +32,7 @@ The framework SHALL pre-configure sailpoint-api-client instances on the request 
 
 ### Requirement: Result persistence helper
 
-The framework SHALL provide persist(id, attributes?, status?, options?) on a RequestContext typed to the operation output signature. Before writing the account, the framework SHALL reconcile the result source schema for the current operation. The attributes parameter SHALL accept Partial of the operation output type. The framework SHALL always set id, sourceId, date, and status; author-supplied keys matching those names SHALL be ignored. The framework SHALL format attribute values for ISC storage using typed inference: strings booleans numbers bigint and Date stored as native values matching their ISC types, objects and unknown values JSON-serialized to STRING, arrays stored per element type rules with isMulti true on schema. Before writing, the framework SHALL enforce ISC account value limits: the persist identity (account id / nativeIdentity) SHALL NOT exceed 128 characters, and each STRING attribute value (including each element of a STRING array and JSON-serialized object values) SHALL NOT exceed 256 characters. Values exceeding a limit SHALL be truncated to the limit and the framework SHALL log a warning naming the attribute or identity context. The options parameter SHALL accept verify boolean where verify defaults to true. When no account exists for the identity on the result source, the framework SHALL create the account via createAccountV1, wait for the provisioning task to complete, and read the account back. When an account already exists for the identity, the framework SHALL update the account via putAccountV1, wait for the provisioning task when one is returned, and read the account back. The framework SHALL NOT remove existing accounts via deleteAccountAsyncV1 before writing. When verify is true, the framework SHALL read the account back and verify persisted attributes match written values with type-aware comparison before returning control. When verify is false, the framework SHALL skip inline read-back but SHALL record written attributes for later batch verification.
+The framework SHALL provide persist(id, attributes?, status?, options?) on a RequestContext typed to the operation output signature. Before writing the account, the framework SHALL reconcile the result source schema for the current operation. The attributes parameter SHALL accept Partial of the operation output type. The framework SHALL always set id, sourceId, date, and status; when the invocation command is known, the framework SHALL always set operationName from that command; author-supplied keys matching id, status, date, or operationName SHALL be ignored. The framework SHALL format attribute values for ISC storage using typed inference: strings booleans numbers bigint and Date stored as native values matching their ISC types, objects and unknown values JSON-serialized to STRING, arrays stored per element type rules with isMulti true on schema. Before writing, the framework SHALL enforce ISC account value limits: the persist identity (account id / nativeIdentity) SHALL NOT exceed 128 characters, and each STRING attribute value (including each element of a STRING array and JSON-serialized object values) SHALL NOT exceed 256 characters. Values exceeding a limit SHALL be truncated to the limit and the framework SHALL log a warning naming the attribute or identity context. The options parameter SHALL accept verify boolean where verify defaults to true. When no account exists for the identity on the result source, the framework SHALL create the account via createAccountV1, wait for the provisioning task to complete, and read the account back. When an account already exists for the identity, the framework SHALL update the account via putAccountV1, wait for the provisioning task when one is returned, and read the account back. The framework SHALL NOT remove existing accounts via deleteAccountAsyncV1 before writing. When verify is true, the framework SHALL read the account back and verify persisted attributes match written values with type-aware comparison before returning control. When verify is false, the framework SHALL skip inline read-back but SHALL record written attributes for later batch verification.
 
 #### Scenario: Persist stores typed number value
 
@@ -115,8 +115,8 @@ The framework SHALL provide persist(id, attributes?, status?, options?) on a Req
 #### Scenario: Persist ignores reserved framework keys in attributes
 
 - **GIVEN** a request context typed to an output with outcome string
-- **WHEN** ctx.persist('req-001', { id: 'override', status: 'override', outcome: 'ok' }) is called
-- **THEN** the framework SHALL set id and status from framework logic
+- **WHEN** ctx.persist('req-001', { id: 'override', status: 'override', operationName: 'custom:other', outcome: 'ok' }) is called
+- **THEN** the framework SHALL set id, status, and operationName from framework logic
 - **AND** the framework SHALL persist outcome ok
 
 #### Scenario: Positional param mapping
@@ -229,7 +229,7 @@ The framework SHALL provide verifyPersisted(ids) on the request context that rea
 
 ### Requirement: Operation logging
 
-The framework SHALL provide correlated logging on the request context that includes requestId in every log entry.
+The framework SHALL provide correlated logging on the request context via ctx.log with info warn and error methods that include requestId in every log entry. ctx.log SHALL use the dual-sink framework logger for the invocation. The optional second argument SHALL be a named detail map whose values MAY be objects arrays or scalars. When logUrl is configured, ctx.log calls SHALL POST JSON log events whose detail field contains the same normalized map written to stdout.
 
 #### Scenario: Logs include requestId correlation
 
@@ -242,6 +242,89 @@ The framework SHALL provide correlated logging on the request context that inclu
 - **GIVEN** a custom operation input containing a token
 - **WHEN** the handler or framework logs operation details
 - **THEN** the token value SHALL NOT appear in log output
+
+#### Scenario: ctx.log exposed on request context
+
+- **GIVEN** a handler wrapped with customOperation
+- **WHEN** the handler accesses ctx.log
+- **THEN** ctx.log SHALL expose info warn and error methods
+- **AND** each method SHALL route through the invocation framework logger
+
+#### Scenario: Scalar detail values allowed
+
+- **GIVEN** a handler calls ctx.log.info with message step complete and detail `{ count: 3 }`
+- **WHEN** logUrl is configured
+- **THEN** the POSTed JSON detail SHALL include count with value 3
+
+---
+
+### Requirement: Optional logUrl invoke config
+
+The framework SHALL accept an optional non-empty `logUrl` string on the invoke config object. When absent or empty, the framework SHALL operate in console-only logging mode. When present, the framework SHALL trim whitespace and use the value as the external log sink URL for the invocation.
+
+#### Scenario: logUrl resolved from invoke config
+
+- **GIVEN** an invoke with config containing logUrl `https://logs.example.com/ingest`
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework logger for that invocation SHALL target that URL for external log events
+
+#### Scenario: Empty logUrl treated as unset
+
+- **GIVEN** an invoke with config logUrl set to an empty string or whitespace only
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL NOT POST external log events for that invocation
+
+### Requirement: Dual-sink framework logger
+
+The framework SHALL provide a logger that always writes pretty human-readable log output to stdout and, when logUrl is configured, SHALL additionally POST one JSON log event per log call to logUrl using HTTP POST with Content-Type application/json. Console and POST SHALL use the same redacted JSON-safe normalized message and detail. External POST failures SHALL NOT fail or reject the custom operation invocation.
+
+#### Scenario: Console output always emitted
+
+- **GIVEN** an invocation with or without logUrl configured
+- **WHEN** the framework logger records an info warn or error message
+- **THEN** stdout SHALL receive human-readable log output for that message
+
+#### Scenario: External POST when logUrl configured
+
+- **GIVEN** an invocation with logUrl `https://logs.example.com/ingest`
+- **WHEN** the framework logger records an info message
+- **THEN** the framework SHALL POST a JSON log event to that URL
+- **AND** the operation invocation SHALL continue without awaiting POST completion
+
+#### Scenario: External POST failure is non-fatal
+
+- **GIVEN** an invocation with logUrl pointing to an unreachable host
+- **WHEN** the framework logger records a message
+- **THEN** the custom operation SHALL complete normally
+- **AND** console output SHALL still include the log output
+
+---
+
+### Requirement: External log event schema
+
+Each external log event POSTed to logUrl SHALL be a JSON object containing ISO-8601 timestamp, level info warn or error, requestId, optional command string, message string, and optional detail field. The detail field SHALL contain the normalized named detail map when provided. Detail values MAY be scalars objects or arrays. When detail contains sensitive values such as token or Authorization bearer values, the framework SHALL redact them before POST using the same policy applied to stdout.
+
+#### Scenario: Log event includes correlation fields
+
+- **GIVEN** an invocation with requestId wf-run-8842 and command custom:example
+- **WHEN** ctx.log.info is called with message step complete
+- **THEN** the POSTed JSON SHALL include requestId wf-run-8842 command custom:example level info and message step complete
+
+#### Scenario: Token redacted in external log event detail
+
+- **GIVEN** an invocation where a log call includes detail containing a token field
+- **WHEN** the framework POSTs the external log event
+- **THEN** the detail token value SHALL be replaced with a redaction marker
+- **AND** the raw token value SHALL NOT appear in the POST body
+
+#### Scenario: Named detail map preserved in JSON
+
+- **GIVEN** ctx.log.info called with message violation loaded and detail `{ violation: { id: 'v-1' }, controls: [] }`
+- **WHEN** the framework POSTs the external log event
+- **THEN** the POSTed detail SHALL include keys violation and controls
+- **AND** violation.id SHALL be `v-1`
+
+---
 
 ### Requirement: Custom operation wrapper
 
@@ -313,28 +396,32 @@ The framework SHALL attach an OperationSchemaContract to the request context con
 
 ### Requirement: Base account schema on result source create
 
-When the framework auto-provisions a new DelimitedFile result source, it SHALL apply the **base account schema** immediately after source creation. The base schema SHALL include core framework attributes (`id`, `status`, `date`) plus the union of all registered custom operation output fields (excluding reserved framework keys), with typed inference matching templates generator and persist-time reconciliation rules.
+When the framework auto-provisions a new DelimitedFile result source, it SHALL apply the **base account schema** immediately after source creation. The base schema SHALL include core framework attributes (`id`, `status`, `date`, `details`, `operationName`) plus the **output fields of the invoking custom operation** (from `operationSchema.outputFields` on the current invocation), excluding reserved framework keys, with typed inference matching templates generator and persist-time reconciliation rules.
 
 If an account schema already exists on the newly created source (for example from ISC schema discovery), the framework SHALL align that schema to the base schema by adding missing attributes and correcting schema metadata (`identityAttribute`, `displayAttribute`, `nativeObjectType`, `name`) when absent or incorrect. The framework SHALL NOT remove existing attributes. Type and isMulti conflicts SHALL follow the same warn-only policy as persist-time schema reconciliation.
+
+When `operationSchema` is unavailable at source create, the framework SHALL apply core framework attributes only and SHALL rely on persist-time reconciliation to add operation output fields on first `ctx.persist`.
 
 #### Scenario: New source receives full base schema
 
 - **GIVEN** no ISC source exists with the configured sourceName
-- **AND** registered operations declare output fields `summary` and `violationId`
+- **AND** the invoking operation declares output fields `summary` and `step`
+- **AND** other registered operations declare output field `violationId`
 - **WHEN** a custom operation invocation auto-creates the result source
-- **THEN** the framework SHALL create or align the account schema to include `id`, `status`, `date`, `summary`, and `violationId`
+- **THEN** the framework SHALL create or align the account schema to include `id`, `status`, `date`, `details`, `operationName`, `summary`, and `step`
+- **AND** the account schema SHALL NOT include `violationId` from other registered operations
 - **AND** SHALL set `identityAttribute` to `id`
 
 #### Scenario: ISC-discovered schema replaced with base schema
 
 - **GIVEN** source create completes and ISC has already materialized an account schema with only discovered CSV columns
-- **WHEN** the framework applies the base account schema
-- **THEN** the framework SHALL patch the existing account schema to add all base schema attributes
+- **WHEN** the framework applies the base account schema for the invoking operation
+- **THEN** the framework SHALL patch the existing account schema to add core attributes and the invoking operation's output fields including `details` and `operationName`
 - **AND** SHALL NOT fail with a duplicate schema create error
 
 #### Scenario: Base schema excludes reserved framework keys
 
-- **GIVEN** registered operation output includes field `sourceId`
+- **GIVEN** the invoking operation output includes field `sourceId`
 - **WHEN** base schema is applied on source create
 - **THEN** the account schema SHALL NOT include attribute `sourceId`
 
@@ -344,6 +431,22 @@ If an account schema already exists on the newly created source (for example fro
 - **WHEN** a custom operation is invoked
 - **THEN** the framework SHALL resolve the existing source ID
 - **AND** SHALL NOT re-apply the base account schema
+
+#### Scenario: Later operation adds fields via persist reconciliation
+
+- **GIVEN** a result source was auto-created by operation A with only A's output fields on the schema
+- **AND** operation B declares output field `violationId` not present on the schema
+- **WHEN** operation B invokes and calls `ctx.persist` with attribute `violationId`
+- **THEN** the framework SHALL add `violationId` to the account schema before writing the account
+
+#### Scenario: Core-only base schema when operationSchema absent
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **AND** the invoking handler has no resolvable `operationSchema`
+- **WHEN** a custom operation invocation auto-creates the result source
+- **THEN** the applied base account schema SHALL include only `id`, `status`, `date`, `details`, and `operationName`
+
+---
 
 ### Requirement: Result source resolution by name
 
@@ -386,7 +489,7 @@ The framework SHALL reconcile the result source account schema before each ctx.p
 
 - **GIVEN** a newly created result source with base schema applied
 - **WHEN** ctx.persist is called for any operation
-- **THEN** the account schema SHALL include id status and date attributes
+- **THEN** the account schema SHALL include id, status, date, details, and operationName attributes
 - **AND** identityAttribute SHALL be id
 
 #### Scenario: Type conflict warns and keeps existing
@@ -474,6 +577,13 @@ When test mode is active, the framework SHALL NOT call ISC account create, accou
 ### Requirement: Test mode persistence console logging
 
 When test mode is active, the framework SHALL log each inhibited persist and verifyPersisted operation to console with a test-mode prefix including identity, status, and formatted attributes.
+
+#### Scenario: Inhibited failed persist logged with details
+
+- **GIVEN** test mode is active
+- **WHEN** a terminal failure triggers automatic failed account persist
+- **THEN** console output SHALL include a test-mode inhibited persist line for the requestId
+- **AND** SHALL include status failed and details in the logged attributes
 
 #### Scenario: Inhibited persist logged with attributes
 
@@ -569,7 +679,7 @@ The framework SHALL determine whether an invocation config object was provided f
 
 ### Requirement: Default incoming request logging
 
-The framework SHALL log every registered custom command invoke to stdout before the handler executes. The log output SHALL include the command type, the invoke input object, and the resolved invocation config when available. The log format SHALL use readable section headers and spread JSON formatting consistent with the operation test runner output style.
+The framework SHALL log every registered custom command invoke before the handler executes using the same dual-sink framework logger as ctx.log. The log SHALL use message Incoming request and detail `{ command, input, config }` when config is available. Config in detail SHALL pass through sanitizeForLog. Console output MAY use readable section headers and spread JSON formatting consistent with the operation test runner output style. When logUrl is configured, the framework SHALL POST the same JSON log event schema as other framework logs.
 
 #### Scenario: Invoke payload logged at command entry
 
@@ -590,13 +700,21 @@ The framework SHALL log every registered custom command invoke to stdout before 
 - **GIVEN** an invoke config containing a non-empty token value
 - **WHEN** the incoming request is logged
 - **THEN** the logged config token field SHALL be replaced with a redaction marker
-- **AND** the raw token value SHALL NOT appear in stdout
+- **AND** the raw token value SHALL NOT appear in stdout or POSTed detail
 
 #### Scenario: All registered commands wrapped
 
 - **GIVEN** auto-discovered and manually registered custom commands
 - **WHEN** registerCommands completes
 - **THEN** every command handler registered via connector.command SHALL log incoming requests before delegation
+
+#### Scenario: Incoming request posted when logUrl configured
+
+- **GIVEN** an invoke with config logUrl set to a reachable HTTP endpoint
+- **WHEN** the incoming request is logged at command entry
+- **THEN** the framework SHALL POST a JSON log event to logUrl
+- **AND** the event message SHALL be Incoming request
+- **AND** the event detail SHALL include command input and redacted config using the same schema as ctx.log detail
 
 ### Requirement: Invoke config resolution for bundled and spcx runtimes
 
@@ -625,7 +743,7 @@ The framework SHALL resolve per-invoke config from context.config when present, 
 
 ### Requirement: Failed operation responses for custom operations
 
-The framework SHALL catch every failure escaping a `customOperation`-wrapped handler, normalize it via `toConnectorError` (plain `Error`, axios rejections, `PersistVerificationError`, and existing `ConnectorError`), and send `{ status: 'failed', error: <message> }` on the command response when the handler has not already sent a response. The invocation SHALL resolve without throwing so local spcx and workflow HTTP invokes return success transport status with a terminal failed payload instead of HTTP 500 retries.
+The framework SHALL catch every failure escaping a `customOperation`-wrapped handler, normalize it via `toConnectorError` (plain `Error`, axios rejections, `PersistVerificationError`, and existing `ConnectorError`), and send `{ status: 'failed', error: <message> }` on the command response when the handler has not already sent a response. The invocation SHALL resolve without throwing so local spcx and workflow HTTP invokes return success transport status with a terminal failed payload instead of HTTP 500 retries. For every terminal failed response, the framework SHALL also upsert a result source account for the invoke `requestId` with `status` failed and `details` set to the same normalized message as described in **Automatic failed account persist on terminal failure**.
 
 #### Scenario: Handler throws plain Error
 
@@ -634,6 +752,7 @@ The framework SHALL catch every failure escaping a `customOperation`-wrapped han
 - **THEN** the invocation SHALL resolve without throwing
 - **AND** the response SHALL include status failed
 - **AND** the error field SHALL include the original failure message
+- **AND** a result account SHALL exist for requestId with status failed and matching details
 
 #### Scenario: Initialization failure before handler runs
 
@@ -641,6 +760,7 @@ The framework SHALL catch every failure escaping a `customOperation`-wrapped han
 - **WHEN** `customOperation` initializes the request context
 - **THEN** the invocation SHALL resolve without throwing
 - **AND** the response SHALL include status failed with the normalized error message
+- **AND** a failed result account with details SHALL be written when persist is available
 
 #### Scenario: Persist verification failure
 
@@ -648,18 +768,22 @@ The framework SHALL catch every failure escaping a `customOperation`-wrapped han
 - **WHEN** the persist helper throws `PersistVerificationError`
 - **THEN** the invocation SHALL resolve without throwing
 - **AND** the response SHALL include status failed describing the verification failure
+- **AND** a failed result account with details SHALL be written
 
 #### Scenario: Existing ConnectorError message preserved
 
 - **GIVEN** a handler or framework helper throws `new ConnectorError('missing field')`
 - **WHEN** the error is handled by `customOperation`
 - **THEN** the failed response error field SHALL include missing field without double-wrapping prefixes beyond the optional command context
+- **AND** account details SHALL include the same normalized message
 
 #### Scenario: HTTP 404 maps to NotFound type
 
 - **GIVEN** an ISC client call fails with HTTP status 404
 - **WHEN** the error is normalized by the framework
-- **THEN** the resulting `ConnectorError` SHALL have type `notFound` before its message is placed on the failed response
+- **THEN** the resulting `ConnectorError` SHALL have type `notFound` before its message is placed on the failed response and account details
+
+---
 
 ### Requirement: Inline Vitest unit test fixtures
 
@@ -679,4 +803,214 @@ Vitest unit tests co-located as `*.spec.ts` under `src/` SHALL define mock retur
 - **THEN** the contribution SHALL co-locate that data in the spec file instead
 - **AND** SHALL NOT introduce new `*-data.ts` or `fixtures.ts` files under `src/` for Vitest-only use
 
+### Requirement: Details core account attribute
+
+The framework SHALL include a mandatory STRING attribute named `details` on the result source base account schema alongside core attributes `id`, `status`, and `date`. Schema reconciliation at persist time SHALL ensure `details` exists on the account schema before writing any account. The `details` attribute SHALL NOT be generated from `OperationSignature.output` fields or operation schema sidecars.
+
+#### Scenario: Base schema includes details on new source
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **WHEN** a custom operation invocation auto-creates the result source
+- **THEN** the applied base account schema SHALL include attribute `details` with type STRING and isMulti false
+- **AND** SHALL include attributes `id`, `status`, and `date`
+
+#### Scenario: Persist reconciles missing details on existing source
+
+- **GIVEN** a result source account schema lacks attribute `details`
+- **WHEN** ctx.persist is called for any operation
+- **THEN** the framework SHALL add `details` to the account schema before writing the account
+
+#### Scenario: Details excluded from operation output codegen union
+
+- **GIVEN** an operation declares output fields in its OperationSignature interface
+- **WHEN** the templates generator builds reference account schema from the union of registered operation outputs
+- **THEN** attribute `details` SHALL come only from framework core attributes
+- **AND** SHALL NOT be duplicated from operation output field definitions
+
+### Requirement: Operation name core account attribute
+
+The framework SHALL include a mandatory STRING attribute named `operationName` on the result source base account schema alongside core attributes `id`, `status`, `date`, and `details`. Schema reconciliation at persist time SHALL ensure `operationName` exists on the account schema before writing any account. The `operationName` attribute SHALL NOT be generated from `OperationSignature.output` fields or operation schema sidecars.
+
+#### Scenario: Base schema includes operationName on new source
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **WHEN** a custom operation invocation auto-creates the result source
+- **THEN** the applied base account schema SHALL include attribute `operationName` with type STRING and isMulti false
+- **AND** SHALL include attributes `id`, `status`, `date`, and `details`
+
+#### Scenario: Persist reconciles missing operationName on existing source
+
+- **GIVEN** a result source account schema lacks attribute `operationName`
+- **WHEN** ctx.persist is called for any operation
+- **THEN** the framework SHALL add `operationName` to the account schema before writing the account
+
+#### Scenario: OperationName excluded from operation output codegen union
+
+- **GIVEN** an operation declares output fields in its OperationSignature interface
+- **WHEN** the templates generator builds reference account schema from the union of registered operation outputs
+- **THEN** attribute `operationName` SHALL come only from framework core attributes
+- **AND** SHALL NOT be duplicated from operation output field definitions
+
+#### Scenario: Success persist sets operationName from command
+
+- **GIVEN** a custom operation invoked with commandType `custom:example`
+- **WHEN** ctx.persist('req-001', { outcome: 'done' }) is called
+- **THEN** the written account SHALL include operationName `custom:example`
+
+#### Scenario: Handler-supplied operationName ignored
+
+- **GIVEN** a custom operation invoked with commandType `custom:example`
+- **WHEN** ctx.persist('req-001', { outcome: 'done', operationName: 'custom:other' }) is called
+- **THEN** the written account SHALL include operationName `custom:example`
+- **AND** SHALL NOT store `custom:other`
+
+### Requirement: Automatic failed account persist on terminal failure
+
+The framework SHALL upsert a result source account for the invoke `requestId` with `status` failed, `details` set to the normalized failure message, and `operationName` set from the invocation command when known whenever a `customOperation`-wrapped invocation terminates with `{ status: 'failed', error }` on the command response and a request context with persist was initialized. This SHALL apply to handler throws normalized by `toConnectorError`, initialization failures before the handler completes, persist verification failures, and handler-initiated `res.send({ status: 'failed', error })` payloads. The framework SHALL perform this persist before or together with sending the failed invoke response. If failure persist itself errors, the framework SHALL log the error and SHALL still send the failed invoke response without throwing.
+
+#### Scenario: Handler throw persists failed account
+
+- **GIVEN** a custom operation handler throws `new Error('operation failed')`
+- **AND** invoke input contains requestId `wf-run-001`
+- **AND** the invocation commandType is `custom:example`
+- **WHEN** ISC invokes the custom command via `customOperation`
+- **THEN** the framework SHALL upsert an account with identity `wf-run-001`, status failed, details containing `operation failed`, and operationName `custom:example`
+- **AND** the invoke response SHALL include status failed and error containing `operation failed`
+
+#### Scenario: Handler sends failed response persists account
+
+- **GIVEN** a handler calls `ctx.res.send({ status: 'failed', error: 'form create failed' })`
+- **AND** invoke input contains requestId `wf-run-002`
+- **AND** the invocation commandType is `custom:example`
+- **WHEN** the custom command completes
+- **THEN** the framework SHALL upsert an account with identity `wf-run-002`, status failed, details `form create failed`, and operationName `custom:example`
+
+#### Scenario: Initialization failure persists failed account
+
+- **GIVEN** test mode is active with provided config and ISC status check rejects
+- **AND** invoke input contains requestId `wf-run-003`
+- **WHEN** `customOperation` fails during request context initialization
+- **THEN** the framework SHALL upsert a failed account for `wf-run-003` with details describing the initialization failure when persist is available
+- **AND** the invoke response SHALL include status failed
+
+#### Scenario: Persist verification failure persists failed account
+
+- **GIVEN** a handler calls `ctx.persist('wf-run-004', { outcome: 'value' })` and verification fails
+- **WHEN** `PersistVerificationError` is handled by `customOperation`
+- **THEN** the framework SHALL upsert a failed account for identity `wf-run-004` with details describing the verification failure
+
+#### Scenario: Failure persist failure is non-fatal
+
+- **GIVEN** a handler throws and account upsert fails with an ISC error
+- **WHEN** `customOperation` handles the terminal failure
+- **THEN** the invoke response SHALL still include status failed with the original error message
+- **AND** the invocation SHALL resolve without throwing
+
+#### Scenario: Failed persist skips inline verification
+
+- **GIVEN** a terminal failure triggers automatic failed account persist
+- **WHEN** the framework writes the failed account
+- **THEN** it SHALL NOT require inline read-back verification to succeed before sending the failed invoke response
+
+---
+
+### Requirement: Optional details on success persist
+
+The framework SHALL allow handlers to supply an optional STRING `details` value when calling `ctx.persist` on success (or any non-failed status). When supplied, the framework SHALL store `details` on the written account attributes. When omitted on success, the framework SHALL NOT invent a default `details` value.
+
+#### Scenario: Success persist with informative details
+
+- **GIVEN** a handler calls `ctx.persist('wf-run-010', { outcome: 'done', details: 'Processed 3 of 5 items' })`
+- **WHEN** the account is written with default status success
+- **THEN** the account SHALL include details `Processed 3 of 5 items`
+- **AND** SHALL include the operation output attribute outcome
+
+#### Scenario: Success persist without details
+
+- **GIVEN** a handler calls `ctx.persist('wf-run-011', { outcome: 'done' })` without details
+- **WHEN** the account is written
+- **THEN** the account SHALL have status success
+- **AND** SHALL NOT require attribute details to be present on the written account unless the handler supplied it
+
+#### Scenario: Details truncated at STRING limit
+
+- **GIVEN** a failure message or handler-supplied details string longer than 256 characters
+- **WHEN** the framework writes the account
+- **THEN** it SHALL store details truncated to 256 characters
+- **AND** SHALL log a truncation warning
+
+---
+
+### Requirement: JSON-safe detail normalization
+
+Before writing to stdout or POSTing to logUrl, the framework SHALL normalize the optional log detail map so that JSON encoding cannot throw. The framework SHALL omit detail keys whose values are undefined, functions, or symbols. The framework SHALL replace circular object references with the string `[Circular]`. The framework SHALL serialize Error instances as plain objects containing name message and stack. The framework SHALL convert bigint values to decimal strings.
+
+#### Scenario: Undefined detail keys omitted from JSON
+
+- **GIVEN** a log call with detail `{ present: 'ok', missing: undefined }`
+- **WHEN** the framework emits the log event
+- **THEN** the POSTed JSON detail SHALL include key present
+- **AND** SHALL NOT include key missing
+
+#### Scenario: Circular reference replaced
+
+- **GIVEN** a log detail object that references itself circularly on key payload
+- **WHEN** the framework emits the log event
+- **THEN** the POSTed JSON detail payload value SHALL be the string `[Circular]`
+- **AND** the invocation SHALL NOT throw
+
+#### Scenario: Function values omitted
+
+- **GIVEN** a log call with detail `{ ok: true, fn: () => {} }`
+- **WHEN** the framework emits the log event
+- **THEN** the POSTed JSON detail SHALL NOT include key fn
+- **AND** the invocation SHALL NOT throw
+
+---
+
+### Requirement: Pretty console log formatting
+
+The framework SHALL format stdout log output for human operators using a headline line followed by labeled detail blocks. The headline SHALL be `[requestId] message`. When detail is present, each detail key SHALL appear on its own labeled line or block. Scalar detail values SHALL render inline after the key label. Object and array detail values SHALL render using Node inspect with depth colors when stdout is a TTY.
+
+#### Scenario: Headline includes requestId and message
+
+- **GIVEN** requestId wf-run-8842 and message violation loaded
+- **WHEN** ctx.log.info is called without detail
+- **THEN** stdout SHALL include a line starting with `[wf-run-8842] violation loaded`
+
+#### Scenario: Named detail keys render as labeled blocks
+
+- **GIVEN** a log call with message violation loaded and detail `{ violation: { id: 'v-1' }, count: 2 }`
+- **WHEN** the framework writes to stdout
+- **THEN** stdout SHALL include label violation with object content
+- **AND** SHALL include label count with scalar value 2
+
+#### Scenario: Console and JSON share normalized detail
+
+- **GIVEN** logUrl configured and detail `{ violation: { id: 'v-1' } }`
+- **WHEN** ctx.log.info is called with message violation loaded
+- **THEN** the POSTed JSON detail SHALL equal the normalized detail used for console rendering
+- **AND** both sinks SHALL apply the same redaction and JSON-safe normalization
+
+---
+
+### Requirement: Operation logs use framework logger
+
+Custom operation handlers and operation-local logging helpers SHALL NOT call console.log console.warn or console.error directly for invoke-scoped diagnostics. Operation step logs SHALL use ctx.log or getActiveFrameworkLogger with a human message headline and a named detail map.
+
+#### Scenario: SOD remediation step logs use framework logger
+
+- **GIVEN** sod-remediation handler executing with logUrl configured
+- **WHEN** the handler logs a violation step
+- **THEN** the log SHALL route through the invocation framework logger
+- **AND** SHALL POST a JSON log event to logUrl
+
+#### Scenario: Access model SOD remediation uses ctx.log
+
+- **GIVEN** access-model-sod-remediation handler executing
+- **WHEN** the handler logs discover or policy steps
+- **THEN** the log SHALL use ctx.log or getActiveFrameworkLogger
+- **AND** SHALL NOT call console.log directly
+
+---
 

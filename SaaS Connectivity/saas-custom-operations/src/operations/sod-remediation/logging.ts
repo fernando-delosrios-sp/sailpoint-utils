@@ -1,20 +1,12 @@
-import { inspect, InspectOptions } from 'node:util'
+import { getActiveFrameworkLogger } from '../../framework/logger'
 import { IdentityAccessItem } from '../../isc/identity-access'
 import { CompensatingControlV1 } from '../../isc/controls'
 import { ViolationV1 } from '../../isc/violations'
 import { ResolvedAccessSide } from './access-path-resolver'
 import { SodFormInputValues } from './form-service'
 
-function logInspectOptions(): InspectOptions {
-    return {
-        depth: null,
-        breakLength: Infinity,
-        colors: Boolean(process.stdout.isTTY && !process.env.NO_COLOR),
-    }
-}
-
 function logStep(requestId: string, step: string, detail: Record<string, unknown>): void {
-    console.log(`[${requestId}] sod-remediation ${step}`, inspect(detail, logInspectOptions()))
+    getActiveFrameworkLogger(requestId).info(`sod-remediation ${step}`, detail)
 }
 
 /** Logs invocation input (never logs tokens). */
@@ -123,14 +115,14 @@ export function logSodRemediationFormInput(requestId: string, formInput: SodForm
         hasControls: formInput.hasControls,
         violationId: formInput.violationId,
         targetIdentityId: formInput.targetIdentityId,
-        groupAContentsHtmlPreview:
-            formInput.groupAContentsHtml.length > 160
-                ? `${formInput.groupAContentsHtml.slice(0, 160)}…`
-                : formInput.groupAContentsHtml,
-        groupBContentsHtmlPreview:
-            formInput.groupBContentsHtml.length > 160
-                ? `${formInput.groupBContentsHtml.slice(0, 160)}…`
-                : formInput.groupBContentsHtml,
+        groupColumnsHtmlWhenGroupARemovedPreview:
+            formInput.groupColumnsHtmlWhenGroupARemoved.length > 160
+                ? `${formInput.groupColumnsHtmlWhenGroupARemoved.slice(0, 160)}…`
+                : formInput.groupColumnsHtmlWhenGroupARemoved,
+        groupColumnsHtmlWhenGroupBRemovedPreview:
+            formInput.groupColumnsHtmlWhenGroupBRemoved.length > 160
+                ? `${formInput.groupColumnsHtmlWhenGroupBRemoved.slice(0, 160)}…`
+                : formInput.groupColumnsHtmlWhenGroupBRemoved,
         groupAAccessSearch: formInput.groupAAccessSearch,
         groupBAccessSearch: formInput.groupBAccessSearch,
         controlOptions: formInput.controlOptions,
@@ -153,18 +145,14 @@ export function logSodRemediationOutput(
 ): void {
     logStep(requestId, 'output', {
         'sod-remediation:form-url': output.formUrl,
-        'sod-remediation:situation-header': output.situationHeader,
-        'sod-remediation:situation-summary': output.situationSummary,
-        'sod-remediation:owner-email': output.ownerEmail,
+        'sod-remediation:form-email-header': output.situationHeader,
+        'sod-remediation:form-email-body': output.situationSummary,
+        'sod-remediation:form-email-recipients': [output.ownerEmail],
         situationSummaryLength: output.situationSummary.length,
     })
 }
 
 /** Logs successful completion. */
 export function logSodRemediationComplete(requestId: string): void {
-    console.log(`[${requestId}] sod-remediation finished`)
+    getActiveFrameworkLogger(requestId).info('sod-remediation finished')
 }
-
-
-
-

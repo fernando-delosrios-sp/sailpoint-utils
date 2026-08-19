@@ -1,4 +1,6 @@
 interface:
   display_name: Improve
   short_description: Survey any codebase as a senior advisor and produce prioritized, self-contained
+policy:
+  allow_implicit_invocation: false
 

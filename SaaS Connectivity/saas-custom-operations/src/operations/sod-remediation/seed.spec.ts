@@ -76,46 +76,70 @@ describe('sod-remediation seed', () => {
         expect(keys).not.toContain('removeGroupBAccess')
         expect(keys).not.toContain('groupA')
         expect(keys).not.toContain('groupB')
-        expect(seed.formInput?.some((input) => input.id === 'groupAContentsHtml' && input.type === 'STRING')).toBe(true)
-        expect(seed.formInput?.some((input) => input.id === 'groupBContentsHtml' && input.type === 'STRING')).toBe(true)
+        expect(seed.formInput?.some((input) => input.id === 'groupColumnsHtmlWhenGroupARemoved' && input.type === 'STRING')).toBe(true)
+        expect(seed.formInput?.some((input) => input.id === 'groupColumnsHtmlWhenGroupBRemoved' && input.type === 'STRING')).toBe(true)
         expect(seed.formInput?.some((input) => input.id === 'controlOptions' && input.type === 'ARRAY')).toBe(true)
         expect(seed.formInput?.some((input) => input.id === 'hasControls' && input.type === 'STRING')).toBe(true)
     })
 
-    it('renders violation context from formInput interpolation', () => {
+    it('Single ctx-summary element interpolates situationSummaryHtml without ctx-identity', () => {
         const seed = loadFormSeed(seedPath)
-        const identityContext = findFormElementById(seed.formElements, 'ctx-identity')
+        const ctxSummary = findFormElementById(seed.formElements, 'ctx-summary')
+        const ctxSection = findFormElementById(seed.formElements, 'ctx-section')
 
-        expect((identityContext?.config as { description?: string })?.description).toContain(
-            '{{$.form.input.violationId}}'
+        expect(findFormElementById(seed.formElements, 'ctx-identity')).toBeUndefined()
+        expect((ctxSummary?.config as { description?: string })?.description).toBe(
+            '{{$.form.input.situationSummaryHtml}}'
         )
+        expect((ctxSection?.config as { label?: string })?.label).not.toContain('policy violation detection')
     })
 
-    it('renders group access paths as DESCRIPTION elements with HTML formInput interpolation', () => {
+    it('swaps column previews via ELEMENT SHOW conditions on remediationSide', () => {
         const seed = loadFormSeed(seedPath)
 
-        const groupA = findFormElementById(seed.formElements, 'group-a-contents')
-        const groupB = findFormElementById(seed.formElements, 'group-b-contents')
+        expect(findFormElementById(seed.formElements, 'group-columns-plain')?.elementType).toBe('DESCRIPTION')
+        expect(findFormElementById(seed.formElements, 'group-columns-when-a-removed')?.elementType).toBe('DESCRIPTION')
+        expect(findFormElementById(seed.formElements, 'group-columns-when-b-removed')?.elementType).toBe('DESCRIPTION')
+        expect(findFormElementById(seed.formElements, 'group-columns-preview')).toBeUndefined()
+        expect(findFormElementById(seed.formElements, 'column-preview-section')?.elementType).toBe('SECTION')
+
         const toxicHeader = findFormElementById(seed.formElements, 'toxic-combination-header')
-        const toxic = findFormElementById(seed.formElements, 'toxic-column-set')
-
-        expect(groupA?.elementType).toBe('DESCRIPTION')
-        expect(groupB?.elementType).toBe('DESCRIPTION')
         expect(toxicHeader?.elementType).toBe('DESCRIPTION')
-        expect((groupA?.config as { description?: string })?.description).toBe('{{$.form.input.groupAContentsHtml}}')
-        expect((groupB?.config as { description?: string })?.description).toBe('{{$.form.input.groupBContentsHtml}}')
         expect((toxicHeader?.config as { description?: string })?.description).toContain(ELEVATED_WARNING)
-        expect((toxic?.config as { description?: string })?.description).toBe('')
-        expect(findFormElementById(seed.formElements, 'group-a-warning')).toBeUndefined()
-        expect(findFormElementById(seed.formElements, 'group-b-warning')).toBeUndefined()
 
-        const conditionSources = (seed.formConditions ?? []).flatMap((condition) =>
-            ((condition.rules as Array<{ source?: string }>) ?? []).map((rule) => rule.source)
+        const intro = findFormElementById(seed.formElements, 'group-columns-preview-intro')
+        expect((intro?.config as { description?: string })?.description).toContain('Select a side above to preview outcomes')
+
+        const columnConditions = (seed.formConditions ?? []).filter((condition) =>
+            ((condition.effects as Array<{ config?: { element?: string } }>) ?? []).some((effect) =>
+                String(effect.config?.element).includes('group-columns')
+            )
         )
-        expect(conditionSources).not.toContain('groupAContents')
-        expect(conditionSources).not.toContain('groupBContents')
-        expect(conditionSources).not.toContain('groupAWarning')
-        expect(conditionSources).not.toContain('groupBWarning')
+        expect(columnConditions).toHaveLength(3)
+
+        for (const condition of columnConditions) {
+            const rules = (condition.rules as Array<Record<string, unknown>>) ?? []
+            expect(rules.some((rule) => rule.sourceType === 'ELEMENT' && rule.source === 'action' && rule.value === 'Correct')).toBe(true)
+            expect(rules.some((rule) => rule.sourceType === 'ELEMENT' && rule.source === 'remediationSide')).toBe(true)
+            const effects = (condition.effects as Array<Record<string, unknown>>) ?? []
+            expect(effects.every((effect) => effect.effectType === 'SHOW')).toBe(true)
+        }
+
+        const showTargets = columnConditions.flatMap((condition) =>
+            ((condition.effects as Array<{ config?: { element?: string } }>) ?? []).map((effect) => effect.config?.element)
+        )
+        expect(showTargets).toEqual([
+            'group-columns-plain',
+            'group-columns-when-a-removed',
+            'group-columns-when-b-removed',
+        ])
+
+        const eqValues = columnConditions.flatMap((condition) =>
+            ((condition.rules as Array<{ operator?: string; value?: string }>) ?? [])
+                .filter((rule) => rule.operator === 'EQ' && rule.source === 'remediationSide')
+                .map((rule) => rule.value)
+        )
+        expect(eqValues).toEqual(['Group A', 'Group B'])
     })
 
     it('buildCreateFormDefinitionPayload applies runtime formName and watermarked description', () => {

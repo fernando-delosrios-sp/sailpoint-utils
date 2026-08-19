@@ -123,7 +123,15 @@ describe('exampleOperation', () => {
             )
         })
 
-        expect(resolveSourceByName).toHaveBeenCalledWith(expect.anything(), 'SaaS Custom Operations', 'test-token')
+        expect(resolveSourceByName).toHaveBeenCalledWith(
+            expect.anything(),
+            'SaaS Custom Operations',
+            'test-token',
+            expect.arrayContaining([
+                expect.objectContaining({ name: 'summary' }),
+                expect.objectContaining({ name: 'step' }),
+            ])
+        )
         expect(createAccountV1).toHaveBeenCalledTimes(2)
         expect(createAccountV1).toHaveBeenCalledWith(
             expect.objectContaining({

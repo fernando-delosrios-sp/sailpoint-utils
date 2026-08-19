@@ -1,8 +1,7 @@
 import { CommandHandler, Connector, Context, Response } from '@sailpoint/connector-sdk'
 import { readInvokeConfig } from './invoke-config'
+import { emitLogEvent, resolveLogUrlFromConfig, sanitizeForLog } from './logger'
 import { formatSpreadJson } from './pretty-json'
-
-const REDACTED = '[REDACTED]'
 
 function useColor(): boolean {
     return Boolean(process.stdout.isTTY && !process.env.NO_COLOR)
@@ -42,15 +41,11 @@ export function redactConfigForLogging(config: Record<string, unknown> | undefin
         return undefined
     }
 
-    const redacted = { ...config }
-    if (redacted.token != null && redacted.token !== '') {
-        redacted.token = REDACTED
-    }
-    return redacted
+    return sanitizeForLog(config) as Record<string, unknown>
 }
 
 export interface IncomingRequestSummary {
-    command: string
+    type: string
     config?: Record<string, unknown>
     input: Record<string, unknown>
 }
@@ -58,13 +53,13 @@ export interface IncomingRequestSummary {
 /** Formats an invoke payload for terminal display (payload-style). */
 export function formatIncomingRequest(summary: IncomingRequestSummary): string {
     const headerParts = [
-        `command=${summary.command}`,
+        `type=${summary.type}`,
         summary.input.requestId != null ? `requestId=${String(summary.input.requestId)}` : undefined,
         summary.config?.testMode === true ? 'testMode=true' : undefined,
     ].filter(Boolean)
 
     const payload: Record<string, unknown> = {
-        command: summary.command,
+        type: summary.type,
         input: summary.input,
     }
     const redactedConfig = redactConfigForLogging(summary.config)
@@ -75,9 +70,27 @@ export function formatIncomingRequest(summary: IncomingRequestSummary): string {
     return ['', formatSection('Incoming request', `${headerParts.join('  ')}\n\n${formatSpreadJson(payload)}`), ''].join('\n')
 }
 
-/** Logs an invoke payload to stdout in a readable, payload-style format. */
+/** Logs an invoke payload through the shared framework emit path. */
 export function printIncomingRequest(summary: IncomingRequestSummary): void {
-    console.log(formatIncomingRequest(summary))
+    const formatted = formatIncomingRequest(summary)
+    const requestId = summary.input.requestId != null ? String(summary.input.requestId).trim() : 'unknown'
+    const logUrl = resolveLogUrlFromConfig(summary.config)
+
+    emitLogEvent(
+        'info',
+        'Incoming request',
+        {
+            command: summary.type,
+            input: summary.input,
+            ...(summary.config !== undefined ? { config: summary.config } : {}),
+        },
+        {
+            requestId,
+            command: summary.type,
+            logUrl,
+            consoleBodyOverride: formatted,
+        }
+    )
 }
 
 type ContextWithConfig = Context & { config?: Record<string, unknown> }
@@ -86,11 +99,12 @@ type ContextWithConfig = Context & { config?: Record<string, unknown> }
 export function withRequestLogging(command: string, handler: CommandHandler): CommandHandler {
     return async (context: Context, input: Record<string, unknown>, res: Response<any>) => {
         const config = await resolveConfigForRequestLogging(context as ContextWithConfig)
-        printIncomingRequest({
-            command,
+        const summary: IncomingRequestSummary = {
+            type: command,
             input,
             config,
-        })
+        }
+        printIncomingRequest(summary)
         await handler(context, input, res)
     }
 }
@@ -104,4 +118,3 @@ export function wrapConnectorWithRequestLogging(connector: Connector): Connector
         },
     })
 }
-

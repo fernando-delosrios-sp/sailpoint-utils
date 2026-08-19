@@ -4,6 +4,7 @@ import { createPersist, createVerifyPersisted, upsertSourceAccount, waitForAccou
 import { findAccountOnSource, getAccount } from '../isc/accounts'
 import { createSailPointClients } from './sdk-factory'
 import { ensureSourceSchema } from './result-source'
+import { createFrameworkLogger, FrameworkLogger } from './logger'
 import { createTestModePersist } from './test-mode-persist'
 import {
     OperationSchemaContract,
@@ -28,6 +29,10 @@ export interface RequestContextDependencies {
     testMode?: boolean
     /** Called after each inhibited persist in test mode (summary logging). */
     onTestModePersist?: () => void
+    /** Pre-built logger; defaults to console-only when omitted. */
+    logger?: FrameworkLogger
+    logUrl?: string
+    command?: string
 }
 
 /** Assembles the volatile request context for a custom operation invocation. */
@@ -51,9 +56,18 @@ export function createRequestContext<TOutput extends object>(
     const sourceId = deps.sourceId ?? ''
     const accountsClient = sdk.accounts
     const writeRegistry: WriteRegistry = new Map()
+    const log =
+        deps.logger ??
+        createFrameworkLogger({
+            requestId: input.requestId,
+            command: deps.command,
+            logUrl: deps.logUrl,
+        })
 
     const persistDeps: PersistDependencies = {
         sourceId,
+        command: deps.command,
+        log,
         operationSchema: deps.operationSchema,
         ensureSourceSchema: deps.operationSchema
             ? async (attributeKeys) => {
@@ -89,8 +103,10 @@ export function createRequestContext<TOutput extends object>(
         ? createTestModePersist<TOutput>(
               {
                   sourceId,
+                  command: deps.command,
                   operationSchema: deps.operationSchema,
                   onPersist: deps.onTestModePersist,
+                  logger: log,
               },
               writeRegistry
           )
@@ -109,6 +125,7 @@ export function createRequestContext<TOutput extends object>(
         sdk,
         persist: persist.persist,
         verifyPersisted: persist.verifyPersisted,
+        log,
         res,
     }
 }
@@ -130,6 +147,7 @@ function createOfflineSdkStub(): SailPointClients {
         createFormInstanceV1: async () => ({
             data: { standAloneFormUrl: 'https://offline.example.com/form/offline-instance' },
         }),
+        searchFormInstancesByTenantV1: async () => ({ data: [] }),
     }
     return {
         accounts: {
@@ -165,7 +183,10 @@ function createOfflineSdkStub(): SailPointClients {
         } as unknown as SailPointClients['governanceGroups'],
         accessRequests: { listAccessRequestStatusV1: stub } as unknown as SailPointClients['accessRequests'],
         search: { searchPostV1: stub } as unknown as SailPointClients['search'],
-        sodPolicies: { listSodPoliciesV1: stub } as unknown as SailPointClients['sodPolicies'],
+        sodPolicies: {
+            listSodPoliciesV1: async () => ({ data: [] }),
+            getSodPolicyV1: async () => ({ data: {} }),
+        } as unknown as SailPointClients['sodPolicies'],
         sodViolations: { startPredictSodViolationsV1: stub } as unknown as SailPointClients['sodViolations'],
         iaiRecommendations: { getRecommendationsV1: stub } as unknown as SailPointClients['iaiRecommendations'],
         iaiOutliers: { getIdentityOutliersV1: stub } as unknown as SailPointClients['iaiOutliers'],

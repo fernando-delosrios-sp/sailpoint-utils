@@ -16,8 +16,10 @@ node_modules/
 
 # Compiled source
 dist/
+.dev-dist/
 coverage/
 /templates/
-local/
+.local/
 
 .scratch/
+.claude/

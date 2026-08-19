@@ -1,6 +1,8 @@
 {
 	"name": "saas-custom-operations",
 	"commands": [
+		"custom:access-model-sod-remediation",
+		"custom:access-model-sod-remediation-apply",
 		"custom:access-request-status",
 		"custom:access-request-threshold",
 		"custom:check-sod-pending",

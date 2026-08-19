@@ -18,9 +18,9 @@ const workflowConfig = {
 
 const sodRemediationPersistAttributes = [
     { name: 'sod-remediation:form-url', type: 'STRING', isMulti: false },
-    { name: 'sod-remediation:situation-header', type: 'STRING', isMulti: false },
-    { name: 'sod-remediation:situation-summary', type: 'STRING', isMulti: false },
-    { name: 'sod-remediation:owner-email', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:form-email-header', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:form-email-body', type: 'STRING', isMulti: false },
+    { name: 'sod-remediation:form-email-recipients', type: 'STRING', isMulti: true },
 ]
 
 const mockViolation = {
@@ -262,6 +262,12 @@ describe('sodRemediationOperation', () => {
                 }),
             })
         )
+        const launchFormInput = vi.mocked(createSodRemediationInstance).mock.calls[0]?.[0]?.formInput
+        expect(launchFormInput?.situationSummaryHtml).toContain('What we found')
+        expect(launchFormInput?.situationSummaryHtml).toContain(
+            '/ui/a/admin/identities/ident-1/details/attributes'
+        )
+        expect(launchFormInput?.situationSummaryHtml).toContain('/ui/sod/policy-management/pol-1/details')
         expect(resolveIdentityEmail).toHaveBeenCalledWith(
             expect.objectContaining({ apiUrl: workflowConfig.apiUrl }),
             'owner-default'
@@ -271,16 +277,16 @@ describe('sodRemediationOperation', () => {
                 accountAttributesCreate: expect.objectContaining({
                     attributes: expect.objectContaining({
                         'sod-remediation:form-url': 'https://tenant.identitynow.com/form/instance-1',
-                        'sod-remediation:situation-header':
+                        'sod-remediation:form-email-header':
                             '⚠️ SOD Violation Remediation Required — Alice Example',
-                        'sod-remediation:situation-summary': expect.stringMatching(/Alice Example/),
-                        'sod-remediation:owner-email': 'owner-default@example.com',
+                        'sod-remediation:form-email-body': expect.stringMatching(/Alice Example/),
+                        'sod-remediation:form-email-recipients': ['owner-default@example.com'],
                     }),
                 }),
             })
         )
         const persistedSummary = createAccountV1.mock.calls[0][0].accountAttributesCreate.attributes[
-            'sod-remediation:situation-summary'
+            'sod-remediation:form-email-body'
         ] as string
         expect(persistedSummary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
         expect(persistedSummary).not.toContain('<ul>')
@@ -289,6 +295,43 @@ describe('sodRemediationOperation', () => {
             '<a href=https://tenant.identitynow.com/form/instance-1>Remediate here</a>'
         )
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
+    })
+
+    it('POSTs sod-remediation step logs to logUrl when configured', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue({ ok: true })
+        vi.stubGlobal('fetch', fetchImpl)
+        const res = { send: vi.fn() }
+
+        try {
+            await _withConfig(
+                { ...workflowConfig, logUrl: 'https://logs.example.com/ingest' },
+                async () => {
+                    await sodRemediationOperation(
+                        { commandType: 'custom:sod-remediation' } as never,
+                        {
+                            requestId: 'req-sod-logurl',
+                            violationId: 'vio-1',
+                            formName: 'SOD Remediation',
+                        },
+                        res as never
+                    )
+                }
+            )
+
+            const postedEvents = fetchImpl.mock.calls.map((call) =>
+                JSON.parse(String(call[1]?.body))
+            )
+            const violationEvent = postedEvents.find((event) => event.message === 'sod-remediation violation')
+
+            expect(violationEvent).toMatchObject({
+                level: 'info',
+                requestId: 'req-sod-logurl',
+                message: 'sod-remediation violation',
+            })
+            expect(violationEvent.detail).toMatchObject({ id: 'vio-1' })
+        } finally {
+            vi.unstubAllGlobals()
+        }
     })
 
     it('reconciles schema from operation sidecar without auto-registry lookup', async () => {
@@ -416,6 +459,33 @@ describe('sodRemediationOperation', () => {
         }
     })
 
+    it('continues launch when access path enrichment fails', async () => {
+        fetchKeepRecommendations.mockRejectedValue(new Error('recommendations unavailable'))
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await sodRemediationOperation(
+                { commandType: 'custom:sod-remediation' } as never,
+                {
+                    requestId: 'req-sod-enrichment-failure',
+                    violationId: 'vio-1',
+                    formName: 'SOD Remediation',
+                },
+                res as never
+            )
+        })
+
+        expect(createSodRemediationInstance).toHaveBeenCalledWith(
+            expect.objectContaining({
+                formInput: expect.objectContaining({
+                    violationId: 'vio-1',
+                    targetIdentityId: 'ident-1',
+                }),
+            })
+        )
+        expect(res.send).toHaveBeenCalledWith({ status: 'success' })
+    })
+
     it('sets hasControls false and notes summary when zero controls', async () => {
         listControlsV1.mockResolvedValue([])
         const res = { send: vi.fn() }
@@ -441,17 +511,86 @@ describe('sodRemediationOperation', () => {
             expect.objectContaining({
                 accountAttributesCreate: expect.objectContaining({
                         attributes: expect.objectContaining({
-                            'sod-remediation:situation-summary': expect.stringMatching(/Alice Example/),
+                            'sod-remediation:form-email-body': expect.stringMatching(/Alice Example/),
                         }),
                 }),
             })
         )
         const zeroControlsSummary = createAccountV1.mock.calls[0][0].accountAttributesCreate.attributes[
-            'sod-remediation:situation-summary'
+            'sod-remediation:form-email-body'
         ] as string
         expect(zeroControlsSummary.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
         expect(zeroControlsSummary).toMatch(/Alice Example/)
         expect(zeroControlsSummary).toContain(
+            '<a href=https://tenant.identitynow.com/form/instance-1>Remediate here</a>'
+        )
+    })
+
+    async function invokeConnectedSodRemediation(
+        requestId: string,
+        input: Record<string, unknown> = {}
+    ): Promise<{ res: { send: ReturnType<typeof vi.fn> } }> {
+        const res = { send: vi.fn() }
+        await _withConfig(workflowConfig, async () => {
+            await sodRemediationOperation(
+                { commandType: 'custom:sod-remediation' } as never,
+                {
+                    requestId,
+                    violationId: 'vio-1',
+                    formName: 'SOD Remediation',
+                    ...input,
+                },
+                res as never
+            )
+        })
+        return { res }
+    }
+
+    function launchFormInput(): Record<string, unknown> | undefined {
+        return vi.mocked(createSodRemediationInstance).mock.calls[0]?.[0]?.formInput as
+            | Record<string, unknown>
+            | undefined
+    }
+
+    it('Omitted disableLinks keeps admin links online', async () => {
+        await invokeConnectedSodRemediation('req-sod-disable-links-omit')
+
+        const formInput = launchFormInput()
+        expect(formInput?.situationSummaryHtml).toContain(
+            '/ui/a/admin/identities/ident-1/details/attributes'
+        )
+        expect(formInput?.groupColumnsHtmlPlain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-a')
+    })
+
+    it('disableLinks false keeps admin links online', async () => {
+        await invokeConnectedSodRemediation('req-sod-disable-links-false', { disableLinks: false })
+
+        const formInput = launchFormInput()
+        expect(formInput?.situationSummaryHtml).toContain(
+            '/ui/a/admin/identities/ident-1/details/attributes'
+        )
+        expect(formInput?.groupColumnsHtmlPlain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-a')
+    })
+
+    it('disableLinks true omits admin links online', async () => {
+        await invokeConnectedSodRemediation('req-sod-disable-links-true', { disableLinks: true })
+
+        const formInput = launchFormInput()
+        expect(formInput?.situationSummaryHtml).toContain('Alice Example')
+        expect(formInput?.situationSummaryHtml).not.toMatch(/<a href=/i)
+        expect(formInput?.groupColumnsHtmlPlain).toContain('Entitlement A')
+        expect(formInput?.groupColumnsHtmlPlain).not.toMatch(/<a href=/i)
+    })
+
+    it('disableLinks does not remove form URL or email CTA', async () => {
+        await invokeConnectedSodRemediation('req-sod-disable-links-cta', { disableLinks: true })
+
+        const persisted = createAccountV1.mock.calls[0][0].accountAttributesCreate.attributes as Record<
+            string,
+            unknown
+        >
+        expect(persisted['sod-remediation:form-url']).toBe('https://tenant.identitynow.com/form/instance-1')
+        expect(persisted['sod-remediation:form-email-body']).toContain(
             '<a href=https://tenant.identitynow.com/form/instance-1>Remediate here</a>'
         )
     })

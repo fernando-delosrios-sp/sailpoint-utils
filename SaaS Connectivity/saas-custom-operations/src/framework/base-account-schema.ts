@@ -7,12 +7,14 @@ import {
     OperationField,
 } from './schema-inference'
 
-const CORE_ATTRIBUTE_NAMES = ['id', 'status', 'date'] as const
+const CORE_ATTRIBUTE_NAMES = ['id', 'status', 'date', 'details', 'operationName'] as const
 
 const CORE_ATTRIBUTES: SchemaAttribute[] = [
     { name: 'id', type: 'STRING', isMulti: false },
     { name: 'status', type: 'STRING', isMulti: false },
     { name: 'date', type: 'STRING', isMulti: false },
+    { name: 'details', type: 'STRING', isMulti: false },
+    { name: 'operationName', type: 'STRING', isMulti: false },
 ]
 
 function toAttributeDefinition(attr: InferredSchemaAttribute): SchemaAttribute {
@@ -28,7 +30,7 @@ function toAttributeDefinition(attr: InferredSchemaAttribute): SchemaAttribute {
     }
 }
 
-/** Collects union attribute definitions for a base account schema from operation output fields. */
+/** Collects attribute definitions for a base account schema from operation output fields. */
 export function collectBaseSchemaAttributes(outputFields: OperationField[]): Map<string, InferredSchemaAttribute> {
     const required = new Map<string, InferredSchemaAttribute>()
 
@@ -41,7 +43,7 @@ export function collectBaseSchemaAttributes(outputFields: OperationField[]): Map
     }
 
     for (const field of outputFields) {
-        if (RESERVED_OUTPUT_KEYS.has(field.name)) {
+        if (RESERVED_OUTPUT_KEYS.has(field.name) || field.name === 'details' || field.name === 'operationName') {
             continue
         }
 

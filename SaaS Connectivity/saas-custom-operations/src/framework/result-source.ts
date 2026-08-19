@@ -12,12 +12,12 @@ import {
     SourcePayload,
 } from '../isc/sources'
 import { resolveTokenIdentity } from '../isc/token-identity'
+import { getActiveFrameworkLogger } from './logger'
 import {
     BASE_CORE_ATTRIBUTES,
     baseSchemaAttributeDefinition,
     buildBaseAccountSchema,
 } from './base-account-schema'
-import { listRegisteredOperationSchemas } from './operation-schema-registry'
 import { RESERVED_OUTPUT_KEYS } from './output-schema'
 import {
     IscAttributeType,
@@ -50,10 +50,6 @@ export async function resolveSourceByNameReadOnly(
         return existing.id
     }
     return undefined
-}
-
-function registeredOutputFields(): OperationField[] {
-    return listRegisteredOperationSchemas().flatMap((schema) => schema.outputFields)
 }
 
 function buildMetadataPatches(schema: SchemaPayload): Array<{ op: string; path: string; value?: unknown }> {
@@ -92,7 +88,7 @@ function mergeSchemaAttributes(
         }
 
         if (existing.type && existing.type !== inferred.type) {
-            console.warn(
+            getActiveFrameworkLogger().warn(
                 `[schema] Type conflict for ${name}: existing ${existing.type}, inferred ${inferred.type} — keeping existing`
             )
             continue
@@ -101,7 +97,7 @@ function mergeSchemaAttributes(
         if (existing.isMulti === false && inferred.isMulti) {
             const index = merged.findIndex((attr) => attr.name === name)
             if (index >= 0) {
-                console.warn(`[schema] isMulti conflict for ${name}: patching to true`)
+                getActiveFrameworkLogger().warn(`[schema] isMulti conflict for ${name}: patching to true`)
                 merged[index] = { ...merged[index], isMulti: true }
                 changed = true
             }
@@ -126,7 +122,7 @@ function buildSchemaReconciliationPatches(
 }
 
 function buildSchemaPayloadFromRequired(required: Map<string, InferredSchemaAttribute>): SchemaPayload {
-    const coreNames = ['id', 'status', 'date'] as const
+    const coreNames = ['id', 'status', 'date', 'details', 'operationName'] as const
     const dynamicNames = [...required.keys()]
         .filter((name) => !coreNames.includes(name as (typeof coreNames)[number]))
         .sort((a, b) => a.localeCompare(b))
@@ -154,9 +150,13 @@ function buildBaseSchemaAlignmentPatches(
     return patches
 }
 
-/** Applies the base account schema (union of registered operation outputs) on a newly created result source. */
-export async function applyBaseAccountSchema(sourcesApi: SourcesApi, sourceId: string): Promise<void> {
-    const baseSchema = buildBaseAccountSchema(registeredOutputFields())
+/** Applies the base account schema for the invoking operation on a newly created result source. */
+export async function applyBaseAccountSchema(
+    sourcesApi: SourcesApi,
+    sourceId: string,
+    outputFields: OperationField[] = []
+): Promise<void> {
+    const baseSchema = buildBaseAccountSchema(outputFields)
     let schema = await getAccountSchema(sourcesApi, sourceId)
 
     if (!schema?.id) {
@@ -172,7 +172,8 @@ export async function applyBaseAccountSchema(sourcesApi: SourcesApi, sourceId: s
 export async function createDelimitedFileResultSource(
     sourcesApi: SourcesApi,
     sourceName: string,
-    ownerId: string
+    ownerId: string,
+    outputFields: OperationField[] = []
 ): Promise<string> {
     const sourceId = await createSource(
         sourcesApi,
@@ -190,7 +191,7 @@ export async function createDelimitedFileResultSource(
         { provisionAsCsv: true }
     )
 
-    await applyBaseAccountSchema(sourcesApi, sourceId)
+    await applyBaseAccountSchema(sourcesApi, sourceId, outputFields)
     return sourceId
 }
 
@@ -198,7 +199,8 @@ export async function createDelimitedFileResultSource(
 export async function resolveSourceByName(
     sourcesApi: SourcesApi,
     sourceName: string,
-    token: string
+    token: string,
+    outputFields: OperationField[] = []
 ): Promise<string> {
     const existing = await findSourceByName(sourcesApi, sourceName)
     if (existing?.id) {
@@ -208,7 +210,7 @@ export async function resolveSourceByName(
 
     try {
         const ownerId = resolveTokenIdentity(token)
-        return await createDelimitedFileResultSource(sourcesApi, sourceName, ownerId)
+        return await createDelimitedFileResultSource(sourcesApi, sourceName, ownerId, outputFields)
     } catch (error) {
         const retried = await findSourceByName(sourcesApi, sourceName)
         if (retried?.id) {
@@ -233,7 +235,7 @@ function collectRequiredAttributes(
     }
 
     for (const field of outputFields) {
-        if (RESERVED_OUTPUT_KEYS.has(field.name)) {
+        if (RESERVED_OUTPUT_KEYS.has(field.name) || field.name === 'details' || field.name === 'operationName') {
             continue
         }
         required.set(field.name, inferSchemaAttribute(field))
@@ -267,7 +269,7 @@ export async function ensureSourceSchema(
             return
         } catch (error) {
             if (isHttpNotFound(error)) {
-                console.warn(
+                getActiveFrameworkLogger().warn(
                     `[schema] account schema unavailable for source ${sourceId} (404 on create) — skipping reconciliation`
                 )
                 return
@@ -282,7 +284,7 @@ export async function ensureSourceSchema(
         await patchAccountSchema(sourcesApi, sourceId, schema.id!, patches)
     } catch (error) {
         if (isHttpNotFound(error)) {
-            console.warn(
+            getActiveFrameworkLogger().warn(
                 `[schema] account schema patch unavailable for source ${sourceId} (404) — continuing persist`
             )
             return

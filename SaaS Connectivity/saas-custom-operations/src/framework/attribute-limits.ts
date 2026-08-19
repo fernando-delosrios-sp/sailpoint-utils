@@ -1,3 +1,5 @@
+import { getActiveFrameworkLogger } from './logger'
+
 /** ISC maximum length for account identity / nativeIdentity values (aggregation limit). */
 export const ISC_IDENTITY_MAX_LENGTH = 128
 
@@ -14,6 +16,6 @@ export function truncateForIscStorage(value: string, maxLength: number, context?
     }
 
     const contextLabel = context ?? 'value'
-    console.warn(`[persist] truncated ${contextLabel} from ${value.length} to ${maxLength} chars`)
+    getActiveFrameworkLogger().warn(`[persist] truncated ${contextLabel} from ${value.length} to ${maxLength} chars`)
     return value.slice(0, maxLength)
 }

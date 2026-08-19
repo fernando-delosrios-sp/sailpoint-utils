@@ -1,0 +1,5 @@
+interface:
+  display_name: Setup Matt Pocock Skills
+  short_description: Configure this repo for the engineering skills — set up its issue tracke
+policy:
+  allow_implicit_invocation: false

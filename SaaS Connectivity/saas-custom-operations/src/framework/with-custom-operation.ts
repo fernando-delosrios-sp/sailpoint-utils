@@ -1,5 +1,7 @@
 import { CommandHandler, ConnectorError, Context, Response } from '@sailpoint/connector-sdk'
-import { toConnectorError } from './connector-error'
+import { buildErrorLogDetail, toConnectorError } from './connector-error'
+import { createFrameworkLogger, getActiveFrameworkLogger, resolveLogUrlFromConfig, setActiveFrameworkLogger } from './logger'
+import { persistFailedResult } from './failure-persist'
 import {
     clearInFlightInvocation,
     getInFlightInvocation,
@@ -108,6 +110,7 @@ export interface CustomOperationOptions extends RequestContextDependencies {
  * Auto-discovered operations resolve `operationSchema` from the build-time registry when omitted.
  * Failures are normalized via {@link toConnectorError} and returned as `{ status: 'failed', error }`
  * (HTTP 200) so calling workflows do not retry on spcx/platform 500s — unless the handler already sent a response.
+ * Terminal failures also upsert a result account with `status: failed` and `details` when request context is available.
  */
 export function customOperation<T extends OperationSignature>(
     handler: CustomOperationHandler<T>,
@@ -119,8 +122,8 @@ export function customOperation<T extends OperationSignature>(
             const inFlight = getInFlightInvocation(dedupeKey)
             if (inFlight) {
                 const requestId = String(input.requestId).trim()
-                console.log(
-                    `[${requestId}] duplicate invoke — awaiting in-flight ${context.commandType ?? 'custom operation'}`
+                getActiveFrameworkLogger(requestId).info(
+                    `duplicate invoke — awaiting in-flight ${context.commandType ?? 'custom operation'}`
                 )
                 const outcome = await inFlight
                 res.send(
@@ -134,12 +137,18 @@ export function customOperation<T extends OperationSignature>(
 
         let responseSent = false
         let outcome: InvocationOutcome = { status: 'success' }
+        let activeCtx: RequestContext<InferOperationOutput<T>> | undefined
+        let pendingFailurePersist: Promise<void> | undefined
+
         const trackedRes: Response<any> = {
             send(output: unknown) {
                 responseSent = true
-                outcome = isFailedCommandOutput(output)
-                    ? { status: 'failed', error: output.error }
-                    : { status: 'success' }
+                if (isFailedCommandOutput(output)) {
+                    outcome = { status: 'failed', error: output.error }
+                    pendingFailurePersist = persistFailedResult(activeCtx?.requestId, output.error, activeCtx)
+                } else {
+                    outcome = { status: 'success' }
+                }
                 res.send(output)
             },
             saveState: (state) => res.saveState(state),
@@ -153,17 +162,25 @@ export function customOperation<T extends OperationSignature>(
             keepAliveTimer = startKeepAlive(trackedRes)
 
             try {
-                await runCustomOperation(context, input, trackedRes, handler, deps)
+                await runCustomOperation(context, input, trackedRes, handler, deps, (ctx) => {
+                    activeCtx = ctx
+                })
+                await pendingFailurePersist
                 return outcome
             } catch (e) {
                 const error = toConnectorError(e, context.commandType)
-                console.error(error.message)
+                getActiveFrameworkLogger(String(input.requestId ?? 'unknown')).error(
+                    error.message,
+                    buildErrorLogDetail(e)
+                )
                 if (!responseSent) {
                     trackedRes.send({ status: 'failed', error: error.message })
                 }
+                await pendingFailurePersist
                 return outcome
             } finally {
                 stopKeepAlive(keepAliveTimer)
+                setActiveFrameworkLogger(undefined)
             }
         })()
 
@@ -186,47 +203,59 @@ async function runCustomOperation<T extends OperationSignature>(
     input: Record<string, unknown>,
     res: Response<any>,
     handler: CustomOperationHandler<T>,
-    deps: CustomOperationOptions
+    deps: CustomOperationOptions,
+    onContext?: (ctx: RequestContext<InferOperationOutput<T>>) => void
 ): Promise<void> {
         const { config, configProvided } = await resolveInvocationConfig(deps, context as ContextWithConfig)
         const testMode = configProvided ? isTestMode(config) : isTestMode({})
         const { standard, operationInput } = parseStandardInput(config, input, { testMode, configProvided })
+        const logUrl = resolveLogUrlFromConfig(config)
+        const log = createFrameworkLogger({
+            requestId: standard.requestId,
+            command: context.commandType,
+            logUrl,
+        })
+        setActiveFrameworkLogger(log)
+
+        const resolvedSchema =
+            deps.operationSchema ??
+            (context.commandType ? getOperationSchema(context.commandType) : undefined)
+        const outputFields = resolvedSchema?.outputFields ?? []
 
         let sdk = deps.sdk
         let sourceId = deps.sourceId
         let inhibitedPersistCount = 0
 
         if (testMode) {
-            console.log(`[test-mode] active command=${context.commandType} requestId=${standard.requestId}`)
+            log.info(`[test-mode] active command=${context.commandType} requestId=${standard.requestId}`)
 
             if (configProvided) {
                 sdk = sdk ?? createSailPointClients(standard.apiUrl, standard.token)
                 await verifyIscStatus(sdk.sources)
-                console.log(`[test-mode] ISC status check succeeded`)
+                log.info(`[test-mode] ISC status check succeeded`)
 
                 if (!sourceId) {
                     const resolved = await resolveSourceByNameReadOnly(sdk.sources, standard.sourceName)
                     if (resolved) {
                         sourceId = resolved
                     } else {
-                        console.warn(
+                        log.warn(
                             `[test-mode] source "${standard.sourceName}" not found — using placeholder ${TEST_MODE_PLACEHOLDER_SOURCE_ID}`
                         )
                         sourceId = TEST_MODE_PLACEHOLDER_SOURCE_ID
                     }
                 }
             } else {
-                console.log(`[test-mode] no config — skipping ISC`)
+                log.info(`[test-mode] no config — skipping ISC`)
                 sourceId = sourceId ?? TEST_MODE_PLACEHOLDER_SOURCE_ID
             }
         } else {
             sdk = sdk ?? createSailPointClients(standard.apiUrl, standard.token)
-            sourceId = sourceId ?? (await resolveSourceByName(sdk.sources, standard.sourceName, standard.token))
+            sourceId =
+                sourceId ??
+                (await resolveSourceByName(sdk.sources, standard.sourceName, standard.token, outputFields))
         }
 
-        const resolvedSchema =
-            deps.operationSchema ??
-            (context.commandType ? getOperationSchema(context.commandType) : undefined)
         const operationSchema: OperationSchemaContract | undefined = resolvedSchema
             ? {
                   command: resolvedSchema.command ?? context.commandType,
@@ -241,19 +270,22 @@ async function runCustomOperation<T extends OperationSignature>(
             operationSchema,
             testMode,
             onTestModePersist: testMode ? () => inhibitedPersistCount++ : undefined,
+            logger: log,
+            logUrl,
+            command: context.commandType,
         })
 
-        console.log(`[${standard.requestId}] custom operation started: ${context.commandType}`)
+        onContext?.(requestContext)
+
+        log.info(`custom operation started: ${context.commandType}`)
 
         await handler(requestContext, operationInput as InferOperationInput<T>)
 
         if (testMode) {
-            console.log(
-                `[test-mode] completed requestId=${standard.requestId} inhibitedPersists=${inhibitedPersistCount}`
-            )
+            log.info(`[test-mode] completed requestId=${standard.requestId} inhibitedPersists=${inhibitedPersistCount}`)
         }
 
-        console.log(`[${standard.requestId}] custom operation completed`)
+        log.info('custom operation completed')
 }
 
 

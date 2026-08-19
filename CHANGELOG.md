@@ -4,6 +4,42 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-08-12
+
+### ✨ New Features
+
+- **saas-custom-operations** — Foundation TypeScript connector template for ISC custom workflow operations (`SaaS Connectivity/saas-custom-operations/`).
+  - Invoke commands from workflows, call back into ISC APIs via loopback, and persist typed results to an auto-provisioned DelimitedFile source for downstream **Get Accounts** steps.
+  - Auto-provisions the result source by name, applies a shared base account schema, and reconciles per-operation output fields at persist time.
+  - Build-time auto-registration of operations from command literals; schema codegen from operation signatures.
+  - Local **test mode** and fixture runner for dry-run operation development (`npm run call:op`).
+  - Example workflow export demonstrating invoke → persist → **Get Accounts**.
+- **SOD remediation operation** (`custom:sod-remediation`) — Launch workflow forms for SOD violations with persisted form URL, email summary fields, revocable access-search filters, and launch-time `formInput` workflow keys.
+- **Preventive SOD check** (`custom:preventive-sod-check`) — Evaluate existing or request-scoped SoD violations before approval, with persisted violation flags and policy summaries.
+- **Governance group emails** (`custom:governance-group-emails`) — Resolve a workgroup by name and persist member emails for workflow notifications.
+- **Repository catalog README** — Root README with purpose, layout tables, and links to all ISC, SaaS Connectivity, and Third-Party utilities.
+
+### 🔧 Improvements
+
+- **Result source schema management** — Base account schema applied on source create; schema attributes replaced on apply so re-provisioned sources stay aligned with registered operations.
+- **Persist reliability** — Values truncated to ISC account storage limits; concurrent invokes deduplicated with keepAlive; default request logging for connector troubleshooting.
+- **Local invoke tooling** — `call:op` script loads auto-registry and optional `ISC_TOKEN` for connected dry-runs.
+
+### 🐛 Fixes
+
+- **Custom operation error handling** — Operation failures propagate as `ConnectorError` to callers instead of silent success.
+- **Persist upsert on existing accounts** — Uses `putAccountV1` when updating an identity's persisted result account.
+- **SOD form definition owner** — Form definitions created with the access-token identity as owner (not the violation owner).
+- **Result source provisioning** — Connector reference included on DelimitedFile source create; workflow token placeholders normalized in invoke payloads.
+
+### 📚 Documentation
+
+- **saas-custom-operations guides** — Co-located operation READMEs, workflow invoke payload reference, RequestContext API docs, and SOD/persist integration notes.
+- **Utility README Purpose sections** — Added consistent Purpose sections across utility READMEs.
+- **Custom workflow actions banner** — Promotional image in saas-custom-operations README.
+
+---
+
 ## 2026-08-04
 
 ### ✨ New Features

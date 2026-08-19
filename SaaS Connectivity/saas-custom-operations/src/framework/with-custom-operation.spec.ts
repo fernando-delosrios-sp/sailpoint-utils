@@ -8,6 +8,7 @@ import {
 } from './operation-schema-registry'
 import { createRequestContext } from './request-context'
 import { clearInFlightInvocationsForTests } from './invocation-guard'
+import { beginPayloadOutputCapture, endPayloadOutputCapture } from './payload-persist-collector'
 import { KEEP_ALIVE_INTERVAL_MS } from './invocation-guard'
 import { customOperation, normalizeAccessToken, parseStandardInput } from './with-custom-operation'
 
@@ -199,6 +200,41 @@ describe('customOperation', () => {
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
     })
 
+    it('exposes ctx.log and POSTs when logUrl is configured', async () => {
+        const fetchImpl = vi.fn().mockResolvedValue({ ok: true })
+        vi.stubGlobal('fetch', fetchImpl)
+        const res = mockResponse()
+        const handler = vi.fn(async (ctx) => {
+            expect(ctx.log.info).toEqual(expect.any(Function))
+            ctx.log.info('violation loaded', { violation: { id: 'v-1' }, count: 2 })
+            ctx.res.send({ status: 'success' })
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { ...testConfig, logUrl: 'https://logs.example.com/ingest' },
+            sourceId: 'source-123',
+        })
+
+        await wrapped(
+            { commandType: 'custom:test' } as any,
+            { requestId: 'req-log', payload: 'data' },
+            res as any
+        )
+
+        expect(handler).toHaveBeenCalled()
+        expect(fetchImpl).toHaveBeenCalledWith(
+            'https://logs.example.com/ingest',
+            expect.objectContaining({ method: 'POST' })
+        )
+        const body = fetchImpl.mock.calls
+            .map((call) => JSON.parse(String(call[1]?.body)))
+            .find((event) => event.message === 'violation loaded')
+        expect(body).toMatchObject({
+            message: 'violation loaded',
+            detail: { violation: { id: 'v-1' }, count: 2 },
+        })
+        vi.unstubAllGlobals()
+    })
+
     it('deduplicates concurrent invokes with the same command and requestId', async () => {
         let releaseHandler!: () => void
         const handlerGate = new Promise<void>((resolve) => {
@@ -256,6 +292,51 @@ describe('customOperation', () => {
         expect(res2.send).toHaveBeenCalledWith({ status: 'failed', error: 'form create failed' })
     })
 
+    it('Concurrent apply deduped', async () => {
+        let releaseHandler!: () => void
+        const handlerGate = new Promise<void>((resolve) => {
+            releaseHandler = resolve
+        })
+
+        const handler = vi.fn(async (ctx) => {
+            await handlerGate
+            ctx.res.send({
+                status: 'success',
+                'access-model-sod-remediation-apply:status': 'applied',
+            })
+        })
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: testConfig,
+            sourceId: 'source-123',
+        })
+
+        const res1 = mockResponse()
+        const res2 = mockResponse()
+        const first = wrapped(
+            { commandType: 'custom:access-model-sod-remediation-apply' } as any,
+            { requestId: 'req-a', formInstanceId: 'fi-dup' },
+            res1 as any
+        )
+        await Promise.resolve()
+        const second = wrapped(
+            { commandType: 'custom:access-model-sod-remediation-apply' } as any,
+            { requestId: 'req-b', formInstanceId: 'fi-dup' },
+            res2 as any
+        )
+
+        releaseHandler()
+        await Promise.all([first, second])
+
+        expect(handler).toHaveBeenCalledTimes(1)
+        expect(res1.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'success',
+                'access-model-sod-remediation-apply:status': 'applied',
+            })
+        )
+        expect(res2.send).toHaveBeenCalledWith({ status: 'success' })
+    })
+
     it('sends keepAlive while the handler is running', async () => {
         vi.useFakeTimers()
         try {
@@ -278,6 +359,111 @@ describe('customOperation', () => {
         } finally {
             vi.useRealTimers()
         }
+    })
+
+    it('passes invoking operation output fields when auto-creating result source', async () => {
+        clearOperationSchemaRegistry()
+        registerOperationSchema(
+            'custom:example',
+            defineOperationSchema({ summary: 'string', step: 'string' }, { command: 'custom:example' })
+        )
+        registerOperationSchema(
+            'custom:other',
+            defineOperationSchema({ violationId: 'string' }, { command: 'custom:other' })
+        )
+
+        const header = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url')
+        const body = Buffer.from(JSON.stringify({ identity_id: 'owner-id' })).toString('base64url')
+        const token = `${header}.${body}.signature`
+
+        const res = mockResponse()
+        const handler = vi.fn(async () => {})
+        const sourcesApi = {
+            listSourcesV1: vi
+                .fn()
+                .mockResolvedValueOnce({ data: [] })
+                .mockResolvedValueOnce({ data: [] }),
+            createSourceV1: vi.fn().mockResolvedValue({ data: { id: 'new-source-id' } }),
+            getSourceSchemasV1: vi.fn().mockResolvedValue({ data: [] }),
+            createSourceSchemaV1: vi.fn().mockResolvedValue({ data: { id: 'schema-id', name: 'account' } }),
+        } as any
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { ...testConfig, token },
+            sdk: {
+                sources: sourcesApi,
+                accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() },
+            } as any,
+        })
+
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(sourcesApi.createSourceSchemaV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                schema: expect.objectContaining({
+                    attributes: expect.arrayContaining([
+                        expect.objectContaining({ name: 'summary', type: 'STRING' }),
+                        expect.objectContaining({ name: 'step', type: 'STRING' }),
+                    ]),
+                }),
+            })
+        )
+
+        const createCall = sourcesApi.createSourceSchemaV1.mock.calls[0]?.[0]
+        const attributeNames = createCall.schema.attributes.map((attr: { name: string }) => attr.name)
+        expect(attributeNames).not.toContain('violationId')
+        expect(handler).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 'new-source-id' }), {})
+    })
+
+    it('auto-creates core-only base schema when operationSchema is absent', async () => {
+        clearOperationSchemaRegistry()
+
+        const header = Buffer.from(JSON.stringify({ alg: 'none' })).toString('base64url')
+        const body = Buffer.from(JSON.stringify({ identity_id: 'owner-id' })).toString('base64url')
+        const token = `${header}.${body}.signature`
+
+        const res = mockResponse()
+        const handler = vi.fn(async (ctx) => {
+            expect(ctx.operationSchema).toBeUndefined()
+        })
+        const sourcesApi = {
+            listSourcesV1: vi
+                .fn()
+                .mockResolvedValueOnce({ data: [] })
+                .mockResolvedValueOnce({ data: [] }),
+            createSourceV1: vi.fn().mockResolvedValue({ data: { id: 'new-source-id' } }),
+            getSourceSchemasV1: vi.fn().mockResolvedValue({ data: [] }),
+            createSourceSchemaV1: vi.fn().mockResolvedValue({ data: { id: 'schema-id', name: 'account' } }),
+        } as any
+        const wrapped = customOperation<TestOperation>(handler, {
+            config: { ...testConfig, token },
+            sdk: {
+                sources: sourcesApi,
+                accounts: { createAccountV1: vi.fn(), putAccountV1: vi.fn(), listAccountsV1: vi.fn() },
+            } as any,
+        })
+
+        await wrapped({ commandType: 'custom:manual' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(sourcesApi.createSourceSchemaV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                sourceId: 'new-source-id',
+                schema: expect.objectContaining({
+                    identityAttribute: 'id',
+                    attributes: expect.arrayContaining([
+                        expect.objectContaining({ name: 'id', type: 'STRING' }),
+                        expect.objectContaining({ name: 'status', type: 'STRING' }),
+                        expect.objectContaining({ name: 'date', type: 'STRING' }),
+                        expect.objectContaining({ name: 'details', type: 'STRING' }),
+                        expect.objectContaining({ name: 'operationName', type: 'STRING' }),
+                    ]),
+                }),
+            })
+        )
+
+        const createCall = sourcesApi.createSourceSchemaV1.mock.calls[0]?.[0]
+        const attributeNames = createCall.schema.attributes.map((attr: { name: string }) => attr.name)
+        expect(attributeNames).toEqual(['id', 'status', 'date', 'details', 'operationName'])
+        expect(handler).toHaveBeenCalledWith(expect.objectContaining({ sourceId: 'new-source-id' }), {})
     })
 
     it('resolves source by name when sourceId is not provided', async () => {
@@ -365,9 +551,18 @@ describe('customOperation', () => {
     it('sends status failed for persist verification failure instead of throwing', async () => {
         vi.useFakeTimers()
         try {
-            const res = { send: vi.fn() }
+            const res = mockResponse()
+            const upsertAttributes: Record<string, unknown>[] = []
             const accountsApi = {
-                createAccountV1: vi.fn().mockResolvedValue({}),
+                createAccountV1: vi.fn().mockImplementation(async (req: {
+                    accountAttributesCreate?: { attributes?: Record<string, unknown> }
+                }) => {
+                    const attributes = req.accountAttributesCreate?.attributes
+                    if (attributes) {
+                        upsertAttributes.push(attributes)
+                    }
+                    return {}
+                }),
                 putAccountV1: vi.fn().mockResolvedValue({}),
                 deleteAccountAsyncV1: vi.fn().mockResolvedValue({}),
                 listAccountsV1: vi.fn().mockResolvedValue({ data: [] }),
@@ -398,12 +593,71 @@ describe('customOperation', () => {
                         error: expect.stringMatching(/account not found after retries/),
                     })
                 )
+                expect(
+                    upsertAttributes.some(
+                        (attributes) =>
+                            attributes.status === 'failed' &&
+                            String(attributes.details).match(/account not found after retries/)
+                    )
+                ).toBe(true)
             })
             await vi.runAllTimersAsync()
             await assertion
         } finally {
             vi.useRealTimers()
         }
+    })
+
+    it('persists failed account with details when handler throws in test mode', async () => {
+        process.env.SPCX_TEST_MODE = '1'
+        const res = mockResponse()
+        const wrapped = customOperation<TestOperation>(
+            async () => {
+                throw new Error('operation failed')
+            },
+            { sourceId: 'source-1' }
+        )
+
+        beginPayloadOutputCapture()
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'req-fail-details' }, res as any)
+        const inhibited = endPayloadOutputCapture()
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({ status: 'failed', error: expect.stringMatching(/operation failed/) })
+        )
+        expect(inhibited).toEqual([
+            expect.objectContaining({
+                identity: 'req-fail-details',
+                status: 'failed',
+                attributes: expect.objectContaining({
+                    details: expect.stringMatching(/operation failed/),
+                    operationName: 'custom:example',
+                }),
+            }),
+        ])
+    })
+
+    it('persists failed account with details when handler sends failed response', async () => {
+        process.env.SPCX_TEST_MODE = '1'
+        const res = mockResponse()
+        const wrapped = customOperation<TestOperation>(async (ctx) => {
+            ctx.res.send({ status: 'failed', error: 'form create failed' })
+        })
+
+        beginPayloadOutputCapture()
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'req-send-failed' }, res as any)
+        const inhibited = endPayloadOutputCapture()
+
+        expect(inhibited).toEqual([
+            expect.objectContaining({
+                identity: 'req-send-failed',
+                status: 'failed',
+                attributes: expect.objectContaining({
+                    details: 'form create failed',
+                    operationName: 'custom:example',
+                }),
+            }),
+        ])
     })
 })
 
@@ -479,6 +733,37 @@ describe('customOperation test mode', () => {
             expect.objectContaining({
                 status: 'failed',
                 error: expect.stringMatching(/Unauthorized/),
+            })
+        )
+    })
+
+    it('preserves existing ConnectorError message without double-wrapping', async () => {
+        const res = { send: vi.fn() }
+        const wrapped = customOperation<TestOperation>(
+            async () => {
+                throw new ConnectorError('missing field')
+            },
+            {
+                config: testConfig,
+                sourceId: 'source-1',
+                sdk: {
+                    sources: { listSourcesV1: vi.fn(), createSourceV1: vi.fn() } as any,
+                    accounts: {
+                        createAccountV1: vi.fn(),
+                        putAccountV1: vi.fn(),
+                        deleteAccountAsyncV1: vi.fn(),
+                        listAccountsV1: vi.fn(),
+                    } as any,
+                },
+            }
+        )
+
+        await wrapped({ commandType: 'custom:test', config: testConfig } as any, { requestId: 'req-001' }, res as any)
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                error: 'missing field',
             })
         )
     })

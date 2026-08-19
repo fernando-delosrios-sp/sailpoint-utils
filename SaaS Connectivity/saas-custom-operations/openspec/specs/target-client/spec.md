@@ -12,7 +12,7 @@ The connector SHALL organize generic ISC integration code under `src/isc/<api-gr
 
 - **GIVEN** the connector source tree under `src/isc/`
 - **WHEN** a developer inspects ISC integration modules
-- **THEN** forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, public-identities, recommendations, governance-groups, access-requests, events-search, and sod-prediction SHALL each reside in their own subdirectory
+- **THEN** forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, public-identities, recommendations, governance-groups, access-requests, events-search, sod-prediction, and sod-policies SHALL each reside in their own subdirectory
 - **AND** flat handler files directly under `src/isc/` (other than shared barrels if present) SHALL NOT be used for ISC client implementations
 
 #### Scenario: Identity access APIs separated
@@ -84,6 +84,13 @@ The connector SHALL pre-configure `sailpoint-api-client` instances from operatio
 - **WHEN** the preventive-sod-check handler accesses ISC APIs
 - **THEN** `ctx.sdk` SHALL expose configured `AccessRequestsApi`, `SearchApi`, and `SODViolationsApi` instances
 - **AND** SHALL reuse existing `RolesApi` and `AccessProfilesApi` clients for entitlement expansion
+
+#### Scenario: Access model SOD remediation clients available on context
+
+- **GIVEN** a custom operation receives valid apiUrl and token in its input envelope
+- **WHEN** the access-model-sod-remediation handler accesses ISC APIs
+- **THEN** `ctx.sdk` SHALL expose configured SodPolicies (or equivalent), RolesApi, AccessProfilesApi, and CustomFormsApi instances
+- **AND** SHALL reuse existing entitlement expansion helpers under roles and access-profiles modules
 
 ### Requirement: No external target application client
 

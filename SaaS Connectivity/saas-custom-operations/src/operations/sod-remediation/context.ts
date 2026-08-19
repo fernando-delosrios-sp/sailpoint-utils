@@ -3,16 +3,21 @@ import { CompensatingControlV1 } from '../../isc/controls'
 import { ViolationV1, extractSideEntitlements, resolveViolationSides } from '../../isc/violations'
 import { IdentityAccessItem } from '../../isc/identity-access'
 import {
+    escapeHtml,
+    buildGroupColumnLayouts,
+    buildIdentitySodContextPanelHtml,
+    renderEmojiLegend,
+    renderFlatAccessPathList,
+    renderFlatAccessPathListBody,
+    SideVariants,
+} from '../../lib/sod-form-html'
+import {
     RecommendedSideToCorrect,
     sideCorrectionLabel,
 } from './access-path-enrichment'
 import { buildRevocableAccessSearchString, ResolvedAccessSide, resolveAccessSide } from './access-path-resolver'
 import { FormInputSelectOption, SodFormInputValues } from './form-service'
-import {
-    REVOCABILITY_EMOJI,
-    renderAccessPathListHtml,
-    renderSideCorrectionHtml,
-} from './revocability-labels'
+import { REVOCABILITY_EMOJI, renderSideCorrectionHtml } from './revocability-labels'
 
 export interface SituationSummaryInput {
     violation: ViolationV1
@@ -20,14 +25,6 @@ export interface SituationSummaryInput {
     groupB: ResolvedAccessSide
     controls: CompensatingControlV1[]
     recommendedSideToCorrect?: RecommendedSideToCorrect
-}
-
-function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
 }
 
 /** Builds a plain-text email subject for workflow notifications. */
@@ -65,7 +62,7 @@ function remediationFormLink(formUrl: string): string {
 }
 
 /**
- * Compact HTML for persisted `sod-remediation:situation-summary`.
+ * Compact HTML for persisted `sod-remediation:form-email-body`.
  * Fits ISC STRING storage (256 chars); access-path detail lives in the remediation form.
  */
 export function buildPersistedSituationSummary(
@@ -109,48 +106,56 @@ export function buildPersistedSituationSummary(
     return truncated.length <= maxLength ? truncated : truncated.slice(0, maxLength)
 }
 
-/** Builds full HTML for in-form DESCRIPTION rendering (includes access-path lists). */
-export function buildSituationSummary(input: SituationSummaryInput): string {
+function buildSituationSummaryCore(input: SituationSummaryInput, uiOrigin?: string): string {
     const { violation, groupA, groupB, controls, recommendedSideToCorrect = null } = input
-    const targetName = escapeHtml(violation.identity.name ?? violation.identity.id)
-    const policyName = escapeHtml(violation.policy?.name ?? 'Unknown policy')
-    const violationId = escapeHtml(violation.id)
     const sideHint = renderSideCorrectionHtml(sideCorrectionLabel(recommendedSideToCorrect), escapeHtml)
 
-    const parts = [
-        `<h2>${REVOCABILITY_EMOJI.warning} SOD Violation Remediation Required</h2>`,
-        `<p><strong>Identity:</strong> ${targetName}</p>`,
-        `<p><strong>Policy:</strong> ${policyName}</p>`,
-        `<p><strong>Violation ID:</strong> ${violationId}</p>`,
-        sideHint,
-        '<h3>Group A access paths</h3>',
-        renderAccessPathListHtml(groupA.accessPaths, escapeHtml),
-        '<h3>Group B access paths</h3>',
-        renderAccessPathListHtml(groupB.accessPaths, escapeHtml),
-    ].filter(Boolean)
-
-    if (controls.length === 0) {
-        parts.push(
-            `<p><em>${REVOCABILITY_EMOJI.info} Note: No compensating controls are configured for this tenant.</em></p>`
-        )
-    }
-
-    // Single-line HTML: DelimitedFile provisionAsCsv breaks on embedded newlines in attribute values.
-    return parts.join('')
+    return buildIdentitySodContextPanelHtml({
+        uiOrigin,
+        identityId: violation.identity.id,
+        identityName: violation.identity.name ?? violation.identity.id,
+        policyId: violation.policy?.id,
+        policyName: violation.policy?.name ?? 'Unknown policy',
+        violationId: violation.id,
+        groupAPathsHtml: renderFlatAccessPathListBody(groupA.accessPaths, { uiOrigin }),
+        groupBPathsHtml: renderFlatAccessPathListBody(groupB.accessPaths, { uiOrigin }),
+        hasControls: controls.length > 0,
+        sideHintHtml: sideHint || undefined,
+    })
 }
 
-/** Builds HTML for a resolved access side form column. */
-export function buildAccessContentsHtml(
+/** Builds full HTML for in-form DESCRIPTION rendering (includes access-path lists and emoji legend). */
+export function buildSituationSummary(input: SituationSummaryInput, uiOrigin?: string): string {
+    return `${buildSituationSummaryCore(input, uiOrigin)}${renderEmojiLegend()}`
+}
+
+/** Builds HTML summary without emoji legend (for persisted output parity). */
+export function buildSituationSummaryWithoutLegend(input: SituationSummaryInput, uiOrigin?: string): string {
+    return buildSituationSummaryCore(input, uiOrigin)
+}
+
+function buildAccessContentsVariants(
     side: ResolvedAccessSide,
     recommendedSideToCorrect?: RecommendedSideToCorrect,
-    sideKey?: 'groupA' | 'groupB'
-): string {
+    sideKey?: 'groupA' | 'groupB',
+    uiOrigin?: string
+): SideVariants {
     const sideHint =
         sideKey && recommendedSideToCorrect === sideKey
             ? renderSideCorrectionHtml(sideCorrectionLabel(recommendedSideToCorrect), escapeHtml)
             : ''
 
-    return `${sideHint}${renderAccessPathListHtml(side.accessPaths, escapeHtml)}`
+    return renderFlatAccessPathList(side.accessPaths, { sideHintHtml: sideHint, uiOrigin })
+}
+
+/** Builds HTML for a resolved access side form column (plain variant). */
+export function buildAccessContentsHtml(
+    side: ResolvedAccessSide,
+    recommendedSideToCorrect?: RecommendedSideToCorrect,
+    sideKey?: 'groupA' | 'groupB',
+    uiOrigin?: string
+): string {
+    return buildAccessContentsVariants(side, recommendedSideToCorrect, sideKey, uiOrigin).plain
 }
 
 /** Builds FORM_INPUT select options for tenant compensating controls. */
@@ -173,19 +178,25 @@ export interface AssembleFormInputParams {
     groupB: ResolvedAccessSide
     controls: CompensatingControlV1[]
     recommendedSideToCorrect?: RecommendedSideToCorrect
+    uiOrigin?: string
 }
 
 /** Assembles launch-time formInput values from violation context and resolved access paths. */
 export function assembleFormInput(params: AssembleFormInputParams): SodFormInputValues {
-    const { violation, groupA, groupB, controls, recommendedSideToCorrect = null } = params
-    const summary = buildSituationSummary({ violation, groupA, groupB, controls, recommendedSideToCorrect })
+    const { violation, groupA, groupB, controls, recommendedSideToCorrect = null, uiOrigin } = params
+    const summary = buildSituationSummary(
+        { violation, groupA, groupB, controls, recommendedSideToCorrect },
+        uiOrigin
+    )
+    const groupAVariants = buildAccessContentsVariants(groupA, recommendedSideToCorrect, 'groupA', uiOrigin)
+    const groupBVariants = buildAccessContentsVariants(groupB, recommendedSideToCorrect, 'groupB', uiOrigin)
+    const layouts = buildGroupColumnLayouts(groupAVariants, groupBVariants)
 
     return {
         targetIdentityName: violation.identity.name ?? violation.identity.id,
         policyName: violation.policy?.name ?? 'Unknown policy',
         situationSummaryHtml: summary,
-        groupAContentsHtml: buildAccessContentsHtml(groupA, recommendedSideToCorrect, 'groupA'),
-        groupBContentsHtml: buildAccessContentsHtml(groupB, recommendedSideToCorrect, 'groupB'),
+        ...layouts,
         hasControls: controls.length > 0,
         violationId: violation.id,
         targetIdentityId: violation.identity.id,

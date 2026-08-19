@@ -1,4 +1,4 @@
-import { customOperation, OperationSignature } from '../../framework'
+import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
 import { preventiveSodCheckOperationSchema } from './index.schema'
 import { evaluatePreventiveSod } from './pending-grants'
 import { resolvePreventiveSodCheckInput } from './resolve-input'
@@ -20,9 +20,8 @@ export interface PreventiveSodCheckOperation extends OperationSignature {
 /** Evaluates executing GRANT_ACCESS requests and persists preventive SoD summary outputs. */
 export const preventiveSodCheckOperation = customOperation<PreventiveSodCheckOperation>(
     async (ctx, input) => {
-        const offline = !ctx.apiUrl && !ctx.token
-        const clientConfig =
-            offline || !ctx.apiUrl || !ctx.token ? null : { apiUrl: ctx.apiUrl, token: ctx.token }
+        const offline = isOfflineContext(ctx)
+        const clientConfig = offline ? null : { apiUrl: ctx.apiUrl, token: ctx.token }
 
         const resolved = await resolvePreventiveSodCheckInput(ctx.requestId, ctx.sdk, input, offline)
 

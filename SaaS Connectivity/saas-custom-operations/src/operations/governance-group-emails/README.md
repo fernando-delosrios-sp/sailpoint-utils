@@ -67,6 +67,10 @@ Connected workflow example:
 }
 ```
 
+## Bundled workflows
+
+No workflow exports are bundled for this operation. Use it as a lookup step before Send Email — invoke, then read `governance-group-emails:emails` from Get Accounts for BCC or distribution lists.
+
 ## Workflow integration
 
 1. Invoke `custom:governance-group-emails` with the target governance group display name.

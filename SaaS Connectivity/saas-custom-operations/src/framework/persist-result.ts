@@ -1,3 +1,5 @@
+import { inspect, type InspectOptions } from 'node:util'
+import { getActiveFrameworkLogger } from './logger'
 import { AccountsApi, TaskManagementApi } from 'sailpoint-api-client'
 import { createAccount, findAccountOnSource, getAccount, putAccount } from '../isc/accounts'
 import {
@@ -7,15 +9,37 @@ import {
 } from './attribute-limits'
 import { RESERVED_OUTPUT_KEYS } from './output-schema'
 import { inferFromTsType, OperationField } from './schema-inference'
-import { PersistDependencies, PersistFn, VerifyPersistedFn, WriteRegistry } from './types'
+import { PersistDependencies, PersistFn, PersistOptions, VerifyPersistedFn, WriteRegistry } from './types'
 
 const DEFAULT_STATUS = 'success'
 /** ISC account indexing can take several seconds after createAccountV1. */
-const DEFAULT_MAX_ATTEMPTS = 30
+const DEFAULT_MAX_ATTEMPTS = 60
 const DEFAULT_RETRY_DELAY_MS = 500
 const POST_CREATE_LOOKUP_ATTEMPTS = DEFAULT_MAX_ATTEMPTS
 /** Brief pause after provisioning task SUCCESS before first account lookup (DelimitedFile aggregation). */
 const POST_CREATE_INITIAL_DELAY_MS = 1000
+
+function persistLogInspectOptions(): InspectOptions {
+    return {
+        depth: null,
+        breakLength: Infinity,
+        colors: Boolean(process.stdout.isTTY && !process.env.NO_COLOR),
+    }
+}
+
+/** Formats account attribute maps for persist debug logging. */
+export function formatAccountContentsForLog(attributes: Record<string, unknown>): string {
+    return inspect(attributes, persistLogInspectOptions())
+}
+
+function logPersistAccountContents(
+    log: PersistDependencies['log'],
+    phase: string,
+    identity: string,
+    attributes: Record<string, unknown>
+): void {
+    log?.info(`[persist] ${phase} identity=${identity} ${formatAccountContentsForLog(attributes)}`)
+}
 
 interface AccountProvisioningTaskStatus {
     completed?: string | null
@@ -119,6 +143,7 @@ export function buildAccountAttributes<TOutput extends object>(
     attributes: Partial<TOutput> | undefined,
     status: string | undefined,
     outputFields: OperationField[] | undefined,
+    command?: string,
     now: () => Date = () => new Date()
 ): Record<string, unknown> {
     const result: Record<string, unknown> = {
@@ -126,6 +151,10 @@ export function buildAccountAttributes<TOutput extends object>(
         id: truncateForIscStorage(id, ISC_IDENTITY_MAX_LENGTH, 'identity'),
         date: now().toISOString(),
         status: status ?? DEFAULT_STATUS,
+    }
+
+    if (command) {
+        result.operationName = truncateForIscStorage(command, ISC_STRING_ATTRIBUTE_MAX_LENGTH, 'operationName')
     }
 
     if (!attributes) {
@@ -274,6 +303,7 @@ export async function verifyAccountWrite(
         if (actual) {
             const mismatches = verifyPersistedAccount(expected, actual)
             if (mismatches.length === 0) {
+                logPersistAccountContents(deps.log, 'verified account contents', id, actual)
                 return
             }
             if (attempt === DEFAULT_MAX_ATTEMPTS) {
@@ -368,7 +398,7 @@ export async function waitForAccountProvisioningTask(
         } else if (task.completed) {
             const completionStatus = task.completionStatus ?? 'UNKNOWN'
             if (TASK_SUCCESS_STATUSES.has(completionStatus)) {
-                console.log(`[persist] account task ${taskId} completed with ${completionStatus}`)
+                getActiveFrameworkLogger().info(`[persist] account task ${taskId} completed with ${completionStatus}`)
                 return task as AccountProvisioningTaskStatus
             }
 
@@ -416,7 +446,9 @@ async function resolveAccountAfterProvisioning(
         try {
             const account = await getAccount(accounts, taskAccountId)
             if (account?.id && account.sourceId === sourceId) {
-                console.log(`[persist] resolved identity=${nativeIdentity} iscAccountId=${account.id} from task`)
+                getActiveFrameworkLogger().info(
+                    `[persist] resolved identity=${nativeIdentity} iscAccountId=${account.id} from task`
+                )
                 return account.id
             }
         } catch {
@@ -450,15 +482,15 @@ export async function upsertSourceAccount(
     options: UpsertSourceAccountOptions = {}
 ): Promise<string | undefined> {
     const nativeId = String(attributes.id)
-    console.log(`[persist] upsert sourceId=${sourceId} identity=${nativeId}`)
+    getActiveFrameworkLogger().info(`[persist] upsert sourceId=${sourceId} identity=${nativeId}`)
     const existing = await findAccountOnSource(accounts, sourceId, nativeId)
 
     if (existing) {
-        console.log(`[persist] upsert identity=${nativeId} action=put iscAccountId=${existing.id}`)
+        getActiveFrameworkLogger().info(`[persist] upsert identity=${nativeId} action=put iscAccountId=${existing.id}`)
         const putTaskId = await putAccount(accounts, existing.id, attributes as { sourceId: string; [key: string]: unknown })
         let completedTask: AccountProvisioningTaskStatus | undefined
         if (putTaskId) {
-            console.log(`[persist] putAccount taskId=${putTaskId}`)
+            getActiveFrameworkLogger().info(`[persist] putAccount taskId=${putTaskId}`)
             if (options.waitForAccountTask) {
                 completedTask = await options.waitForAccountTask(putTaskId)
             }
@@ -469,11 +501,11 @@ export async function upsertSourceAccount(
         )
     }
 
-    console.log(`[persist] upsert identity=${nativeId} action=create`)
+    getActiveFrameworkLogger().info(`[persist] upsert identity=${nativeId} action=create`)
     const taskId = await createAccount(accounts, attributes as { sourceId: string; [key: string]: unknown })
     let completedTask: AccountProvisioningTaskStatus | undefined
     if (taskId) {
-        console.log(`[persist] createAccount taskId=${taskId}`)
+        getActiveFrameworkLogger().info(`[persist] createAccount taskId=${taskId}`)
         if (options.waitForAccountTask) {
             completedTask = await options.waitForAccountTask(taskId)
         }
@@ -486,12 +518,24 @@ export async function upsertSourceAccount(
  * Persists operation output to the result source via account upsert (create or put by native identity).
  * Reconciles source schema before write. Verification runs by default.
  */
+export function mergePersistAttributes<TOutput extends object>(
+    attributes: Partial<TOutput> | undefined,
+    options?: PersistOptions
+): Partial<TOutput> | undefined {
+    const merged = attributes ? { ...attributes } : {}
+    if (options?.details !== undefined) {
+        ;(merged as Record<string, unknown>).details = options.details
+    }
+    return Object.keys(merged).length > 0 ? merged : undefined
+}
+
 export function createPersist<TOutput extends object>(
     deps: PersistDependencies,
     registry: WriteRegistry
 ): PersistFn<TOutput> {
-    return async (id: string, attributes?: Partial<TOutput>, status?: string, options?: { verify?: boolean }) => {
-        const attributeKeys = attributes ? Object.keys(attributes) : []
+    return async (id: string, attributes?: Partial<TOutput>, status?: string, options?: PersistOptions) => {
+        const mergedAttributes = mergePersistAttributes(attributes, options)
+        const attributeKeys = mergedAttributes ? Object.keys(mergedAttributes) : []
         if (deps.ensureSourceSchema) {
             await deps.ensureSourceSchema(attributeKeys)
         }
@@ -499,18 +543,20 @@ export function createPersist<TOutput extends object>(
         const built = buildAccountAttributes(
             deps.sourceId,
             id,
-            attributes,
+            mergedAttributes,
             status,
-            deps.operationSchema?.outputFields
+            deps.operationSchema?.outputFields,
+            deps.command
         )
         registry.set(id, built)
+        logPersistAccountContents(deps.log, 'account contents', id, built)
         const iscAccountId = await deps.upsertAccount(built)
 
         if (options?.verify !== false) {
             await verifyAccountWrite(deps, id, built, iscAccountId)
         }
 
-        console.log(`[persist] identity=${id} status=${built.status}`)
+        deps.log?.info(`[persist] identity=${id} status=${built.status}`)
     }
 }
 

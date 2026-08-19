@@ -41,6 +41,8 @@ describe('buildAccountSchema', () => {
         expect(names).toContain('id')
         expect(names).toContain('status')
         expect(names).toContain('date')
+        expect(names).toContain('details')
+        expect(names).toContain('operationName')
     })
 
     it('merges output fields from registered operations', () => {

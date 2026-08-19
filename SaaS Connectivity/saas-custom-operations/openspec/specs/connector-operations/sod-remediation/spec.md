@@ -11,7 +11,7 @@ The connector SHALL register a custom command `custom:sod-remediation` that prep
 
 - **GIVEN** `custom:sod-remediation` is declared in connector-spec.json and registered
 - **WHEN** ISC invokes the command with input containing `violationId`, `formName`, and standard `requestId`
-- **THEN** the handler SHALL fetch the violation, ensure the form definition identified by `formName` exists, create a standalone form instance, and persist namespaced output fields `sod-remediation:form-url`, `sod-remediation:situation-header`, `sod-remediation:situation-summary`, and `sod-remediation:owner-email`
+- **THEN** the handler SHALL fetch the violation, ensure the form definition identified by `formName` exists, create a standalone form instance, and persist namespaced output fields `sod-remediation:form-url`, `sod-remediation:form-email-header`, `sod-remediation:form-email-body`, and `sod-remediation:form-email-recipients`
 
 #### Scenario: Recipient defaults to violation owner
 
@@ -55,27 +55,27 @@ The connector SHALL register a custom command `custom:sod-remediation` that prep
 - **GIVEN** the resolved form instance recipient identity ID is `owner-a`
 - **AND** the public identity record for `owner-a` has email `owner-a@example.com`
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** persisted output `sod-remediation:owner-email` SHALL be `owner-a@example.com`
+- **THEN** persisted output `sod-remediation:form-email-recipients` SHALL be `['owner-a@example.com']`
 
 #### Scenario: Email subject header output
 
 - **GIVEN** a violation for identity `Alice Example`
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** persisted output `sod-remediation:situation-header` SHALL be plain text suitable for workflow email subject lines
+- **THEN** persisted output `sod-remediation:form-email-header` SHALL be plain text suitable for workflow email subject lines
 - **AND** SHALL include the violating identity display name
 
 #### Scenario: Email summary includes remediation form link
 
 - **GIVEN** a successful launch producing form URL `https://tenant.example/form/1`
 - **WHEN** the handler persists operation output
-- **THEN** `sod-remediation:situation-summary` SHALL include an HTML link to the remediation form URL
+- **THEN** `sod-remediation:form-email-body` SHALL include an HTML link to the remediation form URL
 - **AND** form launch input `situationSummaryHtml` SHALL NOT include the remediation form link
 
 #### Scenario: Output contract is minimal
 
 - **GIVEN** a successful launch
 - **WHEN** the handler completes
-- **THEN** operation output persisted via `ctx.persist` SHALL include only `sod-remediation:form-url`, `sod-remediation:situation-header`, `sod-remediation:situation-summary`, and `sod-remediation:owner-email` as typed output fields
+- **THEN** operation output persisted via `ctx.persist` SHALL include only `sod-remediation:form-url`, `sod-remediation:form-email-header`, `sod-remediation:form-email-body`, and `sod-remediation:form-email-recipients` as typed output fields
 - **AND** SHALL NOT require output fields `formInstanceId`, `violationId`, `formName`, `formDefinitionId`, or `recipientName`
 
 #### Scenario: Workflow-friendly form keys
@@ -162,24 +162,24 @@ The sod-remediation operation SHALL fetch violation details and tenant compensat
 
 ### Requirement: Situation summary HTML format
 
-The sod-remediation operation SHALL build `sod-remediation:situation-summary` as HTML suitable for workflow email bodies. The same HTML SHALL populate `situationSummaryHtml` formInput for in-form DESCRIPTION rendering. Violation-derived dynamic text SHALL be HTML-escaped and SHALL NOT embed unescaped user-controlled markup.
+The sod-remediation operation SHALL build `sod-remediation:form-email-body` as HTML suitable for workflow email bodies. The same HTML SHALL populate `situationSummaryHtml` formInput for in-form DESCRIPTION rendering. Violation-derived dynamic text SHALL be HTML-escaped and SHALL NOT embed unescaped user-controlled markup. The in-form `situationSummaryHtml` SHALL append a single emoji legend footer decoding icon suffix meanings.
 
 #### Scenario: Email-oriented HTML structure
 
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** operation output `sod-remediation:situation-summary` SHALL include a top-level heading, labeled identity/policy/violation fields, grouped access-path lists, and an optional note when no compensating controls exist
+- **THEN** operation output `sod-remediation:form-email-body` SHALL include a top-level heading, labeled identity/policy/violation fields, grouped access-path lists, and an optional note when no compensating controls exist
 - **AND** SHALL use semantic HTML elements such as `h2`, `h3`, `p`, `strong`, `ul`, `li`, and `em`
 
 #### Scenario: Dynamic values escaped
 
 - **WHEN** `custom:sod-remediation` assembles the situation summary
-- **THEN** violation-derived text in both `sod-remediation:situation-summary` and `situationSummaryHtml` SHALL escape `&`, `<`, `>`, and `"` characters
+- **THEN** violation-derived text in both `sod-remediation:form-email-body` and `situationSummaryHtml` SHALL escape `&`, `<`, `>`, and `"` characters
 
 #### Scenario: Form input reuses operation summary without email-only link
 
 - **WHEN** `custom:sod-remediation` assembles form input
 - **THEN** `situationSummaryHtml` SHALL equal the shared situation summary HTML without the remediation form link
-- **AND** persisted output `sod-remediation:situation-summary` SHALL equal that same HTML plus the remediation form link
+- **AND** persisted output `sod-remediation:form-email-body` SHALL equal that same HTML plus the remediation form link
 
 #### Scenario: Seed interpolates summary without extra wrapper
 
@@ -187,9 +187,15 @@ The sod-remediation operation SHALL build `sod-remediation:situation-summary` as
 - **WHEN** the ctx-summary DESCRIPTION element is inspected
 - **THEN** its `description` SHALL be exactly `{{$.form.input.situationSummaryHtml}}` without an additional surrounding wrapper element
 
+#### Scenario: Situation summary includes emoji legend
+
+- **WHEN** `situationSummaryHtml` is assembled
+- **THEN** it SHALL append one emoji legend footer decoding revocability, keep recommendation, and privileged icons
+- **AND** group column HTML variants SHALL NOT include the legend footer
+
 ### Requirement: ISC keep recommendation annotation
 
-The sod-remediation operation SHALL fetch ISC keep recommendations for each resolved access path item on the violation target identity at launch using the Recommendations API. Items whose recommendation is `YES` SHALL be annotated for display as recommended to keep. Items whose recommendation is `MAYBE`, `NO`, or `NOT_FOUND` SHALL NOT receive a keep star.
+The sod-remediation operation SHALL fetch ISC keep recommendations for each resolved access path item on the violation target identity at launch using the Recommendations API. Items whose recommendation is `YES` SHALL be annotated for display as recommended to keep using a keep star icon suffix. Items whose recommendation is `MAYBE`, `NO`, or `NOT_FOUND` SHALL NOT receive a keep star.
 
 #### Scenario: Batch keep recommendations at launch
 
@@ -202,7 +208,8 @@ The sod-remediation operation SHALL fetch ISC keep recommendations for each reso
 
 - **GIVEN** the Recommendations API returns `YES` for a role on Group B
 - **WHEN** form input and situation summary HTML are rendered
-- **THEN** that role line SHALL include a keep star with label Recommended to keep
+- **THEN** that role line SHALL include a keep star icon suffix without inline explanatory text on the line
+- **AND** the situation summary legend SHALL decode the keep star meaning
 - **AND** SHALL NOT include a connector revoke recommendation star
 
 #### Scenario: MAYBE does not show keep star
@@ -248,7 +255,7 @@ When keep recommendations exist on exactly one violation group, the sod-remediat
 
 - **GIVEN** a side correction recommendation is computed
 - **WHEN** form input and operation output are produced
-- **THEN** the side hint SHALL appear in group column DESCRIPTION HTML and in `situationSummaryHtml` and `sod-remediation:situation-summary`
+- **THEN** the side hint SHALL appear in group column DESCRIPTION HTML and in `situationSummaryHtml` and `sod-remediation:form-email-body`
 
 ### Requirement: Privileged access indicator
 
@@ -258,7 +265,8 @@ The sod-remediation operation SHALL annotate entitlement access path lines with 
 
 - **GIVEN** entitlement metadata indicates an entitlement is privileged
 - **WHEN** access path HTML is rendered
-- **THEN** that entitlement line SHALL include a privileged badge using UTF-8 emoji
+- **THEN** that entitlement line SHALL include a privileged icon suffix without inline explanatory text on the line
+- **AND** the situation summary legend SHALL decode the privileged icon meaning
 
 #### Scenario: Missing privileged metadata
 
@@ -305,21 +313,129 @@ The sod-remediation operation SHALL annotate each resolved access path with work
 - **THEN** each side revoke payload item SHALL include `revocable`, optional `reason`, optional `grantedVia`, and optional `keepRecommendation`
 - **AND** `recommendedRevoke` MAY remain for workflow use without owner-visible star
 
+### Requirement: Group column outcome panel variants
+
+The sod-remediation operation SHALL pre-render three HTML variants per policy side at form launch and populate corresponding formInput STRING fields. Outcome panels SHALL appear only after the recipient selects a remediation side.
+
+#### Scenario: Six group HTML formInput fields
+
+- **WHEN** `custom:sod-remediation` assembles form input
+- **THEN** formInput SHALL include `groupAContentsHtml`, `groupAContentsHtmlAsKept`, `groupAContentsHtmlAsRemoved`, `groupBContentsHtml`, `groupBContentsHtmlAsKept`, and `groupBContentsHtmlAsRemoved`
+- **AND** the plain variants SHALL NOT include outcome panel wrappers
+
+#### Scenario: Plain variants shown before selection
+
+- **GIVEN** the bundled seed form definition with formConditions for group column DESCRIPTION elements
+- **WHEN** the recipient has not selected `remediationSide`
+- **THEN** the seed SHALL show plain `groupAContentsHtml` and `groupBContentsHtml` DESCRIPTION elements
+- **AND** SHALL NOT show `AsKept` or `AsRemoved` variants
+
+#### Scenario: Outcome variants shown after Group A selection
+
+- **GIVEN** the recipient selects `remediationSide` value `groupA`
+- **WHEN** formConditions evaluate
+- **THEN** Group A column SHALL show `groupAContentsHtmlAsRemoved` with red outcome panel styling
+- **AND** Group B column SHALL show `groupBContentsHtmlAsKept` with green outcome panel styling
+- **AND** plain variants SHALL be hidden
+
+#### Scenario: Outcome variants shown after Group B selection
+
+- **GIVEN** the recipient selects `remediationSide` value `groupB`
+- **WHEN** formConditions evaluate
+- **THEN** Group B column SHALL show `groupBContentsHtmlAsRemoved` with red outcome panel styling
+- **AND** Group A column SHALL show `groupAContentsHtmlAsKept` with green outcome panel styling
+
+#### Scenario: Flat horizontal list topology preserved
+
+- **WHEN** group column HTML is rendered for any variant
+- **THEN** access paths on each side SHALL render as a flat unordered list without nested access-profile grouping
+
 ### Requirement: Revocability HTML display with emojis
 
-The sod-remediation operation SHALL render access path annotations in HTML using UTF-8 emojis alongside text labels in group column form input and in operation `sod-remediation:situation-summary` output. Keep recommendation stars SHALL use distinct copy from revocability labels.
+The sod-remediation operation SHALL render access path annotations in HTML using space-separated UTF-8 emoji icon suffixes on each line in group column form input and in operation `sod-remediation:form-email-body` output. Lines SHALL use shared type tags for access kind. When UI origin is available, access path display names in group column HTML SHALL link to the corresponding ISC admin UI routes. Inline revocability and keep recommendation text labels SHALL NOT appear on lines; meanings SHALL be conveyed by the situation summary legend footer only.
 
 #### Scenario: Group column HTML form input
 
 - **WHEN** `custom:sod-remediation` assembles form input
-- **THEN** `groupAContentsHtml` and `groupBContentsHtml` SHALL contain HTML list items with revocability emoji and text labels
-- **AND** keep recommendation stars SHALL appear only for `YES` responses with label Recommended to keep
-- **AND** the bundled seed SHALL render those keys in DESCRIPTION elements for group A and group B columns
+- **THEN** each group side SHALL produce plain, asKept, and asRemoved HTML variants in `groupColumnsHtmlPlain`, `groupColumnsHtmlWhenGroupARemoved`, `groupColumnsHtmlWhenGroupBRemoved`, and B-side equivalents
+- **AND** plain variants SHALL contain type tags and icon suffixes without outcome panel wrappers
+- **AND** asKept and asRemoved variants SHALL wrap the same line content in green and red outcome panels respectively
+- **AND** the bundled seed SHALL render those keys in conditional DESCRIPTION elements for group A and group B columns
+
+#### Scenario: Group column HTML form input variants
+
+- **WHEN** `custom:sod-remediation` assembles form input
+- **THEN** formInput SHALL include group column HTML STRING fields covering plain and outcome variants for each side
+- **AND** seed formConditions SHALL swap visible DESCRIPTION elements when `remediationSide` changes
+
+#### Scenario: Icon suffixes on lines
+
+- **GIVEN** a revocable access path line with keep recommendation `YES`
+- **WHEN** HTML is rendered
+- **THEN** the line SHALL include space-separated `⭐` and `✅` icon suffixes
+- **AND** SHALL NOT include inline text `Revocable` or `Recommended to keep` on the line
+
+#### Scenario: Linked path line names when online
+
+- **GIVEN** UI origin is available and a path line has id and type `ENTITLEMENT`
+- **WHEN** group column HTML is rendered
+- **THEN** the entitlement display name SHALL be wrapped in an entitlement admin UI link
 
 #### Scenario: Email summary parity
 
 - **WHEN** `custom:sod-remediation` completes successfully
-- **THEN** persisted output `sod-remediation:situation-summary` SHALL include the same access path annotations and side correction hint as the group column HTML
+- **THEN** persisted output `sod-remediation:form-email-body` SHALL include the same access path icon suffixes and side correction hint as the group column HTML line content without entity admin deep links
+- **AND** `situationSummaryHtml` SHALL additionally include the emoji legend footer
 
+### Requirement: SOD remediation context panel layout
 
+The bundled sod-remediation form seed SHALL present a single upper context panel DESCRIPTION interpolating `situationSummaryHtml`. The panel SHALL use user-facing section copy structured as “What we found” and “What we need from you”. The seed SHALL NOT include a separate static identity/policy/violation metadata DESCRIPTION that duplicates content from `situationSummaryHtml`.
+
+#### Scenario: Single ctx-summary element
+
+- **GIVEN** the bundled sod-remediation seed template
+- **WHEN** the context section is inspected
+- **THEN** exactly one DESCRIPTION element SHALL interpolate `{{$.form.input.situationSummaryHtml}}`
+- **AND** the seed SHALL NOT define element id `ctx-identity`
+
+#### Scenario: User-facing section label
+
+- **GIVEN** the bundled sod-remediation seed context section
+- **WHEN** the section label is inspected
+- **THEN** it SHALL NOT contain the phrase `policy violation detection`
+
+#### Scenario: Call to action in summary
+
+- **WHEN** `situationSummaryHtml` is assembled for a violation with compensating controls available
+- **THEN** the “What we need from you” block SHALL instruct the recipient to choose Correct or Mitigate and select a remediation side
+
+### Requirement: Optional disableLinks input for SOD remediation
+
+The sod-remediation operation SHALL accept an optional boolean input `disableLinks`. When `disableLinks` is `true`, the handler SHALL omit UI origin for form HTML assembly so ISC UI links are not rendered in `situationSummaryHtml` or group column HTML, even when invoke `apiUrl` would otherwise resolve a UI origin. When `disableLinks` is omitted or `false`, link behavior SHALL match existing rules (links when UI origin is available). The flag SHALL NOT remove `sod-remediation:form-url` or the remediation form CTA from `sod-remediation:form-email-body`.
+
+#### Scenario: Omitted disableLinks keeps admin links online
+
+- **GIVEN** invoke has resolvable `apiUrl` and input omits `disableLinks`
+- **WHEN** form HTML is assembled for a violation
+- **THEN** `situationSummaryHtml` and group column HTML SHALL include ISC UI links for linked entity display names
+
+#### Scenario: disableLinks false keeps admin links online
+
+- **GIVEN** invoke has resolvable `apiUrl` and input sets `disableLinks` to `false`
+- **WHEN** form HTML is assembled for a violation
+- **THEN** `situationSummaryHtml` and group column HTML SHALL include ISC UI links for linked entity display names
+
+#### Scenario: disableLinks true omits admin links online
+
+- **GIVEN** invoke has resolvable `apiUrl` and input sets `disableLinks` to `true`
+- **WHEN** form HTML is assembled for a violation
+- **THEN** entity display names in `situationSummaryHtml` and group column HTML SHALL render as plain escaped text
+- **AND** those fields SHALL NOT include ISC admin UI `<a href=` anchors
+
+#### Scenario: disableLinks does not remove form URL or email CTA
+
+- **GIVEN** input sets `disableLinks` to `true` and a remediation form is created
+- **WHEN** the handler persists operation output
+- **THEN** output SHALL still include `sod-remediation:form-url`
+- **AND** `sod-remediation:form-email-body` SHALL still include the remediation form CTA link
 

@@ -8,7 +8,7 @@ describe('collectBaseSchemaAttributes', () => {
             { name: 'step', type: 'string' },
         ])
 
-        expect([...attrs.keys()].sort()).toEqual(['date', 'id', 'status', 'step', 'summary'])
+        expect([...attrs.keys()].sort()).toEqual(['date', 'details', 'id', 'operationName', 'status', 'step', 'summary'])
     })
 
     it('excludes reserved framework keys', () => {
@@ -38,7 +38,18 @@ describe('buildBaseAccountSchema', () => {
         expect(schema.identityAttribute).toBe('id')
         expect(schema.displayAttribute).toBe('id')
         expect(schema.nativeObjectType).toBe('User')
-        expect(schema.attributes?.map((attr) => attr.name)).toEqual(['id', 'status', 'date', 'count', 'summary'])
+        expect(schema.attributes?.map((attr) => attr.name)).toEqual([
+            'id',
+            'status',
+            'date',
+            'details',
+            'operationName',
+            'count',
+            'summary',
+        ])
+        expect(schema.attributes?.find((attr) => attr.name === 'details')).toEqual(
+            expect.objectContaining({ type: 'STRING', isMulti: false })
+        )
         expect(schema.attributes?.find((attr) => attr.name === 'count')).toEqual(
             expect.objectContaining({ type: 'INT', isMulti: false })
         )

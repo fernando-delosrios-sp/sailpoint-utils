@@ -38,6 +38,19 @@ Offline example:
 }
 ```
 
+## Bundled workflow
+
+[`workflows/SaaS Custom Operations.json`](../../../workflows/SaaS%20Custom%20Operations.json) exports **SaaS Custom Operations Call** — the reference invoke → persist → read-back pattern.
+
+| Step | Behavior |
+|---|---|
+| Configuration | API URL, connector ID, result source name |
+| Get Access Token | OAuth client credentials |
+| Call SaaS Custom Operation | `type: custom:example`, `input.requestId` + optional `message` |
+| Read SaaS Custom Operation Result | **Get Accounts** filtered by `requestId` |
+
+No event triggers — run manually or attach an external HTTP trigger after import. Re-point Configuration to your tenant connector and OAuth client.
+
 ## Workflow integration
 
 1. Invoke `custom:example` with `requestId` and optional `message`.

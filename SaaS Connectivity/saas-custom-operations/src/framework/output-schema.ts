@@ -1,5 +1,5 @@
 /** Framework-managed account attribute names — not part of operation output types. */
-export const RESERVED_OUTPUT_KEYS = new Set(['id', 'sourceId', 'date', 'status'])
+export const RESERVED_OUTPUT_KEYS = new Set(['id', 'sourceId', 'date', 'status', 'operationName'])
 
 /**
  * Combined input/output contract for a custom operation (plain TypeScript shapes).

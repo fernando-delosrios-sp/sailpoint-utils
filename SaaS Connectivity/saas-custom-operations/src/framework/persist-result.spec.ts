@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { createFrameworkLogger } from './logger'
 import {
     ISC_IDENTITY_MAX_LENGTH,
     ISC_STRING_ATTRIBUTE_MAX_LENGTH,
@@ -51,7 +52,7 @@ describe('formatAttributeValue', () => {
 
         expect(result).toHaveLength(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
         expect(warn).toHaveBeenCalledWith(
-            `[persist] truncated summary from ${longValue.length} to ${ISC_STRING_ATTRIBUTE_MAX_LENGTH} chars`
+            expect.stringContaining(`[persist] truncated summary from ${longValue.length} to ${ISC_STRING_ATTRIBUTE_MAX_LENGTH} chars`)
         )
     })
 
@@ -91,6 +92,7 @@ describe('buildAccountAttributes', () => {
             { outcome: 'processed', count: 42 },
             undefined,
             outputFields,
+            undefined,
             now
         )
 
@@ -109,6 +111,7 @@ describe('buildAccountAttributes', () => {
             { errorCode: 'timeout' },
             'failed',
             [{ name: 'errorCode', type: 'string' }],
+            undefined,
             now
         )
 
@@ -126,6 +129,7 @@ describe('buildAccountAttributes', () => {
                 { name: 'name', type: 'string' },
                 { name: 'emails', type: 'string[]' },
             ],
+            undefined,
             now
         )
 
@@ -137,14 +141,16 @@ describe('buildAccountAttributes', () => {
         const attributes = buildAccountAttributes(
             'source-1',
             'req-001',
-            { outcome: 'ok', id: 'override', status: 'override' },
+            { outcome: 'ok', id: 'override', status: 'override', operationName: 'custom:other' },
             undefined,
             [{ name: 'outcome', type: 'string' }],
+            'custom:example',
             now
         )
 
         expect(attributes.id).toBe('req-001')
         expect(attributes.status).toBe('success')
+        expect(attributes.operationName).toBe('custom:example')
         expect(attributes.outcome).toBe('ok')
     })
 
@@ -152,13 +158,56 @@ describe('buildAccountAttributes', () => {
         const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
         const longId = 'r'.repeat(ISC_IDENTITY_MAX_LENGTH + 10)
 
-        const attributes = buildAccountAttributes('source-1', longId, undefined, undefined, undefined, now)
+        const attributes = buildAccountAttributes('source-1', longId, undefined, undefined, undefined, undefined, now)
 
         expect(attributes.id).toHaveLength(ISC_IDENTITY_MAX_LENGTH)
         expect(attributes.id).toBe(longId.slice(0, ISC_IDENTITY_MAX_LENGTH))
         expect(warn).toHaveBeenCalledWith(
-            `[persist] truncated identity from ${longId.length} to ${ISC_IDENTITY_MAX_LENGTH} chars`
+            expect.stringContaining(`[persist] truncated identity from ${longId.length} to ${ISC_IDENTITY_MAX_LENGTH} chars`)
         )
+    })
+
+    it('sets operationName from command context', () => {
+        const attributes = buildAccountAttributes(
+            'source-1',
+            'req-001',
+            { outcome: 'done' },
+            undefined,
+            [{ name: 'outcome', type: 'string' }],
+            'custom:example',
+            now
+        )
+
+        expect(attributes.operationName).toBe('custom:example')
+    })
+
+    it('ignores author-supplied operationName in attributes', () => {
+        const attributes = buildAccountAttributes(
+            'source-1',
+            'req-001',
+            { outcome: 'ok', operationName: 'custom:other' },
+            undefined,
+            [{ name: 'outcome', type: 'string' }],
+            'custom:example',
+            now
+        )
+
+        expect(attributes.operationName).toBe('custom:example')
+        expect(attributes.outcome).toBe('ok')
+    })
+
+    it('omits operationName when command is undefined', () => {
+        const attributes = buildAccountAttributes(
+            'source-1',
+            'req-001',
+            { outcome: 'done' },
+            undefined,
+            [{ name: 'outcome', type: 'string' }],
+            undefined,
+            now
+        )
+
+        expect(attributes.operationName).toBeUndefined()
     })
 })
 
@@ -456,6 +505,70 @@ function createTestDeps(overrides: Partial<Parameters<typeof createPersist>[0]> 
 }
 
 describe('createPersist', () => {
+    it('stores optional details on success persist', async () => {
+        const deps = createTestDeps({
+            operationSchema: { outputFields: [{ name: 'outcome', type: 'string' }] },
+        })
+        const persist = createPersist<{ outcome: string }>(deps, new Map())
+
+        await persist('req-001', { outcome: 'done', details: 'Processed 3 of 5 items' } as never)
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                outcome: 'done',
+                details: 'Processed 3 of 5 items',
+                status: 'success',
+            })
+        )
+    })
+
+    it('stores operationName from persist command on success persist', async () => {
+        const deps = createTestDeps({
+            command: 'custom:example',
+            operationSchema: { outputFields: [{ name: 'outcome', type: 'string' }] },
+        })
+        const persist = createPersist<{ outcome: string }>(deps, new Map())
+
+        await persist('req-001', { outcome: 'done' })
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                outcome: 'done',
+                operationName: 'custom:example',
+            })
+        )
+    })
+
+    it('stores details from persist options on failure', async () => {
+        const deps = createTestDeps({ command: 'custom:example' })
+        const persist = createPersist<{ outcome: string }>(deps, new Map())
+
+        await persist('req-001', undefined, 'failed', { verify: false, details: 'operation failed' })
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                details: 'operation failed',
+                operationName: 'custom:example',
+            })
+        )
+        expect(deps.readAccount).not.toHaveBeenCalled()
+    })
+
+    it('truncates details longer than STRING limit', async () => {
+        const deps = createTestDeps()
+        const persist = createPersist(deps, new Map())
+        const longDetails = 'd'.repeat(300)
+
+        await persist('req-001', undefined, 'failed', { verify: false, details: longDetails })
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({
+                details: 'd'.repeat(256),
+            })
+        )
+    })
+
     it('calls ensureSourceSchema before account create', async () => {
         const deps = createTestDeps()
         const persist = createPersist<{ errorCode: string }>(deps, new Map())
@@ -522,13 +635,24 @@ describe('createPersist', () => {
     })
 
     it('skips inline read when verify is false', async () => {
-        const deps = createTestDeps()
+        const lines: string[] = []
+        const log = createFrameworkLogger({
+            requestId: 'req-001',
+            consoleImpl: {
+                log: (line) => lines.push(line),
+                warn: (line) => lines.push(line),
+                error: (line) => lines.push(line),
+            },
+        })
+        const deps = createTestDeps({ log })
         const registry = new Map()
         const persist = createPersist<{ outcome: string }>(deps, registry)
 
         await persist('req-001', { outcome: 'value' }, undefined, { verify: false })
 
         expect(deps.readAccount).not.toHaveBeenCalled()
+        expect(lines.some((line) => line.includes('[persist] account contents identity=req-001'))).toBe(true)
+        expect(lines.some((line) => line.includes('outcome') && line.includes('value'))).toBe(true)
         expect(registry.get('req-001')).toMatchObject({ outcome: 'value', status: 'success' })
     })
 

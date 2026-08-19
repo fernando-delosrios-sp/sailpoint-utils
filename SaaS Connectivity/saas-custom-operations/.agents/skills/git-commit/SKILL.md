@@ -1,6 +1,6 @@
 ---
 name: git-commit
-description: 'Session-scoped git commit with conventional message analysis and staging. Use when user asks to commit changes, create a git commit, or mentions "/commit". Commits only this session''s work — never picks up changes from concurrent sessions on the same branch. Asks for scope clarification when session work is empty or ambiguous.'
+description: 'Session-scoped git commit with conventional message analysis and staging. Use when user asks to commit changes, create a git commit, or mentions "/commit". Commits only this session''s work — never picks up changes from concurrent sessions on the same branch. Asks for scope clarification when session work is empty or ambiguous. Private-data gate on staged diff before commit.'
 license: MIT
 allowed-tools: Bash
 ---
@@ -90,11 +90,32 @@ git add -p path/to/mixed-file   # when only some hunks belong to this session
 
 **Never** use `git add -A`, `git add .`, or other catch-all staging when out-of-scope dirty files exist.
 
-**Never commit secrets** (.env, credentials.json, private keys).
+Stage only paths destined to pass the private-data gate (step 4).
 
 **Done when:** the staged diff contains only in-scope changes.
 
-### 4. Changelog gate
+### 4. Private-data gate
+
+Scan what will be committed — staged diff only:
+
+```bash
+git diff --cached --name-only
+git diff --cached
+```
+
+Read [references/private-data.md](references/private-data.md). Classify every staged path against **secrets**, **PII**, and **sensitive-path** signals. Merge optional CLI results (gitleaks, detect-secrets) when on PATH.
+
+When findings exist — **halt**. List every flagged file with signal types (`path:line`, category, context hint — **never the value**). Present a **structured-choices** gate per that reference:
+
+- `unstage_conflicts` — unstage flagged paths, return to step 3 or stop if nothing remains (Recommended unless only low-confidence doc/PII hits)
+- `proceed` — user accepts risk; continue
+- `abort` — exit without committing
+
+Re-run this step after re-staging following `unstage_conflicts`.
+
+**Done when:** staged diff has zero unresolved findings, or user chose `proceed` via gate.
+
+### 5. Changelog gate
 
 When the repo root has `CHANGELOG.md` and it is **not** among staged paths, update the changelog before continuing — do not generate a commit message or commit until this step completes.
 
@@ -105,9 +126,11 @@ git diff --cached --name-only   # staged paths
 
 Read and follow the **changelog-generator** skill, scoped to the **staged diff** (this commit's changes). Update `CHANGELOG.md` per that skill's format rules when the staged changes include user-visible work. Stage `CHANGELOG.md` when modified.
 
+Re-run step 4 if staging `CHANGELOG.md` introduces new private-data signals.
+
 **Done when:** `CHANGELOG.md` is staged, or changelog-generator confirms the staged diff has no user-visible entry to add.
 
-### 5. Generate commit message
+### 6. Generate commit message
 
 Analyze the **staged** diff (not the full working tree) to determine:
 
@@ -115,7 +138,7 @@ Analyze the **staged** diff (not the full working tree) to determine:
 - **Scope**: What area/module is affected?
 - **Description**: One-line summary (present tense, imperative mood, <72 chars)
 
-### 6. Execute commit
+### 7. Execute commit
 
 ```bash
 # Single line

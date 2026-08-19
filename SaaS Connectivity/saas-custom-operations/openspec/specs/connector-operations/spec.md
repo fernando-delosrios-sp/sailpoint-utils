@@ -100,7 +100,7 @@ Each custom operation SHALL persist workflow-readable output on the result sourc
 
 - **GIVEN** `custom:sod-remediation` completes successfully
 - **WHEN** operation output is read from the result source
-- **THEN** persisted keys SHALL include `sod-remediation:form-url`, `sod-remediation:situation-header`, `sod-remediation:situation-summary`, and `sod-remediation:owner-email`
+- **THEN** persisted keys SHALL include `sod-remediation:form-url`, `sod-remediation:form-email-header`, `sod-remediation:form-email-body`, and `sod-remediation:form-email-recipients`
 
 #### Scenario: Preventive sod check follows namespacing convention
 

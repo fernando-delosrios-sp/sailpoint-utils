@@ -1,4 +1,5 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
+import { getActiveFrameworkLogger } from '../../framework/logger'
 import {
     resolveIdentityIdForAccessRequest,
     resolveIdentityIdForAccessRequestOffline,
@@ -26,8 +27,8 @@ export async function resolvePreventiveSodCheckInput(
 
     if (accessRequestId) {
         if (providedIdentityId) {
-            console.warn(
-                `[${requestId}] preventive-sod-check: identityId ignored when accessRequestId is provided`
+            getActiveFrameworkLogger(requestId).warn(
+                'preventive-sod-check: identityId ignored when accessRequestId is provided'
             )
         }
 
