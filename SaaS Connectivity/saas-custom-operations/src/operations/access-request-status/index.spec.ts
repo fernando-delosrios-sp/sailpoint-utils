@@ -1,5 +1,6 @@
 import { _withConfig } from '@sailpoint/connector-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ISC_STRING_ATTRIBUTE_MAX_LENGTH } from '../../framework/attribute-limits'
 import { accessRequestStatusOperation } from './index'
 
 const workflowConfig = {
@@ -183,6 +184,27 @@ describe('accessRequestStatusOperation', () => {
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({ emailRoute: 'manager', accessOwnerId: 'owner-123' })
         )
+    })
+
+    it('persists an approval body linking the invoking tenant within the STRING limit', async () => {
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessRequestStatusOperation(
+                { commandType: 'custom:access-request-status' } as never,
+                {
+                    requestId: 'req-tenant',
+                    outputProfile: 'approval-email',
+                    accessRequestId: 'ar-tenant',
+                },
+                res as never
+            )
+        })
+
+        const emailBodyHtml = String(persistedAccounts.get('req-tenant')?.emailBodyHtml)
+        expect(emailBodyHtml).toContain('https://company22986-poc.identitynow.com/ui/d/approvals/requested-items')
+        expect(emailBodyHtml.length).toBeLessThanOrEqual(ISC_STRING_ATTRIBUTE_MAX_LENGTH)
+        expect(emailBodyHtml.endsWith('</p>')).toBe(true)
     })
 
     it('persists bccEmails array when approval route is manager-owner-bcc', async () => {

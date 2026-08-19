@@ -3,6 +3,7 @@ import { customOperation, OperationSignature } from '../../framework'
 import { fetchIdentityDisplayContext } from '../../isc/identities/fetch-identity-display-context'
 import { resolveGovernanceGroupEmails } from '../../isc/governance-groups'
 import { getRequestedItemOwnerId } from '../../isc/access-requests/requested-item'
+import { resolveUiOrigin } from '../../lib/sod-form-html'
 import { buildEtsPreApprovalComment, getRequestedItemName, resolveEmailRoute } from './approval-routing'
 import { computeAccessRequestAnalytics, type OutputProfile } from './compute-analytics'
 import { buildApprovalEmailBody } from './email-templates'
@@ -68,8 +69,8 @@ export const accessRequestStatusOperation = customOperation<AccessRequestStatusO
         const emailBodyHtml = buildApprovalEmailBody(analytics, {
             managerRefName,
             displayName,
-            accessRequestId,
             requestedItemName: getRequestedItemName(analytics.accessRequestStatus),
+            uiOrigin: resolveUiOrigin(ctx.apiUrl),
         })
 
         const govGroupName = input.govGroupName ?? DEFAULT_GOV_GROUP_NAME

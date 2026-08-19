@@ -26,6 +26,8 @@ Builds approval email content or ETS pre-approval comments for access request wo
 | `bccEmails` | string[] | `approval-email` (Critical risk route only) |
 | `accessOwnerId` | string | `approval-email` |
 
+`emailBodyHtml` is a compact one-paragraph body built to fit ISC STRING storage (256 characters) — requester, requested item, ISC risk, and an Approval Center link. Long names are shortened with `…` so the value is never cut mid-tag. Full risk analytics belong in the `ets-comment` profile's `preApprovalComment`. The Approval Center link uses the tenant UI origin derived from `config.apiUrl` (`resolveUiOrigin`); when no origin resolves (offline invoke), the body renders plain text instead of an anchor.
+
 ## Invoke response
 
 | Profile | Response fields |
