@@ -224,6 +224,29 @@ describe('sod-form-html renderFlatAccessPathList', () => {
         expect(greenPanels).toBe(2)
     })
 
+    it('asRemoved indents contained entitlement panels to match the kept side Contains list', () => {
+        const variants = renderFlatAccessPathList([
+            {
+                id: 'ent-1',
+                type: 'ENTITLEMENT',
+                name: 'AccountingGeneral',
+                revocable: true,
+                grantedVia: { type: 'ACCESS_PROFILE', id: 'ap-1', name: 'T2.01 Accounting General' },
+            },
+            {
+                id: 'ap-1',
+                type: 'ACCESS_PROFILE',
+                name: 'T2.01 Accounting General',
+                revocable: false,
+            },
+        ])
+
+        expect(variants.asRemoved).toMatch(
+            /T2\.01 Accounting General[\s\S]*padding:8px 12px 8px 40px[\s\S]*AccountingGeneral/
+        )
+        expect(variants.asRemoved).toContain('— Contains:')
+    })
+
     it('asRemoved uses green panels for non-revocable lines and red for revocable lines', () => {
         const variants = renderFlatAccessPathList([
             {

@@ -189,7 +189,8 @@ function buildRemovedSideHtml(entries: GroupedAccessPathEntry[], uiOrigin?: stri
                 .map((line) =>
                     wrapOutcomePanel(
                         renderLineHtml(line, true, uiOrigin),
-                        outcomeOnRemovedSide(line, grantorRevocable)
+                        outcomeOnRemovedSide(line, grantorRevocable),
+                        { nested: true }
                     )
                 )
                 .join('')

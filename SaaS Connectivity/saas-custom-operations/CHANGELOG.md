@@ -76,6 +76,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### 🐛 Bug Fixes
 
+- **SoD remediation removed-side nesting** — On `custom:sod-remediation` form group columns, entitlements contained by a role or access profile now stay indented under their grantor in the removed (red) preview, matching the kept (green) preview. Previously the removed variant rendered them flush with the grantor line because each line gets its own outcome panel for independent keep/remove coloring. New form instances pick this up at launch; already-assigned instances keep prior HTML until recreated.
 - **Access-model SoD policyScope safety** — Compound `policyScope` filters that include `state` but are not exact `state eq "ENFORCED"` or `state eq "NOT_ENFORCED"` now fail with ConnectorError instead of silently listing all policies unfiltered.
 - **Operation errors stop workflow retries** — Failures escaping `customOperation` now send `{ status: 'failed', error }` on the command response (HTTP 200) instead of throwing `ConnectorError` (spcx HTTP 500). Calling workflows receive the error and do not keep retrying.
 - **Persist upsert** — Existing result accounts are updated via `putAccountV1`; new identities use `createAccountV1`. Both paths wait for the async provisioning task and read the account back before verification.
