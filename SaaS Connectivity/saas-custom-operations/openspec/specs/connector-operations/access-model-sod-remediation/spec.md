@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Proactive catalog hygiene: scan enabled roles and/or access profiles in scope, detect intrinsic SoD policy violations by entitlement intersection, and create standalone remediation forms for policy owners. Distinct from `custom:sod-remediation`, which remediates existing identity violations.
+Proactive catalog hygiene: scan enabled roles and/or access profiles in scope, detect intrinsic SoD policy violations by entitlement intersection, and create standalone remediation forms for access item owners. Distinct from `custom:sod-remediation`, which remediates existing identity violations.
 ## Requirements
 ### Requirement: Access model scan summary on invoke response
 
@@ -35,7 +35,7 @@ The access-model-sod-remediation operation SHALL return scan rollup counters on 
 
 ### Requirement: Access model SOD remediation scan operation
 
-The connector SHALL register a custom command `custom:access-model-sod-remediation` that scans enabled roles and/or access profiles in scope, detects intrinsic SoD policy violations by entitlement intersection against policy side definitions, and creates standalone remediation form instances for policy owners. Implementation SHALL reside under `src/operations/access-model-sod-remediation/` with entry module `index.ts`. The operation SHALL NOT use the SoD predict API.
+The connector SHALL register a custom command `custom:access-model-sod-remediation` that scans enabled roles and/or access profiles in scope, detects intrinsic SoD policy violations by entitlement intersection against policy side definitions, and creates standalone remediation form instances for access item owners. Implementation SHALL reside under `src/operations/access-model-sod-remediation/` with entry module `index.ts`. The operation SHALL NOT use the SoD predict API.
 
 #### Scenario: Operation invoked with required formName
 
@@ -111,9 +111,11 @@ The access-model-sod-remediation operation SHALL persist workflow-oriented email
 
 #### Scenario: Policy owner email as recipients array
 
-- **GIVEN** policy `policy-p` owner identity `owner-z` resolves to email `owner-z@example.com`
-- **WHEN** a form is created for a violation of `policy-p`
-- **THEN** persisted output `access-model-sod-remediation:form-email-recipients` SHALL be `['owner-z@example.com']`
+- **GIVEN** violating access item `role-a` has primary owner identity `item-owner-1` resolving to email `item-owner-1@example.com`
+- **AND** policy `policy-p` owner identity resolves to a different email
+- **WHEN** a form is created for that violation of `policy-p`
+- **THEN** persisted output `access-model-sod-remediation:form-email-recipients` SHALL be `['item-owner-1@example.com']`
+- **AND** SHALL NOT use the SoD policy owner email as the recipients array value
 
 #### Scenario: Recipients attribute is multi-value string
 
@@ -200,13 +202,23 @@ The access-model-sod-remediation operation SHALL skip form launch and child pers
 
 ### Requirement: Access model SOD remediation form launch
 
-The access-model-sod-remediation operation SHALL ensure a shared form definition by `formName`, populate launch-time `formInput` with access item and policy context plus group entitlement id lists and HTML summaries, and create standalone form instances for the policy owner. The form SHALL expose Correct-only side selection without an action selector or Mitigate path. Launch-time `formInput` SHALL include `parentRequestId` set to the scan invoke `requestId` (declared in the form definition, no UI element).
+The access-model-sod-remediation operation SHALL ensure a shared form definition by `formName`, populate launch-time `formInput` with access item and policy context plus group entitlement id lists and HTML summaries, and create standalone form instances for the access item owner. The form SHALL expose Correct-only side selection without an action selector or Mitigate path. Launch-time `formInput` SHALL include `parentRequestId` set to the scan invoke `requestId` (declared in the form definition, no UI element).
 
 #### Scenario: Form recipient is policy owner
 
-- **GIVEN** policy `policy-p` has `ownerRef` identity `owner-z`
-- **WHEN** a form is created for a violation of `policy-p`
-- **THEN** the form instance recipient SHALL be identity `owner-z`
+- **GIVEN** role `role-a` has primary owner identity `item-owner-1`
+- **AND** policy `policy-p` has `ownerRef` identity `policy-owner-z`
+- **WHEN** a form is created for a violation of `policy-p` on `role-a`
+- **THEN** the form instance recipient SHALL be identity `item-owner-1`
+- **AND** SHALL NOT be identity `policy-owner-z`
+
+#### Scenario: Missing access item owner fails form launch
+
+- **GIVEN** a detected violation whose access item has no primary owner identity id
+- **WHEN** the handler attempts to create the remediation form
+- **THEN** that form launch SHALL fail
+- **AND** the scan SHALL continue for remaining violations
+- **AND** `access-model-sod-remediation:forms-launch-failed` SHALL increment in the final `ctx.res.send` summary
 
 #### Scenario: Form input carries access item context
 
