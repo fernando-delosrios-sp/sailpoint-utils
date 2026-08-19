@@ -66,6 +66,11 @@ export interface AccessModelSodRemediationOperation extends OperationSignature {
     }
 }
 
+type AccessModelSodRemediationContext = RequestContext<
+    AccessModelSodRemediationOperation['output'],
+    AccessModelSodRemediationOperation['response']
+>
+
 function validateSearchIndices(indices: string[] | undefined): SearchIndex[] {
     const resolved = indices ?? [...DEFAULT_SEARCH_INDICES]
     for (const index of resolved) {
@@ -82,7 +87,7 @@ async function discoverAccessItems(
     offline: boolean,
     searchIndices: SearchIndex[],
     scope: string,
-    ctx: RequestContext<AccessModelSodRemediationOperation['output']>
+    ctx: AccessModelSodRemediationContext
 ): Promise<CatalogAccessItem[]> {
     const items: CatalogAccessItem[] = []
 
@@ -120,7 +125,7 @@ async function discoverAccessItems(
 async function loadPolicies(
     offline: boolean,
     policyScope: string,
-    ctx: RequestContext<AccessModelSodRemediationOperation['output']>
+    ctx: AccessModelSodRemediationContext
 ): Promise<SodPolicySummary[]> {
     ctx.log.info('loadPolicies', { offline, policyScope })
 
