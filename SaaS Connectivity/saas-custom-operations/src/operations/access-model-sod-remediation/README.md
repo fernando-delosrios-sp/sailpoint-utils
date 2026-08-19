@@ -18,6 +18,7 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 | `scope` | No | `"*"` | ISC search filter; `"*"` lists all enabled items in each selected index |
 | `searchIndices` | No | `["accessprofiles","roles"]` | Catalogs to scan; only `accessprofiles` and `roles` allowed |
 | `policyScope` | No | `state eq "ENFORCED"` | Filter for SoD policies to evaluate |
+| `disableLinks` | No | `false` (links enabled when `apiUrl` resolves) | When `true`, omits ISC admin UI deep links in form HTML (`situationSummaryHtml` and group columns). Does **not** remove `form-url` or the email remediation CTA |
 
 ## Output
 

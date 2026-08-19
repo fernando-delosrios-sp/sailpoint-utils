@@ -47,6 +47,7 @@ export interface AccessModelSodRemediationOperation extends OperationSignature {
         scope?: string
         searchIndices?: SearchIndex[]
         policyScope?: string
+        disableLinks?: boolean
     }
     output: {
         'access-model-sod-remediation:access-items-scanned': number
@@ -201,7 +202,8 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     continue
                 }
 
-                const uiOrigin = offline ? undefined : resolveUiOrigin(ctx.apiUrl)
+                const uiOrigin =
+                    offline || input.disableLinks === true ? undefined : resolveUiOrigin(ctx.apiUrl)
                 const html = buildGroupContentsHtml(violation.groupAIds, violation.groupBIds, expanded, uiOrigin)
                 const situationSummaryHtml = buildSituationSummaryHtml({
                     uiOrigin,

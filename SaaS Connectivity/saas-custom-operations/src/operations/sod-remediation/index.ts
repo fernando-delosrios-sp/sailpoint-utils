@@ -49,6 +49,7 @@ export interface SodRemediationOperation extends OperationSignature {
         violationId: string
         formName: string
         owner?: string
+        disableLinks?: boolean
     }
     output: {
         'sod-remediation:form-url': string
@@ -133,7 +134,7 @@ export const sodRemediationOperation = customOperation<SodRemediationOperation>(
             controls,
             recommendedSideToCorrect,
         }
-        const uiOrigin = offline ? undefined : resolveUiOrigin(ctx.apiUrl)
+        const uiOrigin = offline || input.disableLinks === true ? undefined : resolveUiOrigin(ctx.apiUrl)
         const formInput = assembleFormInput({ ...summaryInput, uiOrigin })
         logSodRemediationFormInput(ctx.requestId, formInput)
 

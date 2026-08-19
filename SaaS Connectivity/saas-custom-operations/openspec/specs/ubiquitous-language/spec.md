@@ -283,6 +283,17 @@ The project glossary SHALL include terms for unified SoD remediation form upper-
 - **WHEN** normative text names that base URL
 - **THEN** it SHALL define **UI origin** as the protocol and host used to prefix ISC admin UI paths
 
+### Requirement: disableLinks input vocabulary
+
+The project glossary SHALL define **disableLinks** as the optional boolean custom-operation input that suppresses ISC UI links in remediation form HTML for a single invoke when set to true.
+
+#### Scenario: disableLinks term
+
+- **GIVEN** specs or README describe opting out of admin deep links on `custom:access-model-sod-remediation` or `custom:sod-remediation`
+- **WHEN** normative text names that input
+- **THEN** it SHALL use **disableLinks**
+- **AND** SHALL define it as suppressing ISC UI links in form HTML without removing form URL or email remediation CTA outputs
+
 ## Term entries
 
 ### Term: Access model SoD remediation apply
@@ -290,6 +301,12 @@ The project glossary SHALL include terms for unified SoD remediation form upper-
 **Definition**: The custom operation that reads a completed access-model SoD remediation form instance and mutates the referenced role or access profile in the ISC catalog per `remediationSide`.
 **Aliases**: none
 **Notes**: Input is `formInstanceId` only; persist identity is `{formInstanceId}`.
+
+### Term: disableLinks
+**Context**: connector-operations / access-model-sod-remediation / sod-remediation
+**Definition**: Optional boolean custom-operation input that, when `true`, suppresses ISC UI links in remediation form HTML for that invoke (plain escaped entity names; no admin anchors).
+**Aliases**: none
+**Notes**: Does not remove `*:form-url` or the email remediation-form CTA. Omitted or `false` keeps linked behavior when UI origin resolves.
 
 ### Term: SoD form HTML
 **Context**: sod-form-html

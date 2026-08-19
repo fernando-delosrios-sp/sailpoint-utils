@@ -635,4 +635,74 @@ describe('accessModelSodRemediationOperation', () => {
             })
         )
     })
+
+    async function invokeConnectedAccessModelScan(
+        requestId: string,
+        input: Record<string, unknown> = {}
+    ): Promise<{ res: { send: ReturnType<typeof vi.fn> } }> {
+        const res = { send: vi.fn() }
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
+                {
+                    requestId,
+                    formName: 'Access Model SOD Remediation',
+                    searchIndices: ['roles'],
+                    ...input,
+                },
+                res as never
+            )
+        })
+        return { res }
+    }
+
+    function launchFormInput(): Record<string, unknown> | undefined {
+        return vi.mocked(createAccessModelSodRemediationInstance).mock.calls[0]?.[0]?.formInput as
+            | Record<string, unknown>
+            | undefined
+    }
+
+    it('Omitted disableLinks keeps admin links online', async () => {
+        await invokeConnectedAccessModelScan('req-access-model-disable-links-omit')
+
+        const formInput = launchFormInput()
+        expect(formInput?.situationSummaryHtml).toContain(
+            '/ui/a/admin/access/roles/landing-page/details/role-offline-1'
+        )
+        expect(formInput?.groupColumnsHtmlPlain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-a')
+    })
+
+    it('disableLinks false keeps admin links online', async () => {
+        await invokeConnectedAccessModelScan('req-access-model-disable-links-false', { disableLinks: false })
+
+        const formInput = launchFormInput()
+        expect(formInput?.situationSummaryHtml).toContain(
+            '/ui/a/admin/access/roles/landing-page/details/role-offline-1'
+        )
+        expect(formInput?.groupColumnsHtmlPlain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-a')
+    })
+
+    it('disableLinks true omits admin links online', async () => {
+        await invokeConnectedAccessModelScan('req-access-model-disable-links-true', { disableLinks: true })
+
+        const formInput = launchFormInput()
+        expect(formInput?.situationSummaryHtml).toContain('Finance Role')
+        expect(formInput?.situationSummaryHtml).not.toMatch(/<a href=/i)
+        expect(formInput?.groupColumnsHtmlPlain).toContain('Accounts Receivable')
+        expect(formInput?.groupColumnsHtmlPlain).not.toMatch(/<a href=/i)
+    })
+
+    it('disableLinks does not remove form URL or email CTA', async () => {
+        await invokeConnectedAccessModelScan('req-access-model-disable-links-cta', { disableLinks: true })
+
+        const childAccount = persistedAccounts.get('req-access-model-disable-links-cta:role-offline-1:policy-offline-1')
+        expect(childAccount).toEqual(
+            expect.objectContaining({
+                'access-model-sod-remediation:form-url': 'https://tenant.example/form/1',
+            })
+        )
+        expect(childAccount?.['access-model-sod-remediation:form-email-body']).toContain(
+            '<a href=https://tenant.example/form/1>Remediate here</a>'
+        )
+    })
 })

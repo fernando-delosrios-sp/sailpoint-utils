@@ -525,6 +525,75 @@ describe('sodRemediationOperation', () => {
             '<a href=https://tenant.identitynow.com/form/instance-1>Remediate here</a>'
         )
     })
+
+    async function invokeConnectedSodRemediation(
+        requestId: string,
+        input: Record<string, unknown> = {}
+    ): Promise<{ res: { send: ReturnType<typeof vi.fn> } }> {
+        const res = { send: vi.fn() }
+        await _withConfig(workflowConfig, async () => {
+            await sodRemediationOperation(
+                { commandType: 'custom:sod-remediation' } as never,
+                {
+                    requestId,
+                    violationId: 'vio-1',
+                    formName: 'SOD Remediation',
+                    ...input,
+                },
+                res as never
+            )
+        })
+        return { res }
+    }
+
+    function launchFormInput(): Record<string, unknown> | undefined {
+        return vi.mocked(createSodRemediationInstance).mock.calls[0]?.[0]?.formInput as
+            | Record<string, unknown>
+            | undefined
+    }
+
+    it('Omitted disableLinks keeps admin links online', async () => {
+        await invokeConnectedSodRemediation('req-sod-disable-links-omit')
+
+        const formInput = launchFormInput()
+        expect(formInput?.situationSummaryHtml).toContain(
+            '/ui/a/admin/identities/ident-1/details/attributes'
+        )
+        expect(formInput?.groupColumnsHtmlPlain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-a')
+    })
+
+    it('disableLinks false keeps admin links online', async () => {
+        await invokeConnectedSodRemediation('req-sod-disable-links-false', { disableLinks: false })
+
+        const formInput = launchFormInput()
+        expect(formInput?.situationSummaryHtml).toContain(
+            '/ui/a/admin/identities/ident-1/details/attributes'
+        )
+        expect(formInput?.groupColumnsHtmlPlain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-a')
+    })
+
+    it('disableLinks true omits admin links online', async () => {
+        await invokeConnectedSodRemediation('req-sod-disable-links-true', { disableLinks: true })
+
+        const formInput = launchFormInput()
+        expect(formInput?.situationSummaryHtml).toContain('Alice Example')
+        expect(formInput?.situationSummaryHtml).not.toMatch(/<a href=/i)
+        expect(formInput?.groupColumnsHtmlPlain).toContain('Entitlement A')
+        expect(formInput?.groupColumnsHtmlPlain).not.toMatch(/<a href=/i)
+    })
+
+    it('disableLinks does not remove form URL or email CTA', async () => {
+        await invokeConnectedSodRemediation('req-sod-disable-links-cta', { disableLinks: true })
+
+        const persisted = createAccountV1.mock.calls[0][0].accountAttributesCreate.attributes as Record<
+            string,
+            unknown
+        >
+        expect(persisted['sod-remediation:form-url']).toBe('https://tenant.identitynow.com/form/instance-1')
+        expect(persisted['sod-remediation:form-email-body']).toContain(
+            '<a href=https://tenant.identitynow.com/form/instance-1>Remediate here</a>'
+        )
+    })
 })
 
 

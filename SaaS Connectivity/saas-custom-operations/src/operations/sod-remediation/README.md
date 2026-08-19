@@ -15,6 +15,7 @@ Launch-only operation that fetches an SOD violation, ensures a named form defini
 | `violationId` | Yes | SOD violation ID (`GET /violations/v1/:id`, experimental API) |
 | `formName` | Yes | Tenant form definition name — created from bundled seed on first use; **owner on create** is the access-token identity (not the violation owner) |
 | `owner` | No | Form instance recipient override; defaults to violation owner |
+| `disableLinks` | No | When `true`, omits ISC admin UI deep links in form HTML (`situationSummaryHtml` and group columns). Does **not** remove `sod-remediation:form-url` or the email **Remediate here** CTA |
 
 ## Output (persisted)
 
