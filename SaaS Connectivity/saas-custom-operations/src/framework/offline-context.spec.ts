@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { isOfflineContext } from './offline-context'
 
 const OFFLINE_BRANCHING_OPERATIONS = [
+    'access-expiration-reminders',
     'access-model-sod-remediation',
     'access-model-sod-remediation-apply',
     'governance-group-emails',

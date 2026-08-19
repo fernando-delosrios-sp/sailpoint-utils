@@ -1,6 +1,7 @@
 {
 	"name": "saas-custom-operations",
 	"commands": [
+		"custom:access-expiration-reminders",
 		"custom:access-model-sod-remediation",
 		"custom:access-model-sod-remediation-apply",
 		"custom:access-request-status",

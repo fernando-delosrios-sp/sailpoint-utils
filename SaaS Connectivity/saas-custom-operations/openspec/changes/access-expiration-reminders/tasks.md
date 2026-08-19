@@ -10,18 +10,18 @@
 
 ## 3. Operation scaffold and form seed
 
-- [ ] 3.1 Copy `_template` to `src/operations/access-expiration-reminders/` with `command: 'custom:access-expiration-reminders'`, OperationSignature input (`formName` required, `expirationDays?`), and prefixed output fields
-- [ ] 3.2 Add form seed JSON (situation context + required `newExpirationDate` DATE) and form-service ensure/create helpers wrapping `ensureFormDefinitionByName` / `createStandaloneFormInstance` with `expire = removeDate`
-- [ ] 3.3 Add form-email header/body builders (≤256 chars) and constants (`MAX_FORMS_PER_RUN = 25`, `childPersistIdentity`, default `expirationDays = 1`)
-- [ ] 3.4 Implement UTC calendar-day matching helper and unit tests (exact match / non-match)
+- [x] 3.1 Copy `_template` to `src/operations/access-expiration-reminders/` with `command: 'custom:access-expiration-reminders'`, OperationSignature input (`formName` required, `expirationDays?`), and prefixed output fields
+- [x] 3.2 Add form seed JSON (situation context + required `newExpirationDate` DATE) and form-service ensure/create helpers wrapping `ensureFormDefinitionByName` / `createStandaloneFormInstance` with `expire = removeDate`
+- [x] 3.3 Add form-email header/body builders (≤256 chars) and constants (`MAX_FORMS_PER_RUN = 25`, `childPersistIdentity`, default `expirationDays = 1`)
+- [x] 3.4 Implement UTC calendar-day matching helper and unit tests (exact match / non-match)
 
 ## 4. Operation handler
 
-- [ ] 4.1 Implement scan loop: discover sunset assignments → match `expirationDays` → resolve manager + email → idempotent account check → form launch → child persist (`verify: false`) → reminder scan summary on `ctx.res.send`
-- [ ] 4.2 Enforce skips for missing manager/email and existing notice accounts; enforce 25-form cap with overflow counter and warning log
-- [ ] 4.3 Persist notice fields: identityId, managerId, accessProfileId, removeDate, daysRemaining, form-url, form-email-*
-- [ ] 4.4 Pass formInput `responseAccountId`, `identityId`, `accessProfileId`, plus friendly display context
-- [ ] 4.5 Run `npm run codegen:schemas` / build so auto-registry and `connector-spec.json` include the command
+- [x] 4.1 Implement scan loop: discover sunset assignments → match `expirationDays` → resolve manager + email → idempotent account check → form launch → child persist (`verify: false`) → reminder scan summary on `ctx.res.send`
+- [x] 4.2 Enforce skips for missing manager/email and existing notice accounts; enforce 25-form cap with overflow counter and warning log
+- [x] 4.3 Persist notice fields: identityId, managerId, accessProfileId, removeDate, daysRemaining, form-url, form-email-*
+- [x] 4.4 Pass formInput `responseAccountId`, `identityId`, `accessProfileId`, plus friendly display context
+- [x] 4.5 Run `npm run codegen:schemas` / build so auto-registry and `connector-spec.json` include the command
 
 ## 5. Operation tests and payloads
 

@@ -1,0 +1,107 @@
+{
+    "description": "Access expiration reminder — manager selects a new expiration date for an ACCESS_PROFILE assignment nearing removeDate.",
+    "formInput": [
+        {
+            "id": "responseAccountId",
+            "type": "STRING",
+            "label": "Response Account ID",
+            "description": "Result-source notice account native identity for workflow correlation"
+        },
+        {
+            "id": "identityId",
+            "type": "STRING",
+            "label": "Identity ID",
+            "description": "Identity holding the expiring ACCESS_PROFILE assignment"
+        },
+        {
+            "id": "accessProfileId",
+            "type": "STRING",
+            "label": "Access Profile ID",
+            "description": "Expiring ACCESS_PROFILE id"
+        },
+        {
+            "id": "identityDisplayName",
+            "type": "STRING",
+            "label": "Identity Display Name",
+            "description": "Friendly display name of the identity"
+        },
+        {
+            "id": "accessProfileName",
+            "type": "STRING",
+            "label": "Access Profile Name",
+            "description": "Friendly display name of the access profile"
+        },
+        {
+            "id": "removeDate",
+            "type": "STRING",
+            "label": "Current Expiration Date",
+            "description": "Current assignment removeDate (ISO-8601)"
+        },
+        {
+            "id": "daysRemaining",
+            "type": "STRING",
+            "label": "Days Remaining",
+            "description": "Whole UTC calendar days remaining until removeDate"
+        },
+        {
+            "id": "situationSummaryHtml",
+            "type": "STRING",
+            "label": "Situation Summary",
+            "description": "HTML context panel explaining the expiring assignment"
+        }
+    ],
+    "formElements": [
+        {
+            "id": "ctx-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Situation",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "ctx-summary",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Situation",
+                            "showLabel": false,
+                            "description": "{{$.form.input.situationSummaryHtml}}"
+                        },
+                        "validations": []
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "action-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "Choose a new expiration date that is after the current expiration shown above. Earlier dates are not applied.",
+                "label": "New Expiration",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "new-expiration-date",
+                        "elementType": "DATE",
+                        "key": "newExpirationDate",
+                        "config": {
+                            "label": "New expiration date",
+                            "required": true,
+                            "description": "Must be after the current expiration date ({{$.form.input.removeDate}}).",
+                            "helpText": "Select a date after the current access profile expiration. The connector does not apply this date automatically."
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }]
+                    }
+                ]
+            },
+            "validations": []
+        }
+    ],
+    "formConditions": []
+}
