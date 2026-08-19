@@ -39,7 +39,7 @@ Show the section draft. After confirmation, write to the target file. Report whi
 
 ## Gates (runtime)
 
-At each **_gate_** — a fork, confirmation, or permission pause before you proceed — present choices structurally. Options live in a tool call or `<decision_prompt>` block, not as numbered prose the user must retype.
+At each **_gate_** — a fork, confirmation, or permission pause before you proceed — the choices reach the user as buttons they click, through the host's question tool.
 
 ### When to gate
 
@@ -48,44 +48,58 @@ At each **_gate_** — a fork, confirmation, or permission pause before you proc
 - Permission pauses (install packages/skills, modify config)
 - Ambiguous requirements the request or codebase cannot resolve
 
-**Skip the gate** when only one sensible path exists, the question is genuinely open-ended ("What should I call you?"), or the host is non-interactive (CI) — pick a documented default and note the assumption.
+**Skip the gate** when only one sensible path exists, the question is genuinely open-ended ("What should I call you?"), or no user is available to answer (a CI or scheduled run) — pick a documented default and state the assumption in one line.
+
+The test there is whether a user is present, not which tools you can see. A gate you tried and could not render is the failed call below, not a skip.
+
+### Options already written as a list
+
+Most skills predate this one, so a skill you are running will often spell its choices out as a bulleted list, a blockquoted question, or a "then ask the user" line — sometimes phrased as though you were about to type it into chat.
+
+Read that as **option data for a call**: it describes the fork rather than drafting your message. Take one option per entry, an `id` from the entry's key or a slug of its label, and fold each entry's explanation into its `label`. A wording like "so they can accept it in a word" describes the click, not a request for prose.
+
+A skill that never mentions gates still gets one. Nothing needs to opt in.
 
 ### Gate rules
 
 - **One gate per assistant message** — halt until the user responds. A gate may contain multiple questions when another skill composes it (e.g. grilling rounds).
-- **Two or more fixed options** — do not fake a choice.
+- **Two or more fixed options** — a real fork, carrying the alternatives the user would actually weigh.
 - **Record by `id`** — proceed using the option `id`, not paraphrased label text.
-- **Recommended first** — mark the suggested option in `label` with `(Recommended)` and in `recommended`.
-- **No duplicate lists** — never also print "1. foo 2. bar" in prose when using a tool or block.
+- **Recommended first** — list the suggested option first and suffix its `label` with `(Recommended)`.
+- **One rendering per gate** — the call carries the options; the message beside it says only why you are asking.
 
 **Candidate count:** 1 match → inline one-line confirm; 2+ matches → full gate.
 
-### Platform adapters
+### Emit the gate
 
-Check top to bottom; use the first that applies:
+Call the question tool. In Cursor it is **`AskQuestion`**, built in: invoke it directly, the way you invoke `Read` or `Grep`.
 
-1. **Native decision tool** — if the tool catalog includes `AskQuestion`, `prompt_user_decision`, or any tool that presents interactive choices, call it with fields mapped from the universal contract below.
-2. **Universal block** — emit one `<decision_prompt>` JSON block (see [`references/payload-examples.md`](references/payload-examples.md)); halt immediately after the closing tag.
-3. **Minimal prose fallback** — only when structured output is impossible: short question plus lettered options on separate lines; still halt.
+**The call is the check.** Make it your first move. Its result is the only evidence about the tool that exists — a reading of your tool list is not evidence, and neither is a conclusion about which host you are on.
 
-### Universal contract
-
-```markdown
-<decision_prompt>
+```json
 {
-  "type": "button_group",
-  "question": "<one sentence>",
-  "options": [
-    { "id": "<value>", "label": "<display> (Recommended)", "detail": "<optional>" }
-  ],
-  "allow_custom_input": true,
-  "recommended": "<id>"
+  "questions": [
+    {
+      "id": "issue-tracker",
+      "prompt": "Where should issues live for this repo?",
+      "options": [
+        { "id": "github", "label": "GitHub — the remote already points there (Recommended)" },
+        { "id": "local-md", "label": "Local markdown — files under .scratch/" }
+      ]
+    }
+  ]
 }
 ```
 
-`type`: `button_group` | `select` | `confirm_dialog` | `multi_select`
+An option carries `id` and `label`; explanatory detail rides inside the `label`. Halt after the call and let the user answer.
 
-More examples and adapter field mapping: [`references/payload-examples.md`](references/payload-examples.md).
+More shapes — confirm, multi-select, grilling rounds: [`payload-examples.md`](references/payload-examples.md).
+
+### When the call comes back an error
+
+Then, and only then, [`other-hosts.md`](references/other-hosts.md) carries the alternatives: the field mapping for a question tool under another name, a JSON contract for hosts that parse one, and the prose form for a host with no question tool at all.
+
+Whichever form you land on, open with the question itself. Your tool situation is yours to handle, not the user's to read about.
 
 ### Carve-outs
 
