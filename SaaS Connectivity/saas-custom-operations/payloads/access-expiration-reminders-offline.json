@@ -1,0 +1,8 @@
+{
+    "type": "custom:access-expiration-reminders",
+    "input": {
+        "requestId": "access-expiration-reminders",
+        "formName": "Access Expiration Reminders",
+        "expirationDays": 1
+    }
+}

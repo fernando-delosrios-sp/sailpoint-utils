@@ -25,8 +25,8 @@
 
 ## 5. Operation tests and payloads
 
-- [ ] 5.1 Add `index.spec.ts` covering: happy path persist + res.send summary; default expirationDays; missing formName failure; idempotent skip; missing manager/email skip; multi-AP accounts; form cap/overflow; zero matches; offline path
-- [ ] 5.2 Add offline payload under `payloads/` and wire local invoke as needed for `call:op`
+- [x] 5.1 Add `index.spec.ts` covering: happy path persist + res.send summary; default expirationDays; missing formName failure; idempotent skip; missing manager/email skip; multi-AP accounts; form cap/overflow; zero matches; offline path
+- [x] 5.2 Add offline payload under `payloads/` and wire local invoke as needed for `call:op`
 
 ## 6. Workflows
 
