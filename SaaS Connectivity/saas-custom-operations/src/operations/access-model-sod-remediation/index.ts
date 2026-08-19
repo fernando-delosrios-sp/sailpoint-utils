@@ -50,16 +50,18 @@ export interface AccessModelSodRemediationOperation extends OperationSignature {
         disableLinks?: boolean
     }
     output: {
+        'access-model-sod-remediation:form-url'?: string
+        'access-model-sod-remediation:form-email-header'?: string
+        'access-model-sod-remediation:form-email-body'?: string
+        'access-model-sod-remediation:form-email-recipients'?: string[]
+    }
+    response: {
         'access-model-sod-remediation:access-items-scanned': number
         'access-model-sod-remediation:violations-found': number
         'access-model-sod-remediation:forms-skipped'?: number
         'access-model-sod-remediation:forms-skipped-instances'?: AccessModelSodSkippedFormInstance[]
         'access-model-sod-remediation:forms-launch-failed'?: number
         'access-model-sod-remediation:forms-persist-failed'?: number
-        'access-model-sod-remediation:form-url'?: string
-        'access-model-sod-remediation:form-email-header'?: string
-        'access-model-sod-remediation:form-email-body'?: string
-        'access-model-sod-remediation:form-email-recipients'?: string[]
     }
 }
 
@@ -306,8 +308,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
             }
         }
 
-        ctx.res.send({
-            status: 'success',
+        ctx.respond({
             'access-model-sod-remediation:access-items-scanned': accessItems.length,
             'access-model-sod-remediation:violations-found': violationsFound,
             ...(formsSkipped > 0 ? { 'access-model-sod-remediation:forms-skipped': formsSkipped } : {}),

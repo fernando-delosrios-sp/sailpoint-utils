@@ -114,4 +114,18 @@ describe('buildAccountSchema', () => {
         const names = schema.attributes.map((a) => a.name)
         expect(names).toContain('secretField')
     })
+
+    it('excludes response summary fields that are not in output', () => {
+        const formOp: OperationMeta = {
+            command: 'custom:form-op',
+            modulePath: '/fake/form-op.ts',
+            input: [],
+            output: [{ name: 'form-url', optional: false, type: 'string' }],
+            childIdentities: [],
+        }
+        const schema = buildAccountSchema([formOp])
+        const names = schema.attributes.map((a) => a.name)
+        expect(names).toContain('form-url')
+        expect(names).not.toContain('items-scanned')
+    })
 })

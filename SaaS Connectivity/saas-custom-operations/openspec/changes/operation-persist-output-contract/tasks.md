@@ -7,17 +7,17 @@
 
 ## 2. Codegen: persist-output guard + persisted-only derivation
 
-- [ ] 2.1 In `scripts/templates/operation-introspection.ts`, collect object-literal keys from `ctx.persist(...)` second arguments per entry module, and parse `// persist-dynamic: <key>` markers
-- [ ] 2.2 In `scripts/generate-operation-schemas.ts`, fail with non-zero exit when any `output` field is absent from the persisted-key set; report module path + offending fields
-- [ ] 2.3 Confirm `scripts/templates/account-schema.ts` / `buildAccountSchema` derive attributes from persisted `output` only (no code change expected once operations comply; add assertion/test)
-- [ ] 2.4 Tests (RED→GREEN) in `scripts/generate-operation-schemas.spec.ts` and `scripts/templates/account-schema.spec.ts`: never-persisted field fails codegen; fully-persisted passes; `persist-dynamic` marker whitelists; response summary field excluded from account schema — covers templates-generator "Persist-output guard" and "Account schema generation" scenarios
+- [x] 2.1 In `scripts/templates/operation-introspection.ts`, collect object-literal keys from `ctx.persist(...)` second arguments per entry module, and parse `// persist-dynamic: <key>` markers
+- [x] 2.2 In `scripts/generate-operation-schemas.ts`, fail with non-zero exit when any `output` field is absent from the persisted-key set; report module path + offending fields
+- [x] 2.3 Confirm `scripts/templates/account-schema.ts` / `buildAccountSchema` derive attributes from persisted `output` only (no code change expected once operations comply; add assertion/test)
+- [x] 2.4 Tests (RED→GREEN) in `scripts/generate-operation-schemas.spec.ts` and `scripts/templates/account-schema.spec.ts`: never-persisted field fails codegen; fully-persisted passes; `persist-dynamic` marker whitelists; response summary field excluded from account schema — covers templates-generator "Persist-output guard" and "Account schema generation" scenarios
 
 ## 3. Remediate operations (audit all; fix violators)
 
-- [ ] 3.1 Audit every `src/operations/*/index.ts`: classify each `output` field as persisted vs response-only (confirmed violator: `access-model-sod-remediation`; confirm `example`, `governance-group-emails`, `preventive-sod-check`, `sod-remediation`, `access-model-sod-remediation-apply` are compliant)
-- [ ] 3.2 Refactor `src/operations/access-model-sod-remediation/index.ts`: move scan-summary counters (`access-items-scanned`, `violations-found`, `forms-skipped`, `forms-skipped-instances`, `forms-launch-failed`, `forms-persist-failed`) from `output` into `response`; keep only persisted child keys in `output`; replace `ctx.res.send({...})` with `ctx.respond({...summary})`
-- [ ] 3.3 Regenerate `*.schema.ts` sidecars, `src/operations/auto-registry.ts`, and `connector-spec.json` via `npm run codegen:schemas`; confirm the account schema no longer contains scan-summary counters
-- [ ] 3.4 Update `src/operations/access-model-sod-remediation/index.spec.ts` and the persist-output guard fixtures — covers connector-operations "Access model scan summary on invoke response" scenarios
+- [x] 3.1 Audit every `src/operations/*/index.ts`: classify each `output` field as persisted vs response-only (confirmed violator: `access-model-sod-remediation`; confirm `example`, `governance-group-emails`, `preventive-sod-check`, `sod-remediation`, `access-model-sod-remediation-apply` are compliant)
+- [x] 3.2 Refactor `src/operations/access-model-sod-remediation/index.ts`: move scan-summary counters (`access-items-scanned`, `violations-found`, `forms-skipped`, `forms-skipped-instances`, `forms-launch-failed`, `forms-persist-failed`) from `output` into `response`; keep only persisted child keys in `output`; replace `ctx.res.send({...})` with `ctx.respond({...summary})`
+- [x] 3.3 Regenerate `*.schema.ts` sidecars, `src/operations/auto-registry.ts`, and `connector-spec.json` via `npm run codegen:schemas`; confirm the account schema no longer contains scan-summary counters
+- [x] 3.4 Update `src/operations/access-model-sod-remediation/index.spec.ts` and the persist-output guard fixtures — covers connector-operations "Access model scan summary on invoke response" scenarios
 
 ## 4. Verification
 

@@ -17,14 +17,29 @@ const workflowConfig = {
 }
 
 const persistAttributes = [
-    { name: 'access-model-sod-remediation:access-items-scanned', type: 'INT', isMulti: false },
-    { name: 'access-model-sod-remediation:violations-found', type: 'INT', isMulti: false },
-    { name: 'access-model-sod-remediation:forms-skipped', type: 'INT', isMulti: false },
     { name: 'access-model-sod-remediation:form-url', type: 'STRING', isMulti: false },
     { name: 'access-model-sod-remediation:form-email-header', type: 'STRING', isMulti: false },
     { name: 'access-model-sod-remediation:form-email-body', type: 'STRING', isMulti: false },
     { name: 'access-model-sod-remediation:form-email-recipients', type: 'STRING', isMulti: true },
 ]
+
+function expectScanSummary(
+    res: { send: ReturnType<typeof vi.fn> },
+    summary: Record<string, unknown>
+): void {
+    expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+            name: 'custom:access-model-sod-remediation',
+            type: 'custom',
+            status: 'success',
+            summary: expect.objectContaining(summary),
+        })
+    )
+}
+
+function sentSummary(res: { send: ReturnType<typeof vi.fn> }): Record<string, unknown> {
+    return (res.send.mock.calls[0]?.[0] as { summary?: Record<string, unknown> })?.summary ?? {}
+}
 
 const createAccountV1 = vi.fn().mockResolvedValue({})
 const resolveSourceByName = vi.fn()
@@ -214,9 +229,13 @@ describe('accessModelSodRemediationOperation', () => {
 
             expect(res.send).toHaveBeenCalledWith(
                 expect.objectContaining({
+                    name: 'custom:access-model-sod-remediation',
+                    type: 'custom',
                     status: 'success',
-                    'access-model-sod-remediation:access-items-scanned': 2,
-                    'access-model-sod-remediation:violations-found': 1,
+                    summary: expect.objectContaining({
+                        'access-model-sod-remediation:access-items-scanned': 2,
+                        'access-model-sod-remediation:violations-found': 1,
+                    }),
                 })
             )
             expect(inhibitedPersists.map((record) => record.identity)).toEqual([
@@ -283,9 +302,14 @@ describe('accessModelSodRemediationOperation', () => {
             )
 
             expect(res.send).toHaveBeenCalledWith({
+                name: 'custom:access-model-sod-remediation',
+                type: 'custom',
                 status: 'success',
-                'access-model-sod-remediation:access-items-scanned': 1,
-                'access-model-sod-remediation:violations-found': 0,
+                responses: [],
+                summary: {
+                    'access-model-sod-remediation:access-items-scanned': 1,
+                    'access-model-sod-remediation:violations-found': 0,
+                },
             })
         } finally {
             if (previousTestMode === undefined) {
@@ -314,24 +338,21 @@ describe('accessModelSodRemediationOperation', () => {
             )
         })
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-model-sod-remediation:access-items-scanned': 1,
-                'access-model-sod-remediation:violations-found': 1,
-                'access-model-sod-remediation:forms-skipped': 1,
-                'access-model-sod-remediation:forms-skipped-instances': [
-                    {
-                        childIdentity: 'req-access-model-sod-skipped:role-offline-1:policy-offline-1',
-                        accessItemId: 'role-offline-1',
-                        accessItemType: 'ROLE',
-                        accessItemName: 'Finance Role',
-                        policyId: 'policy-offline-1',
-                        policyName: 'AP/AR Separation',
-                    },
-                ],
-            })
-        )
+        expectScanSummary(res, {
+            'access-model-sod-remediation:access-items-scanned': 1,
+            'access-model-sod-remediation:violations-found': 1,
+            'access-model-sod-remediation:forms-skipped': 1,
+            'access-model-sod-remediation:forms-skipped-instances': [
+                {
+                    childIdentity: 'req-access-model-sod-skipped:role-offline-1:policy-offline-1',
+                    accessItemId: 'role-offline-1',
+                    accessItemType: 'ROLE',
+                    accessItemName: 'Finance Role',
+                    policyId: 'policy-offline-1',
+                    policyName: 'AP/AR Separation',
+                },
+            ],
+        })
         expect(vi.mocked(createAccessModelSodRemediationInstance)).not.toHaveBeenCalled()
         expect(persistedIdentities).not.toContain('req-access-model-sod-skipped:role-offline-1:policy-offline-1')
     })
@@ -354,16 +375,11 @@ describe('accessModelSodRemediationOperation', () => {
             )
         })
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-model-sod-remediation:violations-found': 1,
-            })
-        )
-        expect(res.send.mock.calls[0]?.[0]).not.toHaveProperty('access-model-sod-remediation:forms-skipped')
-        expect(res.send.mock.calls[0]?.[0]).not.toHaveProperty(
-            'access-model-sod-remediation:forms-skipped-instances'
-        )
+        expectScanSummary(res, {
+            'access-model-sod-remediation:violations-found': 1,
+        })
+        expect(sentSummary(res)).not.toHaveProperty('access-model-sod-remediation:forms-skipped')
+        expect(sentSummary(res)).not.toHaveProperty('access-model-sod-remediation:forms-skipped-instances')
         expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalledWith(
             expect.objectContaining({
                 recipientId: 'item-owner-1',
@@ -410,13 +426,10 @@ describe('accessModelSodRemediationOperation', () => {
         })
 
         expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-model-sod-remediation:access-items-scanned': 2,
-                'access-model-sod-remediation:violations-found': 2,
-            })
-        )
+        expectScanSummary(res, {
+            'access-model-sod-remediation:access-items-scanned': 2,
+            'access-model-sod-remediation:violations-found': 2,
+        })
     })
 
     it('does not persist rollup on requestId when connected', async () => {
@@ -436,12 +449,12 @@ describe('accessModelSodRemediationOperation', () => {
 
         expect(persistedIdentities).not.toContain('req-access-model-sod-connected')
         expect(persistedIdentities).toContain('req-access-model-sod-connected:role-offline-1:policy-offline-1')
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-model-sod-remediation:access-items-scanned': 1,
-                'access-model-sod-remediation:violations-found': 1,
-            })
+        expectScanSummary(res, {
+            'access-model-sod-remediation:access-items-scanned': 1,
+            'access-model-sod-remediation:violations-found': 1,
+        })
+        expect(res.send.mock.calls[0]?.[0].responses).toContain(
+            'req-access-model-sod-connected:role-offline-1:policy-offline-1'
         )
     })
 
@@ -521,13 +534,10 @@ describe('accessModelSodRemediationOperation', () => {
             )
         })
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-model-sod-remediation:violations-found': 1,
-                'access-model-sod-remediation:forms-launch-failed': 1,
-            })
-        )
+        expectScanSummary(res, {
+            'access-model-sod-remediation:violations-found': 1,
+            'access-model-sod-remediation:forms-launch-failed': 1,
+        })
         expect(vi.mocked(createAccessModelSodRemediationInstance)).not.toHaveBeenCalled()
         expect(persistedIdentities).not.toContain(
             'req-access-model-sod-missing-owner:role-offline-1:policy-offline-1'
@@ -550,18 +560,11 @@ describe('accessModelSodRemediationOperation', () => {
             )
         })
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-model-sod-remediation:violations-found': 1,
-                'access-model-sod-remediation:forms-launch-failed': 1,
-            })
-        )
-        expect(res.send).toHaveBeenCalledWith(
-            expect.not.objectContaining({
-                'access-model-sod-remediation:forms-persist-failed': expect.anything(),
-            })
-        )
+        expectScanSummary(res, {
+            'access-model-sod-remediation:violations-found': 1,
+            'access-model-sod-remediation:forms-launch-failed': 1,
+        })
+        expect(sentSummary(res)).not.toHaveProperty('access-model-sod-remediation:forms-persist-failed')
         expect(persistedIdentities).not.toContain('req-access-model-sod-launch-failed:role-offline-1:policy-offline-1')
     })
 
@@ -597,13 +600,10 @@ describe('accessModelSodRemediationOperation', () => {
         })
 
         expect(vi.mocked(createAccessModelSodRemediationInstance)).toHaveBeenCalledTimes(MAX_FORMS_PER_RUN)
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-model-sod-remediation:access-items-scanned': MAX_FORMS_PER_RUN + 2,
-                'access-model-sod-remediation:violations-found': MAX_FORMS_PER_RUN,
-            })
-        )
+        expectScanSummary(res, {
+            'access-model-sod-remediation:access-items-scanned': MAX_FORMS_PER_RUN + 2,
+            'access-model-sod-remediation:violations-found': MAX_FORMS_PER_RUN,
+        })
     })
 
     it('Child persist failure increments persist counter only', async () => {
@@ -622,18 +622,11 @@ describe('accessModelSodRemediationOperation', () => {
             )
         })
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-model-sod-remediation:violations-found': 1,
-                'access-model-sod-remediation:forms-persist-failed': 1,
-            })
-        )
-        expect(res.send).toHaveBeenCalledWith(
-            expect.not.objectContaining({
-                'access-model-sod-remediation:forms-launch-failed': expect.anything(),
-            })
-        )
+        expectScanSummary(res, {
+            'access-model-sod-remediation:violations-found': 1,
+            'access-model-sod-remediation:forms-persist-failed': 1,
+        })
+        expect(sentSummary(res)).not.toHaveProperty('access-model-sod-remediation:forms-launch-failed')
     })
 
     async function invokeConnectedAccessModelScan(

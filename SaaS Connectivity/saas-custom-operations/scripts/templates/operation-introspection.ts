@@ -187,6 +187,86 @@ export function detectChildIdentities(filePath: string): string[] {
     return [...patterns]
 }
 
+const PERSIST_DYNAMIC_PATTERN = /\/\/\s*persist-dynamic:\s*(.+)$/gm
+
+function propertyNameFromObjectLiteralName(name: ts.PropertyName, sourceFile: ts.SourceFile): string | undefined {
+    if (ts.isIdentifier(name)) {
+        return name.text
+    }
+    if (ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+        return name.text
+    }
+    if (ts.isComputedPropertyName(name) && ts.isStringLiteral(name.expression)) {
+        return name.expression.text
+    }
+    return undefined
+}
+
+function collectKeysFromObjectLiteral(node: ts.ObjectLiteralExpression, sourceFile: ts.SourceFile): string[] {
+    const keys: string[] = []
+    for (const property of node.properties) {
+        if (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) {
+            const key = propertyNameFromObjectLiteralName(property.name, sourceFile)
+            if (key) {
+                keys.push(key)
+            }
+        }
+    }
+    return keys
+}
+
+function isCtxPersistCall(node: ts.CallExpression, sourceFile: ts.SourceFile): boolean {
+    const expression = node.expression
+    if (!ts.isPropertyAccessExpression(expression) || expression.name.text !== 'persist') {
+        return false
+    }
+    return expression.expression.getText(sourceFile) === 'ctx'
+}
+
+function unwrapExpression(node: ts.Expression): ts.Expression {
+    let current = node
+    while (ts.isAsExpression(current) || ts.isTypeAssertionExpression(current) || ts.isParenthesizedExpression(current)) {
+        current = current.expression
+    }
+    return current
+}
+
+/** Collects object-literal keys from `ctx.persist(...)` second arguments and `// persist-dynamic:` markers. */
+export function collectPersistedKeys(filePath: string): Set<string> {
+    const source = fs.readFileSync(filePath, 'utf-8')
+    const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true)
+    const keys = new Set<string>()
+
+    const visit = (node: ts.Node): void => {
+        if (ts.isCallExpression(node) && isCtxPersistCall(node, sourceFile) && node.arguments.length >= 2) {
+            const attributesArg = unwrapExpression(node.arguments[1])
+            if (ts.isObjectLiteralExpression(attributesArg)) {
+                for (const key of collectKeysFromObjectLiteral(attributesArg, sourceFile)) {
+                    keys.add(key)
+                }
+            }
+        }
+        ts.forEachChild(node, visit)
+    }
+    visit(sourceFile)
+
+    for (const match of source.matchAll(PERSIST_DYNAMIC_PATTERN)) {
+        const key = match[1]?.trim()
+        if (key) {
+            keys.add(key)
+        }
+    }
+
+    return keys
+}
+
+/** Returns output field names that never appear in the persisted-key set. */
+export function findNeverPersistedOutputFields(filePath: string): string[] {
+    const { output } = extractOperationSignature(filePath)
+    const persisted = collectPersistedKeys(filePath)
+    return output.map((field) => field.name).filter((name) => !persisted.has(name))
+}
+
 /** Loads full metadata for all registered operations. */
 export function loadOperationMeta(indexPath: string): OperationMeta[] {
     const operationsDir = path.dirname(indexPath)

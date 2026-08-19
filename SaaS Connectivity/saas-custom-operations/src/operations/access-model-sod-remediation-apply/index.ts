@@ -29,6 +29,14 @@ export interface AccessModelSodRemediationApplyOperation extends OperationSignat
     }
 }
 
+// Persist keys are assembled in buildOutputs / prior-apply helpers (not inline object literals).
+// persist-dynamic: access-model-sod-remediation-apply:status
+// persist-dynamic: access-model-sod-remediation-apply:access-item-id
+// persist-dynamic: access-model-sod-remediation-apply:access-item-type
+// persist-dynamic: access-model-sod-remediation-apply:removed-entitlement-ids
+// persist-dynamic: access-model-sod-remediation-apply:detached-access-profile-ids
+// persist-dynamic: access-model-sod-remediation-apply:description-appended
+
 function buildOutputs(
     status: 'applied' | 'skipped-already-clean' | 'skipped-already-applied',
     parsed: ReturnType<typeof parseFormInstance>,
