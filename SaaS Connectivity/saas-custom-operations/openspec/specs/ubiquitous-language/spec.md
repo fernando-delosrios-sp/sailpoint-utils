@@ -123,6 +123,60 @@ The glossary SHALL define **form email recipients** as the multi-value persist o
 - **WHEN** the type is stated
 - **THEN** it SHALL be described as `string[]` suitable for multi-value STRING account attributes with `isMulti: true`
 
+### Requirement: Persistable email body term
+
+The glossary SHALL define **persistable email body** as a compact HTML string intended for DelimitedFile/STRING account attributes and ISC workflow Send Email bodies, bounded by `ISC_STRING_ATTRIBUTE_MAX_LENGTH` (256).
+
+#### Scenario: Preferred term for compact workflow email HTML
+
+- **GIVEN** documentation refers to HTML stored on a result account for workflow email delivery
+- **WHEN** distinguishing it from in-form DESCRIPTION HTML
+- **THEN** the preferred term SHALL be **persistable email body**
+- **AND** SHALL NOT call that content SoD form HTML or situation summary panel without qualification
+
+### Requirement: Unquoted href CTA term
+
+The glossary SHALL define **unquoted href CTA** as an HTML anchor whose `href` value is not wrapped in quotes, kept DelimitedFile/`provisionAsCsv`-safe when URLs contain no spaces.
+
+#### Scenario: Preferred spelling for form email links
+
+- **GIVEN** specs describe the remediation or reminder link inside a persistable email body
+- **WHEN** naming the link construction convention
+- **THEN** the preferred term SHALL be **unquoted href CTA**
+- **AND** normative examples SHALL NOT require quoted `href="..."` attributes
+
+### Requirement: Form notification envelope term
+
+The glossary SHALL define **form notification envelope** as the workflow-facing companion to a launched standalone form instance: form URL, plain-text email subject (**form email header**), compact HTML email body (**form email body** / persistable email body), and **form email recipients**.
+
+#### Scenario: Preferred term for the four-field companion
+
+- **GIVEN** documentation describes the set of persist fields used by Notification workflows after form launch
+- **WHEN** naming that set as a unit
+- **THEN** the preferred term SHALL be **form notification envelope**
+- **AND** SHALL NOT invent alternate umbrella names (e.g. form email bundle) in normative text
+
+### Requirement: Form email header term
+
+The glossary SHALL define **form email header** as the plain-text subject line persisted as `{slug}:form-email-header` for ISC workflow Send Email subject binding.
+
+#### Scenario: Preferred persist key spelling for subject
+
+- **GIVEN** specs name the email subject persist output after form launch
+- **WHEN** the ubiquitous language spec is read
+- **THEN** the preferred attribute suffix SHALL be `form-email-header`
+
+### Requirement: Form launch term
+
+The glossary SHALL define **form launch** as the choreographed sequence that ensures a tenant form definition from an operation seed, creates a standalone assigned form instance for a recipient, and produces a **form notification envelope** for persist/workflows.
+
+#### Scenario: Preferred term for ensure-create-notify choreography
+
+- **GIVEN** documentation describes the shared ensure-definition then create-instance then notification pairing
+- **WHEN** naming that choreography
+- **THEN** the preferred term SHALL be **form launch**
+- **AND** SHALL NOT use ambiguous **form service** for the shared orchestrator in normative text
+
 ### Requirement: Operation response term
 
 The glossary SHALL define **operation response** as the typed payload a custom operation returns via `ctx.res.send`, an envelope comprising `name` (operation/command name), `status`, `responses` (the native identities persisted during the invoke), and `summary` (per-operation response detail typed from `OperationSignature['response']`). The operation response SHALL NOT be persisted and SHALL NOT contribute attributes to the result-source account schema.
@@ -390,6 +444,36 @@ The project glossary SHALL define **disableLinks** as the optional boolean custo
 **Definition**: Multi-value persist output listing email addresses for ISC workflow Send Email `recipientEmailList` after SOD form launch operations.
 **Aliases**: none
 **Notes**: Persist key suffix `form-email-recipients` (`string[]`, `isMulti: true`) on `custom:sod-remediation` and `custom:access-model-sod-remediation`.
+
+### Term: Persistable email body
+**Context**: persistable-email / connector-operations
+**Definition**: Compact HTML string intended for DelimitedFile/STRING account attributes and ISC workflow Send Email bodies, bounded by `ISC_STRING_ATTRIBUTE_MAX_LENGTH` (256).
+**Aliases**: none
+**Notes**: Distinct from in-form DESCRIPTION HTML (`sod-form-html`).
+
+### Term: Unquoted href CTA
+**Context**: persistable-email
+**Definition**: HTML anchor whose `href` value is not wrapped in quotes, kept DelimitedFile/`provisionAsCsv`-safe when URLs contain no spaces.
+**Aliases**: none
+**Notes**: Used in persistable email bodies that link to a standalone form URL.
+
+### Term: Form notification envelope
+**Context**: form-notification / connector-operations
+**Definition**: Workflow-facing companion to a launched standalone form instance: form URL, form email header, form email body, and form email recipients.
+**Aliases**: form email bundle (do not use in normative text)
+**Notes**: Persist suffixes `form-url`, `form-email-header`, `form-email-body`, `form-email-recipients`.
+
+### Term: Form email header
+**Context**: connector-operations
+**Definition**: Plain-text subject line persisted as `{slug}:form-email-header` for ISC workflow Send Email subject binding.
+**Aliases**: none
+**Notes**: none
+
+### Term: Form launch
+**Context**: form-launch / connector-operations
+**Definition**: Choreography that ensures a tenant form definition from an operation seed, creates a standalone assigned form instance for a recipient, and produces a form notification envelope.
+**Aliases**: form service (do not use for the shared orchestrator)
+**Notes**: Persistence and recipient policy stay with the operation handler.
 
 ### Term: logUrl
 **Context**: custom-operation-framework / connector-config
