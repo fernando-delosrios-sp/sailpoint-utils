@@ -35,6 +35,19 @@ The connector SHALL provide shared SoD remediation form HTML builders under `src
 
 - **WHEN** `renderEmojiLegend` is invoked
 - **THEN** the output SHALL decode revocability, keep recommendation, and privileged icons with explanatory text
+- **AND** SHALL be suitable for appending once to a block-level HTML summary
+
+#### Scenario: Side variant assembly
+
+- **GIVEN** rendered list body HTML for one policy side
+- **WHEN** the library builds side variants
+- **THEN** it SHALL return `plain`, `asKept`, and `asRemoved` HTML strings
+- **AND** `asKept` and `asRemoved` SHALL differ only by outcome panel styling
+
+#### Scenario: HTML escape helper
+
+- **WHEN** user-controlled names are embedded in HTML output
+- **THEN** the library SHALL escape `&`, `<`, `>`, and `"` characters
 
 #### Scenario: Boundary with persistable email
 
