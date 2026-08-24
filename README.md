@@ -17,6 +17,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 
 | Utility | Description |
 | --- | --- |
+| [Active Directory Home Folders](ISC/Active%20Directory%20Home%20Folders/) | ConnectorAfterCreate rule that creates home folders with NTFS ACLs from configurable base path and template |
 | [Active Directory OU Management](ISC/Active%20Directory%20OU%20Management/) | IQService BeforeScripts that create missing OUs—and optionally AD groups—during AD provisioning |
 | [Dynamic forms and user data collection](ISC/Dynamic%20forms%20and%20user%20data%20collection/) | Example form with cascading dropdowns and CSV-backed reference data |
 | [Generic Manager Correlation](ISC/Generic%20Manager%20Correlation/) | Reusable pattern for correlating managers across heterogeneous sources |
