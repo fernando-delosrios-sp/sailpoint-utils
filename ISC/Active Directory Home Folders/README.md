@@ -58,6 +58,7 @@ On the same AD source, add these **connector attributes**:
 | `HomeFolderBasePath` | `C:\Shared Folders` |
 | `HomeFolderTemplate` | `$department\Personal\$sAMAccountName` |
 | `HomeFolderDebugEnabled` | `true` |
+| `HomeFolderLogFile` | `C:\SailPoint\ActiveDirectoryHomeFolders.log` |
 
 Save the source after updating the attributes.
 
@@ -67,7 +68,7 @@ Provision a new AD account and confirm:
 
 * The folder is created at the expected path.
 * The new user has Full Control on the folder.
-* Debug logs appear under `%TEMP%\ActiveDirectoryHomeFolders_YYYYMMDD.log` on the IQService host when `HomeFolderDebugEnabled` is `"true"`.
+* Debug and operational logs appear on the IQService host. Default: `%TEMP%\ActiveDirectoryHomeFolders_YYYYMMDD.log`. With `HomeFolderLogFile` set, e.g. `C:\SailPoint\ActiveDirectoryHomeFolders.log` → `C:\SailPoint\ActiveDirectoryHomeFolders_YYYYMMDD.log`.
 
 ## Configuration
 
@@ -82,6 +83,7 @@ Configure these attributes on your AD source using the [SailPoint Identity Secur
 | `HomeFolderBasePath` | `string` | Root path used when `HomeFolderTemplate` resolves to a **relative** path. Ignored when the expanded template is absolute. Required for relative templates. |
 | `HomeFolderTemplate` | `string` | Path template with placeholders filled from the account request. Supports `$attributeName` and `{attributeName}` (case-insensitive attribute match). If blank or still containing unresolved placeholders after expansion, defaults to `sAMAccountName`. |
 | `HomeFolderDebugEnabled` | `boolean` | Set to `"true"` to enable detailed debug logging. |
+| `HomeFolderLogFile` | `string` | **Optional.** Log file path such as `C:\SailPoint\ActiveDirectoryHomeFolders.log`. `_YYYYMMDD` is appended before the extension (e.g. `ActiveDirectoryHomeFolders_20260824.log`). Defaults to `%TEMP%\ActiveDirectoryHomeFolders_YYYYMMDD.log` when not set. |
 
 ### Example source configuration
 
@@ -93,6 +95,7 @@ Relative path (equivalent to the original hardcoded layout):
     "HomeFolderBasePath": "C:\\Shared Folders",
     "HomeFolderTemplate": "$department\\Personal\\$sAMAccountName",
     "HomeFolderDebugEnabled": "true",
+    "HomeFolderLogFile": "C:\\SailPoint\\ActiveDirectoryHomeFolders.log",
     "nativeRules": ["Active Directory Home Folders"]
   }
 }
@@ -128,13 +131,14 @@ Creates `C:\Shared Folders\Personal\<sAMAccountName>`.
 
 1. IQService executes the uploaded ConnectorAfterCreate rule after a successful AD account creation.
 2. The rule parses `$env:Request` into an `AccountRequest` and reads `$env:Application` for configuration.
-3. On `Create` operations only, it builds an attribute map from the account request (including `nativeIdentity`).
-4. It expands `HomeFolderTemplate` using account request attribute values.
-5. Path resolution:
+3. It resolves the log file path from `HomeFolderLogFile` (or the default under `%TEMP%`) and appends `_YYYYMMDD` to the file name.
+4. On `Create` operations only, it builds an attribute map from the account request (including `nativeIdentity`).
+5. It expands `HomeFolderTemplate` using account request attribute values.
+6. Path resolution:
    * **Blank or unresolved template** → use `sAMAccountName` as the path fragment.
    * **Absolute expanded path** (`\\server\share\...` or `X:\...`) → use it directly; base path is ignored.
-   * **Relative expanded path** → `Join-Path` of `HomeFolderBasePath` + expanded template. Fails if base path is missing.
-6. It creates the folder tree if needed, breaks NTFS inheritance, and applies Full Control for the new user and `BUILTIN\Administrators`.
+   * **Relative expanded path** → `Join-Path` of `HomeFolderBasePath` + expanded template. Fails if base path is missing. Creates `HomeFolderBasePath` first if it does not exist.
+7. It creates the home folder (and any missing intermediate directories) if needed, breaks NTFS inheritance, and applies Full Control for the new user and `BUILTIN\Administrators`.
 
 ## Out of scope
 

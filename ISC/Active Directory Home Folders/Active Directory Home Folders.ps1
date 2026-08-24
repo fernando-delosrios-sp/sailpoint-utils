@@ -11,6 +11,8 @@
 #   - HomeFolderTemplate (string): Path template with $attributeName or {attributeName} placeholders
 #     filled from the account request. Defaults to sAMAccountName when blank or unresolvable.
 #   - HomeFolderDebugEnabled (boolean): Set to "true" to enable detailed debug logging.
+#   - HomeFolderLogFile (string): Optional log file path (e.g. C:\SailPoint\ActiveDirectoryHomeFolders.log).
+#     _YYYYMMDD is appended before the extension. Defaults to %TEMP%\ActiveDirectoryHomeFolders_YYYYMMDD.log.
 #
 # IQService prerequisites:
 #   - Utils.dll must exist in the IQService install directory (unqualified load below).
@@ -23,7 +25,7 @@ Add-Type -Path "Utils.dll"
 Import-Module ActiveDirectory
 
 $logDate = Get-Date -UFormat "%Y%m%d"
-$logFile = Join-Path $env:TEMP "ActiveDirectoryHomeFolders_$logDate.log"
+$logFile = $null
 $enableDebug = $false
 
 ###############################################################################################################################
@@ -31,6 +33,10 @@ $enableDebug = $false
 ###############################################################################################################################
 
 function LogToFile([String] $info) {
+    if (-not $logFile) {
+        return
+    }
+
     $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     "[$Timestamp] $info" | Out-File $logFile -Append
 }
@@ -150,6 +156,19 @@ function Test-IsAbsolutePath([String] $path) {
     return $false
 }
 
+function Ensure-DirectoryExists {
+    param([String] $path)
+
+    if ([string]::IsNullOrWhiteSpace($path)) {
+        return
+    }
+
+    if (-not (Test-Path -Path $path)) {
+        LogToFile("Creating directory: $path")
+        New-Item -ItemType Directory -Force -Path $path | Out-Null
+    }
+}
+
 function Resolve-HomeFolderPath {
     param(
         [String] $basePath,
@@ -175,7 +194,41 @@ function Resolve-HomeFolderPath {
         throw "HomeFolderBasePath is required when HomeFolderTemplate resolves to a relative path ('$expanded')."
     }
 
+    Ensure-DirectoryExists -path $basePath
+
     return Join-Path -Path $basePath -ChildPath $expanded
+}
+
+function Resolve-HomeFolderLogFile {
+    param(
+        [String] $configuredPath,
+        [String] $logDate
+    )
+
+    if ([string]::IsNullOrWhiteSpace($configuredPath)) {
+        return Join-Path $env:TEMP "ActiveDirectoryHomeFolders_$logDate.log"
+    }
+
+    $directory = Split-Path -Path $configuredPath -Parent
+    $fileName = Split-Path -Path $configuredPath -Leaf
+    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
+    $extension = [System.IO.Path]::GetExtension($fileName)
+    $datedFileName = "${baseName}_$logDate$extension"
+
+    if ([string]::IsNullOrWhiteSpace($directory)) {
+        return $datedFileName
+    }
+
+    return Join-Path -Path $directory -ChildPath $datedFileName
+}
+
+function Initialize-HomeFolderLogFile([String] $configuredPath) {
+    $script:logFile = Resolve-HomeFolderLogFile -configuredPath $configuredPath -logDate $logDate
+
+    $logDirectory = Split-Path -Path $script:logFile -Parent
+    if (-not [string]::IsNullOrWhiteSpace($logDirectory) -and -not (Test-Path -Path $logDirectory)) {
+        New-Item -ItemType Directory -Force -Path $logDirectory | Out-Null
+    }
 }
 
 ###############################################################################################################################
@@ -184,12 +237,15 @@ function Resolve-HomeFolderPath {
 
 $appAttributes = Get-ApplicationAttributes
 
+Initialize-HomeFolderLogFile -configuredPath $appAttributes["HomeFolderLogFile"]
+
 if ($appAttributes["HomeFolderDebugEnabled"] -eq "true" -or $appAttributes["HomeFolderDebugEnabled"] -eq "True") {
     $enableDebug = $true
 }
 
 if ($enableDebug) {
     LogToFile("Entering ConnectorAfterCreate for Active Directory Home Folders")
+    LogToFile("Log file: $logFile")
     LogToFile("--- Input Variables ---")
     LogToFile("env:Request: $($env:Request)")
     LogToFile("env:Application: $($env:Application)")
@@ -245,10 +301,10 @@ try {
             LogToFile("Calculated home folder target path: $TargetHomePath")
         }
 
-        if (-not (Test-Path -Path $TargetHomePath)) {
-            LogToFile("Target path missing. Creating folder tree: $TargetHomePath")
-            New-Item -ItemType Directory -Force -Path $TargetHomePath | Out-Null
-        } else {
+        $targetExisted = Test-Path -Path $TargetHomePath
+        Ensure-DirectoryExists -path $TargetHomePath
+
+        if ($targetExisted) {
             LogToFile("Target home folder already exists at path. Updating permissions on existing resource.")
         }
 
