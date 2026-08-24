@@ -84,7 +84,7 @@ After bind, paths are under `ACTIVE_CHANGE_ROOT`. Prefer OpenSpec `artifactPaths
 
 **Done when:** `PRESET_OVERRIDES` contains `venue` and `parallelism`; interactive hosts completed step 2 via structured-choices.
 
-**Non-interactive host** (CI): skip step 2 gate; set `venue` from merged Presets → `venue` (legacy `workspace`), else **`remote`** when shipping intent is clear, else **`local`**; choose `parallelism` per same criteria; lock both in `PRESET_OVERRIDES`; snapshot `TRACKING_SETUP`.
+**Non-interactive host** (CI — no user present to answer; not merely a tool you cannot see): skip step 2 gate; set `venue` from merged Presets → `venue` (legacy `workspace`), else **`remote`** when shipping intent is clear, else **`local`**; choose `parallelism` per same criteria; lock both in `PRESET_OVERRIDES`; snapshot `TRACKING_SETUP`.
 
 #### Parallelism criteria (all venues, including remote)
 

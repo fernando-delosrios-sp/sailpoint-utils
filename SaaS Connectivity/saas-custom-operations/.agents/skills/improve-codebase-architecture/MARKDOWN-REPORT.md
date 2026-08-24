@@ -64,7 +64,9 @@ Domain terms worth formalising via `/domain-modeling`, discovered during analysi
 - **Suggested context** — domain terms to route through `/domain-modeling`: ubiquitous-language spec (OpenSpec) or `CONTEXT.md` (legacy). Do not create those files from the report.
 - **Decision conflict** (if applicable) — one line in a blockquote warning. OpenSpec: cite capability spec slug/requirement (e.g. `module-ordering`). Legacy: cite ADR identifier (e.g. ADR-0007).
 
-No paragraphs of explanation. If the diagram needs a paragraph to be understood, redraw the diagram.
+In OpenSpec repos, picked candidates become change packages after grilling — see [OPENSPEC-CHANGE.md](OPENSPEC-CHANGE.md).
+
+No paragraphs of explanation.
 
 ## Diagram patterns
 

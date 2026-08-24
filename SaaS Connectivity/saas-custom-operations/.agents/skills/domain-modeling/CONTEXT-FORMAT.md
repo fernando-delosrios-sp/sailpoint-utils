@@ -1,6 +1,6 @@
-**Legacy mode only.** When `openspec/config.yaml` or `openspec/specs/` exists, maintain vocabulary in `openspec/specs/ubiquitous-language/spec.md` per [OPENSPEC-MODE.md](./OPENSPEC-MODE.md) instead of CONTEXT.md.
-
 # CONTEXT.md Format
+
+**Legacy mode only.** When `openspec/config.yaml` or `openspec/specs/` exists, maintain vocabulary in `openspec/specs/ubiquitous-language/spec.md` per [OPENSPEC-MODE.md](./OPENSPEC-MODE.md) instead of CONTEXT.md.
 
 ## Structure
 
@@ -42,9 +42,9 @@ _Avoid_: Client, buyer, account
 
 ## Contexts
 
-- [Ordering](./src/ordering/CONTEXT.md) — receives and tracks customer orders
-- [Billing](./src/billing/CONTEXT.md) — generates invoices and processes payments
-- [Fulfillment](./src/fulfillment/CONTEXT.md) — manages warehouse picking and shipping
+- [Ordering](./src/ordering/CONTEXT.md): receives and tracks customer orders
+- [Billing](./src/billing/CONTEXT.md): generates invoices and processes payments
+- [Fulfillment](./src/fulfillment/CONTEXT.md): manages warehouse picking and shipping
 
 ## Relationships
 

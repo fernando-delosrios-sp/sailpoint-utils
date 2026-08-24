@@ -1,6 +1,5 @@
 interface:
   display_name: Improve
-  short_description: Survey any codebase as a senior advisor and produce prioritized, self-contained
+  short_description: Survey any codebase as a senior advisor and produce prioritized handoff
 policy:
   allow_implicit_invocation: false
-
