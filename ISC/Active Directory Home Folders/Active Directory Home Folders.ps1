@@ -8,7 +8,7 @@
 #
 # APPLICATION ATTRIBUTES (connectorAttributes on the AD source):
 #   - HomeFolderBasePath (string): Root path when HomeFolderTemplate resolves to a relative path.
-#   - HomeFolderTemplate (string): Path template with $attributeName or {attributeName} placeholders
+#   - HomeFolderTemplate (string, optional): Path template with $attributeName or {attributeName} placeholders
 #     filled from the account request. Defaults to sAMAccountName when blank or unresolvable.
 #   - HomeFolderDebugEnabled (boolean): Set to "true" to enable detailed debug logging.
 #   - HomeFolderLogFile (string): Optional log file path (e.g. C:\SailPoint\ActiveDirectoryHomeFolders.log).

@@ -81,7 +81,7 @@ Configure these attributes on your AD source using the [SailPoint Identity Secur
 | Attribute | Type | Description |
 | :--- | :--- | :--- |
 | `HomeFolderBasePath` | `string` | Root path used when `HomeFolderTemplate` resolves to a **relative** path. Ignored when the expanded template is absolute. Required for relative templates. |
-| `HomeFolderTemplate` | `string` | Path template with placeholders filled from the account request. Supports `$attributeName` and `{attributeName}` (case-insensitive attribute match). If blank or still containing unresolved placeholders after expansion, defaults to `sAMAccountName`. |
+| `HomeFolderTemplate` | `string` | **Optional.** Path template with placeholders filled from the account request. Supports `$attributeName` and `{attributeName}` (case-insensitive attribute match). If blank or still containing unresolved placeholders after expansion, defaults to `sAMAccountName`. |
 | `HomeFolderDebugEnabled` | `boolean` | Set to `"true"` to enable detailed debug logging. |
 | `HomeFolderLogFile` | `string` | **Optional.** Log file path such as `C:\SailPoint\ActiveDirectoryHomeFolders.log`. `_YYYYMMDD` is appended before the extension (e.g. `ActiveDirectoryHomeFolders_20260824.log`). Defaults to `%TEMP%\ActiveDirectoryHomeFolders_YYYYMMDD.log` when not set. |
 
