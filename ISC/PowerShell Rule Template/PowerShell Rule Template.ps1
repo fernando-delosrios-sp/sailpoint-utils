@@ -1,33 +1,29 @@
 ###############################################################################################################################
-# ConnectorAfterCreate rule for Active Directory home folder provisioning.
+# ISC IQService PowerShell Connector Rule Template
 #
-# Built from ISC/PowerShell Rule Template. Keep the template bootstrap and helper functions unchanged.
-# Home-folder logic lives in HOME FOLDER HELPERS and CUSTOM PROCESS CODE.
+# Copy this file as the starting point for ConnectorBeforeCreate, ConnectorBeforeModify, ConnectorBeforeDelete,
+# ConnectorAfterCreate, ConnectorAfterModify, and ConnectorAfterDelete rules on Active Directory and Azure AD.
 #
-# Upload this script as a Connector Rule (type: ConnectorAfterCreate) using the
-# SailPoint Identity Security Cloud VS Code extension:
+# Upload the finished script as a Connector Rule using the SailPoint Identity Security Cloud VS Code extension:
 # https://marketplace.visualstudio.com/items?itemName=yannick-beot-sp.vscode-sailpoint-identitynow
-# Attach the rule to your AD source through connectorAttributes.nativeRules.
+# Attach the rule to your source through connectorAttributes.nativeRules.
 #
-# APPLICATION ATTRIBUTES (connectorAttributes on the AD source):
-#   - HomeFolderBasePath (string): Root path when HomeFolderTemplate resolves to a relative path.
-#   - HomeFolderTemplate (string, optional): Path template with $attributeName or {attributeName} placeholders
-#     filled from the account request. Defaults to sAMAccountName when blank or unresolvable.
-#   - HomeFolderDebugEnabled (boolean): Set to "true" to enable detailed process debug logging.
-#   - HomeFolderUtilsDllPath (string): Optional full path to Utils.dll when the IQService directory lookup fails.
-#   - HomeFolderFailOnError (boolean): Optional override of PwshSilentError. "false" keeps the created AD account
-#     and only logs the home folder failure.
-#   - PwshSilentError, PwshUnsafePayloadLogging, PwshReplay (boolean): Template options. Defaults false.
-#     Script variables of the same name, if defined, take precedence.
+# APPLICATION ATTRIBUTES (connectorAttributes on the source). Defaults are false when omitted.
+# Script variables of the same name, if defined, take precedence over these attributes.
+#   - PwshSilentError (boolean): When true, process failures exit 0 and IQService reports success.
+#   - PwshUnsafePayloadLogging (boolean): When true, logs and replay scripts store raw payloads.
+#   - PwshReplay (boolean): When true, write a timestamped .replay.ps1 next to the log for this run.
 #
-# IQService prerequisites:
-#   - Utils.dll must be in the IQService install directory, or HomeFolderUtilsDllPath must point to it.
-#   - The IQService Run As account must be able to write under <IQService>\scripts.
-#   - The IQService Run As account must be able to create folders and set NTFS ACLs on the target share.
+# SailPoint documentation:
+# https://developer.sailpoint.com/docs/extensibility/rules/connector-rules
+#
+# IQService copies each uploaded rule to a generated runtime file named Script_<GUID>.ps1 in the IQService folder.
+# This template preserves that runtime script, a self-contained replay script with Request/Application
+# context, and a per-run log under <IQService>\scripts.
 ###############################################################################################################################
 
 ###############################################################################################################################
-# CONFIGURATION — edit these constants when you copy this template
+# CONFIGURATION - edit these constants when you copy this template
 ###############################################################################################################################
 
 # Set this to match the connector rule type configured in ISC for this script.
@@ -37,12 +33,11 @@
 $ConnectorRuleType = "ConnectorAfterCreate"
 
 # Optional display name from the ISC connector rule. Used as the artifact filename prefix when set; otherwise the runtime GUID is used.
-$ConnectorRuleName = "Active Directory Home Folders"
+$ConnectorRuleName = ""
 
 # Optional script overrides. Define any of these to take precedence over the source connectorAttributes
-# of the same name. Leave them undefined to use PwshSilentError, PwshUnsafePayloadLogging, and
-# PwshReplay from the AD source (default false). HomeFolderFailOnError can still override PwshSilentError
-# during process.
+# of the same name (PwshSilentError, PwshUnsafePayloadLogging, PwshReplay). Leave them undefined
+# to use the application attributes, which default to false.
 # $PwshSilentError = $false
 # $PwshUnsafePayloadLogging = $false
 # $PwshReplay = $false
@@ -51,7 +46,7 @@ $ConnectorRuleName = "Active Directory Home Folders"
 $ScriptsSubfolder = "scripts"
 
 ###############################################################################################################################
-# RUNTIME STATE — do not edit below this line in copied rules unless you extend the template itself
+# RUNTIME STATE - do not edit below this line in copied rules unless you extend the template itself
 ###############################################################################################################################
 
 $script:RuleLogFile = $null
@@ -59,9 +54,12 @@ $script:RuleEmergencyLogFile = $null
 $script:RuleArtifactsDirectory = $null
 $script:RuleRuntimeBaseName = $null
 $script:RuleRuntimeScriptPath = $null
+$script:RuleRuntimeScriptResolved = $false
+$script:RuleRuntimeScriptReason = $null
 $script:RuleScriptDumpPath = $null
 $script:RuleReplayScriptPath = $null
 $script:RuleIQServiceDirectory = $null
+$script:RuleIQServiceDirectorySource = $null
 $script:RulePhase = "bootstrap"
 $script:RuleReplayMode = $false
 $script:RuleApplicationAttributes = $null
@@ -69,7 +67,6 @@ $script:RuleApplicationAttributesLoaded = $false
 $script:PwshSilentErrorSource = "default"
 $script:PwshUnsafePayloadLoggingSource = "default"
 $script:PwshReplaySource = "default"
-$script:HomeFolderDebugEnabled = $false
 
 ###############################################################################################################################
 # HELPER FUNCTIONS
@@ -207,26 +204,234 @@ function Get-RuleArtifactBaseName {
     return "RuleTemplate"
 }
 
+function Get-ApplicationEntryValue($entry) {
+    if ($entry.HasAttribute("value")) {
+        return $entry.GetAttribute("value")
+    }
+
+    $valueNode = $entry.SelectSingleNode("value")
+    if ($valueNode) {
+        return $valueNode.InnerText.Trim()
+    }
+
+    return $null
+}
+
+function Get-ApplicationAttributes {
+    if ($script:RuleApplicationAttributesLoaded) {
+        return $script:RuleApplicationAttributes
+    }
+
+    $appAttributes = @{}
+    $script:RuleApplicationAttributes = $appAttributes
+    $script:RuleApplicationAttributesLoaded = $true
+
+    if (-not $env:Application) {
+        Write-RuleLog -Level WARN -Message "env:Application is null or empty. No source attributes are available."
+        return $appAttributes
+    }
+
+    try {
+        $appXml = [xml]$env:Application
+
+        # ISC sends a bare <Map> root. Only ever select TOP-LEVEL entries: nested <Map> values such as
+        # deltaAggregation contain their own <entry> elements whose keys would otherwise collide.
+        $entries = $null
+        foreach ($xpath in @("/Map/entry", "/Application/Attributes/Map/entry", "//Attributes/Map/entry")) {
+            $candidate = $appXml.SelectNodes($xpath)
+            if ($candidate -and $candidate.Count -gt 0) {
+                $entries = $candidate
+                Write-RuleLog -Level INFO -Message "Source attributes read using XPath '$xpath' ($($candidate.Count) entries)."
+                break
+            }
+        }
+
+        if (-not $entries) {
+            Write-RuleLog -Level WARN -Message "No source attributes found in env:Application. Root element is '$($appXml.DocumentElement.Name)', which none of the known payload shapes match."
+            return $appAttributes
+        }
+
+        foreach ($entry in $entries) {
+            $key = $entry.GetAttribute("key")
+            if (-not [string]::IsNullOrWhiteSpace($key)) {
+                $appAttributes[$key] = Get-ApplicationEntryValue $entry
+            }
+        }
+    } catch {
+        Write-RuleLog -Level ERROR -Message "Error parsing application attributes: $(Format-RuleErrorRecord $_)"
+    }
+
+    return $appAttributes
+}
+
+function Get-AttributeValueCaseInsensitive([hashtable] $attributes, [String] $name) {
+    if (-not $attributes) {
+        return $null
+    }
+
+    foreach ($entry in $attributes.GetEnumerator()) {
+        if ($entry.Key -ieq $name) {
+            return [string]$entry.Value
+        }
+    }
+
+    return $null
+}
+
+function ConvertTo-RuleBoolean {
+    param(
+        $Value,
+        [bool] $Default = $false
+    )
+
+    if ($Value -is [bool]) {
+        return [bool]$Value
+    }
+
+    if ($null -eq $Value) {
+        return $Default
+    }
+
+    $text = ([string]$Value).Trim()
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return $Default
+    }
+
+    if ($text -match '^(?i)(true|1|yes)$') {
+        return $true
+    }
+
+    if ($text -match '^(?i)(false|0|no)$') {
+        return $false
+    }
+
+    Write-RuleLog -Level WARN -Message "Could not parse '$text' as boolean. Using $Default."
+    return $Default
+}
+
+function Get-ScriptVariableIfDefined {
+    param([Parameter(Mandatory = $true)][string] $Name)
+
+    $variable = Get-Variable -Name $Name -Scope Script -ErrorAction SilentlyContinue
+    if ($null -ne $variable) {
+        return $variable
+    }
+
+    return (Get-Variable -Name $Name -ErrorAction SilentlyContinue)
+}
+
+function Resolve-RuleBooleanOption {
+    param(
+        [Parameter(Mandatory = $true)][string] $Name,
+        [bool] $Default = $false
+    )
+
+    $scriptVariable = Get-ScriptVariableIfDefined -Name $Name
+    if ($null -ne $scriptVariable) {
+        $value = ConvertTo-RuleBoolean -Value $scriptVariable.Value -Default $Default
+        Write-RuleLog -Level INFO -Phase bootstrap -Message ("{0} : {1} (script variable)" -f $Name, $value)
+        return @{ Value = $value; Source = "script" }
+    }
+
+    $appRaw = Get-AttributeValueCaseInsensitive $script:RuleApplicationAttributes $Name
+    if (-not [string]::IsNullOrWhiteSpace([string]$appRaw)) {
+        $value = ConvertTo-RuleBoolean -Value $appRaw -Default $Default
+        Write-RuleLog -Level INFO -Phase bootstrap -Message ("{0} : {1} (application attribute)" -f $Name, $value)
+        return @{ Value = $value; Source = "application" }
+    }
+
+    Write-RuleLog -Level INFO -Phase bootstrap -Message ("{0} : {1} (default)" -f $Name, $Default)
+    return @{ Value = $Default; Source = "default" }
+}
+
+function Initialize-RuleOptions {
+    $script:RuleApplicationAttributes = Get-ApplicationAttributes
+
+    $silent = Resolve-RuleBooleanOption -Name "PwshSilentError" -Default $false
+    $unsafe = Resolve-RuleBooleanOption -Name "PwshUnsafePayloadLogging" -Default $false
+    $replay = Resolve-RuleBooleanOption -Name "PwshReplay" -Default $false
+
+    $script:PwshSilentError = $silent.Value
+    $script:PwshSilentErrorSource = $silent.Source
+    $script:PwshUnsafePayloadLogging = $unsafe.Value
+    $script:PwshUnsafePayloadLoggingSource = $unsafe.Source
+    $script:PwshReplay = $replay.Value
+    $script:PwshReplaySource = $replay.Source
+}
+
+# Only the script dump and the replay script need the runtime path. Logging must not depend on it,
+# so an unresolvable path is reported rather than thrown: IQService can execute a rule body without
+# leaving a backing .ps1 file, and that must not cost us the log.
 function Resolve-RuntimeScriptIdentity {
     param([string] $ScriptPath)
 
+    $identity = @{
+        ScriptPath = $null
+        FileName   = $null
+        BaseName   = $null
+        Resolved   = $false
+        Reason     = $null
+    }
+
     if ([string]::IsNullOrWhiteSpace($ScriptPath)) {
-        throw "Unable to determine the runtime script path. `$PSCommandPath was empty."
+        $identity.Reason = "Both `$PSCommandPath and `$MyInvocation.MyCommand.Path were empty, so IQService ran this rule without a backing script file."
+        return $identity
     }
 
     if (-not (Test-Path -LiteralPath $ScriptPath)) {
-        throw "Runtime script path does not exist: '$ScriptPath'"
+        $identity.Reason = "Runtime script path does not exist: '$ScriptPath'"
+        return $identity
     }
 
     $resolvedPath = (Resolve-Path -LiteralPath $ScriptPath).Path
     $fileName = Split-Path -Path $resolvedPath -Leaf
-    $baseName = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
 
-    return @{
-        ScriptPath = $resolvedPath
-        FileName   = $fileName
-        BaseName   = $baseName
+    $identity.ScriptPath = $resolvedPath
+    $identity.FileName = $fileName
+    $identity.BaseName = [System.IO.Path]::GetFileNameWithoutExtension($fileName)
+    $identity.Resolved = $true
+
+    return $identity
+}
+
+function Test-LooksLikeIQServiceDirectory {
+    param([string] $Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or -not (Test-Path -LiteralPath $Path)) {
+        return $false
     }
+
+    foreach ($marker in @("IQService.exe", "Utils.dll")) {
+        if (Test-Path -LiteralPath (Join-Path -Path $Path -ChildPath $marker)) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
+function Expand-IQServiceDirectoryCandidates {
+    param([string[]] $Paths)
+
+    $expanded = @()
+    foreach ($path in $Paths) {
+        if ([string]::IsNullOrWhiteSpace($path)) {
+            continue
+        }
+
+        $expanded += $path
+
+        try {
+            $parent = Split-Path -Path $path -Parent
+            if (-not [string]::IsNullOrWhiteSpace($parent)) {
+                $expanded += $parent
+            }
+        } catch {
+            # Ignore.
+        }
+    }
+
+    return $expanded
 }
 
 function Resolve-IQServiceDirectory {
@@ -275,7 +480,10 @@ function Resolve-IQServiceDirectory {
         Write-RuleLog -Level WARN -Phase bootstrap -Message "Could not enumerate IQService registry entries: $($_.Exception.Message)"
     }
 
+    $candidates = Expand-IQServiceDirectoryCandidates -Paths $candidates
+
     $attempted = @()
+    $fallback = $null
     foreach ($candidate in $candidates) {
         if ([string]::IsNullOrWhiteSpace($candidate)) {
             continue
@@ -285,9 +493,27 @@ function Resolve-IQServiceDirectory {
         }
         $attempted += $candidate
 
-        if (Test-Path -LiteralPath $candidate) {
-            return (Resolve-Path -LiteralPath $candidate).Path
+        if (-not (Test-Path -LiteralPath $candidate)) {
+            continue
         }
+
+        $resolved = (Resolve-Path -LiteralPath $candidate).Path
+        if (-not $fallback) {
+            $fallback = $resolved
+        }
+
+        if (Test-LooksLikeIQServiceDirectory -Path $resolved) {
+            $script:RuleIQServiceDirectorySource = "IQService.exe or Utils.dll found in the directory"
+            return $resolved
+        }
+    }
+
+    if ($fallback) {
+        # Nothing carried an IQService marker, so this is the first readable candidate and may well be
+        # the working directory rather than the install directory. Say so in the log instead of implying
+        # the lookup succeeded.
+        $script:RuleIQServiceDirectorySource = "first readable candidate, no IQService marker found in any of: $($attempted -join '; ')"
+        return $fallback
     }
 
     throw "Unable to resolve the IQService directory. Checked: $($attempted -join '; ')"
@@ -345,7 +571,15 @@ function Initialize-RuleArtifacts {
     $script:RuleLogFile = Join-Path -Path $script:RuleArtifactsDirectory -ChildPath ($artifactBaseName + "_" + $stamp + ".log")
     New-Item -ItemType File -Path $script:RuleLogFile -Force -ErrorAction Stop | Out-Null
 
-    $script:RuleScriptDumpPath = Join-Path -Path $script:RuleArtifactsDirectory -ChildPath ($artifactBaseName + [System.IO.Path]::GetExtension($runtimeIdentity.FileName))
+    $dumpExtension = ".ps1"
+    if (-not [string]::IsNullOrWhiteSpace($runtimeIdentity.FileName)) {
+        $runtimeExtension = [System.IO.Path]::GetExtension($runtimeIdentity.FileName)
+        if (-not [string]::IsNullOrWhiteSpace($runtimeExtension)) {
+            $dumpExtension = $runtimeExtension
+        }
+    }
+
+    $script:RuleScriptDumpPath = Join-Path -Path $script:RuleArtifactsDirectory -ChildPath ($artifactBaseName + $dumpExtension)
     $script:RuleReplayScriptPath = Join-Path -Path $script:RuleArtifactsDirectory -ChildPath ($artifactBaseName + "_" + $stamp + ".replay.ps1")
 }
 
@@ -427,7 +661,7 @@ function Write-ReplayScript {
 
     $headerLines = @(
         "###############################################################################################################################"
-        "# REPLAY WRAPPER — generated by PowerShell Rule Template. Do not upload this file to ISC."
+        "# REPLAY WRAPPER - generated by PowerShell Rule Template. Do not upload this file to ISC."
         "# Restores `$env:Request` and `$env:Application` from the original IQService invocation, then runs the captured script."
         "# Captured at: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff") local / $((Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.fff")) UTC"
         "# Runtime script: $sourcePath"
@@ -586,9 +820,14 @@ function Write-RuleContextBlock {
         }
 
         Write-RuleLog -Level INFO -Message ("PSScriptRoot               : {0}" -f $PSScriptRoot)
-        Write-RuleLog -Level INFO -Message ("RuntimeScriptPath          : {0}" -f $script:RuleRuntimeScriptPath)
+        if ($script:RuleRuntimeScriptResolved) {
+            Write-RuleLog -Level INFO -Message ("RuntimeScriptPath          : {0}" -f $script:RuleRuntimeScriptPath)
+        } else {
+            Write-RuleLog -Level WARN -Message ("RuntimeScriptPath          : <unresolved> {0}" -f $script:RuleRuntimeScriptReason)
+        }
         Write-RuleLog -Level INFO -Message ("RuntimeScriptName          : {0}" -f $script:RuleRuntimeBaseName)
         Write-RuleLog -Level INFO -Message ("IQServiceDirectory         : {0}" -f $script:RuleIQServiceDirectory)
+        Write-RuleLog -Level INFO -Message ("IQServiceDirectorySource   : {0}" -f $script:RuleIQServiceDirectorySource)
         Write-RuleLog -Level INFO -Message ("ArtifactsDirectory         : {0}" -f $script:RuleArtifactsDirectory)
         Write-RuleLog -Level INFO -Message ("LogFile                    : {0}" -f $script:RuleLogFile)
         Write-RuleLog -Level INFO -Message ("ScriptDumpPath             : {0}" -f $script:RuleScriptDumpPath)
@@ -646,430 +885,12 @@ function Exit-Rule {
     }
 
     if (-not $script:PwshSilentError) {
-        Write-RuleLog -Level ERROR -Phase completion -Message "Rule failed. Exiting with code 1 because PwshSilentError is false. IQService reports this rule as failed. The AD account already exists at this point, so whether ISC removes it depends on rollbackCreatedAccountOnError."
+        Write-RuleLog -Level ERROR -Phase completion -Message "Rule failed. Exiting with code 1 because PwshSilentError is false. IQService reports this rule as failed. Before rules abort the pending operation; for After rules the operation is already complete and rollback depends on rollbackCreatedAccountOnError."
         exit 1
     }
 
     Write-RuleLog -Level WARN -Phase completion -Message "Rule failed, but exiting with code 0 because PwshSilentError is true. IQService reports success and the failure is recorded only in this log."
     exit 0
-}
-
-###############################################################################################################################
-# HOME FOLDER HELPERS
-###############################################################################################################################
-
-function Write-HomeFolderDebug([string] $Message) {
-    if ($script:HomeFolderDebugEnabled) {
-        Write-RuleLog -Level DEBUG -Message $Message
-    }
-}
-
-# A source attribute is serialized either as an attribute on <entry> or as a nested <value> element:
-#   <entry key="HomeFolderBasePath" value="S:\HomeDir" />
-#   <entry key="HomeFolderDebugEnabled"><value><Boolean>true</Boolean></value></entry>
-# Read both explicitly rather than relying on PowerShell's XML adapter, which resolves $entry.value
-# differently depending on which of the two forms it encounters.
-function Get-ApplicationEntryValue($entry) {
-    if ($entry.HasAttribute("value")) {
-        return $entry.GetAttribute("value")
-    }
-
-    $valueNode = $entry.SelectSingleNode("value")
-    if ($valueNode) {
-        return $valueNode.InnerText.Trim()
-    }
-
-    return $null
-}
-
-function Get-AttributeValueFromAccountRequest($request, [String] $targetAttribute) {
-    $value = $null
-
-    if ($request) {
-        foreach ($attrib in $request.AttributeRequests) {
-            if ($attrib.Name -ieq $targetAttribute) {
-                $value = $attrib.Value
-                break
-            }
-        }
-    } else {
-        Write-RuleLog -Level WARN -Message "Account request data was null"
-    }
-
-    return $value
-}
-
-function Get-ApplicationAttributes {
-    if ($script:RuleApplicationAttributesLoaded) {
-        return $script:RuleApplicationAttributes
-    }
-
-    $appAttributes = @{}
-    $script:RuleApplicationAttributes = $appAttributes
-    $script:RuleApplicationAttributesLoaded = $true
-
-    if (-not $env:Application) {
-        Write-RuleLog -Level WARN -Message "env:Application is null or empty. No source attributes are available."
-        return $appAttributes
-    }
-
-    try {
-        $appXml = [xml]$env:Application
-
-        # ISC sends a bare <Map> root. Only ever select TOP-LEVEL entries: nested <Map> values such as
-        # deltaAggregation contain their own <entry> elements whose keys would otherwise collide.
-        $entries = $null
-        foreach ($xpath in @("/Map/entry", "/Application/Attributes/Map/entry", "//Attributes/Map/entry")) {
-            $candidate = $appXml.SelectNodes($xpath)
-            if ($candidate -and $candidate.Count -gt 0) {
-                $entries = $candidate
-                Write-RuleLog -Level INFO -Message "Source attributes read using XPath '$xpath' ($($candidate.Count) entries)."
-                break
-            }
-        }
-
-        if (-not $entries) {
-            Write-RuleLog -Level WARN -Message "No source attributes found in env:Application. Root element is '$($appXml.DocumentElement.Name)', which none of the known payload shapes match."
-            return $appAttributes
-        }
-
-        foreach ($entry in $entries) {
-            $key = $entry.GetAttribute("key")
-            if (-not [string]::IsNullOrWhiteSpace($key)) {
-                $appAttributes[$key] = Get-ApplicationEntryValue $entry
-            }
-        }
-    } catch {
-        Write-RuleLog -Level ERROR -Message "Error parsing application attributes: $(Format-RuleErrorRecord $_)"
-    }
-
-    return $appAttributes
-}
-
-function Get-AccountRequestAttributeMap($request) {
-    $attributes = @{}
-
-    if (-not $request) {
-        return $attributes
-    }
-
-    if ($request.NativeIdentity) {
-        $attributes["nativeIdentity"] = $request.NativeIdentity
-    }
-
-    foreach ($attrib in $request.AttributeRequests) {
-        $attributes[$attrib.Name] = $attrib.Value
-    }
-
-    return $attributes
-}
-
-function Get-AttributeValueCaseInsensitive([hashtable] $attributes, [String] $name) {
-    if (-not $attributes) {
-        return $null
-    }
-
-    foreach ($entry in $attributes.GetEnumerator()) {
-        if ($entry.Key -ieq $name) {
-            return [string]$entry.Value
-        }
-    }
-
-    return $null
-}
-
-function ConvertTo-RuleBoolean {
-    param(
-        $Value,
-        [bool] $Default = $false
-    )
-
-    if ($Value -is [bool]) {
-        return [bool]$Value
-    }
-
-    if ($null -eq $Value) {
-        return $Default
-    }
-
-    $text = ([string]$Value).Trim()
-    if ([string]::IsNullOrWhiteSpace($text)) {
-        return $Default
-    }
-
-    if ($text -match '^(?i)(true|1|yes)$') {
-        return $true
-    }
-
-    if ($text -match '^(?i)(false|0|no)$') {
-        return $false
-    }
-
-    Write-RuleLog -Level WARN -Message "Could not parse '$text' as boolean. Using $Default."
-    return $Default
-}
-
-function Get-ScriptVariableIfDefined {
-    param([Parameter(Mandatory = $true)][string] $Name)
-
-    $variable = Get-Variable -Name $Name -Scope Script -ErrorAction SilentlyContinue
-    if ($null -ne $variable) {
-        return $variable
-    }
-
-    return (Get-Variable -Name $Name -ErrorAction SilentlyContinue)
-}
-
-function Resolve-RuleBooleanOption {
-    param(
-        [Parameter(Mandatory = $true)][string] $Name,
-        [bool] $Default = $false
-    )
-
-    $scriptVariable = Get-ScriptVariableIfDefined -Name $Name
-    if ($null -ne $scriptVariable) {
-        $value = ConvertTo-RuleBoolean -Value $scriptVariable.Value -Default $Default
-        Write-RuleLog -Level INFO -Phase bootstrap -Message ("{0} : {1} (script variable)" -f $Name, $value)
-        return @{ Value = $value; Source = "script" }
-    }
-
-    $appRaw = Get-AttributeValueCaseInsensitive $script:RuleApplicationAttributes $Name
-    if (-not [string]::IsNullOrWhiteSpace([string]$appRaw)) {
-        $value = ConvertTo-RuleBoolean -Value $appRaw -Default $Default
-        Write-RuleLog -Level INFO -Phase bootstrap -Message ("{0} : {1} (application attribute)" -f $Name, $value)
-        return @{ Value = $value; Source = "application" }
-    }
-
-    Write-RuleLog -Level INFO -Phase bootstrap -Message ("{0} : {1} (default)" -f $Name, $Default)
-    return @{ Value = $Default; Source = "default" }
-}
-
-function Initialize-RuleOptions {
-    $script:RuleApplicationAttributes = Get-ApplicationAttributes
-
-    $silent = Resolve-RuleBooleanOption -Name "PwshSilentError" -Default $false
-    $unsafe = Resolve-RuleBooleanOption -Name "PwshUnsafePayloadLogging" -Default $false
-    $replay = Resolve-RuleBooleanOption -Name "PwshReplay" -Default $false
-
-    $script:PwshSilentError = $silent.Value
-    $script:PwshSilentErrorSource = $silent.Source
-    $script:PwshUnsafePayloadLogging = $unsafe.Value
-    $script:PwshUnsafePayloadLoggingSource = $unsafe.Source
-    $script:PwshReplay = $replay.Value
-    $script:PwshReplaySource = $replay.Source
-}
-
-function Expand-HomeFolderTemplate([String] $template, [hashtable] $attributes) {
-    if ([string]::IsNullOrWhiteSpace($template)) {
-        return $null
-    }
-
-    $result = $template
-
-    $result = [regex]::Replace($result, '\$([A-Za-z_][A-Za-z0-9_]*)', {
-        param($match)
-        $name = $match.Groups[1].Value
-        $value = Get-AttributeValueCaseInsensitive $attributes $name
-        if ($null -ne $value) { return $value }
-        return $match.Value
-    })
-
-    $result = [regex]::Replace($result, '\{([A-Za-z_][A-Za-z0-9_]*)\}', {
-        param($match)
-        $name = $match.Groups[1].Value
-        $value = Get-AttributeValueCaseInsensitive $attributes $name
-        if ($null -ne $value) { return $value }
-        return $match.Value
-    })
-
-    return $result
-}
-
-function Test-TemplateHasUnresolvedTokens([String] $value) {
-    if ([string]::IsNullOrWhiteSpace($value)) {
-        return $true
-    }
-
-    return ($value -match '\$[A-Za-z_][A-Za-z0-9_]*' -or $value -match '\{[A-Za-z_][A-Za-z0-9_]*\}')
-}
-
-function Test-IsAbsolutePath([String] $path) {
-    if ([string]::IsNullOrWhiteSpace($path)) {
-        return $false
-    }
-
-    if ($path -match '^\\\\[^\\]+\\') {
-        return $true
-    }
-
-    if ($path -match '^[A-Za-z]:\\') {
-        return $true
-    }
-
-    return $false
-}
-
-# '\\fileserver\HomeDir' is a share root, not a folder: the first component is always the server name.
-# Returns $null for a UNC path with no share component, such as '\\fileserver'.
-function Get-UncShareRoot([String] $path) {
-    if ([string]::IsNullOrWhiteSpace($path)) {
-        return $null
-    }
-
-    if ($path -match '^\\\\([^\\]+)\\([^\\]+)') {
-        return "\\{0}\{1}" -f $matches[1], $matches[2]
-    }
-
-    return $null
-}
-
-function Test-IsPathRoot([String] $path) {
-    if ([string]::IsNullOrWhiteSpace($path)) {
-        return $false
-    }
-
-    $trimmed = $path.TrimEnd('\')
-
-    if ($trimmed -match '^[A-Za-z]:$') {
-        return $true
-    }
-
-    $shareRoot = Get-UncShareRoot $trimmed
-    return ($shareRoot -and $shareRoot -ieq $trimmed)
-}
-
-function Ensure-DirectoryExists {
-    param([String] $path)
-
-    if ([string]::IsNullOrWhiteSpace($path)) {
-        return
-    }
-
-    if (Test-Path -LiteralPath $path) {
-        return
-    }
-
-    # New-Item cannot create a drive root or a UNC share root. With -Force it walks up to an
-    # illegal parent instead, and reports "The path is not of a legal form" rather than the real cause.
-    if (Test-IsPathRoot $path) {
-        throw "'$path' is a root, not a folder, so it cannot be created. $(Get-PathRootAdvice $path)"
-    }
-
-    Write-RuleLog -Level INFO -Message "Creating directory: $path"
-    # -ErrorAction Stop, otherwise the failure is non-terminating and the caller's catch is skipped.
-    New-Item -ItemType Directory -Force -Path $path -ErrorAction Stop | Out-Null
-}
-
-function Get-PathRootAdvice([String] $path) {
-    if ($path -match '^\\\\([^\\]+)\\([^\\]+)') {
-        return "'$path' is read as server '$($matches[1])' and share '$($matches[2])'. Both must already exist and be reachable from this IQService host, and the IQService Run As account must be able to write to the share. If '$($matches[1])' is not a server name, the server is missing from the path: use \\<fileserver>\$($matches[1])\$($matches[2])."
-    }
-
-    return "Point HomeFolderBasePath at a folder inside an existing share or volume."
-}
-
-# Two roots fail silently under a Windows service: a mapped drive letter (per-logon, so invisible to
-# the service) and an unreachable UNC share. Both surface as "path not found" or as an unhelpful
-# New-Item argument error, so name the actual cause here.
-function Assert-PathRootAvailable([String] $path) {
-    if ([string]::IsNullOrWhiteSpace($path)) {
-        return
-    }
-
-    if ($path -match '^([A-Za-z]):\\') {
-        $driveRoot = $matches[1] + ":\"
-        if (Test-Path -LiteralPath $driveRoot) {
-            return
-        }
-
-        throw "Drive '$driveRoot' is not available to the account running IQService. Mapped network drives are per-logon and are normally invisible to a Windows service, even when the same account can see them interactively. Use a UNC path such as \\server\share in HomeFolderBasePath instead of a mapped drive letter."
-    }
-
-    if (-not $path.StartsWith("\\")) {
-        return
-    }
-
-    $shareRoot = Get-UncShareRoot $path
-    if (-not $shareRoot) {
-        throw "'$path' is not a usable UNC path. A UNC path needs both a server and a share, as in \\fileserver\HomeDir."
-    }
-
-    if (Test-Path -LiteralPath $shareRoot) {
-        Write-HomeFolderDebug "Share root '$shareRoot' is reachable."
-        return
-    }
-
-    throw "Share root '$shareRoot' is not reachable from this IQService host. $(Get-PathRootAdvice $shareRoot)"
-}
-
-function Resolve-HomeFolderPath {
-    param(
-        [String] $basePath,
-        [String] $template,
-        [hashtable] $attributes,
-        [String] $samAccountName
-    )
-
-    $expanded = Expand-HomeFolderTemplate $template $attributes
-
-    if ([string]::IsNullOrWhiteSpace($expanded) -or (Test-TemplateHasUnresolvedTokens $expanded)) {
-        Write-HomeFolderDebug "Template blank or contains unresolved placeholders. Falling back to sAMAccountName: '$samAccountName'"
-        $expanded = $samAccountName
-    }
-
-    if (Test-IsAbsolutePath $expanded) {
-        Assert-PathRootAvailable $expanded
-        return $expanded
-    }
-
-    if ([string]::IsNullOrWhiteSpace($basePath)) {
-        throw "HomeFolderBasePath is required when HomeFolderTemplate resolves to a relative path ('$expanded')."
-    }
-
-    Assert-PathRootAvailable $basePath
-    Ensure-DirectoryExists -path $basePath
-
-    return Join-Path -Path $basePath -ChildPath $expanded
-}
-
-function Import-SailPointUtils([String] $configuredPath) {
-    $candidates = @()
-
-    if (-not [string]::IsNullOrWhiteSpace($configuredPath)) {
-        $candidates += $configuredPath
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($script:RuleIQServiceDirectory)) {
-        $candidates += (Join-Path $script:RuleIQServiceDirectory "Utils.dll")
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
-        $candidates += (Join-Path $PSScriptRoot "Utils.dll")
-    }
-
-    $attempted = @()
-
-    foreach ($candidate in $candidates) {
-        if ($attempted -contains $candidate) {
-            continue
-        }
-        $attempted += $candidate
-
-        if (-not (Test-Path -Path $candidate)) {
-            Write-HomeFolderDebug "Utils.dll not present at: $candidate"
-            continue
-        }
-
-        try {
-            Add-Type -Path $candidate
-            Write-RuleLog -Level INFO -Message "Loaded SailPoint Utils assembly from: $candidate"
-            return $candidate
-        } catch {
-            Write-RuleLog -Level WARN -Message "Failed to load Utils.dll from '$candidate': $($_.Exception.Message)"
-        }
-    }
-
-    throw "Utils.dll could not be loaded. Searched: $($attempted -join '; '). Set HomeFolderUtilsDllPath on the AD source to the full path of Utils.dll."
 }
 
 ###############################################################################################################################
@@ -1092,6 +913,8 @@ if ([string]::IsNullOrWhiteSpace($ruleRuntimeScriptPath)) {
 
 $runtimeIdentity = Resolve-RuntimeScriptIdentity -ScriptPath $ruleRuntimeScriptPath
 $script:RuleRuntimeScriptPath = $runtimeIdentity.ScriptPath
+$script:RuleRuntimeScriptResolved = $runtimeIdentity.Resolved
+$script:RuleRuntimeScriptReason = $runtimeIdentity.Reason
 $script:RuleReplayMode = ($env:SAILPOINT_RULE_REPLAY -eq "1")
 
 try {
@@ -1112,15 +935,15 @@ try {
 
 if ($script:RuleReplayMode) {
     Write-RuleLog -Level INFO -Phase bootstrap -Message "Replay mode: restoring captured Request/Application and skipping dump/replay writes."
+} elseif (-not $script:RuleRuntimeScriptResolved) {
+    Write-RuleLog -Level WARN -Phase bootstrap -Message ("Skipping the script dump and replay script because the runtime script path is unresolved. {0} Logging and rule logic are unaffected." -f $script:RuleRuntimeScriptReason)
 } else {
+    # Both artifacts are debugging aids. A failure here must not fail the connector operation, so it is
+    # logged and the rule continues.
     try {
         Copy-RuntimeScriptDump -sourcePath $script:RuleRuntimeScriptPath -destinationPath $script:RuleScriptDumpPath
     } catch {
-        if (-not $script:RuleEmergencyLogFile) {
-            Initialize-EmergencyLogFile -runtimeBaseName (Get-RuleArtifactBaseName -FallbackBaseName $runtimeIdentity.BaseName) | Out-Null
-        }
-        Write-RuleLog -Level ERROR -Phase bootstrap -Message ("Script dump failed: $(Format-RuleErrorRecord $_)")
-        Exit-Rule 1
+        Write-RuleLog -Level WARN -Phase bootstrap -Message ("Script dump failed: $(Format-RuleErrorRecord $_). Continuing without it.")
     }
 
     if ($script:PwshReplay) {
@@ -1137,105 +960,28 @@ if ($script:RuleReplayMode) {
 Write-RuleContextBlock
 
 ###############################################################################################################################
-# CUSTOM PROCESS CODE — Active Directory home folder provisioning
+# CUSTOM PROCESS CODE - replace this section in copied rules
 ###############################################################################################################################
 
 $script:RulePhase = "process"
 
 try {
-    Write-RuleLog -Level INFO -Message "Starting Active Directory home folder provisioning."
+    Write-RuleLog -Level INFO -Message "CUSTOM PROCESS CODE placeholder reached. Replace this section with rule-specific logic."
 
-    $appAttributes = Get-ApplicationAttributes
-
-    if ((Get-AttributeValueCaseInsensitive $appAttributes "HomeFolderDebugEnabled") -ieq "true") {
-        $script:HomeFolderDebugEnabled = $true
-        Write-RuleLog -Level INFO -Message "HomeFolderDebugEnabled is true. Extra process debug lines will be written."
-    }
-
-    $failOnErrorOverride = Get-AttributeValueCaseInsensitive $appAttributes "HomeFolderFailOnError"
-    if ($failOnErrorOverride -ieq "false") {
-        $script:PwshSilentError = $true
-        $script:PwshSilentErrorSource = "HomeFolderFailOnError"
-        Write-RuleLog -Level INFO -Message "PwshSilentError overridden to true by HomeFolderFailOnError=false."
-    } elseif ($failOnErrorOverride -ieq "true") {
-        $script:PwshSilentError = $false
-        $script:PwshSilentErrorSource = "HomeFolderFailOnError"
-        Write-RuleLog -Level INFO -Message "PwshSilentError overridden to false by HomeFolderFailOnError=true."
-    }
-
-    Import-SailPointUtils (Get-AttributeValueCaseInsensitive $appAttributes "HomeFolderUtilsDllPath") | Out-Null
-
-    ##########################
-    # Begin SailPoint protected code -- do not modify this code block
     #
-    $sReader = New-Object System.IO.StringReader([System.String]$env:Request)
-    $xmlReader = [System.xml.XmlTextReader]([sailpoint.utils.xml.XmlUtil]::getReader($sReader))
-    $requestObject = New-Object Sailpoint.Utils.objects.AccountRequest($xmlReader)
-
-    Write-HomeFolderDebug "Request object contents:"
-    Write-HomeFolderDebug ($requestObject | Out-String)
+    # Example: parse the SailPoint account request when you need Utils.dll
     #
-    # End SailPoint protected code
-    ##########################
+    # Add-Type -Path (Join-Path $script:RuleIQServiceDirectory "Utils.dll")
+    # $sReader = New-Object System.IO.StringReader([System.String]$env:Request)
+    # $xmlReader = [System.Xml.XmlTextReader]([sailpoint.utils.xml.XmlUtil]::getReader($sReader))
+    # $requestObject = New-Object Sailpoint.Utils.objects.AccountRequest($xmlReader)
+    #
+    # Write-RuleLog -Level DEBUG -Message ("Account operation: $($requestObject.Operation)")
+    #
 
-    if ($requestObject.Operation -eq "Create") {
-        $attributeMap = Get-AccountRequestAttributeMap $requestObject
-        $SAMAccountName = Get-AttributeValueFromAccountRequest $requestObject "sAMAccountName"
-
-        if ([string]::IsNullOrWhiteSpace($SAMAccountName)) {
-            throw "sAMAccountName could not be successfully extracted from the plan payload."
-        }
-
-        $HomeFolderBasePath = Get-AttributeValueCaseInsensitive $appAttributes "HomeFolderBasePath"
-        $HomeFolderTemplate = Get-AttributeValueCaseInsensitive $appAttributes "HomeFolderTemplate"
-
-        Write-HomeFolderDebug "Parsed attributes -> sAMAccountName: '$SAMAccountName'"
-        Write-HomeFolderDebug "Configuration -> HomeFolderBasePath: '$HomeFolderBasePath', HomeFolderTemplate: '$HomeFolderTemplate'"
-
-        $TargetHomePath = Resolve-HomeFolderPath `
-            -basePath $HomeFolderBasePath `
-            -template $HomeFolderTemplate `
-            -attributes $attributeMap `
-            -samAccountName $SAMAccountName
-
-        Write-RuleLog -Level INFO -Message "Calculated home folder target path: $TargetHomePath"
-
-        $targetExisted = Test-Path -LiteralPath $TargetHomePath
-        Ensure-DirectoryExists -path $TargetHomePath
-
-        if ($targetExisted) {
-            Write-RuleLog -Level INFO -Message "Target home folder already exists at path. Updating permissions on existing resource."
-        }
-
-        $ACL = Get-Acl -Path $TargetHomePath
-        $ACL.SetAccessRuleProtection($true, $false)
-
-        # InheritanceFlags: 3 = ContainerInherit | ObjectInherit
-        # PropagationFlags: 0 = None
-        # AccessControlType: 0 = Allow
-        $UserAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-            $SAMAccountName,
-            "FullControl",
-            3,
-            0,
-            0
-        )
-
-        $AdminAccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
-            "BUILTIN\Administrators",
-            "FullControl",
-            3,
-            0,
-            0
-        )
-
-        $ACL.SetAccessRule($UserAccessRule)
-        $ACL.SetAccessRule($AdminAccessRule)
-        Set-Acl -Path $TargetHomePath -AclObject $ACL
-        Write-RuleLog -Level INFO -Message "Successfully restricted folder inheritance and applied exclusive ACL ownership to $SAMAccountName."
-    } else {
-        Write-RuleLog -Level INFO -Message "Skipping home folder workflow. Action is restricted exclusively to Create operations. Current operation: $($requestObject.Operation)"
-    }
+    #
+    # End CUSTOM PROCESS CODE
+    #
 }
 catch {
     Write-RuleLog -Level ERROR -Phase process -Message ("Process error: $(Format-RuleErrorRecord $_)")
