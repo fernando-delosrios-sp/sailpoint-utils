@@ -4,6 +4,20 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-08-25
+
+### ✨ New Features
+
+- **PowerShell Rule Template** — Copy-ready IQService connector-rule bootstrap for AD and Azure AD (`ISC/PowerShell Rule Template/`).
+  - Handles IQService directory lookup, per-run logging, payload redaction, explicit exit codes, and optional replay of a captured invocation.
+  - Supports Before/After Create, Modify, and Delete connector rule types; custom logic stays in a dedicated process section.
+
+### 🔧 Improvements
+
+- **Active Directory Home Folders** — Rebuilt on the PowerShell Rule Template so bootstrap, artifact preservation, and logging stay aligned with other IQService rules.
+
+---
+
 ## 2026-08-24
 
 ### ✨ New Features
