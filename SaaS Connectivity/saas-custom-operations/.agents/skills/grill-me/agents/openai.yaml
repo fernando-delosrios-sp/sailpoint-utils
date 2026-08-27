@@ -1,0 +1,5 @@
+interface:
+  display_name: Grill Me
+  short_description: A relentless interview to sharpen a plan or design.
+policy:
+  allow_implicit_invocation: false

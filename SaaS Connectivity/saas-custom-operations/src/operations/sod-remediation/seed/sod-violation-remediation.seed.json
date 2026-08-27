@@ -1,0 +1,294 @@
+{
+    "description": "SOD violation remediation — launch form for corrective removal or compensating control mitigation.",
+    "formInput": [
+        { "id": "targetIdentityName", "type": "STRING", "label": "Target Identity Name", "description": "Display name of the violating identity" },
+        { "id": "policyName", "type": "STRING", "label": "Policy Name", "description": "SOD policy that was violated" },
+        { "id": "situationSummaryHtml", "type": "STRING", "label": "Situation Summary", "description": "HTML context panel for the violation situation" },
+        { "id": "groupColumnsHtmlPlain", "type": "STRING", "label": "Group Columns HTML (Plain)", "description": "Side-by-side plain group columns before side selection" },
+        { "id": "groupColumnsHtmlWhenGroupARemoved", "type": "STRING", "label": "Group Columns HTML (Group A Removed)", "description": "Side-by-side columns when group A is selected for removal" },
+        { "id": "groupColumnsHtmlWhenGroupBRemoved", "type": "STRING", "label": "Group Columns HTML (Group B Removed)", "description": "Side-by-side columns when group B is selected for removal" },
+        { "id": "hasControls", "type": "STRING", "label": "Has Controls", "description": "Whether tenant compensating controls exist (true/false)" },
+        { "id": "controlOptions", "type": "ARRAY", "label": "Control Options", "description": "Compensating control labels for mitigate select options" },
+        { "id": "violationId", "type": "STRING", "label": "Violation ID", "description": "Launch-time workflow key (read from form instance formInput, not formData)" },
+        { "id": "targetIdentityId", "type": "STRING", "label": "Target Identity ID", "description": "Launch-time workflow key (read from form instance formInput, not formData)" },
+        { "id": "groupAAccessSearch", "type": "STRING", "label": "Group A Access Search", "description": "ISC access-item search filter for group A (id:x OR id:y)" },
+        { "id": "groupBAccessSearch", "type": "STRING", "label": "Group B Access Search", "description": "ISC access-item search filter for group B (id:x OR id:y)" }
+    ],
+    "formElements": [
+        {
+            "id": "ctx-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Situation",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "ctx-summary",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Situation",
+                            "showLabel": false,
+                            "description": "{{$.form.input.situationSummaryHtml}}"
+                        },
+                        "validations": []
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "action-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Remediation Action",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "action-select",
+                        "elementType": "SELECT",
+                        "key": "action",
+                        "config": {
+                            "label": "Action",
+                            "required": true,
+                            "forceSelect": true,
+                            "maximum": 1,
+                            "dataSource": {
+                                "dataSourceType": "STATIC",
+                                "config": {
+                                    "options": [
+                                        { "label": "Correct", "value": "Correct", "sublabel": "Remove conflicting access" },
+                                        { "label": "Mitigate", "value": "Mitigate", "sublabel": "Apply compensating control" }
+                                    ]
+                                }
+                            }
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }, { "validationType": "DATA_SOURCE" }]
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "correct-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "Select the side whose access should be removed to resolve this violation.",
+                "label": "Correct Violation",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "remediation-side-select",
+                        "elementType": "SELECT",
+                        "key": "remediationSide",
+                        "config": {
+                            "label": "Side to remediate",
+                            "required": true,
+                            "forceSelect": false,
+                            "maximum": 1,
+                            "dataSource": {
+                                "dataSourceType": "STATIC",
+                                "config": {
+                                    "options": [
+                                        { "label": "Group A", "value": "groupA", "sublabel": "Remove access from group A" },
+                                        { "label": "Group B", "value": "groupB", "sublabel": "Remove access from group B" }
+                                    ]
+                                }
+                            }
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }, { "validationType": "DATA_SOURCE" }]
+                    },
+                    {
+                        "id": "toxic-combination-header",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Toxic Combination",
+                            "labelStyle": "h5",
+                            "showLabel": true,
+                            "description": "<p><em>⚠️ Removing access profile- or role-level access may affect other functions of the user.</em></p>"
+                        },
+                        "validations": []
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "column-preview-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Toxic Combination Preview",
+                "labelStyle": "h2",
+                "showLabel": false,
+                "formElements": [
+                    {
+                        "id": "group-columns-preview-intro",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Toxic combination preview",
+                            "showLabel": false,
+                            "description": "<p><em>Select a side above to preview outcomes. Green = kept, red = removed.</em></p>"
+                        },
+                        "validations": []
+                    },
+                    {
+                        "id": "group-columns-plain",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Toxic combination preview",
+                            "showLabel": false,
+                            "description": "{{$.form.input.groupColumnsHtmlPlain}}"
+                        },
+                        "validations": []
+                    },
+                    {
+                        "id": "group-columns-when-a-removed",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Toxic combination preview",
+                            "showLabel": false,
+                            "description": "{{$.form.input.groupColumnsHtmlWhenGroupARemoved}}"
+                        },
+                        "validations": []
+                    },
+                    {
+                        "id": "group-columns-when-b-removed",
+                        "elementType": "DESCRIPTION",
+                        "key": "",
+                        "config": {
+                            "label": "Toxic combination preview",
+                            "showLabel": false,
+                            "description": "{{$.form.input.groupColumnsHtmlWhenGroupBRemoved}}"
+                        },
+                        "validations": []
+                    }
+                ]
+            },
+            "validations": []
+        },
+        {
+            "id": "mitigate-section",
+            "elementType": "SECTION",
+            "config": {
+                "alignment": "LEFT",
+                "description": "",
+                "label": "Mitigate Violation",
+                "labelStyle": "h2",
+                "showLabel": true,
+                "formElements": [
+                    {
+                        "id": "control-select",
+                        "elementType": "SELECT",
+                        "key": "control",
+                        "config": {
+                            "label": "Compensating Control",
+                            "required": true,
+                            "forceSelect": true,
+                            "maximum": 1,
+                            "dataSource": {
+                                "dataSourceType": "FORM_INPUT",
+                                "config": {
+                                    "formInputId": "controlOptions",
+                                    "sortBy": "ASC"
+                                }
+                            }
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }, { "validationType": "DATA_SOURCE" }]
+                    },
+                    {
+                        "id": "comments",
+                        "elementType": "TEXTAREA",
+                        "key": "comments",
+                        "config": {
+                            "label": "Comments",
+                            "required": true,
+                            "rows": 3,
+                            "resize": false
+                        },
+                        "validations": [{ "validationType": "REQUIRED" }]
+                    }
+                ]
+            },
+            "validations": []
+        }
+    ],
+    "formConditions": [
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "ELEMENT", "source": "action", "operator": "EQ", "valueType": "STRING", "value": "Correct" }],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "correct-section" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [
+                { "sourceType": "ELEMENT", "source": "action", "operator": "EQ", "valueType": "STRING", "value": "Mitigate" },
+                { "sourceType": "INPUT", "source": "hasControls", "operator": "EQ", "valueType": "STRING", "value": "true" }
+            ],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "mitigate-section" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [{ "sourceType": "ELEMENT", "source": "action", "operator": "EQ", "valueType": "STRING", "value": "Correct" }],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "column-preview-section" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [
+                { "sourceType": "ELEMENT", "source": "action", "operator": "EQ", "valueType": "STRING", "value": "Correct" },
+                {
+                    "sourceType": "ELEMENT",
+                    "source": "remediationSide",
+                    "operator": "EM",
+                    "valueType": "STRING",
+                    "value": ""
+                }
+            ],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "group-columns-plain" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [
+                { "sourceType": "ELEMENT", "source": "action", "operator": "EQ", "valueType": "STRING", "value": "Correct" },
+                {
+                    "sourceType": "ELEMENT",
+                    "source": "remediationSide",
+                    "operator": "EQ",
+                    "valueType": "STRING",
+                    "value": "Group A"
+                }
+            ],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "group-columns-when-a-removed" } }]
+        },
+        {
+            "ruleOperator": "AND",
+            "rules": [
+                { "sourceType": "ELEMENT", "source": "action", "operator": "EQ", "valueType": "STRING", "value": "Correct" },
+                {
+                    "sourceType": "ELEMENT",
+                    "source": "remediationSide",
+                    "operator": "EQ",
+                    "valueType": "STRING",
+                    "value": "Group B"
+                }
+            ],
+            "effects": [{ "effectType": "SHOW", "config": { "element": "group-columns-when-b-removed" } }]
+        }
+    ]
+}
+
+
+

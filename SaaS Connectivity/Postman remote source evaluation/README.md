@@ -1,6 +1,10 @@
 # Postman Remote Source Evaluation
 
-Pre-request script for Postman that:
+## Purpose
+
+Postman pre-request script for testing ISC SaaS and Web Services sources: handles OAuth authentication, resolves a source by exact name, merges connector configuration, and optionally routes requests through remote connector invoke—without hard-coding tenant-specific values in every request.
+
+The script:
 
 - Authenticates to SailPoint ISC using OAuth client credentials.
 - Resolves the target source by exact `sourceName`.
@@ -108,4 +112,5 @@ If an env override value is valid JSON, it is parsed as JSON; otherwise treated 
 - Store `clientSecret` in Postman environment variables marked secret/sensitive.
 - Do not commit secrets to source control.
 - Rotate OAuth credentials periodically per your security policy.
+
 

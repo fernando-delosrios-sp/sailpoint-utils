@@ -1,8 +1,8 @@
 # sailpoint-utils
 
-Reusable utilities, integration patterns, and supporting tools for [SailPoint Identity Security Cloud (ISC)](https://www.sailpoint.com/products/identity-security-cloud/) and IdentityIQ (IIQ).
+## Purpose
 
-Each utility lives in its own folder with a dedicated `README.md` covering setup, artifacts, and usage. Browse by area below or see [CHANGELOG.md](CHANGELOG.md) for release history.
+Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https://www.sailpoint.com/products/identity-security-cloud/) and IdentityIQ (IIQ) patterns — rules, transforms, connector tooling, and third-party integrations. Each utility is self-contained with its own README for setup, artifacts, and usage. Browse by area below or see [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Repository layout
 
@@ -17,6 +17,7 @@ Each utility lives in its own folder with a dedicated `README.md` covering setup
 
 | Utility | Description |
 | --- | --- |
+| [Active Directory Home Folders](ISC/Active%20Directory%20Home%20Folders/) | ConnectorAfterCreate rule (built from PowerShell Rule Template) that creates home folders with NTFS ACLs from configurable base path and template |
 | [Active Directory OU Management](ISC/Active%20Directory%20OU%20Management/) | IQService BeforeScripts that create missing OUs—and optionally AD groups—during AD provisioning |
 | [Dynamic forms and user data collection](ISC/Dynamic%20forms%20and%20user%20data%20collection/) | Example form with cascading dropdowns and CSV-backed reference data |
 | [Generic Manager Correlation](ISC/Generic%20Manager%20Correlation/) | Reusable pattern for correlating managers across heterogeneous sources |
@@ -24,6 +25,7 @@ Each utility lives in its own folder with a dedicated `README.md` covering setup
 | [LCS Operations](ISC/LCS%20Operations/) | BeforeProvisioning rule that maps lifecycle-state dummy attributes to native connector operations |
 | [Optimistic Provisioning Generic SDIM](ISC/Optimistic%20Provisioning%20Generic%20SDIM/) | Configuration guide for optimistic provisioning with Generic SDIM |
 | [Organizational Hierarchy Path](ISC/Organizational%20Hierarchy%20Path/) | IdentityAttribute rule that builds a consolidated org hierarchy path from entitlements |
+| [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) | Copy-ready IQService connector-rule bootstrap with logging, redaction, exit handling, and optional replay |
 | [Transforms](ISC/Transforms/) | Reusable transform definitions (dates, lifecycle state, attribute history, manager flag) |
 
 ## SaaS Connectivity
@@ -52,9 +54,10 @@ Utilities that include a Node.js toolchain (for example, [JDBC SaaS Driver Downl
 When adding a new utility or integration pattern:
 
 1. Place it under the appropriate top-level folder (`ISC/`, `SaaS Connectivity/`, `Third-Party/`, or `IIQ/`).
-2. Include a `README.md` with setup steps, artifacts, and usage examples.
+2. Include a `README.md` with a **Purpose** section, setup steps, artifacts, and usage examples.
 3. Add an entry under the newest dated section in [CHANGELOG.md](CHANGELOG.md) (create one for today's date if needed).
 
 ## Changelog
 
 Notable changes are recorded in [CHANGELOG.md](CHANGELOG.md), grouped by date in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
+

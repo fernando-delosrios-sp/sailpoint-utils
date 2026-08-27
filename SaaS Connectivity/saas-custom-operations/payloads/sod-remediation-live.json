@@ -1,0 +1,15 @@
+{
+    "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+    "tag": "latest",
+    "type": "custom:sod-remediation",
+    "input": {
+        "requestId": "sod-remediation:9d372c5365e447a3b979d046184f97b3",
+        "violationId": "9d372c5365e447a3b979d046184f97b3",
+        "formName": "SOD Violation Remediation"
+    },
+    "config": {
+        "apiUrl": "{{$.configuration.aPIURL}}",
+        "token": "{{$.getAccessToken.body.access_token}}",
+        "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}"
+    }
+}

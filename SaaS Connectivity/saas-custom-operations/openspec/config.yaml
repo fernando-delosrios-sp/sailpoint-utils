@@ -1,0 +1,74 @@
+schema: ferspec
+
+context: |
+  Project: saas-custom-operations — a SailPoint Identity Security Cloud (ISC) SaaS connector
+  for workflow-driven custom operations (not an aggregation source). Handlers invoke ISC APIs
+  via loopback credentials, persist typed results to an auto-provisioned DelimitedFile source,
+  and return command responses to the caller.
+
+  Tech stack:
+  - TypeScript 5.x, Node.js
+  - @sailpoint/connector-sdk (^1.0.0) — connector runtime and command registration
+  - sailpoint-api-client — ISC API loopback from handlers (via ctx.sdk)
+  - Vitest 4 for unit tests (60% statement coverage threshold)
+  - @vercel/ncc for bundling; spcx CLI for local run and packaging
+
+  Architecture:
+  - src/index.ts — connector entry; registerCommands(createConnector())
+  - src/operations/ — custom operation handlers under <slug>/; auto-registry.ts (codegen)
+  - src/framework/ — customOperation wrapper, RequestContext, persist, source provisioning
+  - src/isc/ — reusable ISC SDK helpers grouped by API surface
+  - scripts/call-op.ts — local invoke runner (OPERATION_HANDLERS map)
+  - connector-spec.json — declared custom:* commands and invoke sourceConfig
+
+  Supported commands (custom only):
+  - custom:example, custom:governance-group-emails, custom:access-model-sod-remediation,
+    custom:access-model-sod-remediation-apply, custom:preventive-sod-check, custom:sod-remediation
+
+  Configuration:
+  - Invoke config: apiUrl, token, sourceName (plus optional logUrl, testMode)
+  - Result source auto-created by sourceName; schema reconciled per operation at persist
+  - Local connected invoke: ISC_TOKEN env when payload token is a placeholder
+
+  Conventions:
+  - Prettier: 120 print width, 4-space tabs, no semicolons, single quotes
+  - Connector exported as module property named `connector`
+  - Package privately scoped; verify via npm run typecheck, npm test, npm run build
+  - Monorepo CI: .github/workflows/saas-custom-operations-ci.yml with path filter
+
+rules:
+  global:
+    - Always use the `changelog-generator` skill to maintain and enforce a changelog for all changes.
+    - Preserve SailPoint connector-sdk patterns — custom commands use customOperation and ctx.res.send.
+    - New custom operations: copy src/operations/_template/, declare OperationSignature, run codegen; auto-discovery syncs connector-spec.json.
+  discovery:
+    - Focus on custom operation scope, ISC loopback constraints, persist/schema behavior, and workflow integration.
+    - Output stays in the change's discovery.md — not repo-root CONTEXT.md.
+    - Mark domain terms draft/conflicts-with-canonical/promote; conflict-check openspec/specs/ubiquitous-language/spec.md.
+  proposal:
+    - Keep proposals under 2 pages; emphasize Why and Capabilities over implementation detail.
+    - Reuse existing openspec/specs/ capability names before proposing new ones.
+  design:
+    - Document authentication strategy, error handling, persist/schema reconciliation, and operation output mapping.
+    - Include rollback/migration notes when changing connector-spec.json or operation output schemas.
+    - Invoke c4-diagram when the change touches 3+ containers (apps, services, databases, queues, external systems).
+  specs:
+    - Write requirements with GIVEN/WHEN/THEN scenarios for custom operation and framework behavior.
+    - Use SHALL/MUST for normative connector contract language.
+    - Map scenarios to Vitest test cases in src/**/*.spec.ts and scripts/**/*.spec.ts.
+    - Promote discovery Language terms marked `promote` into ubiquitous-language delta specs.
+  tasks:
+    - Include connector-spec.json / codegen updates when adding or modifying custom commands.
+    - Break tasks into chunks completable in one session; cover all spec scenarios with tests.
+    - Record `npm test` as the canonical test command; include `npm run typecheck` for TS changes.
+    - Include spcx run/pack-zip validation for integration-sensitive changes.
+    - Include mandatory Documentation and Changelog task groups per ferspec template.
+
+operations:
+  archive:
+    guidance:
+      - "Archive is incomplete until synced specs and the moved change folder are committed. The built-in /opsx:archive workflow syncs and moves but does NOT commit."
+      - "After sync and archive move: run git status --porcelain. If non-empty, stage openspec/specs/ and openspec/changes/ (plus any paths touched during sync), then invoke git-commit via Skill tool with change name and archive context."
+      - "Fallback when git-commit skill is absent: conventional commit manually, e.g. docs(openspec): archive <change-name> and sync specs — do not skip when porcelain is non-empty."
+      - "Post-commit gate (blocking): git status --porcelain must be empty; when the change is under openspec/changes/archive/, confirm the latest commit includes synced specs and the archive folder via git log -1 --name-only -- openspec/specs/ openspec/changes/archive/."
+      - "Do not report archive complete until the post-commit gate passes."

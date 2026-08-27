@@ -1,6 +1,8 @@
 # Generic Manager Correlation
 
-Reusable pattern for correlating manager identities across heterogeneous sources in SailPoint ISC.
+## Purpose
+
+Reusable pattern for correlating manager identities across heterogeneous ISC sources where manager references use different identifiers (email, username, employee number, etc.).
 
 ## Overview
 
@@ -57,3 +59,4 @@ This contract decouples identifier selection (transform) from lookup execution (
 
 - This pattern is intended for environments where manager identifiers vary by source.
 - Behavior depends on data quality and uniqueness of selected identity attributes.
+
