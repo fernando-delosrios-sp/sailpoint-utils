@@ -1,0 +1,7 @@
+{
+    "type": "custom:access-model-sod-remediation-apply",
+    "input": {
+        "requestId": "offline-access-model-sod-apply-001",
+        "formInstanceId": "fi-role-group-b-nested"
+    }
+}

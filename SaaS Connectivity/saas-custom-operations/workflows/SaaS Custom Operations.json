@@ -1,0 +1,161 @@
+{
+  "version": 1,
+  "timestamp": "2026-08-03T13:44:21.578200352Z",
+  "tenant": "company22986-poc",
+  "description": "Example workflow export for SaaS Custom Operations invoke and read-back",
+  "options": {
+    "excludeTypes": null,
+    "includeTypes": [
+      "WORKFLOW"
+    ],
+    "objectOptions": {
+      "WORKFLOW": {
+        "includedNames": [],
+        "includedIds": [
+          "ce96dd2e-6135-47e9-b7dd-e6840f5e6366"
+        ]
+      }
+    }
+  },
+  "objects": [
+    {
+      "version": 1,
+      "self": {
+        "id": "ce96dd2e-6135-47e9-b7dd-e6840f5e6366",
+        "name": "SaaS Custom Operations Call",
+        "type": "WORKFLOW"
+      },
+      "object": {
+        "id": "ce96dd2e-6135-47e9-b7dd-e6840f5e6366",
+        "name": "SaaS Custom Operations Call",
+        "description": "",
+        "created": "2026-08-03T13:24:58.079349998Z",
+        "modified": "2026-08-03T13:37:00.861069292Z",
+        "modifiedBy": {
+          "type": "IDENTITY",
+          "id": "fed0f8932606496e8e6ceab8a242c29e",
+          "name": "fernando.delosrios"
+        },
+        "definition": {
+          "start": "Configuration",
+          "steps": {
+            "Call SaaS Custom Operation": {
+              "actionId": "sp:http",
+              "attributes": {
+                "jsonRequestBody": {
+                  "config": {
+                    "apiUrl": "{{$.configuration.aPIURL}}",
+                    "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}",
+                    "token": "{{$.getAccessToken.body.access_token}}"
+                  },
+                  "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+                  "input": {
+                    "message": "Hello, world!",
+                    "requestId": "req-888"
+                  },
+                  "tag": "latest",
+                  "type": "custom:example"
+                },
+                "method": "post",
+                "param_authenticationRef": "none",
+                "requestContentType": "json",
+                "requestHeaders": {
+                  "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+                },
+                "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke"
+              },
+              "displayName": "Call SaaS Custom Operation",
+              "nextStep": "Read SaaS Custom Operation Result",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Configuration": {
+              "actionId": "sp:define-variable",
+              "attributes": {
+                "id": "sp:define-variable",
+                "variables": [
+                  {
+                    "description": "",
+                    "name": "API URL",
+                    "transforms": [],
+                    "variableA": "https://company22986-poc.api.identitynow.com"
+                  },
+                  {
+                    "description": "",
+                    "name": "SaaS Custom Operations Source Name",
+                    "transforms": [],
+                    "variableA": "SaaS Custom Operations"
+                  },
+                  {
+                    "description": "",
+                    "name": "SaaS Custom Operations Connector ID",
+                    "transforms": [],
+                    "variableA": "131d48cc-d53f-4a67-9858-845f16166376"
+                  }
+                ]
+              },
+              "displayName": "Configuration",
+              "nextStep": "Get Access Token",
+              "type": "Mutation"
+            },
+            "End Step - Success": {
+              "actionId": "sp:operator-success",
+              "displayName": "",
+              "type": "success"
+            },
+            "Get Access Token": {
+              "actionId": "sp:http",
+              "attributes": {
+                "formRequestBody": {
+                  "grant_type": "client_credentials"
+                },
+                "method": "post",
+                "param_authenticationRef": "basic",
+                "requestContentType": "form",
+                "url": "{{$.configuration.aPIURL}}/oauth/token"
+              },
+              "displayName": "Get Access Token",
+              "nextStep": "Call SaaS Custom Operation",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Read SaaS Custom Operation Result": {
+              "actionId": "sp:get-accounts",
+              "attributes": {
+                "filterCriteria": "nativeIdentity",
+                "getAccountsBy": "filters",
+                "operator": "eq",
+                "resultSelector": [
+                  "$.readSaaSCustomOperationResult.accounts[*].attributes"
+                ],
+                "value": "req-888"
+              },
+              "displayName": "Read SaaS Custom Operation Result",
+              "nextStep": "End Step - Success",
+              "type": "action",
+              "versionNumber": 1
+            }
+          }
+        },
+        "enabled": false,
+        "creator": {
+          "type": "IDENTITY",
+          "id": "fed0f8932606496e8e6ceab8a242c29e",
+          "name": "fernando.delosrios"
+        },
+        "owner": {
+          "type": "IDENTITY",
+          "id": "fed0f8932606496e8e6ceab8a242c29e",
+          "name": "fernando.delosrios"
+        },
+        "trigger": {
+          "type": "EXTERNAL",
+          "attributes": {
+            "id": "idn:external-http",
+            "integrationId": null
+          }
+        }
+      }
+    }
+  ]
+}

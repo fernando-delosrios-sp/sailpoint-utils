@@ -1,0 +1,3 @@
+interface:
+  display_name: "Git Commit"
+  short_description: "Session-scoped git commit with conventional message analysis and staging"

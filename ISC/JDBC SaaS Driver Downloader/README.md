@@ -1,6 +1,8 @@
 # JDBC SaaS Driver Downloader
 
-Download and zip JDBC driver JARs from Maven Central for use with the SailPoint JDBC SaaS connector.
+## Purpose
+
+Download JDBC driver JARs from Maven Central and package them as upload-ready ZIPs for SailPoint JDBC SaaS connector sources—supporting common engines (PostgreSQL, MySQL, Oracle, SQL Server, DB2, Sybase) with interactive or batch workflows.
 
 ## Requirements
 
@@ -86,3 +88,4 @@ Upload the ZIP from `dist/` as a driver asset for your JDBC SaaS source, then se
 
 - Oracle JARs may have licensing constraints; use the interactive command to pick an approved version, or place a manual JAR under `drivers/` if needed.
 - AWS RDS uses the same engine drivers based on the database type (MySQL, PostgreSQL, SQL Server, Oracle, etc.).
+

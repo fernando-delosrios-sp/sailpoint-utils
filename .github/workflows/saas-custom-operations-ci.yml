@@ -1,0 +1,40 @@
+name: saas-custom-operations CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'SaaS Connectivity/saas-custom-operations/**'
+  pull_request:
+    paths:
+      - 'SaaS Connectivity/saas-custom-operations/**'
+
+defaults:
+  run:
+    working-directory: 'SaaS Connectivity/saas-custom-operations'
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: 'SaaS Connectivity/saas-custom-operations/package-lock.json'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

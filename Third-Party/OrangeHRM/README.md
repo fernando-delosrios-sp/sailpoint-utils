@@ -2,9 +2,7 @@
 
 ## Purpose
 
-These changes connect OrangeHRM employee updates with SailPoint Identity Security Cloud (ISC), also referred to as IdentityIQ/IIQ in the source code.
-
-After relevant employee data is saved, OrangeHRM requests an account aggregation so SailPoint can discover the latest data without waiting for its regular aggregation schedule.
+OrangeHRM plugin changes that trigger SailPoint account aggregation immediately after relevant employee lifecycle events—create, terminate, activate, job/contact updates, and report-to changes—so ISC discovers the latest HR data without waiting for the scheduled aggregation cycle.
 
 ## Triggering workflows
 
@@ -91,3 +89,4 @@ The current implementation is demo-oriented. Before production use:
 - Protect the INI file with appropriate filesystem permissions.
 - Move the hard-coded INI path into environment-specific configuration.
 - Consider moving aggregation to an asynchronous job so SailPoint response time does not delay the OrangeHRM request.
+

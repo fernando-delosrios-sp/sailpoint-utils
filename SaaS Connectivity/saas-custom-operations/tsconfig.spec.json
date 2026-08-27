@@ -1,0 +1,10 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "types": ["vitest/globals"],
+        "noEmit": true
+    },
+    "include": ["src/**/*.spec.ts"],
+    "exclude": ["node_modules"]
+}
+
