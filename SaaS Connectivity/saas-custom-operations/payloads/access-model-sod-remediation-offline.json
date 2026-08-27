@@ -1,0 +1,7 @@
+{
+    "type": "custom:access-model-sod-remediation",
+    "input": {
+        "requestId": "offline-access-model-sod-001",
+        "formName": "Access Model SOD Remediation"
+    }
+}

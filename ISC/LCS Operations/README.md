@@ -1,9 +1,12 @@
 # User Manual: LCS Operations BeforeProvisioning Rule
 
-This user manual provides comprehensive documentation and configuration examples for the **LCS Operations BeforeProvisioning Rule**.
+## Purpose
+
+BeforeProvisioning rule that translates lifecycle-state (LCS) dummy attribute updates into native connector operations—Enable/Disable, Active Directory OU moves, CN renames—so LCS transitions can be driven from Attribute Sync without custom code per state.
 
 ## Overview
-The **LCS Operations** rule is a BeanShell rule designed to intercept `Modify` Provisioning Plans in SailPoint IdentityNow right before they are executed. Its main purpose is to translate dummy attribute updates—indicating Lifecycle State (LCS) changes—into native connector operations like account Enable/Disable, or Active Directory specific operations like OU moves and CN renames.
+
+The **LCS Operations** rule is a BeanShell rule designed to intercept `Modify` Provisioning Plans in SailPoint IdentityNow right before they are executed.
 
 Instead of writing custom code for LCS transitions, this rule relies on specific dummy attributes being sent in the `AccountRequest` (typically via Attribute Sync).
 
@@ -132,3 +135,4 @@ Modify
   - AC_NewName = "CN=John.Doe"
   - AC_NewParent = "OU=Users,DC=company,DC=com"
 ```
+

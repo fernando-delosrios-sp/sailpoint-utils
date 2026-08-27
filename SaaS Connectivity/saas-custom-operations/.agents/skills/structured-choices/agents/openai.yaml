@@ -1,0 +1,3 @@
+interface:
+  display_name: Structured Choices
+  short_description: Present user gates as structured interactive choices; run install to wire AGENTS.md.

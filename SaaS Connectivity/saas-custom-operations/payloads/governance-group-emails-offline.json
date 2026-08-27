@@ -1,0 +1,7 @@
+{
+    "type": "custom:governance-group-emails",
+    "input": {
+        "requestId": "offline-gg-001",
+        "groupName": "Offline Approvers"
+    }
+}

@@ -2,7 +2,11 @@
 
 ![Optimistic Provisioning Generic SDIM](promo.png)
 
-Follow these instructions to configure the Generic SDIM integration in SailPoint Identity Security Cloud (ISC). These instructions are mapped directly to the fields presented in the configuration UI, utilizing a public echo service (`postman-echo.com`) to seamlessly fake the ticket lifecycle.
+## Purpose
+
+Step-by-step configuration guide for Generic SDIM optimistic provisioning in ISC, using Postman Echo as a fake ticket backend. Use for demos, POCs, and validating SDIM wiring before connecting a real ITSM system.
+
+These instructions map directly to the configuration UI fields and utilize a public echo service (`postman-echo.com`) to fake the ticket lifecycle.
 
 To avoid issues with how the connector serializes payload bodies (which can cause JSON parsing errors on the receiving end), we pass the required dummy values natively via the URL query parameters.
 

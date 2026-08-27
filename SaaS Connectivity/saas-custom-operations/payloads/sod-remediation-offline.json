@@ -1,0 +1,8 @@
+{
+    "type": "custom:sod-remediation",
+    "input": {
+        "requestId": "offline-sod-001",
+        "violationId": "offline-violation-001",
+        "formName": "SOD Violation Remediation"
+    }
+}

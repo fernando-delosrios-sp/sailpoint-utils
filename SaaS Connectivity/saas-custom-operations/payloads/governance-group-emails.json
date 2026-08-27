@@ -1,0 +1,13 @@
+{
+    "type": "custom:governance-group-emails",
+    "input": {
+        "requestId": "req-gg-001",
+        "groupName": "Access Review Approvers"
+    },
+    "config": {
+        "apiUrl": "https://YOUR-TENANT.api.identitynow.com",
+        "token": "__SET_VIA_ISC_TOKEN_ENV__",
+        "sourceName": "SaaS Custom Operations",
+        "testMode": true
+    }
+}

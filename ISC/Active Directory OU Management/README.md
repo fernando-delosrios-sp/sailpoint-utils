@@ -1,6 +1,8 @@
 # Active Directory OU Management Scripts
 
-This directory contains Identity Security Cloud (ISC) IQService BeforeScripts for the Active Directory connector. They are designed to parse provisioning requests and dynamically create missing Organizational Units (OUs), with an optional feature to automatically provision a dedicated AD Group for any newly created OU.
+## Purpose
+
+IQService BeforeScripts for the Active Directory connector that parse provisioning requests and automatically create missing Organizational Units—and optionally a dedicated security group for each new OU—so accounts land in the correct container without manual AD preparation.
 
 ## Scripts
 * **`ConnectorBeforeCreate - Create Active Directory OU.ps1`**: Triggered before an account creation. Extracts the OU path from the requested `NativeIdentity` and ensures all OUs in the path exist.
@@ -55,3 +57,4 @@ You must define the following attributes on your Active Directory Source in ISC 
 4. It iterates from the top-level Domain Components (DC) downwards, checking if each OU in the path exists.
 5. If an OU is missing, it attempts to create it (with retries on failure).
 6. If the OU is successfully created and `OUGroupCreationEnabled` is `true`, it provisions a new AD Group formatted by `OUGroupNameTemplate` in the `OUGroupBaseDN` (or inside the new OU if no BaseDN is specified).
+

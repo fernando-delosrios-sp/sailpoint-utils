@@ -130,7 +130,281 @@ The rule supports dynamic value replacement in `Value` strings. This is highly u
 
 ## 4. Configuration Examples
 
-### Example 1: Set a Termination Date and Move OU on Disable
+### 4.1 Action Examples
+
+Each example below is a complete `cloudServicesIDNSetup` fragment. `eventActions` run in order; later actions see the effects of earlier ones.
+
+#### ADMoveAccount
+Sets `AC_NewParent` so IQService moves the AD account to the given OU. Skips the move if the account already lives in that OU. `Value` supports substitution.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Disable",
+                "eventActions": [
+                    {
+                        "Action": "ADMoveAccount",
+                        "Value": "OU=Disabled,OU=Users,OU=#{identity.location},DC=company,DC=com"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### ADRenameAccount
+Sets `AC_NewName` so IQService renames the AD account (typically the CN/RDN). `Value` supports substitution.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Modify",
+                "eventActions": [
+                    {
+                        "Action": "ADRenameAccount",
+                        "Value": "CN=#{identity.displayName}"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### ChangeOperation
+Changes the `AccountRequest` operation. `Value` must be a valid `AccountRequest.Operation` name (`Create`, `Modify`, `Enable`, `Disable`, `Delete`). Invalid values are logged and ignored. Place this last if earlier actions should still run against the original matching operation.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Disable",
+                "eventActions": [
+                    {
+                        "Action": "ADMoveAccount",
+                        "Value": "OU=Disabled,OU=Users,DC=company,DC=com"
+                    },
+                    {
+                        "Action": "ChangeOperation",
+                        "Value": "Modify"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### RemoveEntitlements
+Reads the identity's current account values for `Attribute` and adds a `Remove` request for all of them. Use this for non-AD entitlement attributes, or AD when you want every group removed (including Domain Users).
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Disable",
+                "eventActions": [
+                    {
+                        "Action": "RemoveEntitlements",
+                        "Attribute": "memberOf"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### RemoveADEntitlements
+Sets `memberOf` to a single group (normally Domain Users). `Value` must be a DN that contains `DC`. Unlike `RemoveEntitlements`, this replaces membership rather than issuing individual removes.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Disable",
+                "eventActions": [
+                    {
+                        "Action": "RemoveADEntitlements",
+                        "Value": "CN=Domain Users,CN=Users,DC=company,DC=com"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### ScramblePassword
+Generates an 18-character random password and sets it on the named password attribute.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Disable",
+                "eventActions": [
+                    {
+                        "Action": "ScramblePassword",
+                        "Attribute": "*password*"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### UpdateAttribute
+Adds an `AttributeRequest` to `Set` the named attribute. `Value` supports substitution, including `#{null}` to clear the attribute.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Disable",
+                "eventActions": [
+                    {
+                        "Action": "UpdateAttribute",
+                        "Attribute": "terminationDate",
+                        "Value": "#{now.ISO8601}"
+                    },
+                    {
+                        "Action": "UpdateAttribute",
+                        "Attribute": "manager",
+                        "Value": "#{null}"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### AddArgument
+Adds an execution argument on the `AccountRequest` (connector/IQService arguments). Always sets the argument, including when the resolved value is null or empty.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Create",
+                "eventActions": [
+                    {
+                        "Action": "AddArgument",
+                        "Attribute": "CreateMailbox",
+                        "Value": "True"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### AddArgumentIfNotNull
+Same as `AddArgument`, but skips the argument when the resolved value is null or empty. Use this when the value comes from identity attributes that may be missing.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Create",
+                "eventActions": [
+                    {
+                        "Action": "AddArgumentIfNotNull",
+                        "Attribute": "PrimarySmtpAddress",
+                        "Value": "#{identity.email}"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### ThrowError
+Stops the provisioning transaction by throwing a `GeneralException`. `Value` is the error message; if it is missing or not a string, the message is `Unspecified Exception`.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Modify",
+                "Current Account Status Trigger": "ACTIVE",
+                "Identity Attribute Triggers": [
+                    {
+                        "Attribute": "department",
+                        "Operation": "eq",
+                        "Value": "Executives"
+                    }
+                ],
+                "eventActions": [
+                    {
+                        "Action": "ThrowError",
+                        "Value": "Automated modification of Executive accounts is strictly prohibited."
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### StopProcessing
+Returns immediately from the rule: remaining actions in this event, and remaining event configurations, are not applied. Provisioning continues with the plan as modified so far. `Attribute` and `Value` are ignored.
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Disable",
+                "Identity Attribute Triggers": [
+                    {
+                        "Attribute": "employeeType",
+                        "Operation": "eq",
+                        "Value": "VIP"
+                    }
+                ],
+                "eventActions": [
+                    {
+                        "Action": "StopProcessing"
+                    }
+                ]
+            },
+            {
+                "Operation": "Disable",
+                "eventActions": [
+                    {
+                        "Action": "RemoveEntitlements",
+                        "Attribute": "memberOf"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+In this example, VIP identities skip entitlement removal on Disable; all other identities still hit the second event.
+
+### 4.2 Combined Scenarios
+
+#### Example 1: Set a Termination Date and Move OU on Disable
 When an account is disabled, record the disable date on an attribute and move the account to a Disabled Users OU based on their location.
 
 ```json
@@ -160,7 +434,7 @@ When an account is disabled, record the disable date on an attribute and move th
 }
 ```
 
-### Example 2: Scramble Password and Clear Manager if Department is "Contractor"
+#### Example 2: Scramble Password and Clear Manager if Department is "Contractor"
 If the Identity is a contractor and their account is being Disabled, scramble their password and nullify their manager.
 
 ```json
@@ -193,7 +467,7 @@ If the Identity is a contractor and their account is being Disabled, scramble th
 }
 ```
 
-### Example 3: Injecting Exchange Arguments on Create
+#### Example 3: Injecting Exchange Arguments on Create
 When creating an Active Directory account, we might need to pass arguments down to the IQService to trigger mailbox creation, but only if the user has an email address.
 
 ```json
@@ -220,7 +494,7 @@ When creating an Active Directory account, we might need to pass arguments down 
 }
 ```
 
-### Example 4: Prevent Modification of Active Accounts in Sensitive Departments
+#### Example 4: Prevent Modification of Active Accounts in Sensitive Departments
 If an attempt is made to Modify an Active account belonging to the "Executives" department, throw an error to block the provisioning plan.
 
 ```json
