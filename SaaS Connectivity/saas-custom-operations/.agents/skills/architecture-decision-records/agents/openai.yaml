@@ -1,0 +1,3 @@
+interface:
+  display_name: Architecture Decision Records
+  short_description: Write and maintain Architecture Decision Records (ADRs) following best...

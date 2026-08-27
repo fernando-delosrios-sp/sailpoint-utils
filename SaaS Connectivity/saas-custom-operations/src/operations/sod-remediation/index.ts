@@ -1,0 +1,176 @@
+import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
+import { sodRemediationOperationSchema } from './index.schema'
+import { listAssignedEntitlements, listAssignedEntitlementsOffline } from '../../isc/identity-history'
+import {
+    fetchKeepRecommendations,
+    fetchKeepRecommendationsOffline,
+    type KeepRecommendationRequest,
+} from '../../isc/recommendations'
+import { resolveTokenIdentity } from '../../isc/token-identity'
+import { getViolationV1 } from '../../isc/violations'
+import { listControlsV1 } from '../../isc/controls'
+import {
+    fetchIdentityAccessItemsFromSdk,
+    fetchIdentityAccessItemsOffline,
+} from '../../isc/identity-access'
+import { resolveIdentityEmail } from '../../isc/public-identities'
+import { resolveIdentityEmailOffline } from '../../isc/public-identities/offline-data'
+import {
+    computeRecommendedSideToCorrect,
+    createPrivilegedEntitlementMap,
+    enrichResolvedAccessSides,
+} from './access-path-enrichment'
+import { AccessPathLine } from './access-path-resolver'
+import { toPersistAttributes } from '../../lib/form-notification'
+import { resolveUiOrigin } from '../../lib/sod-form-html'
+import {
+    assembleFormInput,
+    buildPersistedSituationSummary,
+    buildSituationHeader,
+    resolveViolationAccessPaths,
+} from './context'
+import { launchSodRemediationForm } from './form-service'
+import {
+    logSodRemediationAccessPaths,
+    logSodRemediationComplete,
+    logSodRemediationControls,
+    logSodRemediationFormInput,
+    logSodRemediationIdentityAccess,
+    logSodRemediationInput,
+    logSodRemediationOutput,
+    logSodRemediationRecipient,
+    logSodRemediationViolation,
+} from './logging'
+import { OFFLINE_VIOLATION } from './offline-data'
+
+export interface SodRemediationOperation extends OperationSignature {
+    command: 'custom:sod-remediation'
+    input: {
+        violationId: string
+        formName: string
+        owner?: string
+        disableLinks?: boolean
+    }
+    output: {
+        'sod-remediation:form-url': string
+        'sod-remediation:form-email-body': string
+        'sod-remediation:form-email-header': string
+        'sod-remediation:form-email-recipients': string[]
+    }
+}
+
+function collectKeepRecommendationRequests(
+    identityId: string,
+    paths: AccessPathLine[]
+): KeepRecommendationRequest[] {
+    const seen = new Set<string>()
+
+    return paths.flatMap((line) => {
+        const key = `${line.type}:${line.id}`
+        if (seen.has(key)) {
+            return []
+        }
+        seen.add(key)
+        return [{ identityId, itemId: line.id, itemType: line.type }]
+    })
+}
+
+/** Launch-only SOD remediation operation — prepares form instance and returns URL + summary. */
+export const sodRemediationOperation = customOperation<SodRemediationOperation>(
+    async (ctx, input) => {
+        const offline = isOfflineContext(ctx)
+        const clientConfig = { apiUrl: ctx.apiUrl, token: ctx.token }
+
+        logSodRemediationInput(ctx.requestId, input, offline)
+
+        const violation = offline
+            ? { ...OFFLINE_VIOLATION, id: input.violationId }
+            : await getViolationV1(clientConfig, input.violationId)
+        logSodRemediationViolation(ctx.requestId, violation, offline ? 'offline' : 'isc')
+
+        const controls = offline ? [] : await listControlsV1(clientConfig)
+        logSodRemediationControls(ctx.requestId, controls)
+
+        const identityAccess = offline
+            ? await fetchIdentityAccessItemsOffline(violation.identity.id)
+            : await fetchIdentityAccessItemsFromSdk(ctx.sdk, violation.identity.id)
+        logSodRemediationIdentityAccess(ctx.requestId, identityAccess)
+
+        let { groupA, groupB } = resolveViolationAccessPaths({ violation, identityAccess })
+        let recommendedSideToCorrect = null
+
+        try {
+            const recommendationRequests = [
+                ...collectKeepRecommendationRequests(violation.identity.id, groupA.accessPaths),
+                ...collectKeepRecommendationRequests(violation.identity.id, groupB.accessPaths),
+            ]
+
+            const keepRecommendations = offline
+                ? fetchKeepRecommendationsOffline(recommendationRequests)
+                : await fetchKeepRecommendations(clientConfig, recommendationRequests)
+
+            const assignedEntitlements = offline
+                ? listAssignedEntitlementsOffline(violation.identity.id)
+                : await listAssignedEntitlements(ctx.sdk.identityHistory, violation.identity.id)
+
+            const privilegedEntitlements = createPrivilegedEntitlementMap(assignedEntitlements)
+                ; ({ groupA, groupB } = enrichResolvedAccessSides(
+                    groupA,
+                    groupB,
+                    keepRecommendations,
+                    privilegedEntitlements
+                ))
+            recommendedSideToCorrect = computeRecommendedSideToCorrect(groupA, groupB)
+        } catch {
+            // Advisory metadata only — launch proceeds without keep or privileged annotations.
+        }
+
+        logSodRemediationAccessPaths(ctx.requestId, groupA, groupB)
+
+        const summaryInput = {
+            violation,
+            groupA,
+            groupB,
+            controls,
+            recommendedSideToCorrect,
+        }
+        const uiOrigin = offline || input.disableLinks === true ? undefined : resolveUiOrigin(ctx.apiUrl)
+        const formInput = assembleFormInput({ ...summaryInput, uiOrigin })
+        logSodRemediationFormInput(ctx.requestId, formInput)
+
+        const recipientId = input.owner ?? violation.owner.id
+        logSodRemediationRecipient(ctx.requestId, recipientId, input.owner ? 'owner-override' : 'violation-owner')
+
+        const ownerEmail = offline
+            ? resolveIdentityEmailOffline(recipientId)
+            : await resolveIdentityEmail(clientConfig, recipientId)
+
+        const definitionOwnerId = offline ? OFFLINE_VIOLATION.owner.id : resolveTokenIdentity(ctx.token)
+        const situationHeader = buildSituationHeader(summaryInput)
+        const formNotification = await launchSodRemediationForm({
+            forms: ctx.sdk.forms,
+            formName: input.formName,
+            definitionOwnerId,
+            recipientId,
+            createdBySourceId: ctx.sourceId,
+            formInput,
+            notification: {
+                emailHeader: situationHeader,
+                emailBody: ({ formUrl }) => buildPersistedSituationSummary(summaryInput, formUrl),
+                emailRecipients: [ownerEmail],
+            },
+        })
+
+        logSodRemediationOutput(ctx.requestId, {
+            formUrl: formNotification.formUrl,
+            situationHeader: formNotification.emailHeader,
+            situationSummary: formNotification.emailBody,
+            ownerEmail,
+        })
+        await ctx.persist(ctx.requestId, toPersistAttributes('sod-remediation', formNotification))
+
+        logSodRemediationComplete(ctx.requestId)
+        ctx.res.send({ status: 'success' })
+    },
+    { operationSchema: sodRemediationOperationSchema }
+)

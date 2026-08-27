@@ -1,0 +1,1055 @@
+## Purpose
+
+Custom operation framework (`src/framework/`) providing request context, SDK loopback, result persistence, logging, and the withCustomOperation wrapper for custom command handlers.
+## Requirements
+### Requirement: Volatile request context
+
+The framework SHALL initialize a RequestContext at the start of each custom operation invocation and discard it when the handler completes.
+
+#### Scenario: Context initialized from standard input
+
+- **GIVEN** a custom operation receives input containing apiUrl, token, requestId, and sourceName
+- **WHEN** the operation handler begins execution via withCustomOperation
+- **THEN** the framework SHALL expose requestId and sourceName on the context
+- **AND** SHALL expose the resolved sourceId after source resolution
+
+#### Scenario: Context is not shared across invocations
+
+- **GIVEN** two sequential custom operation invocations with different requestId values
+- **WHEN** each handler executes
+- **THEN** each invocation SHALL receive an independent context with its own requestId
+
+### Requirement: SDK loopback initialization
+
+The framework SHALL pre-configure sailpoint-api-client instances on the request context using apiUrl and token from the operation input.
+
+#### Scenario: SDK available without manual setup
+
+- **GIVEN** a custom operation handler wrapped with withCustomOperation
+- **WHEN** the handler accesses ctx.sdk
+- **THEN** the SDK SHALL be configured for the provided apiUrl and token
+- **AND** ctx.sdk.sources SHALL provide SourcesApi for source and schema management
+
+### Requirement: Result persistence helper
+
+The framework SHALL provide persist(id, attributes?, status?, options?) on a RequestContext typed to the operation output signature. Before writing the account, the framework SHALL reconcile the result source schema for the current operation. The attributes parameter SHALL accept Partial of the operation output type. The framework SHALL always set id, sourceId, date, and status; when the invocation command is known, the framework SHALL always set operationName from that command; author-supplied keys matching id, status, date, or operationName SHALL be ignored. The framework SHALL format attribute values for ISC storage using typed inference: strings booleans numbers bigint and Date stored as native values matching their ISC types, objects and unknown values JSON-serialized to STRING, arrays stored per element type rules with isMulti true on schema. Before writing, the framework SHALL enforce ISC account value limits: the persist identity (account id / nativeIdentity) SHALL NOT exceed 128 characters, and each STRING attribute value (including each element of a STRING array and JSON-serialized object values) SHALL NOT exceed 256 characters. Values exceeding a limit SHALL be truncated to the limit and the framework SHALL log a warning naming the attribute or identity context. The options parameter SHALL accept verify boolean where verify defaults to true. When no account exists for the identity on the result source, the framework SHALL create the account via createAccountV1, wait for the provisioning task to complete, and read the account back. When an account already exists for the identity, the framework SHALL update the account via putAccountV1, wait for the provisioning task when one is returned, and read the account back. The framework SHALL NOT remove existing accounts via deleteAccountAsyncV1 before writing. When verify is true, the framework SHALL read the account back and verify persisted attributes match written values with type-aware comparison before returning control. When verify is false, the framework SHALL skip inline read-back but SHALL record written attributes for later batch verification.
+
+#### Scenario: Persist stores typed number value
+
+- **GIVEN** a request context typed to an output with count number
+- **WHEN** ctx.persist('req-001', { count: 42 }) is called
+- **THEN** the framework SHALL create an account with count stored as 42
+- **AND** the framework SHALL verify read-back count equals 42 before resolving
+
+#### Scenario: Persist stores boolean value
+
+- **GIVEN** a request context typed to an output with active boolean
+- **WHEN** ctx.persist('req-001', { active: true }) is called
+- **THEN** the framework SHALL create an account with active stored as true
+- **AND** the framework SHALL verify read-back active equals true before resolving
+
+#### Scenario: Persist serializes object values
+
+- **GIVEN** a request context typed to an output with meta Record string unknown
+- **WHEN** ctx.persist('req-001', { meta: { key: 'value' } }) is called
+- **THEN** the framework SHALL store meta as a JSON-serialized string
+- **AND** the framework SHALL verify read-back meta matches the serialized value
+
+#### Scenario: Persist with default status and timestamp
+
+- **GIVEN** a request context typed to an output with outcome string
+- **WHEN** ctx.persist('req-001', { outcome: 'processed' }) is called
+- **THEN** the framework SHALL create an account with identity req-001, status success, date set, and outcome processed
+- **AND** the framework SHALL verify read-back status and outcome match before resolving
+
+#### Scenario: Persist with typed output attributes and default status
+
+- **GIVEN** a request context typed to an output with outcome string and count number
+- **WHEN** ctx.persist('req-001', { outcome: 'processed', count: 42 }) is called
+- **THEN** the framework SHALL create an account with identity req-001, status success, date set, outcome processed, and count 42
+- **AND** the framework SHALL verify read-back status, outcome, and count match before resolving
+
+#### Scenario: Persist with sparse params
+
+- **GIVEN** a valid typed request context
+- **WHEN** ctx.persist('req-001') is called with no attributes
+- **THEN** the framework SHALL create an account with identity req-001, status success, and date set
+- **AND** the framework SHALL verify status on read-back without requiring unset output attributes
+
+#### Scenario: Persist with no attributes
+
+- **GIVEN** a valid typed request context
+- **WHEN** ctx.persist('req-001') is called with no attributes
+- **THEN** the framework SHALL create an account with identity req-001, status success, and date set
+- **AND** the framework SHALL verify status on read-back
+
+#### Scenario: Persist with explicit status override
+
+- **GIVEN** a request context typed to an output with errorCode string
+- **WHEN** ctx.persist('req-001:err', { errorCode: 'timeout' }, 'failed') is called
+- **THEN** the framework SHALL create an account with status failed and errorCode timeout
+- **AND** the framework SHALL verify read-back status failed and errorCode timeout before resolving
+
+#### Scenario: Persist creates account when identity absent
+
+- **GIVEN** no account with identity req-001 exists on the result source
+- **WHEN** ctx.persist('req-001', { outcome: 'new' }) is called
+- **THEN** the framework SHALL invoke createAccountV1
+- **AND** the framework SHALL NOT invoke putAccountV1
+
+#### Scenario: Persist upserts duplicate identity
+
+- **GIVEN** an account with identity req-001 already exists on the result source with a resolvable ISC account id
+- **WHEN** ctx.persist('req-001', { outcome: 'updated' }) is called again
+- **THEN** the framework SHALL update the account via putAccountV1 with the updated attributes
+- **AND** the framework SHALL NOT invoke deleteAccountAsyncV1
+- **AND** the framework SHALL verify read-back outcome is updated before resolving
+
+#### Scenario: Persist serializes array and object values
+
+- **GIVEN** a request context typed to an output with name string and emails string array
+- **WHEN** ctx.persist('req-001', { name: 'Fernando', emails: ['dfas', 'fasdfas'] }) is called
+- **THEN** the framework SHALL store name as Fernando and emails as the string array
+- **AND** the framework SHALL verify read-back name and emails match before resolving
+
+#### Scenario: Persist ignores reserved framework keys in attributes
+
+- **GIVEN** a request context typed to an output with outcome string
+- **WHEN** ctx.persist('req-001', { id: 'override', status: 'override', operationName: 'custom:other', outcome: 'ok' }) is called
+- **THEN** the framework SHALL set id, status, and operationName from framework logic
+- **AND** the framework SHALL persist outcome ok
+
+#### Scenario: Positional param mapping
+
+- **GIVEN** a request context typed to an output with fieldA string, fieldB string, and fieldC string
+- **WHEN** ctx.persist('req-001', { fieldA: 'a', fieldB: 'b', fieldC: 'c' }) is called
+- **THEN** the framework SHALL persist fieldA, fieldB, and fieldC as named account attributes
+- **AND** the framework SHALL verify read-back fieldA, fieldB, and fieldC match a, b, and c
+
+#### Scenario: Persist retries read until account is available
+
+- **GIVEN** account write succeeds but the account is not immediately readable from ISC
+- **WHEN** ctx.persist('req-001', { outcome: 'value' }) is called
+- **THEN** the framework SHALL retry reading the account with bounded attempts before failing verification
+
+#### Scenario: Persist rejects when account cannot be verified
+
+- **GIVEN** account write succeeds but read-back never returns a matching account within retry limits
+- **WHEN** ctx.persist('req-001', { outcome: 'value' }) is called
+- **THEN** the persist call SHALL reject with an error indicating verification failed for identity req-001
+
+#### Scenario: Persist rejects on attribute mismatch
+
+- **GIVEN** account write succeeds but read-back returns an account with status or output attribute values that differ from what was written
+- **WHEN** ctx.persist('req-001', { outcome: 'expected' }, 'success') is called
+- **THEN** the persist call SHALL reject with an error indicating which attributes failed verification
+
+#### Scenario: Persist skips inline verification when verify is false
+
+- **GIVEN** a valid typed request context
+- **WHEN** ctx.persist('req-001', { outcome: 'value' }, undefined, { verify: false }) is called
+- **THEN** the framework SHALL write the account without inline read-back verification
+- **AND** the framework SHALL record expected attributes for identity req-001 in the write registry
+
+#### Scenario: Identity truncated at 128 characters
+
+- **GIVEN** a persist identity string longer than 128 characters
+- **WHEN** ctx.persist is called with that identity
+- **THEN** the framework SHALL store an account identity of exactly 128 characters equal to the first 128 characters of the supplied identity
+- **AND** the framework SHALL log a warning that the identity was truncated
+
+#### Scenario: STRING attribute truncated at 256 characters
+
+- **GIVEN** a request context typed to an output with summary string
+- **AND** summary value longer than 256 characters
+- **WHEN** ctx.persist('req-001', { summary: '<long value>' }) is called
+- **THEN** the framework SHALL store summary as exactly 256 characters equal to the first 256 characters of the input
+- **AND** the framework SHALL log a warning naming summary
+
+#### Scenario: STRING array elements truncated independently
+
+- **GIVEN** a request context typed to an output with tags string array
+- **AND** one tag element longer than 256 characters
+- **WHEN** ctx.persist('req-001', { tags: ['ok', '<long tag>'] }) is called
+- **THEN** the framework SHALL store the long tag truncated to 256 characters
+- **AND** the framework SHALL store the short tag unchanged
+
+#### Scenario: Values within limits unchanged
+
+- **GIVEN** a persist identity of 64 characters and a STRING attribute of 200 characters
+- **WHEN** ctx.persist is called with those values
+- **THEN** the framework SHALL store identity and attribute values without truncation
+- **AND** the framework SHALL NOT log a truncation warning
+
+### Requirement: Accounts API delegation for persist
+
+The framework persist implementation SHALL delegate generic AccountsApi lookup and CRUD calls to `src/isc/accounts/` rather than inlining `AccountsApi` method calls or OData filter logic in framework code. Persist orchestration (attribute formatting, provisioning task polling via TaskManagementApi, read-back verification) SHALL remain in the framework.
+
+#### Scenario: Persist lookup delegates to isc accounts
+
+- **GIVEN** ctx.persist is invoked for an identity on the result source
+- **WHEN** the framework determines whether an account already exists for that native identity
+- **THEN** it SHALL use `findAccountOnSource` from `src/isc/accounts/`
+- **AND** persist behavior SHALL remain unchanged from the caller perspective
+
+#### Scenario: Framework does not duplicate account CRUD wrappers
+
+- **GIVEN** the framework needs to create or update an account during persist
+- **WHEN** the implementation performs AccountsApi create or put operations
+- **THEN** it SHALL call the thin wrappers exported from `src/isc/accounts/`
+- **AND** SHALL NOT call `createAccountV1` or `putAccountV1` directly outside `src/isc/accounts/`
+
+### Requirement: Batch persist verification
+
+The framework SHALL provide verifyPersisted(ids) on the request context that reads and verifies a list of account identities previously written via persist in the same invocation using type-aware comparison.
+
+#### Scenario: Batch verify succeeds for deferred writes
+
+- **GIVEN** ctx.persist('req-001', { outcome: 'a' }, undefined, { verify: false }) and ctx.persist('req-001:child', { outcome: 'b' }, undefined, { verify: false }) were called
+- **WHEN** ctx.verifyPersisted(['req-001', 'req-001:child']) is called
+- **THEN** the framework SHALL verify attributes match recorded expectations for all identities
+
+#### Scenario: Batch verify rejects on attribute mismatch
+
+- **GIVEN** an identity was written with verify false but read-back attributes differ from recorded expectations
+- **WHEN** ctx.verifyPersisted(['req-001']) is called
+- **THEN** the call SHALL reject with an error indicating which attributes failed verification
+
+#### Scenario: Batch verify rejects on missing account
+
+- **GIVEN** an identity was written with verify false but is not readable within retry limits
+- **WHEN** ctx.verifyPersisted(['req-001']) is called
+- **THEN** the call SHALL reject with an error indicating verification failed for identity req-001
+
+#### Scenario: Batch verify rejects unknown identity
+
+- **GIVEN** identity req-999 was not written via ctx.persist in the current invocation
+- **WHEN** ctx.verifyPersisted(['req-999']) is called
+- **THEN** the call SHALL reject with an error indicating req-999 was not persisted in this invocation
+
+### Requirement: Operation logging
+
+The framework SHALL provide correlated logging on the request context via ctx.log with info warn and error methods that include requestId in every log entry. ctx.log SHALL use the dual-sink framework logger for the invocation. The optional second argument SHALL be a named detail map whose values MAY be objects arrays or scalars. When logUrl is configured, ctx.log calls SHALL POST JSON log events whose detail field contains the same normalized map written to stdout.
+
+#### Scenario: Logs include requestId correlation
+
+- **GIVEN** a custom operation with requestId wf-run-8842
+- **WHEN** the handler calls ctx.log.info with a message
+- **THEN** the log output SHALL include requestId wf-run-8842
+
+#### Scenario: Token is not logged
+
+- **GIVEN** a custom operation input containing a token
+- **WHEN** the handler or framework logs operation details
+- **THEN** the token value SHALL NOT appear in log output
+
+#### Scenario: ctx.log exposed on request context
+
+- **GIVEN** a handler wrapped with customOperation
+- **WHEN** the handler accesses ctx.log
+- **THEN** ctx.log SHALL expose info warn and error methods
+- **AND** each method SHALL route through the invocation framework logger
+
+#### Scenario: Scalar detail values allowed
+
+- **GIVEN** a handler calls ctx.log.info with message step complete and detail `{ count: 3 }`
+- **WHEN** logUrl is configured
+- **THEN** the POSTed JSON detail SHALL include count with value 3
+
+---
+
+### Requirement: Optional logUrl invoke config
+
+The framework SHALL accept an optional non-empty `logUrl` string on the invoke config object. When absent or empty, the framework SHALL operate in console-only logging mode. When present, the framework SHALL trim whitespace and use the value as the external log sink URL for the invocation.
+
+#### Scenario: logUrl resolved from invoke config
+
+- **GIVEN** an invoke with config containing logUrl `https://logs.example.com/ingest`
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework logger for that invocation SHALL target that URL for external log events
+
+#### Scenario: Empty logUrl treated as unset
+
+- **GIVEN** an invoke with config logUrl set to an empty string or whitespace only
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL NOT POST external log events for that invocation
+
+### Requirement: Dual-sink framework logger
+
+The framework SHALL provide a logger that always writes pretty human-readable log output to stdout and, when logUrl is configured, SHALL additionally POST one JSON log event per log call to logUrl using HTTP POST with Content-Type application/json. Console and POST SHALL use the same redacted JSON-safe normalized message and detail. External POST failures SHALL NOT fail or reject the custom operation invocation.
+
+#### Scenario: Console output always emitted
+
+- **GIVEN** an invocation with or without logUrl configured
+- **WHEN** the framework logger records an info warn or error message
+- **THEN** stdout SHALL receive human-readable log output for that message
+
+#### Scenario: External POST when logUrl configured
+
+- **GIVEN** an invocation with logUrl `https://logs.example.com/ingest`
+- **WHEN** the framework logger records an info message
+- **THEN** the framework SHALL POST a JSON log event to that URL
+- **AND** the operation invocation SHALL continue without awaiting POST completion
+
+#### Scenario: External POST failure is non-fatal
+
+- **GIVEN** an invocation with logUrl pointing to an unreachable host
+- **WHEN** the framework logger records a message
+- **THEN** the custom operation SHALL complete normally
+- **AND** console output SHALL still include the log output
+
+---
+
+### Requirement: External log event schema
+
+Each external log event POSTed to logUrl SHALL be a JSON object containing ISO-8601 timestamp, level info warn or error, requestId, optional command string, message string, and optional detail field. The detail field SHALL contain the normalized named detail map when provided. Detail values MAY be scalars objects or arrays. When detail contains sensitive values such as token or Authorization bearer values, the framework SHALL redact them before POST using the same policy applied to stdout.
+
+#### Scenario: Log event includes correlation fields
+
+- **GIVEN** an invocation with requestId wf-run-8842 and command custom:example
+- **WHEN** ctx.log.info is called with message step complete
+- **THEN** the POSTed JSON SHALL include requestId wf-run-8842 command custom:example level info and message step complete
+
+#### Scenario: Token redacted in external log event detail
+
+- **GIVEN** an invocation where a log call includes detail containing a token field
+- **WHEN** the framework POSTs the external log event
+- **THEN** the detail token value SHALL be replaced with a redaction marker
+- **AND** the raw token value SHALL NOT appear in the POST body
+
+#### Scenario: Named detail map preserved in JSON
+
+- **GIVEN** ctx.log.info called with message violation loaded and detail `{ violation: { id: 'v-1' }, controls: [] }`
+- **WHEN** the framework POSTs the external log event
+- **THEN** the POSTed detail SHALL include keys violation and controls
+- **AND** violation.id SHALL be `v-1`
+
+---
+
+### Requirement: Custom operation wrapper
+
+The framework SHALL provide customOperation to wrap custom command handlers with context initialization and standard input parsing.
+
+#### Scenario: Handler receives context and input
+
+- **GIVEN** a handler registered via customOperation with an OperationSignature type parameter
+- **WHEN** ISC invokes the custom command
+- **THEN** the handler SHALL receive a RequestContext whose persist method accepts Partial of the operation output type
+- **AND** the handler SHALL receive parsed operation input typed from the signature input field
+
+### Requirement: Operation response envelope
+
+The framework SHALL provide a typed operation response envelope for the `ctx.res.send` payload that is distinct from the persisted-attribute `output`. The envelope SHALL carry `name` (the operation/command name), `status`, `responses` (the native identities persisted during the invoke), and `summary` (per-operation response detail typed from an optional `OperationSignature['response']`). The framework SHALL populate `name`, `status`, and `responses`; the handler SHALL supply only `summary`. Response envelope fields SHALL NOT be propagated to the result-source account schema.
+
+#### Scenario: Handler returns response via ctx.respond
+
+- **GIVEN** an operation declares `response` summary fields on its `OperationSignature` interface
+- **WHEN** the handler calls `ctx.respond(summary)` after persisting accounts
+- **THEN** the framework SHALL call `ctx.res.send` with an envelope containing `name`, `status`, `responses`, and the supplied `summary`
+- **AND** `summary` SHALL be typed as `OperationSignature['response']`
+
+#### Scenario: responses lists persisted native ids
+
+- **GIVEN** a handler persists accounts with native identities `req:child-a` and `req:child-b` during one invoke
+- **WHEN** the handler calls `ctx.respond(summary)`
+- **THEN** the envelope `responses` SHALL contain `req:child-a` and `req:child-b`
+- **AND** SHALL be derived from the persist write registry, not from a handler-supplied list
+
+#### Scenario: Response summary excluded from account schema
+
+- **GIVEN** an operation declares response summary field `items-scanned` and persisted output field `form-url`
+- **WHEN** codegen derives the account schema
+- **THEN** the account schema SHALL include `form-url`
+- **AND** SHALL NOT include `items-scanned`
+
+#### Scenario: Default status
+
+- **GIVEN** a handler calls `ctx.respond(summary)` without an explicit status
+- **WHEN** the framework builds the envelope
+- **THEN** `status` SHALL default to `success`
+
+### Requirement: Operation signature
+
+Each custom operation SHALL declare an OperationSignature interface with input and output fields using plain TypeScript types, and MAY declare an optional `response` field. The `output` field SHALL contain only attributes the operation persists via `ctx.persist` and SHALL be the sole source of the result-source account schema; it SHALL NOT contain `ctx.res.send` response or summary content. The optional `response` field SHALL type the operation response envelope `summary`. The interface MAY optionally declare `command?: string` as a string literal for build-time auto-registration. The framework SHALL provide customOperation to register the handler; input and ctx.persist attribute types SHALL be inferred from that interface at compile time.
+
+#### Scenario: Operation declares command for auto-registration
+
+- **GIVEN** an operation defines `interface ExampleOperation extends OperationSignature` with `command: 'custom:example'`, input, and output fields
+- **WHEN** codegen runs
+- **THEN** the operation SHALL be included in the generated auto-registry without manual index.ts registration
+
+#### Scenario: Operation declares combined input and output signature
+
+- **GIVEN** an operation defines interface ExampleOperation extending OperationSignature with input message optional string and output summary string and optional step string
+- **WHEN** the operation is registered via customOperation with a handler typed to ExampleOperation
+- **THEN** the handler input parameter SHALL be typed as ExampleOperation input
+- **AND** ctx.persist SHALL accept Partial of ExampleOperation output
+
+#### Scenario: Output declares persisted attributes only
+
+- **GIVEN** an operation persists child accounts with attribute `form-url` and returns rollup counter `items-scanned` via the response envelope
+- **WHEN** its OperationSignature is authored
+- **THEN** `output` SHALL declare `form-url`
+- **AND** `output` SHALL NOT declare `items-scanned`
+- **AND** `items-scanned` SHALL be declared under `response`
+
+### Requirement: Operation schema contract on context
+
+The framework SHALL attach an OperationSchemaContract to the request context containing the current command name and output fields from the operation's OperationSignature. For auto-discovered operations, the framework SHALL resolve the schema from a build-time populated registry keyed by command name when `operationSchema` is not passed explicitly to `customOperation`. Manually registered operations SHALL continue to pass an explicit `operationSchema` sidecar. Operation modules SHALL NOT hand-maintain duplicate `defineOperationSchema({...})` field maps.
+
+#### Scenario: Context carries current operation output fields
+
+- **GIVEN** `custom:example` declares output fields `summary` string and optional `step` string in its OperationSignature interface
+- **AND** `example-operation.schema.ts` is generated from that interface
+- **AND** the sidecar is registered via generated `auto-registry.ts`
+- **WHEN** `custom:example` is invoked
+- **THEN** the request context operationSchema SHALL include `summary` and `step` as output fields for schema reconciliation
+
+#### Scenario: Auto-discovered operation resolves schema from registry
+
+- **GIVEN** `custom:example` is auto-discovered and its generated sidecar is registered via `registerOperationSchema`
+- **AND** the handler is created via `customOperation<ExampleOperation>(handler)` without an explicit `operationSchema` option
+- **WHEN** `custom:example` is invoked
+- **THEN** the request context operationSchema SHALL include output fields from the generated sidecar for schema reconciliation
+
+#### Scenario: Auto-discovered operation wires sidecar via auto-registry
+
+- **GIVEN** `example-operation.ts` declares `command: 'custom:example'` on its OperationSignature interface
+- **AND** codegen generates `example-operation.schema.ts` and `auto-registry.ts`
+- **WHEN** the generated auto-registry is loaded
+- **THEN** it SHALL import `exampleOperationSchema` from `./example-operation.schema`
+- **AND** SHALL call `registerOperationSchema('custom:example', exampleOperationSchema)`
+- **AND** `example-operation.ts` SHALL NOT inline a manual `defineOperationSchema({...})` field map
+
+#### Scenario: Manual operation requires explicit operationSchema
+
+- **GIVEN** a manually registered operation without `command` on its OperationSignature
+- **WHEN** the handler is registered via `customOperation` with `{ operationSchema: manualOperationSchema }`
+- **THEN** the request context operationSchema SHALL use the explicitly passed schema
+
+#### Scenario: Explicit operationSchema overrides registry
+
+- **GIVEN** an auto-discovered operation also passes `{ operationSchema: customSchema }` to `customOperation`
+- **WHEN** the operation is invoked
+- **THEN** the explicit schema SHALL take precedence over the registry lookup
+
+### Requirement: Base account schema on result source create
+
+When the framework auto-provisions a new DelimitedFile result source, it SHALL apply the **base account schema** immediately after source creation. The base schema SHALL include core framework attributes (`id`, `status`, `date`, `details`, `operationName`) plus the **output fields of the invoking custom operation** (from `operationSchema.outputFields` on the current invocation), excluding reserved framework keys, with typed inference matching templates generator and persist-time reconciliation rules.
+
+If an account schema already exists on the newly created source (for example from ISC schema discovery), the framework SHALL align that schema to the base schema by adding missing attributes and correcting schema metadata (`identityAttribute`, `displayAttribute`, `nativeObjectType`, `name`) when absent or incorrect. The framework SHALL NOT remove existing attributes. Type and isMulti conflicts SHALL follow the same warn-only policy as persist-time schema reconciliation.
+
+When `operationSchema` is unavailable at source create, the framework SHALL apply core framework attributes only and SHALL rely on persist-time reconciliation to add operation output fields on first `ctx.persist`.
+
+#### Scenario: New source receives full base schema
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **AND** the invoking operation declares output fields `summary` and `step`
+- **AND** other registered operations declare output field `violationId`
+- **WHEN** a custom operation invocation auto-creates the result source
+- **THEN** the framework SHALL create or align the account schema to include `id`, `status`, `date`, `details`, `operationName`, `summary`, and `step`
+- **AND** the account schema SHALL NOT include `violationId` from other registered operations
+- **AND** SHALL set `identityAttribute` to `id`
+
+#### Scenario: ISC-discovered schema replaced with base schema
+
+- **GIVEN** source create completes and ISC has already materialized an account schema with only discovered CSV columns
+- **WHEN** the framework applies the base account schema for the invoking operation
+- **THEN** the framework SHALL patch the existing account schema to add core attributes and the invoking operation's output fields including `details` and `operationName`
+- **AND** SHALL NOT fail with a duplicate schema create error
+
+#### Scenario: Base schema excludes reserved framework keys
+
+- **GIVEN** the invoking operation output includes field `sourceId`
+- **WHEN** base schema is applied on source create
+- **THEN** the account schema SHALL NOT include attribute `sourceId`
+
+#### Scenario: Existing result source unchanged
+
+- **GIVEN** an ISC result source with the configured sourceName already exists
+- **WHEN** a custom operation is invoked
+- **THEN** the framework SHALL resolve the existing source ID
+- **AND** SHALL NOT re-apply the base account schema
+
+#### Scenario: Later operation adds fields via persist reconciliation
+
+- **GIVEN** a result source was auto-created by operation A with only A's output fields on the schema
+- **AND** operation B declares output field `violationId` not present on the schema
+- **WHEN** operation B invokes and calls `ctx.persist` with attribute `violationId`
+- **THEN** the framework SHALL add `violationId` to the account schema before writing the account
+
+#### Scenario: Core-only base schema when operationSchema absent
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **AND** the invoking handler has no resolvable `operationSchema`
+- **WHEN** a custom operation invocation auto-creates the result source
+- **THEN** the applied base account schema SHALL include only `id`, `status`, `date`, `details`, and `operationName`
+
+---
+
+### Requirement: Result source resolution by name
+
+The framework SHALL resolve the configured sourceName to an ISC source ID at the start of each custom operation invocation using SourcesApi.
+
+#### Scenario: Existing source resolved by name
+
+- **GIVEN** an ISC source named Results Store exists
+- **WHEN** a custom operation is invoked with sourceName Results Store
+- **THEN** the framework SHALL set sourceId on the request context to that source's ID
+- **AND** the handler SHALL proceed without creating a new source
+
+#### Scenario: Missing source auto-created
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **WHEN** a custom operation is invoked
+- **THEN** the framework SHALL create a DelimitedFile source with provisionAsCsv true and the configured name
+- **AND** the source owner SHALL be the identity associated with the access token
+- **AND** the framework SHALL apply the base account schema on the new source
+- **AND** the framework SHALL set sourceId on the request context to the created source ID
+
+#### Scenario: Duplicate source name on concurrent create
+
+- **GIVEN** two invocations attempt to create the same sourceName concurrently
+- **WHEN** one create succeeds and the other receives a conflict
+- **THEN** the framework SHALL re-list sources by name and use the existing source ID
+
+### Requirement: Schema reconciliation at persist
+
+The framework SHALL reconcile the result source account schema before each ctx.persist call, scoped to the current operation's output contract and the keys present in the attributes argument.
+
+#### Scenario: Missing output attribute added to schema
+
+- **GIVEN** the account schema on the result source lacks attribute summary
+- **AND** the current operation output includes summary string
+- **WHEN** ctx.persist is called with attributes containing summary
+- **THEN** the framework SHALL add summary to the account schema before creating the account
+
+#### Scenario: Core framework attributes always present
+
+- **GIVEN** a newly created result source with base schema applied
+- **WHEN** ctx.persist is called for any operation
+- **THEN** the account schema SHALL include id, status, date, details, and operationName attributes
+- **AND** identityAttribute SHALL be id
+
+#### Scenario: Type conflict warns and keeps existing
+
+- **GIVEN** the account schema defines count as STRING
+- **AND** the current operation output defines count as number
+- **WHEN** ctx.persist is called with count 42
+- **THEN** the framework SHALL log a warning about the type conflict
+- **AND** SHALL NOT change the existing count attribute type
+- **AND** SHALL proceed with account creation
+
+#### Scenario: isMulti conflict patched to true
+
+- **GIVEN** the account schema defines tags as STRING with isMulti false
+- **AND** the current operation output defines tags as string array
+- **WHEN** ctx.persist is called with tags containing values
+- **THEN** the framework SHALL log a warning about the isMulti conflict
+- **AND** SHALL patch the schema to set tags isMulti true
+- **AND** SHALL proceed with account creation
+
+### Requirement: Typed schema inference
+
+The framework SHALL infer ISC account schema attribute definitions from OperationSignature output TypeScript types using the following mapping: string to STRING isMulti false, number to INT isMulti false, boolean to BOOLEAN isMulti false, bigint to LONG isMulti false, Date to DATE isMulti false, object or unknown to STRING isMulti false, array types to the element type mapping with isMulti true.
+
+#### Scenario: Number output infers INT attribute
+
+- **GIVEN** an operation output field count with type number
+- **WHEN** schema reconciliation runs for that field
+- **THEN** the inferred attribute SHALL have type INT and isMulti false
+
+#### Scenario: String array output infers STRING multi attribute
+
+- **GIVEN** an operation output field tags with type string array
+- **WHEN** schema reconciliation runs for that field
+- **THEN** the inferred attribute SHALL have type STRING and isMulti true
+
+### Requirement: Test mode activation
+
+The framework SHALL activate test mode when config testMode is true or when environment variable SPCX_TEST_MODE equals 1 and config testMode is not explicitly false.
+
+#### Scenario: Test mode enabled via config
+
+- **GIVEN** invoke config contains testMode true
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL operate in test mode for that invocation
+
+#### Scenario: Test mode enabled via environment fallback
+
+- **GIVEN** SPCX_TEST_MODE is 1 and config does not set testMode
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL operate in test mode for that invocation
+
+#### Scenario: Test mode disabled by default
+
+- **GIVEN** config omits testMode and SPCX_TEST_MODE is not 1
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL NOT operate in test mode
+- **AND** persistence behavior SHALL match the existing production path
+
+### Requirement: Inhibited ISC persistence in test mode
+
+When test mode is active, the framework SHALL NOT call ISC account create, account read-back verification for persist, source auto-provision, or schema reconciliation APIs. ctx.persist and ctx.verifyPersisted SHALL remain callable with unchanged signatures.
+
+#### Scenario: Persist does not create ISC account
+
+- **GIVEN** test mode is active
+- **WHEN** the handler calls ctx.persist with an identity and attributes
+- **THEN** the framework SHALL NOT invoke createAccountV1
+- **AND** the persist call SHALL resolve without error
+
+#### Scenario: VerifyPersisted does not read ISC accounts
+
+- **GIVEN** test mode is active and ctx.persist was called for identity req-001
+- **WHEN** the handler calls ctx.verifyPersisted with req-001
+- **THEN** the framework SHALL NOT invoke listAccountsV1 for verification
+- **AND** the call SHALL resolve without error
+
+#### Scenario: Source auto-provision inhibited in test mode
+
+- **GIVEN** test mode is active with a valid access token and no existing source for sourceName
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL NOT call createSourceV1
+- **AND** SHALL set sourceId to a placeholder value and log that source was not found
+
+### Requirement: Test mode persistence console logging
+
+When test mode is active, the framework SHALL log each inhibited persist and verifyPersisted operation to console with a test-mode prefix including identity, status, and formatted attributes.
+
+#### Scenario: Inhibited failed persist logged with details
+
+- **GIVEN** test mode is active
+- **WHEN** a terminal failure triggers automatic failed account persist
+- **THEN** console output SHALL include a test-mode inhibited persist line for the requestId
+- **AND** SHALL include status failed and details in the logged attributes
+
+#### Scenario: Inhibited persist logged with attributes
+
+- **GIVEN** test mode is active
+- **WHEN** ctx.persist is called with identity req-001 and attributes containing outcome processed
+- **THEN** console output SHALL include a test-mode log line for identity req-001
+- **AND** SHALL include the formatted attributes that would have been written
+
+#### Scenario: Test mode startup and summary logged
+
+- **GIVEN** test mode is active
+- **WHEN** a custom operation starts and completes
+- **THEN** console output SHALL log that test mode is active at start
+- **AND** SHALL log a summary of inhibited persist count at completion
+
+#### Scenario: Token not logged in test mode output
+
+- **GIVEN** test mode is active and config contains a token
+- **WHEN** the framework logs test mode messages
+- **THEN** the token value SHALL NOT appear in console output
+
+### Requirement: Unchanged res.send in test mode
+
+When test mode is active, ctx.res SHALL remain the SDK Response object and handler calls to ctx.res.send SHALL behave identically to non-test-mode invocations.
+
+#### Scenario: res.send invoked normally
+
+- **GIVEN** test mode is active
+- **WHEN** the handler calls ctx.res.send with a payload
+- **THEN** the response object SHALL receive the payload through the standard SDK send mechanism
+
+### Requirement: Config-gated ISC status checks in test mode
+
+When test mode is active and an invocation config object is provided, the framework SHALL validate standard connection fields, perform read-only ISC connectivity validation before the handler runs, and fail when the token is missing, invalid, or when any read-only ISC call errors. When test mode is active and no invocation config is provided, the framework SHALL skip all ISC API calls.
+
+#### Scenario: ISC status checked when config provided
+
+- **GIVEN** test mode is active and an invocation config object is provided with apiUrl token and sourceName
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL call a read-only ISC API to verify connectivity and token validity
+- **AND** SHALL fail with ConnectorError when the status check fails
+
+#### Scenario: ISC status logged on success
+
+- **GIVEN** test mode is active with provided config and a successful ISC status check
+- **WHEN** customOperation completes initialization
+- **THEN** console output SHALL include a test-mode log line indicating ISC status check succeeded
+
+#### Scenario: All ISC calls skipped when no config provided
+
+- **GIVEN** test mode is active via SPCX_TEST_MODE and no invocation config object is provided
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL NOT call any ISC API
+- **AND** SHALL set sourceId to a fixed placeholder value for the invocation
+
+#### Scenario: Source resolved read-only when config provided
+
+- **GIVEN** test mode is active with provided config and an existing ISC source matching sourceName
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL resolve sourceId via list-only lookup
+- **AND** SHALL NOT auto-provision a missing source
+
+#### Scenario: Missing token fails when config provided
+
+- **GIVEN** test mode is active and an invocation config object is provided without token
+- **WHEN** customOperation initializes the request context
+- **THEN** the framework SHALL reject with ConnectorError indicating missing required config fields
+
+### Requirement: Invocation config presence detection
+
+The framework SHALL determine whether an invocation config object was provided from deps.config, context.config, or readInvokeConfig before applying test mode ISC gating. readInvokeConfig SHALL try external node_modules SDK readConfig before bundled readConfig.
+
+#### Scenario: Context config counts as provided
+
+- **GIVEN** test mode is active and context.config contains connection fields
+- **WHEN** customOperation resolves configuration
+- **THEN** the framework SHALL treat config as provided
+- **AND** SHALL require apiUrl token and sourceName
+
+#### Scenario: Absent config enables offline test mode path
+
+- **GIVEN** test mode is active via SPCX_TEST_MODE only and neither deps.config nor context.config is set
+- **WHEN** customOperation resolves configuration
+- **THEN** the framework SHALL treat config as not provided
+- **AND** SHALL skip ISC API calls
+
+#### Scenario: spcx AsyncLocalStorage config counts as provided
+
+- **GIVEN** test mode is active and spcx supplies config via _withConfig without context.config
+- **WHEN** customOperation resolves configuration via readInvokeConfig
+- **THEN** the framework SHALL treat config as provided
+- **AND** SHALL require apiUrl token and sourceName
+
+### Requirement: Default incoming request logging
+
+The framework SHALL log every registered custom command invoke before the handler executes using the same dual-sink framework logger as ctx.log. The log SHALL use message Incoming request and detail `{ command, input, config }` when config is available. Config in detail SHALL pass through sanitizeForLog. Console output MAY use readable section headers and spread JSON formatting consistent with the operation test runner output style. When logUrl is configured, the framework SHALL POST the same JSON log event schema as other framework logs.
+
+#### Scenario: Invoke payload logged at command entry
+
+- **GIVEN** a custom command registered via registerCommands
+- **WHEN** the connector receives an invoke with input containing requestId
+- **THEN** stdout SHALL include an Incoming request section before the handler runs
+- **AND** the log SHALL include the command type and input fields
+
+#### Scenario: Config included when resolved
+
+- **GIVEN** an invoke with a resolvable config containing apiUrl token and sourceName
+- **WHEN** the command handler is invoked
+- **THEN** the incoming request log SHALL include a config object with apiUrl and sourceName
+- **AND** the config object SHALL appear alongside command and input in the logged payload
+
+#### Scenario: Token redacted in request log
+
+- **GIVEN** an invoke config containing a non-empty token value
+- **WHEN** the incoming request is logged
+- **THEN** the logged config token field SHALL be replaced with a redaction marker
+- **AND** the raw token value SHALL NOT appear in stdout or POSTed detail
+
+#### Scenario: All registered commands wrapped
+
+- **GIVEN** auto-discovered and manually registered custom commands
+- **WHEN** registerCommands completes
+- **THEN** every command handler registered via connector.command SHALL log incoming requests before delegation
+
+#### Scenario: Incoming request posted when logUrl configured
+
+- **GIVEN** an invoke with config logUrl set to a reachable HTTP endpoint
+- **WHEN** the incoming request is logged at command entry
+- **THEN** the framework SHALL POST a JSON log event to logUrl
+- **AND** the event message SHALL be Incoming request
+- **AND** the event detail SHALL include command input and redacted config using the same schema as ctx.log detail
+
+### Requirement: Invoke config resolution for bundled and spcx runtimes
+
+The framework SHALL resolve per-invoke config from context.config when present, otherwise from the external node_modules connector SDK readConfig when running under spcx local dev, otherwise from the bundled readConfig runtime path.
+
+#### Scenario: spcx per-invoke config resolved
+
+- **GIVEN** spcx wraps the invoke with _withConfig supplying apiUrl token and sourceName
+- **WHEN** resolveInvocationConfig or readInvokeConfig is called without context.config
+- **THEN** the framework SHALL return the spcx-supplied config object
+- **AND** configProvided SHALL be true
+
+#### Scenario: Production CONNECTOR_CONFIG fallback
+
+- **GIVEN** no context.config and no spcx AsyncLocalStorage config
+- **WHEN** readInvokeConfig is called and bundled readConfig returns a non-empty object
+- **THEN** the framework SHALL return the bundled config
+- **AND** configProvided SHALL be true when keys are present
+
+#### Scenario: Absent config returns not provided
+
+- **GIVEN** no context.config and all readConfig paths return empty or fail
+- **WHEN** resolveInvocationConfig is called
+- **THEN** configProvided SHALL be false
+- **AND** config SHALL be an empty object
+
+### Requirement: Failed operation responses for custom operations
+
+The framework SHALL catch every failure escaping a `customOperation`-wrapped handler, normalize it via `toConnectorError` (plain `Error`, axios rejections, `PersistVerificationError`, and existing `ConnectorError`), and send `{ status: 'failed', error: <message> }` on the command response when the handler has not already sent a response. The invocation SHALL resolve without throwing so local spcx and workflow HTTP invokes return success transport status with a terminal failed payload instead of HTTP 500 retries. For every terminal failed response, the framework SHALL also upsert a result source account for the invoke `requestId` with `status` failed and `details` set to the same normalized message as described in **Automatic failed account persist on terminal failure**.
+
+#### Scenario: Handler throws plain Error
+
+- **GIVEN** a custom operation handler that throws `new Error('operation failed')`
+- **WHEN** ISC invokes the custom command via `customOperation`
+- **THEN** the invocation SHALL resolve without throwing
+- **AND** the response SHALL include status failed
+- **AND** the error field SHALL include the original failure message
+- **AND** a result account SHALL exist for requestId with status failed and matching details
+
+#### Scenario: Initialization failure before handler runs
+
+- **GIVEN** test mode is active with provided config and ISC status check rejects with a plain SDK error
+- **WHEN** `customOperation` initializes the request context
+- **THEN** the invocation SHALL resolve without throwing
+- **AND** the response SHALL include status failed with the normalized error message
+- **AND** a failed result account with details SHALL be written when persist is available
+
+#### Scenario: Persist verification failure
+
+- **GIVEN** a handler calls `ctx.persist` and account read-back verification fails after bounded retries
+- **WHEN** the persist helper throws `PersistVerificationError`
+- **THEN** the invocation SHALL resolve without throwing
+- **AND** the response SHALL include status failed describing the verification failure
+- **AND** a failed result account with details SHALL be written
+
+#### Scenario: Existing ConnectorError message preserved
+
+- **GIVEN** a handler or framework helper throws `new ConnectorError('missing field')`
+- **WHEN** the error is handled by `customOperation`
+- **THEN** the failed response error field SHALL include missing field without double-wrapping prefixes beyond the optional command context
+- **AND** account details SHALL include the same normalized message
+
+#### Scenario: HTTP 404 maps to NotFound type
+
+- **GIVEN** an ISC client call fails with HTTP status 404
+- **WHEN** the error is normalized by the framework
+- **THEN** the resulting `ConnectorError` SHALL have type `notFound` before its message is placed on the failed response and account details
+
+---
+
+### Requirement: Inline Vitest unit test fixtures
+
+Vitest unit tests co-located as `*.spec.ts` under `src/` SHALL define mock return values, stub entities, and expected payload objects inline within the spec file. The project SHALL NOT add sibling modules whose primary purpose is supplying data to unit tests (for example `offline-data.ts`, `fixtures.ts`, or `test-data.ts` imported only or primarily by `*.spec.ts` files).
+
+#### Scenario: Spec file contains its own mock data
+
+- **GIVEN** a developer adds or updates a Vitest test for a module under `src/`
+- **WHEN** the test needs canned API responses or entity shapes
+- **THEN** the mock data SHALL be declared in the co-located `*.spec.ts` file using inline literals, module-level constants, or `vi.fn()` setup in the same file
+- **AND** the test SHALL NOT import from a dedicated fixture-only sibling module
+
+#### Scenario: No new test-fixture sibling files
+
+- **GIVEN** a code review or contribution adds unit test coverage
+- **WHEN** test data would previously have been placed in a separate file for spec consumption
+- **THEN** the contribution SHALL co-locate that data in the spec file instead
+- **AND** SHALL NOT introduce new `*-data.ts` or `fixtures.ts` files under `src/` for Vitest-only use
+
+### Requirement: Details core account attribute
+
+The framework SHALL include a mandatory STRING attribute named `details` on the result source base account schema alongside core attributes `id`, `status`, and `date`. Schema reconciliation at persist time SHALL ensure `details` exists on the account schema before writing any account. The `details` attribute SHALL NOT be generated from `OperationSignature.output` fields or operation schema sidecars.
+
+#### Scenario: Base schema includes details on new source
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **WHEN** a custom operation invocation auto-creates the result source
+- **THEN** the applied base account schema SHALL include attribute `details` with type STRING and isMulti false
+- **AND** SHALL include attributes `id`, `status`, and `date`
+
+#### Scenario: Persist reconciles missing details on existing source
+
+- **GIVEN** a result source account schema lacks attribute `details`
+- **WHEN** ctx.persist is called for any operation
+- **THEN** the framework SHALL add `details` to the account schema before writing the account
+
+#### Scenario: Details excluded from operation output codegen union
+
+- **GIVEN** an operation declares output fields in its OperationSignature interface
+- **WHEN** the templates generator builds reference account schema from the union of registered operation outputs
+- **THEN** attribute `details` SHALL come only from framework core attributes
+- **AND** SHALL NOT be duplicated from operation output field definitions
+
+### Requirement: Operation name core account attribute
+
+The framework SHALL include a mandatory STRING attribute named `operationName` on the result source base account schema alongside core attributes `id`, `status`, `date`, and `details`. Schema reconciliation at persist time SHALL ensure `operationName` exists on the account schema before writing any account. The `operationName` attribute SHALL NOT be generated from `OperationSignature.output` fields or operation schema sidecars.
+
+#### Scenario: Base schema includes operationName on new source
+
+- **GIVEN** no ISC source exists with the configured sourceName
+- **WHEN** a custom operation invocation auto-creates the result source
+- **THEN** the applied base account schema SHALL include attribute `operationName` with type STRING and isMulti false
+- **AND** SHALL include attributes `id`, `status`, `date`, and `details`
+
+#### Scenario: Persist reconciles missing operationName on existing source
+
+- **GIVEN** a result source account schema lacks attribute `operationName`
+- **WHEN** ctx.persist is called for any operation
+- **THEN** the framework SHALL add `operationName` to the account schema before writing the account
+
+#### Scenario: OperationName excluded from operation output codegen union
+
+- **GIVEN** an operation declares output fields in its OperationSignature interface
+- **WHEN** the templates generator builds reference account schema from the union of registered operation outputs
+- **THEN** attribute `operationName` SHALL come only from framework core attributes
+- **AND** SHALL NOT be duplicated from operation output field definitions
+
+#### Scenario: Success persist sets operationName from command
+
+- **GIVEN** a custom operation invoked with commandType `custom:example`
+- **WHEN** ctx.persist('req-001', { outcome: 'done' }) is called
+- **THEN** the written account SHALL include operationName `custom:example`
+
+#### Scenario: Handler-supplied operationName ignored
+
+- **GIVEN** a custom operation invoked with commandType `custom:example`
+- **WHEN** ctx.persist('req-001', { outcome: 'done', operationName: 'custom:other' }) is called
+- **THEN** the written account SHALL include operationName `custom:example`
+- **AND** SHALL NOT store `custom:other`
+
+### Requirement: Automatic failed account persist on terminal failure
+
+The framework SHALL upsert a result source account for the invoke `requestId` with `status` failed, `details` set to the normalized failure message, and `operationName` set from the invocation command when known whenever a `customOperation`-wrapped invocation terminates with `{ status: 'failed', error }` on the command response and a request context with persist was initialized. This SHALL apply to handler throws normalized by `toConnectorError`, initialization failures before the handler completes, persist verification failures, and handler-initiated `res.send({ status: 'failed', error })` payloads. The framework SHALL perform this persist before or together with sending the failed invoke response. If failure persist itself errors, the framework SHALL log the error and SHALL still send the failed invoke response without throwing.
+
+#### Scenario: Handler throw persists failed account
+
+- **GIVEN** a custom operation handler throws `new Error('operation failed')`
+- **AND** invoke input contains requestId `wf-run-001`
+- **AND** the invocation commandType is `custom:example`
+- **WHEN** ISC invokes the custom command via `customOperation`
+- **THEN** the framework SHALL upsert an account with identity `wf-run-001`, status failed, details containing `operation failed`, and operationName `custom:example`
+- **AND** the invoke response SHALL include status failed and error containing `operation failed`
+
+#### Scenario: Handler sends failed response persists account
+
+- **GIVEN** a handler calls `ctx.res.send({ status: 'failed', error: 'form create failed' })`
+- **AND** invoke input contains requestId `wf-run-002`
+- **AND** the invocation commandType is `custom:example`
+- **WHEN** the custom command completes
+- **THEN** the framework SHALL upsert an account with identity `wf-run-002`, status failed, details `form create failed`, and operationName `custom:example`
+
+#### Scenario: Initialization failure persists failed account
+
+- **GIVEN** test mode is active with provided config and ISC status check rejects
+- **AND** invoke input contains requestId `wf-run-003`
+- **WHEN** `customOperation` fails during request context initialization
+- **THEN** the framework SHALL upsert a failed account for `wf-run-003` with details describing the initialization failure when persist is available
+- **AND** the invoke response SHALL include status failed
+
+#### Scenario: Persist verification failure persists failed account
+
+- **GIVEN** a handler calls `ctx.persist('wf-run-004', { outcome: 'value' })` and verification fails
+- **WHEN** `PersistVerificationError` is handled by `customOperation`
+- **THEN** the framework SHALL upsert a failed account for identity `wf-run-004` with details describing the verification failure
+
+#### Scenario: Failure persist failure is non-fatal
+
+- **GIVEN** a handler throws and account upsert fails with an ISC error
+- **WHEN** `customOperation` handles the terminal failure
+- **THEN** the invoke response SHALL still include status failed with the original error message
+- **AND** the invocation SHALL resolve without throwing
+
+#### Scenario: Failed persist skips inline verification
+
+- **GIVEN** a terminal failure triggers automatic failed account persist
+- **WHEN** the framework writes the failed account
+- **THEN** it SHALL NOT require inline read-back verification to succeed before sending the failed invoke response
+
+---
+
+### Requirement: Optional details on success persist
+
+The framework SHALL allow handlers to supply an optional STRING `details` value when calling `ctx.persist` on success (or any non-failed status). When supplied, the framework SHALL store `details` on the written account attributes. When omitted on success, the framework SHALL NOT invent a default `details` value.
+
+#### Scenario: Success persist with informative details
+
+- **GIVEN** a handler calls `ctx.persist('wf-run-010', { outcome: 'done', details: 'Processed 3 of 5 items' })`
+- **WHEN** the account is written with default status success
+- **THEN** the account SHALL include details `Processed 3 of 5 items`
+- **AND** SHALL include the operation output attribute outcome
+
+#### Scenario: Success persist without details
+
+- **GIVEN** a handler calls `ctx.persist('wf-run-011', { outcome: 'done' })` without details
+- **WHEN** the account is written
+- **THEN** the account SHALL have status success
+- **AND** SHALL NOT require attribute details to be present on the written account unless the handler supplied it
+
+#### Scenario: Details truncated at STRING limit
+
+- **GIVEN** a failure message or handler-supplied details string longer than 256 characters
+- **WHEN** the framework writes the account
+- **THEN** it SHALL store details truncated to 256 characters
+- **AND** SHALL log a truncation warning
+
+---
+
+### Requirement: JSON-safe detail normalization
+
+Before writing to stdout or POSTing to logUrl, the framework SHALL normalize the optional log detail map so that JSON encoding cannot throw. The framework SHALL omit detail keys whose values are undefined, functions, or symbols. The framework SHALL replace circular object references with the string `[Circular]`. The framework SHALL serialize Error instances as plain objects containing name message and stack. The framework SHALL convert bigint values to decimal strings.
+
+#### Scenario: Undefined detail keys omitted from JSON
+
+- **GIVEN** a log call with detail `{ present: 'ok', missing: undefined }`
+- **WHEN** the framework emits the log event
+- **THEN** the POSTed JSON detail SHALL include key present
+- **AND** SHALL NOT include key missing
+
+#### Scenario: Circular reference replaced
+
+- **GIVEN** a log detail object that references itself circularly on key payload
+- **WHEN** the framework emits the log event
+- **THEN** the POSTed JSON detail payload value SHALL be the string `[Circular]`
+- **AND** the invocation SHALL NOT throw
+
+#### Scenario: Function values omitted
+
+- **GIVEN** a log call with detail `{ ok: true, fn: () => {} }`
+- **WHEN** the framework emits the log event
+- **THEN** the POSTed JSON detail SHALL NOT include key fn
+- **AND** the invocation SHALL NOT throw
+
+---
+
+### Requirement: Pretty console log formatting
+
+The framework SHALL format stdout log output for human operators using a headline line followed by labeled detail blocks. The headline SHALL be `[requestId] message`. When detail is present, each detail key SHALL appear on its own labeled line or block. Scalar detail values SHALL render inline after the key label. Object and array detail values SHALL render using Node inspect with depth colors when stdout is a TTY.
+
+#### Scenario: Headline includes requestId and message
+
+- **GIVEN** requestId wf-run-8842 and message violation loaded
+- **WHEN** ctx.log.info is called without detail
+- **THEN** stdout SHALL include a line starting with `[wf-run-8842] violation loaded`
+
+#### Scenario: Named detail keys render as labeled blocks
+
+- **GIVEN** a log call with message violation loaded and detail `{ violation: { id: 'v-1' }, count: 2 }`
+- **WHEN** the framework writes to stdout
+- **THEN** stdout SHALL include label violation with object content
+- **AND** SHALL include label count with scalar value 2
+
+#### Scenario: Console and JSON share normalized detail
+
+- **GIVEN** logUrl configured and detail `{ violation: { id: 'v-1' } }`
+- **WHEN** ctx.log.info is called with message violation loaded
+- **THEN** the POSTed JSON detail SHALL equal the normalized detail used for console rendering
+- **AND** both sinks SHALL apply the same redaction and JSON-safe normalization
+
+---
+
+### Requirement: Operation logs use framework logger
+
+Custom operation handlers and operation-local logging helpers SHALL NOT call console.log console.warn or console.error directly for invoke-scoped diagnostics. Operation step logs SHALL use ctx.log or getActiveFrameworkLogger with a human message headline and a named detail map.
+
+#### Scenario: SOD remediation step logs use framework logger
+
+- **GIVEN** sod-remediation handler executing with logUrl configured
+- **WHEN** the handler logs a violation step
+- **THEN** the log SHALL route through the invocation framework logger
+- **AND** SHALL POST a JSON log event to logUrl
+
+#### Scenario: Access model SOD remediation uses ctx.log
+
+- **GIVEN** access-model-sod-remediation handler executing
+- **WHEN** the handler logs discover or policy steps
+- **THEN** the log SHALL use ctx.log or getActiveFrameworkLogger
+- **AND** SHALL NOT call console.log directly
+
+---
+

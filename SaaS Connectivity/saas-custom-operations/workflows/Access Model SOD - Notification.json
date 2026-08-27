@@ -1,0 +1,56 @@
+{
+  "id": "49f08c34-1c4b-43b4-8aeb-09d71ffec794",
+  "name": "Access Model SOD - Notification",
+  "description": "Access Model SOD - Notification",
+  "created": "2026-08-18T09:10:00.660612953Z",
+  "modified": "2026-08-18T10:08:46.837706525Z",
+  "modifiedBy": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
+  "definition": {
+    "start": "Send Email",
+    "steps": {
+      "End Step - Success": {
+        "actionId": "sp:operator-success",
+        "displayName": "",
+        "type": "success"
+      },
+      "Send Email": {
+        "actionId": "sp:send-email",
+        "attributes": {
+          "body.$": "$.trigger.account.attributes['access-model-sod-remediation:form-email-body']",
+          "context": {},
+          "recipientEmailList.$": "$.trigger.account.attributes['access-model-sod-remediation:form-email-recipients']",
+          "replyTo.$": "",
+          "subject.$": "$.trigger.account.attributes['access-model-sod-remediation:form-email-header']"
+        },
+        "displayName": "",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 2
+      }
+    }
+  },
+  "enabled": true,
+  "creator": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
+  "owner": {
+    "type": "IDENTITY",
+    "id": "49d1b304294449769e5551c8ece08896",
+    "name": "fernando.delosrios"
+  },
+  "trigger": {
+    "type": "EVENT",
+    "mode": "advanced",
+    "attributes": {
+      "filter.$": "$.account.attributes[?(@.operationName == \"custom:access-model-sod-remediation\")]",
+      "id": "idn:account-created",
+      "integrationId": null
+    }
+  }
+}

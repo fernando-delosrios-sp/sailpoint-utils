@@ -1,0 +1,5 @@
+interface:
+  display_name: Handoff
+  short_description: Compact the current conversation into a handoff document for another age
+policy:
+  allow_implicit_invocation: false

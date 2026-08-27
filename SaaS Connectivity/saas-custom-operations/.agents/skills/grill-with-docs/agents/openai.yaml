@@ -1,0 +1,5 @@
+interface:
+  display_name: Grill With Docs
+  short_description: A relentless interview to sharpen a plan or design, which also creates d
+policy:
+  allow_implicit_invocation: false

@@ -1,0 +1,3 @@
+interface:
+  display_name: C4 Diagram
+  short_description: Generate C4 Container diagrams (Simon Brown standard) as editable .dr...

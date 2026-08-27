@@ -1,0 +1,47 @@
+{
+	"name": "saas-custom-operations",
+	"commands": [
+		"custom:access-model-sod-remediation",
+		"custom:access-model-sod-remediation-apply",
+		"custom:example",
+		"custom:governance-group-emails",
+		"custom:preventive-sod-check",
+		"custom:sod-remediation"
+	],
+	"sourceConfig": [
+		{
+			"type": "menu",
+			"label": "Connection",
+			"items": [
+				{
+					"type": "section",
+					"sectionTitle": "ISC Loopback",
+					"sectionHelpMessage": "Credentials and target source for custom operation loopback and result persistence.",
+					"items": [
+						{
+							"key": "apiUrl",
+							"label": "ISC API URL",
+							"type": "url",
+							"required": true,
+							"placeholder": "https://your-tenant.api.identitynow.com"
+						},
+						{
+							"key": "token",
+							"label": "Access Token",
+							"type": "secret",
+							"required": true
+						},
+						{
+							"key": "sourceName",
+							"label": "Result Source Name",
+							"type": "text",
+							"required": true,
+							"placeholder": "SaaS Custom Operations"
+						}
+					]
+				}
+			]
+		}
+	],
+	"entitlementSchemas": []
+}
