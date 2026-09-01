@@ -32,6 +32,14 @@ The sod-remediation operation SHALL resolve each conflicting entitlement on a vi
 - **THEN** the side display list SHALL include the role in addition to the entitlement
 - **AND** the side warning text SHALL state that removing role-level access may affect other functions of the user
 
+#### Scenario: Access profile or role on side
+
+- **GIVEN** a conflicting entitlement granted via an access profile or role assigned to the target identity
+- **WHEN** access paths are resolved for that side
+- **THEN** when the grantor is a role, the side display list SHALL include the role in addition to the entitlement
+- **AND** the side display list SHALL NOT include an access profile
+- **AND** when a role is on the path, the side warning text SHALL state that removing role-level access may affect other functions of the user
+
 #### Scenario: Hidden access search string per side
 
 - **WHEN** form input is assembled for launch
