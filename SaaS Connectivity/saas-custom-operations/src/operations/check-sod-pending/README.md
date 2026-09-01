@@ -18,9 +18,9 @@ For predict-based preventive checks with persisted workflow outputs, use `custom
 
 ## Output (invoke response only)
 
-This operation does **not** persist to the result source. Read values from the invoke response:
+This operation does **not** persist to the result source. On success, `ctx.respond(summary)` returns `{ name, status, responses, summary }`. Read values from `summary`:
 
-| Field | Type | Description |
+| Summary field | Type | Description |
 |---|---|---|
 | `identityId` | string | Evaluated identity |
 | `hasViolations` | boolean | True when local policy matching finds violations |

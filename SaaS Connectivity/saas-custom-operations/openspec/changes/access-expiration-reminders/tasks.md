@@ -17,7 +17,7 @@
 
 ## 4. Operation handler
 
-- [x] 4.1 Implement scan loop: discover sunset assignments → match `expirationDays` → resolve manager + email → idempotent account check → form launch → child persist (`verify: false`) → reminder scan summary on `ctx.res.send`
+- [x] 4.1 Implement scan loop: discover sunset assignments → match `expirationDays` → resolve manager + email → idempotent account check → form launch → child persist (`verify: false`) → reminder scan summary via `ctx.respond`
 - [x] 4.2 Enforce skips for missing manager/email and existing notice accounts; enforce 25-form cap with overflow counter and warning log
 - [x] 4.3 Persist notice fields: identityId, managerId, accessProfileId, removeDate, daysRemaining, form-url, form-email-*
 - [x] 4.4 Pass formInput `responseAccountId`, `identityId`, `accessProfileId`, plus friendly display context

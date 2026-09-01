@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Discovers ACCESS_PROFILE assignments whose `removeDate` is exactly `expirationDays` UTC calendar days from the run date, creates a standalone manager reminder form per matching assignment (subject to caps and skips), persists one expiration notice account per launched form, and returns a reminder scan summary on `ctx.res.send`. Does **not** apply the manager-selected `newExpirationDate` to ISC.
+Discovers ACCESS_PROFILE assignments whose `removeDate` is exactly `expirationDays` UTC calendar days from the run date, creates a standalone manager reminder form per matching assignment (subject to caps and skips), persists one expiration notice account per launched form, and returns a reminder scan summary via `ctx.respond`. Does **not** apply the manager-selected `newExpirationDate` to ISC.
 
 ## Command
 
@@ -19,9 +19,18 @@ Discovers ACCESS_PROFILE assignments whose `removeDate` is exactly `expirationDa
 
 ### Invoke response (scan summary)
 
-On success, `ctx.res.send` returns rollup counters alongside `status: 'success'`. Optional zero-valued skip/failure/overflow counters may be omitted. These fields are **not** persisted on result-source identity `{requestId}`.
+On success, `ctx.respond(summary)` returns an **operation response** envelope:
 
-| Field | Description |
+| Envelope field | Meaning |
+|---|---|
+| `name` | `custom:access-expiration-reminders` |
+| `status` | `success` |
+| `responses` | Native identities persisted this invoke |
+| `summary` | Scan rollup counters (below) |
+
+Optional zero-valued skip/failure/overflow counters may be omitted. These fields are **not** persisted on result-source identity `{requestId}`.
+
+| Summary field | Description |
 |---|---|
 | `access-expiration-reminders:identities-scanned` | Identities returned by sunset ACCESS_PROFILE search |
 | `access-expiration-reminders:expirations-matched` | Assignments matching `expirationDays` |

@@ -26,14 +26,6 @@ export interface AccessExpirationRemindersOperation extends OperationSignature {
         expirationDays?: number
     }
     output: {
-        'access-expiration-reminders:identities-scanned': number
-        'access-expiration-reminders:expirations-matched': number
-        'access-expiration-reminders:forms-created': number
-        'access-expiration-reminders:forms-skipped-existing'?: number
-        'access-expiration-reminders:forms-skipped-missing-manager-email'?: number
-        'access-expiration-reminders:forms-launch-failed'?: number
-        'access-expiration-reminders:forms-persist-failed'?: number
-        'access-expiration-reminders:forms-overflow'?: number
         'access-expiration-reminders:identityId'?: string
         'access-expiration-reminders:managerId'?: string
         'access-expiration-reminders:accessProfileId'?: string
@@ -43,6 +35,16 @@ export interface AccessExpirationRemindersOperation extends OperationSignature {
         'access-expiration-reminders:form-email-header'?: string
         'access-expiration-reminders:form-email-body'?: string
         'access-expiration-reminders:form-email-recipients'?: string[]
+    }
+    response: {
+        'access-expiration-reminders:identities-scanned': number
+        'access-expiration-reminders:expirations-matched': number
+        'access-expiration-reminders:forms-created': number
+        'access-expiration-reminders:forms-skipped-existing'?: number
+        'access-expiration-reminders:forms-skipped-missing-manager-email'?: number
+        'access-expiration-reminders:forms-launch-failed'?: number
+        'access-expiration-reminders:forms-persist-failed'?: number
+        'access-expiration-reminders:forms-overflow'?: number
     }
 }
 
@@ -72,9 +74,14 @@ function buildSituationSummaryHtml(params: {
     )
 }
 
+type AccessExpirationRemindersContext = RequestContext<
+    AccessExpirationRemindersOperation['output'],
+    AccessExpirationRemindersOperation['response']
+>
+
 async function discoverSunsetIdentities(
     offline: boolean,
-    ctx: RequestContext<AccessExpirationRemindersOperation['output']>
+    ctx: AccessExpirationRemindersContext
 ): Promise<IdentityWithSunsetAccessProfiles[]> {
     if (offline) {
         ctx.log.info('discoverSunsetIdentities using offline fixtures')
@@ -261,8 +268,7 @@ export const accessExpirationRemindersOperation = customOperation<AccessExpirati
             }
         }
 
-        ctx.res.send({
-            status: 'success',
+        ctx.respond({
             'access-expiration-reminders:identities-scanned': identities.length,
             'access-expiration-reminders:expirations-matched': expirationsMatched,
             'access-expiration-reminders:forms-created': formsCreated,

@@ -13,10 +13,16 @@ export interface CheckSodPendingOperation extends OperationSignature {
     input: {
         identityId?: string
     }
-    output: {
+    output: {}
+    response: {
         identityId: string
         hasViolations: boolean
         violatedPolicyNames: string[]
+        counts: {
+            pendingEntitlements: number
+            grantedEntitlements: number
+            combinedTotal: number
+        }
     }
 }
 
@@ -44,8 +50,7 @@ export const checkSodPendingOperation = customOperation<CheckSodPendingOperation
         localViolations.forEach((violation) => violatedPolicyNamesSet.add(violation.policyName))
         const violatedPolicyNames = Array.from(violatedPolicyNamesSet)
 
-        ctx.res.send({
-            status: 'success',
+        ctx.respond({
             identityId,
             hasViolations: localViolations.length > 0,
             violatedPolicyNames,

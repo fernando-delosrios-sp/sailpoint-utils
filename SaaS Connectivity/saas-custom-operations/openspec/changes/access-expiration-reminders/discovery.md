@@ -25,7 +25,7 @@ Required manager form element key `newExpirationDate` collecting the proposed re
 _Avoid_: expirationDate, removeDate (as the form output key)
 
 **Reminder scan summary** (`promote`):
-Rollup counters returned on successful `ctx.res.send` for identities scanned, expirations matched, forms created, existing-account skips, missing-manager/email skips, launch/persist failures, and cap overflow.
+Rollup counters returned on successful `ctx.respond` for identities scanned, expirations matched, forms created, existing-account skips, missing-manager/email skips, launch/persist failures, and cap overflow.
 _Avoid_: parent persist rollup
 
 ## Decisions
@@ -33,7 +33,7 @@ _Avoid_: parent persist rollup
 **Context:** Legacy sketch returned one nested `data[]` payload via `res.send`. This connector’s pattern is one result-source account per actionable notice (see access-model-sod-remediation), with rollup on `res.send` and email via `idn:account-created`.
 
 **Q1 — Output shape?**
-→ Chosen: One `ctx.persist` per notice; `ctx.res.send` carries reminder scan summary only.
+→ Chosen: One `ctx.persist` per notice; `ctx.respond` carries reminder scan summary only.
 
 **Q2 — Persist namespace?**
 → Chosen: `access-expiration-reminders:` prefix (same field kinds as sod form-email outputs, not the `sod-remediation:` keys).

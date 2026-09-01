@@ -21,12 +21,6 @@ const workflowConfig = {
 }
 
 const persistAttributes = [
-    { name: 'access-expiration-reminders:identities-scanned', type: 'INT', isMulti: false },
-    { name: 'access-expiration-reminders:expirations-matched', type: 'INT', isMulti: false },
-    { name: 'access-expiration-reminders:forms-created', type: 'INT', isMulti: false },
-    { name: 'access-expiration-reminders:forms-skipped-existing', type: 'INT', isMulti: false },
-    { name: 'access-expiration-reminders:forms-skipped-missing-manager-email', type: 'INT', isMulti: false },
-    { name: 'access-expiration-reminders:forms-overflow', type: 'INT', isMulti: false },
     { name: 'access-expiration-reminders:identityId', type: 'STRING', isMulti: false },
     { name: 'access-expiration-reminders:managerId', type: 'STRING', isMulti: false },
     { name: 'access-expiration-reminders:accessProfileId', type: 'STRING', isMulti: false },
@@ -37,6 +31,19 @@ const persistAttributes = [
     { name: 'access-expiration-reminders:form-email-body', type: 'STRING', isMulti: false },
     { name: 'access-expiration-reminders:form-email-recipients', type: 'STRING', isMulti: true },
 ]
+
+function expectScanSummary(
+    res: { send: ReturnType<typeof vi.fn> },
+    summary: Record<string, unknown>
+): void {
+    expect(res.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+            name: 'custom:access-expiration-reminders',
+            status: 'success',
+            summary: expect.objectContaining(summary),
+        })
+    )
+}
 
 const createAccountV1 = vi.fn().mockResolvedValue({})
 const resolveSourceByName = vi.fn()
@@ -142,10 +149,11 @@ vi.mock('../../framework/sdk-factory', () => ({
     })),
 }))
 
-function cloneOfflineFixtures() {
+function cloneOfflineFixtures(now: Date = OFFLINE_REFERENCE_NOW) {
+    const removeDate = matchingRemoveDate(now)
     return OFFLINE_SUNSET_IDENTITIES.map((identity) => ({
         ...identity,
-        accessProfiles: identity.accessProfiles.map((ap) => ({ ...ap })),
+        accessProfiles: identity.accessProfiles.map((ap) => ({ ...ap, removeDate })),
     }))
 }
 
@@ -259,15 +267,12 @@ describe('accessExpirationRemindersOperation', () => {
             { capturePersist: true }
         )
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-expiration-reminders:identities-scanned': 2,
-                'access-expiration-reminders:expirations-matched': 2,
-                'access-expiration-reminders:forms-created': 1,
-                'access-expiration-reminders:forms-skipped-missing-manager-email': 1,
-            })
-        )
+        expectScanSummary(res, {
+            'access-expiration-reminders:identities-scanned': 2,
+            'access-expiration-reminders:expirations-matched': 2,
+            'access-expiration-reminders:forms-created': 1,
+            'access-expiration-reminders:forms-skipped-missing-manager-email': 1,
+        })
 
         const childId = `${requestId}:identity-offline-1:ap-offline-1`
         expect(inhibitedPersists.map((record) => record.identity)).toEqual([childId])
@@ -309,13 +314,10 @@ describe('accessExpirationRemindersOperation', () => {
             { capturePersist: true }
         )
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-expiration-reminders:expirations-matched': 2,
-                'access-expiration-reminders:forms-created': 1,
-            })
-        )
+        expectScanSummary(res, {
+            'access-expiration-reminders:expirations-matched': 2,
+            'access-expiration-reminders:forms-created': 1,
+        })
         expect(inhibitedPersists[0]?.attributes).toEqual(
             expect.objectContaining({
                 'access-expiration-reminders:daysRemaining': 1,
@@ -341,18 +343,18 @@ describe('accessExpirationRemindersOperation', () => {
         const requestId = 'req-access-expiration-idempotent'
         const childId = `${requestId}:identity-offline-1:ap-offline-1`
         persistedAccounts.set(childId, { id: childId })
+        vi.mocked(searchIdentitiesWithSunsetAccessProfiles).mockImplementation(async () =>
+            cloneOfflineFixtures(new Date())
+        )
 
         const { res } = await invokeConnected(requestId, { expirationDays: 1 })
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-expiration-reminders:expirations-matched': 2,
-                'access-expiration-reminders:forms-created': 0,
-                'access-expiration-reminders:forms-skipped-existing': 1,
-                'access-expiration-reminders:forms-skipped-missing-manager-email': 1,
-            })
-        )
+        expectScanSummary(res, {
+            'access-expiration-reminders:expirations-matched': 2,
+            'access-expiration-reminders:forms-created': 0,
+            'access-expiration-reminders:forms-skipped-existing': 1,
+            'access-expiration-reminders:forms-skipped-missing-manager-email': 1,
+        })
         expect(vi.mocked(createAccessExpirationRemindersInstance)).not.toHaveBeenCalled()
         expect(persistedIdentities).not.toContain(childId)
         expect(persistedIdentities).not.toContain(requestId)
@@ -365,13 +367,10 @@ describe('accessExpirationRemindersOperation', () => {
             expirationDays: 1,
         })
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-expiration-reminders:forms-skipped-missing-manager-email': 1,
-                'access-expiration-reminders:forms-created': 1,
-            })
-        )
+        expectScanSummary(res, {
+            'access-expiration-reminders:forms-skipped-missing-manager-email': 1,
+            'access-expiration-reminders:forms-created': 1,
+        })
     })
 
     it('Manager without email skips form and increments missing-manager/email counter', async () => {
@@ -401,14 +400,11 @@ describe('accessExpirationRemindersOperation', () => {
             { capturePersist: true }
         )
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-expiration-reminders:expirations-matched': 1,
-                'access-expiration-reminders:forms-skipped-missing-manager-email': 1,
-                'access-expiration-reminders:forms-created': 0,
-            })
-        )
+        expectScanSummary(res, {
+            'access-expiration-reminders:expirations-matched': 1,
+            'access-expiration-reminders:forms-skipped-missing-manager-email': 1,
+            'access-expiration-reminders:forms-created': 0,
+        })
         expect(vi.mocked(createAccessExpirationRemindersInstance)).not.toHaveBeenCalled()
         expect(inhibitedPersists).toEqual([])
     })
@@ -437,13 +433,10 @@ describe('accessExpirationRemindersOperation', () => {
             { capturePersist: true }
         )
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-expiration-reminders:expirations-matched': 2,
-                'access-expiration-reminders:forms-created': 2,
-            })
-        )
+        expectScanSummary(res, {
+            'access-expiration-reminders:expirations-matched': 2,
+            'access-expiration-reminders:forms-created': 2,
+        })
         expect(vi.mocked(createAccessExpirationRemindersInstance)).toHaveBeenCalledTimes(2)
         expect(inhibitedPersists.map((record) => record.identity).sort()).toEqual([
             `${requestId}:id-a:ap-1`,
@@ -476,14 +469,11 @@ describe('accessExpirationRemindersOperation', () => {
         })
 
         expect(vi.mocked(createAccessExpirationRemindersInstance)).toHaveBeenCalledTimes(1)
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-expiration-reminders:expirations-matched': 2,
-                'access-expiration-reminders:forms-created': 1,
-                'access-expiration-reminders:forms-overflow': 1,
-            })
-        )
+        expectScanSummary(res, {
+            'access-expiration-reminders:expirations-matched': 2,
+            'access-expiration-reminders:forms-created': 1,
+            'access-expiration-reminders:forms-overflow': 1,
+        })
     })
 
     it('Zero matches summary only: no notice persist', async () => {
@@ -497,10 +487,14 @@ describe('accessExpirationRemindersOperation', () => {
         )
 
         expect(res.send).toHaveBeenCalledWith({
+            name: 'custom:access-expiration-reminders',
             status: 'success',
-            'access-expiration-reminders:identities-scanned': 2,
-            'access-expiration-reminders:expirations-matched': 0,
-            'access-expiration-reminders:forms-created': 0,
+            responses: [],
+            summary: {
+                'access-expiration-reminders:identities-scanned': 2,
+                'access-expiration-reminders:expirations-matched': 0,
+                'access-expiration-reminders:forms-created': 0,
+            },
         })
         expect(inhibitedPersists).toEqual([])
         expect(vi.mocked(createAccessExpirationRemindersInstance)).not.toHaveBeenCalled()
@@ -513,14 +507,11 @@ describe('accessExpirationRemindersOperation', () => {
             expirationDays: 1,
         })
 
-        expect(res.send).toHaveBeenCalledWith(
-            expect.objectContaining({
-                status: 'success',
-                'access-expiration-reminders:identities-scanned': expect.any(Number),
-                'access-expiration-reminders:expirations-matched': expect.any(Number),
-                'access-expiration-reminders:forms-created': expect.any(Number),
-            })
-        )
+        expectScanSummary(res, {
+            'access-expiration-reminders:identities-scanned': expect.any(Number),
+            'access-expiration-reminders:expirations-matched': expect.any(Number),
+            'access-expiration-reminders:forms-created': expect.any(Number),
+        })
     })
 
     it('Form inputs include correlation keys and expire equals removeDate', async () => {

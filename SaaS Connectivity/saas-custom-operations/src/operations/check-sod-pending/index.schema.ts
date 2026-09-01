@@ -2,7 +2,5 @@
 import { defineOperationSchema } from '../../framework'
 
 export const checkSodPendingOperationSchema = defineOperationSchema({
-    hasViolations: 'boolean',
-    identityId: 'string',
-    violatedPolicyNames: 'string[]',
+
 })

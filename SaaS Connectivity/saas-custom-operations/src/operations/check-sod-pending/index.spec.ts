@@ -67,14 +67,18 @@ describe('checkSodPendingOperation', () => {
         expect(createAccountV1).not.toHaveBeenCalled()
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
+                name: 'custom:check-sod-pending',
                 status: 'success',
-                identityId: 'identity-1',
-                hasViolations: false,
-                violatedPolicyNames: [],
-                counts: {
-                    pendingEntitlements: 0,
-                    grantedEntitlements: 0,
-                    combinedTotal: 0,
+                responses: [],
+                summary: {
+                    identityId: 'identity-1',
+                    hasViolations: false,
+                    violatedPolicyNames: [],
+                    counts: {
+                        pendingEntitlements: 0,
+                        grantedEntitlements: 0,
+                        combinedTotal: 0,
+                    },
                 },
             })
         )
@@ -97,8 +101,11 @@ describe('checkSodPendingOperation', () => {
 
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
-                hasViolations: true,
-                violatedPolicyNames: ['Policy A'],
+                status: 'success',
+                summary: expect.objectContaining({
+                    hasViolations: true,
+                    violatedPolicyNames: ['Policy A'],
+                }),
             })
         )
     })

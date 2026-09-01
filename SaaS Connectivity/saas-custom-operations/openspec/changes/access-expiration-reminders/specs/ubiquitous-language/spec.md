@@ -41,7 +41,7 @@ The glossary SHALL define **access expiration reminder**, **expiration notice ac
 
 - **GIVEN** specs refer to rollup counts from `custom:access-expiration-reminders`
 - **WHEN** normative text names the delivery mechanism
-- **THEN** it SHALL use **reminder scan summary** for the invoke response payload via `ctx.res.send`
+- **THEN** it SHALL use **reminder scan summary** for the invoke response envelope `summary` via `ctx.respond`
 - **AND** SHALL NOT describe those counters as a parent result-source account on `requestId`
 
 ---

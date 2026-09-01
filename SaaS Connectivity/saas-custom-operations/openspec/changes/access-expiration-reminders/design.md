@@ -22,7 +22,7 @@ Scheduler ──invoke──▶ SaaS Custom Operations ──search──▶ ISC
 - Discover identities with ACCESS_PROFILE assignments matching `expirationDays` (UTC calendar exact)
 - Launch at most 25 manager forms per run; skip missing manager/email and existing notice accounts
 - Persist one expiration notice account per launched form with context + form/email fields
-- Return full reminder scan summary on `ctx.res.send`
+- Return full reminder scan summary via `ctx.respond`
 - Ship Analysis (scheduled) and Notification (account-created) workflows
 
 **Non-Goals:**
@@ -53,7 +53,7 @@ Scheduler ──invoke──▶ SaaS Custom Operations ──search──▶ ISC
 
 ### D4: Persist and response split
 
-- **Choice:** Notice account holds context + `form-url` / `form-email-*`; `res.send` holds scan counters only (no parent persist on `requestId`)
+- **Choice:** Notice account holds context + `form-url` / `form-email-*`; `ctx.respond` holds scan counters only (no parent persist on `requestId`)
 - **Reason:** Same delivery model as access-model SoD after scan-summary change
 - **Considered alternatives:** Nested `data[]` on `res.send` (user rejected)
 

@@ -9,7 +9,7 @@ Managers need advance notice when a report’s access-profile assignment is abou
 - Required input `formName`; optional `expirationDays` (default `1`)
 - Match ACCESS_PROFILE assignments whose UTC calendar-day distance to `removeDate` equals `expirationDays`
 - Create one standalone manager form per match (cap 25); persist one expiration notice account per form
-- Return reminder scan summary on `ctx.res.send` (no parent account on `requestId`)
+- Return reminder scan summary via `ctx.respond` (no parent account on `requestId`)
 
 **Form and email contract**
 - Form inputs: `responseAccountId`, `identityId`, `accessProfileId`, plus friendly situation context
