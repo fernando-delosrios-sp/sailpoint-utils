@@ -3,6 +3,109 @@ import { Response } from '@sailpoint/connector-sdk'
 import { createFrameworkLogger } from './logger'
 import { createRequestContext } from './request-context'
 
+describe('operation response envelope via ctx.respond', () => {
+    const input = {
+        apiUrl: 'https://tenant.api.identitynow.com',
+        token: 'pat-token',
+        requestId: 'req-001',
+        sourceName: 'SaaS Custom Operations',
+    }
+
+    function stubSdk() {
+        return {
+            accounts: {
+                createAccountV1: vi.fn().mockResolvedValue({ data: { id: 'task-1' } }),
+                listAccountsV1: vi.fn().mockResolvedValue({ data: [] }),
+                getAccountV1: vi.fn(),
+                putAccountV1: vi.fn(),
+            } as never,
+            sources: {} as never,
+            forms: {} as never,
+            identityHistory: {} as never,
+            accessProfiles: {} as never,
+            roles: {} as never,
+            tasks: {
+                getTaskStatusV1: vi.fn().mockResolvedValue({
+                    data: {
+                        completed: '2026-08-11T10:00:00Z',
+                        completionStatus: 'SUCCESS',
+                        target: { id: 'isc-1' },
+                        messages: [],
+                    },
+                }),
+            } as never,
+            governanceGroups: {} as never,
+            accessRequests: {} as never,
+            search: {} as never,
+            sodPolicies: {} as never,
+            sodViolations: {} as never,
+        }
+    }
+
+    it('emits name, status, responses, and summary on res.send', async () => {
+        const send = vi.fn()
+        const ctx = createRequestContext<{ formUrl: string }, { 'items-scanned': number }>(
+            input,
+            { send } as unknown as Response<any>,
+            { sourceId: 'source-1', command: 'custom:example', testMode: true, sdk: stubSdk() }
+        )
+
+        await ctx.persist('req:child-a', { formUrl: 'https://form.example/a' })
+        ctx.respond({ 'items-scanned': 50 })
+
+        expect(send).toHaveBeenCalledWith({
+            name: 'custom:example',
+            status: 'success',
+            responses: ['req:child-a'],
+            summary: { 'items-scanned': 50 },
+        })
+    })
+
+    it('lists all persisted native ids from the write registry in responses', async () => {
+        const send = vi.fn()
+        const ctx = createRequestContext(input, { send } as unknown as Response<any>, {
+            sourceId: 'source-1',
+            command: 'custom:example',
+            testMode: true,
+            sdk: stubSdk(),
+        })
+
+        await ctx.persist('req:child-a', { outcome: 'a' })
+        await ctx.persist('req:child-b', { outcome: 'b' })
+        ctx.respond({ ok: true })
+
+        expect(send.mock.calls[0]?.[0].responses).toEqual(['req:child-a', 'req:child-b'])
+    })
+
+    it('defaults status to success when omitted', () => {
+        const send = vi.fn()
+        const ctx = createRequestContext(input, { send } as unknown as Response<any>, {
+            sourceId: 'source-1',
+            command: 'custom:example',
+            testMode: true,
+            sdk: stubSdk(),
+        })
+
+        ctx.respond({ ok: true })
+
+        expect(send).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
+    })
+
+    it('uses an explicit status when provided', () => {
+        const send = vi.fn()
+        const ctx = createRequestContext(input, { send } as unknown as Response<any>, {
+            sourceId: 'source-1',
+            command: 'custom:example',
+            testMode: true,
+            sdk: stubSdk(),
+        })
+
+        ctx.respond({ ok: false }, 'error')
+
+        expect(send).toHaveBeenCalledWith(expect.objectContaining({ status: 'error' }))
+    })
+})
+
 describe('createRequestContext persist wiring', () => {
     const input = {
         apiUrl: 'https://tenant.api.identitynow.com',

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import * as persistableEmail from '../persistable-email'
+import * as sodFormHtml from './index'
 import {
     buildSideVariants,
     escapeHtml,
@@ -13,6 +15,16 @@ import {
 describe('sod-form-html escapeHtml', () => {
     it('escapes HTML special characters', () => {
         expect(escapeHtml('A & B <script>"x"</script>')).toBe('A &amp; B &lt;script&gt;&quot;x&quot;&lt;/script&gt;')
+    })
+})
+
+describe('sod-form-html persistable email boundary', () => {
+    it('Boundary with persistable email: fit-to-256 lives on persistable-email, not sod-form-html', () => {
+        expect(persistableEmail).toHaveProperty('fitPersistableHtml')
+        expect(persistableEmail).toHaveProperty('renderUnquotedHrefCta')
+        expect(sodFormHtml).not.toHaveProperty('fitPersistableHtml')
+        expect(sodFormHtml).not.toHaveProperty('renderUnquotedHrefCta')
+        expect(sodFormHtml).toHaveProperty('escapeHtml')
     })
 })
 

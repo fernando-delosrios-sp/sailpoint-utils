@@ -24,18 +24,25 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 
 ### Invoke response (scan summary)
 
-On success, `ctx.res.send` returns rollup counters alongside `status: 'success'`:
+On success, `ctx.respond(summary)` returns an **operation response** envelope:
 
-| Field | Description |
+| Envelope field | Meaning |
+|---|---|
+| `name` | `custom:access-model-sod-remediation` |
+| `status` | `success` |
+| `responses` | Native identities persisted this invoke |
+| `summary` | Scan rollup counters (below) |
+
+| Summary field | Description |
 |---|---|
 | `access-model-sod-remediation:access-items-scanned` | Count of roles/APs evaluated |
 | `access-model-sod-remediation:violations-found` | Count of (access item × policy) hits |
 | `access-model-sod-remediation:forms-skipped` | Optional; violations skipped because the child persist account at `{requestId}:{accessItemId}:{policyId}` already exists |
-| `access-model-sod-remediation:forms-skipped-instances` | Optional; global invoke-only list of skipped violations (child identity plus access item and policy context). Form URLs and email fields are **not** on `res.send` — read them from the existing child account at `{requestId}:{accessItemId}:{policyId}` |
+| `access-model-sod-remediation:forms-skipped-instances` | Optional; global invoke-only list of skipped violations (child identity plus access item and policy context). Form URLs and email fields are **not** on the envelope — read them from the existing child account at `{requestId}:{accessItemId}:{policyId}` |
 | `access-model-sod-remediation:forms-launch-failed` | Optional; form instance creation failures during the scan |
 | `access-model-sod-remediation:forms-persist-failed` | Optional; child persist failures after a form was created |
 
-These fields are **not** persisted on result-source identity `{requestId}`.
+These summary fields are declared under `OperationSignature.response`, **not** persisted on result-source identity `{requestId}`, and **not** account schema attributes.
 
 ### Scan idempotency and performance
 
@@ -49,6 +56,8 @@ Before launching a form for each violation, the scan checks whether a child resu
 | `access-model-sod-remediation:form-email-header` | Plain-text email subject for workflow Send Email |
 | `access-model-sod-remediation:form-email-body` | HTML email body with remediation link |
 | `access-model-sod-remediation:form-email-recipients` | Access item owner email addresses (`string[]`) |
+
+Child form notification fields are built via the shared form notification envelope (`src/lib/form-notification/`).
 
 ## Invoke example
 
@@ -137,7 +146,7 @@ Handled by [`custom:access-model-sod-remediation-apply`](../access-model-sod-rem
 
 Manual or custom orchestration follows the same contract as the bundled exports:
 
-1. Invoke scan; read rollup counts and optional `forms-skipped-instances` from the **invoke response** (`access-model-sod-remediation:access-items-scanned`, `violations-found`, optional `forms-skipped`, `forms-skipped-instances`, `forms-launch-failed`, and `forms-persist-failed`).
+1. Invoke scan; read rollup counts from the operation response **`summary`**: `summary['access-model-sod-remediation:access-items-scanned']`, `summary['access-model-sod-remediation:violations-found']`, and optional `summary['access-model-sod-remediation:forms-skipped']`, `summary['access-model-sod-remediation:forms-skipped-instances']`, `summary['access-model-sod-remediation:forms-launch-failed']`, and `summary['access-model-sod-remediation:forms-persist-failed']`.
 2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields — or rely on an account-created event as the Notification export does.
 3. Notify access item owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).

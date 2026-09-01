@@ -1,11 +1,11 @@
 import {
     buildCreateFormDefinitionPayload,
-    createStandaloneFormInstance,
-    ensureFormDefinitionByName,
     FormsApiLike,
     loadFormSeed,
     pickDeclaredFormInputValues,
 } from '../../isc/forms'
+import { launchForm, FormLaunchNotification } from '../../lib/form-launch'
+import { FormNotification } from '../../lib/form-notification'
 import sodViolationRemediationSeed from './seed/sod-violation-remediation.seed.json'
 
 export interface FormInputSelectOption {
@@ -29,36 +29,38 @@ export interface SodFormInputValues {
     controlOptions: FormInputSelectOption[]
 }
 
-export interface CreateRemediationInstanceParams {
+export interface LaunchSodRemediationFormParams {
     forms: FormsApiLike
-    formDefinitionId: string
+    formName: string
+    definitionOwnerId: string
     recipientId: string
     createdBySourceId: string
     formInput: SodFormInputValues
+    notification: FormLaunchNotification
 }
 
 const sodRemediationSeed = loadFormSeed(sodViolationRemediationSeed)
 
-/** Ensures the SOD remediation form definition exists, creating from the operation-local seed when absent. */
-export async function ensureSodFormDefinition(forms: FormsApiLike, formName: string, ownerId: string): Promise<string> {
-    const template = buildCreateFormDefinitionPayload(formName, ownerId, sodRemediationSeed, sodRemediationSeed.description)
-    return ensureFormDefinitionByName(forms, { name: formName, ownerId, template })
-}
-
-/** Creates a standalone SOD remediation form instance for the recipient. */
-export async function createSodRemediationInstance(params: CreateRemediationInstanceParams): Promise<string> {
-    const { forms, formDefinitionId, recipientId, createdBySourceId, formInput } = params
+/** Supplies the operation seed and formInput serialization to the shared form launch facade. */
+export async function launchSodRemediationForm(params: LaunchSodRemediationFormParams): Promise<FormNotification> {
+    const { forms, formName, definitionOwnerId, recipientId, createdBySourceId, formInput, notification } = params
+    const template = buildCreateFormDefinitionPayload(
+        formName,
+        definitionOwnerId,
+        sodRemediationSeed,
+        sodRemediationSeed.description
+    )
     const instanceFormInput = pickDeclaredFormInputValues(sodRemediationSeed, {
         ...formInput,
         hasControls: String(formInput.hasControls),
     })
 
-    return createStandaloneFormInstance({
+    return launchForm({
         forms,
-        formDefinitionId,
+        definition: { formName, ownerId: definitionOwnerId, template },
         recipientId,
         createdBySourceId,
         formInput: instanceFormInput,
+        notification,
     })
 }
-

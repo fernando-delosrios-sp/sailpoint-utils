@@ -78,8 +78,14 @@ export type WriteRegistry = Map<string, Record<string, unknown>>
 /**
  * Volatile request context scoped to a single custom operation invocation.
  * Initialized automatically by {@link customOperation}.
+ *
+ * `TOutput` types `ctx.persist` attributes (persisted-only `OperationSignature.output`).
+ * `TSummary` types `ctx.respond` summary (optional `OperationSignature.response`).
  */
-export interface RequestContext<TOutput extends object = Record<string, unknown>> {
+export interface RequestContext<
+    TOutput extends object = Record<string, unknown>,
+    TSummary extends object = Record<string, unknown>,
+> {
     requestId: string
     apiUrl: string
     token: string
@@ -89,6 +95,11 @@ export interface RequestContext<TOutput extends object = Record<string, unknown>
     sdk: SailPointClients
     persist: PersistFn<TOutput>
     verifyPersisted: VerifyPersistedFn
+    /**
+     * Builds the operation response envelope from the persist write registry and calls `res.send`.
+     * Authors supply only `summary`; `name`/`status`/`responses` are framework-populated.
+     */
+    respond: (summary: TSummary, status?: string) => void
     /** Correlated dual-sink logger for this invocation. */
     log: FrameworkLogger
     /** SDK response object for sending command output back to ISC. */

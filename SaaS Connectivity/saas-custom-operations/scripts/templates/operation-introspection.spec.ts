@@ -345,4 +345,71 @@ export function registerCommands(connector: unknown) {
     })
 })
 
+describe('collectPersistedKeys', () => {
+    let tempDir: string
+
+    afterEach(() => {
+        if (tempDir && fs.existsSync(tempDir)) {
+            fs.rmSync(tempDir, { recursive: true, force: true })
+        }
+    })
+
+    it('collects object-literal keys from ctx.persist second arguments', async () => {
+        const { collectPersistedKeys } = await import('./operation-introspection')
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'persist-keys-'))
+        const modulePath = path.join(tempDir, 'index.ts')
+        fs.writeFileSync(
+            modulePath,
+            `export async function run(ctx: { persist: Function; requestId: string }) {
+    await ctx.persist(ctx.requestId, { summary: 'ok', 'form-url': 'https://x' })
+}
+`
+        )
+
+        expect([...collectPersistedKeys(modulePath)].sort()).toEqual(['form-url', 'summary'])
+    })
+
+    it('registers persist-dynamic marker keys', async () => {
+        const { collectPersistedKeys } = await import('./operation-introspection')
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'persist-dyn-'))
+        const modulePath = path.join(tempDir, 'index.ts')
+        fs.writeFileSync(
+            modulePath,
+            `// persist-dynamic: dynamicKey
+export async function run(ctx: { persist: Function }) {
+    await ctx.persist('id', { summary: 'ok' })
+}
+`
+        )
+
+        expect([...collectPersistedKeys(modulePath)].sort()).toEqual(['dynamicKey', 'summary'])
+    })
+
+    it('expands toPersistAttributes(prefix, ...) into prefixed form-notification keys', async () => {
+        const { collectPersistedKeys } = await import('./operation-introspection')
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'persist-tpa-'))
+        const modulePath = path.join(tempDir, 'index.ts')
+        fs.writeFileSync(
+            modulePath,
+            `import { toPersistAttributes } from '../../lib/form-notification'
+export async function run(ctx: { persist: Function; requestId: string }) {
+    await ctx.persist(ctx.requestId, toPersistAttributes('sod-remediation', {
+        formUrl: 'https://x',
+        emailHeader: 'h',
+        emailBody: 'b',
+        emailRecipients: ['a@b.c'],
+    }))
+}
+`
+        )
+
+        expect([...collectPersistedKeys(modulePath)].sort()).toEqual([
+            'sod-remediation:form-email-body',
+            'sod-remediation:form-email-header',
+            'sod-remediation:form-email-recipients',
+            'sod-remediation:form-url',
+        ])
+    })
+})
+
 

@@ -25,8 +25,8 @@ import {
 import { detectAccessItemViolations } from './detect-violations'
 import { ExpandedAccessItemEntitlements, expandAccessItemEntitlements } from './expand-access-item-entitlements'
 import {
-    createAccessModelSodRemediationInstance,
     ensureAccessModelSodFormDefinition,
+    launchAccessModelSodRemediationForm,
     resolveRemediationSectionLabel,
 } from './form-service'
 import { buildFormEmailBody, buildFormEmailHeader } from './form-email'
@@ -34,6 +34,7 @@ import { buildGroupContentsHtml } from './group-html'
 import { buildSituationSummaryHtml } from './situation-summary'
 import { expandAccessItemEntitlementsOffline } from './offline-data'
 import { accessModelSodRemediationOperationSchema } from './index.schema'
+import { FormNotification, toPersistAttributes } from '../../lib/form-notification'
 import { renderTypeTag, resolveUiOrigin } from '../../lib/sod-form-html'
 import {
     AccessModelSodSkippedFormInstance,
@@ -50,18 +51,25 @@ export interface AccessModelSodRemediationOperation extends OperationSignature {
         disableLinks?: boolean
     }
     output: {
+        'access-model-sod-remediation:form-url'?: string
+        'access-model-sod-remediation:form-email-header'?: string
+        'access-model-sod-remediation:form-email-body'?: string
+        'access-model-sod-remediation:form-email-recipients'?: string[]
+    }
+    response: {
         'access-model-sod-remediation:access-items-scanned': number
         'access-model-sod-remediation:violations-found': number
         'access-model-sod-remediation:forms-skipped'?: number
         'access-model-sod-remediation:forms-skipped-instances'?: AccessModelSodSkippedFormInstance[]
         'access-model-sod-remediation:forms-launch-failed'?: number
         'access-model-sod-remediation:forms-persist-failed'?: number
-        'access-model-sod-remediation:form-url'?: string
-        'access-model-sod-remediation:form-email-header'?: string
-        'access-model-sod-remediation:form-email-body'?: string
-        'access-model-sod-remediation:form-email-recipients'?: string[]
     }
 }
+
+type AccessModelSodRemediationContext = RequestContext<
+    AccessModelSodRemediationOperation['output'],
+    AccessModelSodRemediationOperation['response']
+>
 
 function validateSearchIndices(indices: string[] | undefined): SearchIndex[] {
     const resolved = indices ?? [...DEFAULT_SEARCH_INDICES]
@@ -79,7 +87,7 @@ async function discoverAccessItems(
     offline: boolean,
     searchIndices: SearchIndex[],
     scope: string,
-    ctx: RequestContext<AccessModelSodRemediationOperation['output']>
+    ctx: AccessModelSodRemediationContext
 ): Promise<CatalogAccessItem[]> {
     const items: CatalogAccessItem[] = []
 
@@ -117,7 +125,7 @@ async function discoverAccessItems(
 async function loadPolicies(
     offline: boolean,
     policyScope: string,
-    ctx: RequestContext<AccessModelSodRemediationOperation['output']>
+    ctx: AccessModelSodRemediationContext
 ): Promise<SodPolicySummary[]> {
     ctx.log.info('loadPolicies', { offline, policyScope })
 
@@ -222,7 +230,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
 
                 let ownerId = ownerIdByAccessItemId.get(violation.accessItem.id)
                 let ownerEmail: string | undefined
-                let formUrl: string
+                let formNotification: FormNotification
                 try {
                     if (ownerId === undefined) {
                         ownerId = offline
@@ -242,7 +250,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                         ownerEmailById.set(ownerId, ownerEmail)
                     }
 
-                    formUrl = await createAccessModelSodRemediationInstance({
+                    formNotification = await launchAccessModelSodRemediationForm({
                         forms: ctx.sdk.forms,
                         formDefinitionId,
                         recipientId: ownerId,
@@ -260,6 +268,11 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                             groupAIds: violation.groupAIds,
                             groupBIds: violation.groupBIds,
                             ...html,
+                        },
+                        notification: {
+                            emailHeader: buildFormEmailHeader(emailInput),
+                            emailBody: ({ formUrl }) => buildFormEmailBody(emailInput, formUrl),
+                            emailRecipients: [ownerEmail],
                         },
                     })
                 } catch (error) {
@@ -280,12 +293,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                 try {
                     await ctx.persist(
                         childId,
-                        {
-                            'access-model-sod-remediation:form-url': formUrl,
-                            'access-model-sod-remediation:form-email-header': buildFormEmailHeader(emailInput),
-                            'access-model-sod-remediation:form-email-body': buildFormEmailBody(emailInput, formUrl),
-                            'access-model-sod-remediation:form-email-recipients': [ownerEmail],
-                        },
+                        toPersistAttributes('access-model-sod-remediation', formNotification),
                         undefined,
                         { verify: false }
                     )
@@ -306,8 +314,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
             }
         }
 
-        ctx.res.send({
-            status: 'success',
+        ctx.respond({
             'access-model-sod-remediation:access-items-scanned': accessItems.length,
             'access-model-sod-remediation:violations-found': violationsFound,
             ...(formsSkipped > 0 ? { 'access-model-sod-remediation:forms-skipped': formsSkipped } : {}),

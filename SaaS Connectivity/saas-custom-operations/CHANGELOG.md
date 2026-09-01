@@ -2,6 +2,35 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-08-19 · v0.3.4
+
+### 💥 Breaking Changes
+
+- **Typed operation response envelope** — Successful custom operation invokes now return `{ name, status, responses, summary }` via `ctx.respond(summary)` (preferred) instead of a flat `ctx.res.send` payload. Scan rollup counters for `custom:access-model-sod-remediation` move under `summary`. Workflows that read those counters from the invoke response body must update JSONPath to `summary.<field>`. Result-source **Get Accounts** reads are unchanged.
+
+### 🔧 Improvements
+
+- **Persisted-only `OperationSignature.output`** — `output` is the sole feed for the result-source account schema. Codegen (`npm run codegen:schemas`) fails when an `output` field is never persisted (object-literal `ctx.persist` keys, `toPersistAttributes(prefix, …)` expansion, or `// persist-dynamic: <key>` markers). Access-model scan counters leave the account schema.
+- **Shared form launch facade** — Adds a non-breaking ensure → create → notify facade used by `custom:sod-remediation` and `custom:access-model-sod-remediation`. Form seeds, recipient policy, skip/cap handling, persist keys, and workflow JSONPaths remain unchanged.
+
+---
+
+## 2026-08-19 · v0.3.3
+
+### 🔧 Improvements
+
+- **Form notification envelope** — Adds `src/lib/form-notification/` with a typed `FormNotification` envelope and `toPersistAttributes(prefix, envelope)` mapper for the four workflow companion fields (`form-url`, `form-email-header`, `form-email-body`, `form-email-recipients`). `custom:sod-remediation` and `custom:access-model-sod-remediation` persist via the mapper. Non-breaking — persist keys, types, and workflow JSONPaths are unchanged.
+
+---
+
+## 2026-08-19 · v0.3.2
+
+### 🔧 Improvements
+
+- **Shared persistable-email kit** — Adds `src/lib/persistable-email/` for compact STRING-safe workflow email HTML (escape, ellipsis truncation, unquoted href CTAs, and fit-to-budget with optional suffixes). `custom:access-model-sod-remediation` and `custom:sod-remediation` persistable email bodies use the kit; `sod-form-html` re-exports `escapeHtml` from it. Non-breaking — email body/subject behavior and persist keys are unchanged.
+
+---
+
 ## Unreleased
 
 ### 🔧 Improvements

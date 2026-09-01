@@ -2,6 +2,7 @@ import { getActiveFrameworkLogger } from '../../framework/logger'
 import { IdentityAccessItem } from '../../isc/identity-access'
 import { CompensatingControlV1 } from '../../isc/controls'
 import { ViolationV1 } from '../../isc/violations'
+import { toPersistAttributes } from '../../lib/form-notification'
 import { ResolvedAccessSide } from './access-path-resolver'
 import { SodFormInputValues } from './form-service'
 
@@ -144,10 +145,12 @@ export function logSodRemediationOutput(
     }
 ): void {
     logStep(requestId, 'output', {
-        'sod-remediation:form-url': output.formUrl,
-        'sod-remediation:form-email-header': output.situationHeader,
-        'sod-remediation:form-email-body': output.situationSummary,
-        'sod-remediation:form-email-recipients': [output.ownerEmail],
+        ...toPersistAttributes('sod-remediation', {
+            formUrl: output.formUrl,
+            emailHeader: output.situationHeader,
+            emailBody: output.situationSummary,
+            emailRecipients: [output.ownerEmail],
+        }),
         situationSummaryLength: output.situationSummary.length,
     })
 }

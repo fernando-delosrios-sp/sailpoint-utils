@@ -137,7 +137,9 @@ export interface ExampleOperation extends OperationSignature {
     }
 }
 
-export const exampleOperation = customOperation<ExampleOperation>(async () => {})
+export const exampleOperation = customOperation<ExampleOperation>(async (ctx) => {
+    await ctx.persist(ctx.requestId, { summary: 'ok', step: 'done' })
+})
 `
         )
         fs.writeFileSync(path.join(operationsDir, 'example', 'README.md'), '# custom:example\n')
@@ -199,7 +201,9 @@ export interface ExampleOperation extends OperationSignature {
     output: { summary: string }
 }
 
-export const exampleOperation = customOperation<ExampleOperation>(async () => {})
+export const exampleOperation = customOperation<ExampleOperation>(async (ctx) => {
+    await ctx.persist(ctx.requestId, { summary: 'ok' })
+})
 `
         )
         fs.writeFileSync(path.join(operationsDir, 'example', 'README.md'), '# custom:example\n')
@@ -271,6 +275,113 @@ export function registerCommands(connector: unknown) {
 
         const spec = JSON.parse(fs.readFileSync(specPath, 'utf-8'))
         expect(spec.commands.sort()).toEqual(autoOps.map((operation) => operation.command).sort())
+    })
+})
+
+describe('persist-output guard', () => {
+    let tempDir: string
+
+    afterEach(() => {
+        if (tempDir && fs.existsSync(tempDir)) {
+            fs.rmSync(tempDir, { recursive: true, force: true })
+        }
+    })
+
+    function writeMinimalOps(moduleSource: string): { operationsDir: string; specPath: string } {
+        tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'persist-guard-'))
+        const operationsDir = path.join(tempDir, 'operations')
+        fs.mkdirSync(path.join(operationsDir, 'example'), { recursive: true })
+        fs.writeFileSync(path.join(operationsDir, 'example', 'index.ts'), moduleSource)
+        fs.writeFileSync(path.join(operationsDir, 'example', 'README.md'), '# custom:example\n')
+        fs.writeFileSync(
+            path.join(operationsDir, 'index.ts'),
+            `import { Connector } from '@sailpoint/connector-sdk'
+import { registerAutoOperations } from './auto-registry'
+
+export function registerCommands(connector: Connector): Connector {
+    return registerAutoOperations(connector)
+}
+`
+        )
+        const specPath = path.join(tempDir, 'connector-spec.json')
+        fs.writeFileSync(specPath, `${JSON.stringify({ name: 'test', commands: [], sourceConfig: [] }, null, '\t')}\n`)
+        return { operationsDir, specPath }
+    }
+
+    it('fails codegen when an output field is never persisted', () => {
+        const { operationsDir, specPath } = writeMinimalOps(`import { customOperation, OperationSignature } from '../../framework'
+
+export interface ExampleOperation extends OperationSignature {
+    command: 'custom:example'
+    input: {}
+    output: {
+        summary: string
+        'items-scanned': number
+    }
+}
+
+export const exampleOperation = customOperation<ExampleOperation>(async (ctx) => {
+    await ctx.persist(ctx.requestId, { summary: 'ok' })
+})
+`)
+
+        expect(() =>
+            generateOperationSchemas({
+                indexPath: path.join(operationsDir, 'index.ts'),
+                specPath,
+            })
+        ).toThrow(/Persist-output guard failed.*items-scanned/)
+    })
+
+    it('passes when every output field appears in a ctx.persist object literal', () => {
+        const { operationsDir, specPath } = writeMinimalOps(`import { customOperation, OperationSignature } from '../../framework'
+
+export interface ExampleOperation extends OperationSignature {
+    command: 'custom:example'
+    input: {}
+    output: {
+        summary: string
+        step?: string
+    }
+}
+
+export const exampleOperation = customOperation<ExampleOperation>(async (ctx) => {
+    await ctx.persist(ctx.requestId, { summary: 'ok', step: 'done' })
+})
+`)
+
+        expect(() =>
+            generateOperationSchemas({
+                indexPath: path.join(operationsDir, 'index.ts'),
+                specPath,
+            })
+        ).not.toThrow()
+    })
+
+    it('treats persist-dynamic markers as persisted keys', () => {
+        const { operationsDir, specPath } = writeMinimalOps(`import { customOperation, OperationSignature } from '../../framework'
+
+export interface ExampleOperation extends OperationSignature {
+    command: 'custom:example'
+    input: {}
+    output: {
+        summary: string
+        dynamicKey: string
+    }
+}
+
+export const exampleOperation = customOperation<ExampleOperation>(async (ctx) => {
+    // persist-dynamic: dynamicKey
+    await ctx.persist(ctx.requestId, { summary: 'ok' })
+})
+`)
+
+        expect(() =>
+            generateOperationSchemas({
+                indexPath: path.join(operationsDir, 'index.ts'),
+                specPath,
+            })
+        ).not.toThrow()
     })
 })
 

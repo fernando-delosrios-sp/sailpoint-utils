@@ -36,11 +36,14 @@ export interface RequestContextDependencies {
 }
 
 /** Assembles the volatile request context for a custom operation invocation. */
-export function createRequestContext<TOutput extends object>(
+export function createRequestContext<
+    TOutput extends object = Record<string, unknown>,
+    TSummary extends object = Record<string, unknown>,
+>(
     input: StandardInput,
     res: Response<any>,
     deps: RequestContextDependencies = {}
-): RequestContext<TOutput> {
+): RequestContext<TOutput, TSummary> {
     const sdk: SailPointClients =
         deps.sdk ??
         (deps.testMode && !input.token
@@ -115,6 +118,15 @@ export function createRequestContext<TOutput extends object>(
               verifyPersisted: createVerifyPersisted(persistDeps, writeRegistry),
           }
 
+    const respond = (summary: TSummary, status = 'success'): void => {
+        res.send({
+            name: deps.command ?? '',
+            status,
+            responses: Array.from(writeRegistry.keys()),
+            summary,
+        })
+    }
+
     return {
         requestId: input.requestId,
         apiUrl: input.apiUrl,
@@ -125,6 +137,7 @@ export function createRequestContext<TOutput extends object>(
         sdk,
         persist: persist.persist,
         verifyPersisted: persist.verifyPersisted,
+        respond,
         log,
         res,
     }

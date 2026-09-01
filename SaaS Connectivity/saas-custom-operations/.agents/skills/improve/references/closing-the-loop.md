@@ -1,14 +1,25 @@
 # Closing the Loop — execute, reconcile, issues
 
-The advisor's job doesn't end at the plan. This file covers the three follow-through flows: dispatching an executor and reviewing its work (`execute`), keeping the plan backlog alive (`reconcile`), and publishing plans where work gets picked up (`--issues`).
+The advisor's job doesn't end at the handoff artifact. This file covers follow-through: dispatching an executor and reviewing its work (`execute`), keeping the backlog alive (`reconcile`), and publishing where work gets picked up (`--issues`).
 
-The founding rule survives unchanged: **the advisor never edits source code.** In `execute`, a *separate executor subagent* edits code in an isolated git worktree; the advisor dispatches, reviews, and renders a verdict — like a tech lead who doesn't push commits to your branch.
+The founding rule survives unchanged: **the advisor never edits source code.**
 
 ---
 
-## `execute <plan>` — dispatch and review
+## Mode routing
 
-### Preconditions (check all before dispatching)
+| Mode | `execute` | `reconcile` | `--issues` |
+|---|---|---|---|
+| **Legacy** | Executor subagent on a plan in `plans/` | `plans/README.md` + plan files | `--body-file` the plan |
+| **OpenSpec** | Invoke **apply-code-changes** on `openspec/changes/<slug>/`; advisor reviews apply output | Open changes under `openspec/changes/` (exclude `archive/`) | `proposal.md` + pointer to change folder |
+
+---
+
+## `execute` — dispatch and review
+
+### Legacy: `execute <plan>`
+
+#### Preconditions (check all before dispatching)
 
 - The repo is a git repository (worktree isolation requires it). If not: stop and say so.
 - The plan file exists and its dependencies show DONE in `plans/README.md`. If not: stop, name the missing dependency.
@@ -68,9 +79,19 @@ Review like a tech lead reviewing a PR against the spec — never fix anything y
 
 Running verification commands inside the executor's worktree is fine — it's isolated and disposable. The no-mutating-commands rule protects the user's working tree, not the worktree.
 
+### OpenSpec: `execute <slug>`
+
+1. Confirm `openspec/changes/<slug>/` exists. Read **Apply status** from that folder's `proposal.md`. Every **Depends on** slug must be DONE (see [openspec-change.md](./openspec-change.md)); if not, stop and name the missing dependency.
+2. Run the drift check from `design.md` yourself before invoking apply.
+3. Invoke **apply-code-changes** on the change folder — the skill owns venue gate, bind, task execution, and verify-fix.
+4. Review apply handoff like a tech lead: re-run verification criteria from `tasks.md`, check scope against `design.md`, read the diff — never edit source yourself.
+5. Write this package's **Status** (`DONE` | `BLOCKED`) in `proposal.md` Apply status. **Merging and archive are the user's decision** — never run `/opsx:archive` from improve.
+
 ---
 
-## `reconcile` — keep `plans/` alive
+## `reconcile` — keep the backlog alive
+
+### Legacy: `plans/`
 
 Process what happened since the last session. Read `plans/README.md` and every plan file, then per status:
 
@@ -81,16 +102,27 @@ Process what happened since the last session. Read `plans/README.md` and every p
 
 Finish with a short report: what's verified done, what was refreshed, what's rejected, and what's executable right now.
 
+### OpenSpec: open changes
+
+Walk `openspec/changes/` excluding `archive/`. Per change:
+
+- **DONE** — spot-check cheap verification criteria on HEAD; keep **Apply status** at DONE.
+- **BLOCKED** — investigate; refresh `design.md`/`tasks.md` or mark REJECTED in **Apply status**.
+- **TODO** — run drift check; refresh excerpts and planned-at SHA in `design.md`; if finding is gone, mark REJECTED in **Apply status**.
+
+Report executable slugs and dependency order.
+
 ---
 
-## `--issues` — publish plans as GitHub issues
+## `--issues` — publish handoff artifacts as GitHub issues
 
 Modifier on any planning invocation (`/improve --issues`, `/improve security --issues`). The flag is the user's authorization to create issues — never create them without it.
 
-1. Preflight: `gh auth status` succeeds and the repo has a GitHub remote. If either fails, write the plan files as normal and say why issues were skipped.
-2. Visibility check: `gh repo view --json visibility`. If the repo is **public**, warn the user that issues are publicly visible and get explicit confirmation before publishing any plan that describes a security vulnerability, credential location, or other sensitive finding.
+1. Preflight: `gh auth status` succeeds and the repo has a GitHub remote. If either fails, write artifacts as normal and say why issues were skipped.
+2. Visibility check: `gh repo view --json visibility`. If the repo is **public**, warn the user that issues are publicly visible and get explicit confirmation before publishing any package that describes a security vulnerability, credential location, or other sensitive finding.
 3. Show the list of titles about to become issues; confirm once if interactive.
-4. Per plan: `gh issue create --title "<plan title>" --body-file <plan file>`. Labels: `improve` plus the category — apply only if the labels exist or can be created without erroring; skip labels rather than fail.
-5. Record each issue URL in the plan's Status block (`- **Issue**: <url>`) and the index.
+4. **Legacy:** per plan — `gh issue create --title "<plan title>" --body-file <plan file>`.
+5. **OpenSpec:** per change — `gh issue create --title "<proposal title>" --body-file <proposal.md>` with a footer linking `openspec/changes/<slug>/`.
+6. Record each issue URL in the plan Status block (legacy) or that change's `proposal.md` **Apply status** Issue field (OpenSpec).
 
-The plan file remains the source of truth; the issue is distribution. The self-containment rule pays off here — the issue body needs no edits to make sense to whoever (or whatever) picks it up.
+The handoff artifact remains the source of truth; the issue is distribution.

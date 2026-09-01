@@ -93,8 +93,7 @@ const getViolationV1 = vi.fn()
 const listControlsV1 = vi.fn()
 const fetchIdentityAccessItemsFromSdk = vi.fn()
 const fetchIdentityAccessItemsOffline = vi.fn()
-const ensureSodFormDefinition = vi.fn()
-const createSodRemediationInstance = vi.fn()
+const launchSodRemediationForm = vi.fn()
 
 vi.mock('../../framework/result-source', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../framework/result-source')>()
@@ -194,8 +193,7 @@ vi.mock('./form-service', async (importOriginal) => {
     const actual = await importOriginal<typeof import('./form-service')>()
     return {
         ...actual,
-        ensureSodFormDefinition: (...args: unknown[]) => ensureSodFormDefinition(...args),
-        createSodRemediationInstance: (...args: unknown[]) => createSodRemediationInstance(...args),
+        launchSodRemediationForm: (...args: unknown[]) => launchSodRemediationForm(...args),
     }
 })
 
@@ -226,8 +224,19 @@ describe('sodRemediationOperation', () => {
         fetchKeepRecommendations.mockResolvedValue(new Map())
         listAssignedEntitlements.mockResolvedValue([])
         resolveIdentityEmail.mockResolvedValue('owner-default@example.com')
-        ensureSodFormDefinition.mockResolvedValue('def-1')
-        createSodRemediationInstance.mockResolvedValue('https://tenant.identitynow.com/form/instance-1')
+        launchSodRemediationForm.mockImplementation(async (params) => {
+            const formUrl = 'https://tenant.identitynow.com/form/instance-1'
+            const emailBody =
+                typeof params.notification.emailBody === 'function'
+                    ? params.notification.emailBody({ formUrl })
+                    : params.notification.emailBody
+            return {
+                formUrl,
+                emailHeader: params.notification.emailHeader,
+                emailBody,
+                emailRecipients: params.notification.emailRecipients,
+            }
+        })
     })
 
     it('returns namespaced output fields on happy path', async () => {
@@ -247,8 +256,7 @@ describe('sodRemediationOperation', () => {
 
         expect(getViolationV1).toHaveBeenCalled()
         expect(fetchIdentityAccessItemsFromSdk).toHaveBeenCalledWith(expect.anything(), 'ident-1')
-        expect(ensureSodFormDefinition).toHaveBeenCalled()
-        expect(createSodRemediationInstance).toHaveBeenCalledWith(
+        expect(launchSodRemediationForm).toHaveBeenCalledWith(
             expect.objectContaining({
                 recipientId: 'owner-default',
                 formInput: expect.objectContaining({
@@ -262,7 +270,7 @@ describe('sodRemediationOperation', () => {
                 }),
             })
         )
-        const launchFormInput = vi.mocked(createSodRemediationInstance).mock.calls[0]?.[0]?.formInput
+        const launchFormInput = vi.mocked(launchSodRemediationForm).mock.calls[0]?.[0]?.formInput
         expect(launchFormInput?.situationSummaryHtml).toContain('What we found')
         expect(launchFormInput?.situationSummaryHtml).toContain(
             '/ui/a/admin/identities/ident-1/details/attributes'
@@ -398,15 +406,13 @@ describe('sodRemediationOperation', () => {
             )
         })
 
-        expect(createSodRemediationInstance).toHaveBeenCalledWith(
+        expect(launchSodRemediationForm).toHaveBeenCalledWith(
             expect.objectContaining({ recipientId: 'owner-override' })
         )
         expect(resolveIdentityEmail).toHaveBeenCalledWith(expect.anything(), 'owner-override')
     })
 
     it('creates form definition from seed when missing', async () => {
-        ensureSodFormDefinition.mockResolvedValue('def-created')
-
         const res = { send: vi.fn() }
         await _withConfig(workflowConfig, async () => {
             await sodRemediationOperation(
@@ -420,7 +426,12 @@ describe('sodRemediationOperation', () => {
             )
         })
 
-        expect(ensureSodFormDefinition).toHaveBeenCalledWith(expect.anything(), 'New SOD Form', 'token-owner-id')
+        expect(launchSodRemediationForm).toHaveBeenCalledWith(
+            expect.objectContaining({
+                formName: 'New SOD Form',
+                definitionOwnerId: 'token-owner-id',
+            })
+        )
     })
 
     it('uses offline fallback owner for form definition create', async () => {
@@ -441,12 +452,13 @@ describe('sodRemediationOperation', () => {
 
             expect(getViolationV1).not.toHaveBeenCalled()
             expect(fetchIdentityAccessItemsOffline).toHaveBeenCalledWith('offline-identity')
-            expect(ensureSodFormDefinition).toHaveBeenCalledWith(
-                expect.anything(),
-                'SOD Remediation',
-                'offline-owner'
+            expect(launchSodRemediationForm).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    formName: 'SOD Remediation',
+                    definitionOwnerId: 'offline-owner',
+                })
             )
-            expect(createSodRemediationInstance).toHaveBeenCalledWith(
+            expect(launchSodRemediationForm).toHaveBeenCalledWith(
                 expect.objectContaining({ recipientId: 'offline-owner' })
             )
             expect(resolveIdentityEmail).not.toHaveBeenCalled()
@@ -475,7 +487,7 @@ describe('sodRemediationOperation', () => {
             )
         })
 
-        expect(createSodRemediationInstance).toHaveBeenCalledWith(
+        expect(launchSodRemediationForm).toHaveBeenCalledWith(
             expect.objectContaining({
                 formInput: expect.objectContaining({
                     violationId: 'vio-1',
@@ -502,7 +514,7 @@ describe('sodRemediationOperation', () => {
             )
         })
 
-        expect(createSodRemediationInstance).toHaveBeenCalledWith(
+        expect(launchSodRemediationForm).toHaveBeenCalledWith(
             expect.objectContaining({
                 formInput: expect.objectContaining({ hasControls: false }),
             })
@@ -547,7 +559,7 @@ describe('sodRemediationOperation', () => {
     }
 
     function launchFormInput(): Record<string, unknown> | undefined {
-        return vi.mocked(createSodRemediationInstance).mock.calls[0]?.[0]?.formInput as
+        return vi.mocked(launchSodRemediationForm).mock.calls[0]?.[0]?.formInput as
             | Record<string, unknown>
             | undefined
     }

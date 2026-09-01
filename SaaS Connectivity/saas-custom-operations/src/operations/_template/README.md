@@ -20,10 +20,27 @@
 
 Persist keys use the `{slug}:` prefix where `slug` is the command name without `custom:` (e.g. `custom:my-op` → `my-op:result`).
 
+`OperationSignature.output` lists **only** attributes written via `ctx.persist`. Never put invoke rollup counters here — those belong under `response`.
+
 | Field | Required | Description |
 |---|---|---|
 | `template:result` | Yes | <!-- describe --> |
 | `template:detail` | No | <!-- describe --> |
+
+## Response (invoke envelope)
+
+Return rollups with `ctx.respond(summary)` (not raw `ctx.res.send`). The framework builds:
+
+| Field | Source |
+|---|---|
+| `name` | Command name (e.g. `custom:template`) |
+| `status` | Defaults to `success` |
+| `responses` | Native identities persisted this invoke |
+| `summary` | Your `OperationSignature.response` fields |
+
+| Summary field | Required | Description |
+|---|---|---|
+| `itemsProcessed` | No | <!-- example rollup — not persisted, not on account schema --> |
 
 ## Invoke examples
 

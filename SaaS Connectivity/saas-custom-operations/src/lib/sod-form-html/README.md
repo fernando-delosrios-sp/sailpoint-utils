@@ -2,6 +2,8 @@
 
 Shared HTML builders for SoD remediation ISC forms (DESCRIPTION interpolation and launch-time `formInput` strings).
 
+For compact workflow **persistable email body** HTML (STRING ≤ 256, unquoted CTA), use `src/lib/persistable-email/` instead.
+
 ## ISC admin UI links
 
 When loopback `apiUrl` is present, `resolveUiOrigin(apiUrl)` derives the tenant UI base URL by removing the `.api.` hostname segment. `renderIscUiLink` builds admin anchors with `target="_blank"` and `rel="noopener noreferrer"`. Offline invoke omits links (plain escaped text only).

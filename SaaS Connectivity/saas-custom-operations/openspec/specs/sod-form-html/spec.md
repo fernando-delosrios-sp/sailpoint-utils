@@ -5,7 +5,7 @@ TBD - created by archiving change unify-sod-form-html. Update Purpose after arch
 ## Requirements
 ### Requirement: SoD form HTML shared library
 
-The connector SHALL provide shared SoD remediation form HTML builders under `src/lib/sod-form-html/`. The library SHALL assemble HTML strings for ISC form DESCRIPTION interpolation and SHALL NOT invoke ISC APIs or encode operation persist logic.
+The connector SHALL provide shared SoD remediation form HTML builders under `src/lib/sod-form-html/`. The library SHALL assemble HTML strings for ISC form DESCRIPTION interpolation and SHALL NOT invoke ISC APIs or encode operation persist logic. Compact workflow **persistable email body** HTML SHALL be assembled via `src/lib/persistable-email/` rather than duplicated inside this library; `escapeHtml` MAY be re-exported from persistable-email for convenience.
 
 #### Scenario: Type tag rendering
 
@@ -51,6 +51,13 @@ The connector SHALL provide shared SoD remediation form HTML builders under `src
 
 - **WHEN** user-controlled names are embedded in HTML output
 - **THEN** the library SHALL escape `&`, `<`, `>`, and `"` characters
+
+#### Scenario: Boundary with persistable email
+
+- **GIVEN** a caller needs compact HTML for a workflow Send Email body bounded by STRING max length
+- **WHEN** choosing a shared library
+- **THEN** the caller SHALL use `persistable-email` helpers
+- **AND** SHALL NOT treat `sod-form-html` as the home for fit-to-256 email body construction
 
 ### Requirement: Access model entitlement tree flat access profile lines
 

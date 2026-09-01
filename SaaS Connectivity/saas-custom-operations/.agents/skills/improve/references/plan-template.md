@@ -1,14 +1,16 @@
 # Handoff Plan Template
 
-Every plan is written for an executor model that has **zero context**: it has not seen the advisor session, the audit, the other plans, or any prior conversation. It may be a smaller/cheaper model. Assume it is competent at following explicit instructions and weak at filling gaps, recovering from ambiguity, or knowing when to stop.
+Every plan is written for an executor model that has **zero context**: it has not seen the advisor session, the audit, the other packages, or any prior conversation. It may be a smaller/cheaper model. Assume it is competent at following explicit instructions and weak at filling gaps, recovering from ambiguity, or knowing when to stop.
 
-Three properties make a plan executable by a weaker model:
+**OpenSpec mode:** This file is the **section map**, not the output path. Do not write standalone `plans/NNN-slug.md` files. Map sections into `openspec/changes/<slug>/` per [openspec-change.md](./openspec-change.md). Status / Depends on / Issue map to `proposal.md` **Apply status**. Omit the **OpenSpec prerequisite** section — the change package is the proposal.
 
-1. **Self-contained context** — everything needed is in the file: paths, code excerpts, conventions, commands.
+**Legacy mode:** Output path is `plans/NNN-short-slug.md`, numbered in recommended execution order.
+
+Three properties make a handoff artifact executable by a weaker model:
+
+1. **Self-contained context** — everything needed is in the file(s): paths, code excerpts, conventions, commands.
 2. **Verification gates** — every step ends with a command and its expected result. The executor never has to *judge* whether it succeeded.
 3. **Hard boundaries and escape hatches** — explicit out-of-scope list, and "STOP and report" conditions instead of letting the model improvise when reality doesn't match the plan.
-
-File naming: `plans/NNN-short-slug.md`, numbered in recommended execution order.
 
 ---
 
@@ -62,17 +64,8 @@ The facts the executor needs, inlined — never "as discussed" or "see audit":
   name), including product/design constraints encoded in specs; in legacy mode —
   the relevant `CONTEXT.md` terms, the ADR whose decision this work must stay
   consistent with, and `DESIGN.md` tokens/components to reuse.
-  Quote the specific lines — the executor has not read those docs.
-
-## OpenSpec prerequisite (direction/spike plans only)
-
-Include when the target repo uses OpenSpec and this plan introduces new product
-or design intent that is not yet in a capability spec:
-
-- **Change proposal**: open or land an OpenSpec change via `/opsx:propose` or
-  `/domain-modeling` before implementation steps — delta at
-  `openspec/changes/<name>/specs/<capability>/spec.md`.
-- Do **not** add steps that create PRDs, `PRODUCT.md`, or `DESIGN.md`.
+  Quote the specific lines — the executor has not read those docs. Cite only
+  OpenSpec paths (and other intent docs) the advisor actually found in recon.
 
 ## Commands you will need
 

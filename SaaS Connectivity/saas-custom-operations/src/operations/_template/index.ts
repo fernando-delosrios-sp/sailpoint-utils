@@ -20,9 +20,14 @@ export interface TemplateOperation extends OperationSignature {
     input: {
         exampleField?: string
     }
+    /** Persisted attributes only — sole feed for the result-source account schema. */
     output: {
         result: string
         detail?: string
+    }
+    /** Optional invoke response summary (typed into the operation response envelope). */
+    response: {
+        itemsProcessed?: number
     }
 }
 
@@ -32,6 +37,6 @@ export const templateOperation = customOperation<TemplateOperation>(
 
         await ctx.persist(ctx.requestId, { result: 'example-value' })
 
-        ctx.res.send({ status: 'success' })
+        ctx.respond({ itemsProcessed: 1 })
     }
 )

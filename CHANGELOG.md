@@ -4,6 +4,32 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-08-25
+
+### ✨ New Features
+
+- **PowerShell Rule Template** — Copy-ready IQService connector-rule bootstrap for AD and Azure AD (`ISC/PowerShell Rule Template/`).
+  - Handles IQService directory lookup, per-run logging, payload redaction, explicit exit codes, and optional replay of a captured invocation.
+  - Supports Before/After Create, Modify, and Delete connector rule types; custom logic stays in a dedicated process section.
+
+### 🔧 Improvements
+
+- **Active Directory Home Folders** — Rebuilt on the PowerShell Rule Template so bootstrap, artifact preservation, and logging stay aligned with other IQService rules.
+
+---
+
+## 2026-08-24
+
+### ✨ New Features
+
+- **Active Directory Home Folders** — ConnectorAfterCreate rule that provisions NTFS home folders after AD account creation (`ISC/Active Directory Home Folders/`).
+  - Destination path driven by source `connectorAttributes`: `HomeFolderBasePath` plus a `HomeFolderTemplate` filled from account request attributes (`$attributeName` or `{attributeName}` placeholders).
+  - Supports absolute UNC or drive-letter paths; falls back to `sAMAccountName` when the template is blank or unresolvable.
+  - Creates the folder tree, breaks inheritance, and grants Full Control to the new user and `BUILTIN\Administrators`.
+  - Installation and configuration documented for the [SailPoint Identity Security Cloud VS Code extension](https://marketplace.visualstudio.com/items?itemName=yannick-beot-sp.vscode-sailpoint-identitynow).
+
+---
+
 ## 2026-08-12
 
 ### ✨ New Features

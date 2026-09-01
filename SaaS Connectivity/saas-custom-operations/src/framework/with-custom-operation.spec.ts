@@ -200,6 +200,25 @@ describe('customOperation', () => {
         expect(res.send).toHaveBeenCalledWith({ status: 'success' })
     })
 
+    it('builds the operation response envelope via ctx.respond', async () => {
+        process.env.SPCX_TEST_MODE = '1'
+        const res = mockResponse()
+        const wrapped = customOperation<TestOperation>(async (ctx) => {
+            await ctx.persist('req:child-a', { result: 'ok' })
+            ctx.respond({ itemsScanned: 3 })
+        })
+
+        await wrapped({ commandType: 'custom:test' } as any, { requestId: 'req-001' }, res as any)
+
+        expect(res.send).toHaveBeenCalledWith({
+            name: 'custom:test',
+            status: 'success',
+            responses: ['req:child-a'],
+            summary: { itemsScanned: 3 },
+        })
+        delete process.env.SPCX_TEST_MODE
+    })
+
     it('exposes ctx.log and POSTs when logUrl is configured', async () => {
         const fetchImpl = vi.fn().mockResolvedValue({ ok: true })
         vi.stubGlobal('fetch', fetchImpl)

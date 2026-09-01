@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
-    createAccessModelSodRemediationInstance,
+    launchAccessModelSodRemediationForm,
     resolveRemediationSectionLabel,
     serializeAccessModelSodFormInputForCreate,
 } from './form-service'
@@ -43,14 +43,14 @@ describe('serializeAccessModelSodFormInputForCreate', () => {
     })
 })
 
-describe('createAccessModelSodRemediationInstance', () => {
+describe('launchAccessModelSodRemediationForm', () => {
     it('sends JSON-string group ids to createFormInstanceV1', async () => {
         const createFormInstanceV1 = vi.fn().mockResolvedValue({
             data: { standAloneFormUrl: 'https://tenant.identitynow.com/form/abc', state: 'ASSIGNED' },
         })
         const forms = { createFormInstanceV1 } as never
 
-        await createAccessModelSodRemediationInstance({
+        await launchAccessModelSodRemediationForm({
             forms,
             formDefinitionId: 'def-1',
             recipientId: 'owner-1',
@@ -58,6 +58,11 @@ describe('createAccessModelSodRemediationInstance', () => {
             formInput: {
                 ...baseFormInput,
                 groupAIds: ['ent-a'],
+            },
+            notification: {
+                emailHeader: 'Review',
+                emailBody: 'Open the form',
+                emailRecipients: ['owner@example.com'],
             },
         })
 
@@ -79,12 +84,17 @@ describe('createAccessModelSodRemediationInstance', () => {
         })
         const forms = { createFormInstanceV1 } as never
 
-        await createAccessModelSodRemediationInstance({
+        await launchAccessModelSodRemediationForm({
             forms,
             formDefinitionId: 'def-1',
             recipientId: 'owner-1',
             createdBySourceId: 'source-1',
             formInput: baseFormInput,
+            notification: {
+                emailHeader: 'Review',
+                emailBody: 'Open the form',
+                emailRecipients: ['owner@example.com'],
+            },
         })
 
         expect(createFormInstanceV1).toHaveBeenCalledWith(

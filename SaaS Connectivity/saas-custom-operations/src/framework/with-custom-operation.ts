@@ -12,7 +12,12 @@ import {
     trackInFlightInvocation,
     type InvocationOutcome,
 } from './invocation-guard'
-import { InferOperationInput, InferOperationOutput, OperationSignature } from './output-schema'
+import {
+    InferOperationInput,
+    InferOperationOutput,
+    InferOperationResponse,
+    OperationSignature,
+} from './output-schema'
 import { getOperationSchema } from './operation-schema-registry'
 import { createRequestContext, RequestContextDependencies } from './request-context'
 import { createSailPointClients } from './sdk-factory'
@@ -95,7 +100,7 @@ export function parseStandardInput(
 }
 
 export type CustomOperationHandler<T extends OperationSignature> = (
-    ctx: RequestContext<InferOperationOutput<T>>,
+    ctx: RequestContext<InferOperationOutput<T>, InferOperationResponse<T>>,
     input: InferOperationInput<T>
 ) => Promise<void> | void
 
@@ -137,7 +142,7 @@ export function customOperation<T extends OperationSignature>(
 
         let responseSent = false
         let outcome: InvocationOutcome = { status: 'success' }
-        let activeCtx: RequestContext<InferOperationOutput<T>> | undefined
+        let activeCtx: RequestContext<InferOperationOutput<T>, InferOperationResponse<T>> | undefined
         let pendingFailurePersist: Promise<void> | undefined
 
         const trackedRes: Response<any> = {
@@ -204,7 +209,7 @@ async function runCustomOperation<T extends OperationSignature>(
     res: Response<any>,
     handler: CustomOperationHandler<T>,
     deps: CustomOperationOptions,
-    onContext?: (ctx: RequestContext<InferOperationOutput<T>>) => void
+    onContext?: (ctx: RequestContext<InferOperationOutput<T>, InferOperationResponse<T>>) => void
 ): Promise<void> {
         const { config, configProvided } = await resolveInvocationConfig(deps, context as ContextWithConfig)
         const testMode = configProvided ? isTestMode(config) : isTestMode({})
@@ -263,7 +268,10 @@ async function runCustomOperation<T extends OperationSignature>(
               }
             : undefined
 
-        const requestContext = createRequestContext<InferOperationOutput<T>>(standard, res, {
+        const requestContext = createRequestContext<
+            InferOperationOutput<T>,
+            InferOperationResponse<T>
+        >(standard, res, {
             ...deps,
             sdk,
             sourceId,

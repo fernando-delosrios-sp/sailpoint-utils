@@ -4,7 +4,7 @@ import { RequestContext } from './types'
 export async function persistFailedResult(
     requestId: string | undefined,
     message: string,
-    ctx: RequestContext | undefined
+    ctx: Pick<RequestContext, 'persist' | 'log'> | undefined
 ): Promise<void> {
     if (!requestId || !ctx) {
         return
