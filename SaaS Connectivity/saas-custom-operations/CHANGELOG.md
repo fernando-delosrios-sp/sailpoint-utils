@@ -2,6 +2,15 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-09-01 · v0.4.0
+
+### ⚠️ Breaking Changes
+
+- **Identity SoD revoke targets entitlements and roles, not access profiles** — `custom:sod-remediation` no longer treats assigned access profiles as parent access items. `groupAAccessSearch` / `groupBAccessSearch` now contain revocable **entitlement** and **role** ids only. Identity-access listing fetches assigned roles (and their entitlement ids), not access profiles. Owner-facing HTML and the elevated warning are role-level only. Residual AP membership after entitlement revoke is out of scope.
+  - Migration: deploy the connector and re-invoke `custom:sod-remediation` so new form instances get the updated search strings. Bundled `workflows/SOD Violation - Remediation.json` is unchanged (Get Access already includes entitlements). In-flight form instances keep their launch-time search strings until relaunch.
+
+---
+
 ## 2026-08-19 · v0.3.4
 
 ### 💥 Breaking Changes
