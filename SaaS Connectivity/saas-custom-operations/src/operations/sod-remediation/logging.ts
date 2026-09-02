@@ -46,11 +46,10 @@ export function logSodRemediationControls(requestId: string, controls: Compensat
     })
 }
 
-/** Logs identity access items used for AP/role path expansion. */
+/** Logs identity access items used for role path expansion. */
 export function logSodRemediationIdentityAccess(requestId: string, items: IdentityAccessItem[]): void {
     logStep(requestId, 'identity-access', {
         count: items.length,
-        accessProfiles: items.filter((item) => item.type === 'ACCESS_PROFILE').length,
         roles: items.filter((item) => item.type === 'ROLE').length,
         items: items.map((item) => ({
             type: item.type,

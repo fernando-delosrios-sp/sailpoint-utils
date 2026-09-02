@@ -4,9 +4,9 @@ import type { IdentityAccessItem } from './types'
 const OFFLINE_IDENTITY_ACCESS_DATA: Record<string, IdentityAccessItem[]> = {
     'offline-identity': [
         {
-            type: 'ACCESS_PROFILE',
-            id: 'offline-ap-a',
-            name: 'Offline Finance AP',
+            type: 'ROLE',
+            id: 'offline-role-a',
+            name: 'Offline Finance Role',
             grantedEntitlementIds: ['offline-ent-a'],
         },
     ],
