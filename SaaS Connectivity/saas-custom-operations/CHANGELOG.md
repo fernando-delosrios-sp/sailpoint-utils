@@ -2,6 +2,15 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-09-02 · v0.5.0
+
+### ⚠️ Breaking Changes
+
+- **Access-model SoD apply loads forms by definition list, not get-by-id** — `custom:access-model-sod-remediation-apply` now requires `formDefinitionId` next to `formInstanceId`. After a prior-apply persist check, it lists tenant form instances with `searchFormInstancesByTenantV1` (`formDefinitionId eq`), paginates until the matching instance id is found, and does **not** call `getFormInstanceByKeyV1` (recipient-only; loopback PATs were failing after form submit). Persist identity remains `{formInstanceId}`.
+  - Migration: add `formDefinitionId: "{{$.trigger.formDefinitionId}}"` to the Custom Command invoke body (bundled `workflows/Access Model SOD - Remediation.json` already does). Re-import the export or edit existing workflows. Local `call:op` payloads must include a non-empty `formDefinitionId`. Offline fixtures are still keyed by `formInstanceId` only.
+
+---
+
 ## 2026-09-01 · v0.4.0
 
 ### ⚠️ Breaking Changes

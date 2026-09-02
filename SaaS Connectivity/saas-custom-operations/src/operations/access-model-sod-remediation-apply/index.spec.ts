@@ -1,11 +1,15 @@
 import { _withConfig } from '@sailpoint/connector-sdk'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import '../auto-registry'
 import { beginPayloadOutputCapture, endPayloadOutputCapture } from '../../framework/payload-persist-collector'
 import { accessModelSodRemediationApplyOperation } from './index'
+import { FORM_INSTANCE_LIST_PAGE_SIZE } from '../../isc/forms'
 import {
     getFormInstanceByIdOffline,
     markOfflineRoleAlreadyClean,
+    OFFLINE_FORM_INSTANCES,
     resetOfflineCatalogState,
 } from './offline-data'
 
@@ -37,6 +41,19 @@ const getRoleEntitlementsV1 = vi.fn()
 const getAccessProfileEntitlementsV1 = vi.fn()
 const getAccessProfileV1 = vi.fn()
 const getFormInstanceByKeyV1 = vi.fn()
+const searchFormInstancesByTenantV1 = vi.fn()
+const DEFAULT_FORM_DEFINITION_ID = 'fd-1'
+
+function listRowFromOffline(formInstanceId: string): Record<string, unknown> {
+    const instance = getFormInstanceByIdOffline(formInstanceId)
+    return {
+        id: instance.id,
+        state: instance.state,
+        formInput: instance.formInput,
+        formData: instance.formData,
+        recipients: instance.submitterId ? [{ id: instance.submitterId }] : undefined,
+    }
+}
 
 vi.mock('../../framework/result-source', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../framework/result-source')>()
@@ -84,6 +101,7 @@ vi.mock('../../framework/sdk-factory', () => ({
         },
         forms: {
             getFormInstanceByKeyV1: (...args: unknown[]) => getFormInstanceByKeyV1(...args),
+            searchFormInstancesByTenantV1: (...args: unknown[]) => searchFormInstancesByTenantV1(...args),
         },
     })),
 }))
@@ -140,11 +158,11 @@ describe('accessModelSodRemediationApplyOperation', () => {
             return { data: [{ id: 'ent-x', name: 'X' }] }
         })
         getAccessProfileV1.mockResolvedValue({ data: { description: 'AP desc' } })
-        getFormInstanceByKeyV1.mockImplementation(async ({ formInstanceID }) => ({
-            data: {
-                ...getFormInstanceByIdOffline(String(formInstanceID)),
-            },
-        }))
+        getFormInstanceByKeyV1.mockClear()
+        searchFormInstancesByTenantV1.mockReset()
+        searchFormInstancesByTenantV1.mockResolvedValue({
+            data: Object.keys(OFFLINE_FORM_INSTANCES).map((id) => listRowFromOffline(id)),
+        })
     })
 
     it('Offline apply simulates success for role direct entitlement removal', async () => {
@@ -159,6 +177,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-offline-1',
                     formInstanceId: 'fi-role-group-a-direct',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
                 },
                 res as never
             )
@@ -174,6 +193,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 })
             )
             expect(inhibitedPersists[0]?.identity).toBe('fi-role-group-a-direct')
+            expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
         } finally {
             endPayloadOutputCapture()
             if (previousTestMode === undefined) {
@@ -195,6 +215,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-offline-2',
                     formInstanceId: 'fi-role-group-b-nested',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
                 },
                 res as never
             )
@@ -227,6 +248,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-offline-skip',
                     formInstanceId: 'fi-role-already-clean',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
                 },
                 res as never
             )
@@ -257,6 +279,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-invalid',
                     formInstanceId: 'fi-in-progress',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
                 },
                 res as never
             )
@@ -286,6 +309,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-first',
                     formInstanceId: 'fi-role-group-a-direct',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
                 },
                 resFirst as never
             )
@@ -300,12 +324,15 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-second',
                     formInstanceId: 'fi-role-group-a-direct',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
                 },
                 resSecond as never
             )
         })
 
         expect(patchRoleV1).not.toHaveBeenCalled()
+        expect(searchFormInstancesByTenantV1).toHaveBeenCalledTimes(1)
+        expect(getFormInstanceByKeyV1).not.toHaveBeenCalled()
         expect(resSecond.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 status: 'success',
@@ -324,12 +351,14 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-live',
                     formInstanceId: 'fi-role-group-b-nested',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
                 },
                 res as never
             )
         })
 
         expect(patchRoleV1).toHaveBeenCalled()
+        expect(getFormInstanceByKeyV1).not.toHaveBeenCalled()
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 status: 'success',
@@ -349,6 +378,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-ap',
                     formInstanceId: 'fi-ap-group-a',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
                 },
                 res as never
             )
@@ -367,5 +397,190 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 process.env.SPCX_TEST_MODE = previousTestMode
             }
         }
+    })
+
+    it('List filtered by form definition id', async () => {
+        const res = { send: vi.fn() }
+        searchFormInstancesByTenantV1.mockResolvedValue({
+            data: [listRowFromOffline('fi-role-group-a-direct')],
+        })
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-list-filter',
+                    formInstanceId: 'fi-role-group-a-direct',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                },
+                res as never
+            )
+        })
+
+        expect(searchFormInstancesByTenantV1).toHaveBeenCalledWith({
+            offset: 0,
+            limit: FORM_INSTANCE_LIST_PAGE_SIZE,
+            filters: `formDefinitionId eq "${DEFAULT_FORM_DEFINITION_ID}"`,
+        })
+        expect(getFormInstanceByKeyV1).not.toHaveBeenCalled()
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'success',
+                'access-model-sod-remediation-apply:status': 'applied',
+            })
+        )
+    })
+
+    it('Instance found on a later page', async () => {
+        const res = { send: vi.fn() }
+        const firstPage = Array.from({ length: FORM_INSTANCE_LIST_PAGE_SIZE }, (_, index) => ({
+            id: `fi-other-${index}`,
+            state: 'ASSIGNED',
+            formInput: {},
+            formData: {},
+        }))
+        searchFormInstancesByTenantV1
+            .mockResolvedValueOnce({ data: firstPage })
+            .mockResolvedValueOnce({ data: [listRowFromOffline('fi-role-group-b-nested')] })
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-later-page',
+                    formInstanceId: 'fi-role-group-b-nested',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                },
+                res as never
+            )
+        })
+
+        expect(searchFormInstancesByTenantV1).toHaveBeenNthCalledWith(2, {
+            offset: FORM_INSTANCE_LIST_PAGE_SIZE,
+            limit: FORM_INSTANCE_LIST_PAGE_SIZE,
+            filters: `formDefinitionId eq "${DEFAULT_FORM_DEFINITION_ID}"`,
+        })
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'success',
+                'access-model-sod-remediation-apply:status': 'applied',
+            })
+        )
+    })
+
+    it('Missing instance after last page', async () => {
+        const res = { send: vi.fn() }
+        searchFormInstancesByTenantV1.mockResolvedValue({ data: [] })
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-missing',
+                    formInstanceId: 'fi-missing',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                },
+                res as never
+            )
+        })
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                error: expect.stringMatching(/not found/),
+            })
+        )
+        expect(patchRoleV1).not.toHaveBeenCalled()
+        expect(patchAccessProfileV1).not.toHaveBeenCalled()
+        expect(getFormInstanceByKeyV1).not.toHaveBeenCalled()
+    })
+
+    it('Prior apply skips list', async () => {
+        const resFirst = { send: vi.fn() }
+        const resSecond = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-skip-list-first',
+                    formInstanceId: 'fi-role-group-a-direct',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                },
+                resFirst as never
+            )
+        })
+
+        searchFormInstancesByTenantV1.mockClear()
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-skip-list-second',
+                    formInstanceId: 'fi-role-group-a-direct',
+                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                },
+                resSecond as never
+            )
+        })
+
+        expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
+        expect(resSecond.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                'access-model-sod-remediation-apply:status': 'skipped-already-applied',
+            })
+        )
+    })
+
+    it('Missing formDefinitionId validation', async () => {
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-missing-def',
+                    formInstanceId: 'fi-role-group-a-direct',
+                    formDefinitionId: '   ',
+                },
+                res as never
+            )
+        })
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                error: expect.stringMatching(/formDefinitionId/),
+            })
+        )
+        expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
+        expect(patchRoleV1).not.toHaveBeenCalled()
+    })
+
+    it('scan README/spec downstream invoke fields', () => {
+        const applyReadme = readFileSync(
+            join(process.cwd(), 'src/operations/access-model-sod-remediation-apply/README.md'),
+            'utf-8'
+        )
+        const scanReadme = readFileSync(
+            join(process.cwd(), 'src/operations/access-model-sod-remediation/README.md'),
+            'utf-8'
+        )
+        const workflow = readFileSync(
+            join(process.cwd(), 'workflows/Access Model SOD - Remediation.json'),
+            'utf-8'
+        )
+        const offlinePayload = readFileSync(
+            join(process.cwd(), 'payloads/access-model-sod-remediation-apply-offline.json'),
+            'utf-8'
+        )
+
+        expect(applyReadme).toMatch(/formDefinitionId/)
+        expect(applyReadme).toMatch(/searchFormInstancesByTenantV1/)
+        expect(applyReadme).not.toMatch(/formInstanceId` only/)
+        expect(scanReadme).toMatch(/formDefinitionId/)
+        expect(workflow).toContain('"formDefinitionId": "{{$.trigger.formDefinitionId}}"')
+        expect(offlinePayload).toMatch(/"formDefinitionId"/)
     })
 })

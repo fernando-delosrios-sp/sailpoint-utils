@@ -2,6 +2,10 @@ export {
     createStandaloneFormInstance,
 } from './create-instance'
 export {
+    getFormInstanceByDefinitionAndId,
+    FORM_INSTANCE_LIST_PAGE_SIZE,
+} from './find-form-instance'
+export {
     getFormInstanceById,
     type NormalizedFormInstance,
 } from './get-form-instance'
