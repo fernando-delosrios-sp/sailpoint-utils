@@ -15,7 +15,7 @@ Runs after `custom:access-model-sod-remediation` form submit in the access-model
 | Field | Required | Description |
 |---|---|---|
 | `formInstanceId` | Yes | Completed form instance id from the form trigger |
-| `formDefinitionId` | Yes | Form definition id from the form trigger; used to filter the tenant form instance list |
+| `formName` | Yes | Shared tenant form definition name; must match the name used by `custom:access-model-sod-remediation` |
 | `requestId` | Yes | Standard invoke id for logging; persist key is `formInstanceId`. In-flight dedupe also keys on `formInstanceId` for this command |
 
 ## Output
@@ -43,9 +43,9 @@ Never patches entitlement lists on nested access profiles when correcting a role
 
 ## Idempotency
 
-Before catalog PATCH, the handler checks the result-source account at `{formInstanceId}` for a prior terminal apply (`applied` or `skipped-already-applied`). When found, it skips the tenant form instance list and PATCH and returns `skipped-already-applied`. Concurrent invokes for the same `formInstanceId` dedupe in-flight via a framework key that includes `formInstanceId` (not `requestId`).
+Before catalog PATCH, the handler checks the result-source account at `{formInstanceId}` for a prior terminal apply (`applied` or `skipped-already-applied`). When found, it skips the form definition lookup, tenant form instance list, and PATCH and returns `skipped-already-applied`. Concurrent invokes for the same `formInstanceId` dedupe in-flight via a framework key that includes `formInstanceId` (not `requestId`).
 
-When no prior persist exists, the handler lists tenant form instances with `searchFormInstancesByTenantV1` filtered to `formDefinitionId eq "<id>"`, paginates until `formInstanceId` matches, and parses that row. It does not call `getFormInstanceByKeyV1`.
+When no prior persist exists, the handler resolves the existing definition with `searchFormDefinitionsByTenantV1` filtered to `name eq "<formName>"`. It then lists tenant form instances with `searchFormInstancesByTenantV1` filtered to the resolved `formDefinitionId`, paginates until `formInstanceId` matches, and parses that row. Apply does not create or patch form definitions and does not call `getFormInstanceByKeyV1`.
 
 | Status | Meaning |
 |---|---|
@@ -61,7 +61,7 @@ When no prior persist exists, the handler lists tenant form instances with `sear
     "input": {
         "requestId": "access-model-sod-apply-001",
         "formInstanceId": "{{$.trigger.formInstanceId}}",
-        "formDefinitionId": "{{$.trigger.formDefinitionId}}"
+        "formName": "Access Model SOD Remediation"
     },
     "config": {
         "apiUrl": "{{$.defineVariable.aPIURL}}",
@@ -80,22 +80,22 @@ Offline: [`payloads/access-model-sod-remediation-apply-offline.json`](../../../p
 | Step | Behavior |
 |---|---|
 | Trigger | `sp:form-submitted`, filtered by **Access Model SOD Remediation** form definition ID |
-| Invoke | `custom:access-model-sod-remediation-apply` with `formInstanceId: {{$.trigger.formInstanceId}}` and `formDefinitionId: {{$.trigger.formDefinitionId}}` |
+| Invoke | `custom:access-model-sod-remediation-apply` with `formInstanceId: {{$.trigger.formInstanceId}}` and `formName: Access Model SOD Remediation` |
 | Persist key | Result-source account at native identity `{formInstanceId}` |
 
-The workflow does not read `formData` or `formInput` — the apply handler lists tenant form instances for `formDefinitionId` and picks `formInstanceId`, then derives the correction plan from stored launch inputs plus submitted `remediationSide`.
+The workflow does not read `formData` or `formInput` — the apply handler resolves `formName` to the existing definition ID, lists that definition's tenant form instances, and picks `formInstanceId`. It then derives the correction plan from stored launch inputs plus submitted `remediationSide`.
 
 > **Import note:** Update the form-submitted trigger filter to your tenant's form definition UUID after the scan operation creates or patches the form.
 
 ## Workflow integration
 
-1. After access-model SoD form completion (Wait for Form / trigger), invoke this command with `formInstanceId` and `formDefinitionId` from the form trigger.
+1. After access-model SoD form completion (Wait for Form / trigger), invoke this command with `formInstanceId` from the trigger and the same `formName` used by the scan.
 2. Read `access-model-sod-remediation-apply:status` from the invoke response or Get Accounts on `{formInstanceId}`.
 3. Branch on `applied`, `skipped-already-clean`, or `skipped-already-applied`. Retries and parallel workflow branches are safe — duplicate applies for the same form instance do not double-PATCH.
 
 ## Token scope requirements
 
-- Custom Forms list (`searchFormInstancesByTenantV1`)
+- Custom Forms definition and instance search (`searchFormDefinitionsByTenantV1`, `searchFormInstancesByTenantV1`)
 - Roles read/update (`getRoleV1`, `getRoleEntitlementsV1`, `patchRoleV1`) when correcting roles
 - Access profiles read/update (`getAccessProfileV1`, `getAccessProfileEntitlementsV1`, `patchAccessProfileV1`) when correcting APs or expanding role nested APs
 - Result source account persist (standard custom operation scopes)

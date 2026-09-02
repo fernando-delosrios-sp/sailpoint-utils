@@ -41,8 +41,12 @@ const getRoleEntitlementsV1 = vi.fn()
 const getAccessProfileEntitlementsV1 = vi.fn()
 const getAccessProfileV1 = vi.fn()
 const getFormInstanceByKeyV1 = vi.fn()
+const searchFormDefinitionsByTenantV1 = vi.fn()
+const createFormDefinitionV1 = vi.fn()
+const patchFormDefinitionV1 = vi.fn()
 const searchFormInstancesByTenantV1 = vi.fn()
 const DEFAULT_FORM_DEFINITION_ID = 'fd-1'
+const DEFAULT_FORM_NAME = 'Access Model SOD Remediation'
 
 function listRowFromOffline(formInstanceId: string): Record<string, unknown> {
     const instance = getFormInstanceByIdOffline(formInstanceId)
@@ -101,6 +105,9 @@ vi.mock('../../framework/sdk-factory', () => ({
         },
         forms: {
             getFormInstanceByKeyV1: (...args: unknown[]) => getFormInstanceByKeyV1(...args),
+            searchFormDefinitionsByTenantV1: (...args: unknown[]) => searchFormDefinitionsByTenantV1(...args),
+            createFormDefinitionV1: (...args: unknown[]) => createFormDefinitionV1(...args),
+            patchFormDefinitionV1: (...args: unknown[]) => patchFormDefinitionV1(...args),
             searchFormInstancesByTenantV1: (...args: unknown[]) => searchFormInstancesByTenantV1(...args),
         },
     })),
@@ -159,6 +166,12 @@ describe('accessModelSodRemediationApplyOperation', () => {
         })
         getAccessProfileV1.mockResolvedValue({ data: { description: 'AP desc' } })
         getFormInstanceByKeyV1.mockClear()
+        searchFormDefinitionsByTenantV1.mockReset()
+        searchFormDefinitionsByTenantV1.mockResolvedValue({
+            data: { results: [{ id: DEFAULT_FORM_DEFINITION_ID }] },
+        })
+        createFormDefinitionV1.mockClear()
+        patchFormDefinitionV1.mockClear()
         searchFormInstancesByTenantV1.mockReset()
         searchFormInstancesByTenantV1.mockResolvedValue({
             data: Object.keys(OFFLINE_FORM_INSTANCES).map((id) => listRowFromOffline(id)),
@@ -177,7 +190,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-offline-1',
                     formInstanceId: 'fi-role-group-a-direct',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 res as never
             )
@@ -193,6 +206,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 })
             )
             expect(inhibitedPersists[0]?.identity).toBe('fi-role-group-a-direct')
+            expect(searchFormDefinitionsByTenantV1).not.toHaveBeenCalled()
             expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
         } finally {
             endPayloadOutputCapture()
@@ -215,7 +229,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-offline-2',
                     formInstanceId: 'fi-role-group-b-nested',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 res as never
             )
@@ -248,7 +262,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-offline-skip',
                     formInstanceId: 'fi-role-already-clean',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 res as never
             )
@@ -279,7 +293,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-invalid',
                     formInstanceId: 'fi-in-progress',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 res as never
             )
@@ -309,7 +323,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-first',
                     formInstanceId: 'fi-role-group-a-direct',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 resFirst as never
             )
@@ -324,7 +338,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-second',
                     formInstanceId: 'fi-role-group-a-direct',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 resSecond as never
             )
@@ -351,7 +365,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-live',
                     formInstanceId: 'fi-role-group-b-nested',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 res as never
             )
@@ -378,7 +392,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-ap',
                     formInstanceId: 'fi-ap-group-a',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 res as never
             )
@@ -411,7 +425,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-list-filter',
                     formInstanceId: 'fi-role-group-a-direct',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 res as never
             )
@@ -422,6 +436,11 @@ describe('accessModelSodRemediationApplyOperation', () => {
             limit: FORM_INSTANCE_LIST_PAGE_SIZE,
             filters: `formDefinitionId eq "${DEFAULT_FORM_DEFINITION_ID}"`,
         })
+        expect(searchFormDefinitionsByTenantV1).toHaveBeenCalledWith({
+            filters: `name eq "${DEFAULT_FORM_NAME}"`,
+        })
+        expect(createFormDefinitionV1).not.toHaveBeenCalled()
+        expect(patchFormDefinitionV1).not.toHaveBeenCalled()
         expect(getFormInstanceByKeyV1).not.toHaveBeenCalled()
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -449,7 +468,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-later-page',
                     formInstanceId: 'fi-role-group-b-nested',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 res as never
             )
@@ -478,7 +497,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-missing',
                     formInstanceId: 'fi-missing',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 res as never
             )
@@ -495,6 +514,33 @@ describe('accessModelSodRemediationApplyOperation', () => {
         expect(getFormInstanceByKeyV1).not.toHaveBeenCalled()
     })
 
+    it('Missing form definition by name fails before instance list and catalog patch', async () => {
+        const res = { send: vi.fn() }
+        searchFormDefinitionsByTenantV1.mockResolvedValue({ data: { results: [] } })
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-missing-definition',
+                    formInstanceId: 'fi-role-group-a-direct',
+                    formName: 'Unknown Form',
+                },
+                res as never
+            )
+        })
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'failed',
+                error: expect.stringMatching(/formName/),
+            })
+        )
+        expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
+        expect(patchRoleV1).not.toHaveBeenCalled()
+        expect(patchAccessProfileV1).not.toHaveBeenCalled()
+    })
+
     it('Prior apply skips list', async () => {
         const resFirst = { send: vi.fn() }
         const resSecond = { send: vi.fn() }
@@ -505,13 +551,14 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-skip-list-first',
                     formInstanceId: 'fi-role-group-a-direct',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 resFirst as never
             )
         })
 
         searchFormInstancesByTenantV1.mockClear()
+        searchFormDefinitionsByTenantV1.mockClear()
 
         await _withConfig(workflowConfig, async () => {
             await accessModelSodRemediationApplyOperation(
@@ -519,13 +566,14 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-skip-list-second',
                     formInstanceId: 'fi-role-group-a-direct',
-                    formDefinitionId: DEFAULT_FORM_DEFINITION_ID,
+                    formName: DEFAULT_FORM_NAME,
                 },
                 resSecond as never
             )
         })
 
         expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
+        expect(searchFormDefinitionsByTenantV1).not.toHaveBeenCalled()
         expect(resSecond.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 'access-model-sod-remediation-apply:status': 'skipped-already-applied',
@@ -533,7 +581,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
         )
     })
 
-    it('Missing formDefinitionId validation', async () => {
+    it.each([undefined, '   '])('Missing formName validation for %j', async (formName) => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
@@ -542,7 +590,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                 {
                     requestId: 'req-apply-missing-def',
                     formInstanceId: 'fi-role-group-a-direct',
-                    formDefinitionId: '   ',
+                    formName,
                 },
                 res as never
             )
@@ -551,14 +599,15 @@ describe('accessModelSodRemediationApplyOperation', () => {
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 status: 'failed',
-                error: expect.stringMatching(/formDefinitionId/),
+                error: expect.stringMatching(/formName/),
             })
         )
         expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
+        expect(searchFormDefinitionsByTenantV1).not.toHaveBeenCalled()
         expect(patchRoleV1).not.toHaveBeenCalled()
     })
 
-    it('scan README/spec downstream invoke fields', () => {
+    it('Form submit returns remediation side through documented workflow binding', () => {
         const applyReadme = readFileSync(
             join(process.cwd(), 'src/operations/access-model-sod-remediation-apply/README.md'),
             'utf-8'
@@ -576,11 +625,13 @@ describe('accessModelSodRemediationApplyOperation', () => {
             'utf-8'
         )
 
-        expect(applyReadme).toMatch(/formDefinitionId/)
+        expect(applyReadme).toMatch(/formName/)
         expect(applyReadme).toMatch(/searchFormInstancesByTenantV1/)
         expect(applyReadme).not.toMatch(/formInstanceId` only/)
-        expect(scanReadme).toMatch(/formDefinitionId/)
-        expect(workflow).toContain('"formDefinitionId": "{{$.trigger.formDefinitionId}}"')
-        expect(offlinePayload).toMatch(/"formDefinitionId"/)
+        expect(scanReadme).toMatch(/same `formName`/)
+        expect(workflow).toContain('"formName": "Access Model SOD Remediation"')
+        expect(workflow).not.toContain('"formDefinitionId": "{{$.trigger.formDefinitionId}}"')
+        expect(offlinePayload).toMatch(/"formName"/)
+        expect(offlinePayload).not.toMatch(/"formDefinitionId"/)
     })
 })

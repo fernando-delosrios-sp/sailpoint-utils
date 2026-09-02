@@ -5,6 +5,7 @@ export {
     getFormInstanceByDefinitionAndId,
     FORM_INSTANCE_LIST_PAGE_SIZE,
 } from './find-form-instance'
+export { findFormDefinitionIdByName } from './find-form-definition'
 export {
     getFormInstanceById,
     type NormalizedFormInstance,

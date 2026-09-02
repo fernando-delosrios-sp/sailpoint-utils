@@ -3,6 +3,6 @@
     "input": {
         "requestId": "offline-access-model-sod-apply-001",
         "formInstanceId": "fi-role-group-b-nested",
-        "formDefinitionId": "fd-offline-1"
+        "formName": "Access Model SOD Remediation"
     }
 }
