@@ -4,6 +4,7 @@ import {
     logSodRemediationControls,
     logSodRemediationFormDefinition,
     logSodRemediationFormInput,
+    logSodRemediationIdentityAccess,
     logSodRemediationOutput,
     logSodRemediationViolation,
 } from './logging'
@@ -152,6 +153,18 @@ describe('sod-remediation logging', () => {
             definitionOwnerId: 'token-owner-id',
             definitionOwnerSource: 'token-identity',
         })
+    })
+
+    it('logs identity-access role counts without accessProfiles', () => {
+        logSodRemediationIdentityAccess('req-log-ia', [
+            { type: 'ROLE', id: 'role-1', name: 'Finance Role', grantedEntitlementIds: ['ent-1'] },
+        ])
+
+        const identityAccessCall = mockLogger.info.mock.calls.find((call) =>
+            String(call[0]).includes('identity-access')
+        )
+        expect(identityAccessCall?.[1]).toMatchObject({ count: 1, roles: 1 })
+        expect(identityAccessCall?.[1]).not.toHaveProperty('accessProfiles')
     })
 
     it('logs nested violation entitlements in detail', () => {

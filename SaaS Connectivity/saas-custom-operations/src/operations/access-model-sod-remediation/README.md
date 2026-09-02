@@ -138,7 +138,7 @@ Each child account creation fires one notification. Skipped violations (existing
 
 **Remediation workflow integration**
 
-Handled by [`custom:access-model-sod-remediation-apply`](../access-model-sod-remediation-apply/README.md) — see that README for apply semantics. The export invokes apply with `formInstanceId` from `$.trigger.formInstanceId` on form submit.
+Handled by [`custom:access-model-sod-remediation-apply`](../access-model-sod-remediation-apply/README.md) — see that README for apply semantics. The export invokes apply with `formInstanceId` from `$.trigger.formInstanceId` and the same `formName` (`Access Model SOD Remediation`) used by Analysis.
 
 > **Import note:** Re-point form-submitted trigger `formDefinitionId` to your tenant's **Access Model SOD Remediation** form definition (created or patched on first scan invoke). Connector IDs and OAuth refs are tenant-specific.
 
@@ -150,7 +150,7 @@ Manual or custom orchestration follows the same contract as the bundled exports:
 2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields — or rely on an account-created event as the Notification export does.
 3. Notify access item owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).
-5. Invoke `custom:access-model-sod-remediation-apply` with `formInstanceId` from the form trigger to apply the catalog correction (detach nested APs from roles or remove direct entitlements; remove entitlements from AP definitions when the access item is an AP). Re-invokes for the same form instance are idempotent — expect `skipped-already-applied` when a prior apply persist exists, or `skipped-already-clean` when the catalog already matches the decision.
+5. Invoke `custom:access-model-sod-remediation-apply` with `formInstanceId` from the form trigger and the same `formName` used by the scan to apply the catalog correction (detach nested APs from roles or remove direct entitlements; remove entitlements from AP definitions when the access item is an AP). Re-invokes for the same form instance are idempotent — expect `skipped-already-applied` when a prior apply persist exists, or `skipped-already-clean` when the catalog already matches the decision.
 
 ## Form submit contract
 

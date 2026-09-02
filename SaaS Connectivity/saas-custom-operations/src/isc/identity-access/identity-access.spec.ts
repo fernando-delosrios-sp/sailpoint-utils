@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { fetchIdentityAccessItemsFromSdk, fetchIdentityAccessItemsOffline } from './index'
 
 describe('isc/identity-access', () => {
-    it('fetchIdentityAccessItemsFromSdk maps access profiles and roles with granted entitlement IDs', async () => {
+    it('SDK loopback listing lists roles only and does not call access profiles', async () => {
         const listIdentityAccessItemsV1 = vi
             .fn()
             .mockImplementation(async ({ type }: { type?: string }) => {
@@ -22,27 +22,21 @@ describe('isc/identity-access', () => {
         const items = await fetchIdentityAccessItemsFromSdk(
             {
                 identityHistory: { listIdentityAccessItemsV1 } as never,
-                accessProfiles: { getAccessProfileEntitlementsV1 } as never,
                 roles: { getRoleEntitlementsV1 } as never,
             },
             'ident-1'
         )
 
-        expect(listIdentityAccessItemsV1).toHaveBeenCalledWith(
-            expect.objectContaining({ id: 'ident-1', type: 'accessProfile', xSailPointExperimental: 'true' })
-        )
+        expect(listIdentityAccessItemsV1).toHaveBeenCalledTimes(1)
         expect(listIdentityAccessItemsV1).toHaveBeenCalledWith(
             expect.objectContaining({ id: 'ident-1', type: 'role', xSailPointExperimental: 'true' })
         )
-        expect(getAccessProfileEntitlementsV1).toHaveBeenCalledWith({ id: 'ap-1' })
+        expect(listIdentityAccessItemsV1).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'accessProfile' })
+        )
+        expect(getAccessProfileEntitlementsV1).not.toHaveBeenCalled()
         expect(getRoleEntitlementsV1).toHaveBeenCalledWith({ id: 'role-1' })
         expect(items).toEqual([
-            {
-                type: 'ACCESS_PROFILE',
-                id: 'ap-1',
-                name: 'Finance AP',
-                grantedEntitlementIds: ['ent-1', 'ent-2'],
-            },
             {
                 type: 'ROLE',
                 id: 'role-1',
@@ -50,14 +44,18 @@ describe('isc/identity-access', () => {
                 grantedEntitlementIds: ['ent-1'],
             },
         ])
+        expect(items.some((item) => item.type === 'ACCESS_PROFILE')).toBe(false)
     })
 
-    it('fetchIdentityAccessItemsOffline returns deterministic offline data for known offline identities', async () => {
-        await expect(fetchIdentityAccessItemsOffline('offline-identity')).resolves.toEqual([
+    it('Offline data listing returns a role, not an access profile', async () => {
+        const items = await fetchIdentityAccessItemsOffline('offline-identity')
+
+        expect(items.some((item) => item.type === 'ACCESS_PROFILE')).toBe(false)
+        expect(items).toEqual([
             {
-                type: 'ACCESS_PROFILE',
-                id: 'offline-ap-a',
-                name: 'Offline Finance AP',
+                type: 'ROLE',
+                id: 'offline-role-a',
+                name: 'Offline Finance Role',
                 grantedEntitlementIds: ['offline-ent-a'],
             },
         ])
