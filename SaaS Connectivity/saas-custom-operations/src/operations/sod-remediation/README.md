@@ -101,7 +101,7 @@ Runs on form submit — no connector invoke. Reads the bundled seed form definit
 2. **Correct** path: branch on `formData.remediationSide`, set access search from launch-time keys on the form instance:
    - `$.trigger.formInstanceInputs[0].groupAAccessSearch.value` or `groupBAccessSearch.value`
    - These mirror `formInput` values set at instance create by this operation
-3. **Get Access** (search query) → **Manage Access** (`REVOKE_ACCESS`) removes revocable items from `targetIdentityId`.
+3. **Get Access** (search query) → **Manage Access** (`REVOKE_ACCESS`) removes revocable items from `targetIdentityId`. Get Access already includes entitlements; this bundled JSON is unchanged. Existing form instances keep launch-time search strings (including historical access-profile ids) until a new `custom:sod-remediation` launch.
 4. **Mitigate** path: **HTTP Request** POSTs to `/violations/v1/{violationId}/controls` with `control` and `comments` from `formData`.
 
 > **Import note:** Export snapshots embed tenant-specific connector IDs, OAuth parameter refs, form definition UUIDs, and owner identity IDs. Treat bundled JSON as templates — update Configuration and the form-submitted trigger filter to match your deployed form definition after the first `custom:sod-remediation` invoke creates or patches it.
@@ -116,7 +116,7 @@ Manual or custom orchestration follows the same contract as the bundled exports:
 4. Wait for form submission; read **user decisions** from submitted `formData`: `action`, `remediationSide`, `control`, `comments`.
 5. Read **launch-time workflow keys** from the completed form instance **`formInput`** (not `formData`):
    - `violationId`, `targetIdentityId`, `groupAAccessSearch`, `groupBAccessSearch`
-   - Access search strings include **revocable** access path ids only (`id:x OR id:y`); non-revocable entitlements granted via role or access profile on the same side are omitted from the filter
+   - Access search strings include **revocable** role and entitlement ids only (`id:x OR id:y`). Assigned access profiles are not parent access items, so their ids never appear. Entitlements granted via a remaining **role** stay not revocable; the role id is the revoke target. Residual AP re-grant after entitlement-only revoke is out of scope.
    - On a **form-submitted** event trigger, ISC exposes the same values under `formInstanceInputs` (see Remediation export above). After a **Wait for Form** / **Get Form Instance** step, use `{{$.form.formInput.groupAAccessSearch}}`.
 6. Select the access-search string for the chosen side using `formData.remediationSide`.
 7. Execute corrective revoke or apply compensating control in separate workflow HTTP actions (not handled by the connector).

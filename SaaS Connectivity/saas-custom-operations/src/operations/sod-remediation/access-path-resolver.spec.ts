@@ -60,26 +60,27 @@ describe('access-path-resolver', () => {
         })
     })
 
-    it('AP-granted entitlement marks entitlement not revocable with grantedVia access profile', () => {
+    it('Assigned access profile is not a parent access item', () => {
         const result = resolveAccessSide(
             [{ id: 'ent-1', name: 'Finance Ledger' }],
             [{ type: 'ACCESS_PROFILE', id: 'ap-1', name: 'Finance AP', grantedEntitlementIds: ['ent-1'] }]
         )
 
-        expect(result.accessPaths[0]).toMatchObject({
-            type: 'ENTITLEMENT',
-            revocable: false,
-            recommended: false,
-            reason: 'granted-via-access-profile',
-            grantedVia: { type: 'ACCESS_PROFILE', id: 'ap-1', name: 'Finance AP' },
-        })
-        expect(result.accessPaths[1]).toMatchObject({
-            type: 'ACCESS_PROFILE',
-            revocable: true,
-            recommended: false,
-        })
-        expect(result.warningText).toContain('profile- or role-level access')
-        expect(result.revokePayload.recommendedRevoke.type).toBe('ACCESS_PROFILE')
+        expect(result.accessPaths).toEqual([
+            {
+                type: 'ENTITLEMENT',
+                id: 'ent-1',
+                name: 'Finance Ledger',
+                revocable: true,
+                recommended: false,
+                reason: 'direct-assignment',
+            },
+        ])
+        expect(result.displayLines).not.toContain('Access Profile: Finance AP')
+        expect(result.warningText).toContain('Select the side whose access should be removed')
+        expect(result.warningText).not.toContain('access profile')
+        expect(buildRevocableAccessSearchString(result.accessPaths)).toBe('id:ent-1')
+        expect(buildRevocableAccessSearchString(result.accessPaths)).not.toContain('ap-1')
     })
 
     it('role-granted entitlement records named grantedVia role', () => {
@@ -99,9 +100,11 @@ describe('access-path-resolver', () => {
             revocable: true,
             recommended: false,
         })
+        expect(result.warningText).toContain('role-level access')
+        expect(result.warningText).not.toContain('access profile')
     })
 
-    it('recommendedRevoke prefers Role over Access Profile over Entitlement among revocable items', () => {
+    it('Role preferred over access profile when both grant', () => {
         const result = resolveAccessSide(
             [{ id: 'ent-1', name: 'Finance Ledger' }],
             [
@@ -120,5 +123,29 @@ describe('access-path-resolver', () => {
             reason: 'granted-via-role',
             grantedVia: { type: 'ROLE', id: 'role-1', name: 'Finance Role' },
         })
+        expect(result.accessPaths.some((line) => line.type === 'ACCESS_PROFILE')).toBe(false)
+        expect(result.warningText).toContain('role-level access')
+        expect(result.warningText).not.toContain('access profile')
+        expect(buildRevocableAccessSearchString(result.accessPaths)).toBe('id:role-1')
+    })
+
+    it('Role plus standalone entitlement search includes role id and standalone entitlement id only', () => {
+        const result = resolveAccessSide(
+            [
+                { id: 'ent-1', name: 'Finance Ledger' },
+                { id: 'ent-2', name: 'Payroll' },
+            ],
+            [{ type: 'ROLE', id: 'role-1', name: 'Finance Role', grantedEntitlementIds: ['ent-1'] }]
+        )
+
+        expect(result.accessPaths.find((line) => line.id === 'ent-1')).toMatchObject({
+            revocable: false,
+            reason: 'granted-via-role',
+        })
+        expect(result.accessPaths.find((line) => line.id === 'ent-2')).toMatchObject({
+            revocable: true,
+            reason: 'direct-assignment',
+        })
+        expect(buildRevocableAccessSearchString(result.accessPaths)).toBe('id:role-1 OR id:ent-2')
     })
 })
