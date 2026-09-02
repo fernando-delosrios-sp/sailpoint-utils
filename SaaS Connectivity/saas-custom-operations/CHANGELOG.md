@@ -2,6 +2,24 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-09-02 · v0.5.0
+
+### ⚠️ Breaking Changes
+
+- **Access-model SoD apply resolves forms by name** — `custom:access-model-sod-remediation-apply` now requires `formName` alongside `formInstanceId`, matching the scan operation. It looks up the existing definition by name, then lists instances by the resolved definition ID; it does not create or patch definitions and does not call the recipient-only get-by-id API. Persist identity remains `{formInstanceId}`.
+  - Migration: replace `formDefinitionId` in existing Custom Command invoke bodies with the same `formName` used by Analysis (normally `Access Model SOD Remediation`). The form-submitted trigger UUID filter remains tenant-specific. Re-import the bundled workflow or edit existing workflows; local payloads must also provide `formName`.
+
+---
+
+## 2026-09-01 · v0.4.0
+
+### ⚠️ Breaking Changes
+
+- **Identity SoD revoke targets entitlements and roles, not access profiles** — `custom:sod-remediation` no longer treats assigned access profiles as parent access items. `groupAAccessSearch` / `groupBAccessSearch` now contain revocable **entitlement** and **role** ids only. Identity-access listing fetches assigned roles (and their entitlement ids), not access profiles. Owner-facing HTML and the elevated warning are role-level only. Residual AP membership after entitlement revoke is out of scope.
+  - Migration: deploy the connector and re-invoke `custom:sod-remediation` so new form instances get the updated search strings. Bundled `workflows/SOD Violation - Remediation.json` is unchanged (Get Access already includes entitlements). In-flight form instances keep their launch-time search strings until relaunch.
+
+---
+
 ## 2026-08-19 · v0.3.4
 
 ### 💥 Breaking Changes

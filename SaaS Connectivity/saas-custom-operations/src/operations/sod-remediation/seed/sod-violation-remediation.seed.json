@@ -114,7 +114,7 @@
                             "label": "Toxic Combination",
                             "labelStyle": "h5",
                             "showLabel": true,
-                            "description": "<p><em>⚠️ Removing access profile- or role-level access may affect other functions of the user.</em></p>"
+                            "description": "<p><em>⚠️ Removing role-level access may affect other functions of the user.</em></p>"
                         },
                         "validations": []
                     }

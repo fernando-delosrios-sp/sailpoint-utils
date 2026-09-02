@@ -40,7 +40,7 @@ export interface ResolvedAccessSide {
 const STANDARD_WARNING =
     'Select the side whose access should be removed to resolve this violation.'
 const ELEVATED_WARNING =
-    'Removing access profile- or role-level access may affect other functions of the user.'
+    'Removing role-level access may affect other functions of the user.'
 
 export { ELEVATED_WARNING }
 
@@ -90,21 +90,17 @@ function pickGrantor(
 function annotateRevocability(
     items: Array<{ type: AccessPathType; id: string; name: string; grantedVia?: GrantedViaRef }>
 ): AccessPathLine[] {
-    const hasRole = items.some((item) => item.type === 'ROLE')
-    const hasAccessProfile = items.some((item) => item.type === 'ACCESS_PROFILE')
-    const hasElevatedPath = hasRole || hasAccessProfile
-
     return items.map((item) => {
-        if (item.type === 'ROLE' || item.type === 'ACCESS_PROFILE') {
+        if (item.type === 'ROLE') {
             return { ...item, revocable: true, recommended: false }
         }
 
-        if (hasElevatedPath) {
+        if (item.type === 'ENTITLEMENT' && item.grantedVia?.type === 'ROLE') {
             return {
                 ...item,
                 revocable: false,
                 recommended: false,
-                reason: hasRole ? 'granted-via-role' : 'granted-via-access-profile',
+                reason: 'granted-via-role',
             }
         }
 
@@ -125,7 +121,7 @@ export function resolveAccessSide(
         items.push({ type: 'ENTITLEMENT', id: entitlement.id, name: entitlement.name })
 
         for (const access of identityAccess) {
-            if (access.type === 'ENTITLEMENT') {
+            if (access.type !== 'ROLE') {
                 continue
             }
             const grants = access.grantedEntitlementIds ?? []
@@ -134,7 +130,7 @@ export function resolveAccessSide(
                 hasElevatedPath = true
 
                 const grantor: GrantedViaRef = {
-                    type: access.type,
+                    type: 'ROLE',
                     id: access.id,
                     name: access.name,
                 }

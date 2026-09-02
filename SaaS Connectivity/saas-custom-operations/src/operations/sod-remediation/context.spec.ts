@@ -8,7 +8,7 @@ import {
     buildSituationHeader,
     buildSituationSummary,
 } from './context'
-import { ELEVATED_WARNING } from './access-path-resolver'
+import { ELEVATED_WARNING, resolveAccessSide } from './access-path-resolver'
 
 describe('sod-remediation context', () => {
     const summaryInput = {
@@ -300,5 +300,29 @@ describe('sod-remediation context', () => {
         expect(formInput.hasControls).toBe(true)
         expect(formInput.groupAAccessSearch).toBe('id:ent-a')
         expect(formInput.groupBAccessSearch).toBe('id:role-1')
+    })
+
+    it('Assigned access profile is not a parent access item in form HTML', () => {
+        const groupA = resolveAccessSide(
+            [{ id: 'ent-a', name: 'Ent A' }],
+            [{ type: 'ACCESS_PROFILE', id: 'ap-1', name: 'Finance AP', grantedEntitlementIds: ['ent-a'] }]
+        )
+        const formInput = assembleFormInput({
+            ...summaryInput,
+            groupA,
+        })
+        const summary = buildSituationSummary({
+            ...summaryInput,
+            groupA,
+        })
+
+        expect(formInput.groupAAccessSearch).toBe('id:ent-a')
+        expect(formInput.groupAAccessSearch).not.toContain('ap-1')
+        expect(formInput.situationSummaryHtml).not.toContain('Finance AP')
+        expect(formInput.situationSummaryHtml).not.toContain('access profile')
+        expect(formInput.groupColumnsHtmlPlain).not.toContain('Finance AP')
+        expect(formInput.groupColumnsHtmlWhenGroupARemoved).not.toContain('Finance AP')
+        expect(summary).not.toContain('Finance AP')
+        expect(summary).not.toMatch(/Finance AP[\s\S]*Contains/)
     })
 })

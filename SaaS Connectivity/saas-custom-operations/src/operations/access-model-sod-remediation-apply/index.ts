@@ -1,6 +1,6 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
 import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
-import { getFormInstanceById } from '../../isc/forms'
+import { findFormDefinitionIdByName, getFormInstanceByDefinitionAndId } from '../../isc/forms'
 import { CatalogAccessItem } from '../../isc/roles'
 import { expandAccessItemEntitlements } from '../access-model-sod-remediation/expand-access-item-entitlements'
 import { applyCorrection, buildAuditLineForPlan } from './apply-correction'
@@ -18,6 +18,7 @@ export interface AccessModelSodRemediationApplyOperation extends OperationSignat
     command: 'custom:access-model-sod-remediation-apply'
     input: {
         formInstanceId: string
+        formName: string
     }
     output: {
         'access-model-sod-remediation-apply:status': string
@@ -68,6 +69,11 @@ export const accessModelSodRemediationApplyOperation = customOperation<AccessMod
             throw new ConnectorError('Missing required input field: formInstanceId')
         }
 
+        const formName = input.formName?.trim()
+        if (!formName) {
+            throw new ConnectorError('Missing required input field: formName')
+        }
+
         const offline = isOfflineContext(ctx)
 
         if (!offline) {
@@ -79,9 +85,13 @@ export const accessModelSodRemediationApplyOperation = customOperation<AccessMod
             }
         }
 
-        const instance = offline
-            ? getFormInstanceByIdOffline(formInstanceId)
-            : await getFormInstanceById(ctx.sdk.forms, formInstanceId)
+        let instance
+        if (offline) {
+            instance = getFormInstanceByIdOffline(formInstanceId)
+        } else {
+            const formDefinitionId = await findFormDefinitionIdByName(ctx.sdk.forms, formName)
+            instance = await getFormInstanceByDefinitionAndId(ctx.sdk.forms, formDefinitionId, formInstanceId)
+        }
 
         const parsed = parseFormInstance(instance)
 

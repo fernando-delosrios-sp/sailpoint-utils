@@ -62,6 +62,30 @@ function normalizeFormInstanceInputs(raw: unknown): Record<string, string> {
     return result
 }
 
+/** Normalizes a Custom Forms instance payload into string maps for formInput and formData. */
+export function normalizeFormInstance(data: {
+    id: string
+    state?: string
+    formInput?: unknown
+    formData?: unknown
+    recipients?: Array<{ id?: string }>
+    formInstanceInputs?: unknown
+}): NormalizedFormInstance {
+    const formInputFromInputs = normalizeFormInstanceInputs(data.formInstanceInputs)
+    const formInput = {
+        ...normalizeStringMap(data.formInput),
+        ...formInputFromInputs,
+    }
+
+    return {
+        id: data.id,
+        state: data.state ?? '',
+        formInput,
+        formData: normalizeStringMap(data.formData),
+        submitterId: data.recipients?.[0]?.id,
+    }
+}
+
 /** Fetches a form instance and returns normalized string maps for formInput and formData. */
 export async function getFormInstanceById(
     forms: FormsApiLike,
@@ -75,17 +99,12 @@ export async function getFormInstanceById(
         throw new ConnectorError(`Form instance "${formInstanceId}" not found`)
     }
 
-    const formInputFromInputs = normalizeFormInstanceInputs((data as Record<string, unknown>).formInstanceInputs)
-    const formInput = {
-        ...normalizeStringMap(data.formInput),
-        ...formInputFromInputs,
-    }
-
-    return {
+    return normalizeFormInstance({
         id: data.id,
-        state: data.state ?? '',
-        formInput,
-        formData: normalizeStringMap(data.formData),
-        submitterId: data.recipients?.[0]?.id,
-    }
+        state: data.state,
+        formInput: data.formInput,
+        formData: data.formData,
+        recipients: data.recipients,
+        formInstanceInputs: (data as Record<string, unknown>).formInstanceInputs,
+    })
 }
