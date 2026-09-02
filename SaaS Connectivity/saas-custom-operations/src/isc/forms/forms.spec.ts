@@ -4,6 +4,7 @@ import { resolve } from 'path'
 import { createStandaloneFormInstance } from './create-instance'
 import { ensureFormDefinitionByName } from './ensure-definition'
 import { formatFormsApiError } from './error-formatting'
+import { findFormDefinitionIdByName } from './find-form-definition'
 import { buildCreateFormDefinitionPayload, loadFormSeed } from './seed-loader'
 import { pickDeclaredFormInputValues } from './form-input-values'
 import {
@@ -412,6 +413,47 @@ describe('isc/forms ensure-definition', () => {
         await expect(
             ensureFormDefinitionByName(forms, { name: 'SOD Remediation', ownerId: 'owner-1', template })
         ).rejects.toThrow(/Failed to create form definition "SOD Remediation"/)
+    })
+})
+
+describe('isc/forms find-form-definition', () => {
+    it('Existing name returns definition id without mutation', async () => {
+        const forms = createFormsStub({
+            searchFormDefinitionsByTenantV1: vi.fn().mockResolvedValue({
+                data: { results: [{ id: 'fd-1' }] },
+            }),
+        })
+
+        await expect(findFormDefinitionIdByName(forms, 'Access Model SOD Remediation')).resolves.toBe('fd-1')
+        expect(forms.searchFormDefinitionsByTenantV1).toHaveBeenCalledWith({
+            filters: 'name eq "Access Model SOD Remediation"',
+        })
+        expect(forms.createFormDefinitionV1).not.toHaveBeenCalled()
+        expect(forms.patchFormDefinitionV1).not.toHaveBeenCalled()
+    })
+
+    it('Missing name is surfaced as ConnectorError without mutation', async () => {
+        const forms = createFormsStub({
+            searchFormDefinitionsByTenantV1: vi.fn().mockResolvedValue({ data: { results: [] } }),
+        })
+
+        await expect(findFormDefinitionIdByName(forms, 'Unknown Form')).rejects.toBeInstanceOf(ConnectorError)
+        expect(forms.createFormDefinitionV1).not.toHaveBeenCalled()
+        expect(forms.patchFormDefinitionV1).not.toHaveBeenCalled()
+    })
+
+    it('Name with quotes is OData escaped', async () => {
+        const forms = createFormsStub({
+            searchFormDefinitionsByTenantV1: vi.fn().mockResolvedValue({
+                data: { results: [{ id: 'fd-quoted' }] },
+            }),
+        })
+
+        await findFormDefinitionIdByName(forms, 'Team "Alpha"')
+
+        expect(forms.searchFormDefinitionsByTenantV1).toHaveBeenCalledWith({
+            filters: 'name eq "Team ""Alpha"""',
+        })
     })
 })
 

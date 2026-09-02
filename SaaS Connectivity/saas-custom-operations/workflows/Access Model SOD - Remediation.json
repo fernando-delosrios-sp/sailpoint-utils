@@ -23,6 +23,7 @@
             },
             "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
             "input": {
+              "formName": "Access Model SOD Remediation",
               "formInstanceId": "{{$.trigger.formInstanceId}}",
               "requestId": "access-model-sod-remediation-apply-{{$.trigger.formInstanceId}}"
             },
