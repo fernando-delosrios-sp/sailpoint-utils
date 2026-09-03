@@ -1,0 +1,8 @@
+<Application>
+  <Attributes>
+    <Map>
+      <entry key="WrappedSetting" value="wrapped-value" />
+      <entry key="PwshReplay" value="true" />
+    </Map>
+  </Attributes>
+</Application>

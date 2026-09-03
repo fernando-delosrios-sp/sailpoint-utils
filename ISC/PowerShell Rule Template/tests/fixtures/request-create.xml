@@ -1,0 +1,18 @@
+<AccountRequest application="Active Directory" nativeIdentity="CN=Jane Smith,OU=People,DC=example,DC=com" op="Create">
+  <AttributeRequest name="sAMAccountName" op="Set" value="jsmith" />
+  <AttributeRequest name="proxyAddresses" op="Set">
+    <value>
+      <List>
+        <String>SMTP:jane.smith@example.com</String>
+        <String>smtp:jsmith@example.com</String>
+      </List>
+    </value>
+  </AttributeRequest>
+  <AttributeRequest name="singleGroup" op="Set">
+    <value>
+      <List>
+        <String>CN=Employees,OU=Groups,DC=example,DC=com</String>
+      </List>
+    </value>
+  </AttributeRequest>
+</AccountRequest>

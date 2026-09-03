@@ -4,6 +4,17 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-03
+
+### 🔧 Improvements
+
+- **PowerShell Rule Context** — Connector-rule custom code can now read normalized account requests and source settings through `$ctx.Request` and `$ctx.Application`, with helpers for common lookups and preserved arrays, nested maps, and Modify operations.
+- **PowerShell Rule Template internals** — Runtime paths and resolved `Pwsh*` options now live under `$ctx.Runtime` and `$ctx.Options`; source-side option names and precedence remain unchanged.
+- **Active Directory Home Folders** — Uses the shared `$ctx` interface and no longer requires `Utils.dll` solely to parse the account request.
+- **Documentation and tests** — Added interface, value-shape, security, migration, replay, troubleshooting, and fixture-test coverage for the new context API.
+
+---
+
 ## 2026-08-25
 
 ### ✨ New Features

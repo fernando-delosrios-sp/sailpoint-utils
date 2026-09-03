@@ -1,0 +1,17 @@
+<AccountRequest application="Active Directory" nativeIdentity="CN=Jane Smith,OU=People,DC=example,DC=com" op="Modify">
+  <AttributeRequest name="memberOf" op="Add">
+    <value>
+      <List>
+        <String>CN=New Group,OU=Groups,DC=example,DC=com</String>
+      </List>
+    </value>
+  </AttributeRequest>
+  <AttributeRequest name="displayName" op="Set" value="Jane Smith" />
+  <AttributeRequest name="MEMBEROF" op="Remove">
+    <value>
+      <List>
+        <String>CN=Old Group,OU=Groups,DC=example,DC=com</String>
+      </List>
+    </value>
+  </AttributeRequest>
+</AccountRequest>
