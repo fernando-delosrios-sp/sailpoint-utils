@@ -102,7 +102,7 @@ Present via **structured-choices** when any finding exists:
 | Option id | Label | Effect |
 | --------- | ----- | ------ |
 | `unstage_conflicts` | Unstage flagged paths and fix (Recommended) | `git restore --staged <paths>`; return to staging or stop if nothing left |
-| `proceed` | Proceed anyway — I accept the risk | Continue to changelog + commit |
+| `proceed` | Proceed anyway — I accept the risk | Continue to commit |
 | `abort` | Abort — do not commit | Exit without committing |
 
 One gate per message. List every flagged file and signal type before the tool call.

@@ -40,7 +40,7 @@ You are a **technical release writer** specializing in user-facing changelogs. Y
 | ---------------------- | ------------------------------------------------------- | ------------------------------------------------------- |
 | Changelog skill spec   | `@./SKILL.md`                                           | Format rules, generation process, validation gates      |
 | Existing changelog     | `@./CHANGELOG.md` (repo root)                           | Avoid duplicates; merge into today's section if present |
-| Active OpenSpec change | `@./docs/superpowers/changes/<change-name>/proposal.md` | User-visible Capabilities checklist (when present)      |
+| Active change proposal | `<change-root>/proposal.md`                             | User-visible Capabilities checklist (when present)      |
 | Git commit range       | `git log <range> --oneline`                             | Primary history source; group by spec/feature           |
 | Changed files / diffs  | `git diff <range>` or per-commit diffs                  | User-visible outcomes for feat/fix/breaking changes     |
 
@@ -48,8 +48,8 @@ You are a **technical release writer** specializing in user-facing changelogs. Y
 
 | Source               | Path / command                                       | Purpose                                                           |
 | -------------------- | ---------------------------------------------------- | ----------------------------------------------------------------- |
-| OpenSpec tasks       | `@./docs/superpowers/changes/<change-name>/tasks.md` | Confirm scope of shipped work                                     |
-| OpenSpec specs delta | `@./docs/superpowers/changes/<change-name>/specs/`   | Contract or behavior changes                                      |
+| OpenSpec tasks       | `<change-root>/tasks.md`                             | Confirm scope of shipped work                                     |
+| OpenSpec specs delta | `<change-root>/specs/`                               | Contract or behavior changes                                      |
 | Latest git tag       | `git describe --tags --abbrev=0`                     | Release boundary fallback; version candidate when semver-shaped   |
 | Package / manifest   | `package.json` `version` (or equivalent)             | Baseline semver when no tag; bump target in Phase 4        |
 | User request         | Chat context                                         | Explicit date range, tag, audience mode (public/internal), semver |
@@ -61,6 +61,15 @@ You are a **technical release writer** specializing in user-facing changelogs. Y
 | [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/) | Canonical section taxonomy              |
 | [Conventional Commits](https://www.conventionalcommits.org/)   | Prefix → category mapping               |
 | PR descriptions / `gh pr list`                                 | Optional extra context — never required |
+
+**Change root** — resolve once, then load `proposal.md`, `tasks.md`, and `specs/` from that folder (first match):
+
+1. `ACTIVE_CHANGE_ROOT` when **apply-code-changes** has bound
+2. `CHANGE_ROOT` when the apply adapter or user already set it
+3. Explicit path from the user request
+4. In-flight OpenSpec folder `openspec/changes/<change-name>/` — match change name, branch, or the only non-archive change
+
+When no folder resolves after all four steps, record OpenSpec inputs as absent at the Phase 1 checkpoint.
 
 **Scope resolution order:** explicit user range → last git tag to `HEAD` → newest `## YYYY-MM-DD` in `CHANGELOG.md` to today.
 
@@ -150,7 +159,7 @@ Every bullet must **trace** to a commit, diff, or OpenSpec capability — do not
 - Resolve commit range per INPUT scope rules.
 - Resolve baseline version per INPUT baseline rules; record `X.Y.Z` or `none`.
 - Read `@./CHANGELOG.md` if it exists; note newest release section; reject or migrate any `[Unreleased]` / `Unreleased` heading (never preserve unreleased sections).
-- If an OpenSpec change is active, read proposal Capabilities and Impact; list every user-visible capability as a checklist.
+- If a change root resolved, read that folder's proposal Capabilities and Impact; list every user-visible capability as a checklist.
 - Run `git log` for the resolved range; capture commit messages and hashes.
 - Set audience mode (public default).
 - **CHECKPOINT:** Confirm commit range, baseline version (or `none`), audience mode, and OpenSpec checklist (if any) before proceeding.

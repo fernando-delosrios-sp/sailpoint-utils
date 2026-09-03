@@ -1,5 +1,5 @@
 interface:
   display_name: Improve Codebase Architecture
-  short_description: Scan a codebase for deepening opportunities, present a markdown report,
+  short_description: Scan a codebase for deepening opportunities, present them as a markdown report, grill through whichever one you pick, then write an OpenSpec change package when capability specs exist.
 policy:
   allow_implicit_invocation: false

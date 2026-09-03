@@ -3,7 +3,7 @@ name: grilling
 description: Grill the user relentlessly about a plan, decision, or idea. Use when the user wants to stress-test their thinking, or uses any 'grill' trigger phrases.
 ---
 
-Stress-test a plan, decision, or idea until you reach a shared understanding. Map this as a **design tree**: every decision branches into the decisions that hang off it. Work the tree in **rounds**.
+Stress-test a plan, decision, or idea until shared understanding. Map decisions as a **design tree**; work it in **rounds**.
 
 ## Design tree
 
@@ -19,7 +19,7 @@ Every decision branches into decisions that hang off it. The **frontier** is eve
 
 ## Present a round
 
-Follow [structured-choices](../structured-choices/SKILL.md). One gate per round — never numbered prose lists.
+Follow [`structured-choices`](../structured-choices/SKILL.md). One gate per round — never numbered prose lists.
 
 **Multi-question round:** one decision-tool call (e.g. Cursor `AskQuestion`) with a `questions` entry per frontier item. The user answers each in sequence within that single gate.
 
@@ -34,8 +34,8 @@ Do not duplicate options in prose after the tool call.
 
 ## Facts vs decisions
 
-Finding _facts_ is your job, never the user's. When a frontier question needs a fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to find it; don't ask the user for anything you could look up yourself. Don't block on it: a running exploration is an unsettled prerequisite, so only the questions downstream of it wait for the sub-agent to report; ask the rest of the frontier now. The _decisions_ are the user's: put each to them and wait.
+Finding facts is your job — dispatch a sub-agent when a frontier question needs environment facts. A running exploration is an unsettled prerequisite; only downstream questions wait — ask the rest of the frontier now. Decisions are the user's.
 
 ## Done
 
-The session is done when the frontier is empty and the user confirms shared understanding (`confirm_dialog` gate per structured-choices). Do not act on it until confirmed. Every branch of the design tree visited, nothing left silently assumed.
+Frontier empty and user confirms shared understanding (`confirm_dialog` gate). Every branch of the design tree visited, nothing left silently assumed. Do not act until confirmed.

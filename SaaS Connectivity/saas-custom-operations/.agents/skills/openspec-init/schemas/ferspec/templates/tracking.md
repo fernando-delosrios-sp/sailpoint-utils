@@ -4,7 +4,7 @@
 
 ## Change
 
-<!-- changeRoot from openspec status — full path, not assumed repo-local -->
+<!-- CHANGE_ROOT_REL — repo-relative path (e.g. openspec/changes/<name>), not a machine-absolute path -->
 
 ## Branch
 
