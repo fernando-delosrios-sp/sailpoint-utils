@@ -7,7 +7,7 @@ description: Test-driven development. Use when the user wants to build features 
 
 TDD is the red → green loop. This skill is the reference that makes that loop produce tests worth keeping: what a good test is, where tests go, the anti-patterns, and the rules of the loop. Every section applies on every cycle: consult them before and during the loop, not after.
 
-When exploring the codebase, match test names and interface vocabulary to the project's domain language. Detect mode the same way as `domain-modeling`: OpenSpec when `openspec/config.yaml` or `openspec/specs/` exists — then read `openspec/specs/ubiquitous-language/spec.md` and relevant capability specs under `openspec/specs/`. Otherwise (legacy) read `CONTEXT.md` (or via `CONTEXT-MAP.md`) and respect ADRs in the area you're touching.
+When exploring the codebase, use the project's domain glossary so test names and interface vocabulary match the project's domain language. Check whether `openspec/config.yaml` or `openspec/specs/` exists first (same detection as `/domain-modeling`): in OpenSpec mode, read `openspec/specs/ubiquitous-language/spec.md` and relevant capability specs under `openspec/specs/`; in legacy mode, read `CONTEXT.md` (or via `CONTEXT-MAP.md`) and respect ADRs in the area you're touching.
 
 ## What a good test is
 

@@ -69,7 +69,7 @@ npx skills add fernando-delosrios-sp/skills --skill setup-matt-pocock-skills
 | gherkin-authoring | specs | schema.yaml |
 | c4-diagram | design | schema.yaml |
 | git-commit | apply, archive | schema.yaml; archive commit (manual fallback if absent) |
-| changelog-generator | tasks, apply | schema.yaml; git-commit |
+| changelog-generator | tasks, apply | schema.yaml; apply Changelog group |
 | tdd | apply | schema.yaml |
 | codebase-design | apply | tdd (seam / interface vocabulary) |
 | code-review | apply | tdd (post-implementation review) |

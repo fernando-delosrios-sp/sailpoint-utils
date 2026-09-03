@@ -28,11 +28,11 @@ Look for the originating spec, in this order:
 
 1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.), fetched via the workflow in `docs/agents/issue-tracker.md`.
 2. A path the user passed as an argument.
-3. **OpenSpec** (when `openspec/config.yaml` or `openspec/specs/` exists), before legacy paths:
+3. When `openspec/config.yaml` or `openspec/specs/` exists (OpenSpec mode), search these **before** legacy paths:
    - Delta specs under `openspec/changes/<change-name>/specs/` — match `<change-name>` to branch name, commit messages, or issue title/slug.
    - Canonical capability specs under `openspec/specs/<domain>/spec.md` for domains touched by the diff or named in commit messages.
    - `openspec/changes/<change-name>/proposal.md` or `design.md` when delta specs are absent but the change folder exists.
-4. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature (legacy search; skip when OpenSpec already supplied the spec).
+4. A spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature (legacy fallback when OpenSpec is absent, or after OpenSpec paths yield nothing).
 5. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
 
 ### 3. Identify the standards sources
@@ -71,7 +71,7 @@ Each smell reads *what it is* → *how to fix*; match it against the diff:
 
 - The diff command and commit list.
 - The path or fetched contents of the spec.
-- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words." When the spec is OpenSpec delta specs, treat ADDED/MODIFIED requirements and `#### Scenario:` blocks as the contract; cite requirement headers and scenario steps.
+- The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. For OpenSpec delta specs, treat ADDED/MODIFIED requirements and `#### Scenario:` blocks as the contract; cite requirement headers and scenario steps. Quote the spec line for each finding. Under 400 words."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.
 

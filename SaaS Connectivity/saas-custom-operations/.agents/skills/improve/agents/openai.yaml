@@ -1,5 +1,5 @@
 interface:
   display_name: Improve
-  short_description: Survey any codebase as a senior advisor and produce prioritized handoff
+  short_description: Survey any codebase as a senior advisor and produce prioritized handoff artifacts for OTHER models/agents to execute — OpenSpec change packages (when capability specs exist) or legacy implementation plans.
 policy:
   allow_implicit_invocation: false

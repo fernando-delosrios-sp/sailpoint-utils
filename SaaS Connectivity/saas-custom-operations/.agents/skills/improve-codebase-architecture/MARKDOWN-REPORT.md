@@ -66,7 +66,7 @@ Domain terms worth formalising via `/domain-modeling`, discovered during analysi
 
 In OpenSpec repos, picked candidates become change packages after grilling — see [OPENSPEC-CHANGE.md](OPENSPEC-CHANGE.md).
 
-No paragraphs of explanation.
+No paragraphs of explanation. If the diagram needs a paragraph to be understood, redraw the diagram.
 
 ## Diagram patterns
 
