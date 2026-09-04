@@ -1,7 +1,36 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
-<Rule name="Organizational Hierarchy Path" type="IdentityAttribute">
-  <Description>Returns the consolidated organizational hierarchy position for the identity by traversing entitlement parent relationships via a configured entitlement attribute.</Description>
+<Rule name="Organizational Hierarchy Path" type="Generic">
+  <Description>Generic utility rule invoked from an ISC Rule transform; input is sourceId|attributeValue.</Description>
+  <Signature>
+    <Inputs>
+      <Argument name="context" type="sailpoint.api.SailPointContext">
+        <Description>
+          SailPoint database context object for read-only queries if needed.
+        </Description>
+      </Argument>
+      <Argument name="environment" type="java.util.Map">
+        <Description>
+          Map of operational flags or contextual execution parameters.
+        </Description>
+      </Argument>
+      <Argument name="value" type="Object">
+        <Description>
+          The output from the input sub-transform: sourceId|attributeValue.
+        </Description>
+      </Argument>
+      <Argument name="idn" type="sailpoint.server.IdnRuleUtil">
+        <Description>
+          Provides a read-only starting point for using the SailPoint API.
+        </Description>
+      </Argument>
+    </Inputs>
+    <Returns>
+      <Argument name="output" type="Object">
+        <Description>The consolidated organizational hierarchy path.</Description>
+      </Argument>
+    </Returns>
+  </Signature>
   <Source><![CDATA[
 import java.util.List;
 import java.util.ArrayList;
@@ -11,34 +40,32 @@ import java.util.Collections;
 import java.util.Map;
 import sailpoint.object.ManagedAttribute.Type;
 
-String SOURCE_ID = "<SOURCE_ID>";
 String DEFAULT_VALUE = "-";
 
-/* Fetch source attribute configuration values from IdentityNow.
-   These are defined per-source in the IdentityNow admin UI. */
-String identityAttr = idn.getSourceAttributeBySourceId(SOURCE_ID, "identityAttribute");
-String entitlementAccAttr = idn.getSourceAttributeBySourceId(SOURCE_ID, "entitlementAccountAttribute");
-String parentOrgAttr = idn.getSourceAttributeBySourceId(SOURCE_ID, "parentOrganizationAttribute");
-String displayAttr = idn.getSourceAttributeBySourceId(SOURCE_ID, "entitlementDisplayAttribute");
-String hierarchySep = idn.getSourceAttributeBySourceId(SOURCE_ID, "hierarchySeparator");
-
-/* Validate that required source attributes are configured. */
-if (identityAttr == null || entitlementAccAttr == null || parentOrgAttr == null || displayAttr == null) {
+/* The transform passes "sourceId|attributeValue" as the rule input. */
+if (value == null) {
+    return DEFAULT_VALUE;
+}
+String input = value.toString().trim();
+int sep = input.indexOf('|');
+if (sep <= 0 || sep == input.length() - 1) {
+    return DEFAULT_VALUE;
+}
+String sourceId = input.substring(0, sep).trim();
+String entitlementValue = input.substring(sep + 1).trim();
+if (sourceId.isEmpty() || entitlementValue.isEmpty()) {
     return DEFAULT_VALUE;
 }
 
-/* Retrieve the entitlement value from the identity.
-   identityAttr points to the identity attribute that holds the entitlement reference (e.g., "organization"). */
-String entitlementValue = null;
-if (identity != null) {
-    Object val = identity.getAttribute(identityAttr);
-    if (val != null) {
-        entitlementValue = val.toString();
-    }
-}
+/* Fetch source attribute configuration values from IdentityNow.
+   These are defined per-source in the IdentityNow admin UI. */
+String entitlementAccAttr = idn.getSourceAttributeBySourceId(sourceId, "entitlementAccountAttribute");
+String parentOrgAttr = idn.getSourceAttributeBySourceId(sourceId, "parentOrganizationAttribute");
+String displayAttr = idn.getSourceAttributeBySourceId(sourceId, "entitlementDisplayAttribute");
+String hierarchySep = idn.getSourceAttributeBySourceId(sourceId, "hierarchySeparator");
 
-/* If no entitlement value is found on the identity, return the default. */
-if (entitlementValue == null || entitlementValue.trim().isEmpty()) {
+/* Validate that required source attributes are configured. */
+if (entitlementAccAttr == null || parentOrgAttr == null || displayAttr == null) {
     return DEFAULT_VALUE;
 }
 
@@ -60,7 +87,7 @@ while (current != null && !current.trim().isEmpty() && !visited.contains(current
     /* Look up the managed attribute details for the current entitlement.
        entitlementAccAttr is the account attribute name that holds the entitlement value on source accounts. */
     sailpoint.rule.ManagedAttributeDetails details = idn.getManagedAttributeDetails(
-        SOURCE_ID, entitlementAccAttr, current, Type.Entitlement
+        sourceId, entitlementAccAttr, current, Type.Entitlement
     );
     if (details == null) {
         break;

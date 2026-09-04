@@ -4,31 +4,34 @@
 
 ## Purpose
 
-IdentityAttribute rule that builds a consolidated organizational hierarchy path on each identity (e.g., `Business Unit>Division>Department`) by walking entitlement parent links configured on a source.
+Generic cloud rule invoked by an ISC **Rule** transform that builds a consolidated organizational hierarchy path on each identity (e.g., `Business Unit>Division>Department`) by walking entitlement parent links configured on a source.
 
 ## Overview
 
 Organizational hierarchies (e.g., department → division → business unit) are often flattened across sources. This rule reconstructs the full hierarchy path by walking up a chain of entitlements, where each entitlement exposes its parent organization in a designated source attribute.
 
+The transform passes `sourceId|attributeValue` as the rule input. The rule is tenant- and source-agnostic — no code edits are required per environment. All environment specifics live in the transform configuration.
+
 The result is a single identity attribute value like `Eurowings>Eurowings Discover`, built dynamically from the entitlement graph.
 
 ## Artifacts
 
-- `Rule - IdentityAttribute - Organizational Hierarchy Path.xml` — IdentityAttribute rule that computes the organizational hierarchy path.
+- `Rule - Generic - Organizational Hierarchy Path.xml` — Generic cloud rule that computes the organizational hierarchy path.
+- `Transform.json` — Rule transform that supplies `sourceId|attributeValue` as input to the rule.
 
 ## How It Works
 
-1. Reads five source attribute configurations from the source identified by `SOURCE_ID`:
-   - **identityAttribute** — the identity attribute that holds the entitlement reference (e.g., `organization`).
+1. The transform builds a composite input `${sourceId}|${attributeValue}` and passes it to the rule as `value`.
+2. The rule parses `sourceId` and `attributeValue` from `value` (split on the first `|`).
+3. Reads four source attribute configurations from the parsed `sourceId`:
    - **entitlementAccountAttribute** — the account attribute that holds the entitlement value on source accounts.
    - **parentOrganizationAttribute** — the entitlement attribute key that holds the parent organization value.
    - **entitlementDisplayAttribute** — the entitlement attribute key that holds the display name (e.g., `name`).
    - **hierarchySeparator** — the string used to join hierarchy levels (e.g., `>` or ` > `).
-2. Retrieves the entitlement value from the identity using the configured `identityAttribute`.
-3. Walks **up** the entitlement chain: for each entitlement, calls `idn.getManagedAttributeDetails(sourceId, entitlementAccountAttribute, value, Type.Entitlement)` and reads the configured parent and display attributes from `ManagedAttributeDetails.getAttributes()`.
-4. Adds each entitlement's display name (from `entitlementDisplayAttribute`) to the path.
-5. Stops when an entitlement has no parent (parent attribute is null/empty) or when the maximum depth (20) is reached.
-6. Reverses the path (root first, leaf last) and joins with the hierarchy separator.
+4. Walks **up** the entitlement chain starting from `attributeValue`: for each entitlement, calls `idn.getManagedAttributeDetails(sourceId, entitlementAccountAttribute, value, Type.Entitlement)` and reads the configured parent and display attributes from `ManagedAttributeDetails.getAttributes()`.
+5. Adds each entitlement's display name (from `entitlementDisplayAttribute`) to the path.
+6. Stops when an entitlement has no parent (parent attribute is null/empty) or when the maximum depth (20) is reached.
+7. Reverses the path (root first, leaf last) and joins with the hierarchy separator.
 
 ## Example: NERM - Organisations
 
@@ -38,11 +41,17 @@ This pattern was validated against a **Web Services SaaS** source (`NERM - Organ
 
 | Source attribute | Example value | Purpose |
 |---|---|---|
-| `identityAttribute` | `organization` | Identity attribute holding the user's organization entitlement value |
 | `entitlementAccountAttribute` | `organization` | Account/entitlement schema attribute used for `getManagedAttributeDetails` lookups |
 | `parentOrganizationAttribute` | `parent2` | Entitlement metadata key for the parent organization value |
 | `entitlementDisplayAttribute` | `name` | Entitlement metadata key for the display name |
 | `hierarchySeparator` | `>` | Separator used when joining hierarchy levels |
+
+### Transform configuration
+
+| Transform placeholder | Example value | Purpose |
+|---|---|---|
+| `<SOURCE_ID>` | `6659e1f4-...` | UUID of the target source |
+| `<ATTRIBUTE_NAME>` | `organization` | Identity attribute holding the user's organization entitlement value |
 
 Group aggregation response mapping (Web Services SaaS `resMappingObj`):
 
@@ -94,7 +103,7 @@ Map a new identity attribute (e.g., `organizationHierarchy`) in the identity pro
 
 ![Identity profile mapping for organizationHierarchy](images/identity-profile-mapping.png)
 
-No source attribute selection is required on the mapping itself — the rule reads all configuration from the hardcoded `SOURCE_ID` and its source attributes.
+No source attribute selection is required on the mapping itself — the transform supplies the source ID and entitlement attribute value to the rule.
 
 ## Entitlement Parent Attribute Convention
 
@@ -121,7 +130,6 @@ Define the following source attributes on the target source in IdentityNow (via 
 
 | Attribute | Description |
 |---|---|
-| `identityAttribute` | Name of the identity attribute that references the entitlement value (e.g., `organization`). |
 | `entitlementAccountAttribute` | Name of the account attribute that holds the entitlement value on source accounts. |
 | `parentOrganizationAttribute` | Name of the entitlement attribute key that holds the parent organization value (e.g., `parent2`). |
 | `entitlementDisplayAttribute` | Name of the entitlement attribute key that holds the display name (e.g., `name`). |
@@ -129,9 +137,9 @@ Define the following source attributes on the target source in IdentityNow (via 
 
 ### Setup Steps
 
-1. Create a new IdentityAttribute rule named **Organizational Hierarchy Path** and paste in the rule XML from `Rule - IdentityAttribute - Organizational Hierarchy Path.xml`.
-2. **Replace `SOURCE_ID`** in the rule source with the UUID of your target source. You can find this in the source's URL in the admin UI (e.g., `https://tenant.identitynow.com/ui/admin/#/sources/6659e1f4...`).
-3. Configure the five source attributes on your source and map entitlement aggregation fields so `name` and `parent2` (or your chosen keys) are populated on each entitlement.
+1. Create a new **Generic** cloud rule named **Organizational Hierarchy Path** and paste in the rule XML from `Rule - Generic - Organizational Hierarchy Path.xml` (no code edits required).
+2. Create a **Rule** transform named **Organizational Hierarchy Path** from `Transform.json`, replacing `<SOURCE_ID>` with the UUID of your target source and `<ATTRIBUTE_NAME>` with the identity attribute that holds the entitlement value (e.g., `organization`). You can find the source UUID in the source's URL in the admin UI (e.g., `https://tenant.identitynow.com/ui/admin/#/sources/6659e1f4...`).
+3. Configure the four source attributes on your source and map entitlement aggregation fields so `name` and `parent2` (or your chosen keys) are populated on each entitlement.
 4. Ensure each entitlement's parent attribute contains its parent's **entitlement value**, not a display path or description string.
 5. Create a new identity attribute (e.g., `organizationHierarchy`) mapped with source **Complex Data Source** and transform **Organizational Hierarchy Path**.
 
@@ -140,16 +148,15 @@ Define the following source attributes on the target source in IdentityNow (via 
 | Symptom | Likely cause |
 |---|---|
 | `organization>organization` | Display name read from `getName()` instead of `entitlementDisplayAttribute`. Ensure `entitlementDisplayAttribute` is configured (e.g., `name`) and populated on entitlements. |
-| `-` (default) | Missing source attribute, unset `SOURCE_ID`, or identity has no value in `identityAttribute`. |
+| `-` (default) | Missing source attribute, malformed transform input (missing `|`), or identity has no value in the mapped attribute. |
 | Truncated path | Broken parent reference — `parentOrganizationAttribute` value does not match any entitlement value on the source. |
 | Wrong order | Expected behavior: path is built leaf-to-root during traversal, then reversed to root-first before joining. |
 
 ## Notes
 
-- The `SOURCE_ID` constant is hardcoded and **must be updated** for each tenant/environment.
+- The rule is generic and reusable across sources and tenants — configure source and attribute via the transform only.
 - Entitlement lookups use [`getManagedAttributeDetails`](https://developer.sailpoint.com/rule-java-docs/sailpoint/rule/ManagedAttributeDetails.html) with [`ManagedAttribute.Type.Entitlement`](https://developer.sailpoint.com/rule-java-docs/sailpoint/object/ManagedAttribute.Type.html). Display names and parent values are read from the attributes map via `entitlementDisplayAttribute` and `parentOrganizationAttribute` — not from `getName()` or `getDescription()`.
 - Cycle detection is built in — if two entitlements reference each other as parents, traversal stops safely.
 - Maximum traversal depth is 20 levels to prevent runaway chains.
-- If any required source attribute is missing or the identity has no entitlement value, the rule returns `-` (the default value).
+- If any required source attribute is missing or the transform input has no entitlement value, the rule returns `-` (the default value).
 - This rule depends on the parent organization attribute being maintained correctly on each entitlement. Any broken parent reference will truncate the path at the break.
-
