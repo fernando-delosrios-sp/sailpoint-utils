@@ -4,6 +4,60 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-05
+
+### ✨ New Features
+
+- **Source Connection Setup (IQService Control)** — Added **Stream logs** (`-Action StreamLogs`) to follow `iqtrace.log` with colored `ERROR` / `INFO` / `DEBUG` lines, including stack-trace continuations and log rotation.
+
+### 🔧 Improvements
+
+- **Source Connection Setup** — Connection Settings files default to `sourceConfig/<source>` (AWS, Entra ID, Google Workspace) instead of a folder in the working directory. That tree is gitignored.
+
+- **Source Connection Setup** — Interactive prompts use **Esc** to go back to the previous question and **Ctrl+C** to exit. The completion copy/open menu still treats Esc as Done.
+
+- **Google Workspace source setup** — Domain-wide delegation still has no Google API; the script now opens the Admin console page and copies Client ID then scopes in order. Workspace admin roles (User Management Admin, Groups Admin) can be assigned through the Admin SDK after a Super Admin OAuth sign-in.
+- **Google Workspace NHI discovery** — Bind GCP's real predefined roles for Secret Manager Viewer (`roles/secretmanager.viewer`) and API Keys Viewer (`roles/serviceusage.apiKeysViewer`). The display-name slugs are not grantable on a project or organization.
+- **Google Workspace domain-wide delegation walkthrough** — Print Client ID and the comma-delimited OAuth scopes (plus each scope) before the first paste prompt, then copy those fields in order. Esc on a wait returns to the previous field so a clipboard overwrite is recoverable.
+- **Google Workspace OAuth client** — Creating one has no Google API, so the bare `OAuth client ID for Super Admin sign-in` prompt is now a walkthrough: it opens the Cloud Console create page, lists the fields to fill, copies the redirect URI, then collects the client ID and secret. Declining assigns the roles in the Admin console instead, and a failed sign-in (such as `redirect_uri_mismatch`) explains the cause and offers a retry. The Client Credentials grant type gets the same guidance.
+- **Google Workspace OAuth audience** — A new External client starts in Testing, where Google blocks every account that is not a test user (`Access blocked … has not completed the Google verification process`) and never redirects back. The walkthrough now opens the Audience page and copies the account to add before the sign-in, notes that Internal is only offered for Workspace organization projects, and warns that leaving a Client Credentials app in Testing expires its refresh token after 7 days.
+
+- **Google Workspace impersonate user** — Reject Gmail addresses that cannot exist (Gmail allows only letters, digits, and dots, so a hyphen means a typo), and warn that a consumer account cannot be the impersonate user or the Super Admin, since only a managed domain has an Admin console. A bad address used to reach Connection Settings and the OAuth test-user list before failing. When role assignment finds no such user, the script now says so plainly and lists the admin accounts that do exist, instead of surfacing a raw Admin SDK 404 and offering a pointless retry with another OAuth client.
+
+### 🐛 Fixes
+
+- **Google Workspace OAuth sign-in** — A consent screen that blocks the sign-in never reaches the loopback listener, which waited forever. The wait now stops after 5 minutes with the audience fix, and stays responsive to Ctrl+C.
+
+---
+
+## 2026-09-04
+
+### ✨ New Features
+
+- **Source Connection Setup (Entra ID)** — Interactive Microsoft Graph script that creates or updates the app registration used by the ISC Microsoft Entra connector (`ISC/Source Connection Setup/`).
+  - Grants every application permission from SailPoint's required-permissions table by default, with a `Directory` mode for the documented coarse alternative.
+  - Optional feature packs for access packages, MFA management, CIEM PIM groups, NHI discovery, Teams and SharePoint scanning, Copilot discovery, and Defender hunting.
+  - Assigns the User Administrator role required for Set Password and Delete User; Global Administrator is no longer assigned by default.
+  - Idempotent updates: merge permissions, grant missing admin consent, optionally rotate the client secret.
+  - Replaces the retired AzureAD / Azure AD Graph workflow.
+- **Source Connection Setup (AWS SaaS)** — Interactive AWS Tools for PowerShell script that creates or updates the IAM role used by the ISC Amazon Web Services SaaS connector (`ISC/Source Connection Setup/AWS.ps1`).
+  - Trusts SailPoint `ciem_universal` for commercial **CIEM** (`874540850173`) and **ISC SaaS** (`706944607044`), or GovCloud (`229634586956`), with the External ID from the ISC source.
+  - Attaches documented MGO (default) or non-MGO aggregation, organization, and provisioning policies; optional Activity Insights, CIEM, Bedrock / AgentCore discovery, and IAM Identity Center packs.
+  - Idempotent updates of trust and customer-managed policies; optional organization-wide create using a member assume role.
+- **Source Connection Setup (Google Workspace SaaS)** — Interactive gcloud script that configures either grant type for the ISC Google Workspace SaaS connector (`ISC/Source Connection Setup/Google Workspace.ps1`).
+  - **Service Account:** creates or updates the service account, enables documented Admin SDK / Groups Settings APIs, issues a JSON key, and converts it with OpenSSL to the encrypted RSA PEM the source expects; prints the client ID and scopes for Admin console domain-wide delegation.
+  - **Client Credentials:** runs the OAuth 2.0 authorization-code flow against your OAuth client — loopback redirect caught by the script, or the documented OAuth Playground redirect — and returns the offline refresh token.
+  - Optional feature packs for GCP inventory, CIEM, Gmail delegates, delta aggregation, Activity Insights, domain management, NHI discovery, and Vertex AI agents.
+  - Idempotent updates of the service account and organization custom role `sailpointGoogleWorkspace`, bound to the service account or the authorizing user depending on grant type.
+  - Connection Settings are printed one value per line, written to files, and offered through a repeatable copy-to-clipboard menu.
+- **Source Connection Setup (IQService Control)** — Windows operator script for IQService hosts (`ISC/Source Connection Setup/IQService Control.ps1`).
+  - Downloads `IQService.zip` from a pasted ISC pre-signed URL or a local file, unblocks the archive before extraction.
+  - Installs or updates IQService with backup, service stop/uninstall, binary unblock, registry-aware reinstall, and optional auto-start.
+  - Service management (start/stop/restart/uninstall), trace log level configuration, status reporting, and `Utils.dll` unblock.
+  - Interactive lists use the same arrow-key menus as the Entra ID script, with numbered prompts when the host cannot read single keystrokes.
+
+---
+
 ## 2026-09-03
 
 ### 🔧 Improvements

@@ -25,6 +25,9 @@ pnpm-debug.log*
 !.env.example
 *.local
 
+# Source Connection Setup run artifacts (keys, PEMs, connection settings)
+sourceConfig/
+
 # Dependencies
 node_modules/
 vendor/

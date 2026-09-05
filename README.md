@@ -26,6 +26,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | [Optimistic Provisioning Generic SDIM](ISC/Optimistic%20Provisioning%20Generic%20SDIM/) | Configuration guide for optimistic provisioning with Generic SDIM |
 | [Organizational Hierarchy Path](ISC/Organizational%20Hierarchy%20Path/) | IdentityAttribute rule that builds a consolidated org hierarchy path from entitlements |
 | [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) | Copy-ready IQService connector-rule bootstrap with logging, redaction, exit handling, and optional replay |
+| [Source Connection Setup](ISC/Source%20Connection%20Setup/) | Entra ID app registration, AWS SaaS IAM role setup, Google Workspace SaaS service account setup, and IQService host control (download, install, update, service, logging, Utils.dll unblock) |
 | [Transforms](ISC/Transforms/) | Reusable transform definitions (dates, lifecycle state, attribute history, manager flag) |
 
 ## SaaS Connectivity
