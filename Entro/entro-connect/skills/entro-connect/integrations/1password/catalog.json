@@ -1,0 +1,16 @@
+{
+  "tile": "1Password",
+  "category": "uncaptured",
+  "integrationPaths": [],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "none"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect 1Password \u2014 connection form not yet captured for Connect catalog.",
+  "connectionFields": [],
+  "captureRequired": true,
+  "pathEvidence": "capture-required"
+}

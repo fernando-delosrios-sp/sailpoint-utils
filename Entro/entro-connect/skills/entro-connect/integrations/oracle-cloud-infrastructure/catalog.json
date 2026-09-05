@@ -1,0 +1,125 @@
+{
+  "tile": "Oracle Cloud Infrastructure",
+  "category": "cloud-and-infrastructure",
+  "integrationPaths": [
+    {
+      "name": "Oracle Cloud Infrastructure",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "oci"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Tenancy OCID",
+          "secret": false,
+          "obtainedHow": "OCI Console \u2192 Tenancy details \u2192 OCID."
+        },
+        {
+          "name": "User OCID",
+          "secret": false,
+          "obtainedHow": "Identity \u2192 Users \u2192 the Entro user OCID."
+        },
+        {
+          "name": "Fingerprint",
+          "secret": false,
+          "obtainedHow": "API keys on that user \u2192 fingerprint."
+        },
+        {
+          "name": "Private Key",
+          "secret": true,
+          "obtainedHow": "PEM API signing key downloaded when the API key was added; store in the operator vault."
+        },
+        {
+          "name": "Region",
+          "secret": false,
+          "obtainedHow": "OCI region identifier for the home region (Console region selector)."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment Nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment Nickname",
+          "default": "nonprod"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create an Entro OCI user and API key",
+          "instruction": "Create a user with Entro's read-only policies, add an API signing key, and record tenancy OCID, user OCID, fingerprint, and private key in the operator vault.",
+          "evidence": "Identity shows the user, policy, and an API key fingerprint"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create an Entro OCI user and API key",
+          "preview": "oci iam user get --user-id (inspect collision by name via list)",
+          "mutation": "oci iam user create, group/policy attach from Entro's read-only set, then oci iam user api-key upload; operator stores the PEM outside the session",
+          "target": "OCI tenancy",
+          "expectedChange": "Identity shows the user, policy, and an API key fingerprint",
+          "verification": "oci iam user list --compartment-id <tenancyOcid> ; oci iam user api-key list --user-id <userOcid>",
+          "rollbackOrImpact": "Delete the API key and user created this run after Approve",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/oci/oci-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "oci"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect an OCI tenancy so Entro can discover secrets in Vault and related services.",
+  "connectionFields": [
+    {
+      "name": "Environment Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Tenancy OCID",
+      "secret": false,
+      "obtainedHow": "OCI Console \u2192 Tenancy details \u2192 OCID."
+    },
+    {
+      "name": "User OCID",
+      "secret": false,
+      "obtainedHow": "Identity \u2192 Users \u2192 the Entro user OCID."
+    },
+    {
+      "name": "Fingerprint",
+      "secret": false,
+      "obtainedHow": "API keys on that user \u2192 fingerprint."
+    },
+    {
+      "name": "Private Key",
+      "secret": true,
+      "obtainedHow": "PEM API signing key downloaded when the API key was added; store in the operator vault."
+    },
+    {
+      "name": "Region",
+      "secret": false,
+      "obtainedHow": "OCI region identifier for the home region (Console region selector)."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

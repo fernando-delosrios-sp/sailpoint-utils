@@ -1,0 +1,273 @@
+{
+  "tile": "GitHub",
+  "category": "code-and-ci-cd",
+  "integrationPaths": [
+    {
+      "name": "GitHub Cloud - New",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "binary": "gh"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "github-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Display Name",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Company Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "display_name",
+          "prompt": "Display Name in Entro",
+          "purpose": "Operator-chosen Entro display name",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Display Name"
+        },
+        {
+          "key": "company_nickname",
+          "prompt": "Company Nickname in Entro",
+          "purpose": "Operator-chosen Entro company nickname",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Company Nickname"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Install the Entro GitHub App",
+          "instruction": "From Entro Add New Account \u2192 GitHub Cloud - New, choose Install on GitHub Organization, pick the org or repos, and approve the App permissions. Entro redirects back after install.",
+          "evidence": "GitHub Organization Settings \u2192 GitHub Apps lists the Entro app as installed",
+          "uncataloged": {
+            "evidence": "GitHub Organization Settings \u2192 GitHub Apps lists the Entro app as installed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "GitHub Cloud - Legacy",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "binary": "gh"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "github-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Display Name",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Company Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Environment Type",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "Github access token",
+          "secret": true,
+          "obtainedHow": "Fine-grained or classic PAT created for Entro with repo read access; store in the operator vault. Never paste the token into chat."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "display_name",
+          "prompt": "Display Name in Entro",
+          "purpose": "Operator-chosen Entro display name",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Display Name"
+        },
+        {
+          "key": "company_nickname",
+          "prompt": "Company Nickname in Entro",
+          "purpose": "Operator-chosen Entro company nickname",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Company Nickname"
+        },
+        {
+          "key": "environment_type",
+          "prompt": "Environment type in Entro",
+          "purpose": "Production, Development, or the matching form value",
+          "validation": "One of Production, Development, or the form's listed types",
+          "secret": false,
+          "bindsTo": "Environment Type",
+          "default": "Development"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create a GitHub PAT for Entro",
+          "instruction": "In GitHub Settings \u2192 Developer settings, create a fine-grained token (preferred) or classic token with Entro's documented read scopes, no expiration if policy allows, and store it in the operator vault.",
+          "evidence": "GitHub lists a PAT named Entro (value stored outside the session)",
+          "uncataloged": {
+            "evidence": "GitHub lists a PAT named Entro (value stored outside the session)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "GitHub Enterprise Server",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "binary": "gh"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Display Name",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Environment Type",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "Github server hostname",
+          "secret": false,
+          "obtainedHow": "GHES hostname as operators use it in the browser (no token)."
+        },
+        {
+          "name": "Github access token",
+          "secret": true,
+          "obtainedHow": "Classic PAT generated on the GHES instance; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Create a GHES PAT",
+          "instruction": "On the GitHub Enterprise Server, create a classic PAT with Entro's documented scopes and confirm the Connector can reach the hostname.",
+          "evidence": "GHES shows a PAT named Entro and the Connector resolves the hostname",
+          "uncataloged": {
+            "evidence": "GHES shows a PAT named Entro and the Connector resolves the hostname"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [
+    {
+      "name": "Real-time scanning",
+      "configurationTools": []
+    },
+    {
+      "name": "Enterprise S3 log streaming",
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "aws"
+        }
+      ],
+      "prepSteps": [
+        {
+          "title": "Grant Entro IAM S3 read on the streaming bucket",
+          "instruction": "On the Entro IAM role in the AWS account that hosts the GitHub audit-log bucket, attach s3:ListBucket and s3:GetObject for that bucket.",
+          "evidence": "The Entro IAM role can list and get objects on the streaming bucket"
+        },
+        {
+          "title": "Record the S3 bucket name",
+          "instruction": "After GitHub Enterprise audit log streaming to Amazon S3 is configured, record the bucket name for the Entro form.",
+          "evidence": "The bucket name is recorded and head-bucket succeeds"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Grant Entro IAM S3 read on the streaming bucket",
+          "preview": "aws iam simulate-principal-policy or get-role-policy inspect",
+          "mutation": "aws iam put-role-policy or attach the Entro-documented inline policy with s3:ListBucket and s3:GetObject on the streaming bucket",
+          "target": "AWS account that hosts the GitHub audit-log S3 bucket",
+          "expectedChange": "Entro IAM role can list and get objects on that bucket",
+          "verification": "aws iam get-role-policy / simulate-principal-policy for s3:ListBucket and s3:GetObject",
+          "rollbackOrImpact": "Delete the inline policy statement added this run",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/code-and-ci-cd/github/github-cloud-onboarding/github-cloud-enterprise-s3-logs-streaming.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Record the S3 bucket name",
+          "preview": "aws s3api head-bucket --bucket <s3_bucket_name>",
+          "mutation": "Operator records the GitHub audit-log streaming bucket name as an Operator input",
+          "target": "GitHub Enterprise audit log streaming + AWS S3",
+          "expectedChange": "Bucket name persisted for the Entro form",
+          "verification": "aws s3api head-bucket --bucket <s3_bucket_name> exits 0",
+          "rollbackOrImpact": "No mutation beyond IAM already gated",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/code-and-ci-cd/github/github-cloud-onboarding/github-cloud-enterprise-s3-logs-streaming.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "s3_bucket_name",
+          "prompt": "S3 bucket name for GitHub Enterprise audit log streaming",
+          "purpose": "Bucket GitHub streams audit logs into; Entro form needs the name",
+          "validation": "Valid S3 bucket name",
+          "secret": false
+        }
+      ]
+    }
+  ],
+  "configurationTools": [
+    {
+      "fit": "usable",
+      "binary": "gh"
+    },
+    {
+      "fit": "usable",
+      "kind": "mcp",
+      "id": "github-mcp"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect GitHub Cloud by installing Entro's GitHub App on the organization (no PAT).",
+  "connectionFields": [
+    {
+      "name": "Display Name",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Company Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

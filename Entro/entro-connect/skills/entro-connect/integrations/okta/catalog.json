@@ -1,0 +1,221 @@
+{
+  "tile": "Okta",
+  "category": "security-and-identity",
+  "integrationPaths": [
+    {
+      "name": "Super Administrator",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "okta"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Display Name",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Okta Domain",
+          "secret": false,
+          "obtainedHow": "Okta org URL from the Admin Console address bar, e.g. https://<org>.okta.com."
+        },
+        {
+          "name": "Client Id",
+          "secret": false,
+          "obtainedHow": "API Services app \u2192 General tab \u2192 Client ID after you paste Entro's public key into the app."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment",
+          "prompt": "Environment label for Entro",
+          "purpose": "Operator-chosen Entro environment label",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment",
+          "default": "Development"
+        },
+        {
+          "key": "display_name",
+          "prompt": "Display Name in Entro",
+          "purpose": "Operator-chosen Entro display name",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Display Name"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Copy Entro's public key from the Okta form",
+          "instruction": "In Entro Add New Account \u2192 Okta, copy the Public Key from the bottom of the form and keep the tab open.",
+          "evidence": "The Entro Okta form still shows a Public Key"
+        },
+        {
+          "title": "Create an Okta API Services app",
+          "instruction": "In Okta Admin, create an API Services app, set public-key authentication, paste Entro's public key, disable DPoP, grant Entro's documented Okta API scopes, and assign Super Administrator (or the documented custom role).",
+          "evidence": "The app General tab shows a Client ID and the public key; scopes are granted"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Copy Entro's public key from the Okta form",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "Operator copies the Public Key from Entro Add New Account \u2192 Okta (non-secret PEM) and keeps the tab open",
+          "target": "Entro Okta wizard",
+          "expectedChange": "The Entro Okta form still shows a Public Key",
+          "verification": "Public key PEM is recorded as non-secret Operator input material for the next step",
+          "rollbackOrImpact": "No Okta mutation",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/security-and-identity/okta/okta-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Create an Okta API Services app",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "okta apps create (API Services) with public-key authentication, paste Entro's public key, disable DPoP, grant Entro's documented Okta API scopes, assign Super Administrator or the documented custom role",
+          "target": "Okta org",
+          "expectedChange": "The app General tab shows a Client ID and the public key; scopes are granted",
+          "verification": "okta apps list / apps show for the Entro app",
+          "rollbackOrImpact": "Deactivate then delete the API Services app created this run",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/security-and-identity/okta/okta-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    },
+    {
+      "name": "Custom Entro Role",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "okta"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Display Name",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Okta Domain",
+          "secret": false,
+          "obtainedHow": "Okta org URL from the Admin Console address bar, e.g. https://<org>.okta.com."
+        },
+        {
+          "name": "Client Id",
+          "secret": false,
+          "obtainedHow": "API Services app \u2192 General tab \u2192 Client ID after you paste Entro's public key into the app."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment",
+          "prompt": "Environment label for Entro",
+          "purpose": "Operator-chosen Entro environment label",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment",
+          "default": "Development"
+        },
+        {
+          "key": "display_name",
+          "prompt": "Display Name in Entro",
+          "purpose": "Operator-chosen Entro display name",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Display Name"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Copy Entro's public key from the Okta form",
+          "instruction": "In Entro Add New Account \u2192 Okta, copy the Public Key from the bottom of the form and keep the tab open.",
+          "evidence": "The Entro Okta form still shows a Public Key"
+        },
+        {
+          "title": "Create an Okta API Services app",
+          "instruction": "In Okta Admin, create an API Services app, set public-key authentication, paste Entro's public key, disable DPoP, grant Entro's documented Okta API scopes, and assign Super Administrator (or the documented custom role).",
+          "evidence": "The app General tab shows a Client ID and the public key; scopes are granted"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Copy Entro's public key from the Okta form",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "Operator copies the Public Key from Entro Add New Account \u2192 Okta (non-secret PEM) and keeps the tab open",
+          "target": "Entro Okta wizard",
+          "expectedChange": "The Entro Okta form still shows a Public Key",
+          "verification": "Public key PEM is recorded as non-secret Operator input material for the next step",
+          "rollbackOrImpact": "No Okta mutation",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/security-and-identity/okta/okta-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Create an Okta API Services app",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "okta apps create (API Services) with public-key authentication, paste Entro's public key, disable DPoP, grant Entro's documented Okta API scopes, assign Super Administrator or the documented custom role",
+          "target": "Okta org",
+          "expectedChange": "The app General tab shows a Client ID and the public key; scopes are granted",
+          "verification": "okta apps list / apps show for the Entro app",
+          "rollbackOrImpact": "Deactivate then delete the API Services app created this run",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/security-and-identity/okta/okta-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "okta"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect Okta via an API Services app that uses Entro's public key (no client secret in the form).",
+  "connectionFields": [
+    {
+      "name": "Environment",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Display Name",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Okta Domain",
+      "secret": false,
+      "obtainedHow": "Okta org URL from the Admin Console address bar, e.g. https://<org>.okta.com."
+    },
+    {
+      "name": "Client Id",
+      "secret": false,
+      "obtainedHow": "API Services app \u2192 General tab \u2192 Client ID after you paste Entro's public key into the app."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

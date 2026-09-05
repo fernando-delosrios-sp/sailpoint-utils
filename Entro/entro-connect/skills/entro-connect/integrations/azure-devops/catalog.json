@@ -1,0 +1,131 @@
+{
+  "tile": "Azure DevOps",
+  "category": "cloud-and-infrastructure",
+  "integrationPaths": [
+    {
+      "name": "Azure DevOps",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "az"
+        },
+        {
+          "fit": "preferred",
+          "binary": "pwsh"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "azure-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Tenant ID",
+          "secret": false,
+          "obtainedHow": "Entra app Overview \u2192 Directory (tenant) ID."
+        },
+        {
+          "name": "Client ID",
+          "secret": false,
+          "obtainedHow": "Entra app Overview \u2192 Application (client) ID."
+        },
+        {
+          "name": "Client Secret",
+          "secret": true,
+          "obtainedHow": "Certificates & secrets Value for the Entro DevOps app; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment Nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment Nickname",
+          "default": "nonprod"
+        },
+        {
+          "key": "display_name",
+          "prompt": "Display name for the Entra app registration",
+          "purpose": "Names the Entra app object this run creates in the tenant",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "default": "EntroSecurityApp"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create or reuse the Entro Entra app",
+          "instruction": "Register (or reuse) an Entra app with Azure DevOps permissions from Entro's onboarding guide and grant admin consent.",
+          "evidence": "Entra shows the app with Azure DevOps permissions consented"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create or reuse the Entro Entra app",
+          "preview": "Inspect existing apps with az ad app list --display-name <display_name> before create",
+          "mutation": "Reuse the Microsoft Ecosystem app or az ad app create, then add Azure DevOps application permissions from Entro's guide and admin-consent",
+          "target": "Entra tenant / Azure DevOps organization",
+          "expectedChange": "Entra shows the app with Azure DevOps permissions consented",
+          "verification": "az ad app permission list --id <appId>",
+          "rollbackOrImpact": "Stop and reuse an existing matching app when the name collides; otherwise az ad app delete only if this run created it",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/azure-devops/azure-devops-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "az"
+    },
+    {
+      "fit": "preferred",
+      "binary": "pwsh"
+    },
+    {
+      "fit": "usable",
+      "kind": "mcp",
+      "id": "azure-mcp"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect Azure DevOps organizations through an Entra app so Entro can discover secrets in pipelines and repos.",
+  "connectionFields": [
+    {
+      "name": "Environment Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Tenant ID",
+      "secret": false,
+      "obtainedHow": "Entra app Overview \u2192 Directory (tenant) ID."
+    },
+    {
+      "name": "Client ID",
+      "secret": false,
+      "obtainedHow": "Entra app Overview \u2192 Application (client) ID."
+    },
+    {
+      "name": "Client Secret",
+      "secret": true,
+      "obtainedHow": "Certificates & secrets Value for the Entro DevOps app; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

@@ -1,0 +1,99 @@
+{
+  "tile": "Google Workspace",
+  "category": "collaboration-and-saas",
+  "integrationPaths": [
+    {
+      "name": "Service Account Key",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "binary": "gcloud"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Client ID",
+          "secret": false,
+          "obtainedHow": "GCP Console \u2192 the Workspace integration service account \u2192 Unique ID / Client ID."
+        },
+        {
+          "name": "Service Account Key JSON",
+          "secret": true,
+          "obtainedHow": "JSON key for that service account when using key auth; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Enable Domain-wide Delegation",
+          "instruction": "In Google Workspace Admin, authorize the service account Client ID with Entro's Drive scopes, or complete WIF as documented.",
+          "evidence": "Admin console shows the Client ID with the Drive scopes (or WIF is bound)",
+          "uncataloged": {
+            "evidence": "Admin console shows the Client ID with the Drive scopes (or WIF is bound)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workload Identity Federation",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "binary": "gcloud"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Client ID",
+          "secret": false,
+          "obtainedHow": "GCP Console \u2192 the Workspace integration service account \u2192 Unique ID / Client ID."
+        },
+        {
+          "name": "Service Account Key JSON",
+          "secret": true,
+          "obtainedHow": "JSON key for that service account when using key auth; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Enable Domain-wide Delegation",
+          "instruction": "In Google Workspace Admin, authorize the service account Client ID with Entro's Drive scopes, or complete WIF as documented.",
+          "evidence": "Admin console shows the Client ID with the Drive scopes (or WIF is bound)",
+          "uncataloged": {
+            "evidence": "Admin console shows the Client ID with the Drive scopes (or WIF is bound)"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "usable",
+      "binary": "gcloud"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect Google Drive / Workspace so Entro can discover exposed secrets in Drive.",
+  "connectionFields": [
+    {
+      "name": "Client ID",
+      "secret": false,
+      "obtainedHow": "GCP Console \u2192 the Workspace integration service account \u2192 Unique ID / Client ID."
+    },
+    {
+      "name": "Service Account Key JSON",
+      "secret": true,
+      "obtainedHow": "JSON key for that service account when using key auth; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

@@ -1,0 +1,120 @@
+{
+  "tile": "Bitbucket",
+  "category": "code-and-ci-cd",
+  "integrationPaths": [
+    {
+      "name": "BitBucket Cloud",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "atlassian-rovo-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Environment Type",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "Workspace",
+          "secret": false,
+          "obtainedHow": "Bitbucket workspace slug from the workspace URL or settings."
+        },
+        {
+          "name": "Access Token",
+          "secret": true,
+          "obtainedHow": "Repository or workspace access token with read scope; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create a Bitbucket access token",
+          "instruction": "In Bitbucket Cloud, create a workspace or repository access token with read access for Entro and store it in the operator vault.",
+          "evidence": "Bitbucket shows an access token named for Entro (value stored outside the session)",
+          "uncataloged": {
+            "evidence": "Bitbucket shows an access token named for Entro (value stored outside the session)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "BitBucket Data Center",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Bitbucket Base URL",
+          "secret": false,
+          "obtainedHow": "HTTPS URL of the Data Center instance reachable from the Connector."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Configure Data Center federation",
+          "instruction": "Follow Entro's Bitbucket Data Center workload-identity steps so the instance trusts Entro without a long-lived PAT in chat.",
+          "evidence": "Bitbucket Data Center shows the Entro application link or federation entry",
+          "uncataloged": {
+            "evidence": "Bitbucket Data Center shows the Entro application link or federation entry"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "usable",
+      "kind": "mcp",
+      "id": "atlassian-rovo-mcp"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect Bitbucket Cloud workspaces so Entro can scan repositories for secrets.",
+  "connectionFields": [
+    {
+      "name": "Environment",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Environment Type",
+      "secret": false,
+      "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+    },
+    {
+      "name": "Workspace",
+      "secret": false,
+      "obtainedHow": "Bitbucket workspace slug from the workspace URL or settings."
+    },
+    {
+      "name": "Access Token",
+      "secret": true,
+      "obtainedHow": "Repository or workspace access token with read scope; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

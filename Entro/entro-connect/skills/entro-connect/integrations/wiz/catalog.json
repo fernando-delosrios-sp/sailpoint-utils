@@ -1,0 +1,72 @@
+{
+  "tile": "Wiz",
+  "category": "security-and-identity",
+  "integrationPaths": [
+    {
+      "name": "Wiz",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Wiz Service Account Client ID",
+          "secret": false,
+          "obtainedHow": "From Wiz Settings \u2192 Service Accounts after creating the Entro account."
+        },
+        {
+          "name": "Wiz Service Account Client Secret",
+          "secret": true,
+          "obtainedHow": "Secret shown when the service account is created; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create a Wiz service account",
+          "instruction": "In Wiz, create a service account with read:data_findings, create:reports, and read:reports, then copy Client ID and Client Secret into the operator vault.",
+          "evidence": "Wiz lists the Entro service account (secret stored outside the session)",
+          "uncataloged": {
+            "evidence": "Wiz lists the Entro service account (secret stored outside the session)"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "none"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect Wiz via a service account so Entro can read DSPM findings.",
+  "connectionFields": [
+    {
+      "name": "Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Wiz Service Account Client ID",
+      "secret": false,
+      "obtainedHow": "From Wiz Settings \u2192 Service Accounts after creating the Entro account."
+    },
+    {
+      "name": "Wiz Service Account Client Secret",
+      "secret": true,
+      "obtainedHow": "Secret shown when the service account is created; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

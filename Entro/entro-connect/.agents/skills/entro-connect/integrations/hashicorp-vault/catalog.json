@@ -1,0 +1,112 @@
+{
+  "tile": "HashiCorp Vault",
+  "category": "cloud-and-infrastructure",
+  "integrationPaths": [
+    {
+      "name": "HashiCorp Vault",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "vault"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Vault Server URL",
+          "secret": false,
+          "obtainedHow": "Base URL of the Vault API including scheme and port (from the Vault UI or VAULT_ADDR)."
+        },
+        {
+          "name": "Access Token",
+          "secret": true,
+          "obtainedHow": "Token created with the entro-policy; copy once from `vault token create` into the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment",
+          "prompt": "Environment label for Entro",
+          "purpose": "Operator-chosen Entro environment label",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment",
+          "default": "Development"
+        }
+      ],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Create the entro-policy ACL",
+          "instruction": "In Vault, add an ACL policy named entro-policy with Entro's documented list/read capabilities (no write on secrets).",
+          "evidence": "Policies list includes entro-policy"
+        },
+        {
+          "title": "Create a renewable token",
+          "instruction": "After local `vault login`, create a token bound to entro-policy and store it in the operator vault. Do not paste the token into chat.",
+          "evidence": "Vault reports a token created with policy entro-policy (value stored outside the session)"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create the entro-policy ACL",
+          "preview": "vault policy read entro-policy (inspect collision)",
+          "mutation": "vault policy write entro-policy <entro-acl.hcl> with list/read capabilities from Entro's guide",
+          "target": "Vault cluster at VAULT_ADDR",
+          "expectedChange": "Policies list includes entro-policy",
+          "verification": "vault policy read entro-policy",
+          "rollbackOrImpact": "vault policy delete entro-policy if this run created it",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/hashicorp-vault/hashicorp-vault-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Create a renewable token",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "vault token create -policy=entro-policy -renewable (operator copies token into the operator vault; not into chat)",
+          "target": "Vault cluster",
+          "expectedChange": "Vault reports a token created with policy entro-policy (value stored outside the session)",
+          "verification": "vault token lookup (metadata only; do not print the token)",
+          "rollbackOrImpact": "vault token revoke <tokenAccessor> using the accessor, not the secret token in session",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/hashicorp-vault/hashicorp-vault-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "vault"
+    }
+  ],
+  "hosting": "self-hosted",
+  "summary": "Connect a HashiCorp Vault cluster using a read-only ACL policy and a renewable token.",
+  "connectionFields": [
+    {
+      "name": "Environment",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Vault Server URL",
+      "secret": false,
+      "obtainedHow": "Base URL of the Vault API including scheme and port (from the Vault UI or VAULT_ADDR)."
+    },
+    {
+      "name": "Access Token",
+      "secret": true,
+      "obtainedHow": "Token created with the entro-policy; copy once from `vault token create` into the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

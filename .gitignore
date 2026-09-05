@@ -40,6 +40,17 @@ __pycache__/
 .mypy_cache/
 .venv/
 venv/
+.apply-venv/
+
+# Entro Connect run artifacts
+entro-*.md
+/entro-connect/
+/Entro/entro-connect/entro-connect/
+/integrationConfig/
+/Entro/entro-connect/integrationConfig/
+# Accidental copies at repo root; Skill-held files live under skill row folders.
+/Entro-Azure-Onboarding.ps1
+/Entro-Onboard.ps1
 
 # Caches and temp files
 .cache/

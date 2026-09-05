@@ -1,0 +1,103 @@
+{
+  "tile": "Microsoft Teams",
+  "category": "collaboration-and-saas",
+  "integrationPaths": [
+    {
+      "name": "Microsoft Teams",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "az"
+        },
+        {
+          "fit": "preferred",
+          "binary": "pwsh"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "azure-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Tenant ID",
+          "secret": false,
+          "obtainedHow": "Entra app Overview \u2192 Directory (tenant) ID."
+        },
+        {
+          "name": "Client ID",
+          "secret": false,
+          "obtainedHow": "Entra app Overview \u2192 Application (client) ID."
+        },
+        {
+          "name": "Client Secret",
+          "secret": true,
+          "obtainedHow": "Client secret Value for the Teams-capable Entro app; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Grant Teams Graph permissions",
+          "instruction": "On the Entro Entra app, add Teams-related application permissions from Entro's Teams onboarding guide and grant admin consent.",
+          "evidence": "API permissions show Teams scopes with admin consent"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Grant Teams Graph permissions",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "az ad app permission add --id <appId> with Teams application permissions from Entro's Teams onboarding guide, then admin-consent",
+          "target": "Entro Entra app",
+          "expectedChange": "API permissions show Teams scopes with admin consent",
+          "verification": "az ad app permission list --id <appId>",
+          "rollbackOrImpact": "Delete the added permission entries; existing tokens remain until expiry",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/collaboration-and-saas/microsoft-teams/microsoft-teams-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "az"
+    },
+    {
+      "fit": "preferred",
+      "binary": "pwsh"
+    },
+    {
+      "fit": "usable",
+      "kind": "mcp",
+      "id": "azure-mcp"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect Microsoft Teams so Entro can discover secrets in Teams content using an Entra app.",
+  "connectionFields": [
+    {
+      "name": "Tenant ID",
+      "secret": false,
+      "obtainedHow": "Entra app Overview \u2192 Directory (tenant) ID."
+    },
+    {
+      "name": "Client ID",
+      "secret": false,
+      "obtainedHow": "Entra app Overview \u2192 Application (client) ID."
+    },
+    {
+      "name": "Client Secret",
+      "secret": true,
+      "obtainedHow": "Client secret Value for the Teams-capable Entro app; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

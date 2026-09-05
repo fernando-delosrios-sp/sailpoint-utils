@@ -1,0 +1,442 @@
+{
+  "tile": "Microsoft ecosystem",
+  "category": "cloud-and-infrastructure",
+  "integrationPaths": [
+    {
+      "name": "Automated PowerShell",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "az"
+        },
+        {
+          "fit": "preferred",
+          "binary": "pwsh"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "azure-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Tenant ID",
+          "secret": false,
+          "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Directory (tenant) ID."
+        },
+        {
+          "name": "Azure Client ID",
+          "secret": false,
+          "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Application (client) ID."
+        },
+        {
+          "name": "Client Secret",
+          "secret": true,
+          "obtainedHow": "Certificates & secrets \u2192 new client secret; copy Value immediately into the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment nickname",
+          "default": "nonprod"
+        },
+        {
+          "key": "display_name",
+          "prompt": "Display name for the Entra app registration",
+          "purpose": "Names the Entra app object this run creates in the tenant",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "default": "EntroSecurityApp"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Run Entro's Azure onboarding script",
+          "instruction": "On a workstation with PowerShell 7 and Az modules, run Entro's automated onboarding script as a Global Administrator so it creates the app, secret, and required Graph / Azure permissions.",
+          "evidence": "The script reports success and Entra shows the Entro app registration"
+        },
+        {
+          "title": "Record tenant, client ID, and secret",
+          "instruction": "Copy Tenant ID, Application (client) ID, and the generated secret Value into the operator vault. Do not paste the secret into chat.",
+          "evidence": "Tenant ID and Client ID are visible on the app Overview; secret Value is stored outside the session"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Run Entro's Azure onboarding script",
+          "preview": "Script has no vendor dry-run; checksum the Skill-held file, review path/size/checksum, then Approve. Entro docs describe a local run only.",
+          "mutation": "pwsh -File integrations/microsoft-ecosystem/Entro-Azure-Onboarding.ps1",
+          "target": "Entra tenant and selected Azure subscriptions / management groups",
+          "expectedChange": "Entro app registration EntroSecurityApp exists with Entro permission-audit Graph and Defender grants on the Identity object",
+          "verification": "sha256 of integrations/microsoft-ecosystem/Entro-Azure-Onboarding.ps1 matches script.checksum; script prints Azure Client ID, Tenant ID, and Client Secret; az ad app list --display-name EntroSecurityApp --query [].appId",
+          "rollbackOrImpact": "Script does not declare automatic rollback; residual Entra app, custom role, and Log Analytics resources must be deleted manually if the operator stops",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/azure/automated-powershell-onboarding.md",
+          "retrievedAt": "2026-08-31",
+          "script": {
+            "skillPath": "integrations/microsoft-ecosystem/Entro-Azure-Onboarding.ps1",
+            "version": "Entro-Azure-Onboarding.ps1 Local onboarding fork (origin upload 7pmnww8A099dTyQLXKT0; Entro permission-audit set; Az.Resources 9 PSRoleDefinition Actions/NotActions; TeamsAppInstallation.ReadWriteSelfForUser.All; ordered permission-group lookup; lazy WindowsDefenderATP service-principal provisioning)",
+            "checksum": "sha256:edcb8bb6dbf8a782a9d663df6598515b39126852347415eede36b509d36237fd",
+            "originUrl": "https://2094737390-files.gitbook.io/~/files/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FdLpzpLCXBV04nzCnCsDJ%2Fuploads%2F7pmnww8A099dTyQLXKT0%2FEntro-Azure-Onboarding.ps1?alt=media",
+            "localFork": true,
+            "originChecksum": "sha256:af42cb707a3edce614ba23eed7aa14add8ee336142061dc775edb3d4409666d1"
+          }
+        },
+        {
+          "prepStepTitle": "Record tenant, client ID, and secret",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "Operator copies Tenant ID and Application (client) ID from app Overview; creates or copies client secret Value only in the operator vault",
+          "target": "Entra app Overview and Certificates & secrets",
+          "expectedChange": "Tenant ID and Client ID recorded; secret Value stored outside the session",
+          "verification": "az ad app show --id <appId> --query '{appId:appId,publisherDomain:publisherDomain}' ; secret Value is never printed",
+          "rollbackOrImpact": "Irreversible for a revealed secret Value; rotate by creating a new secret and deleting the old one in Entra",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/azure/automated-powershell-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    },
+    {
+      "name": "Manual App Registration",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "az"
+        },
+        {
+          "fit": "preferred",
+          "binary": "pwsh"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "azure-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Tenant ID",
+          "secret": false,
+          "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Directory (tenant) ID."
+        },
+        {
+          "name": "Azure Client ID",
+          "secret": false,
+          "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Application (client) ID."
+        },
+        {
+          "name": "Client Secret",
+          "secret": true,
+          "obtainedHow": "Certificates & secrets \u2192 new client secret; copy Value immediately into the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment nickname",
+          "default": "nonprod"
+        },
+        {
+          "key": "display_name",
+          "prompt": "Display name for the Entra app registration",
+          "purpose": "Names the Entra app object this run creates in the tenant",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "default": "EntroSecurityApp"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Register the Entro app in Entra",
+          "instruction": "In entra.microsoft.com, register a single-tenant app for Entro, create a client secret, and add the Graph / Azure application permissions from Entro's permissions reference, then grant admin consent.",
+          "evidence": "App Overview shows Tenant ID and Client ID; API permissions show admin consent"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Register the Entro app in Entra",
+          "preview": "az ad app create has no dry-run; disclose display name and permissions then Approve",
+          "mutation": "az ad app create --display-name <display_name> --sign-in-audience AzureADMyOrg ; then add Graph/Azure application permissions from Entro's permissions reference and az ad app permission admin-consent",
+          "target": "Entra tenant",
+          "expectedChange": "Single-tenant app exists with admin-consented application permissions",
+          "verification": "az ad app list --display-name <display_name> --query [].appId",
+          "rollbackOrImpact": "Delete the app registration if the operator stops (az ad app delete --id <appId>); admin consent is not fully reversed by delete alone for issued tokens",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/azure/azure-manual-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    },
+    {
+      "name": "Manual Policy Creation",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "az"
+        },
+        {
+          "fit": "preferred",
+          "binary": "pwsh"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "azure-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Tenant ID",
+          "secret": false,
+          "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Directory (tenant) ID."
+        },
+        {
+          "name": "Azure Client ID",
+          "secret": false,
+          "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Application (client) ID."
+        },
+        {
+          "name": "Client Secret",
+          "secret": true,
+          "obtainedHow": "Certificates & secrets \u2192 new client secret; copy Value immediately into the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment nickname",
+          "default": "nonprod"
+        },
+        {
+          "key": "display_name",
+          "prompt": "Display name for the Entra app registration",
+          "purpose": "Names the Entra app object this run creates in the tenant",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "default": "EntroSecurityApp"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create the Entro Azure policy and custom role",
+          "instruction": "Follow Entro's Manual Policy Creation flow: create the policy, define the custom role, then link Tenant ID, Client ID, and secret in Entro.",
+          "evidence": "Azure shows the Entro policy and custom role; Entro form has Tenant ID and Client ID",
+          "operatorOnly": {
+            "reason": "Azure Portal policy and custom-role blades have no complete CLI equivalent in Entro's guide",
+            "evidence": "The Manual Policy Creation flow is divided into Azure Portal pages"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Azure Continuous Onboarding",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "az"
+        },
+        {
+          "fit": "preferred",
+          "binary": "pwsh"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "azure-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Tenant ID",
+          "secret": false,
+          "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Directory (tenant) ID."
+        },
+        {
+          "name": "Azure Client ID",
+          "secret": false,
+          "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Application (client) ID."
+        },
+        {
+          "name": "Client Secret",
+          "secret": true,
+          "obtainedHow": "Certificates & secrets \u2192 new client secret; copy Value immediately into the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment nickname",
+          "default": "nonprod"
+        },
+        {
+          "key": "display_name",
+          "prompt": "Display name for the Entra app registration",
+          "purpose": "Names the Entra app object this run creates in the tenant",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "default": "EntroSecurityApp"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Enable continuous onboarding of subscriptions",
+          "instruction": "Deploy Entro's Azure Function App against the Tenant Root management group so new subscriptions and Key Vaults onboard without repeating the wizard.",
+          "evidence": "The Function App is running and new subscriptions appear in Entro without a second wizard run",
+          "operatorOnly": {
+            "reason": "Function App and management-group wiring is documented as Azure Portal / ARM, not a preferred CLI plan",
+            "evidence": "The setup leverages Microsoft Azure Functions to periodically invoke Entro's onboarding API"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [
+    {
+      "name": "Copilot Studio",
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "pac"
+        }
+      ],
+      "prepSteps": [
+        {
+          "title": "Add Copilot Studio Graph permissions",
+          "instruction": "On the same Entra app used for Microsoft Ecosystem, add the Copilot Studio / Power Platform Graph application permissions from Entro's Copilot Studio permissions list, then grant admin consent for the tenant.",
+          "evidence": "API permissions page shows the Copilot Studio scopes with admin consent granted"
+        },
+        {
+          "title": "Provision the app into Dataverse environments",
+          "instruction": "Using the Power Platform CLI as a Global Administrator, add the Entro Entra app as an application user in each Power Platform environment that hosts Copilot Studio agents.",
+          "evidence": "Each target environment lists the Entro app under Application users"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Add Copilot Studio Graph permissions",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "az ad app permission add --id <appId> with Copilot Studio / Power Platform application permission IDs from Entro's Copilot Studio permissions list, then az ad app permission admin-consent --id <appId>",
+          "target": "Same Entra app as Microsoft Ecosystem",
+          "expectedChange": "API permissions include Copilot Studio scopes with admin consent",
+          "verification": "az ad app permission list --id <appId>",
+          "rollbackOrImpact": "Remove the added Graph permissions (az ad app permission delete) then re-consent; tokens already issued remain until expiry",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/ai-and-agents/microsoft-copilot-studio/onboarding-microsoft-copilot-studio.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Provision the app into Dataverse environments",
+          "preview": "pac admin list shows target environments; assign-user has no dry-run beyond listing application users first",
+          "mutation": "pac admin assign-user --environment <environment_id> --user <appId> --role \"System Customizer\" --application-user",
+          "target": "Power Platform / Dataverse environments that host Copilot Studio agents",
+          "expectedChange": "Each locked environment lists the Entro app as an application user",
+          "verification": "pac admin list-application-users --environment <environment_id> (or Power Platform admin \u2192 Application users)",
+          "rollbackOrImpact": "Remove the application user from Dataverse environments; no automatic rollback command is cataloged",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/ai-and-agents/microsoft-copilot-studio/onboarding-microsoft-copilot-studio.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_id",
+          "prompt": "Power Platform environments that host Copilot Studio agents",
+          "purpose": "Dataverse environments the Entro app is added to as an application user",
+          "validation": "Environment ID (GUID) or environment URL as pac admin list reports it; separate several environments with commas",
+          "secret": false
+        }
+      ]
+    }
+  ],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "az"
+    },
+    {
+      "fit": "preferred",
+      "binary": "pwsh"
+    },
+    {
+      "fit": "usable",
+      "kind": "mcp",
+      "id": "azure-mcp"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect Microsoft Entra / Azure / M365 so Entro can discover secrets and NHIs through a dedicated app registration.",
+  "connectionFields": [
+    {
+      "name": "Environment nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Tenant ID",
+      "secret": false,
+      "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Directory (tenant) ID."
+    },
+    {
+      "name": "Azure Client ID",
+      "secret": false,
+      "obtainedHow": "Entra admin center \u2192 the app Overview \u2192 Application (client) ID."
+    },
+    {
+      "name": "Client Secret",
+      "secret": true,
+      "obtainedHow": "Certificates & secrets \u2192 new client secret; copy Value immediately into the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "ui-verified"
+}

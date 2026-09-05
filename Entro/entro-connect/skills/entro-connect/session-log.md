@@ -1,0 +1,11 @@
+# Connect log
+
+The **Connect run folder** is `integrationConfig/` under the current working directory. If the current directory is inside either Skill catalog tree (`.agents/skills/entro-connect` or `skills/entro-connect`), use the repository-root `integrationConfig/` instead. Path: `integrationConfig/entro-<tile-slug>[-<path-slug>].md`, not at repository root. Slug: lowercase, spaces to hyphens. Examples: `integrationConfig/entro-okta.md`, `integrationConfig/entro-amazon-web-services-terraform.md`. The repository-root folder is gitignored via `/integrationConfig/`; the existing `entro-*.md` pattern covers leftover root logs only.
+
+**Create once the tile is confirmed.** Open with the Integration — tile, Integration path when not implicit, and the mode the operator already chose. Then persist the same Intro brief as chat (purpose, optional capabilities available, topology, prerequisites, tools, names, fields, Prep outline, safety boundary, C4). Append Platform identity, Operator inputs with their origins, the Configuration plan, optional-capability consent decisions, and Prep evidence as they occur. Re-runs add a new section; keep prior evidence.
+
+**Playbook mode:** the whole safe write-up from Typed actions — disclosures, targets, evidence checks, rollback or impact — every mutation operator-executed. Connection details: locked path `connectionFields` plus shared tile fields and the Worker Group (Connector) kind the Integration requires. Secret fields named; values blank.
+
+**Supervised / automated:** append a timestamped run section. Record Platform identity on auth success (principal, endpoint, scope — not tokens). For each Prep step, record the execution actor — the agent under automated, the operator under supervised — and non-secret `evidence`; record a collision, approved fix, Temporary script copy use, and retry without copying script contents. When a step produced a secret, log the identifiers only, never the secret and never the path it was written to. Configure once: record the selected route's `name`, that it was requested, and its outcome (skipped, completed, Help); never wizard answers.
+
+**Done when:** the file exists in the Connect run folder, Intro is present before any tools or Prep section, and the file contains no secret-shaped values.

@@ -1,0 +1,13 @@
+[project]
+name = "entro-integrations"
+version = "6.4.1"
+description = "Tooling to ingest and manage SailPoint Entro integration documentation"
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

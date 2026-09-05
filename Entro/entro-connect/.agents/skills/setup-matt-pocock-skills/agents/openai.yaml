@@ -1,0 +1,5 @@
+interface:
+  display_name: Setup Matt Pocock Skills
+  short_description: Configure this repo for the engineering skills — set up its issue tracker, triage label vocabulary, and domain doc layout.
+policy:
+  allow_implicit_invocation: false

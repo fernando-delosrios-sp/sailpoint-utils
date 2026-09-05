@@ -1,0 +1,43 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Entro API",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.test.com"
+    }
+  ],
+  "paths": {
+    "/v1/integrations": {
+      "get": {
+        "tags": ["Integrations"],
+        "summary": "List integrations",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/v1/risk/findings": {
+      "get": {
+        "tags": ["Risk"],
+        "summary": "List findings",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "token": "ghp_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1202 @@
+{
+  "toolInstall": {
+    "az": {
+      "authOnce": "az login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://learn.microsoft.com/cli/azure/install-azure-cli",
+      "presenceCheck": {
+        "command": "command -v az",
+        "sourceUrl": "https://learn.microsoft.com/cli/azure/install-azure-cli",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "az version",
+        "sourceUrl": "https://learn.microsoft.com/cli/azure/install-azure-cli",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "JSON includes azure-cli"
+      },
+      "authCheck": {
+        "command": "az account show",
+        "sourceUrl": "https://learn.microsoft.com/cli/azure/account",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "az account show --output json",
+        "principal": "user.name",
+        "endpoint": "environmentName",
+        "scope": "id (subscription) and tenantId",
+        "sourceUrl": "https://learn.microsoft.com/cli/azure/account",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --exact --id Microsoft.AzureCLI",
+          "docsUrl": "https://learn.microsoft.com/cli/azure/install-azure-cli-windows"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew update && brew install azure-cli",
+          "docsUrl": "https://learn.microsoft.com/cli/azure/install-azure-cli-macos"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://learn.microsoft.com/cli/azure/install-azure-cli-linux"
+        }
+      }
+    },
+    "pwsh": {
+      "authOnce": "pwsh (then Connect-AzAccount when using Azure modules)",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://learn.microsoft.com/powershell/scripting/install/installing-powershell",
+      "presenceCheck": {
+        "command": "command -v pwsh",
+        "sourceUrl": "https://learn.microsoft.com/powershell/scripting/install/installing-powershell",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "pwsh -NoProfile -Command \"Get-Module -ListAvailable Az, Microsoft.Graph | Select-Object Name, Version\"",
+        "sourceUrl": "https://learn.microsoft.com/powershell/azure/install-azure-powershell",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "Az and Microsoft.Graph modules are listed",
+        "minVersion": "7.0"
+      },
+      "authCheck": {
+        "command": "pwsh -NoProfile -Command \"Get-AzSubscription -ErrorAction Stop | Select-Object -First 1 | Out-Null\"",
+        "sourceUrl": "https://learn.microsoft.com/powershell/module/az.accounts/get-azcontext",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "pwsh -NoProfile -Command \"Get-AzContext | Select-Object Account, Environment, Tenant, Subscription | ConvertTo-Json\"",
+        "principal": "Account",
+        "endpoint": "Environment",
+        "scope": "Tenant and Subscription",
+        "sourceUrl": "https://learn.microsoft.com/powershell/module/az.accounts/get-azcontext",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Microsoft.PowerShell --source winget",
+          "docsUrl": "https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install --cask powershell",
+          "docsUrl": "https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-macos"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-linux"
+        }
+      }
+    },
+    "pac": {
+      "authOnce": "pac auth create",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://learn.microsoft.com/power-platform/developer/cli/introduction",
+      "presenceCheck": {
+        "command": "command -v pac",
+        "sourceUrl": "https://learn.microsoft.com/power-platform/developer/cli/introduction",
+        "retrievedAt": "2026-09-02"
+      },
+      "capabilityProbe": {
+        "command": "pac",
+        "sourceUrl": "https://learn.microsoft.com/power-platform/developer/cli/introduction",
+        "retrievedAt": "2026-09-02",
+        "suitableWhen": "banner prints Microsoft PowerPlatform CLI with a Version line"
+      },
+      "authCheck": {
+        "command": "pac auth list",
+        "sourceUrl": "https://learn.microsoft.com/power-platform/developer/cli/reference/auth",
+        "retrievedAt": "2026-09-02"
+      },
+      "platformIdentity": {
+        "command": "pac auth list",
+        "principal": "User of the active (*) authentication profile",
+        "endpoint": "Cloud of the active profile",
+        "scope": "Url of the active profile (Dataverse environment)",
+        "sourceUrl": "https://learn.microsoft.com/power-platform/developer/cli/reference/auth",
+        "retrievedAt": "2026-09-02"
+      },
+      "install": {
+        "windows": {
+          "method": "dotnet-tool",
+          "command": "dotnet tool install --global Microsoft.PowerApps.CLI.Tool",
+          "docsUrl": "https://learn.microsoft.com/power-platform/developer/howto/install-cli-net-tool"
+        },
+        "macos": {
+          "method": "dotnet-tool",
+          "command": "dotnet tool install --global Microsoft.PowerApps.CLI.Tool",
+          "docsUrl": "https://learn.microsoft.com/power-platform/developer/howto/install-cli-net-tool"
+        },
+        "linux": {
+          "method": "dotnet-tool",
+          "command": "dotnet tool install --global Microsoft.PowerApps.CLI.Tool",
+          "docsUrl": "https://learn.microsoft.com/power-platform/developer/howto/install-cli-net-tool"
+        }
+      }
+    },
+    "aws": {
+      "authOnce": "aws sso login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html",
+      "presenceCheck": {
+        "command": "command -v aws",
+        "sourceUrl": "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "aws --version",
+        "sourceUrl": "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "aws-cli/2 is reported"
+      },
+      "authCheck": {
+        "command": "aws sts get-caller-identity",
+        "sourceUrl": "https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "aws sts get-caller-identity --output json",
+        "principal": "Arn",
+        "endpoint": "sts regional endpoint in use",
+        "scope": "Account",
+        "sourceUrl": "https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Amazon.AWSCLI",
+          "docsUrl": "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install awscli",
+          "docsUrl": "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"
+        }
+      },
+      "configureOnce": {
+        "methods": [
+          {
+            "name": "IAM user access keys",
+            "whenToPick": "Your organization does not use IAM Identity Center, or you already hold an IAM user access key. Needs nothing configured at the organization level and works in any AWS account. The keys are long-lived, so rotate or delete them once onboarding is done.",
+            "command": "aws configure",
+            "check": {
+              "command": "CREDS=\"${AWS_SHARED_CREDENTIALS_FILE:-$HOME/.aws/credentials}\"; test -f \"$CREDS\" && grep -q \"aws_access_key_id\" \"$CREDS\"",
+              "sourceUrl": "https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html",
+              "retrievedAt": "2026-09-03"
+            },
+            "suitableWhen": "Shared credentials file already holds an access key ID",
+            "prompts": [
+              {
+                "prompt": "AWS Access Key ID",
+                "whereToFind": "IAM console \u2192 Users \u2192 your user \u2192 Security credentials \u2192 Access keys \u2192 Create access key, or the credentials CSV downloaded when that key was created. aws configure import --csv loads the same CSV without retyping."
+              },
+              {
+                "prompt": "AWS Secret Access Key",
+                "whereToFind": "Shown once when the access key is created, and in that same credentials CSV. Type it straight into the prompt.",
+                "secret": true
+              },
+              {
+                "prompt": "Default region name",
+                "whereToFind": "Operator choice: the default AWS Region this profile sends commands to."
+              },
+              {
+                "prompt": "Default output format",
+                "whereToFind": "Operator choice: typically json if unspecified."
+              }
+            ],
+            "authOnce": null,
+            "credentialBoundary": "shared credentials file holding long-lived keys",
+            "docsUrl": "https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html",
+            "sourceUrl": "https://docs.aws.amazon.com/cli/latest/userguide/cli-authentication-user.html",
+            "retrievedAt": "2026-09-03"
+          },
+          {
+            "name": "IAM Identity Center",
+            "whenToPick": "Your organization has IAM Identity Center \u2014 the AWS access portal \u2014 enabled and you sign in through it. Credentials are short-lived and refresh with a browser sign-in.",
+            "command": "aws configure sso",
+            "check": {
+              "command": "CONFIG=\"${AWS_CONFIG_FILE:-$HOME/.aws/config}\"; test -f \"$CONFIG\" && grep -qE \"sso_session|sso_start_url\" \"$CONFIG\"",
+              "sourceUrl": "https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html",
+              "retrievedAt": "2026-09-03"
+            },
+            "suitableWhen": "AWS config file already has an IAM Identity Center session or start URL",
+            "prompts": [
+              {
+                "prompt": "SSO session name (Recommended)",
+                "whereToFind": "Operator-chosen name for this IAM Identity Center session in the AWS config file."
+              },
+              {
+                "prompt": "SSO start URL",
+                "whereToFind": "AWS access portal \u2192 permission set \u2192 Access keys \u2192 IAM Identity Center credentials (Start URL). On AWS CLI 2.22.0+, the Issuer URL from the IAM Identity Center console Dashboard or Settings is an alternative."
+              },
+              {
+                "prompt": "SSO region",
+                "whereToFind": "Same AWS access portal path as the start URL (IAM Identity Center credentials). The AWS Region that hosts the IAM Identity Center directory."
+              },
+              {
+                "prompt": "SSO registration scopes",
+                "whereToFind": "Press Enter to accept the default sso:account:access unless an administrator named other OAuth scopes."
+              },
+              {
+                "prompt": "AWS account",
+                "whereToFind": "The target AWS account Entro will scan; pick an account whose permission set can create the Entro role."
+              },
+              {
+                "prompt": "IAM role",
+                "whereToFind": "A permission set in that account that can create the Entro integration role."
+              },
+              {
+                "prompt": "Default client Region",
+                "whereToFind": "Operator choice: the default AWS Region this CLI profile sends commands to."
+              },
+              {
+                "prompt": "CLI default output format",
+                "whereToFind": "Operator choice: typically json if unspecified."
+              },
+              {
+                "prompt": "Profile name",
+                "whereToFind": "Operator choice: the name this profile is stored under; default makes it the default profile."
+              }
+            ],
+            "authOnce": "aws sso login",
+            "credentialBoundary": "vendor CLI token cache",
+            "docsUrl": "https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html",
+            "sourceUrl": "https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sso.html",
+            "retrievedAt": "2026-09-03"
+          }
+        ]
+      }
+    },
+    "terraform": {
+      "authOnce": "aws sso login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://developer.hashicorp.com/terraform/install",
+      "presenceCheck": {
+        "command": "command -v terraform",
+        "sourceUrl": "https://developer.hashicorp.com/terraform/install",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "terraform version",
+        "sourceUrl": "https://developer.hashicorp.com/terraform/install",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "Terraform v1 is reported"
+      },
+      "authCheck": {
+        "command": "aws sts get-caller-identity",
+        "sourceUrl": "https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "aws sts get-caller-identity --output json",
+        "principal": "Arn",
+        "endpoint": "sts regional endpoint in use",
+        "scope": "Account",
+        "sourceUrl": "https://docs.aws.amazon.com/cli/latest/reference/sts/get-caller-identity.html",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Hashicorp.Terraform",
+          "docsUrl": "https://developer.hashicorp.com/terraform/install"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew tap hashicorp/tap && brew install hashicorp/tap/terraform",
+          "docsUrl": "https://developer.hashicorp.com/terraform/install"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://developer.hashicorp.com/terraform/install"
+        }
+      }
+    },
+    "gcloud": {
+      "authOnce": "gcloud auth login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://cloud.google.com/sdk/docs/install",
+      "presenceCheck": {
+        "command": "command -v gcloud",
+        "sourceUrl": "https://cloud.google.com/sdk/docs/install",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "gcloud version",
+        "sourceUrl": "https://cloud.google.com/sdk/docs/install",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "Google Cloud SDK is reported"
+      },
+      "authCheck": {
+        "command": "gcloud auth list --filter=status:ACTIVE --format=value(account)",
+        "sourceUrl": "https://cloud.google.com/sdk/gcloud/reference/auth/list",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "gcloud config list --format=json",
+        "principal": "core.account",
+        "endpoint": "core.universe_domain or default cloud endpoint",
+        "scope": "core.project",
+        "sourceUrl": "https://cloud.google.com/sdk/gcloud/reference/config/list",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Google.CloudSDK",
+          "docsUrl": "https://cloud.google.com/sdk/docs/install-sdk"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install --cask google-cloud-sdk",
+          "docsUrl": "https://cloud.google.com/sdk/docs/install-sdk"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://cloud.google.com/sdk/docs/install-sdk"
+        }
+      }
+    },
+    "gh": {
+      "authOnce": "gh auth login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://cli.github.com/",
+      "presenceCheck": {
+        "command": "command -v gh",
+        "sourceUrl": "https://cli.github.com/",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "gh --version",
+        "sourceUrl": "https://cli.github.com/",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "gh version is reported"
+      },
+      "authCheck": {
+        "command": "gh auth status",
+        "sourceUrl": "https://cli.github.com/manual/gh_auth_status",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "gh api user --jq '{login, html_url}'",
+        "principal": "login",
+        "endpoint": "github.com or GH_HOST",
+        "scope": "gh api user.html_url",
+        "sourceUrl": "https://cli.github.com/manual/gh_auth_status",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id GitHub.cli --source winget",
+          "docsUrl": "https://github.com/cli/cli#installation"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install gh",
+          "docsUrl": "https://github.com/cli/cli#installation"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://github.com/cli/cli#installation"
+        }
+      }
+    },
+    "glab": {
+      "authOnce": "glab auth login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://gitlab.com/gitlab-org/cli#installation",
+      "presenceCheck": {
+        "command": "command -v glab",
+        "sourceUrl": "https://gitlab.com/gitlab-org/cli",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "glab version",
+        "sourceUrl": "https://gitlab.com/gitlab-org/cli",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "glab version is reported"
+      },
+      "authCheck": {
+        "command": "glab auth status",
+        "sourceUrl": "https://gitlab.com/gitlab-org/cli/-/blob/main/docs/source/auth/status.md",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "glab auth status",
+        "principal": "Logged in as",
+        "endpoint": "GitLab hostname",
+        "scope": "API endpoint host",
+        "sourceUrl": "https://gitlab.com/gitlab-org/cli/-/blob/main/docs/source/auth/status.md",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id GLab.GLab",
+          "docsUrl": "https://gitlab.com/gitlab-org/cli#windows"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install glab",
+          "docsUrl": "https://gitlab.com/gitlab-org/cli#macos"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://gitlab.com/gitlab-org/cli#linux"
+        }
+      }
+    },
+    "vault": {
+      "authOnce": "vault login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://developer.hashicorp.com/vault/install",
+      "presenceCheck": {
+        "command": "command -v vault",
+        "sourceUrl": "https://developer.hashicorp.com/vault/docs/install",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "vault version",
+        "sourceUrl": "https://developer.hashicorp.com/vault/docs/install",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "Vault CLI version is reported"
+      },
+      "authCheck": {
+        "command": "vault token lookup",
+        "sourceUrl": "https://developer.hashicorp.com/vault/docs/commands/token/lookup",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "vault token lookup -format=json",
+        "principal": "meta.username or display_name",
+        "endpoint": "VAULT_ADDR",
+        "scope": "policies",
+        "sourceUrl": "https://developer.hashicorp.com/vault/docs/commands/token/lookup",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Hashicorp.Vault",
+          "docsUrl": "https://developer.hashicorp.com/vault/install"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew tap hashicorp/tap && brew install hashicorp/tap/vault",
+          "docsUrl": "https://developer.hashicorp.com/vault/install"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://developer.hashicorp.com/vault/install"
+        }
+      }
+    },
+    "oci": {
+      "authOnce": "oci session authenticate",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm",
+      "presenceCheck": {
+        "command": "command -v oci",
+        "sourceUrl": "https://docs.oracle.com/en-us/iaas/Content/API/Concepts/cliconcepts.htm",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "oci --version",
+        "sourceUrl": "https://docs.oracle.com/en-us/iaas/Content/API/Concepts/cliconcepts.htm",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "oci version is reported"
+      },
+      "authCheck": {
+        "command": "oci iam region list --output json",
+        "sourceUrl": "https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "oci iam region list --query 'data[0].key' --output json; oci os ns get --output json",
+        "principal": "config user OCID",
+        "endpoint": "OCI regional API",
+        "scope": "tenancy OCID from config",
+        "sourceUrl": "https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Oracle.OCI-CLI",
+          "docsUrl": "https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install oci-cli",
+          "docsUrl": "https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm"
+        }
+      }
+    },
+    "jf": {
+      "authOnce": "jf login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://jfrog.com/help/r/jfrog-cli/install-jfrog-cli",
+      "presenceCheck": {
+        "command": "command -v jf",
+        "sourceUrl": "https://jfrog.com/help/r/jfrog-cli/getting-started-with-the-jfrog-cli",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "jf --version",
+        "sourceUrl": "https://jfrog.com/help/r/jfrog-cli/getting-started-with-the-jfrog-cli",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "jf version is reported"
+      },
+      "authCheck": {
+        "command": "jf rt ping",
+        "sourceUrl": "https://jfrog.com/help/r/jfrog-cli/pinging-artifactory",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "jf config show",
+        "principal": "User",
+        "endpoint": "Url",
+        "scope": "Server ID / platform URL",
+        "sourceUrl": "https://jfrog.com/help/r/jfrog-cli/getting-started-with-the-jfrog-cli",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id JFrog.JFrogCLI",
+          "docsUrl": "https://jfrog.com/help/r/jfrog-cli/install-jfrog-cli"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install jfrog-cli",
+          "docsUrl": "https://jfrog.com/help/r/jfrog-cli/install-jfrog-cli"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://jfrog.com/help/r/jfrog-cli/install-jfrog-cli"
+        }
+      }
+    },
+    "sf": {
+      "authOnce": "sf org login web",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_install_cli.htm",
+      "presenceCheck": {
+        "command": "command -v sf",
+        "sourceUrl": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_org_commands_unified.htm",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "sf --version",
+        "sourceUrl": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_org_commands_unified.htm",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "sf version is reported"
+      },
+      "authCheck": {
+        "command": "sf org display --json",
+        "sourceUrl": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_org_commands_unified.htm",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "sf org display --json",
+        "principal": "username",
+        "endpoint": "instanceUrl",
+        "scope": "orgId",
+        "sourceUrl": "https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference_org_commands_unified.htm",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Salesforce.SalesforceCLI",
+          "docsUrl": "https://developer.salesforce.com/tools/salesforcecli"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install --cask sf",
+          "docsUrl": "https://developer.salesforce.com/tools/salesforcecli"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://developer.salesforce.com/tools/salesforcecli"
+        }
+      }
+    },
+    "snow": {
+      "authOnce": "snow connection add",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://docs.snowflake.com/en/developer-guide/snowflake-cli/installation/installation",
+      "presenceCheck": {
+        "command": "command -v snow",
+        "sourceUrl": "https://docs.snowflake.com/en/developer-guide/snowflake-cli/connecting/configure-connections",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "snow --version",
+        "sourceUrl": "https://docs.snowflake.com/en/developer-guide/snowflake-cli/connecting/configure-connections",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "Snowflake CLI version is reported"
+      },
+      "authCheck": {
+        "command": "snow connection test",
+        "sourceUrl": "https://docs.snowflake.com/en/developer-guide/snowflake-cli/connecting/configure-connections",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "snow sql -q \"SELECT CURRENT_USER(), CURRENT_ACCOUNT(), CURRENT_REGION()\"",
+        "principal": "CURRENT_USER()",
+        "endpoint": "Snowflake account URL",
+        "scope": "CURRENT_ACCOUNT() and CURRENT_REGION()",
+        "sourceUrl": "https://docs.snowflake.com/en/developer-guide/snowflake-cli/connecting/configure-connections",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Snowflake.SnowflakeCLI",
+          "docsUrl": "https://docs.snowflake.com/en/developer-guide/snowflake-cli/installation/installation"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew tap snowflake-cli && brew install snowflake-cli",
+          "docsUrl": "https://docs.snowflake.com/en/developer-guide/snowflake-cli/installation/installation"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://docs.snowflake.com/en/developer-guide/snowflake-cli/installation/installation"
+        }
+      }
+    },
+    "jenkins-cli": {
+      "authOnce": "java -jar jenkins-cli.jar -s https://<controller> help",
+      "credentialBoundary": "Jenkins controller session; download jenkins-cli.jar from the controller",
+      "docsUrl": "https://www.jenkins.io/doc/book/managing/cli/",
+      "presenceCheck": {
+        "command": "test -f jenkins-cli.jar",
+        "sourceUrl": "https://www.jenkins.io/doc/book/managing/cli/",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "java -jar jenkins-cli.jar -s \"$JENKINS_URL\" help",
+        "sourceUrl": "https://www.jenkins.io/doc/book/managing/cli/",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "help lists Jenkins CLI commands"
+      },
+      "authCheck": {
+        "command": "java -jar jenkins-cli.jar -s \"$JENKINS_URL\" who-am-i",
+        "sourceUrl": "https://www.jenkins.io/doc/book/managing/cli/",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "java -jar jenkins-cli.jar -s \"$JENKINS_URL\" who-am-i",
+        "principal": "authenticated user id",
+        "endpoint": "JENKINS_URL",
+        "scope": "controller URL",
+        "sourceUrl": "https://www.jenkins.io/doc/book/managing/cli/",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "controller-jar",
+          "command": null,
+          "docsUrl": "https://www.jenkins.io/doc/book/managing/cli/"
+        },
+        "macos": {
+          "method": "controller-jar",
+          "command": null,
+          "docsUrl": "https://www.jenkins.io/doc/book/managing/cli/"
+        },
+        "linux": {
+          "method": "controller-jar",
+          "command": null,
+          "docsUrl": "https://www.jenkins.io/doc/book/managing/cli/"
+        }
+      }
+    },
+    "akeyless": {
+      "authOnce": "akeyless login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://docs.akeyless.io/docs/cli",
+      "presenceCheck": {
+        "command": "command -v akeyless",
+        "sourceUrl": "https://docs.akeyless.io/docs/cli",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "akeyless --version",
+        "sourceUrl": "https://docs.akeyless.io/docs/cli",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "akeyless version is reported"
+      },
+      "authCheck": {
+        "command": "akeyless list-auth-methods",
+        "sourceUrl": "https://docs.akeyless.io/docs/cli",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "akeyless profile-list",
+        "principal": "profile name / Access ID",
+        "endpoint": "Akeyless API gateway",
+        "scope": "account / Access ID",
+        "sourceUrl": "https://docs.akeyless.io/docs/cli",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Akeyless.CLI",
+          "docsUrl": "https://docs.akeyless.io/docs/cli"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install akeyless",
+          "docsUrl": "https://docs.akeyless.io/docs/cli"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://docs.akeyless.io/docs/cli"
+        }
+      }
+    },
+    "okta": {
+      "authOnce": "okta login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://cli.okta.com/",
+      "presenceCheck": {
+        "command": "command -v okta",
+        "sourceUrl": "https://cli.okta.com/",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "okta --version",
+        "sourceUrl": "https://cli.okta.com/",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "okta CLI version is reported"
+      },
+      "authCheck": {
+        "command": "okta login --help && okta orgs",
+        "sourceUrl": "https://cli.okta.com/",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "okta orgs",
+        "principal": "logged-in admin",
+        "endpoint": "Okta org URL",
+        "scope": "Okta org",
+        "sourceUrl": "https://cli.okta.com/",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Okta.OktaCLI",
+          "docsUrl": "https://cli.okta.com/"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install okta",
+          "docsUrl": "https://cli.okta.com/"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://cli.okta.com/"
+        }
+      }
+    },
+    "bk": {
+      "authOnce": "bk login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://buildkite.com/docs/pipelines/cli",
+      "presenceCheck": {
+        "command": "command -v bk",
+        "sourceUrl": "https://buildkite.com/docs/apis/cli",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "bk --version",
+        "sourceUrl": "https://buildkite.com/docs/apis/cli",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "bk version is reported"
+      },
+      "authCheck": {
+        "command": "bk api user",
+        "sourceUrl": "https://buildkite.com/docs/apis/rest-api/user",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "bk api user",
+        "principal": "user name/email",
+        "endpoint": "api.buildkite.com",
+        "scope": "organization slugs",
+        "sourceUrl": "https://buildkite.com/docs/apis/rest-api/user",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Buildkite.CLI",
+          "docsUrl": "https://github.com/buildkite/cli#installation"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew install buildkite/buildkite/bk",
+          "docsUrl": "https://github.com/buildkite/cli#installation"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://github.com/buildkite/cli#installation"
+        }
+      }
+    },
+    "acli": {
+      "authOnce": "acli auth login",
+      "credentialBoundary": "vendor CLI token cache",
+      "docsUrl": "https://developer.atlassian.com/cloud/acli/guides/install-acli/",
+      "presenceCheck": {
+        "command": "command -v acli",
+        "sourceUrl": "https://developer.atlassian.com/cloud/acli/guides/install/",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "acli --version",
+        "sourceUrl": "https://developer.atlassian.com/cloud/acli/guides/install/",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "acli version is reported"
+      },
+      "authCheck": {
+        "command": "acli auth status",
+        "sourceUrl": "https://developer.atlassian.com/cloud/acli/guides/install/",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "acli auth status",
+        "principal": "Atlassian account",
+        "endpoint": "Atlassian cloud",
+        "scope": "org/site",
+        "sourceUrl": "https://developer.atlassian.com/cloud/acli/guides/install/",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "winget",
+          "command": "winget install --id Atlassian.ACLI",
+          "docsUrl": "https://developer.atlassian.com/cloud/acli/guides/install-acli/"
+        },
+        "macos": {
+          "method": "homebrew",
+          "command": "brew tap atlassian/homebrew-acli && brew install acli",
+          "docsUrl": "https://developer.atlassian.com/cloud/acli/guides/install-acli/"
+        },
+        "linux": {
+          "method": "docs",
+          "command": null,
+          "docsUrl": "https://developer.atlassian.com/cloud/acli/guides/install-acli/"
+        }
+      }
+    },
+    "n8n-mcp": {
+      "authOnce": "Enable instance MCP in n8n Settings and authorize the MCP client",
+      "credentialBoundary": "MCP client OAuth session or vendor token cache",
+      "docsUrl": "https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server/",
+      "presenceCheck": {
+        "command": "MCP client configuration lists server id n8n-mcp",
+        "sourceUrl": "https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server/",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "MCP tools/list for n8n-mcp returns vendor tools",
+        "sourceUrl": "https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server/",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "tools/list is non-empty"
+      },
+      "authCheck": {
+        "command": "MCP session for n8n-mcp reports authenticated",
+        "sourceUrl": "https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server/",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "MCP whoami or equivalent resource on n8n-mcp",
+        "principal": "non-secret principal from MCP",
+        "endpoint": "MCP server endpoint",
+        "scope": "tenant/org/account from MCP",
+        "sourceUrl": "https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server/",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server/"
+        },
+        "macos": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server/"
+        },
+        "linux": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://docs.n8n.io/advanced-ai/accessing-n8n-mcp-server/"
+        }
+      }
+    },
+    "azure-mcp": {
+      "authOnce": "Sign in through the Azure MCP client (uses Azure CLI or Entra login)",
+      "credentialBoundary": "MCP client OAuth session or vendor token cache",
+      "docsUrl": "https://learn.microsoft.com/azure/developer/azure-mcp-server/",
+      "presenceCheck": {
+        "command": "MCP client configuration lists server id azure-mcp",
+        "sourceUrl": "https://learn.microsoft.com/azure/developer/azure-mcp-server/",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "MCP tools/list for azure-mcp returns vendor tools",
+        "sourceUrl": "https://learn.microsoft.com/azure/developer/azure-mcp-server/",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "tools/list is non-empty"
+      },
+      "authCheck": {
+        "command": "MCP session for azure-mcp reports authenticated",
+        "sourceUrl": "https://learn.microsoft.com/azure/developer/azure-mcp-server/",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "MCP whoami or equivalent resource on azure-mcp",
+        "principal": "non-secret principal from MCP",
+        "endpoint": "MCP server endpoint",
+        "scope": "tenant/org/account from MCP",
+        "sourceUrl": "https://learn.microsoft.com/azure/developer/azure-mcp-server/",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://learn.microsoft.com/azure/developer/azure-mcp-server/"
+        },
+        "macos": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://learn.microsoft.com/azure/developer/azure-mcp-server/"
+        },
+        "linux": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://learn.microsoft.com/azure/developer/azure-mcp-server/"
+        }
+      }
+    },
+    "aws-mcp": {
+      "authOnce": "Configure the AWS MCP client to use a local AWS CLI profile",
+      "credentialBoundary": "MCP client OAuth session or vendor token cache",
+      "docsUrl": "https://awslabs.github.io/mcp/",
+      "presenceCheck": {
+        "command": "MCP client configuration lists server id aws-mcp",
+        "sourceUrl": "https://awslabs.github.io/mcp/",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "MCP tools/list for aws-mcp returns vendor tools",
+        "sourceUrl": "https://awslabs.github.io/mcp/",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "tools/list is non-empty"
+      },
+      "authCheck": {
+        "command": "MCP session for aws-mcp reports authenticated",
+        "sourceUrl": "https://awslabs.github.io/mcp/",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "MCP whoami or equivalent resource on aws-mcp",
+        "principal": "non-secret principal from MCP",
+        "endpoint": "MCP server endpoint",
+        "scope": "tenant/org/account from MCP",
+        "sourceUrl": "https://awslabs.github.io/mcp/",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://awslabs.github.io/mcp/"
+        },
+        "macos": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://awslabs.github.io/mcp/"
+        },
+        "linux": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://awslabs.github.io/mcp/"
+        }
+      }
+    },
+    "github-mcp": {
+      "authOnce": "Authorize the GitHub MCP client (OAuth)",
+      "credentialBoundary": "MCP client OAuth session or vendor token cache",
+      "docsUrl": "https://github.com/github/github-mcp-server",
+      "presenceCheck": {
+        "command": "MCP client configuration lists server id github-mcp",
+        "sourceUrl": "https://github.com/github/github-mcp-server",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "MCP tools/list for github-mcp returns vendor tools",
+        "sourceUrl": "https://github.com/github/github-mcp-server",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "tools/list is non-empty"
+      },
+      "authCheck": {
+        "command": "MCP session for github-mcp reports authenticated",
+        "sourceUrl": "https://github.com/github/github-mcp-server",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "MCP whoami or equivalent resource on github-mcp",
+        "principal": "non-secret principal from MCP",
+        "endpoint": "MCP server endpoint",
+        "scope": "tenant/org/account from MCP",
+        "sourceUrl": "https://github.com/github/github-mcp-server",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://github.com/github/github-mcp-server"
+        },
+        "macos": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://github.com/github/github-mcp-server"
+        },
+        "linux": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://github.com/github/github-mcp-server"
+        }
+      }
+    },
+    "atlassian-rovo-mcp": {
+      "authOnce": "Authorize the Atlassian Rovo MCP client (OAuth 2.1)",
+      "credentialBoundary": "MCP client OAuth session or vendor token cache",
+      "docsUrl": "https://github.com/atlassian/atlassian-mcp-server",
+      "presenceCheck": {
+        "command": "MCP client configuration lists server id atlassian-rovo-mcp",
+        "sourceUrl": "https://github.com/atlassian/atlassian-mcp-server",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "MCP tools/list for atlassian-rovo-mcp returns vendor tools",
+        "sourceUrl": "https://github.com/atlassian/atlassian-mcp-server",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "tools/list is non-empty"
+      },
+      "authCheck": {
+        "command": "MCP session for atlassian-rovo-mcp reports authenticated",
+        "sourceUrl": "https://github.com/atlassian/atlassian-mcp-server",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "MCP whoami or equivalent resource on atlassian-rovo-mcp",
+        "principal": "non-secret principal from MCP",
+        "endpoint": "MCP server endpoint",
+        "scope": "tenant/org/account from MCP",
+        "sourceUrl": "https://github.com/atlassian/atlassian-mcp-server",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://github.com/atlassian/atlassian-mcp-server"
+        },
+        "macos": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://github.com/atlassian/atlassian-mcp-server"
+        },
+        "linux": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://github.com/atlassian/atlassian-mcp-server"
+        }
+      }
+    },
+    "salesforce-mcp": {
+      "authOnce": "Register an External Client App and authorize the MCP client",
+      "credentialBoundary": "MCP client OAuth session or vendor token cache",
+      "docsUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/client-connection-overview.html",
+      "presenceCheck": {
+        "command": "MCP client configuration lists server id salesforce-mcp",
+        "sourceUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/client-connection-overview.html",
+        "retrievedAt": "2026-08-31"
+      },
+      "capabilityProbe": {
+        "command": "MCP tools/list for salesforce-mcp returns vendor tools",
+        "sourceUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/client-connection-overview.html",
+        "retrievedAt": "2026-08-31",
+        "suitableWhen": "tools/list is non-empty"
+      },
+      "authCheck": {
+        "command": "MCP session for salesforce-mcp reports authenticated",
+        "sourceUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/client-connection-overview.html",
+        "retrievedAt": "2026-08-31"
+      },
+      "platformIdentity": {
+        "command": "MCP whoami or equivalent resource on salesforce-mcp",
+        "principal": "non-secret principal from MCP",
+        "endpoint": "MCP server endpoint",
+        "scope": "tenant/org/account from MCP",
+        "sourceUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/client-connection-overview.html",
+        "retrievedAt": "2026-08-31"
+      },
+      "install": {
+        "windows": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/client-connection-overview.html"
+        },
+        "macos": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/client-connection-overview.html"
+        },
+        "linux": {
+          "method": "mcp-config",
+          "command": null,
+          "docsUrl": "https://developer.salesforce.com/docs/platform/hosted-mcp-servers/guide/client-connection-overview.html"
+        }
+      }
+    }
+  }
+}

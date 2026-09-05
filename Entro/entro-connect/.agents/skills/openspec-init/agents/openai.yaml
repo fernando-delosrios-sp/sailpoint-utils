@@ -1,0 +1,3 @@
+interface:
+  display_name: Openspec Init
+  short_description: Use when the user asks to initialize or update an OpenSpec project — schema refresh, config/rules sync, agent routing fragments, and companion skills.

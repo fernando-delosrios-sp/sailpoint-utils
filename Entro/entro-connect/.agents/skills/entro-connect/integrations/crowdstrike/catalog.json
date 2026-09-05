@@ -1,0 +1,77 @@
+{
+  "tile": "CrowdStrike",
+  "category": "security-and-identity",
+  "integrationPaths": [
+    {
+      "name": "CrowdStrike",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Client ID",
+          "secret": false,
+          "obtainedHow": "Falcon console \u2192 Support \u2192 API clients \u2192 Entro client ID."
+        },
+        {
+          "name": "Client Secret",
+          "secret": true,
+          "obtainedHow": "Secret shown once when the API client is created; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create a Falcon API client",
+          "instruction": "In CrowdStrike Falcon, create an API client with Entro's documented scopes and copy Client ID and Client Secret into the operator vault.",
+          "evidence": "API clients lists the Entro client (secret stored outside the session)",
+          "uncataloged": {
+            "evidence": "API clients lists the Entro client (secret stored outside the session)"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [
+    {
+      "name": "Falcon RTR",
+      "configurationTools": []
+    }
+  ],
+  "configurationTools": [
+    {
+      "fit": "none"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect CrowdStrike Falcon via an API client so Entro can discover related secrets and NHIs.",
+  "connectionFields": [
+    {
+      "name": "Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Client ID",
+      "secret": false,
+      "obtainedHow": "Falcon console \u2192 Support \u2192 API clients \u2192 Entro client ID."
+    },
+    {
+      "name": "Client Secret",
+      "secret": true,
+      "obtainedHow": "Secret shown once when the API client is created; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

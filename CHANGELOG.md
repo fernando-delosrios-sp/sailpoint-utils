@@ -14,6 +14,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 - **Source Connection Setup** — Connection Settings files default to `sourceConfig/<source>` (AWS, Entra ID, Google Workspace) instead of a folder in the working directory. That tree is gitignored.
 
+- **Entro Connect** — Connect logs and other run files default to `integrationConfig/` instead of the repository root. That tree is gitignored.
+
 - **Source Connection Setup** — Interactive prompts use **Esc** to go back to the previous question and **Ctrl+C** to exit. The completion copy/open menu still treats Esc as Done.
 
 - **Google Workspace source setup** — Domain-wide delegation still has no Google API; the script now opens the Admin console page and copies Client ID then scopes in order. Workspace admin roles (User Management Admin, Groups Admin) can be assigned through the Admin SDK after a Super Admin OAuth sign-in.
