@@ -1,3 +1,11 @@
+## 2026-09-07 · v6.5.3
+
+### 🔧 Improvements
+
+- **npx skills install** — The installable skill tree now lives at repo-root `skills/entro-connect/`. This project's `skills/` directory symlinks to `../../skills/` so catalog generation and tests keep the same relative paths. Install with `npx skills add fernando-delosrios-sp/sailpoint-utils --skill entro-connect`.
+
+---
+
 ## 2026-09-05 · v6.5.2
 
 ### 🔧 Improvements

@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-07
+
+### 🔧 Improvements
+
+- **Agent skills catalog** — Published installable skills at repo-root `skills/`. The `entro-connect` skill is installable via `npx skills add fernando-delosrios-sp/sailpoint-utils --skill entro-connect`. `Entro/entro-connect/skills` symlinks to the repo catalog so local dual-tree paths stay stable.
+
 ## 2026-09-05
 
 ### ✨ New Features
