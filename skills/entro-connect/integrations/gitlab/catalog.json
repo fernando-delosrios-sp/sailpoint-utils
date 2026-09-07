@@ -1,0 +1,154 @@
+{
+  "tile": "GitLab",
+  "category": "code-and-ci-cd",
+  "integrationPaths": [
+    {
+      "name": "Group Access Token",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "glab"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "GitLab URL",
+          "secret": false,
+          "obtainedHow": "https://gitlab.com or the self-managed base URL."
+        },
+        {
+          "name": "Access Token",
+          "secret": true,
+          "obtainedHow": "Group or project access token with read_api/read_repository; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "nickname",
+          "prompt": "Nickname in Entro",
+          "purpose": "Operator-chosen Entro nickname",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Nickname"
+        }
+      ],
+      "hosting": "operator-selected",
+      "prepSteps": [
+        {
+          "title": "Create a GitLab access token",
+          "instruction": "In GitLab, create a group or project access token with Entro's read scopes and store it in the operator vault.",
+          "evidence": "GitLab shows an access token named for Entro (value stored outside the session)"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create a GitLab access token",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "glab token create --name entro --scopes read_api,read_repository (group or project as locked); operator stores the token in the vault",
+          "target": "GitLab.com or self-managed GitLab",
+          "expectedChange": "GitLab shows an access token named for Entro (value stored outside the session)",
+          "verification": "glab token list",
+          "rollbackOrImpact": "Revoke the token created this run (glab token revoke)",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/code-and-ci-cd/gitlab/gitlab-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    },
+    {
+      "name": "Personal Access Token",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "glab"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "GitLab URL",
+          "secret": false,
+          "obtainedHow": "https://gitlab.com or the self-managed base URL."
+        },
+        {
+          "name": "Access Token",
+          "secret": true,
+          "obtainedHow": "Group or project access token with read_api/read_repository; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "nickname",
+          "prompt": "Nickname in Entro",
+          "purpose": "Operator-chosen Entro nickname",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Nickname"
+        }
+      ],
+      "hosting": "operator-selected",
+      "prepSteps": [
+        {
+          "title": "Create a GitLab access token",
+          "instruction": "In GitLab, create a group or project access token with Entro's read scopes and store it in the operator vault.",
+          "evidence": "GitLab shows an access token named for Entro (value stored outside the session)"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create a GitLab access token",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "glab token create --name entro --scopes read_api,read_repository (group or project as locked); operator stores the token in the vault",
+          "target": "GitLab.com or self-managed GitLab",
+          "expectedChange": "GitLab shows an access token named for Entro (value stored outside the session)",
+          "verification": "glab token list",
+          "rollbackOrImpact": "Revoke the token created this run (glab token revoke)",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/code-and-ci-cd/gitlab/gitlab-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "glab"
+    }
+  ],
+  "hosting": "operator-selected",
+  "summary": "Connect GitLab.com or self-managed GitLab so Entro can scan projects for secrets.",
+  "connectionFields": [
+    {
+      "name": "Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "GitLab URL",
+      "secret": false,
+      "obtainedHow": "https://gitlab.com or the self-managed base URL."
+    },
+    {
+      "name": "Access Token",
+      "secret": true,
+      "obtainedHow": "Group or project access token with read_api/read_repository; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

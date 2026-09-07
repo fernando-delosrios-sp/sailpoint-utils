@@ -1,0 +1,19 @@
+{
+    "type": "rule",
+    "attributes": {
+        "name": "Organizational Hierarchy Path",
+        "input": {
+            "type": "static",
+            "attributes": {
+                "sourceId": "<SOURCE_ID>",
+                "attributeValue": {
+                    "type": "identityAttribute",
+                    "attributes": {
+                        "name": "<ATTRIBUTE_NAME>"
+                    }
+                },
+                "value": "${sourceId}|${attributeValue}"
+            }
+        }
+    }
+}

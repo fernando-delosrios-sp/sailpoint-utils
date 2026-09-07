@@ -1,0 +1,46 @@
+schema: ferspec
+context: |
+  Product: tooling to manage SailPoint Entro integrations (onboarding integrations so Entro can connect and discover secrets / AI agents).
+
+  Stage 1 (current): extract Entro's online integration documentation into structured, agent-usable instructions covering (a) how to prepare each integration for connection and (b) which connection details to enter in Entro.
+
+  Later stages: per-integration AI skills that explain what Entro requires from that integration, then either walk the user through manual configuration or automate it. Automation SHOULD use vendor/integration CLIs that the user authenticates to locally. The agent MUST NOT handle secrets, credentials, or tokens directly.
+
+  Current workspace (early, evolving):
+    - Python crawl script (`crawl_docs.py`) using crawl4ai to deep-crawl GitBook-style docs into markdown
+    - Raw captures: `integrations.md`, `integrations-crawl.md` (vendor pages for many integrations: AWS, Azure, GitHub, Okta, Vault, n8n, SailPoint ISC, etc.)
+    - Agent skills already installed under `.agents/skills/` (ferspec companion set)
+
+  Conventions:
+  - Prefer structured specs and playbooks over dumping raw crawl output into skills
+  - Secrets stay with the user / their CLI session; never commit credentials
+  - Discuss automation design in later changes; do not invent a secrets-handling architecture now
+rules:
+  global:
+    - "Always use the `changelog-generator` skill to maintain and enforce a changelog for all changes."
+    - "Do not store, log, or commit secrets, API keys, tokens, or passwords. Automation must assume the user authenticates CLIs locally."
+    - "Treat crawled vendor docs as source material to distill; do not copy them wholesale into specs or skills."
+  discovery:
+    - "Lock stage intent (docs extract vs skill vs CLI automation) before promoting scope."
+    - "Name integrations using Entro's onboarding catalog names unless the glossary already has a preferred term."
+  proposal:
+    - "Keep proposals under 500 words."
+    - "Always include a Non-goals section; defer secrets-in-agent-runtime and full automation until those stages are in scope."
+    - "Capabilities must name domains that already exist under openspec/specs/ or call out a new domain explicitly."
+  design:
+    - "Prefer CLI-based integration configuration over custom API clients when a vendor CLI exists."
+    - "If a change touches 3+ containers (Entro, integration, crawler, skill runtime), include a C4 flowchart inline in design.md."
+  specs:
+    - "OpenSpec wrapper: ### Requirement: and #### Scenario: (exact four hashes). Scenario steps: GIVEN / WHEN / THEN."
+    - "Requirements use SHALL or MUST. Distill vendor UI steps into integration-prep and Entro connection-detail requirements, not page-by-page recaps."
+  tasks:
+    - "Break tasks into chunks of max 2 hours where practical."
+    - "Include Documentation and Changelog groups. Record the canonical test command when the repo has tests."
+operations:
+  archive:
+    guidance:
+      - "Archive is incomplete until synced specs and the moved change folder are committed. The built-in /opsx:archive workflow syncs and moves but does NOT commit."
+      - "After sync and archive move: run git status --porcelain. If non-empty, stage openspec/specs/ and openspec/changes/ (plus any paths touched during sync), then invoke git-commit via Skill tool with change name and archive context."
+      - "Fallback when git-commit skill is absent: conventional commit manually, e.g. docs(openspec): archive <change-name> and sync specs — do not skip when porcelain is non-empty."
+      - "Post-commit gate (blocking): git status --porcelain must be empty; when the change is under openspec/changes/archive/, confirm the latest commit includes synced specs and the archive folder via git log -1 --name-only -- openspec/specs/ openspec/changes/archive/."
+      - "Do not report archive complete until the post-commit gate passes."

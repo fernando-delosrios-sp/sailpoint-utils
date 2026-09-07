@@ -1,0 +1,251 @@
+{
+  "tile": "Atlassian",
+  "category": "collaboration-and-saas",
+  "integrationPaths": [
+    {
+      "name": "Scoped API Token - Jira",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "binary": "acli"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "atlassian-rovo-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "Atlassian URL",
+          "secret": false,
+          "obtainedHow": "Site URL such as https://<org>.atlassian.net from the browser."
+        },
+        {
+          "name": "Jira Cloud ID",
+          "secret": false,
+          "obtainedHow": "Cloud ID from Atlassian admin or Entro's documented lookup for the Jira site."
+        },
+        {
+          "name": "Atlassian Username",
+          "secret": false,
+          "obtainedHow": "Atlassian account email used to create the API token."
+        },
+        {
+          "name": "Atlassian API Token",
+          "secret": true,
+          "obtainedHow": "API token from https://id.atlassian.com/manage-profile/security/api-tokens; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create an Atlassian API token",
+          "instruction": "Sign in as a Jira admin, create an API token, and note the site URL and Jira Cloud ID.",
+          "evidence": "id.atlassian.com lists an API token (value stored outside the session) and the Cloud ID is recorded",
+          "uncataloged": {
+            "evidence": "id.atlassian.com lists an API token (value stored outside the session) and the Cloud ID is recorded"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Scoped API Token - Confluence",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "binary": "acli"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "atlassian-rovo-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "Atlassian URL",
+          "secret": false,
+          "obtainedHow": "Site URL such as https://<org>.atlassian.net."
+        },
+        {
+          "name": "Confluence Cloud ID",
+          "secret": false,
+          "obtainedHow": "Cloud ID for the Confluence site from Atlassian admin."
+        },
+        {
+          "name": "Atlassian Username",
+          "secret": false,
+          "obtainedHow": "Atlassian account email used to create the API token."
+        },
+        {
+          "name": "Atlassian API Token",
+          "secret": true,
+          "obtainedHow": "API token from id.atlassian.com; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create an Atlassian API token",
+          "instruction": "As a Confluence admin, create an API token and record the site URL and Confluence Cloud ID.",
+          "evidence": "An API token exists (value stored outside the session) and the Cloud ID is recorded",
+          "uncataloged": {
+            "evidence": "An API token exists (value stored outside the session) and the Cloud ID is recorded"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jira Server",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "Jira Base URL",
+          "secret": false,
+          "obtainedHow": "HTTPS URL of the Jira Server reachable from the Connector."
+        },
+        {
+          "name": "Personal Access Token",
+          "secret": true,
+          "obtainedHow": "Jira Server PAT for a service account; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Create a Jira Server PAT",
+          "instruction": "On Jira Server, create a service user with read access and a personal access token; confirm Connector reachability.",
+          "evidence": "Jira shows the PAT user and the Connector loads the base URL",
+          "uncataloged": {
+            "evidence": "Jira shows the PAT user and the Connector loads the base URL"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Confluence Server",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "Confluence Base URL",
+          "secret": false,
+          "obtainedHow": "HTTPS URL of Confluence Server reachable from the Connector."
+        },
+        {
+          "name": "Personal Access Token",
+          "secret": true,
+          "obtainedHow": "Confluence Server PAT; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Create a Confluence Server PAT",
+          "instruction": "Create a read-only service user and PAT on Confluence Server and confirm Connector reachability.",
+          "evidence": "Confluence shows the PAT user and the Connector loads the base URL",
+          "uncataloged": {
+            "evidence": "Confluence shows the PAT user and the Connector loads the base URL"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Classic API Token",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [],
+      "connectionFields": [],
+      "operatorInputs": [],
+      "hosting": "public"
+    }
+  ],
+  "optionalCapabilities": [
+    {
+      "name": "Jira real-time scanning",
+      "configurationTools": []
+    }
+  ],
+  "configurationTools": [
+    {
+      "fit": "usable",
+      "binary": "acli"
+    },
+    {
+      "fit": "usable",
+      "kind": "mcp",
+      "id": "atlassian-rovo-mcp"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect Jira Cloud so Entro can discover secrets in issues and attachments.",
+  "connectionFields": [
+    {
+      "name": "Environment",
+      "secret": false,
+      "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+    },
+    {
+      "name": "Atlassian URL",
+      "secret": false,
+      "obtainedHow": "Site URL such as https://<org>.atlassian.net from the browser."
+    },
+    {
+      "name": "Jira Cloud ID",
+      "secret": false,
+      "obtainedHow": "Cloud ID from Atlassian admin or Entro's documented lookup for the Jira site."
+    },
+    {
+      "name": "Atlassian Username",
+      "secret": false,
+      "obtainedHow": "Atlassian account email used to create the API token."
+    },
+    {
+      "name": "Atlassian API Token",
+      "secret": true,
+      "obtainedHow": "API token from https://id.atlassian.com/manage-profile/security/api-tokens; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "ui-verified"
+}

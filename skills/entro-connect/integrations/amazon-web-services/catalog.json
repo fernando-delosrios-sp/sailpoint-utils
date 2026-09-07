@@ -1,0 +1,401 @@
+{
+  "tile": "Amazon Web Services",
+  "category": "cloud-and-infrastructure",
+  "integrationPaths": [
+    {
+      "name": "CloudFormation",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "aws"
+        },
+        {
+          "fit": "usable",
+          "binary": "terraform"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "aws-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "AWS Role ARN",
+          "secret": false,
+          "obtainedHow": "IAM console \u2192 Roles \u2192 Entro role \u2192 copy Role ARN. CloudFormation creates this role; paste it for Assume Role."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment",
+          "prompt": "Environment label for Entro",
+          "purpose": "Operator-chosen Entro environment label",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment",
+          "default": "Development"
+        },
+        {
+          "key": "external_id",
+          "prompt": "Entro External ID from the wizard",
+          "purpose": "CloudFormation / IAM trust ExternalId condition",
+          "validation": "Non-empty External ID from the Entro wizard",
+          "secret": false
+        },
+        {
+          "key": "role_name",
+          "prompt": "IAM role name for Entro",
+          "purpose": "Name of the assume-role in the target account",
+          "validation": "IAM role name",
+          "secret": false,
+          "default": "EntroReadOnly"
+        },
+        {
+          "key": "remote_agent",
+          "prompt": "Remote Agent value from Entro",
+          "purpose": "StackSet / Terraform parameter Entro supplies for multi-account automation",
+          "validation": "Non-empty Remote Agent string from the Entro team",
+          "secret": false
+        },
+        {
+          "key": "sns_topic_arn_suffix",
+          "prompt": "SNS topic ARN suffix from Entro (optional)",
+          "purpose": "Optional StackSet / Terraform sns_topic_arn_suffix parameter",
+          "validation": "Empty or Entro-supplied SNS topic ARN suffix",
+          "secret": false,
+          "default": ""
+        },
+        {
+          "key": "terraform_dir",
+          "prompt": "Terraform working directory for the Entro module",
+          "purpose": "Directory holding Terraform-Entro.tf where terraform init/apply run",
+          "validation": "Existing writable directory path",
+          "secret": false,
+          "default": "."
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Launch CloudFormation from the Entro wizard",
+          "instruction": "In Entro, open Add New Account \u2192 AWS, choose CloudFormation, and launch the stack from that wizard. Stay in the Entro UI until the stack finishes and the account shows Active. Do not create the stack from the AWS CLI.",
+          "evidence": "Integrations \u2192 AWS lists the account as Active",
+          "operatorOnly": {
+            "reason": "Entro launches the CloudFormation stack from the Add New Account wizard; there is no CLI create-stack step on this path",
+            "evidence": "Integrations \u2192 AWS lists the account as Active"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assume Role",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "aws"
+        },
+        {
+          "fit": "usable",
+          "binary": "terraform"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "aws-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "AWS Role ARN",
+          "secret": false,
+          "obtainedHow": "IAM console \u2192 Roles \u2192 Entro role \u2192 copy Role ARN. CloudFormation creates this role; paste it for Assume Role."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment",
+          "prompt": "Environment label for Entro",
+          "purpose": "Operator-chosen Entro environment label",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment",
+          "default": "Development"
+        },
+        {
+          "key": "external_id",
+          "prompt": "Entro External ID from the wizard",
+          "purpose": "CloudFormation / IAM trust ExternalId condition",
+          "validation": "Non-empty External ID from the Entro wizard",
+          "secret": false
+        },
+        {
+          "key": "role_name",
+          "prompt": "IAM role name for Entro",
+          "purpose": "Name of the assume-role in the target account",
+          "validation": "IAM role name",
+          "secret": false,
+          "default": "EntroReadOnly"
+        },
+        {
+          "key": "remote_agent",
+          "prompt": "Remote Agent value from Entro",
+          "purpose": "StackSet / Terraform parameter Entro supplies for multi-account automation",
+          "validation": "Non-empty Remote Agent string from the Entro team",
+          "secret": false
+        },
+        {
+          "key": "sns_topic_arn_suffix",
+          "prompt": "SNS topic ARN suffix from Entro (optional)",
+          "purpose": "Optional StackSet / Terraform sns_topic_arn_suffix parameter",
+          "validation": "Empty or Entro-supplied SNS topic ARN suffix",
+          "secret": false,
+          "default": ""
+        },
+        {
+          "key": "terraform_dir",
+          "prompt": "Terraform working directory for the Entro module",
+          "purpose": "Directory holding Terraform-Entro.tf where terraform init/apply run",
+          "validation": "Existing writable directory path",
+          "secret": false,
+          "default": "."
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create the read-only IAM policy and role",
+          "instruction": "In IAM, create Entro's read-only policy, create a role trusted by Entro's AWS account with the wizard External ID, and attach the policy.",
+          "evidence": "IAM shows the Entro role with the read-only policy and a matching trust policy"
+        },
+        {
+          "title": "Copy the Role ARN",
+          "instruction": "Open the role and copy its ARN for the Entro form.",
+          "evidence": "The Role ARN is recorded in the operator vault (not in chat)"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create the read-only IAM policy and role",
+          "preview": "aws iam get-role --role-name <role_name> (inspect collision); no create dry-run",
+          "mutation": "aws iam create-policy then aws iam create-role with Entro account trust and ExternalId condition, then aws iam attach-role-policy",
+          "target": "Target AWS account IAM",
+          "expectedChange": "IAM shows the Entro role with the read-only policy and matching trust policy",
+          "verification": "aws iam get-role --role-name <role_name> ; aws iam list-attached-role-policies --role-name <role_name>",
+          "rollbackOrImpact": "Detach policy, delete role, delete policy version if this run created them",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/amazon-web-services/aws-onboarding-steps/aws-manual-onboarding/assume-role-link-to-entro.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Copy the Role ARN",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "aws iam get-role --role-name <role_name> --query Role.Arn --output text (record in operator vault, not chat)",
+          "target": "IAM role",
+          "expectedChange": "Role ARN recorded for the Entro form",
+          "verification": "ARN matches arn:aws:iam::<accountId>:role/<role_name>",
+          "rollbackOrImpact": "No mutation; stop has no residual change",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/amazon-web-services/aws-onboarding-steps/aws-manual-onboarding/assume-role-link-to-entro.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    },
+    {
+      "name": "Terraform",
+      "pathEvidence": "ui-verified",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "aws"
+        },
+        {
+          "fit": "usable",
+          "binary": "terraform"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "aws-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "AWS Role ARN",
+          "secret": false,
+          "obtainedHow": "IAM console \u2192 Roles \u2192 Entro role \u2192 copy Role ARN. CloudFormation creates this role; paste it for Assume Role."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment",
+          "prompt": "Environment label for Entro",
+          "purpose": "Operator-chosen Entro environment label",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment",
+          "default": "Development"
+        },
+        {
+          "key": "external_id",
+          "prompt": "Entro External ID from the wizard",
+          "purpose": "CloudFormation / IAM trust ExternalId condition",
+          "validation": "Non-empty External ID from the Entro wizard",
+          "secret": false
+        },
+        {
+          "key": "role_name",
+          "prompt": "IAM role name for Entro",
+          "purpose": "Name of the assume-role in the target account",
+          "validation": "IAM role name",
+          "secret": false,
+          "default": "EntroReadOnly"
+        },
+        {
+          "key": "remote_agent",
+          "prompt": "Remote Agent value from Entro",
+          "purpose": "StackSet / Terraform parameter Entro supplies for multi-account automation",
+          "validation": "Non-empty Remote Agent string from the Entro team",
+          "secret": false
+        },
+        {
+          "key": "sns_topic_arn_suffix",
+          "prompt": "SNS topic ARN suffix from Entro (optional)",
+          "purpose": "Optional StackSet / Terraform sns_topic_arn_suffix parameter",
+          "validation": "Empty or Entro-supplied SNS topic ARN suffix",
+          "secret": false,
+          "default": ""
+        },
+        {
+          "key": "terraform_dir",
+          "prompt": "Terraform working directory for the Entro module",
+          "purpose": "Directory holding Terraform-Entro.tf where terraform init/apply run",
+          "validation": "Existing writable directory path",
+          "secret": false,
+          "default": "."
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Initialize the Entro Terraform module",
+          "instruction": "Copy Terraform-Entro.tf into the workspace and run terraform init.",
+          "evidence": "terraform init completes and providers are installed"
+        },
+        {
+          "title": "Plan and apply the Entro IAM roles",
+          "instruction": "Set external_id, remote_agent, and optional sns_topic_arn_suffix, then terraform apply so member accounts get EntroAWSIntegrationRole.",
+          "evidence": "EntroAWSIntegrationRole and EntroReadOnlyAccess exist in member accounts"
+        },
+        {
+          "title": "Copy the Role ARN",
+          "instruction": "Copy EntroAWSIntegrationRole ARN from a member account for the Entro form.",
+          "evidence": "The Role ARN is recorded in the operator vault (not in chat)"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Initialize the Entro Terraform module",
+          "preview": "terraform init -backend=false",
+          "mutation": "terraform init in <terraform_dir> after copying Entro's Terraform-Entro.tf module into that workspace",
+          "target": "Operator Terraform workspace for AWS Organizations",
+          "expectedChange": "terraform init completes and providers are installed",
+          "verification": "terraform -chdir=<terraform_dir> version ; .terraform.lock.hcl exists",
+          "rollbackOrImpact": "Remove .terraform/ created this run if stopping before apply",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/amazon-web-services/aws-onboarding-steps/aws-multiple-account-automation.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Plan and apply the Entro IAM roles",
+          "preview": "terraform plan -var external_id=<external_id> -var remote_agent=<remote_agent> -var sns_topic_arn_suffix=<sns_topic_arn_suffix>",
+          "mutation": "terraform apply -var external_id=<external_id> -var remote_agent=<remote_agent> -var sns_topic_arn_suffix=<sns_topic_arn_suffix> after Approve",
+          "target": "AWS Organizations member accounts",
+          "expectedChange": "EntroAWSIntegrationRole and EntroReadOnlyAccess exist in member accounts",
+          "verification": "terraform show ; aws iam get-role --role-name EntroAWSIntegrationRole",
+          "rollbackOrImpact": "terraform destroy of this workspace's state after Approve if rolling back this run",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/amazon-web-services/aws-onboarding-steps/aws-multiple-account-automation.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Copy the Role ARN",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "aws iam get-role --role-name EntroAWSIntegrationRole --query Role.Arn --output text (record in operator vault, not chat)",
+          "target": "Member-account IAM role EntroAWSIntegrationRole",
+          "expectedChange": "Role ARN recorded for the Entro form",
+          "verification": "ARN matches arn:aws:iam::<accountId>:role/EntroAWSIntegrationRole",
+          "rollbackOrImpact": "No mutation; stop has no residual change",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/amazon-web-services/aws-onboarding-steps/aws-multiple-account-automation.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [
+    {
+      "name": "CloudTrail S3",
+      "configurationTools": []
+    },
+    {
+      "name": "Vault management",
+      "configurationTools": []
+    },
+    {
+      "name": "NHI Management",
+      "configurationTools": []
+    }
+  ],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "aws"
+    },
+    {
+      "fit": "usable",
+      "binary": "terraform"
+    },
+    {
+      "fit": "usable",
+      "kind": "mcp",
+      "id": "aws-mcp"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect AWS accounts so Entro can discover secrets and NHIs via a read-only IAM role (CloudFormation, Terraform, or manual assume-role).",
+  "connectionFields": [
+    {
+      "name": "Environment",
+      "secret": false,
+      "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+    },
+    {
+      "name": "AWS Role ARN",
+      "secret": false,
+      "obtainedHow": "IAM console \u2192 Roles \u2192 Entro role \u2192 copy Role ARN. CloudFormation creates this role; paste it for Assume Role."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "ui-verified"
+}

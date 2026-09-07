@@ -1,0 +1,526 @@
+{
+  "tile": "Google GCP",
+  "category": "cloud-and-infrastructure",
+  "integrationPaths": [
+    {
+      "name": "Console manual \u2014 Private Key Integration",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "gcloud"
+        },
+        {
+          "fit": "usable",
+          "binary": "terraform"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Private Key JSON",
+          "secret": true,
+          "obtainedHow": "Upload the JSON key created for the Entro service account; keep its value in the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "organization_domain",
+          "prompt": "GCP organization domain",
+          "purpose": "Identifies the organization in the Entro form and in Entro's Terraform variables",
+          "validation": "Domain attached to the GCP organization, such as example.com",
+          "secret": false,
+          "bindsTo": "Organization Domain"
+        },
+        {
+          "key": "organization_id",
+          "prompt": "GCP organization ID",
+          "purpose": "Organization whose IAM policy carries Entro's read-only role bindings",
+          "validation": "Numeric GCP organization ID as `gcloud organizations list` reports it",
+          "secret": false
+        },
+        {
+          "key": "project_id",
+          "prompt": "GCP project ID for Entro onboarding",
+          "purpose": "Project the required APIs are enabled in and the Entro reader identity lives in",
+          "validation": "GCP project ID: 6-30 characters, lowercase letters, digits, and hyphens",
+          "secret": false
+        },
+        {
+          "key": "service_account_name",
+          "prompt": "Name for the Entro reader service account",
+          "purpose": "Names the service account this run creates and grants Entro's read-only roles",
+          "validation": "Service account ID: 6-30 characters, lowercase letters, digits, and hyphens",
+          "secret": false,
+          "default": "entro-automatic-onboard"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Run the GCP pre-onboarding check",
+          "instruction": "Save and run Entro's GCP pre-onboarding check so report.txt shows project access and logging before creating the reader identity.",
+          "evidence": "report.txt lists organization projects with role and logging results"
+        },
+        {
+          "title": "Enable Terraform-default GCP APIs",
+          "instruction": "Run the generated, checksummed API artifact. It enables the pinned Terraform defaults on the host project and on active organization projects discovered from the cataloged organization ID; billing-dependent defaults follow the pinned Terraform condition without an API-selection prompt.",
+          "evidence": "APIs & Services shows 8 host-project defaults, 3 organization-project defaults, and the 2 billing-dependent defaults where the Terraform condition applies"
+        },
+        {
+          "title": "Create the Entro reader identity",
+          "instruction": "Describe the requested service-account email first. Stop before grants if it already exists; otherwise create only the service account in the host project.",
+          "evidence": "IAM & Admin \u2192 Service Accounts shows the newly created Entro reader account"
+        },
+        {
+          "title": "Grant the Terraform-derived Entro IAM roles",
+          "instruction": "Run the generated, checksummed IAM artifact after service-account creation. It creates an unused Terraform-compatible Entro Logging Role and grants that role plus the 12 pinned predefined organization roles.",
+          "evidence": "Organization IAM shows the service account with the custom Entro Logging Role and 12 predefined role bindings"
+        },
+        {
+          "title": "Configure organization audit logs",
+          "instruction": "In the Google Cloud console, open https://console.cloud.google.com/iam-admin/audit for the organization. Configure Data Read and Data Write audit logging for Secret Manager API, Cloud Functions API, and Identity and Access Management (IAM) API, preserving existing exempted principals and settings.",
+          "evidence": "The organization Audit Logs page visibly shows Data Read and Data Write enabled for the three required services",
+          "operatorOnly": {
+            "reason": "The documented command route replaces the organization IAM policy; Connect keeps this organization-wide merge-sensitive change in the Google Cloud console",
+            "evidence": "The organization Audit Logs page shows Data Read and Data Write enabled for Secret Manager API, Cloud Functions API, and Identity and Access Management (IAM) API"
+          }
+        },
+        {
+          "title": "Create the private key credential",
+          "instruction": "For Console manual, create a JSON key on the Entro service account and vault the downloaded file. For Terraform automated, fill tf-var-files/create-service-account-key.tfvars; it sets service_account_key_create_condition=true and enable_workload_identity_federation=false.",
+          "evidence": "A service-account private-key JSON file is stored in the operator vault",
+          "uncataloged": {
+            "evidence": "A service-account private-key JSON file is stored in the operator vault"
+          }
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Run the GCP pre-onboarding check",
+          "preview": "The shell script has no vendor dry-run; checksum the Skill-held file then Approve",
+          "mutation": "bash integrations/google-gcp/gcp_pre_onboarding_check.sh",
+          "target": "GCP organization projects the operator can list",
+          "expectedChange": "report.txt lists projects with role and logging checks",
+          "verification": "report.txt exists and records Organization ID plus per-project results",
+          "rollbackOrImpact": "No GCP mutation; delete local report.txt if stopping",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1/gcp-console-onboarding-new.md",
+          "retrievedAt": "2026-08-31",
+          "script": {
+            "skillPath": "integrations/google-gcp/gcp_pre_onboarding_check.sh",
+            "version": "gcp_pre_onboarding_check.sh",
+            "checksum": "sha256:8400acb5be426c81c63c7bfec97bc65639b3913d8da9dc8763725e29553e390f",
+            "captureSource": "cloud-and-infrastructure/google-cloud-platform/gcp-pre-onboarding-check.md"
+          }
+        },
+        {
+          "prepStepTitle": "Enable Terraform-default GCP APIs",
+          "preview": "The generated artifact has no vendor dry-run; checksum and review the Skill-held file. It will derive active organization projects from <organization_id>, enable 8 host-project defaults on <project_id>, 3 organization-project defaults, and the 2 billing-required defaults when the pinned Terraform billing condition is true.",
+          "mutation": "ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> bash integrations/google-gcp/entro-gcp-enable-apis.sh apply",
+          "target": "Host project <project_id> and active projects under GCP organization <organization_id>",
+          "expectedChange": "The host project has all 8 Terraform-default host services; active organization projects have all 3 organization-project services and, when billing-required defaults are enabled, both billing-dependent services",
+          "verification": "ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> bash integrations/google-gcp/entro-gcp-enable-apis.sh verify",
+          "rollbackOrImpact": "Enabled APIs remain enabled; rollback intentionally does not disable shared services because other workloads may depend on them",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1/gcp-console-onboarding-new.md",
+          "retrievedAt": "2026-08-31",
+          "script": {
+            "skillPath": "integrations/google-gcp/entro-gcp-enable-apis.sh",
+            "version": "Terraform-default GCP API enablement; generated from integrations/google-gcp/Entro GCP Terraform onboarding.zip at sha256:904b1ef405d86d59a759347dc3c45a0d512925b351a71ad7225f01c990a1bbe0",
+            "checksum": "sha256:14a2c93f06b581de40d46005312b815a2e710afc9894bc48789e3f9a18f20f03"
+          }
+        },
+        {
+          "prepStepTitle": "Create the Entro reader identity",
+          "preview": "Run gcloud iam service-accounts describe <service_account_name>@<project_id>.iam.gserviceaccount.com --project <project_id>. If it exists, treat the name as a collision and stop before any IAM grants; do not reuse or modify it.",
+          "mutation": "gcloud iam service-accounts create <service_account_name> --project <project_id> --display-name \"A service account for Entro Automatic Onboard\"",
+          "target": "GCP project <project_id>",
+          "expectedChange": "One Entro reader service account exists; this action creates no key and grants no role",
+          "verification": "gcloud iam service-accounts describe <service_account_name>@<project_id>.iam.gserviceaccount.com --project <project_id>",
+          "rollbackOrImpact": "Delete the service account only if this run created it: gcloud iam service-accounts delete <service_account_name>@<project_id>.iam.gserviceaccount.com --project <project_id>",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1/gcp-console-onboarding-new.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Grant the Terraform-derived Entro IAM roles",
+          "preview": "Checksum and review the generated Skill-held artifact. It will select an unused entroLoggingRole_<1-1000> role ID, create the pinned Entro Logging Role, and add its binding plus exactly 12 predefined organization bindings; existing predefined bindings are left untouched.",
+          "mutation": "ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> SERVICE_ACCOUNT_NAME=<service_account_name> bash integrations/google-gcp/entro-gcp-iam-grants.sh apply",
+          "target": "IAM policy for GCP organization <organization_id> and the Entro reader service account in project <project_id>",
+          "expectedChange": "An Entro Logging Role with the pinned Terraform permission set and exactly 12 predefined roles grants organization read access to the Entro reader service account",
+          "verification": "ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> SERVICE_ACCOUNT_NAME=<service_account_name> bash integrations/google-gcp/entro-gcp-iam-grants.sh verify",
+          "rollbackOrImpact": "Run ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> SERVICE_ACCOUNT_NAME=<service_account_name> bash integrations/google-gcp/entro-gcp-iam-grants.sh rollback; it removes only IAM bindings and the custom role created by this run",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1/gcp-console-onboarding-new.md",
+          "retrievedAt": "2026-08-31",
+          "script": {
+            "skillPath": "integrations/google-gcp/entro-gcp-iam-grants.sh",
+            "version": "Terraform-derived GCP IAM grants; generated from integrations/google-gcp/Entro GCP Terraform onboarding.zip at sha256:904b1ef405d86d59a759347dc3c45a0d512925b351a71ad7225f01c990a1bbe0",
+            "checksum": "sha256:23aac5089d0fc178d543d5bdbdb57e9158921f633d906778fc419528e43329ad"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Console manual \u2014 Workload Identity Federation",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "gcloud"
+        },
+        {
+          "fit": "usable",
+          "binary": "terraform"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Workload Identity Federation Configuration JSON",
+          "secret": false,
+          "obtainedHow": "Upload the external-account configuration downloaded from GCP or emitted by Terraform output wif_config."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "organization_domain",
+          "prompt": "GCP organization domain",
+          "purpose": "Identifies the organization in the Entro form and in Entro's Terraform variables",
+          "validation": "Domain attached to the GCP organization, such as example.com",
+          "secret": false,
+          "bindsTo": "Organization Domain"
+        },
+        {
+          "key": "organization_id",
+          "prompt": "GCP organization ID",
+          "purpose": "Organization whose IAM policy carries Entro's read-only role bindings",
+          "validation": "Numeric GCP organization ID as `gcloud organizations list` reports it",
+          "secret": false
+        },
+        {
+          "key": "project_id",
+          "prompt": "GCP project ID for Entro onboarding",
+          "purpose": "Project the required APIs are enabled in and the Entro reader identity lives in",
+          "validation": "GCP project ID: 6-30 characters, lowercase letters, digits, and hyphens",
+          "secret": false
+        },
+        {
+          "key": "service_account_name",
+          "prompt": "Name for the Entro reader service account",
+          "purpose": "Names the service account this run creates and grants Entro's read-only roles",
+          "validation": "Service account ID: 6-30 characters, lowercase letters, digits, and hyphens",
+          "secret": false,
+          "default": "entro-automatic-onboard"
+        },
+        {
+          "key": "entro_aws_role_arn",
+          "prompt": "Entro AWS role ARN shown by the GCP connection form",
+          "purpose": "Limits Workload Identity Federation impersonation to Entro's dedicated AWS role",
+          "validation": "ARN beginning arn:aws:sts::937217723901:assumed-role/EntroTrustRole-",
+          "secret": false
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Run the GCP pre-onboarding check",
+          "instruction": "Save and run Entro's GCP pre-onboarding check so report.txt shows project access and logging before creating the reader identity.",
+          "evidence": "report.txt lists organization projects with role and logging results"
+        },
+        {
+          "title": "Enable Terraform-default GCP APIs",
+          "instruction": "Run the generated, checksummed API artifact. It enables the pinned Terraform defaults on the host project and on active organization projects discovered from the cataloged organization ID; billing-dependent defaults follow the pinned Terraform condition without an API-selection prompt.",
+          "evidence": "APIs & Services shows 8 host-project defaults, 3 organization-project defaults, and the 2 billing-dependent defaults where the Terraform condition applies"
+        },
+        {
+          "title": "Create the Entro reader identity",
+          "instruction": "Describe the requested service-account email first. Stop before grants if it already exists; otherwise create only the service account in the host project.",
+          "evidence": "IAM & Admin \u2192 Service Accounts shows the newly created Entro reader account"
+        },
+        {
+          "title": "Grant the Terraform-derived Entro IAM roles",
+          "instruction": "Run the generated, checksummed IAM artifact after service-account creation. It creates an unused Terraform-compatible Entro Logging Role and grants that role plus the 12 pinned predefined organization roles.",
+          "evidence": "Organization IAM shows the service account with the custom Entro Logging Role and 12 predefined role bindings"
+        },
+        {
+          "title": "Configure organization audit logs",
+          "instruction": "In the Google Cloud console, open https://console.cloud.google.com/iam-admin/audit for the organization. Configure Data Read and Data Write audit logging for Secret Manager API, Cloud Functions API, and Identity and Access Management (IAM) API, preserving existing exempted principals and settings.",
+          "evidence": "The organization Audit Logs page visibly shows Data Read and Data Write enabled for the three required services",
+          "operatorOnly": {
+            "reason": "The documented command route replaces the organization IAM policy; Connect keeps this organization-wide merge-sensitive change in the Google Cloud console",
+            "evidence": "The organization Audit Logs page shows Data Read and Data Write enabled for Secret Manager API, Cloud Functions API, and Identity and Access Management (IAM) API"
+          }
+        },
+        {
+          "title": "Create the keyless federation credential",
+          "instruction": "Copy Entro's AWS role ARN from the WIF connection form. For Console manual, create an AWS workload identity pool/provider and grant that principal service-account impersonation. For Terraform automated, fill tf-var-files/wif-setup.tfvars; it sets service_account_key_create_condition=false and enable_workload_identity_federation=true.",
+          "evidence": "The WIF provider trusts only Entro's AWS role and its configuration JSON is ready for upload",
+          "uncataloged": {
+            "evidence": "The WIF provider trusts only Entro's AWS role and its configuration JSON is ready for upload"
+          }
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Run the GCP pre-onboarding check",
+          "preview": "The shell script has no vendor dry-run; checksum the Skill-held file then Approve",
+          "mutation": "bash integrations/google-gcp/gcp_pre_onboarding_check.sh",
+          "target": "GCP organization projects the operator can list",
+          "expectedChange": "report.txt lists projects with role and logging checks",
+          "verification": "report.txt exists and records Organization ID plus per-project results",
+          "rollbackOrImpact": "No GCP mutation; delete local report.txt if stopping",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1/gcp-console-onboarding-new.md",
+          "retrievedAt": "2026-08-31",
+          "script": {
+            "skillPath": "integrations/google-gcp/gcp_pre_onboarding_check.sh",
+            "version": "gcp_pre_onboarding_check.sh",
+            "checksum": "sha256:8400acb5be426c81c63c7bfec97bc65639b3913d8da9dc8763725e29553e390f",
+            "captureSource": "cloud-and-infrastructure/google-cloud-platform/gcp-pre-onboarding-check.md"
+          }
+        },
+        {
+          "prepStepTitle": "Enable Terraform-default GCP APIs",
+          "preview": "The generated artifact has no vendor dry-run; checksum and review the Skill-held file. It will derive active organization projects from <organization_id>, enable 8 host-project defaults on <project_id>, 3 organization-project defaults, and the 2 billing-required defaults when the pinned Terraform billing condition is true.",
+          "mutation": "ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> bash integrations/google-gcp/entro-gcp-enable-apis.sh apply",
+          "target": "Host project <project_id> and active projects under GCP organization <organization_id>",
+          "expectedChange": "The host project has all 8 Terraform-default host services; active organization projects have all 3 organization-project services and, when billing-required defaults are enabled, both billing-dependent services",
+          "verification": "ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> bash integrations/google-gcp/entro-gcp-enable-apis.sh verify",
+          "rollbackOrImpact": "Enabled APIs remain enabled; rollback intentionally does not disable shared services because other workloads may depend on them",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1/gcp-console-onboarding-new.md",
+          "retrievedAt": "2026-08-31",
+          "script": {
+            "skillPath": "integrations/google-gcp/entro-gcp-enable-apis.sh",
+            "version": "Terraform-default GCP API enablement; generated from integrations/google-gcp/Entro GCP Terraform onboarding.zip at sha256:904b1ef405d86d59a759347dc3c45a0d512925b351a71ad7225f01c990a1bbe0",
+            "checksum": "sha256:14a2c93f06b581de40d46005312b815a2e710afc9894bc48789e3f9a18f20f03"
+          }
+        },
+        {
+          "prepStepTitle": "Create the Entro reader identity",
+          "preview": "Run gcloud iam service-accounts describe <service_account_name>@<project_id>.iam.gserviceaccount.com --project <project_id>. If it exists, treat the name as a collision and stop before any IAM grants; do not reuse or modify it.",
+          "mutation": "gcloud iam service-accounts create <service_account_name> --project <project_id> --display-name \"A service account for Entro Automatic Onboard\"",
+          "target": "GCP project <project_id>",
+          "expectedChange": "One Entro reader service account exists; this action creates no key and grants no role",
+          "verification": "gcloud iam service-accounts describe <service_account_name>@<project_id>.iam.gserviceaccount.com --project <project_id>",
+          "rollbackOrImpact": "Delete the service account only if this run created it: gcloud iam service-accounts delete <service_account_name>@<project_id>.iam.gserviceaccount.com --project <project_id>",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1/gcp-console-onboarding-new.md",
+          "retrievedAt": "2026-08-31"
+        },
+        {
+          "prepStepTitle": "Grant the Terraform-derived Entro IAM roles",
+          "preview": "Checksum and review the generated Skill-held artifact. It will select an unused entroLoggingRole_<1-1000> role ID, create the pinned Entro Logging Role, and add its binding plus exactly 12 predefined organization bindings; existing predefined bindings are left untouched.",
+          "mutation": "ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> SERVICE_ACCOUNT_NAME=<service_account_name> bash integrations/google-gcp/entro-gcp-iam-grants.sh apply",
+          "target": "IAM policy for GCP organization <organization_id> and the Entro reader service account in project <project_id>",
+          "expectedChange": "An Entro Logging Role with the pinned Terraform permission set and exactly 12 predefined roles grants organization read access to the Entro reader service account",
+          "verification": "ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> SERVICE_ACCOUNT_NAME=<service_account_name> bash integrations/google-gcp/entro-gcp-iam-grants.sh verify",
+          "rollbackOrImpact": "Run ORGANIZATION_ID=<organization_id> PROJECT_ID=<project_id> SERVICE_ACCOUNT_NAME=<service_account_name> bash integrations/google-gcp/entro-gcp-iam-grants.sh rollback; it removes only IAM bindings and the custom role created by this run",
+          "secretProducing": false,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1/gcp-console-onboarding-new.md",
+          "retrievedAt": "2026-08-31",
+          "script": {
+            "skillPath": "integrations/google-gcp/entro-gcp-iam-grants.sh",
+            "version": "Terraform-derived GCP IAM grants; generated from integrations/google-gcp/Entro GCP Terraform onboarding.zip at sha256:904b1ef405d86d59a759347dc3c45a0d512925b351a71ad7225f01c990a1bbe0",
+            "checksum": "sha256:23aac5089d0fc178d543d5bdbdb57e9158921f633d906778fc419528e43329ad"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Terraform automated \u2014 Private Key Integration",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "gcloud"
+        },
+        {
+          "fit": "usable",
+          "binary": "terraform"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Private Key JSON",
+          "secret": true,
+          "obtainedHow": "Upload the JSON key created for the Entro service account; keep its value in the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "organization_domain",
+          "prompt": "GCP organization domain",
+          "purpose": "Identifies the organization in the Entro form and in Entro's Terraform variables",
+          "validation": "Domain attached to the GCP organization, such as example.com",
+          "secret": false,
+          "bindsTo": "Organization Domain"
+        },
+        {
+          "key": "organization_id",
+          "prompt": "GCP organization ID",
+          "purpose": "Organization whose IAM policy carries Entro's read-only role bindings",
+          "validation": "Numeric GCP organization ID as `gcloud organizations list` reports it",
+          "secret": false
+        },
+        {
+          "key": "project_id",
+          "prompt": "GCP project ID for Entro onboarding",
+          "purpose": "Project the required APIs are enabled in and the Entro reader identity lives in",
+          "validation": "GCP project ID: 6-30 characters, lowercase letters, digits, and hyphens",
+          "secret": false
+        },
+        {
+          "key": "service_account_name",
+          "prompt": "Name for the Entro reader service account",
+          "purpose": "Names the service account this run creates and grants Entro's read-only roles",
+          "validation": "Service account ID: 6-30 characters, lowercase letters, digits, and hyphens",
+          "secret": false,
+          "default": "entro-automatic-onboard"
+        },
+        {
+          "key": "terraform_dir",
+          "prompt": "Terraform working directory for the Entro module",
+          "purpose": "Directory holding Terraform-Entro.tf where terraform init/apply run",
+          "validation": "Existing writable directory path",
+          "secret": false,
+          "default": "."
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Initialize and apply Entro's GCP Terraform",
+          "instruction": "Download Entro's GCP Terraform zip. Use the tfvars file named by the locked authentication method, then run terraform init, plan, and apply.",
+          "evidence": "Terraform apply completes and the service account plus the locked authentication credential exist",
+          "operatorOnly": {
+            "reason": "Entro ships a zip of Terraform files the operator applies from their own workspace; not a preferred gcloud typed-action plan",
+            "evidence": "Download the provided Terraform files, update variables, and execute as instructed"
+          }
+        },
+        {
+          "title": "Create the private key credential",
+          "instruction": "For Console manual, create a JSON key on the Entro service account and vault the downloaded file. For Terraform automated, fill tf-var-files/create-service-account-key.tfvars; it sets service_account_key_create_condition=true and enable_workload_identity_federation=false.",
+          "evidence": "A service-account private-key JSON file is stored in the operator vault",
+          "uncataloged": {
+            "evidence": "A service-account private-key JSON file is stored in the operator vault"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Terraform automated \u2014 Workload Identity Federation",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "gcloud"
+        },
+        {
+          "fit": "usable",
+          "binary": "terraform"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Workload Identity Federation Configuration JSON",
+          "secret": false,
+          "obtainedHow": "Upload the external-account configuration downloaded from GCP or emitted by Terraform output wif_config."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "organization_domain",
+          "prompt": "GCP organization domain",
+          "purpose": "Identifies the organization in the Entro form and in Entro's Terraform variables",
+          "validation": "Domain attached to the GCP organization, such as example.com",
+          "secret": false,
+          "bindsTo": "Organization Domain"
+        },
+        {
+          "key": "organization_id",
+          "prompt": "GCP organization ID",
+          "purpose": "Organization whose IAM policy carries Entro's read-only role bindings",
+          "validation": "Numeric GCP organization ID as `gcloud organizations list` reports it",
+          "secret": false
+        },
+        {
+          "key": "project_id",
+          "prompt": "GCP project ID for Entro onboarding",
+          "purpose": "Project the required APIs are enabled in and the Entro reader identity lives in",
+          "validation": "GCP project ID: 6-30 characters, lowercase letters, digits, and hyphens",
+          "secret": false
+        },
+        {
+          "key": "service_account_name",
+          "prompt": "Name for the Entro reader service account",
+          "purpose": "Names the service account this run creates and grants Entro's read-only roles",
+          "validation": "Service account ID: 6-30 characters, lowercase letters, digits, and hyphens",
+          "secret": false,
+          "default": "entro-automatic-onboard"
+        },
+        {
+          "key": "terraform_dir",
+          "prompt": "Terraform working directory for the Entro module",
+          "purpose": "Directory holding Terraform-Entro.tf where terraform init/apply run",
+          "validation": "Existing writable directory path",
+          "secret": false,
+          "default": "."
+        },
+        {
+          "key": "entro_aws_role_arn",
+          "prompt": "Entro AWS role ARN shown by the GCP connection form",
+          "purpose": "Limits Workload Identity Federation impersonation to Entro's dedicated AWS role",
+          "validation": "ARN beginning arn:aws:sts::937217723901:assumed-role/EntroTrustRole-",
+          "secret": false
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Initialize and apply Entro's GCP Terraform",
+          "instruction": "Download Entro's GCP Terraform zip. Use the tfvars file named by the locked authentication method, then run terraform init, plan, and apply.",
+          "evidence": "Terraform apply completes and the service account plus the locked authentication credential exist",
+          "operatorOnly": {
+            "reason": "Entro ships a zip of Terraform files the operator applies from their own workspace; not a preferred gcloud typed-action plan",
+            "evidence": "Download the provided Terraform files, update variables, and execute as instructed"
+          }
+        },
+        {
+          "title": "Create the keyless federation credential",
+          "instruction": "Copy Entro's AWS role ARN from the WIF connection form. For Console manual, create an AWS workload identity pool/provider and grant that principal service-account impersonation. For Terraform automated, fill tf-var-files/wif-setup.tfvars; it sets service_account_key_create_condition=false and enable_workload_identity_federation=true.",
+          "evidence": "The WIF provider trusts only Entro's AWS role and its configuration JSON is ready for upload",
+          "uncataloged": {
+            "evidence": "The WIF provider trusts only Entro's AWS role and its configuration JSON is ready for upload"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "gcloud"
+    },
+    {
+      "fit": "usable",
+      "binary": "terraform"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect a GCP organization so Entro can discover secrets and NHIs using Private Key Integration or Workload Identity Federation.",
+  "connectionFields": [
+    {
+      "name": "Organization Domain",
+      "secret": false,
+      "obtainedHow": "The primary domain attached to the GCP organization, such as example.com."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}
