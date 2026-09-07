@@ -1,36 +1,13 @@
 ---
 name: changelog-generator
-description: Creates user-facing changelogs from spec changes and git history. Analyzes commits (often one spec at a time), OpenSpec capabilities when available, and diffs; categorizes changes; and transforms technical work into clear release notes. Turns hours of manual changelog writing into minutes of automated generation.
+description: Changelog from spec changes and git history. Never adds unreleased sections.
 ---
 
 # Changelog Generator
 
-This skill transforms spec work and git commits into polished, user-facing changelogs.
+Transform spec work and git commits into user-facing release notes.
 
-## When to Use This Skill
-
-- Preparing release notes for a new version
-- Creating weekly or monthly product update summaries
-- Documenting changes for customers
-- Writing changelog entries for app store submissions
-- Generating update notifications
-- Creating internal release documentation
-- Maintaining a public changelog/product updates page
-- Closing an OpenSpec apply step (covers user-visible Capabilities from the proposal)
-
-## Role
-
-You are a **technical release writer** specializing in user-facing changelogs. You turn spec work and git history into clear, scannable release notes that customers and operators understand.
-
-**Competencies:**
-
-- Reading git history and diffs; grouping spec-by-spec commits into single user-visible changes
-- Mapping Conventional Commits and OpenSpec Capabilities to changelog categories
-- Writing in benefits-focused language (public mode) or traceable language (internal mode)
-- Applying [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) structure with ISO 8601 dates, preferred semver when known, and emoji category headings
-- Idempotent updates to `CHANGELOG.md` without duplicating release sections
-
----
+Category headings, audience modes, format examples, and bump edge cases live in [reference.md](reference.md).
 
 ## INPUT
 
@@ -38,9 +15,8 @@ You are a **technical release writer** specializing in user-facing changelogs. Y
 
 | Source                 | Path / command                                          | Purpose                                                 |
 | ---------------------- | ------------------------------------------------------- | ------------------------------------------------------- |
-| Changelog skill spec   | `@./SKILL.md`                                           | Format rules, generation process, validation gates      |
 | Existing changelog     | `@./CHANGELOG.md` (repo root)                           | Avoid duplicates; merge into today's section if present |
-| Active OpenSpec change | `@./docs/superpowers/changes/<change-name>/proposal.md` | User-visible Capabilities checklist (when present)      |
+| Active change proposal | `<change-root>/proposal.md`                             | User-visible Capabilities checklist (when present)      |
 | Git commit range       | `git log <range> --oneline`                             | Primary history source; group by spec/feature           |
 | Changed files / diffs  | `git diff <range>` or per-commit diffs                  | User-visible outcomes for feat/fix/breaking changes     |
 
@@ -48,10 +24,10 @@ You are a **technical release writer** specializing in user-facing changelogs. Y
 
 | Source               | Path / command                                       | Purpose                                                           |
 | -------------------- | ---------------------------------------------------- | ----------------------------------------------------------------- |
-| OpenSpec tasks       | `@./docs/superpowers/changes/<change-name>/tasks.md` | Confirm scope of shipped work                                     |
-| OpenSpec specs delta | `@./docs/superpowers/changes/<change-name>/specs/`   | Contract or behavior changes                                      |
+| OpenSpec tasks       | `<change-root>/tasks.md`                             | Confirm scope of shipped work                                     |
+| OpenSpec specs delta | `<change-root>/specs/`                               | Contract or behavior changes                                      |
 | Latest git tag       | `git describe --tags --abbrev=0`                     | Release boundary fallback; version candidate when semver-shaped   |
-| Package / manifest   | `package.json` `version` (or equivalent)             | Version candidate when no user/tag semver                         |
+| Package / manifest   | `package.json` `version` (or equivalent)             | Baseline semver when no tag; bump target in Phase 4        |
 | User request         | Chat context                                         | Explicit date range, tag, audience mode (public/internal), semver |
 
 ### Priority 3 (LOW) — Reference only
@@ -62,69 +38,67 @@ You are a **technical release writer** specializing in user-facing changelogs. Y
 | [Conventional Commits](https://www.conventionalcommits.org/)   | Prefix → category mapping               |
 | PR descriptions / `gh pr list`                                 | Optional extra context — never required |
 
+**Change root** — resolve once, then load `proposal.md`, `tasks.md`, and `specs/` from that folder (first match):
+
+1. `ACTIVE_CHANGE_ROOT` when **apply-code-changes** has bound
+2. `CHANGE_ROOT` when the apply adapter or user already set it
+3. Explicit path from the user request
+4. In-flight OpenSpec folder `openspec/changes/<change-name>/` — match change name, branch, or the only non-archive change
+
+When no folder resolves after all four steps, record OpenSpec inputs as absent at the Phase 1 checkpoint.
+
 **Scope resolution order:** explicit user range → last git tag to `HEAD` → newest `## YYYY-MM-DD` in `CHANGELOG.md` to today.
 
-**Version resolution order (prefer when known):** explicit user semver → matching/latest git tag (`vX.Y.Z` or `X.Y.Z`) → package/manifest `version` → omit version (date-only heading).
+**Baseline version** (starting point for bump): explicit user semver → matching/latest git tag (`vX.Y.Z` or `X.Y.Z`) → package/manifest `version` → newest `vX.Y.Z` in `CHANGELOG.md`.
 
-See **Change Categories** below for classification rules. See `reference.md` for format examples, model specs, and audience modes.
+When user-visible changes exist, **propose a semver bump** per **Version bump** below — never write an unreleased section or a date-only heading.
+
+Category mapping and prefix quick reference: [reference.md](reference.md).
 
 ---
 
-## Change Categories
+## Version bump
 
-Use exactly one category per grouped change. Category headings use a fixed emoji + label — the emoji is decorative; the **label text is canonical** for validation.
+Every shipped release section uses `## YYYY-MM-DD · vX.Y.Z` — dated, versioned, prepended newest-first.
 
-| Category | Heading | Conventional Commits | Include when | Exclude |
-| --- | --- | --- | --- | --- |
-| **New Features** | `### ✨ New Features` | `feat:` | New user-visible capability, screen, API surface, integration, or behavior that did not exist before | Internal scaffolding, feature flags with no user path yet, refactors that only rename code |
-| **Improvements** | `### 🔧 Improvements` | `perf:`, user-visible `refactor:`, `style:` (UI polish) | Existing behavior works better: faster, clearer UX, better defaults, smoother flows — no new capability | Pure code cleanup, internal-only perf, dependency bumps with no user impact |
-| **Fixes** | `### 🐛 Fixes` | `fix:` | Restores expected behavior; resolves incorrect output, crashes, broken flows, or regressions | Test-only fixes, CI/lint fixes, “fix” commits that only affect developers |
-| **Breaking Changes** | `### ⚠️ Breaking Changes` | `BREAKING CHANGE` footer, `!` after type (`feat!:`, `fix!:`), explicit breaking notes | Contract, API, config, or behavior change that breaks existing integrations or requires user action | Internal breaking refactors with no external contract change |
-| **Documentation** | `### 📚 Documentation` | `docs:` | User-facing docs, guides, help center, README sections customers read, API reference prose | Internal ADRs, code comments, agent/skill docs unless shipped to users |
-| **Security** | `### 🔒 Security` | `security:` (or `fix:` when clearly a CVE/patch) | Security patches, vulnerability remediations, hardening users should know about | Routine dependency bumps without a disclosed security impact |
-| **Deprecated** | `### ⏳ Deprecated` | deprecation notices in commit body or `deprecate:` | Features or APIs marked for removal with timeline or replacement path | Removing code without prior deprecation notice → use **Removed** |
-| **Removed** | `### 🗑️ Removed` | removal/sunset commits | Capabilities, endpoints, or UI removed in this release | Hiding UI without deleting capability (often **Improvements** or **Fixes**) |
+**No unreleased sections** — never add `## [Unreleased]`, `## Unreleased`, or any placeholder awaiting a version. When changes exist, propose the next semver and write a dated release section.
 
-### Classification rules
+When scope contains user-visible changes:
 
-1. **One primary category** — pick the best fit; do not duplicate the same change under multiple headings.
-2. **User-visible first** — if the change is not user- or operator-facing, omit it from the changelog (tests, CI, chore, internal refactors).
-3. **Breaking wins** — if a change is both a feature and breaking, file under **Breaking Changes** and mention the new behavior in the bullet.
-4. **Security vs Fixes** — use **Security** when the commit message, advisory, or diff indicates a vulnerability or hardening users must know about; otherwise **Fixes**.
-5. **Documentation is not a catch-all** — README tweaks for developers only stay out unless the audience is internal mode and the user asked for them.
-6. **Empty sections omitted** — never emit a category heading with zero bullets.
+1. Resolve **baseline** per INPUT baseline rules; record as `X.Y.Z` (or `none` when no baseline exists anywhere).
+2. Classify grouped changes (Phase 2), then take the **highest** applicable bump:
 
-### Prefix quick reference
+| Bump | Result | Triggers |
+| --- | --- | --- |
+| **MAJOR** | `X+1.0.0` | Any ⚠️ Breaking Changes or 🗑️ Removed |
+| **MINOR** | `X.Y+1.0` | Any ✨ New Features or ⏳ Deprecated (when no MAJOR trigger) |
+| **PATCH** | `X.Y.Z+1` | 🐛 Fixes, 🔧 Improvements, 📚 Documentation, 🔒 Security only (when no MAJOR/MINOR trigger) |
 
-```
-feat:     → ✨ New Features
-fix:      → 🐛 Fixes (or 🔒 Security when security-related)
-perf:     → 🔧 Improvements
-refactor: → 🔧 Improvements (only if user-visible outcome)
-docs:     → 📚 Documentation
-style:    → 🔧 Improvements (UI/UX polish) or omit if internal
-test/ci/chore/build: → omit unless operator-facing
-feat! / fix! / BREAKING CHANGE: → ⚠️ Breaking Changes
-```
+3. **Propose** baseline, bump class, and target `vX.Y.Z` at the Phase 2 checkpoint; wait for user confirmation before drafting.
+4. At Phase 4, also propose updating the package/manifest `version` (and tagging when the user releases) to match the approved semver.
+
+**No user-visible changes** — stop; do not add release sections or propose a bump.
+
+**No baseline** — start from `0.0.0` and apply the bump class (first feature release → `0.1.0`; fixes-only → `0.0.1`). See `reference.md` for edge cases.
+
+User-provided semver overrides the computed target when explicit.
 
 ---
 
 ## PHASES
-
-**Model specification:** Sonnet for Phases 1–2; Opus for Phase 3; Sonnet for Phase 4. See `reference.md`.
 
 Every bullet must **trace** to a commit, diff, or OpenSpec capability — do not invent features or fixes.
 
 ### Phase 1: Scope
 
 - Resolve commit range per INPUT scope rules.
-- Resolve release version per INPUT version resolution order; record resolved version or `none`.
-- Read `@./CHANGELOG.md` if it exists; note newest date section and whether today's section already exists.
-- If an OpenSpec change is active, read proposal Capabilities and Impact; list every user-visible capability as a checklist.
+- Resolve baseline version per INPUT baseline rules; record `X.Y.Z` or `none`.
+- Read `@./CHANGELOG.md` if it exists; note newest release section; reject or migrate any `[Unreleased]` / `Unreleased` heading (never preserve unreleased sections).
+- If a change root resolved, read that folder's proposal Capabilities and Impact; list every user-visible capability as a checklist.
 - Run `git log` for the resolved range; capture commit messages and hashes.
 - Set audience mode (public default).
-- **CHECKPOINT:** Confirm commit range, version (or date-only fallback), audience mode, and OpenSpec checklist (if any) before proceeding.
-- **Done when:** commit range resolved, version resolved or explicitly omitted, audience mode set, OpenSpec capability checklist listed (or confirmed absent).
+- **CHECKPOINT:** Confirm commit range, baseline version (or `none`), audience mode, and OpenSpec checklist (if any) before proceeding.
+- **Done when:** commit range resolved, baseline recorded, audience mode set, OpenSpec capability checklist listed (or confirmed absent).
 
 ### Phase 2: Analyze
 
@@ -132,9 +106,9 @@ Every bullet must **trace** to a commit, diff, or OpenSpec capability — do not
 - For each group with `feat`, `fix`, or breaking signal, read the relevant diff; note user-visible outcomes.
 - Exclude internal-only work: tests, CI, refactors with no user impact, chore unless operator-facing.
 - Optionally enrich from PR descriptions when they exist; do not fail if none exist.
-- Map each group to a category per **Change Categories**.
+- Map each group to a category per [reference.md](reference.md).
 - Assign release date: `YYYY-MM-DD` (today unless user specifies otherwise).
-- Assign release heading: `## YYYY-MM-DD · vX.Y.Z` when version resolved; otherwise `## YYYY-MM-DD`.
+- Compute proposed semver per **Version bump** from baseline + categories; if no user-visible changes, stop — no release section.
 - Cross-check grouped changes against OpenSpec user-visible Capabilities checklist (when present).
 - Flag missing capabilities, duplicate titles, or empty categories.
 - Identify breaking changes needing migration bullets.
@@ -143,7 +117,8 @@ Every bullet must **trace** to a commit, diff, or OpenSpec capability — do not
 ```markdown
 ### Changelog scope
 - Range: `<range>`
-- Version: `vX.Y.Z` | none (date-only)
+- Baseline: `vX.Y.Z` | none
+- Proposed: `<MAJOR|MINOR|PATCH>` → `vX.Y.Z` (awaiting approval)
 - Mode: public | internal
 - OpenSpec capabilities: N listed, M traced, K gaps
 
@@ -156,8 +131,8 @@ Every bullet must **trace** to a commit, diff, or OpenSpec capability — do not
 - [ ] Capability X — no commit evidence (flag, do not fabricate)
 ```
 
-- **CHECKPOINT:** Resolve gaps (missing capabilities, misclassified items) before drafting prose.
-- **Done when:** grouped changes table presented; every user-visible capability traced or flagged as gap; gaps resolved.
+- **CHECKPOINT:** Resolve gaps and confirm proposed semver before drafting prose.
+- **Done when:** grouped changes table presented; bump proposal shown; every user-visible capability traced or flagged as gap; gaps resolved; user confirms semver.
 
 ### Phase 3: Draft
 
@@ -167,7 +142,7 @@ Every bullet must **trace** to a commit, diff, or OpenSpec capability — do not
 - Breaking changes: add nested migration bullet when users must act (see `reference.md`).
 - Merge duplicates; drop internal noise; enforce voice and format.
 - Omit empty category sections entirely.
-- Present the full release section in chat for review (`## YYYY-MM-DD · vX.Y.Z` when version known; otherwise `## YYYY-MM-DD`).
+- Present the full release section in chat for review (`## YYYY-MM-DD · vX.Y.Z` with approved semver).
 - **CHECKPOINT:** User approves draft before writing to disk.
 - **Done when:** full release section prose presented in chat; user approves at checkpoint.
 
@@ -175,8 +150,8 @@ Every bullet must **trace** to a commit, diff, or OpenSpec capability — do not
 
 - Confirm all validation gates pass:
 
-- [ ] ISO 8601 date in heading (`YYYY-MM-DD`); include ` · vX.Y.Z` when a version was resolved
-- [ ] Category headings match **Change Categories** (emoji + canonical label)
+- [ ] ISO 8601 date + semver in heading (`## YYYY-MM-DD · vX.Y.Z`); no `[Unreleased]` / `Unreleased` sections
+- [ ] Category headings match [reference.md](reference.md) (emoji + canonical label)
 - [ ] No empty category sections
 - [ ] No duplicate titles within the release
 - [ ] Every ⚠️ entry states who is affected + migration when applicable
@@ -186,72 +161,10 @@ Every bullet must **trace** to a commit, diff, or OpenSpec capability — do not
 
 - Update `CHANGELOG.md`:
   - **Prepend** new section at top (newest first).
-  - If today's release section exists (date match, with or without version), **merge into it** — do not duplicate the heading; upgrade a date-only heading to include version when one is now resolved.
+  - If today's release section exists for the same approved semver, **merge into it** — do not duplicate the heading.
   - Re-run for same range **replaces** that section's content.
   - Insert `---` between release sections.
-- **CHECKPOINT:** Present final changelog section and brief summary before commit/publish.
-- **Done when:** `CHANGELOG.md` updated; all validation gates confirmed; user approves.
-
----
-
-## EXPECTATIONS
-
-### Deliverable
-
-An updated `@./CHANGELOG.md` with a new or merged release section. See `reference.md` for format example.
-
-### Audience
-
-- **Default (public):** End users and customers — plain language, outcome-focused.
-- **Internal (on request):** Engineering and operators — scope labels, evidence links, migration detail.
-
-### Quality standards
-
-- One bullet = one user-visible change (grouped from multiple commits when needed).
-- Descriptions explain **what changed for the user**, not which files moved.
-- Breaking changes always include actionable migration guidance when users must act.
-- Tone is concise, professional, and scannable.
-- Every bullet **traces** to a commit, diff, or OpenSpec capability.
-
-### Final package
-
-- Updated `CHANGELOG.md` at repo root
-- Brief summary of: range used, capabilities covered, categories populated, anything excluded as internal-only
-
-### Quality gates
-
-- All Phase 4 validation checks pass
-- User checkpoint approved before treating changelog as final
-
----
-
-## NARROWING
-
-### Compliance
-
-- Follow `@./SKILL.md` as the authoritative format and process spec.
-- Format inspired by Keep a Changelog; do not invent non-standard section names unless the skill allows (Security, Deprecated, Removed).
-
-### Audience specificity
-
-- Default to **public** mode unless the user explicitly requests internal changelog.
-- Do not expose internal ticket IDs, branch names, or refactor details in public mode.
-
-### Style constraints
-
-- Release headings: prefer `## YYYY-MM-DD · vX.Y.Z` when version known; `## YYYY-MM-DD` only as fallback
-- Category headings: use the exact emoji + labels from **Change Categories** (`✨ New Features`, `🔧 Improvements`, `🐛 Fixes`, `⚠️ Breaking Changes`, `📚 Documentation`, `🔒 Security`, `⏳ Deprecated`, `🗑️ Removed`)
-- Entry format: `- **Title** — Description.` (em dash, not hyphen)
-- Separators: `---` between release sections only
-
-### Trace discipline
-
-- Every bullet must trace to a commit, diff, or OpenSpec capability — do not invent features or fixes.
-- If a capability is listed in the proposal but no commit evidence exists, flag it at the checkpoint rather than fabricating an entry.
-
-### Checkpoint discipline
-
-- Do not write to `CHANGELOG.md` until Phase 2 gaps are resolved and Phase 3 draft is approved.
-- Pause at every **CHECKPOINT**; wait for user confirmation before continuing.
-- If interrupted, re-invoke with the same range — re-derive analysis from git, OpenSpec, and `CHANGELOG.md`; idempotent merge prevents duplicates.
-- For cross-session handoff, optionally use `/handoff` — not a skill requirement.
+  - Remove any legacy `[Unreleased]` / `Unreleased` section when migrating content into the new release.
+- Propose manifest `version` (and git tag when releasing) matching approved semver.
+- **CHECKPOINT:** Present final changelog section, proposed version bump, and brief summary before commit/publish.
+- **Done when:** `CHANGELOG.md` updated; all validation gates confirmed; user approves changelog and version bump.

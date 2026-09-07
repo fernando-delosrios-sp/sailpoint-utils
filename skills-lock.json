@@ -5,19 +5,19 @@
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/changelog-generator/SKILL.md",
-      "computedHash": "5a71e82d1f7919955a67f5d181c83e993f2dc7063a8bbdcb9dc8c70038f9463b"
+      "computedHash": "38cc7315e028e7e0cb21e09ee32a950882c7bfc335755450d2e5d408b0dcd884"
     },
     "code-simplification": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/code-simplification/SKILL.md",
-      "computedHash": "5235011bb65cfb32c08107586c8518706142bb366a8687a092ef0e9c704b2cce"
+      "computedHash": "5efdc18bb9524f455dc2e6b6e0a6b9762b9b2b894ea176d49358ae9de12765ca"
     },
     "git-commit": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
       "skillPath": "skills/engineering/git-commit/SKILL.md",
-      "computedHash": "85ed61b6d6a835360c4953f2719f5c32eff9092331e5a5f0fc3d64f2ac8624c0"
+      "computedHash": "71f3d2a300823034f1b6baaab39dc64368d7e96c413d69c6a8b837d2a2d952d0"
     }
   }
 }

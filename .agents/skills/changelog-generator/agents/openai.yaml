@@ -1,3 +1,3 @@
 interface:
   display_name: Changelog Generator
-  short_description: Automatically creates user-facing changelogs from git commits by anal...
+  short_description: Creates user-facing changelogs from spec changes and git history.
