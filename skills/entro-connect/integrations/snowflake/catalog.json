@@ -1,0 +1,111 @@
+{
+  "tile": "Snowflake",
+  "category": "security-and-identity",
+  "integrationPaths": [
+    {
+      "name": "Snowflake",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "snow"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Display Name",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Account URL",
+          "secret": false,
+          "obtainedHow": "https://<account>.snowflakecomputing.com from Profile \u2192 Account \u2192 View Account Details."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment",
+          "prompt": "Environment label for Entro",
+          "purpose": "Operator-chosen Entro environment label",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment",
+          "default": "Development"
+        },
+        {
+          "key": "display_name",
+          "prompt": "Display Name in Entro",
+          "purpose": "Operator-chosen Entro display name",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Display Name"
+        },
+        {
+          "key": "entro_user",
+          "prompt": "Snowflake username for Entro",
+          "purpose": "Names the Snowflake user this run creates and verifies with DESC USER",
+          "validation": "Snowflake identifier; unquoted names are stored uppercase",
+          "secret": false,
+          "default": "ENTRO"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create the Entro Snowflake user",
+          "instruction": "In Snowflake, create the Entro user with key-pair auth and Entro's documented grants; store the private key in the operator vault, not in chat.",
+          "evidence": "Snowflake shows the Entro user with the documented role"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create the Entro Snowflake user",
+          "preview": "snow sql -q \"SHOW USERS LIKE 'ENTRO%'\" (inspect collision)",
+          "mutation": "snow sql -q \"CREATE USER ... RSA_PUBLIC_KEY=...; GRANT ROLE ...\" per Entro's documented grants; operator stores the private key in the vault",
+          "target": "Snowflake account",
+          "expectedChange": "Snowflake shows the Entro user with the documented role",
+          "verification": "snow sql -q \"DESC USER <entro_user>\"",
+          "rollbackOrImpact": "DROP USER created this run after Approve",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/security-and-identity/snowflake/snowflake-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "snow"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect a Snowflake account so Entro can discover secrets and NHIs with a key-pair user.",
+  "connectionFields": [
+    {
+      "name": "Environment",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Display Name",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Account URL",
+      "secret": false,
+      "obtainedHow": "https://<account>.snowflakecomputing.com from Profile \u2192 Account \u2192 View Account Details."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

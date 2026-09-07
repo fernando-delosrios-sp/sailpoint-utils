@@ -1,0 +1,2609 @@
+openapi: 3.0.0
+info:
+  title: Entro Security API
+  version: 1.0.0
+host: api.entro.io
+basePath: /v2
+servers:
+- url: https://eval-api.entro.security
+  description: Main server
+tags:
+- name: Risk
+  description: Query and Manage your risks
+- name: Exposed Secret
+  description: Query and Manage your exposed secrets
+- name: Scanner
+  description: Scan content for exposed secrets
+- name: Reporting
+  description: Get reporting data
+- name: Employee
+  description: Query employee directory and employee-scoped resources
+- name: User Audit Log
+  description: Query user action audit logs
+- name: Provision
+  description: Query infrastructure provisioning status
+components:
+  securitySchemes:
+    Api-Key:
+      type: apiKey
+      name: Authorization
+      in: header
+security:
+- Api-Key: []
+paths:
+  /v1/risk/{RISK_GUID}:
+    get:
+      tags:
+      - Risk
+      summary: Retrieve risk details
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: enableEnrichment
+        in: query
+        required: false
+        description: Flag to enable enrichment in the response
+        schema:
+          type: boolean
+      - name: mitigationAi
+        in: query
+        required: false
+        description: When true, include an AI-generated mitigation under `mitigationAi`
+          in the response. If the risk does not yet have one, it is generated on demand
+          and persisted (subsequent calls return the cached value). Generation calls
+          an LLM and may add latency; omit or set to false to keep the response shape
+          unchanged.
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                guid: RSK-1273
+                accountId: infosecmachine
+                severity: MEDIUM
+                owner: adam.cheriki@acme.com
+                detectionTime: '1688302174'
+                type: EXPOSURE
+                rule: EXPOSED_GITHUB
+                status: OPEN
+                summary: A secret of type Certificate is exposed inside 1 commit of
+                  the file 'exposure.cert' in the private GitHub repository called
+                  'acme/test'.
+                threatDescription: Storing secrets in a GitHub repository poses a
+                  serious security risk because it's often shared with multiple team
+                  members, or in some cases, publicly, which increases the risk of
+                  the sensitive information being leaked or misused.
+                mitigationAi:
+                  steps:
+                  - Revoke the leaked credential in the GitHub UI immediately.
+                  - Rotate the secret in your secret manager and update all consumers.
+                  - Audit recent uses of the credential for unauthorized access.
+                  taskLevel: MEDIUM
+                payload:
+                  tokenStatus: ENABLED
+                  tokenType: CERTIFICATE
+                  tokenSnippet: '----- BEGIN CERT...'
+                  organization: acme
+                  repository: test
+                  visibility: PUBLIC
+                  filename: exposure.cert
+                  commitAuthor: adam.cheriki
+                  commitUrl: https://github.com/acme/test/commit/34567d343755bd123f82051681e206da99b400bb
+                  commitDate: '2022-12-01T16:12:42Z'
+                account:
+                  uid: 550e8400-e29b-41d4-a716-446655440000
+                  environmentType: PRODUCTION
+                  environment: Acme
+                  accountId: infosecmachine
+                  accountType: GITHUB
+  /v1/risk/{RISK_GUID}/status:
+    post:
+      tags:
+      - Risk
+      summary: Update risk status
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              status: IN_PROGRESS
+              comment: Working on it
+      responses:
+        '204':
+          description: Successful update
+    get:
+      tags:
+      - Risk
+      summary: Get risk status
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                status: IN_PROGRESS
+                entroUser: adam.cheriki@acme.com
+                comment: Working on it
+  /v1/risk/{RISK_GUID}/owner:
+    post:
+      tags:
+      - Risk
+      summary: Update risk owner
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              businessOwner: eyal.neemany@acme.com
+              comment: He is the actual business owner of this risk
+      responses:
+        '204':
+          description: Successful update
+    get:
+      tags:
+      - Risk
+      summary: Get risk owner
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                businessOwner: eyal.neemany@acme.com
+                entroUser: adam.cheriki@acme.com
+                comment: He is the actual business owner of this risk
+  /v1/risk/{RISK_GUID}/comment:
+    post:
+      tags:
+      - Risk
+      summary: Add risk comment
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              entroUser: adam.cheriki@acme.com
+              message: He is the actual business owner of this risk
+      responses:
+        '204':
+          description: Successful update
+    get:
+      tags:
+      - Risk
+      summary: Get risk comments
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                entroUser: adam.cheriki@acme.com
+                comment: He is the actual business owner of this risk
+  /v1/risk/{RISK_GUID}/revalidate:
+    get:
+      deprecated: true
+      tags:
+      - Risk
+      summary: Revalidate risk's exposed secret
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                status: ENABLED
+                isArchived: false
+    post:
+      tags:
+      - Risk
+      summary: Start process for risk revallidation
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                trackingId: 05829995-fa2f-4712-b17f-47dc2165658d
+  /v1/risk/{RISK_GUID}/severity:
+    post:
+      tags:
+      - Risk
+      summary: Update risk severity
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                severity:
+                  type: string
+                  enum:
+                  - LOW
+                  - MEDIUM
+                  - HIGH
+                  - CRITICAL
+                comment:
+                  type: string
+                  description: Optional comment when updating severity
+              required:
+              - severity
+            example:
+              severity: CRITICAL
+              comment: Investigated and confirmed as critical
+      responses:
+        '200':
+          description: Risk severity updated successfully
+          content:
+            application/json:
+              example:
+                message: Risk severity updated successfully
+  /v1/risk/{RISK_GUID}/revalidate/{TRACKING_ID}/status:
+    get:
+      tags:
+      - Risk
+      summary: Check status of risk invalidation process
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: TRACKING_ID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                processStatus: DONE
+                status: ENABLED
+                isArchived: false
+        '404':
+          description: Not found/expired
+          content:
+            application/json:
+              example:
+                processStatus: NOT_FOUND
+                status: NOT_FOUND
+                isArchived: false
+                message: Request associated with tracking id asd is either not found
+                  or has expired
+  /v1/risk/{RISK_GUID}/changelog:
+    get:
+      tags:
+      - Risk
+      summary: Get risk changelog
+      parameters:
+      - name: RISK_GUID
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                changelog:
+                - status: IN_PROGRESS
+                  prevStatus: OPEN
+                  entroUser: adam.cheriki@acme.com
+                  entroUserType: ENTRO_BOT,ENTRO_AUTO,API,HUMAN
+                  comment: Working on it
+                  businessOwner: ''
+                  date: '2023-08-24T10:30:00Z'
+  /v1/risks:
+    get:
+      tags:
+      - Risk
+      summary: List risks
+      parameters:
+      - name: limit
+        in: query
+        required: true
+        description: The maximum number of risks to return in the response.
+        schema:
+          type: integer
+          default: 50
+      - name: skip
+        in: query
+        required: false
+        description: The number of risks to skip before selecting data.
+        schema:
+          type: integer
+      - name: severity
+        in: query
+        required: false
+        description: Severity of the risk
+        schema:
+          type: string
+          enum:
+          - UNKNOWN
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+      - name: riskStatus
+        in: query
+        required: false
+        description: Status of the risk
+        schema:
+          type: string
+          enum:
+          - OPEN
+          - IN_PROGRESS
+          - DISCARDED
+          - MITIGATED
+          - APPROVED
+          - RESOLVED
+      - name: category
+        in: query
+        required: false
+        description: Category of the risk. For complete list of risk categories, please
+          use the /v1/utils/risk-category endpoint
+        schema:
+          type: string
+          enum:
+          - CLOUD_SERVICE_RISKS
+          - ABNORMAL_BEHAVIOR
+          - MISCONFIGURATION
+          - SECRET_HYGINE
+          - EXPOSED_SECRET
+          - LEAST_PRIVILEGE
+          - MONITORING
+      - name: source
+        in: query
+        required: false
+        description: Source of the risk. For complete list of risk types, please use
+          the /v1/utils/risk-source endpoint
+        schema:
+          type: string
+      - name: secretType
+        in: query
+        required: false
+        description: Secret exposed of the Risk. For complete list of risk types,
+          please use the /v1/utils/list/secret-type endpoint
+        schema:
+          type: string
+      - name: fromDate
+        in: query
+        required: false
+        description: Filter risks from this date (MM-DD-YYYY)
+        schema:
+          type: string
+          pattern: ^(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])-[0-9]{4}$
+      - name: fromModifyDate
+        in: query
+        required: false
+        description: Filter risks from this modification date (MM-DD-YYYY)
+        schema:
+          type: string
+          pattern: ^(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])-[0-9]{4}$
+      - name: enableEnrichment
+        in: query
+        required: false
+        description: Flag to enable enrichment in the response
+        schema:
+          type: boolean
+      - name: validity
+        in: query
+        required: false
+        description: Validity of the exposed secret (coexist only with ?category=EXPOSED_SECRET)
+        schema:
+          type: string
+          enum:
+          - INVALID
+          - ENABLED
+          - DISABLED
+          - UNSUPPORTED
+          - UNREACHABLE
+          - REVOKED
+      - name: employee
+        in: query
+        required: false
+        description: An employee of the risk. The exact full name or email of the
+          employee required.
+        schema:
+          type: string
+      - name: commits
+        in: query
+        required: false
+        description: One or more (max 10) Git commit SHAs to filter exposed secrets
+          by. Use a single SHA or provide multiple SHAs separated by commas (e.g.,
+          'commits=34567d343755bd123f82051681e206da99b400bb,34567d343755bd123f82051681e206da99b40012')
+          to find risks associated with specific commits.
+        schema:
+          type: string
+      - name: ruleCode
+        in: query
+        required: false
+        description: Filter risks by their specific rule code (e.g. ROTATION, EXPOSED_GITHUB,
+          IDLE_SECRET). Use this for fine-grained selection within a category.
+        schema:
+          type: string
+      - name: subCategory
+        in: query
+        required: false
+        description: 'Filter risks by a human-readable sub-category label that maps
+          to a curated set of rule codes. Examples: ''Overused secrets'', ''Token
+          behavior anomaly detections'', ''Secret fetch IP address anomaly'', ''Suspicious
+          secret exposure and activity''. Unknown labels return 400.'
+        schema:
+          type: string
+      - name: tag
+        in: query
+        required: false
+        description: Filter risks containing one of the given tags (any-of semantics).
+          Pass repeatedly to filter against multiple tags, e.g. ?tag=country:US&tag=priority:high.
+        schema:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+        explode: true
+      - name: accountId
+        in: query
+        required: false
+        description: 'Filter risks by exact accountId. Note: this matches the value
+          stored on the Risk row, which equals the response field `accountId`. For
+          risks whose source is AZURE_FUNCTION_APP / AZURE_APP_CONFIGURATION / SHAREPOINT,
+          the response `accountId` is rewritten to the Azure publisherDomain — pass
+          that publisherDomain value to filter those risks.'
+        schema:
+          type: string
+      - name: properties
+        in: query
+        required: false
+        description: Project the response to only the listed top-level risk properties
+          (e.g. 'guid,severity,name'). Pass as a comma-separated string or repeat
+          the param. When omitted or empty, the full risk object is returned.
+        schema:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        explode: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                risks:
+                - guid: RSK-1273
+                  severity: MEDIUM
+                  owner: adam.cheriki@acme.com
+                  detectionTime: '1688302174'
+                  type: EXPOSURE
+                  rule: EXPOSED_GITHUB
+                  status: OPEN
+                  summary: A secret of type Certificate is exposed inside 1 commit
+                    of the file 'exposure.cert' in the private GitHub repository called
+                    'acme/test'.
+                  threatDescription: Storing secrets in a GitHub repository poses
+                    a serious security risk because it's often shared with multiple
+                    team members, or in some cases, publicly, which increases the
+                    risk of the sensitive information being leaked or misused.
+                  payload:
+                    tokenStatus: ENABLED
+                    tokenType: CERTIFICATE
+                    tokenSnippet: '----- BEGIN CERT...'
+                    organization: acme
+                    repository: test
+                    visibility: PUBLIC
+                    filename: exposure.cert
+                    commitAuthor: adam.cheriki
+                    commitUrl: https://github.com/acme/test/commit/34567d343755bd123f82051681e206da99b400bb
+                    commitDate: '2022-12-01T16:12:42Z'
+                  account:
+                    uid: 550e8400-e29b-41d4-a716-446655440000
+                    environmentType: PRODUCTION
+                    environment: Acme
+                    accountId: infosecmachine
+                    accountType: GITHUB
+  /v1/utils/risk-source:
+    get:
+      tags:
+      - Utils
+      summary: List risk sources
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                riskSources:
+                - AWS_LAMBDA
+                - GCP_FUNCTION
+                - BITBUCKET_REPO_COMMIT
+                - AZURE_FUNCTION_APP
+                - AZURE_DEV_OPS_WIKI_PAGE
+  /v1/utils/risk-category:
+    get:
+      tags:
+      - Utils
+      summary: List risk categories
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                riskCategories:
+                - CLOUD_SERVICE_RISKS
+                - ABNORMAL_BEHAVIOR
+                - MISCONFIGURATION
+                - SECRET_HYGINE
+                - EXPOSED_SECRET
+                - LEAST_PRIVILEGE
+                - MONITORING
+  /v1/utils/secret-type:
+    get:
+      tags:
+      - Utils
+      summary: List secret types
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                secretTypes:
+                - AWS_IAM_ACCESS_KEY
+  /v1/risks/query:
+    get:
+      tags:
+      - Risk
+      summary: List risks
+      parameters:
+      - name: skip
+        in: query
+        required: false
+        description: The number of risks to skip before selecting data.
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        required: false
+        description: The maximum number of risks to return in the response.
+        schema:
+          type: integer
+      - name: severity
+        in: query
+        required: false
+        description: 'Filter for risks with specified severities, by executing this
+          filter: "?severity=HIGH|CRITICAL". The complete list of risk severities
+          can be retrieved via the /v1/risks endpoint'
+        schema:
+          type: string
+      - name: riskStatus
+        in: query
+        required: false
+        description: 'Filter for risks with specified statuses, by executing this
+          filter: "?riskStatus=OPEN|APPROVED". The complete list of risk types can
+          be retrieved via the /v1/risk-type endpoint'
+        schema:
+          type: string
+      - name: category
+        in: query
+        required: false
+        description: 'Filter risks with specific secret category, OR condition example:
+          "?category=EXPOSED_SECRET|ABNORMAL_BEHAVIOR". The complete list of supported
+          secret categories can be retrieved via the /v1/utils/risk-category endpoint'
+        schema:
+          type: string
+      - name: source
+        in: query
+        required: false
+        description: 'Filter risks with specific source, OR condition example: "?source=AWS_LAMBDA|@GITHUB@".
+          You can use the ‘@@’ to look for partial secret source (contains operator).
+          For complete list of risk types, please use the /v1/utils/risk-source endpoint'
+        schema:
+          type: string
+      - name: secretType
+        in: query
+        required: false
+        description: 'Filter risks with specific secret type, OR condition example:
+          "?secretType=GCP_SERVICE_ACCOUNT_CREDS|@GITHUB@". You can use the ‘@@’ to
+          look for partial secret type name (contains operator). The complete list
+          of supported secret types can be retrieved via the /v1/secret-type endpoint'
+        schema:
+          type: string
+      - name: fromDate
+        in: query
+        required: false
+        description: 'Filter risks creation dates, by using the following filter example:
+          "?fromDate=10-22-2023"'
+        schema:
+          type: string
+          pattern: ^(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])-[0-9]{4}$
+      - name: fromModifyDate
+        in: query
+        required: false
+        description: 'Filter risks modification dates, by using the following filter
+          example: "?fromModifyDate=10-22-2023"'
+        schema:
+          type: string
+          pattern: ^(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])-[0-9]{4}$
+      - name: enableEnrichment
+        in: query
+        required: false
+        description: Flag to enable enrichment in the response
+        schema:
+          type: boolean
+      - name: validity
+        in: query
+        required: false
+        description: Validity of the exposed secret (coexist only with ?category=EXPOSED_SECRET)
+        schema:
+          type: string
+          enum:
+          - INVALID
+          - ENABLED
+          - DISABLED
+          - UNSUPPORTED
+          - UNREACHABLE
+          - REVOKED
+      - name: employee
+        in: query
+        required: false
+        description: An employee of the risk. The exact full name or email of the
+          employee required.
+        schema:
+          type: string
+      - name: commits
+        in: query
+        required: false
+        description: One or more (max 10) Git commit SHAs to filter exposed secrets
+          by. Use a single SHA or provide multiple SHAs separated by commas (e.g.,
+          'commits=34567d343755bd123f82051681e206da99b400bb,34567d343755bd123f82051681e206da99b40012')
+          to find risks associated with specific commits.
+        schema:
+          type: string
+      - name: ruleCode
+        in: query
+        required: false
+        description: Filter risks by their specific rule code (e.g. ROTATION, EXPOSED_GITHUB,
+          IDLE_SECRET). Use this for fine-grained selection within a category.
+        schema:
+          type: string
+      - name: subCategory
+        in: query
+        required: false
+        description: 'Filter risks by a human-readable sub-category label that maps
+          to a curated set of rule codes. Examples: ''Overused secrets'', ''Token
+          behavior anomaly detections'', ''Secret fetch IP address anomaly'', ''Suspicious
+          secret exposure and activity''. Unknown labels return 400.'
+        schema:
+          type: string
+      - name: tag
+        in: query
+        required: false
+        description: Filter risks containing one of the given tags (any-of semantics).
+          Pass repeatedly to filter against multiple tags, e.g. ?tag=country:US&tag=priority:high.
+        schema:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+        explode: true
+      - name: accountId
+        in: query
+        required: false
+        description: 'Filter risks by exact accountId. Note: this matches the value
+          stored on the Risk row, which equals the response field `accountId`. For
+          risks whose source is AZURE_FUNCTION_APP / AZURE_APP_CONFIGURATION / SHAREPOINT,
+          the response `accountId` is rewritten to the Azure publisherDomain — pass
+          that publisherDomain value to filter those risks.'
+        schema:
+          type: string
+      - name: properties
+        in: query
+        required: false
+        description: Project the response to only the listed top-level risk properties
+          (e.g. 'guid,severity,name'). Pass as a comma-separated string or repeat
+          the param. When omitted or empty, the full risk object is returned.
+        schema:
+          type: array
+          items:
+            type: string
+          maxItems: 100
+        explode: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                risks:
+                - guid: RSK-1273
+                  severity: MEDIUM
+                  owner: adam.cheriki@acme.com
+                  detectionTime: '1688302174'
+                  type: EXPOSURE
+                  rule: EXPOSED_GITHUB
+                  status: OPEN
+                  summary: A secret of type Certificate is exposed inside 1 commit
+                    of the file 'exposure.cert' in the private GitHub repository called
+                    'acme/test'.
+                  threatDescription: Storing secrets in a GitHub repository poses
+                    a serious security risk because it's often shared with multiple
+                    team members, or in some cases, publicly, which increases the
+                    risk of the sensitive information being leaked or misused.
+                  payload:
+                    tokenStatus: ENABLED
+                    tokenType: CERTIFICATE
+                    tokenSnippet: '----- BEGIN CERT...'
+                    organization: acme
+                    repository: test
+                    visibility: PUBLIC
+                    filename: exposure.cert
+                    commitAuthor: adam.cheriki
+                    commitUrl: https://github.com/acme/test/commit/34567d343755bd123f82051681e206da99b400bb
+                    commitDate: '2022-12-01T16:12:42Z'
+                  account:
+                    uid: 550e8400-e29b-41d4-a716-446655440000
+                    environmentType: PRODUCTION
+                    environment: Acme
+                    accountId: infosecmachine
+                    accountType: GITHUB
+  /v1/employees:
+    get:
+      tags:
+      - Employee
+      summary: List Employee
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        description: The maximum number of employees to return in the response. Can't
+          be over 10000
+        schema:
+          type: integer
+          default: 1000
+      - name: skip
+        in: query
+        required: false
+        description: The number of employees to skip before selecting data.
+        schema:
+          type: integer
+          default: 0
+      - name: status
+        in: query
+        required: false
+        description: Employee status
+        schema:
+          type: string
+      - name: division
+        in: query
+        required: false
+        description: Employee division
+        schema:
+          type: string
+      - name: department
+        in: query
+        required: false
+        description: Employee department
+        schema:
+          type: string
+      - name: organization
+        in: query
+        required: false
+        description: Employee organization
+        schema:
+          type: string
+      - name: employeeType
+        in: query
+        required: false
+        description: Employee type
+        schema:
+          type: string
+          enum:
+          - HUMAN
+          - APP
+          - UNKNOWN
+      - name: azureEmployeeType
+        in: query
+        required: false
+        description: Employee Azure type
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                employees:
+                - fullName: Adam Cheriki
+                  status: ACTIVE
+                  division: CTO
+                  department: Engineering
+                  organization: Entro
+                  manager: null
+                  phone: null
+                  aliases:
+                  - adam@entro.security
+                  ownerUid: 3213ea55-a05d-48b9-8330-ad684b0a6692
+                  email: adam.cheriki@entro.security
+                  accounts: '["120798482511","adam-testing-3"]'
+                  title: Co-founder and Chief Technology Officer
+                  creationDate: '2023-06-07T07:51:20.000Z'
+                  lastLogin: null
+                  idpSources:
+                  - OKTA
+                  employeeType: HUMAN
+                  azureEmployeeType: Member
+  /v1/employee/{EMPLOYEE_EMAIL}:
+    get:
+      tags:
+      - Employee
+      summary: Get employee by email
+      description: 'Returns the Okta-synced profile for one employee: name, email,
+        Entro owner UID, group names, manager email (from Okta), and training status
+        when present in synced Okta user data. The path email is matched case-insensitively
+        against directory data.'
+      parameters:
+      - name: EMPLOYEE_EMAIL
+        in: path
+        required: true
+        description: Employee email address (URL-encoded if needed).
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                ownerUid: 3213ea55-a05d-48b9-8330-ad684b0a6692
+                firstName: Adam
+                lastName: Cheriki
+                email: adam.cheriki@entro.security
+                source: okta
+                groups:
+                - Everyone
+                - Engineering
+                managerEmail: ceo@entro.security
+                trainingStatus: true
+  /v1/employee/{EMPLOYEE_EMAIL}/nhis:
+    get:
+      tags:
+      - Employee
+      summary: Get NHIs by employee
+      parameters:
+      - name: EMPLOYEE_EMAIL
+        in: path
+        required: true
+        description: The employee email or alias.
+        schema:
+          type: string
+      - name: skip
+        in: query
+        required: false
+        description: The number of NHIs to skip before selecting data.
+        schema:
+          type: integer
+          default: 0
+      - name: limit
+        in: query
+        required: false
+        description: The maximum number of NHIs to return in the response. Can't be
+          over 100
+        schema:
+          type: integer
+          default: 100
+      - name: account
+        in: query
+        required: false
+        description: Filter for NHIs from specified account id
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: Filter for NHIs with specified status
+        schema:
+          type: string
+      - name: identityType
+        in: query
+        required: false
+        description: Filter for NHIs with specified identity type
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                employeeEmail: employee@acme.com
+                employeeAliases:
+                - employee@acme.co.uk
+                employeeName: Employee McEmployee
+                isFormerEmployee: true
+                nhis:
+                - tokenId: ABC123DEF456
+                  accountId: github account id
+                  status: Active
+                  accessedDate: '2024-01-01T16:12:42Z'
+                  rotationDate: '2023-12-01T16:12:42Z'
+                  identity: DevUser
+                  identityType: AWS Role
+  /v1/employee/{EMPLOYEE_EMAIL}/exposedSecrets:
+    get:
+      tags:
+      - Employee
+      summary: Get Exposed Secrets by employee
+      parameters:
+      - name: EMPLOYEE_EMAIL
+        in: path
+        required: true
+        description: The employee email or alias.
+        schema:
+          type: string
+      - name: skip
+        in: query
+        required: false
+        description: The number of Exposed Secrets to skip before selecting data.
+        schema:
+          type: integer
+          default: 0
+      - name: limit
+        in: query
+        required: false
+        description: The maximum number of Exposed Secrets to return in the response.
+          Can't be over 100
+        schema:
+          type: integer
+          default: 100
+      - name: account
+        in: query
+        required: false
+        description: Filter for Exposed Secrets from specified account id
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: Filter for Exposed Secrets with specified status
+        schema:
+          type: string
+          enum:
+          - INVALID
+          - ENABLED
+          - DISABLED
+          - UNSUPPORTED
+          - UNREACHABLE
+          - REVOKED
+      - name: severity
+        in: query
+        required: false
+        description: Filter for Exposed Secrets with specified risk severity
+        schema:
+          type: string
+          enum:
+          - UNKNOWN
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+      - name: exposedAt
+        in: query
+        required: false
+        description: Filter for Exposed Secrets with specified exposed at location.
+        schema:
+          type: string
+          enum:
+          - AWS_LAMBDA
+          - GCP_FUNCTION
+          - BITBUCKET_REPO_COMMIT
+          - AZURE_FUNCTION_APP
+          - AZURE_DEV_OPS_WIKI_PAGE
+          - AZURE_APP_CONFIGURATION
+          - GITHUB_REPO_COMMIT
+          - AWS_PARAMETER_STORE
+          - CONFLUENCE
+          - SLACK_CHANNEL
+          - JIRA
+          - MICROSOFT_TEAMS_CHANNEL
+          - AZURE_DEV_OPS_COMMIT
+          - GITHUB_ACTIONS_WORKFLOWS_LOG
+          - GITLAB_REPO_COMMIT
+          - FILES_SHARING_SMB
+          - SHAREPOINT
+          - GITHUB_PULL_REQUEST
+          - GITHUB_PULL_REQUEST_COMMENT
+          - BUILDKITE_BUILD_LOGS
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                employeeEmail: employee@acme.com
+                employeeAliases:
+                - employee@acme.co.uk
+                employeeName: Employee McEmployee
+                isFormerEmployee: true
+                exposedSecrets:
+                - exposedType: GITHUB_TOKEN
+                  exposedAt: GITHUB_PULL_REQUEST
+                  accountId: github account id
+                  status: ENABLED
+                  severity: LOW
+                  exposurePath: config/app.yml
+                  secretSnippet: Password=1
+  /v1/scan/auditLogs:
+    get:
+      tags:
+      - Scanner
+      summary: Gets the scanner audit logs
+      parameters:
+      - name: from
+        in: query
+        required: false
+        description: Date format dd/mm/yyyy
+        schema:
+          type: string
+      - name: to
+        in: query
+        required: false
+        description: Date format dd/mm/yyyy
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        description: Maximum number of results to return
+        schema:
+          type: integer
+          default: 5000
+      responses:
+        '200':
+          description: Real response is without redundancy
+          content:
+            application/json:
+              example:
+              - request_id: 5ae363e4-0661-46cc-a56b-133b7fda1e9b
+                secrets: []
+                timestamp: 1741510628000
+                date: '2025-03-09T08:57:08.000Z'
+              - request_id: b14b4819-e055-47bc-a4a5-2d6881211009
+                secrets:
+                - secret_type: GITHUB_API_TOKEN
+                  exposed_value: ghp_BT*******************ffv32CiUiw1R82UC7vz
+                  line_number: 1
+                timestamp: 1741510053000
+                date: '2025-03-09T08:47:33.000Z'
+  /v1/scan:
+    post:
+      deprecated: true
+      tags:
+      - Scanner
+      summary: Scan content for exposed secrets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              data: ghp_<redacted>
+      responses:
+        '200':
+          description: Successful update
+          content:
+            application/json:
+              example:
+                requestId: f0418d19-3464-4a46-99a5-d0dab5f64613
+                results:
+                  request_id: f0418d19-3464-4a46-99a5-d0dab5f64613
+                  secrets:
+                  - secret_type: GITHUB_API_TOKEN
+                    exposed_value: ghp_<redacted>
+                    line_number: 1
+  /v2/scan:
+    post:
+      tags:
+      - Scanner
+      summary: Scan content for exposed secrets
+      parameters:
+      - name: generic
+        in: query
+        required: false
+        description: Allow generic secret type
+        schema:
+          type: boolean
+      - name: redact
+        in: query
+        required: false
+        description: Redact secrets from the response
+        schema:
+          type: boolean
+      - name: aiClassification
+        in: query
+        required: false
+        description: Set to true to enable AI classification of scan results.
+        schema:
+          type: boolean
+      - name: aiInsights
+        in: query
+        required: false
+        description: Set to true to enable AI insight enrichment. Only applies when
+          aiClassification is enabled.
+        schema:
+          type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              data: ghp_<redacted>
+      responses:
+        '200':
+          description: Successful update
+          content:
+            application/json:
+              example:
+                requestId: 9752d9bd-58c4-4e98-9ab2-df5a50c79ccf
+                totalCount: 1
+                results:
+                - origin: GITHUB_API_TOKEN
+                  value: ghp_<redacted>
+                  line: 1
+  /v1/exposed-secrets:
+    get:
+      tags:
+      - Exposed Secret
+      summary: List exposed secrets
+      parameters:
+      - name: skip
+        in: query
+        required: false
+        description: The number of exposed secrets to skip before selecting data.
+        schema:
+          type: integer
+      - name: limit
+        in: query
+        required: false
+        description: The maximum number of exposed secrets to return in the response.
+        schema:
+          type: integer
+          default: 50
+          maximum: 50
+          minimum: 1
+      - name: fromDate
+        in: query
+        required: false
+        description: 'Filter risks creation dates, by using the following filter example:
+          "?fromDate=10-22-2023"'
+        schema:
+          type: string
+          pattern: ^(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])-[0-9]{4}$
+      - name: createdAt
+        in: query
+        required: false
+        description: 'Filter exposed secrets by Entro creation date (MM-DD-YYYY),
+          by using the following filter example: "?createdAt=10-22-2023"'
+        schema:
+          type: string
+          pattern: ^(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])-[0-9]{4}$
+      - name: isGeneric
+        in: query
+        required: false
+        description: Filter for exposed secrets of type generic
+        schema:
+          type: boolean
+      - name: isArchived
+        in: query
+        required: false
+        description: Filter for archived exposed secrets
+        schema:
+          type: boolean
+          default: false
+      - name: severity
+        in: query
+        required: false
+        description: Filter for exposed secrets with specified severities
+        schema:
+          type: string
+          enum:
+          - UNKNOWN
+          - LOW
+          - MEDIUM
+          - HIGH
+          - CRITICAL
+      - name: status
+        in: query
+        required: false
+        description: Filter for exposed secrets with specified status
+        schema:
+          type: string
+          enum:
+          - INVALID
+          - ENABLED
+          - DISABLED
+          - UNSUPPORTED
+          - UNREACHABLE
+          - REVOKED
+      - name: source
+        in: query
+        required: false
+        description: Filter for exposed secrets with specified source
+        schema:
+          type: string
+      - name: account
+        in: query
+        required: false
+        description: Filter for exposed secrets with specified account id
+        schema:
+          type: string
+      - name: type
+        in: query
+        required: false
+        description: Filter for exposed secrets with specified type
+        schema:
+          type: string
+      - name: publicExposure
+        in: query
+        required: false
+        description: Filter for pubiclly exposed secrets
+        schema:
+          type: boolean
+      - name: commits
+        in: query
+        required: false
+        description: One or more (max 10) Git commit SHAs to filter exposed secrets
+          by. Use a single SHA or provide multiple SHAs separated by commas (e.g.,
+          'commits=34567d343755bd123f82051681e206da99b400bb,34567d343755bd123f82051681e206da99b40012')
+          to find exposed secrets associated with specific commits.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                exposedSecrets:
+                - exposedId: EXP-1
+                  severity: HIGH
+                  status: ENABLED
+                  exposureUrl: https://example.com
+                  isGeneric: false
+                  keyId: keyid
+                  secretValue: secretvalue
+                  location: lambda123
+                  locationType: AWS_LAMBDA
+                  owner: owner123
+                  path: path123
+                  type: AWS_ACCESS_KEY
+                  snippet: snippet123
+                  tags:
+                  - tag1
+                  - tag2
+                  targetAccount: target123
+                  vendorHash: vendorhash123
+                  occurrences:
+                  - EXP-123
+                  - EXP-456
+                  account:
+                    uid: 550e8400-e29b-41d4-a716-446655440000
+                    id: acc123
+                    type: AWS
+                    environment: prod
+                    environmentType: DEVELOPMENT
+                    tags:
+                    - tag1
+                    - tag2
+                  employee:
+                    name: John Doe
+                    email: john@example.com
+                  redactedSecret: '***secret***'
+                  hash: hash123
+                  isPublic: true
+  /v1/exposed-secret/{EXP_GUID}/blacklist:
+    patch:
+      tags:
+      - Exposed Secret
+      summary: Adds or removes an exposed secret hash from the blacklist to prevent
+        it from being displayed in the system
+      parameters:
+      - name: EXP_GUID
+        in: path
+        description: The exposed secret guid
+        required: true
+        schema:
+          type: string
+          pattern: ^EXP-\d+$
+      - name: action
+        in: query
+        description: Determines the operation
+        required: true
+        schema:
+          type: string
+          enum:
+          - add
+          - remove
+      - name: entroUser
+        in: query
+        description: The identifier of the user performing the action
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: 'Number of exposed secrets that have been added/removed to
+                  the blacklist: [NUMBER]'
+  /v1/exposed-secret/{EXP_GUID}/whitelist:
+    patch:
+      tags:
+      - Exposed Secret
+      summary: Adds or removes an exposed secret hash from the whitelist to mark the
+        secret as a true one
+      parameters:
+      - name: EXP_GUID
+        in: path
+        description: The exposed secret guid
+        required: true
+        schema:
+          type: string
+          pattern: ^EXP-\d+$
+      - name: action
+        in: query
+        description: Determines the operation
+        required: true
+        schema:
+          type: string
+          enum:
+          - add
+          - remove
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: 'Number of exposed secrets that have been added/removed to
+                  the whitelist: [NUMBER]'
+  /v1/exposed-secret/{EXP_GUID}/tags:
+    patch:
+      tags:
+      - Exposed Secret
+      summary: Adds tag to an exposed secret
+      parameters:
+      - name: EXP_GUID
+        in: path
+        description: The exposed secret guid
+        required: true
+        schema:
+          type: string
+          pattern: ^EXP-\d+$
+      - name: tag
+        in: query
+        description: new tag to add to the exposed secret
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: 'Number of exposed secrets that have been added/removed to
+                  the whitelist: [NUMBER]'
+  /v1/reporting:
+    get:
+      tags:
+      - Reporting
+      summary: Get exposed secrets reporting data
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: '[{"account": "GITHUB", "exposedRisk": "exposed Risk", "total":
+                  10, "resolved": "10%"}]'
+  /v1/connectors:
+    get:
+      tags:
+      - Connectors
+      summary: List connectors
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: '[{"name": "connector-name", "isCloud": true, "status": "active",
+                  "integrations": ["GITHUB", "AWS", "ATLASSIAN"]}]'
+  /v1/accounts:
+    get:
+      tags:
+      - Accounts
+      summary: List integrated accounts
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: '[{"accountType": "GITLAB", "environment": "Production",
+                  "status": "active", "uid": "uid-456", "connectorId": "connector-123",
+                  "createdAt": "2025-10-29T12:00:00Z"}]'
+  /v1/accounts/health:
+    get:
+      tags:
+      - Accounts
+      summary: Check account status
+      parameters:
+      - name: accountUid
+        in: query
+        required: true
+        description: The unique identifier for the account
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: '{"app": [{"name": "permission-1", "granted": true}], "user":
+                  [{"name": "permission-2", "granted": true}, {"name": "permission-3",
+                  "granted": false}]}'
+  /v1/accounts/scan:
+    post:
+      tags:
+      - Accounts
+      summary: Run a scan for an account specific location
+      parameters:
+      - name: accountUid
+        in: query
+        required: true
+        description: The unique identifier for the account
+        schema:
+          type: string
+      - name: locationUrl
+        in: query
+        required: true
+        description: Insert the URL for the location we need to scan
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: Completed
+  /v1/integrations/atlassian:
+    post:
+      tags:
+      - Integrations
+      summary: Onboard new Atlassian account or update existing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                environment:
+                  type: string
+                url:
+                  type: string
+                username:
+                  type: string
+                token:
+                  type: string
+                connector_id:
+                  type: string
+                is_cloud:
+                  type: boolean
+                uid:
+                  type: string
+                  description: Use the account UID to update the account
+              required:
+              - environment
+              - url
+              - username
+              - token
+              - connector_id
+              - is_cloud
+            example:
+              environment: prod
+              url: https://your-company.atlassian.net
+              username: user@example.com
+              token: atlassian-api-token
+              connector_id: connector-123
+              is_cloud: true
+              uid: account-123
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: Atlassian onboarded successfully
+  /v1/integrations/confluence:
+    post:
+      tags:
+      - Integrations
+      summary: Onboard new Confluence account or update existing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                environment:
+                  type: string
+                url:
+                  type: string
+                username:
+                  type: string
+                token:
+                  type: string
+                connector_id:
+                  type: string
+                cloudId:
+                  type: string
+                is_cloud:
+                  type: boolean
+                uid:
+                  type: string
+                  description: Use the account UID to update the account
+              required:
+              - environment
+              - url
+              - username
+              - token
+              - connector_id
+              - cloudId
+              - is_cloud
+            example:
+              environment: prod
+              url: https://your-company.atlassian.net
+              username: user@example.com
+              token: atlassian-api-token
+              connector_id: connector-123
+              cloudId: 12345678-1234-1234-1234-123456789123
+              is_cloud: true
+              uid: account-123
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: Confluence onboarded successfully
+  /v1/integrations/jira:
+    post:
+      tags:
+      - Integrations
+      summary: Onboard new Jira account or update existing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                environment:
+                  type: string
+                url:
+                  type: string
+                username:
+                  type: string
+                token:
+                  type: string
+                connector_id:
+                  type: string
+                cloudId:
+                  type: string
+                is_cloud:
+                  type: boolean
+                uid:
+                  type: string
+                  description: Use the account UID to update the account
+              required:
+              - environment
+              - url
+              - username
+              - token
+              - connector_id
+              - cloudId
+              - is_cloud
+            example:
+              environment: prod
+              url: https://your-company.atlassian.net
+              username: user@example.com
+              token: atlassian-api-token
+              connector_id: connector-123
+              cloudId: 12345678-1234-1234-1234-123456789123
+              is_cloud: true
+              uid: account-123
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: Jira onboarded successfully
+  /v1/integrations/gitlab:
+    post:
+      tags:
+      - Integrations
+      summary: Onboard new Gitlab account or update existing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                environment:
+                  type: string
+                url:
+                  type: string
+                port:
+                  type: integer
+                username:
+                  type: string
+                token:
+                  type: string
+                connector_id:
+                  type: string
+                is_cloud:
+                  type: boolean
+                uid:
+                  type: string
+                  description: Use the account UID to update the account
+              required:
+              - environment
+              - url
+              - port
+              - username
+              - token
+              - connector_id
+              - is_cloud
+            example:
+              environment: dev
+              url: https://gitlab.company.com
+              port: 443
+              username: gitlab_user
+              token: gitlab-pat
+              connector_id: connector-456
+              is_cloud: true
+              uid: account-123
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: Gitlab onboarded successfully
+  /v1/integrations/aws:
+    post:
+      tags:
+      - Integrations
+      summary: Onboard new AWS account or update existing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                environment:
+                  type: string
+                role:
+                  type: string
+                  description: AWS IAM role ARN to assume
+                connector_id:
+                  type: string
+                uid:
+                  type: string
+                  description: Use the account UID to update the account
+              required:
+              - environment
+              - role
+              - connector_id
+            example:
+              environment: prod
+              role: arn:aws:iam::123456789012:role/EntroScanRole
+              connector_id: connector-123
+              uid: account-123
+              external_id: custom-external-id
+              is_saf_sourced: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                message: AWS onboarded successfully
+                accountUid: account-123
+                accountId: '123456789012'
+  /v1/integrations/github/app:
+    post:
+      tags:
+      - Integrations
+      summary: Onboard a new GitHub App integration
+      description: Creates a new GitHub account integration using a GitHub App installation.
+        Validates the installation against GitHub, associates it with the specified
+        remote agent (connector), and triggers an initial GitHub scan.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                installation_id:
+                  type: integer
+                  description: The GitHub App installation ID returned after installing
+                    the Entro GitHub App on an organization.
+                remote_agent_uid:
+                  type: string
+                  format: uuid
+                  description: The UID of the remote agent (connector) that will scan
+                    this GitHub integration.
+                account_name:
+                  type: string
+                  description: Optional display name for the account. Defaults to
+                    the GitHub organization login. If not provided, the organization
+                    id will be used as the display name.
+                git_server_enabled:
+                  type: boolean
+                  description: Optional. When true, enables clone-based scanning for
+                    faster history scans. When omitted on create, defaults to false.
+              required:
+              - installation_id
+              - remote_agent_uid
+            example:
+              installation_id: 129095504
+              remote_agent_uid: 00000000-0000-4000-8000-000000000001
+              account_name: Production GitHub
+              git_server_enabled: true
+      responses:
+        '200':
+          description: GitHub account onboarded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  accountUid:
+                    type: string
+                    description: Unique identifier of the onboarded GitHub account
+                      integration.
+                  accountId:
+                    type: string
+                    description: GitHub organization login.
+                  environment:
+                    type: string
+                    description: GitHub organization login.
+                  accountName:
+                    type: string
+                    description: Display name of the account in Entro.
+                  githubOrganizationId:
+                    type: string
+                    description: GitHub organization login.
+                  repositorySelection:
+                    type: string
+                    nullable: true
+                    enum:
+                    - all
+                    - selected
+                    description: GitHub App repository selection scope for the installation.
+                required:
+                - message
+                - accountUid
+                - accountId
+                - environment
+                - accountName
+                - githubOrganizationId
+                - repositorySelection
+              example:
+                message: GitHub onboarded successfully
+                accountUid: 550e8400-e29b-41d4-a716-446655440000
+                accountId: my-org
+                environment: my-org
+                accountName: my-org
+                githubOrganizationId: my-org
+                repositorySelection: all
+        '400':
+          description: Validation error, invalid installation, or connector error
+          content:
+            application/json:
+              examples:
+                invalidInstallation:
+                  summary: Invalid or inaccessible GitHub installation
+                  value:
+                    message: Invalid or inaccessible GitHub installation
+                connectorNotFound:
+                  summary: Connector not found
+                  value:
+                    message: 'Connector not found: bad-connector'
+        '403':
+          description: Invalid API key or customer not found
+          content:
+            application/json:
+              example:
+                message: Invalid api key
+        '500':
+          description: Internal server error or GitHub App credentials not configured
+          content:
+            application/json:
+              examples:
+                credentialsNotConfigured:
+                  summary: GitHub App credentials not configured
+                  value:
+                    message: GitHub App credentials are not configured
+                internalError:
+                  summary: Internal server error
+                  value:
+                    message: Internal server error
+    patch:
+      tags:
+      - Integrations
+      summary: Update an existing GitHub App integration
+      description: Updates an existing GitHub account integration identified by account_uid.
+        Re-validates the GitHub App installation, updates credentials and connector
+        association, and triggers a GitHub scan.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_uid:
+                  type: string
+                  description: The UID of the existing GitHub account integration
+                    to update.
+                installation_id:
+                  type: integer
+                  description: The GitHub App installation ID for the organization.
+                remote_agent_uid:
+                  type: string
+                  format: uuid
+                  description: The UID of the remote agent (connector) that will scan
+                    this GitHub integration.
+                account_name:
+                  type: string
+                  description: Optional display name for the account. Defaults to
+                    the GitHub organization login. If not provided, the organization
+                    id will be used as the display name.
+                git_server_enabled:
+                  type: boolean
+                  description: Optional. When true, enables clone-based scanning for
+                    faster history scans. When omitted on update, the current stored
+                    gitServerEnabled value on the account is preserved unchanged.
+              required:
+              - account_uid
+              - installation_id
+              - remote_agent_uid
+            example:
+              account_uid: 550e8400-e29b-41d4-a716-446655440000
+              installation_id: 129095504
+              remote_agent_uid: 00000000-0000-4000-8000-000000000001
+              account_name: Updated GitHub
+              git_server_enabled: true
+      responses:
+        '200':
+          description: GitHub account updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  accountUid:
+                    type: string
+                    description: Unique identifier of the updated GitHub account integration.
+                  accountId:
+                    type: string
+                    description: GitHub organization login.
+                  environment:
+                    type: string
+                    description: GitHub organization login.
+                  accountName:
+                    type: string
+                    description: Display name of the account in Entro.
+                  githubOrganizationId:
+                    type: string
+                    description: GitHub organization login.
+                  repositorySelection:
+                    type: string
+                    nullable: true
+                    enum:
+                    - all
+                    - selected
+                    description: GitHub App repository selection scope for the installation.
+                required:
+                - message
+                - accountUid
+                - accountId
+                - environment
+                - accountName
+                - githubOrganizationId
+                - repositorySelection
+              example:
+                message: GitHub account updated successfully
+                accountUid: 550e8400-e29b-41d4-a716-446655440000
+                accountId: my-org
+                environment: my-org
+                accountName: Updated GitHub
+                githubOrganizationId: my-org
+                repositorySelection: selected
+        '400':
+          description: Validation error, invalid installation, or connector error
+          content:
+            application/json:
+              example:
+                message: Invalid or inaccessible GitHub installation
+        '403':
+          description: Invalid API key or customer not found
+          content:
+            application/json:
+              example:
+                message: Invalid api key
+        '404':
+          description: GitHub account integration not found
+          content:
+            application/json:
+              example:
+                message: GitHub account integration not found
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              example:
+                message: Internal server error
+  /v1/identity-now/nhi:
+    get:
+      tags:
+      - Identity Now
+      summary: Get All the NHIs formatted for Identity Now
+      parameters:
+      - name: accountType
+        in: query
+        required: false
+        description: Filter for NHIs with specified account type
+        schema:
+          type: string
+          enum:
+          - GITHUB
+          - AWS
+          - AZURE
+          - GCP
+          - OKTA
+      - name: take
+        in: query
+        required: false
+        description: The maximum number of NHIs to return in the response. Can't be
+          over 2000
+        schema:
+          type: integer
+          default: 2000
+      - name: skip
+        in: query
+        required: false
+        description: The offset to use for pagination
+        schema:
+          type: integer
+          default: 0
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                items:
+                - attributes:
+                    entroUniqueIdentifier: TKN-4242
+                    nhiName: data-science-platform-manager
+                    sourceSystem: AWS
+                    account: '156949362959'
+                    accountNickname: account-nickname
+                    environment: DEVELOPMENT
+                    token: AKIARWGDZ7FZHKQZ332
+                    nhiType: AWS IAM Access Key
+                    nhiStatus: Active
+                    tags:
+                    - aws-bot
+                    - lab-test
+                    createdDate: '2024-03-26T09:58:49.047Z'
+                    expirationDate: '2024-06-24T08:58:49.047Z'
+                    isActive: true
+                    isAdmin: false
+                    owner: Eyal Neemany
+                    ownerEmail: Eyal.Neemany@entro.security
+                    lastActivityDate: null
+                    url: https://us-east-1.console.aws.amazon.com/iam/home?region=us-east-1#/users/details/data-science-platform-manager?section=permissions
+                    entroTokenUrl: https://entro.security.com/admin/nhi-tokens-inventory?customFilter=&externalFilters=&tokenGuid=TKN-4242
+                    permissions:
+                    - s3:listbucket
+                hasNext: true
+                nextSkipOffset: 1
+                totalCount: 1
+  /v2/identity-now/nhi:
+    get:
+      tags:
+      - Identity Now
+      summary: Get All the NHIs formatted for Identity Now
+      parameters:
+      - name: accountType
+        in: query
+        required: false
+        description: Filter for NHIs with specified account type
+        schema:
+          type: string
+          enum:
+          - GITHUB
+          - AWS
+          - AZURE
+          - GCP
+          - OKTA
+      - name: take
+        in: query
+        required: false
+        description: The maximum number of NHIs to return in the response. Can"t be
+          over 2000
+        schema:
+          type: integer
+          default: 2000
+      - name: skip
+        in: query
+        required: false
+        description: The offset to use for pagination
+        schema:
+          type: integer
+          default: 0
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                items:
+                - id: d1afd34e-1831-4399-9938-e4489542d10f
+                  name: 90939623-6bd9-4d90-bdf2-cf32aa59346c
+                  displayName: 90939623-6bd9-4d90-bdf2-cf32aa59346c
+                  tokenID: d1afd34e-1831-4399-9938-e4489542d10f
+                  creationDate: '2024-11-19T14:05:55.919Z'
+                  LastRotated: '2024-11-19T14:05:55.919Z'
+                  expirationDate: '2025-05-18T13:05:55.919Z'
+                  accountID: 61079d10-2aa1-45ec-88d9-151a89595782
+                  accountNameInEntro: dev
+                  accountType: AZURE
+                  NHIType: Azure App Registration
+                  status: Inactive
+                  isActive: false
+                  isIdle: true
+                  isProduction: false
+                  email: eyal.neemany@entro.security
+                  employeeNumber: null
+                  familyName: null
+                  givenName: null
+                  tags: null
+                  riskSeverity: MEDIUM
+                  ownerName: Eyal Neemany
+                  ownerEmail: eyal.neemany@entro.security
+                  manager: null
+                  entroGuid: TKN-41
+                  permissions: azure.teamsappinstallation.readforuser.all, azure.device.read.all
+                  phoneNumber: ''
+                  secondaryEmail: null
+                  secondaryPhoneNumber: null
+                  complianceBreach: null
+                  exposed: false
+                  suspiciousActivity: false
+                hasNext: true
+                nextSkipOffset: 1
+                totalCount: 1
+  /v1/identity-now/nhi/ai-agents:
+    get:
+      tags:
+      - Identity Now
+      summary: Get All AI Agents formatted for Identity Now
+      parameters:
+      - name: take
+        in: query
+        required: false
+        description: The maximum number of AI agents to return in the response. Can't
+          be over 5000
+        schema:
+          type: integer
+          default: 5000
+      - name: skip
+        in: query
+        required: false
+        description: The offset to use for pagination
+        schema:
+          type: integer
+          default: 0
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                items:
+                - id: ChatGPT:17e607b3-6c05-4e41-a871-e9c3f1df0d5e
+                  name: ChatGPT
+                  displayName: ChatGPT
+                  environment: Entro Security Product
+                  classification: Third-party
+                  riskSeverity: UNKNOWN
+                  sourceSystem: Azure
+                  sourceType: SaaS Application
+                  ownerName: Eyal Neemany
+                  ownerEmail: eyal.neemany@entro.security
+                  sourceURL: https://portal.azure.com/#view/Microsoft_AAD_IAM/ManagedAppMenuBlade/~/Permissions/objectId/17e607b3-6c05-4e41-a871-e9c3f1df0d5e/appId/e0476654-c1d5-430b-ab80-70cbd947616a
+                  connectedServices: SharePoint:READ,Outlook:READ,Teams:READ
+                  insights: Sanctioned target MCP by policy
+                  nonAdminIdentityToken: Eyal@azurenewentrogmail.onmicrosoft.com
+                  adminIdentityToken: null
+                  email: eyal.neemany@entro.security
+                  employeeNumber: null
+                  familyName: null
+                  givenName: null
+                  manager: null
+                  phoneNumber: null
+                  secondaryEmail: null
+                  secondaryPhoneNumber: null
+                  lastUsed: '2026-02-10T17:10:00.000Z'
+                hasNext: true
+                nextSkipOffset: 100
+                totalCount: 142
+  /v1/identity-now/nhi-permissions:
+    get:
+      tags:
+      - Identity Now
+      summary: Get All the Permissions for the NHIs formatted for Identity Now
+      parameters:
+      - name: accountType
+        in: query
+        required: false
+        description: Filter for permissions with specified account type
+        schema:
+          type: string
+          enum:
+          - GITHUB
+          - AWS
+          - AZURE
+          - GCP
+          - OKTA
+      - name: number_of_token_to_process
+        in: query
+        required: false
+        description: The maximum number of tokens to process in a single request.
+          Can't be over 2000. We extract permissions from the tokens in chunks of
+          this size.
+        schema:
+          type: integer
+          default: 2000
+      - name: nextToken
+        in: query
+        required: false
+        description: The token to use for pagination. It's returned in the previous
+          response.
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                items:
+                - name: aws.s3:listbucket
+                  displayName: s3:listbucket
+                  accountType: AWS
+                - name: github.workflow
+                  displayName: workflow
+                  accountType: GITHUB
+                - name: github.repo
+                  displayName: repo
+                  accountType: GITHUB
+                - name: aws.ec2:get*
+                  displayName: ec2:get*
+                  accountType: AWS
+                hasNext: true
+                nextToken: <token-next-cursor>
+                nextRequestURL: https://app.entro.security/api/entroApi/identity-now/nhi-permissions?nextToken=<token-next-cursor>
+  /v1/identity-now/nhi-permissions/ai-agents:
+    get:
+      tags:
+      - Identity Now
+      summary: Get AI agent connected services and identities for Identity Now
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                items:
+                - connectedService: SharePoint (17e607b3-6c05-4e41-a871-e9c3f1df0d5e)
+                  identity: eyal.neemany@entro.security
+                - connectedService: Entra (17e607b3-6c05-4e41-a871-e9c3f1df0d5e)
+                  identity: All Users
+  /v1/entroKeys/config:
+    put:
+      tags:
+      - Entro API Keys
+      summary: Configure API Key Expiration Settings
+      description: Set the maximum and default expiration days for API keys.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxExpiry:
+                  type: integer
+                  minimum: 1
+                  maximum: 3650
+                  description: Maximum allowed expiration days for API keys
+                  example: 365
+                defaultExpiry:
+                  type: integer
+                  minimum: 1
+                  maximum: 3650
+                  description: Default expiration days pre-filled when creating API
+                    keys
+                  example: 90
+            example:
+              maxExpiry: 365
+              defaultExpiry: 90
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              example:
+                maxExpiry: 365
+                defaultExpiry: 90
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              example:
+                message: defaultExpiry (180) cannot exceed maxExpiry (90)
+  /v1/entroKeys/{provider}/webhook:
+    post:
+      tags:
+      - Entro API Keys
+      summary: Generate Webhook Credentials for a Provider
+      description: Generates webhook authentication credentials for real-time secret
+        scanning via the specified provider. Uses the customer's configured default
+        expiration from /v1/entroKeys/config.
+      parameters:
+      - name: provider
+        in: path
+        required: true
+        description: The webhook provider to generate credentials for
+        schema:
+          type: string
+          enum:
+          - github
+          - gitlab
+      responses:
+        '200':
+          description: Webhook credentials generated successfully
+          content:
+            application/json:
+              example:
+                webhook: https://app.entro.security/api/entroApi/webhooks/github/12345678-1234-1234-1234-123456789123
+                Authorization: ent_**************************************************
+        '404':
+          description: Unsupported provider
+          content:
+            application/json:
+              example:
+                message: 'Unsupported provider. Must be one of: github, gitlab'
+  /v1/entroKeys:
+    get:
+      tags:
+      - Entro API Keys
+      summary: Get a List of All Active Platform API Keys
+      parameters:
+      - name: permissionsType
+        in: query
+        required: true
+        description: Filter for api keys with specified permission type
+        schema:
+          type: string
+          enum:
+          - Full-Access
+          - Scanner
+          - Webhook
+      - name: creatorName
+        in: query
+        required: false
+        description: Filter by the email of the api key creator
+        schema:
+          type: string
+          minLength: 3
+      - name: keyName
+        in: query
+        required: false
+        description: Filter by the name of the api key
+        schema:
+          type: string
+          minLength: 3
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+              - id: 9c3a344f-fb11-4b59-965a-4d401ada82ab
+                name: Production-Scanner
+                created: '2026-01-21T13:03:15.944Z'
+                expires: '2026-04-21T12:03:15.944Z'
+                type: scanner
+                lastUsed: '2026-01-21T13:04:02.118Z'
+                status: ACTIVE
+                creator: firstname.lastname@entro.security
+        '400':
+          description: Invalid session or forbidden
+        '500':
+          description: Internal server error
+    post:
+      tags:
+      - Entro API Keys
+      summary: Create a New Platform API Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - expiry
+              - name
+              - type
+              properties:
+                expiry:
+                  type: integer
+                  minimum: 1
+                  maximum: 365
+                  description: Expiry time in days
+                  example: 99
+                name:
+                  type: string
+                  description: The display name for the key
+                  example: Production-Scanner
+                type:
+                  type: string
+                  enum:
+                  - Full-Access
+                  - Scanner
+                  example: Full-Access
+      responses:
+        '200':
+          description: Key created successfully
+          content:
+            application/json:
+              example:
+                name: New API Key
+                created: '2026-01-22T09:05:18.615Z'
+                expires: '2026-05-02T08:05:18.615Z'
+                apiKey: '**************************************************'
+                status: ACTIVE
+                type: entro
+                isNew: true
+                id: b78e2dfb-afb9-4b8e-847d-19b932840b53
+    delete:
+      tags:
+      - Entro API Keys
+      summary: Delete an API Key
+      parameters:
+      - name: id
+        in: query
+        required: true
+        description: The ID of the key to be deleted
+        schema:
+          type: string
+          example: b78e2dfb-afb9-4b8e-847d-19b932840b53
+      responses:
+        '200':
+          description: Successfully deleted
+          content:
+            application/json:
+              example:
+                message: success
+  /v1/user-audit-log:
+    get:
+      tags:
+      - User Audit Log
+      summary: List user audit log entries
+      description: Returns a paginated list of user actions ordered by date (newest
+        first). Supports cursor-based pagination and optional filtering by user email.
+      parameters:
+      - name: email
+        in: query
+        required: false
+        description: Filter entries by user email address
+        schema:
+          type: string
+          example: user@example.com
+      - name: limit
+        in: query
+        required: false
+        description: Maximum number of entries to return (1-1000, default 100)
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 1000
+          default: 100
+      - name: nextToken
+        in: query
+        required: false
+        description: Pagination cursor returned from a previous response
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                items:
+                - id: 42
+                  userId: user-abc123
+                  email: user@example.com
+                  action: ADD_ACCOUNT
+                  date: '2026-05-21T10:30:00.000Z'
+                nextToken: eyJkYXRlIjoiMjAyNi0wNS0yMVQxMDozMDowMC4wMDBaIiwiaWQiOjQyfQ
+                hasNext: true
+        '400':
+          description: Invalid query parameters
+        '403':
+          description: Invalid API key
+  /v1/provision/customer/status:
+    get:
+      tags:
+      - Provision
+      summary: Get customer provisioning status
+      description: Returns the live provisioning status of the customer infrastructure
+        workflow.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                status: success
+        '401':
+          description: Invalid, expired, or revoked API key
+        '403':
+          description: API key not authorized for this endpoint, or customer not found
+        '404':
+          description: Customer provisioning job not found
+  /v1/provision/remote-agents/status:
+    get:
+      tags:
+      - Provision
+      summary: List remote agent provisioning statuses
+      description: Returns the live provisioning status for each remote agent with
+        a provisioning job.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                agents:
+                - uid: 00000000-0000-4000-8000-000000000001
+                  status: in_progress
+        '401':
+          description: Invalid, expired, or revoked API key
+        '403':
+          description: API key not authorized for this endpoint, or customer not found
+  /v1/provision/remote-agent/{AGENT_UID}/status:
+    get:
+      tags:
+      - Provision
+      summary: Get remote agent provisioning status
+      parameters:
+      - name: AGENT_UID
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              example:
+                status: success
+        '401':
+          description: Invalid, expired, or revoked API key
+        '403':
+          description: API key not authorized for this endpoint, or customer not found
+        '404':
+          description: Agent provisioning job not found

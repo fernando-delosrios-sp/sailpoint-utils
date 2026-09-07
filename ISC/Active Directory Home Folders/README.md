@@ -28,12 +28,11 @@ Use the [SailPoint Identity Security Cloud VS Code extension](https://marketplac
 On each IQService host that may execute the rule:
 
 1. Confirm the IQService Windows Service **Run As** account can create and write under `<IQService>\scripts`.
-2. Confirm `Utils.dll` exists in the IQService install directory. The rule loads it from `$script:RuleIQServiceDirectory` after bootstrap, then from `$PSScriptRoot` if needed. If neither works, set `HomeFolderUtilsDllPath` to the full path.
-3. Verify the IQService **Run As** service account can create folders and set NTFS ACLs on the target share or volume.
-4. Set the IQService Windows Service **Run As** account to that service account (not Local System or the logged-on user).
-5. Confirm the PowerShell execution policy allows the generated runtime script to run.
+2. Verify the IQService **Run As** service account can create folders and set NTFS ACLs on the target share or volume.
+3. Set the IQService Windows Service **Run As** account to that service account (not Local System or the logged-on user).
+4. Confirm the PowerShell execution policy allows the generated runtime script to run.
 
-The rule does not import the `ActiveDirectory` module, so RSAT is not required on the IQService host.
+The rule does not need `Utils.dll` or the `ActiveDirectory` module, so neither a separate SailPoint assembly setup nor RSAT is required.
 
 ### 3. Create the connector rule
 
@@ -91,7 +90,7 @@ Optional script overrides. If defined, they win over the matching source attribu
 
 ### Source attributes
 
-The rule also reads configuration from the SailPoint **Application Hashmap** (source `connectorAttributes`). ISC passes source attributes to IQService via the `$env:Application` XML payload.
+The rule reads configuration from the SailPoint **Application Hashmap** (source `connectorAttributes`) through the template's `$ctx.Application` interface.
 
 Configure these attributes on your AD source using the [SailPoint Identity Security Cloud VS Code extension](https://marketplace.visualstudio.com/items?itemName=yannick-beot-sp.vscode-sailpoint-identitynow) (open the source and edit its connector attributes).
 
@@ -99,14 +98,27 @@ Configure these attributes on your AD source using the [SailPoint Identity Secur
 | :------------------------- | :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `HomeFolderBasePath`       | `string`  | Root path used when `HomeFolderTemplate` resolves to a **relative** path. Ignored when the expanded template is absolute. Required for relative templates. **Use a UNC path, not a mapped drive letter** — see [Mapped drives](#mapped-drives-do-not-work). For a UNC value, include the server name and point at a folder inside an existing share (`\\fileserver\SharedFolders\HomeDir`), not at the share root itself. |
 | `HomeFolderTemplate`       | `string`  | **Optional.** Path template with placeholders filled from the account request. Supports `$attributeName` and `{attributeName}` (case-insensitive attribute match). If blank or still containing unresolved placeholders after expansion, defaults to `sAMAccountName`.                                                                                                                                                    |
-| `HomeFolderDebugEnabled`   | `boolean` | Set to `"true"` to enable extra process debug lines (template expansion, request object dump, Utils.dll candidate misses). The template context block is always written.                                                                                                                                                                                                                                                  |
-| `HomeFolderUtilsDllPath`   | `string`  | **Optional.** Full path to `Utils.dll` on the IQService host. Set this only when the automatic lookup described under [IQService prerequisites](#2-iqservice-prerequisites) fails.                                                                                                                                                                                                                                        |
+| `HomeFolderDebugEnabled`   | `boolean` | Set to `"true"` to enable extra process debug lines for template expansion and resolved configuration. The template context block is always written.                                                                                                                                                                                                                                                                     |
 | `HomeFolderFailOnError`    | `boolean` | **Optional.** Overrides `PwshSilentError` at process time. `"false"` sets silent mode so the run reports success and the failure is recorded in the rule log only. See [Failure handling](#failure-handling).                                                                                                                                                                                                             |
 | `PwshSilentError`          | `boolean` | **Optional.** Template option, default `false`. When `true`, process failures exit `0`. Script `$PwshSilentError` wins if defined.                                                                                                                                                                                                                                                                                        |
 | `PwshUnsafePayloadLogging` | `boolean` | **Optional.** Template option, default `false`. When `true`, logs and replay scripts store raw payloads. Script `$PwshUnsafePayloadLogging` wins if defined.                                                                                                                                                                                                                                                              |
 | `PwshReplay`               | `boolean` | **Optional.** Template option, default `false`. When `true`, write a replay script whose timestamp matches that run's log. Script `$PwshReplay` wins if defined.                                                                                                                                                                                                                                                          |
 
 `HomeFolderLogFile` is no longer used. Logs always go under `<IQService>\scripts` as described in the template.
+
+### How this rule reads inputs
+
+This rule is the working example of the template's `$ctx` interface:
+
+```powershell
+if ($ctx.Request.Operation -eq "Create") {
+    $samAccountName = Get-RequestAttribute "sAMAccountName"
+    $basePath = Get-ApplicationAttribute "HomeFolderBasePath"
+    $template = Get-ApplicationAttribute "HomeFolderTemplate"
+}
+```
+
+Request and application XML are normalized once during bootstrap. Simple values remain text, multi-valued attributes remain arrays, and nested application settings remain key/value maps. See the template's [Rule input context](../PowerShell%20Rule%20Template/README.md#rule-input-context) documentation for the complete interface and Modify behavior.
 
 ### Example source configuration
 
@@ -153,19 +165,18 @@ Creates `C:\Shared Folders\Personal\<sAMAccountName>`.
 
 1. IQService copies the uploaded rule to a generated runtime file such as `Script_<GUID>.ps1` and executes it after a successful AD account creation.
 2. Template bootstrap resolves the IQService directory (preferring one that contains `IQService.exe` or `Utils.dll`), creates `<IQService>\scripts` if needed, and opens a per-run log. It then preserves the runtime script with SHA256 verification when IQService provided a backing file; if it did not, that step is skipped with a warning and logging is unaffected.
-3. The template writes a context block (rule type, request operation, identity, redacted payloads) before any home-folder work.
-4. Custom process code reads `$env:Application` for home-folder configuration and loads `Utils.dll` from the resolved IQService directory.
-5. It parses `$env:Request` into an `AccountRequest`.
-6. On `Create` operations only, it builds an attribute map from the account request (including `nativeIdentity`).
-7. It expands `HomeFolderTemplate` using account request attribute values.
-8. Path resolution:
+3. The template converts the application and account request XML into `$ctx.Application` and `$ctx.Request`, then writes a context block (rule type, request operation, identity, redacted payloads).
+4. Custom process code reads home-folder settings with `Get-ApplicationAttribute` and account values with `Get-RequestAttribute`; no `Utils.dll` parsing is required.
+5. On `Create` operations only, it builds a template attribute map from `$ctx.Request.Attributes` and includes `NativeIdentity`.
+6. It expands `HomeFolderTemplate` using account request attribute values.
+7. Path resolution:
    - **Blank or unresolved template** → use `sAMAccountName` as the path fragment.
    - **Absolute expanded path** (`\\server\share\...` or `X:\...`) → use it directly; base path is ignored.
    - **Relative expanded path** → `Join-Path` of `HomeFolderBasePath` + expanded template. Fails if base path is missing. Creates `HomeFolderBasePath` first if it does not exist.
 
    Before creating anything, the rule validates the root of the path: a drive letter must be visible to the service, and a UNC share root (`\\server\share`) must already exist and be reachable. See [`The path is not of a legal form`](#the-path-is-not-of-a-legal-form).
 
-9. It creates the home folder (and any missing intermediate directories) if needed, breaks NTFS inheritance, and applies Full Control for the new user and `BUILTIN\Administrators`.
+8. It creates the home folder (and any missing intermediate directories) if needed, breaks NTFS inheritance, and applies Full Control for the new user and `BUILTIN\Administrators`.
 
 ## Artifact layout
 
@@ -249,23 +260,11 @@ If the IQService log shows a non-zero exit code but no rule log appears, establi
 
 1. Confirm the updated rule was uploaded to the tenant.
 2. Confirm the rule name appears in `connectorAttributes.nativeRules`.
-3. Search the whole IQService host for `Active Directory Home Folders_*.log`, not just `<IQService>\scripts`. The rule derives its artifacts directory at runtime, so a log written somewhere unexpected means the resolved IQService directory was wrong. The `IQServiceDirectorySource` line in that log says how the directory was chosen; anything other than a directory containing `IQService.exe` or `Utils.dll` is a guess.
+3. Search the whole IQService host for `Active Directory Home Folders_*.log`, not just `<IQService>\scripts`. The rule derives its artifacts directory at runtime, so a log written somewhere unexpected means the resolved IQService directory was wrong. The `IQServiceDirectorySource` line says whether a normal IQService marker was found or the directory was only a fallback guess.
 4. Check for an emergency log under `%TEMP%` named `Active Directory Home Folders_<timestamp>.emergency.log`, or `Script_<GUID>_<timestamp>.emergency.log` if `$ConnectorRuleName` is empty. `%TEMP%` is resolved for the IQService **Run As** account, so look under that account's profile (or `C:\Windows\Temp` for `LOCAL SYSTEM`), not your own.
 5. Confirm the IQService Run As account can create and write under `<IQService>\scripts`.
 
 If nothing appears at any of those paths, the script never ran. The rule was not re-uploaded or is not in `nativeRules`, the PowerShell execution policy or antivirus is blocking it, or the uploaded rule body is malformed.
-
-### `Utils.dll could not be loaded`
-
-The log lists every path that was searched, and whether each one was missing or present-but-unloadable.
-
-- **Missing from every path**: copy the real path of `Utils.dll` from the IQService install directory into the `HomeFolderUtilsDllPath` source attribute.
-- **Found but failed to load**: the file is most likely blocked by Windows because it came from a downloaded archive. Right-click `Utils.dll` → **Properties** → tick **Unblock** → **Apply**. Then confirm the PowerShell execution policy is not `Restricted`:
-
-```powershell
-Get-ExecutionPolicy -List
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine
-```
 
 ### Need the raw request or application payload
 

@@ -10,7 +10,9 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | --- | --- |
 | [`ISC/`](ISC/) | Rules, transforms, forms, and tenant configuration patterns |
 | [`SaaS Connectivity/`](SaaS%20Connectivity/) | Connector testing helpers and custom-operation templates |
+| [`Entro/`](Entro/) | Entro integration tooling and agent skills |
 | [`Third-Party/`](Third-Party/) | Integrations with external systems |
+| [`skills/`](skills/) | Installable agent skills (`npx skills add`) |
 | [`IIQ/`](IIQ/) | IdentityIQ assets *(reserved)* |
 
 ## ISC utilities
@@ -26,6 +28,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | [Optimistic Provisioning Generic SDIM](ISC/Optimistic%20Provisioning%20Generic%20SDIM/) | Configuration guide for optimistic provisioning with Generic SDIM |
 | [Organizational Hierarchy Path](ISC/Organizational%20Hierarchy%20Path/) | IdentityAttribute rule that builds a consolidated org hierarchy path from entitlements |
 | [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) | Copy-ready IQService connector-rule bootstrap with logging, redaction, exit handling, and optional replay |
+| [Source Connection Setup](ISC/Source%20Connection%20Setup/) | Entra ID app registration, AWS SaaS IAM role setup, Google Workspace SaaS service account setup, and IQService host control (download, install, update, service, logging, Utils.dll unblock) |
 | [Transforms](ISC/Transforms/) | Reusable transform definitions (dates, lifecycle state, attribute history, manager flag) |
 
 ## SaaS Connectivity
@@ -41,6 +44,31 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | --- | --- |
 | [OrangeHRM → ISC aggregation](Third-Party/OrangeHRM/) | Triggers SailPoint account aggregation after OrangeHRM employee lifecycle events |
 
+## Entro
+
+| Utility | Description |
+| --- | --- |
+| [entro-connect](Entro/entro-connect/) | Agent skill and tooling to walk SailPoint Entro Integration Connect runs (ingest, catalog, prep automation) |
+
+## Skills
+
+Install skills from this repo into your agent environment:
+
+```bash
+npx skills add fernando-delosrios-sp/sailpoint-utils --skill entro-connect
+```
+
+Use `--skill` when installing so repo-root [`.agents/skills/`](.agents/skills/) maintainer skills are not included by default.
+
+| Skill | Install path | Authoring |
+| --- | --- | --- |
+| [entro-connect](skills/entro-connect/) | `skills/entro-connect/` | Dedicated project under [`Entro/entro-connect/`](Entro/entro-connect/); local working copy at `.agents/skills/entro-connect/`; [`Entro/entro-connect/skills`](Entro/entro-connect/skills) symlinks to repo-root `skills/` |
+
+**Adding a skill**
+
+- **Definition-only** — add `skills/<name>/SKILL.md` (and supporting files) at the repo root.
+- **Dedicated space** — keep the project under `Entro/` (or similar), maintain a local `.agents/skills/<name>/` working copy, and symlink the project's `skills/` to `../../skills` so generators and tests keep path-stable dual trees.
+
 ## Getting started
 
 1. **Pick a utility** from the tables above and open its folder README.
@@ -53,9 +81,11 @@ Utilities that include a Node.js toolchain (for example, [JDBC SaaS Driver Downl
 
 When adding a new utility or integration pattern:
 
-1. Place it under the appropriate top-level folder (`ISC/`, `SaaS Connectivity/`, `Third-Party/`, or `IIQ/`).
+1. Place it under the appropriate top-level folder (`ISC/`, `SaaS Connectivity/`, `Entro/`, `Third-Party/`, or `IIQ/`).
 2. Include a `README.md` with a **Purpose** section, setup steps, artifacts, and usage examples.
 3. Add an entry under the newest dated section in [CHANGELOG.md](CHANGELOG.md) (create one for today's date if needed).
+
+When adding an agent skill, follow the **Skills** section above and add `skills/<name>/SKILL.md` at the repo root.
 
 ## Changelog
 

@@ -1,0 +1,19 @@
+# Integrations
+
+## Integrations
+
+- [Integrations Index](https://entro.gitbook.io/integrations/integrations/readme.md)
+- [n8n](https://entro.gitbook.io/integrations/ai-and-agents/n8n.md)
+- [n8n Onboarding](https://entro.gitbook.io/integrations/ai-and-agents/n8n/n8n-onboarding.md)
+- [Gemini instructions](https://entro.gitbook.io/integrations/ai-and-agents/gemini-instructions.md)
+- [Gemini instructions leftover](https://entro.gitbook.io/integrations/ai-and-agents/gemini-instructions-extra.md)
+- [Copy of SMB File Shares Onboarding](https://entro.gitbook.io/integrations/copy-of-smb-file-shares-onboarding.md)
+- [Active Directory Onboarding - Old](https://entro.gitbook.io/integrations/identity-and-access/active-directory-onboarding-1.md)
+- [Google Cloud Platform](https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform.md)
+- [GCP unsuffixed nested](https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform/onboarding.md)
+- [Google Cloud Platform](https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1.md)
+- [GCP rewrite onboarding](https://entro.gitbook.io/integrations/cloud-and-infrastructure/google-cloud-platform-1/onboarding.md)
+- [Visual Studio Code SailPoint Marketplace](https://entro.gitbook.io/integrations/ai-and-agents/cursor-entro-marketplace-1.md)
+- [Card grid leftover](https://entro.gitbook.io/integrations/pages/a1b2c3d4e5f6a7b8)
+- Not a markdown link at all
+- [Bare HTML](https://entro.gitbook.io/integrations/pages/deadbeefcafebabe)

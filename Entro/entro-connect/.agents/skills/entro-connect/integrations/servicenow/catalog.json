@@ -1,0 +1,82 @@
+{
+  "tile": "ServiceNow",
+  "category": "collaboration-and-saas",
+  "integrationPaths": [
+    {
+      "name": "ServiceNow",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Display Name",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "ServiceNow URL",
+          "secret": false,
+          "obtainedHow": "Instance URL https://<yourDomain>.service-now.com."
+        },
+        {
+          "name": "Access Token",
+          "secret": true,
+          "obtainedHow": "REST API key token from System Web Services \u2192 REST API Key; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create the integration user and API key",
+          "instruction": "In ServiceNow, create the Entro integration user, auth scope, and REST API key; copy the token Value once into the operator vault.",
+          "evidence": "ServiceNow lists the Entro user and an API key (value stored outside the session)",
+          "uncataloged": {
+            "evidence": "ServiceNow lists the Entro user and an API key (value stored outside the session)"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "none"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect a ServiceNow instance using a dedicated integration user and REST API key.",
+  "connectionFields": [
+    {
+      "name": "Environment",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Display Name",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "ServiceNow URL",
+      "secret": false,
+      "obtainedHow": "Instance URL https://<yourDomain>.service-now.com."
+    },
+    {
+      "name": "Access Token",
+      "secret": true,
+      "obtainedHow": "REST API key token from System Web Services \u2192 REST API Key; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

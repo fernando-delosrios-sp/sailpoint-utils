@@ -1,0 +1,143 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule name="Organizational Hierarchy Path" type="Generic">
+  <Description>Generic utility rule invoked from an ISC Rule transform; input is sourceId|attributeValue.</Description>
+  <Signature>
+    <Inputs>
+      <Argument name="context" type="sailpoint.api.SailPointContext">
+        <Description>
+          SailPoint database context object for read-only queries if needed.
+        </Description>
+      </Argument>
+      <Argument name="environment" type="java.util.Map">
+        <Description>
+          Map of operational flags or contextual execution parameters.
+        </Description>
+      </Argument>
+      <Argument name="value" type="Object">
+        <Description>
+          The output from the input sub-transform: sourceId|attributeValue.
+        </Description>
+      </Argument>
+      <Argument name="idn" type="sailpoint.server.IdnRuleUtil">
+        <Description>
+          Provides a read-only starting point for using the SailPoint API.
+        </Description>
+      </Argument>
+    </Inputs>
+    <Returns>
+      <Argument name="output" type="Object">
+        <Description>The consolidated organizational hierarchy path.</Description>
+      </Argument>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Collections;
+import java.util.Map;
+import sailpoint.object.ManagedAttribute.Type;
+
+String DEFAULT_VALUE = "-";
+
+/* The transform passes "sourceId|attributeValue" as the rule input. */
+if (value == null) {
+    return DEFAULT_VALUE;
+}
+String input = value.toString().trim();
+int sep = input.indexOf('|');
+if (sep <= 0 || sep == input.length() - 1) {
+    return DEFAULT_VALUE;
+}
+String sourceId = input.substring(0, sep).trim();
+String entitlementValue = input.substring(sep + 1).trim();
+if (sourceId.isEmpty() || entitlementValue.isEmpty()) {
+    return DEFAULT_VALUE;
+}
+
+/* Fetch source attribute configuration values from IdentityNow.
+   These are defined per-source in the IdentityNow admin UI. */
+String entitlementAccAttr = idn.getSourceAttributeBySourceId(sourceId, "entitlementAccountAttribute");
+String parentOrgAttr = idn.getSourceAttributeBySourceId(sourceId, "parentOrganizationAttribute");
+String displayAttr = idn.getSourceAttributeBySourceId(sourceId, "entitlementDisplayAttribute");
+String hierarchySep = idn.getSourceAttributeBySourceId(sourceId, "hierarchySeparator");
+
+/* Validate that required source attributes are configured. */
+if (entitlementAccAttr == null || parentOrgAttr == null || displayAttr == null) {
+    return DEFAULT_VALUE;
+}
+
+/* Traverse the entitlement hierarchy.
+   Each entitlement must expose its parent organization in the attribute named by parentOrganizationAttribute.
+   The loop walks up the chain until it reaches an entitlement with no parent (attribute is null/empty). */
+
+/* path: ordered list of entitlement display names from top-level to leaf. */
+List path = new ArrayList();
+/* visited: cycle detection to prevent infinite loops in case of circular references. */
+Set visited = new HashSet();
+/* current: the entitlement name currently being processed. */
+String current = entitlementValue;
+int maxDepth = 20;
+
+while (current != null && !current.trim().isEmpty() && !visited.contains(current) && path.size() < maxDepth) {
+    visited.add(current);
+
+    /* Look up the managed attribute details for the current entitlement.
+       entitlementAccAttr is the account attribute name that holds the entitlement value on source accounts. */
+    sailpoint.rule.ManagedAttributeDetails details = idn.getManagedAttributeDetails(
+        sourceId, entitlementAccAttr, current, Type.Entitlement
+    );
+    if (details == null) {
+        break;
+    }
+
+    Map attrs = details.getAttributes();
+
+    /* Read the display name from the configured entitlement attribute (e.g., "name").
+       details.getName() returns the account attribute name, not the entitlement display name. */
+    String name = null;
+    if (attrs != null) {
+        Object displayVal = attrs.get(displayAttr);
+        if (displayVal != null) {
+            name = displayVal.toString();
+        }
+    }
+    if (name == null || name.trim().isEmpty()) {
+        name = current;
+    }
+    path.add(name);
+
+    /* Read the parent organization from the configured entitlement attribute.
+       If null or empty, this entitlement has no parent — traversal is complete. */
+    String parent = null;
+    if (attrs != null) {
+        Object parentVal = attrs.get(parentOrgAttr);
+        if (parentVal != null) {
+            parent = parentVal.toString();
+        }
+    }
+    if (parent == null || parent.trim().isEmpty()) {
+        break;
+    }
+    current = parent;
+}
+
+/* If no entitlements were added to the path, return the default. */
+if (path.isEmpty()) {
+    return DEFAULT_VALUE;
+}
+
+/* Reverse the path to get top-down order (root first, leaf last) and join with the hierarchy separator. */
+Collections.reverse(path);
+StringBuilder result = new StringBuilder();
+for (int i = 0; i < path.size(); i++) {
+    if (i > 0 && hierarchySep != null) {
+        result.append(hierarchySep);
+    }
+    result.append(path.get(i));
+}
+return result.toString();
+  ]]></Source>
+</Rule>

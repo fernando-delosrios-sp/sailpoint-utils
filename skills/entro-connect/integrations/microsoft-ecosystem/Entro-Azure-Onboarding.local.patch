@@ -1,0 +1,431 @@
+--- Entro-Azure-Onboarding.ps1.origin
++++ Entro-Azure-Onboarding.ps1
+@@ -129,6 +129,193 @@
+ ############################################
+ ########   Main Action Functions ###########
+ ############################################
++function Get-EntroAuditPermissionGroups {
++    return [ordered]@{
++        "Mandatory" = @("User.Read", "User.Read.All", "Directory.Read.All")
++        "Azure Cloud" = @("Application.Read.All", "Application.ReadWrite.All", "Device.Read.All", "AuditLog.Read.All", "SignInLogs.Read.All")
++        "Teams Channels" = @("TeamsActivity.Read.All", "TeamSettings.Read.All", "TeamsTab.Read.All", "TeamsAppInstallation.ReadForChat.All", "TeamsAppInstallation.ReadForTeam.All", "TeamsAppInstallation.ReadForUser.All", "Channel.ReadBasic.All", "ChannelMember.Read.All", "ChannelMessage.Read.All", "ChannelSettings.Read.All")
++        "Teams Private Chats" = @("Chat.Read.All")
++        "Teams Send Messages" = @("TeamsAppInstallation.ReadWriteForTeam.All", "TeamsAppInstallation.ReadWriteSelfForUser.All", "TeamsAppInstallation.ReadWriteForUser.All")
++        "SharePoint and OneDrive" = @("Sites.Read.All", "Files.Read.All")
++        "Microsoft Copilot (AI Agents)" = @("AiEnterpriseInteraction.Read.All", "Reports.Read.All", "ExternalConnection.Read.All", "AppCatalog.Read.All")
++        "MS Defender (AI Agents)" = @("Machine.Read.All", "ThreatHunting.Read.All")
++    }
++}
++
++function Get-EntroAuditPermissionNames {
++    $groups = Get-EntroAuditPermissionGroups
++    $names = @()
++    foreach ($group in $groups.Keys) {
++        $names += $groups[$group]
++    }
++    return $names | Select-Object -Unique
++}
++
++function Get-EntroDefenderServicePrincipal {
++    param([switch]$Ensure)
++
++    $defenderAppId = "fc780465-2017-40d4-a0c5-307022471b92"
++    try {
++        $servicePrincipal = Get-MgServicePrincipal -Filter "AppId eq '$defenderAppId'" -ErrorAction Stop
++        if (-not $servicePrincipal -and $Ensure) {
++            Write-Host "WindowsDefenderATP is not provisioned in this tenant. Creating its service principal..." -ForegroundColor Yellow
++            New-MgServicePrincipal -AppId $defenderAppId -ErrorAction Stop *> $null
++            $servicePrincipal = Get-MgServicePrincipal -Filter "AppId eq '$defenderAppId'" -ErrorAction Stop
++        }
++        return $servicePrincipal
++    }
++    catch {
++        Write-Host "Warning: Could not provision or retrieve the WindowsDefenderATP Service Principal. MS Defender permissions will not be available." -ForegroundColor Yellow
++        Write-Host "Error Details: $($_.Exception.Message)" -ForegroundColor Yellow
++        return $null
++    }
++}
++
++function Apply-EntroNamedApiPermissions {
++    param([Parameter(Mandatory = $true)][string[]]$PermissionNames)
++
++    $mgAppReg = Get-MgApplication -Filter "AppId eq '$($script:entroServicePrincipal.AppId)'"
++    $maxRetries = 5
++    $sleepSeconds = 2
++    $attempt = 0
++    while (-not $mgAppReg -and $attempt -lt $maxRetries) {
++        Start-Sleep -Seconds $sleepSeconds
++        $mgAppReg = Get-MgApplication -Filter "AppId eq '$($script:entroServicePrincipal.AppId)'"
++        $attempt++
++    }
++    $attempt = 0
++    $mgEntApp = Get-MgServicePrincipal -Filter "AppId eq '$($script:entroServicePrincipal.AppId)'"
++    while (-not $mgEntApp -and $attempt -lt $maxRetries) {
++        Start-Sleep -Seconds $sleepSeconds
++        $mgEntApp = Get-MgServicePrincipal -Filter "AppId eq '$($script:entroServicePrincipal.AppId)'"
++        $attempt++
++    }
++    try {
++        $graphServicePrincipal = Get-MgServicePrincipal -Filter "AppId eq '00000003-0000-0000-c000-000000000000'"
++    }
++    catch {
++        Write-Error-Message "An error occurred while fetching MS Graph Service Principal, unable to continue operations."
++        Write-Host "Error Details: $($_.Exception.Message)"
++        Read-Host "Press Enter to return to the menu..."
++        return
++    }
++    $defenderServicePrincipal = Get-EntroDefenderServicePrincipal -Ensure:($PermissionNames -contains "Machine.Read.All")
++
++    $graphRequiredAccess = @{
++        ResourceAppId = $graphServicePrincipal.AppId
++        ResourceAccess = @()
++    }
++    $defenderRequiredAccess = @{
++        ResourceAppId = if ($defenderServicePrincipal) { $defenderServicePrincipal.AppId } else { "fc780465-2017-40d4-a0c5-307022471b92" }
++        ResourceAccess = @()
++    }
++    foreach ($permissionName in $PermissionNames) {
++        $appRole = $graphServicePrincipal.AppRoles | Where-Object { $_.Value -eq $permissionName }
++        if ($appRole) {
++            $graphRequiredAccess.ResourceAccess += @{ Id = $appRole.Id; Type = "Role" }
++            Write-Host "Added Graph application permission: $permissionName"
++        } else {
++            $oauth2Permission = $graphServicePrincipal.OAuth2PermissionScopes | Where-Object { $_.Value -eq $permissionName }
++            if ($oauth2Permission) {
++                $graphRequiredAccess.ResourceAccess += @{ Id = $oauth2Permission.Id; Type = "Scope" }
++                Write-Host "Added Graph delegated permission: $permissionName"
++            } elseif ($defenderServicePrincipal) {
++                $defenderRole = $defenderServicePrincipal.AppRoles | Where-Object { $_.Value -eq $permissionName }
++                if ($defenderRole) {
++                    $defenderRequiredAccess.ResourceAccess += @{ Id = $defenderRole.Id; Type = "Role" }
++                    Write-Host "Added Defender application permission: $permissionName"
++                } else {
++                    Write-Warning "Permission '$permissionName' not found in Microsoft Graph or Defender ATP APIs"
++                }
++            } else {
++                Write-Warning "Permission '$permissionName' not found in Microsoft Graph API"
++            }
++        }
++    }
++    $allRequiredAccess = @()
++    if ($graphRequiredAccess.ResourceAccess.Count -gt 0) { $allRequiredAccess += $graphRequiredAccess }
++    if ($defenderRequiredAccess.ResourceAccess.Count -gt 0) { $allRequiredAccess += $defenderRequiredAccess }
++    try {
++        Update-MgApplication -ApplicationId $script:entroAppRegistration.Id -RequiredResourceAccess $allRequiredAccess
++        Write-Host "API permissions have been configured for the application" -ForegroundColor Green
++    }
++    catch {
++        Write-Error-Message "An error occurred while configuring API permissions."
++        Write-Host "Error Details: $($_.Exception.Message)"
++        Read-Host "Press Enter to return to the menu..."
++        return
++    }
++    foreach ($resourceAccess in $graphRequiredAccess.ResourceAccess) {
++        if ($resourceAccess.Type -eq "Role") {
++            try {
++                $params = @{
++                    PrincipalId = $mgEntApp.Id
++                    ResourceId = $graphServicePrincipal.Id
++                    AppRoleId = $resourceAccess.Id
++                }
++                $existingAssignment = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $mgEntApp.Id |
++                    Where-Object { $_.AppRoleId -eq $resourceAccess.Id -and $_.ResourceId -eq $graphServicePrincipal.Id }
++                if (-not $existingAssignment) {
++                    New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $mgEntApp.Id -BodyParameter $params *> $null
++                    $permissionName = ($graphServicePrincipal.AppRoles | Where-Object { $_.Id -eq $resourceAccess.Id }).Value
++                    Write-Host "Granted application permission: $permissionName"
++                } else {
++                    Write-Host "Application permission already granted: $(($graphServicePrincipal.AppRoles | Where-Object { $_.Id -eq $resourceAccess.Id }).Value)"
++                }
++            }
++            catch {
++                Write-Error "Error granting application permission: $_"
++            }
++        }
++        elseif ($resourceAccess.Type -eq "Scope") {
++            try {
++                $params = @{
++                    ClientId = $mgEntApp.Id
++                    ConsentType = "AllPrincipals"
++                    ResourceId = $graphServicePrincipal.Id
++                    Scope = ($graphServicePrincipal.OAuth2PermissionScopes | Where-Object { $_.Id -eq $resourceAccess.Id }).Value
++                }
++                $existingGrant = Get-MgOauth2PermissionGrant -Filter "ClientId eq '$($mgEntApp.Id)' and ResourceId eq '$($graphServicePrincipal.Id)'"
++                if (-not $existingGrant) {
++                    try {
++                        New-MgOauth2PermissionGrant -BodyParameter $params *> $null
++                        Write-Host "Granted delegated permission: $($params.Scope)"
++                    } catch {
++                        Write-Error "Error granting delegated permission: $_"
++                    }
++                } else {
++                    Write-Host "Delegated permission already granted: $($params.Scope)"
++                }
++            }
++            catch {
++                Write-Error "Error granting delegated permission: $_"
++            }
++        }
++    }
++    if ($defenderServicePrincipal) {
++        foreach ($resourceAccess in $defenderRequiredAccess.ResourceAccess) {
++            try {
++                $params = @{
++                    PrincipalId = $mgEntApp.Id
++                    ResourceId = $defenderServicePrincipal.Id
++                    AppRoleId = $resourceAccess.Id
++                }
++                $existingAssignment = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $mgEntApp.Id |
++                    Where-Object { $_.AppRoleId -eq $resourceAccess.Id -and $_.ResourceId -eq $defenderServicePrincipal.Id }
++                if (-not $existingAssignment) {
++                    New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $mgEntApp.Id -BodyParameter $params *> $null
++                    $permissionName = ($defenderServicePrincipal.AppRoles | Where-Object { $_.Id -eq $resourceAccess.Id }).Value
++                    Write-Host "Granted Defender application permission: $permissionName"
++                }
++            }
++            catch {
++                Write-Error "Error granting Defender application permission: $_"
++            }
++        }
++    }
++    Write-Host "API permissions have been granted for the application" -ForegroundColor Green
++}
++
+ function CreateSelect-EntroAppRegistration {
+     [bool]$hasErrors = $false
+     Clear-Host
+@@ -208,156 +395,8 @@
+         }
+ 
+         # Now that we have the app registration created, we need to assign the necessary API permissions to it. These are the APIs that Entro will be allowed to call for the objects we assign in the role/scope later on
+-        write-host "`nAssigning mandatory and Azure Cloud API permissions to the Entro App ..." -ForegroundColor Yellow
+-
+-        # Define the required API permissions
+-        $apiPermissions = @(
+-            # Manadatory permissions
+-            "User.Read",
+-            "User.Read.All",
+-            "Directory.Read.All",
+-            # Azure Cloud permissions
+-            "Application.Read.All",
+-            "Device.Read.All",
+-            "AuditLog.Read.All"
+-        )
+-        # Define App Registration and Enterprise App using their IDs
+-        $mgAppReg = Get-MgApplication -Filter "AppId eq '$($script:entroServicePrincipal.AppId)'"
+-        # Retry logic if no results are returned initially (wait for Azure replication delay)
+-        $maxRetries = 5
+-        $sleepSeconds = 2
+-        $attempt = 0
+-        while (-not $mgAppReg -and $attempt -lt $maxRetries) {
+-            #Write-Host "Application not found. Retrying... (Attempt $($attempt+1)/$maxRetries)" -ForegroundColor Yellow
+-            Start-Sleep -Seconds $sleepSeconds
+-            $mgAppReg = Get-MgApplication -Filter "AppId eq '$($script:entroServicePrincipal.AppId)'"
+-            $attempt++
+-        }
+-        $attempt = 0
+-        $mgEntApp = Get-MgServicePrincipal -Filter "AppId eq '$($script:entroServicePrincipal.AppId)'"
+-        while (-not $mgEntApp -and $attempt -lt $maxRetries) {
+-            #Write-Host "Service Principal not found. Retrying... (Attempt $($attempt+1)/$maxRetries)" -ForegroundColor Yellow
+-            Start-Sleep -Seconds $sleepSeconds
+-            $mgEntApp = Get-MgServicePrincipal -Filter "AppId eq '$($script:entroServicePrincipal.AppId)'"
+-            $attempt++
+-        }
+-
+-        # Get Microsoft Graph Service Principal
+-        try {
+-            $graphServicePrincipal = Get-MgServicePrincipal -Filter "AppId eq '00000003-0000-0000-c000-000000000000'"
+-        }
+-        catch {
+-            Write-Error-Message "An error occurred while fetching MS Graph Service Principal, unable to continue operations."
+-            Write-Host "Error Details: $($_.Exception.Message)"
+-            Read-Host "Press Enter to return to the menu..."
+-            return
+-        }
+-
+-        # Create RequiredResourceAccess object for Microsoft Graph
+-        $requiredAccess = @{
+-            ResourceAppId = $graphServicePrincipal.AppId
+-            ResourceAccess = @()
+-        }
+-
+-        # Add each permission to the RequiredResourceAccess object
+-        foreach ($permissionName in $apiPermissions) {
+-            # Try to find as Application permission (Role) first
+-            $appRole = $graphServicePrincipal.AppRoles | 
+-                Where-Object { $_.Value -eq $permissionName }
+-            
+-            if ($appRole) {
+-                $requiredAccess.ResourceAccess += @{
+-                    Id = $appRole.Id
+-                    Type = "Role"
+-                }
+-                Write-Host "Added application permission: $permissionName"
+-            } else {
+-                # Try to find as Delegated permission (Scope)
+-                $oauth2Permission = $graphServicePrincipal.OAuth2PermissionScopes | 
+-                    Where-Object { $_.Value -eq $permissionName }
+-                
+-                if ($oauth2Permission) {
+-                    $requiredAccess.ResourceAccess += @{
+-                        Id = $oauth2Permission.Id
+-                        Type = "Scope"
+-                    }
+-                    Write-Host "Added delegated permission: $permissionName"
+-                } else {
+-                    Write-Warning "Permission '$permissionName' not found in Microsoft Graph API"
+-                }
+-            }
+-        }
+-
+-        # Update the application with the new permissions
+-        try {
+-            Update-MgApplication -ApplicationId $script:entroAppRegistration.Id -RequiredResourceAccess @($requiredAccess)
+-            Write-Host "API permissions have been configured for the application" -ForegroundColor Green
+-        }
+-        catch {
+-            Write-Error-Message "An error occurred while configuring API permissions."
+-            Write-Host "Error Details: $($_.Exception.Message)"
+-            Read-Host "Press Enter to return to the menu..."
+-            return
+-        }
+-
+-        # Grant admin consent for each permission - Role type for application permissions and Scope type for delegated permissions
+-        foreach ($resourceAccess in $requiredAccess.ResourceAccess) {
+-            if ($resourceAccess.Type -eq "Role") {
+-                # Grant application permission
+-                try {
+-                    $params = @{
+-                        PrincipalId = $mgEntApp.Id
+-                        ResourceId = $graphServicePrincipal.Id
+-                        AppRoleId = $resourceAccess.Id
+-                    }
+-                    
+-                    # Check if the role assignment already exists
+-                    $existingAssignment = Get-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $mgEntApp.Id |
+-                        Where-Object { $_.AppRoleId -eq $resourceAccess.Id -and $_.ResourceId -eq $graphServicePrincipal.Id }
+-                    
+-                    if (-not $existingAssignment) {
+-                        New-MgServicePrincipalAppRoleAssignment -ServicePrincipalId $mgEntApp.Id -BodyParameter $params *> $null
+-                        $permissionName = ($graphServicePrincipal.AppRoles | Where-Object { $_.Id -eq $resourceAccess.Id }).Value
+-                        Write-Host "Granted application permission: $permissionName"
+-                    } else {
+-                        Write-Host "Application permission already granted: $(($graphServicePrincipal.AppRoles | Where-Object { $_.Id -eq $resourceAccess.Id }).Value)"
+-                    }
+-                }
+-                catch {
+-                    Write-Error "Error granting application permission: $_"
+-                }
+-            }
+-            elseif ($resourceAccess.Type -eq "Scope") {
+-                # Grant delegated permission
+-                try {
+-                    $params = @{
+-                        ClientId = $mgEntApp.Id
+-                        ConsentType = "AllPrincipals"
+-                        ResourceId = $graphServicePrincipal.Id
+-                        Scope = ($graphServicePrincipal.OAuth2PermissionScopes | 
+-                            Where-Object { $_.Id -eq $resourceAccess.Id }).Value
+-                    }
+-
+-                    # Check if the oauth2 permission grant already exists
+-                    $existingGrant = Get-MgOauth2PermissionGrant -Filter "ClientId eq '$($mgEntApp.Id)' and ResourceId eq '$($graphServicePrincipal.Id)'"
+-                    
+-                    if (-not $existingGrant) {
+-                        try{
+-                            New-MgOauth2PermissionGrant -BodyParameter $params *> $null
+-                            Write-Host "Granted delegated permission: $($params.Scope)"
+-                        } catch {
+-                            Write-Error "Error granting delegated permission: $_"
+-                        }
+-                    } else {
+-                        Write-Host "Delegated permission already granted: $($params.Scope)"
+-                    }
+-                }
+-                catch {
+-                    Write-Error "Error granting delegated permission: $_"
+-                }
+-            }
+-        }
+-        Write-Host "API permissions have been granted for the application" -ForegroundColor Green
++        write-host "`nAssigning Entro permission-audit Graph and Defender API permissions to the Entro App ..." -ForegroundColor Yellow
++        Apply-EntroNamedApiPermissions -PermissionNames (Get-EntroAuditPermissionNames)
+         Write-Success-Message "Entro App Registration ($AppName) created successfully"
+         Write-Host "`n`n`nCOPY THE FOLLOWING INFORMATION INTO THE ENTRO SECURITY PORTAL --> https://app.entro.security/admin/account/add/2"
+         Write-Notification-Message "`nAzure Tenant ID: $($script:entroServicePrincipal.AppOwnerOrganizationId)"
+@@ -413,16 +452,7 @@
+     }
+ 
+     # Define permission groups
+-    $permissionGroups = @{
+-        "Mandatory" = @("User.Read", "User.Read.All", "Directory.Read.All")
+-        "Azure Cloud" = @("Application.Read.All", "Device.Read.All", "AuditLog.Read.All")
+-        "Teams Channels" = @("TeamsActivity.Read.All", "TeamSettings.Read.All", "TeamsTab.Read.All", "TeamsAppInstallation.ReadForChat.All", "TeamsAppInstallation.ReadForTeam.All", "TeamsAppInstallation.ReadForUser.All", "Channel.ReadBasic.All", "ChannelMember.Read.All", "ChannelMessage.Read.All", "ChannelSettings.Read.All")
+-        "Teams Private Chats" = @("Chat.Read.All")
+-        "Teams Send Messages" = @("TeamsAppInstallation.ReadWriteForTeam.All", "TeamsAppInstallation.ReadWriteForChat.All", "TeamsAppInstallation.ReadWriteForUser.All")
+-        "SharePoint and OneDrive" = @("Sites.Read.All", "Files.Read.All")
+-        "Microsoft Copilot (AI Agents)" = @("AiEnterpriseInteraction.Read.All", "Reports.Read.All", "ExternalConnection.Read.All", "AppCatalog.Read.All")
+-        "MS Defender (AI Agents)" = @("Machine.Read.All", "ThreatHunting.Read.All")
+-    }
++    $permissionGroups = Get-EntroAuditPermissionGroups
+ 
+     # Get Microsoft Graph Service Principal
+     try {
+@@ -436,13 +466,7 @@
+     }
+ 
+     # Get Windows Defender ATP Service Principal (for MS Defender / AI Agents permissions)
+-    $defenderServicePrincipal = $null
+-    try {
+-        $defenderServicePrincipal = Get-MgServicePrincipal -Filter "AppId eq 'fc780465-2017-40d4-a0c5-307022471b92'"
+-    }
+-    catch {
+-        Write-Host "Warning: Could not retrieve Defender ATP Service Principal. MS Defender permissions will not be available." -ForegroundColor Yellow
+-    }
++    $defenderServicePrincipal = Get-EntroDefenderServicePrincipal
+ 
+     # Check Graph session scopes
+     $scopes = Get-MgContext | Select-Object -ExpandProperty Scopes
+@@ -529,7 +553,7 @@
+         -UniqueKey "Id" `
+         -SortBy "ListPos" `
+         -MandatoryIds @("Mandatory") `
+-        -InitialSelectionIds $groupsAlreadyGranted `
++        -InitialSelectionIds @($permissionGroups.Keys) `
+         -CustomMsg "Select permission groups to enable for $($script:entroAppRegistration.DisplayName) (Mandatory is always enabled)"
+ 
+     # Calculate desired groups from selected (Mandatory is always included)
+@@ -538,13 +562,17 @@
+     # Calculate desired permissions
+     $desiredPermissions = @()
+     foreach ($group in $desiredGroups) {
+-        if ($permissionGroups.ContainsKey($group)) {
++        if ($permissionGroups.Contains($group)) {
+             $desiredPermissions += $permissionGroups[$group]
+         } else {
+             Write-Host ("Invalid group name '{0}' encountered. Skipping." -f $group) -ForegroundColor Yellow
+         }
+     }
+     $desiredPermissions = $desiredPermissions | Sort-Object | Select-Object -Unique
++
++    if (-not $defenderServicePrincipal -and $desiredPermissions -contains "Machine.Read.All") {
++        $defenderServicePrincipal = Get-EntroDefenderServicePrincipal -Ensure
++    }
+ 
+     # Debug: Output desired permissions
+     Write-Host "Desired permissions: $($desiredPermissions -join ', ')" -ForegroundColor Cyan
+@@ -795,11 +823,9 @@
+     )
+     $notActions = @("Microsoft.OperationalInsights/workspaces/sharedKeys/read")
+ 
+-    # Az.Resources moved Actions/NotActions off PSRoleDefinition and onto a nested Permissions/PSPermission object
+-    $permission = New-Object -TypeName Microsoft.Azure.Commands.Resources.Models.Authorization.PSPermission
+-    $permission.Actions = $requiredActions
+-    $permission.NotActions = $notActions
+-    $role.Permissions = @($permission)
++    # Az.Resources 9.x: PSRoleDefinition has Actions/NotActions on the role; it has no Permissions property
++    $role.Actions = $requiredActions
++    $role.NotActions = $notActions
+ 
+     # Retrieve the other built-in roles that Entro needs to function properly
+     try {
