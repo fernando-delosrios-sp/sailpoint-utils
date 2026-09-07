@@ -1274,16 +1274,43 @@ function Grant-AppRoleConsent {
     return [PSCustomObject]@{ Granted = $granted; Skipped = $skipped; Failed = @($failed) }
 }
 
+# Role membership reads from the service principal side in one call. Returns $null when the
+# membership cannot be read, so callers fall back to inspecting each role's member list.
+function Get-ServicePrincipalRoleMembership {
+    param([Parameter(Mandatory)]$ServicePrincipal)
+
+    $roleIds = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    try {
+        $objects = @(Get-MgServicePrincipalMemberOf -ServicePrincipalId $ServicePrincipal.Id -All -ErrorAction Stop)
+    }
+    catch {
+        Write-Verbose "Could not read role membership of the service principal: $($_.Exception.Message)"
+        return $null
+    }
+
+    foreach ($object in $objects) {
+        if ($object.Id) { [void]$roleIds.Add([string]$object.Id) }
+    }
+    return $roleIds
+}
+
 function Add-EntraDirectoryRoles {
     param(
         [Parameter(Mandatory)]$ServicePrincipal,
         [string[]]$RoleDisplayNames
     )
 
+    # directoryRoles rejects $filter on displayName in some tenants, so the activated roles are
+    # listed once and matched locally.
+    $activatedRoles = @()
+    try { $activatedRoles = @(Get-MgDirectoryRole -All -ErrorAction Stop) }
+    catch { Write-Verbose "Could not list activated directory roles: $($_.Exception.Message)" }
+
+    $memberOfRoleIds = Get-ServicePrincipalRoleMembership -ServicePrincipal $ServicePrincipal
+
     $assigned = [System.Collections.Generic.List[string]]::new()
     foreach ($displayName in @($RoleDisplayNames)) {
-        $escaped = $displayName.Replace("'", "''")
-        $role = Get-MgDirectoryRole -Filter "displayName eq '$escaped'" -ErrorAction SilentlyContinue | Select-Object -First 1
+        $role = $activatedRoles | Where-Object { $_.DisplayName -eq $displayName } | Select-Object -First 1
 
         if (-not $role) {
             $template = Get-MgDirectoryRoleTemplate -All -ErrorAction Stop |
@@ -1297,16 +1324,21 @@ function Add-EntraDirectoryRoles {
         }
 
         $isMember = $false
-        try {
-            $members = @(Get-MgDirectoryRoleMember -DirectoryRoleId $role.Id -All -ErrorAction Stop)
-            $isMember = [bool]($members | Where-Object { $_.Id -eq $ServicePrincipal.Id })
+        if ($null -ne $memberOfRoleIds) {
+            $isMember = $memberOfRoleIds.Contains([string]$role.Id)
         }
-        catch {
-            Write-Verbose "Could not enumerate members of $displayName : $($_.Exception.Message)"
+        else {
+            try {
+                $members = @(Get-MgDirectoryRoleMember -DirectoryRoleId $role.Id -All -ErrorAction Stop)
+                $isMember = [bool]($members | Where-Object { $_.Id -eq $ServicePrincipal.Id })
+            }
+            catch {
+                Write-Verbose "Could not enumerate members of ${displayName}: $($_.Exception.Message)"
+            }
         }
 
         if ($isMember) {
-            Write-Info "Already a member of $displayName"
+            Write-Info "Already assigned: $displayName"
             $assigned.Add($displayName)
             continue
         }
@@ -1319,7 +1351,13 @@ function Add-EntraDirectoryRoles {
             $assigned.Add($displayName)
         }
         catch {
-            Write-Warning "Failed to assign $displayName : $($_.Exception.Message)"
+            # Graph reports an existing membership as a bad request on the role's members collection.
+            if ($_.Exception.Message -match 'already exist') {
+                Write-Info "Already assigned: $displayName"
+                $assigned.Add($displayName)
+                continue
+            }
+            Write-Warning "Failed to assign ${displayName}: $($_.Exception.Message)"
         }
     }
     return @($assigned)
