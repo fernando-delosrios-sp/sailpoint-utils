@@ -1,0 +1,114 @@
+{
+  "tile": "Jenkins",
+  "category": "code-and-ci-cd",
+  "integrationPaths": [
+    {
+      "name": "Jenkins",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "jenkins-cli"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Environment Type",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        },
+        {
+          "name": "Jenkins URL",
+          "secret": false,
+          "obtainedHow": "Controller base URL reachable from the Connector."
+        },
+        {
+          "name": "API Token",
+          "secret": true,
+          "obtainedHow": "Jenkins user API token generated for Entro; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment Nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment Nickname",
+          "default": "nonprod"
+        },
+        {
+          "key": "environment_type",
+          "prompt": "Environment type in Entro",
+          "purpose": "Production, Development, or the matching form value",
+          "validation": "One of Production, Development, or the form's listed types",
+          "secret": false,
+          "bindsTo": "Environment Type",
+          "default": "Development"
+        }
+      ],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Create a Jenkins API user",
+          "instruction": "On the Jenkins controller, create a user with read access to jobs and credentials metadata, generate an API token, and confirm the Connector can reach the controller URL.",
+          "evidence": "Jenkins shows the Entro user and the Connector loads the login page"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create a Jenkins API user",
+          "preview": "java -jar jenkins-cli.jar -s \"$JENKINS_URL\" list-users or who-am-i inspect",
+          "mutation": "Create a Jenkins user with read access to jobs and credentials metadata and generate an API token (operator copies token in Jenkins UI or CLI groovy); confirm Connector reachability",
+          "target": "Jenkins controller",
+          "expectedChange": "Jenkins shows the Entro user and the Connector loads the login page",
+          "verification": "java -jar jenkins-cli.jar -s \"$JENKINS_URL\" who-am-i ; curl -I \"$JENKINS_URL\"",
+          "rollbackOrImpact": "Delete the Jenkins user created this run; token revoke in the user configure page",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/code-and-ci-cd/jenkins/jenkins-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "jenkins-cli"
+    }
+  ],
+  "hosting": "self-hosted",
+  "summary": "Connect a Jenkins controller so Entro can discover credentials and pipeline secrets.",
+  "connectionFields": [
+    {
+      "name": "Environment Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Environment Type",
+      "secret": false,
+      "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+    },
+    {
+      "name": "Jenkins URL",
+      "secret": false,
+      "obtainedHow": "Controller base URL reachable from the Connector."
+    },
+    {
+      "name": "API Token",
+      "secret": true,
+      "obtainedHow": "Jenkins user API token generated for Entro; store in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

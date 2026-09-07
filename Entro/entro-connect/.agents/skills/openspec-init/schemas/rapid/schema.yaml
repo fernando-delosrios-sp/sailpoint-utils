@@ -1,0 +1,25 @@
+name: rapid
+version: 1
+description: Fast iteration with minimal overhead
+
+artifacts:
+  - id: proposal
+    generates: proposal.md
+    description: Quick proposal
+    template: proposal.md
+    instruction: |
+      Create a brief proposal for this change.
+      Focus on what and why, skip detailed specs.
+    requires: []
+
+  - id: tasks
+    generates: tasks.md
+    description: Implementation checklist
+    template: tasks.md
+    instruction: |
+      - **CRITICAL**: Always include specific tasks to update user-facing documentation, READMEs, API docs, or comments reflecting the changes.
+    requires: [proposal]
+
+apply:
+  requires: [tasks]
+  tracks: tasks.md

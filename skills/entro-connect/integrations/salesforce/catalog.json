@@ -1,0 +1,84 @@
+{
+  "tile": "Salesforce",
+  "category": "collaboration-and-saas",
+  "integrationPaths": [
+    {
+      "name": "Salesforce",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "binary": "sf"
+        },
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "salesforce-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Instance URL",
+          "secret": false,
+          "obtainedHow": "My Domain URL from Salesforce Setup \u2192 Company Settings \u2192 My Domain."
+        },
+        {
+          "name": "Access Token or refresh credentials",
+          "secret": true,
+          "obtainedHow": "Connected-app client credentials or CLI-authenticated org alias; store secrets in the operator vault, not chat."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create a Connected App for Entro",
+          "instruction": "In Salesforce Setup, create a Connected App (or External Client App) with Entro's documented OAuth scopes and record the consumer key in the operator vault.",
+          "evidence": "Setup \u2192 App Manager lists the Entro Connected App",
+          "uncataloged": {
+            "evidence": "Setup \u2192 App Manager lists the Entro Connected App"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "usable",
+      "binary": "sf"
+    },
+    {
+      "fit": "usable",
+      "kind": "mcp",
+      "id": "salesforce-mcp"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect a Salesforce org so Entro can discover secrets in metadata and connected apps.",
+  "connectionFields": [
+    {
+      "name": "Environment",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Instance URL",
+      "secret": false,
+      "obtainedHow": "My Domain URL from Salesforce Setup \u2192 Company Settings \u2192 My Domain."
+    },
+    {
+      "name": "Access Token or refresh credentials",
+      "secret": true,
+      "obtainedHow": "Connected-app client credentials or CLI-authenticated org alias; store secrets in the operator vault, not chat."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

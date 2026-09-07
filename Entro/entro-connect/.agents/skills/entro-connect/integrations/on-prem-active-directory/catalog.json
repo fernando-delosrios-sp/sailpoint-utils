@@ -1,0 +1,134 @@
+{
+  "tile": "On-Prem Active Directory",
+  "category": "security-and-identity",
+  "integrationPaths": [
+    {
+      "name": "On-Prem Active Directory",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "binary": "pwsh"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Domain Controller (DC)",
+          "secret": false,
+          "obtainedHow": "IP or hostname of a DC reachable from the Connector."
+        },
+        {
+          "name": "DC Name (FQDN)",
+          "secret": false,
+          "obtainedHow": "FQDN of that domain controller."
+        },
+        {
+          "name": "Domain",
+          "secret": false,
+          "obtainedHow": "AD DNS domain name."
+        },
+        {
+          "name": "Username",
+          "secret": false,
+          "obtainedHow": "UPN of the read-only service account (e.g. svc_entro@domain)."
+        },
+        {
+          "name": "Password",
+          "secret": true,
+          "obtainedHow": "Password for that service account; store in the operator vault."
+        },
+        {
+          "name": "Root CA (PEM)",
+          "secret": false,
+          "obtainedHow": "PEM of the AD CS root CA if LDAPS is required; paste the certificate, not a private key."
+        },
+        {
+          "name": "Environment Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Environment Type",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Create a read-only AD service account",
+          "instruction": "Create svc_entro (or equivalent) with Entro's documented read rights and confirm LDAPS from the Connector host to a DC.",
+          "evidence": "The account exists in AD and the Connector host can reach the DC on LDAPS",
+          "uncataloged": {
+            "evidence": "The account exists in AD and the Connector host can reach the DC on LDAPS"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "usable",
+      "binary": "pwsh"
+    }
+  ],
+  "hosting": "self-hosted",
+  "summary": "Connect on-premises Active Directory from a Connector that can reach a domain controller.",
+  "connectionFields": [
+    {
+      "name": "Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Domain Controller (DC)",
+      "secret": false,
+      "obtainedHow": "IP or hostname of a DC reachable from the Connector."
+    },
+    {
+      "name": "DC Name (FQDN)",
+      "secret": false,
+      "obtainedHow": "FQDN of that domain controller."
+    },
+    {
+      "name": "Domain",
+      "secret": false,
+      "obtainedHow": "AD DNS domain name."
+    },
+    {
+      "name": "Username",
+      "secret": false,
+      "obtainedHow": "UPN of the read-only service account (e.g. svc_entro@domain)."
+    },
+    {
+      "name": "Password",
+      "secret": true,
+      "obtainedHow": "Password for that service account; store in the operator vault."
+    },
+    {
+      "name": "Root CA (PEM)",
+      "secret": false,
+      "obtainedHow": "PEM of the AD CS root CA if LDAPS is required; paste the certificate, not a private key."
+    },
+    {
+      "name": "Environment Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Environment Type",
+      "secret": false,
+      "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

@@ -1,0 +1,3 @@
+interface:
+  display_name: Diagnosing Bugs
+  short_description: Diagnosis loop for hard bugs and performance regressions.

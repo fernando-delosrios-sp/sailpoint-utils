@@ -1,0 +1,86 @@
+{
+  "tile": "n8n",
+  "category": "ai-and-agents",
+  "integrationPaths": [
+    {
+      "name": "n8n",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "usable",
+          "kind": "mcp",
+          "id": "n8n-mcp"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Display Name",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Instance URL",
+          "secret": false,
+          "obtainedHow": "n8n Cloud uses https://<instance>.app.n8n.cloud; self-hosted uses the instance base URL."
+        },
+        {
+          "name": "API Key",
+          "secret": true,
+          "obtainedHow": "In n8n, create an API key under Settings \u2192 n8n API and copy it once."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "operator-selected",
+      "prepSteps": [
+        {
+          "title": "Create an n8n API key",
+          "instruction": "In the n8n editor, open Settings \u2192 n8n API, create a key with access to the instance, and store it in the operator vault. Do not paste it into chat.",
+          "evidence": "n8n Settings shows an API key entry (value stored outside the session)",
+          "uncataloged": {
+            "evidence": "n8n Settings shows an API key entry (value stored outside the session)"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "usable",
+      "kind": "mcp",
+      "id": "n8n-mcp"
+    }
+  ],
+  "hosting": "operator-selected",
+  "summary": "Connect an n8n Cloud or self-hosted instance so Entro can discover credentials used in workflows.",
+  "connectionFields": [
+    {
+      "name": "Environment",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Display Name",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Instance URL",
+      "secret": false,
+      "obtainedHow": "n8n Cloud uses https://<instance>.app.n8n.cloud; self-hosted uses the instance base URL."
+    },
+    {
+      "name": "API Key",
+      "secret": true,
+      "obtainedHow": "In n8n, create an API key under Settings \u2192 n8n API and copy it once."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

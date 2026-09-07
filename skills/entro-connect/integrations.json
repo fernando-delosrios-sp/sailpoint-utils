@@ -1,0 +1,529 @@
+{
+  "integrations": [
+    {
+      "tile": "Atlassian",
+      "summary": "Connect Jira Cloud so Entro can discover secrets in issues and attachments.",
+      "integrationPathNames": [
+        "Scoped API Token - Jira",
+        "Scoped API Token - Confluence",
+        "Jira Server",
+        "Confluence Server",
+        "Classic API Token"
+      ],
+      "optionalCapabilityNames": [
+        "Jira real-time scanning"
+      ],
+      "catalogPath": "integrations/atlassian/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Amazon Web Services",
+      "summary": "Connect AWS accounts so Entro can discover secrets and NHIs via a read-only IAM role (CloudFormation, Terraform, or manual assume-role).",
+      "integrationPathNames": [
+        "CloudFormation",
+        "Assume Role",
+        "Terraform"
+      ],
+      "optionalCapabilityNames": [
+        "CloudTrail S3",
+        "Vault management",
+        "NHI Management"
+      ],
+      "catalogPath": "integrations/amazon-web-services/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Microsoft ecosystem",
+      "summary": "Connect Microsoft Entra / Azure / M365 so Entro can discover secrets and NHIs through a dedicated app registration.",
+      "integrationPathNames": [
+        "Automated PowerShell",
+        "Manual App Registration",
+        "Manual Policy Creation",
+        "Azure Continuous Onboarding"
+      ],
+      "optionalCapabilityNames": [
+        "Copilot Studio"
+      ],
+      "catalogPath": "integrations/microsoft-ecosystem/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "GitHub",
+      "summary": "Connect GitHub Cloud by installing Entro's GitHub App on the organization (no PAT).",
+      "integrationPathNames": [
+        "GitHub Cloud - New",
+        "GitHub Cloud - Legacy",
+        "GitHub Enterprise Server"
+      ],
+      "optionalCapabilityNames": [
+        "Real-time scanning",
+        "Enterprise S3 log streaming"
+      ],
+      "catalogPath": "integrations/github/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Google GCP",
+      "summary": "Connect a GCP organization so Entro can discover secrets and NHIs using Private Key Integration or Workload Identity Federation.",
+      "integrationPathNames": [
+        "Console manual \u2014 Private Key Integration",
+        "Console manual \u2014 Workload Identity Federation",
+        "Terraform automated \u2014 Private Key Integration",
+        "Terraform automated \u2014 Workload Identity Federation"
+      ],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/google-gcp/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "HashiCorp Vault",
+      "summary": "Connect a HashiCorp Vault cluster using a read-only ACL policy and a renewable token.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/hashicorp-vault/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Bitbucket",
+      "summary": "Connect Bitbucket Cloud workspaces so Entro can scan repositories for secrets.",
+      "integrationPathNames": [
+        "BitBucket Cloud",
+        "BitBucket Data Center"
+      ],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/bitbucket/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Slack",
+      "summary": "Connect a standard Slack workspace via an Entro Slack app installed from a manifest.",
+      "integrationPathNames": [
+        "Slack Private App",
+        "Slack Enterprise Grid App"
+      ],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/slack/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Azure DevOps",
+      "summary": "Connect Azure DevOps organizations through an Entra app so Entro can discover secrets in pipelines and repos.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/azure-devops/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Okta",
+      "summary": "Connect Okta via an API Services app that uses Entro's public key (no client secret in the form).",
+      "integrationPathNames": [
+        "Super Administrator",
+        "Custom Entro Role"
+      ],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/okta/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "GitLab",
+      "summary": "Connect GitLab.com or self-managed GitLab so Entro can scan projects for secrets.",
+      "integrationPathNames": [
+        "Group Access Token",
+        "Personal Access Token"
+      ],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/gitlab/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Remote File System",
+      "summary": "Scan SMB file shares from a Connector that can reach the share over port 445.",
+      "integrationPathNames": [
+        "SMB",
+        "SFTP (SSH)",
+        "WinRM"
+      ],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/remote-file-system/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Akeyless Vault",
+      "summary": "Connect Akeyless Vault so Entro can discover secrets through a read-only Universal Identity or API key.",
+      "integrationPathNames": [
+        "Universal Identity",
+        "API Key"
+      ],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/akeyless-vault/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Buildkite",
+      "summary": "Connect a Buildkite organization so Entro can discover pipeline secrets.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/buildkite/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Microsoft Teams",
+      "summary": "Connect Microsoft Teams so Entro can discover secrets in Teams content using an Entra app.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/microsoft-teams/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "SharePoint",
+      "summary": "Connect SharePoint \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/sharepoint/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "OneDrive",
+      "summary": "Connect OneDrive \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/onedrive/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Snowflake",
+      "summary": "Connect a Snowflake account so Entro can discover secrets and NHIs with a key-pair user.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/snowflake/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Google Workspace",
+      "summary": "Connect Google Drive / Workspace so Entro can discover exposed secrets in Drive.",
+      "integrationPathNames": [
+        "Service Account Key",
+        "Workload Identity Federation"
+      ],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/google-workspace/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Wiz",
+      "summary": "Connect Wiz via a service account so Entro can read DSPM findings.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/wiz/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "ServiceNow",
+      "summary": "Connect a ServiceNow instance using a dedicated integration user and REST API key.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/servicenow/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Salesforce",
+      "summary": "Connect a Salesforce org so Entro can discover secrets in metadata and connected apps.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/salesforce/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Jenkins",
+      "summary": "Connect a Jenkins controller so Entro can discover credentials and pipeline secrets.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/jenkins/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "JFrog Artifactory",
+      "summary": "Connect JFrog Artifactory so Entro can discover tokens and secrets in the instance.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/jfrog-artifactory/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "CrowdStrike",
+      "summary": "Connect CrowdStrike Falcon via an API client so Entro can discover related secrets and NHIs.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [
+        "Falcon RTR"
+      ],
+      "catalogPath": "integrations/crowdstrike/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "On-Prem Active Directory",
+      "summary": "Connect on-premises Active Directory from a Connector that can reach a domain controller.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/on-prem-active-directory/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Oracle Cloud Infrastructure",
+      "summary": "Connect an OCI tenancy so Entro can discover secrets in Vault and related services.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/oracle-cloud-infrastructure/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "Azure Pipeline",
+      "summary": "Connect Azure Pipeline \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/azure-pipeline/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "CircleCI",
+      "summary": "Connect CircleCI \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/circleci/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "DroneCI",
+      "summary": "Connect DroneCI \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/droneci/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "TeamCity",
+      "summary": "Connect TeamCity \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/teamcity/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "TravisCI",
+      "summary": "Connect TravisCI \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/travisci/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Octopus",
+      "summary": "Connect Octopus \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/octopus/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Tines",
+      "summary": "Connect Tines \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/tines/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Torq",
+      "summary": "Connect Torq \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/torq/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "n8n",
+      "summary": "Connect an n8n Cloud or self-hosted instance so Entro can discover credentials used in workflows.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/n8n/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "SailPoint Identity Security Cloud (IdentityNow)",
+      "summary": "Connect SailPoint Identity Security Cloud so Entro can exchange NHI inventory via an API client.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [
+        "Aggregating Entro NHIs & AI agents"
+      ],
+      "catalogPath": "integrations/sailpoint-identity-security-cloud-identitynow/catalog.json",
+      "captureRequired": false
+    },
+    {
+      "tile": "CyberArk Conjur",
+      "summary": "Connect CyberArk Conjur \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/cyberark-conjur/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "CyberArk",
+      "summary": "Connect CyberArk \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/cyberark/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Palo Alto Cortex XDR",
+      "summary": "Connect Palo Alto Cortex XDR \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/palo-alto-cortex-xdr/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "BeyondTrust Safe",
+      "summary": "Connect BeyondTrust Safe \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/beyondtrust-safe/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Datadog",
+      "summary": "Connect Datadog \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/datadog/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Delinea Secrets Vault",
+      "summary": "Connect Delinea Secrets Vault \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/delinea-secrets-vault/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Docker",
+      "summary": "Connect Docker \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/docker/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Elastic",
+      "summary": "Connect Elastic \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/elastic/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Hybrid Azure AD",
+      "summary": "Connect Hybrid Azure AD \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/hybrid-azure-ad/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "JupyterHub",
+      "summary": "Connect JupyterHub \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/jupyterhub/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Kubernetes",
+      "summary": "Connect Kubernetes \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/kubernetes/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "LastPass",
+      "summary": "Connect LastPass \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/lastpass/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Monday",
+      "summary": "Connect Monday \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/monday/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "MongoDB",
+      "summary": "Connect MongoDB \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/mongodb/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Notion",
+      "summary": "Connect Notion \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/notion/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "1Password",
+      "summary": "Connect 1Password \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/1password/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "PagerDuty",
+      "summary": "Connect PagerDuty \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/pagerduty/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Splunk",
+      "summary": "Connect Splunk \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/splunk/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Terraform",
+      "summary": "Connect Terraform \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/terraform/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Workday",
+      "summary": "Connect Workday \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/workday/catalog.json",
+      "captureRequired": true
+    },
+    {
+      "tile": "Zendesk",
+      "summary": "Connect Zendesk \u2014 connection form not yet captured for Connect catalog.",
+      "integrationPathNames": [],
+      "optionalCapabilityNames": [],
+      "catalogPath": "integrations/zendesk/catalog.json",
+      "captureRequired": true
+    }
+  ]
+}

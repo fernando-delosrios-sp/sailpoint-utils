@@ -1,0 +1,191 @@
+{
+  "tile": "Remote File System",
+  "category": "cloud-and-infrastructure",
+  "integrationPaths": [
+    {
+      "name": "SMB",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Username",
+          "secret": false,
+          "obtainedHow": "Domain-qualified service account that can read the share (e.g. DOMAIN\\user)."
+        },
+        {
+          "name": "Password",
+          "secret": true,
+          "obtainedHow": "Password for that service account; store in the operator vault."
+        },
+        {
+          "name": "File Share IP or Hostname",
+          "secret": false,
+          "obtainedHow": "Host:445 of the file server as shown in Entro's SMB form."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Create a read-only share account",
+          "instruction": "On the file server or AD, create a service account with read access to the target shares and confirm port 445 is reachable from the Connector host.",
+          "evidence": "The account can list the share and the Connector host reaches host:445",
+          "uncataloged": {
+            "evidence": "The account can list the share and the Connector host reaches host:445"
+          }
+        },
+        {
+          "title": "Create a read-only share account",
+          "instruction": "On the file server or AD, create a service account with read access to the target shares and confirm port 445 is reachable from the Connector host.",
+          "evidence": "The account can list the share and the Connector host reaches host:445",
+          "uncataloged": {
+            "evidence": "The account can list the share and the Connector host reaches host:445"
+          }
+        },
+        {
+          "title": "Prepare the SMB JSON template",
+          "instruction": "Fill Entro's SMB JSON template for each server and upload it on Add New Account instead of entering one share at a time.",
+          "evidence": "Entro accepts the JSON upload and lists the shares",
+          "uncataloged": {
+            "evidence": "Entro accepts the JSON upload and lists the shares"
+          }
+        }
+      ]
+    },
+    {
+      "name": "SFTP (SSH)",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Host",
+          "secret": false,
+          "obtainedHow": "DNS or IP of the SFTP server (optionally with port)."
+        },
+        {
+          "name": "Username",
+          "secret": false,
+          "obtainedHow": "SFTP user with read access to the target directories."
+        },
+        {
+          "name": "Private Key",
+          "secret": true,
+          "obtainedHow": "SSH private key for that user if not using a password; store in the operator vault."
+        },
+        {
+          "name": "Passphrase (optional)",
+          "secret": true,
+          "obtainedHow": "Passphrase for the private key if it is encrypted; omit when unused."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Provision an SFTP reader",
+          "instruction": "Create an SFTP user limited to the directories Entro should scan and confirm SSH reachability from the Connector host.",
+          "evidence": "SFTP login from the Connector host lists the target directories",
+          "uncataloged": {
+            "evidence": "SFTP login from the Connector host lists the target directories"
+          }
+        }
+      ]
+    },
+    {
+      "name": "WinRM",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Host",
+          "secret": false,
+          "obtainedHow": "DNS or IP of the Windows host with WinRM enabled."
+        },
+        {
+          "name": "Username",
+          "secret": false,
+          "obtainedHow": "WinRM user with read access to the target paths."
+        },
+        {
+          "name": "Password",
+          "secret": true,
+          "obtainedHow": "Password for that user when not using a key; store in the operator vault."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Enable WinRM for the Connector",
+          "instruction": "On each Windows host, enable WinRM, allow the Connector source, and grant a service account read access to the directories to scan.",
+          "evidence": "WinRM responds from the Connector host with the service account",
+          "uncataloged": {
+            "evidence": "WinRM responds from the Connector host with the service account"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "none"
+    }
+  ],
+  "hosting": "self-hosted",
+  "summary": "Scan SMB file shares from a Connector that can reach the share over port 445.",
+  "connectionFields": [
+    {
+      "name": "Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Username",
+      "secret": false,
+      "obtainedHow": "Domain-qualified service account that can read the share (e.g. DOMAIN\\user)."
+    },
+    {
+      "name": "Password",
+      "secret": true,
+      "obtainedHow": "Password for that service account; store in the operator vault."
+    },
+    {
+      "name": "File Share IP or Hostname",
+      "secret": false,
+      "obtainedHow": "Host:445 of the file server as shown in Entro's SMB form."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

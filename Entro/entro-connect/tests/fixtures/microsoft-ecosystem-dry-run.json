@@ -1,0 +1,13 @@
+{
+  "tile": "Microsoft ecosystem",
+  "setupMethod": "Automated PowerShell",
+  "coverages": ["SharePoint / OneDrive", "Copilot Studio"],
+  "configurationTool": "pwsh",
+  "platformIdentity": {
+    "principal": "admin@emea-tes-team.cloud",
+    "endpoint": "AzureCloud",
+    "scope": "tenant 16131240-2ba6-4627-ad0a-275f8450303c; Global Administrator directory role"
+  },
+  "clientSecretRecorded": false,
+  "evidence": "Consented non-production dry-run: auth-check succeeded for Az PowerShell user context; Entro onboarding script was not executed this session because the Skill catalog did not yet pin a checksummed copy. Tenant ID and Application (client) ID observed on existing app SailPoint Entro; secret Value absent (count 0) and not requested into session."
+}
