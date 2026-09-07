@@ -1,0 +1,21 @@
+name: minimalist
+version: 1
+description: Lightweight schema for well-scoped, low-risk changes
+artifacts:
+  - id: specs
+    generates: specs/**/*.md
+    description: Specifications authored as user stories with Given/When/Then acceptance criteria
+    template: specs/spec.md
+    requires: []
+  - id: tasks
+    generates: tasks.md
+    description: Implementation checklist with trackable tasks
+    template: tasks.md
+    instruction: |
+      - **CRITICAL**: Always include specific tasks to update user-facing documentation, READMEs, API docs, or comments reflecting the changes.
+    requires:
+      - specs
+apply:
+  requires:
+    - tasks
+  tracks: tasks.md

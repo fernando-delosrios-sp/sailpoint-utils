@@ -1,0 +1,87 @@
+{
+  "tile": "SailPoint Identity Security Cloud (IdentityNow)",
+  "category": "security-and-identity",
+  "integrationPaths": [
+    {
+      "name": "SailPoint Identity Security Cloud (IdentityNow)",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Tenant URL",
+          "secret": false,
+          "obtainedHow": "ISC tenant API URL retained when the API client is created."
+        },
+        {
+          "name": "Client ID",
+          "secret": false,
+          "obtainedHow": "One-time Client ID from ISC API Management after creating the Entro client."
+        },
+        {
+          "name": "Client Secret",
+          "secret": true,
+          "obtainedHow": "One-time Client Secret from that dialog; store in the operator vault immediately."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create an ISC API client",
+          "instruction": "In SailPoint ISC, create an API client for Entro, copy Tenant URL, Client ID, and Client Secret into the operator vault, and confirm outbound HTTPS from the Connector.",
+          "evidence": "ISC shows the Entro API client (secret stored outside the session)",
+          "uncataloged": {
+            "evidence": "ISC shows the Entro API client (secret stored outside the session)"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [
+    {
+      "name": "Aggregating Entro NHIs & AI agents",
+      "configurationTools": []
+    }
+  ],
+  "configurationTools": [
+    {
+      "fit": "none"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect SailPoint Identity Security Cloud so Entro can exchange NHI inventory via an API client.",
+  "connectionFields": [
+    {
+      "name": "Environment Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Tenant URL",
+      "secret": false,
+      "obtainedHow": "ISC tenant API URL retained when the API client is created."
+    },
+    {
+      "name": "Client ID",
+      "secret": false,
+      "obtainedHow": "One-time Client ID from ISC API Management after creating the Entro client."
+    },
+    {
+      "name": "Client Secret",
+      "secret": true,
+      "obtainedHow": "One-time Client Secret from that dialog; store in the operator vault immediately."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

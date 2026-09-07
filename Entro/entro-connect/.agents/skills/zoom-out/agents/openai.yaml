@@ -1,0 +1,5 @@
+interface:
+  display_name: Zoom Out
+  short_description: Tell the agent to zoom out and give broader context or a higher-level perspective.
+policy:
+  allow_implicit_invocation: false

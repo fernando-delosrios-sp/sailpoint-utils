@@ -1,0 +1,156 @@
+{
+  "tile": "Akeyless Vault",
+  "category": "cloud-and-infrastructure",
+  "integrationPaths": [
+    {
+      "name": "Universal Identity",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "akeyless"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Access ID",
+          "secret": false,
+          "obtainedHow": "From the Akeyless auth method (Universal Identity or API Key) created for Entro."
+        },
+        {
+          "name": "Access Key",
+          "secret": true,
+          "obtainedHow": "The matching Akeyless credential for that Access ID; store it in the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment nickname",
+          "default": "nonprod"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create an Entro auth method in Akeyless",
+          "instruction": "In Akeyless, create a Universal Identity or API Key auth method named for Entro and note Access ID (and UID if Universal Identity).",
+          "evidence": "Akeyless lists the Entro auth method with an Access ID"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create an Entro auth method in Akeyless",
+          "preview": "akeyless list-auth-methods (inspect name collision)",
+          "mutation": "akeyless create-auth-method or create-auth-method-universal-identity named for Entro; operator stores Access Key / UID outside the session",
+          "target": "Akeyless account",
+          "expectedChange": "Akeyless lists the Entro auth method with an Access ID",
+          "verification": "akeyless list-auth-methods",
+          "rollbackOrImpact": "Delete the auth method created this run",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/akeyless-vault/akeyless-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    },
+    {
+      "name": "API Key",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "akeyless"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Environment nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Access ID",
+          "secret": false,
+          "obtainedHow": "From the Akeyless auth method (Universal Identity or API Key) created for Entro."
+        },
+        {
+          "name": "Access Key",
+          "secret": true,
+          "obtainedHow": "The matching Akeyless credential for that Access ID; store it in the operator vault."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment nickname",
+          "default": "nonprod"
+        }
+      ],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create an Entro auth method in Akeyless",
+          "instruction": "In Akeyless, create a Universal Identity or API Key auth method named for Entro and note Access ID (and UID if Universal Identity).",
+          "evidence": "Akeyless lists the Entro auth method with an Access ID"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create an Entro auth method in Akeyless",
+          "preview": "akeyless list-auth-methods (inspect name collision)",
+          "mutation": "akeyless create-auth-method or create-auth-method-universal-identity named for Entro; operator stores Access Key / UID outside the session",
+          "target": "Akeyless account",
+          "expectedChange": "Akeyless lists the Entro auth method with an Access ID",
+          "verification": "akeyless list-auth-methods",
+          "rollbackOrImpact": "Delete the auth method created this run",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/cloud-and-infrastructure/akeyless-vault/akeyless-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "akeyless"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect Akeyless Vault so Entro can discover secrets through a read-only Universal Identity or API key.",
+  "connectionFields": [
+    {
+      "name": "Environment nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Access ID",
+      "secret": false,
+      "obtainedHow": "From the Akeyless auth method (Universal Identity or API Key) created for Entro."
+    },
+    {
+      "name": "Access Key",
+      "secret": true,
+      "obtainedHow": "The matching Akeyless credential for that Access ID; store it in the operator vault."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

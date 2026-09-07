@@ -1,0 +1,16 @@
+{
+  "tile": "LastPass",
+  "category": "uncaptured",
+  "integrationPaths": [],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "none"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect LastPass \u2014 connection form not yet captured for Connect catalog.",
+  "connectionFields": [],
+  "captureRequired": true,
+  "pathEvidence": "capture-required"
+}

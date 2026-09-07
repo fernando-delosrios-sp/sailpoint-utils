@@ -1,0 +1,357 @@
+{
+  "Metadata": {
+    "entroMonitoringType": "LEAST_PRIVILEGE"
+  },
+  "Resources": {
+    "EntroRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "EntroRole-${Environment}-${Timestamp}"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:aws:iam::937217723901:user/liminal-saas-assume-role"
+              },
+              "Action": ["sts:AssumeRole"],
+              "Condition": {
+                "StringEquals": {
+                  "sts:ExternalId": {
+                    "Ref": "ExternalId"
+                  }
+                }
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Sub": "arn:aws:iam::937217723901:role/EntroTrustRole-${ExternalId}"
+                }
+              },
+              "Action": ["sts:AssumeRole"],
+              "Condition": {
+                "StringEquals": {
+                  "sts:ExternalId": {
+                    "Ref": "ExternalId"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "EntroPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "secretsmanager:ListSecrets",
+                    "secretsmanager:TagResource",
+                    "secretsmanager:GetResourcePolicy",
+                    "secretsmanager:DescribeSecret",
+                    "secretsmanager:ValidateResourcePolicy",
+                    "secretsmanager:ListSecretVersionIds",
+                    "kms:DescribeKey",
+                    "kms:ListAliases",
+                    "kms:ListKeys",
+                    "EC2:Get*",
+                    "EC2:Describe*",
+                    "EC2:List*",
+                    "s3:GetObject",
+                    "s3:ListBucket",
+                    "cloudtrail:DescribeTrails",
+                    "cloudtrail:GetTrailStatus",
+                    "cloudtrail:GetEventSelectors",
+                    "cloudtrail:LookupEvents",
+                    "cloudformation:DescribeChangeSet",
+                    "cloudformation:DescribeStackResource",
+                    "cloudformation:DescribeStacks",
+                    "lambda:ListFunctions",
+                    "lambda:GetFunction",
+                    "iam:Get*",
+                    "iam:List*",
+                    "iam:GenerateServiceLastAccessedDetails",
+                    "rds:Describe*",
+                    "rds:ListTagsForResource",
+                    "ssm:ListCommands",
+                    "ssm:ListDocumentVersions",
+                    "ssm:ListDocumentMetadataHistory",
+                    "ssm:DescribeMaintenanceWindowSchedule",
+                    "ssm:DescribeInstancePatches",
+                    "ssm:ListInstanceAssociations",
+                    "ssm:GetParameter",
+                    "ssm:GetMaintenanceWindowExecutionTaskInvocation",
+                    "ssm:DescribeAutomationExecutions",
+                    "ssm:GetMaintenanceWindowTask",
+                    "ssm:DescribeMaintenanceWindowExecutionTaskInvocations",
+                    "ssm:DescribeAutomationStepExecutions",
+                    "ssm:ListOpsMetadata",
+                    "ssm:DescribeParameters",
+                    "ssm:ListResourceDataSync",
+                    "ssm:ListDocuments",
+                    "ssm:DescribeMaintenanceWindowsForTarget",
+                    "ssm:ListComplianceItems",
+                    "ssm:GetConnectionStatus",
+                    "ssm:GetMaintenanceWindowExecutionTask",
+                    "ssm:GetOpsItem",
+                    "ssm:GetMaintenanceWindowExecution",
+                    "ssm:ListResourceComplianceSummaries",
+                    "ssm:GetParameters",
+                    "ssm:GetOpsMetadata",
+                    "ssm:ListOpsItemRelatedItems",
+                    "ssm:DescribeOpsItems",
+                    "ssm:DescribeMaintenanceWindows",
+                    "ssm:DescribeEffectivePatchesForPatchBaseline",
+                    "ssm:GetServiceSetting",
+                    "ssm:DescribeAssociationExecutions",
+                    "ssm:DescribeDocumentPermission",
+                    "ssm:ListCommandInvocations",
+                    "ssm:GetAutomationExecution",
+                    "ssm:DescribePatchGroups",
+                    "ssm:GetDefaultPatchBaseline",
+                    "ssm:DescribeDocument",
+                    "ssm:DescribeMaintenanceWindowTasks",
+                    "ssm:ListAssociationVersions",
+                    "ssm:GetPatchBaselineForPatchGroup",
+                    "ssm:PutConfigurePackageResult",
+                    "ssm:DescribePatchGroupState",
+                    "ssm:DescribeMaintenanceWindowExecutions",
+                    "ssm:GetManifest",
+                    "ssm:DescribeMaintenanceWindowExecutionTasks",
+                    "ssm:DescribeInstancePatchStates",
+                    "ssm:DescribeInstancePatchStatesForPatchGroup",
+                    "ssm:GetDocument",
+                    "ssm:GetInventorySchema",
+                    "ssm:GetParametersByPath",
+                    "ssm:GetMaintenanceWindow",
+                    "ssm:DescribeInstanceAssociationsStatus",
+                    "ssm:DescribeAssociationExecutionTargets",
+                    "ssm:GetPatchBaseline",
+                    "ssm:DescribeInstanceProperties",
+                    "ssm:ListInventoryEntries",
+                    "ssm:DescribeAssociation",
+                    "ssm:ListOpsItemEvents",
+                    "ssm:GetDeployablePatchSnapshotForInstance",
+                    "ssm:DescribeSessions",
+                    "ssm:GetParameterHistory",
+                    "ssm:DescribeMaintenanceWindowTargets",
+                    "ssm:DescribePatchBaselines",
+                    "ssm:DescribeEffectiveInstanceAssociations",
+                    "ssm:DescribeInventoryDeletions",
+                    "ssm:DescribePatchProperties",
+                    "ssm:GetInventory",
+                    "ssm:GetOpsSummary",
+                    "ssm:DescribeActivations",
+                    "ssm:GetCommandInvocation",
+                    "ssm:ListComplianceSummaries",
+                    "ssm:DescribeInstanceInformation",
+                    "ssm:ListTagsForResource",
+                    "ssm:DescribeDocumentParameters",
+                    "ssm:GetCalendar",
+                    "ssm:ListAssociations",
+                    "ssm:GetCalendarState",
+                    "ssm:DescribeAvailablePatches",
+                    "lambda:ListVersionsByFunction",
+                    "lambda:GetLayerVersion",
+                    "lambda:GetAccountSettings",
+                    "lambda:GetFunctionConfiguration",
+                    "lambda:GetLayerVersionPolicy",
+                    "lambda:ListProvisionedConcurrencyConfigs",
+                    "lambda:GetProvisionedConcurrencyConfig",
+                    "lambda:ListTags",
+                    "lambda:ListLayerVersions",
+                    "lambda:ListLayers",
+                    "lambda:ListCodeSigningConfigs",
+                    "lambda:GetAlias",
+                    "lambda:ListFunctions",
+                    "lambda:GetEventSourceMapping",
+                    "lambda:GetFunction",
+                    "lambda:ListAliases",
+                    "lambda:GetFunctionUrlConfig",
+                    "lambda:ListFunctionUrlConfigs",
+                    "lambda:GetFunctionCodeSigningConfig",
+                    "lambda:ListFunctionEventInvokeConfigs",
+                    "lambda:ListFunctionsByCodeSigningConfig",
+                    "lambda:GetFunctionConcurrency",
+                    "lambda:GetFunctionEventInvokeConfig",
+                    "lambda:ListEventSourceMappings",
+                    "lambda:GetCodeSigningConfig",
+                    "lambda:GetPolicy",
+                    "eks:ListNodegroups",
+                    "eks:DescribeFargateProfile",
+                    "eks:ListTagsForResource",
+                    "eks:ListAddons",
+                    "eks:DescribeAddon",
+                    "eks:ListFargateProfiles",
+                    "eks:DescribeNodegroup",
+                    "eks:DescribeIdentityProviderConfig",
+                    "eks:ListUpdates",
+                    "eks:DescribeUpdate",
+                    "eks:AccessKubernetesApi",
+                    "eks:DescribeCluster",
+                    "eks:ListClusters",
+                    "eks:DescribeAddonVersions",
+                    "eks:ListIdentityProviderConfigs",
+                    "sso:ListInstances",
+                    "identitystore:ListUsers",
+                    "identitystore:ListGroupMembershipsForMember",
+                    "sso:ListPermissionSets",
+                    "sso:GetInlinePolicyForPermissionSet",
+                    "sso:ListManagedPoliciesInPermissionSet",
+                    "sso:ListCustomerManagedPolicyReferencesInPermissionSet",
+                    "sso:DescribePermissionSet",
+                    "sso:DescribePermissionSet",
+                    "sso:ListAccountsForProvisionedPermissionSet",
+                    "sso:ListAccountAssignments",
+                    "sso:ListManagedPoliciesInPermissionSet",
+                    "sso:ListCustomerManagedPolicyReferencesInPermissionSet",
+                    "sso:ListInstances",
+                    "sso:ListPermissionSets",
+                    "identitystore:DescribeUser",
+                    "organizations:ListAccounts",
+                    "bedrock-agentcore:List*",
+                    "bedrock-agentcore:Get*",
+                    "bedrock:List*",
+                    "bedrock:Get*"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "EntroReporter": {
+      "Type": "Custom::EntroReporter",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::Sub": "arn:aws:sns:eu-west-3:937217723901:EntroSubsSns${SNSTopicARNSuffix}"
+        },
+        "RoleArn": {
+          "Fn::GetAtt": ["EntroRole", "Arn"]
+        },
+        "ExternalId": {
+          "Ref": "ExternalId"
+        },
+        "Environment": {
+          "Fn::GetAtt": ["AccountAliasResource", "AccountAlias"]
+        },
+        "RemoteAgent": {
+          "Ref": "RemoteAgent"
+        }
+      }
+    },
+    "EntroLambdaExecutionRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": ["lambda.amazonaws.com"]
+              },
+              "Action": ["sts:AssumeRole"]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "LambdaIAMPolicy",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "AllowListAccountAliases",
+                  "Effect": "Allow",
+                  "Action": ["iam:ListAccountAliases"],
+                  "Resource": "*"
+                },
+                {
+                  "Sid": "AllowLambdaLogs",
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/Entro-${Environment}-${Timestamp}-GetAccountAlias"
+                    },
+                    {
+                      "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/Entro-${Environment}-${Timestamp}-GetAccountAlias:*"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "GetAccountAliasLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "Entro-${Environment}-${Timestamp}-GetAccountAlias"
+        },
+        "Handler": "index.lambda_handler",
+        "Role": {
+          "Fn::GetAtt": ["EntroLambdaExecutionRole", "Arn"]
+        },
+        "Code": {
+          "ZipFile": "import boto3\nimport cfnresponse\n\ndef lambda_handler(event, context):\n    iam = boto3.client('iam')\n\n    try:\n        account_id = event['ResourceProperties']['AccountId']\n        response = iam.list_account_aliases()\n        account_alias = response['AccountAliases'][0] if response['AccountAliases'] else account_id\n\n        cfnresponse.send(event, context, cfnresponse.SUCCESS, {'AccountAlias': account_alias})\n    except Exception as e:\n        cfnresponse.send(event, context, cfnresponse.FAILED, {'Error': str(e)})"
+        },
+        "Runtime": "python3.11",
+        "Timeout": 30
+      }
+    },
+    "AccountAliasResource": {
+      "Type": "Custom::AccountAlias",
+      "Properties": {
+        "ServiceToken": {
+          "Fn::GetAtt": ["GetAccountAliasLambdaFunction", "Arn"]
+        },
+        "AccountId": {
+          "Ref": "AWS::AccountId"
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "Environment": {
+      "Default": "",
+      "Description": "Environment name - pulled Entro",
+      "Type": "String"
+    },
+    "ExternalId": {
+      "Description": "External ID for securing the role - Given by Entro",
+      "Type": "String"
+    },
+    "RemoteAgent": {
+      "Description": "Remote agent - Given by Entro",
+      "Type": "String"
+    },
+    "SNSTopicARNSuffix": {
+      "Description": "SNS Topic ARN Suffix - Provided by Entro if needed",
+      "Type": "String",
+      "Default": ""
+    },
+    "Timestamp": {
+      "Description": "Timestamp to make resource names unique",
+      "Type": "String",
+      "Default": ""
+    }
+  }
+}

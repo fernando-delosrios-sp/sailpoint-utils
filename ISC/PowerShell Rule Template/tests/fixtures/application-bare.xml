@@ -1,0 +1,55 @@
+<Map>
+  <entry key="HomeFolderBasePath" value="C:\Homes" />
+  <entry key="ChildValue">
+    <value>
+      <String>from-child</String>
+    </value>
+  </entry>
+  <entry key="EmptyList">
+    <value>
+      <List />
+    </value>
+  </entry>
+  <entry key="SingleList">
+    <value>
+      <List>
+        <String>one</String>
+      </List>
+    </value>
+  </entry>
+  <entry key="MultiList">
+    <value>
+      <List>
+        <String>one</String>
+        <String>two</String>
+      </List>
+    </value>
+  </entry>
+  <entry key="Complex">
+    <value>
+      <Map>
+        <entry key="HomeFolderBasePath" value="nested-path" />
+        <entry key="Enabled" value="true" />
+        <entry key="Names">
+          <value>
+            <List>
+              <String>alpha</String>
+            </List>
+          </value>
+        </entry>
+        <entry key="Items">
+          <value>
+            <List>
+              <Map>
+                <entry key="Name" value="first" />
+              </Map>
+              <Map>
+                <entry key="Name" value="second" />
+              </Map>
+            </List>
+          </value>
+        </entry>
+      </Map>
+    </value>
+  </entry>
+</Map>

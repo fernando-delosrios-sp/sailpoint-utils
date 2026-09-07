@@ -1,0 +1,124 @@
+{
+  "tile": "JFrog Artifactory",
+  "category": "container-registries",
+  "integrationPaths": [
+    {
+      "name": "JFrog Artifactory",
+      "pathEvidence": "documentation-derived",
+      "implicit": true,
+      "configurationTools": [
+        {
+          "fit": "preferred",
+          "binary": "jf"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Artifactory URL",
+          "secret": false,
+          "obtainedHow": "Base URL of the JFrog instance (https://artifactory.example.com)."
+        },
+        {
+          "name": "Username",
+          "secret": false,
+          "obtainedHow": "Username of the account that created the access token."
+        },
+        {
+          "name": "Access Token",
+          "secret": true,
+          "obtainedHow": "Scoped read-only access token from JFrog User Profile \u2192 Generate Identity Token."
+        },
+        {
+          "name": "Environment Nickname",
+          "secret": false,
+          "obtainedHow": "Operator-chosen label in Entro; not a secret."
+        },
+        {
+          "name": "Environment Type",
+          "secret": false,
+          "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+        }
+      ],
+      "operatorInputs": [
+        {
+          "key": "environment_nickname",
+          "prompt": "Environment Nickname for Entro",
+          "purpose": "Operator-chosen Entro label for this connection",
+          "validation": "Non-empty label; letters, digits, spaces, and hyphens.",
+          "secret": false,
+          "bindsTo": "Environment Nickname",
+          "default": "nonprod"
+        },
+        {
+          "key": "environment_type",
+          "prompt": "Environment type in Entro",
+          "purpose": "Production, Development, or the matching form value",
+          "validation": "One of Production, Development, or the form's listed types",
+          "secret": false,
+          "bindsTo": "Environment Type",
+          "default": "Development"
+        }
+      ],
+      "hosting": "self-hosted",
+      "prepSteps": [
+        {
+          "title": "Create a read-only Artifactory token",
+          "instruction": "In JFrog, create a user or identity token with Entro's read scopes and store the token in the operator vault.",
+          "evidence": "Artifactory shows the Entro token (value stored outside the session)"
+        }
+      ],
+      "typedActions": [
+        {
+          "prepStepTitle": "Create a read-only Artifactory token",
+          "preview": "Platform has no dry-run for this change; disclosed as no-preview.",
+          "mutation": "jf access-token-create --groups <read-group> --expiry 0 (or identity token per Entro scopes); operator stores the token in the vault",
+          "target": "JFrog Artifactory instance",
+          "expectedChange": "Artifactory shows the Entro token (value stored outside the session)",
+          "verification": "jf rt ping ; jf config show",
+          "rollbackOrImpact": "Revoke the access token created this run from JFrog User Management",
+          "secretProducing": true,
+          "sourceUrl": "https://entro.gitbook.io/integrations/container-registries/jfrog-artifactory/jfrog-artifactory-onboarding.md",
+          "retrievedAt": "2026-08-31"
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "preferred",
+      "binary": "jf"
+    }
+  ],
+  "hosting": "self-hosted",
+  "summary": "Connect JFrog Artifactory so Entro can discover tokens and secrets in the instance.",
+  "connectionFields": [
+    {
+      "name": "Artifactory URL",
+      "secret": false,
+      "obtainedHow": "Base URL of the JFrog instance (https://artifactory.example.com)."
+    },
+    {
+      "name": "Username",
+      "secret": false,
+      "obtainedHow": "Username of the account that created the access token."
+    },
+    {
+      "name": "Access Token",
+      "secret": true,
+      "obtainedHow": "Scoped read-only access token from JFrog User Profile \u2192 Generate Identity Token."
+    },
+    {
+      "name": "Environment Nickname",
+      "secret": false,
+      "obtainedHow": "Operator-chosen label in Entro; not a secret."
+    },
+    {
+      "name": "Environment Type",
+      "secret": false,
+      "obtainedHow": "Select Production, Development, or the matching environment type in the form."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}

@@ -1,0 +1,109 @@
+{
+  "tile": "Slack",
+  "category": "collaboration-and-saas",
+  "integrationPaths": [
+    {
+      "name": "Slack Private App",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Bot User OAuth Token",
+          "secret": true,
+          "obtainedHow": "From the Slack app OAuth & Permissions page after install (xoxb- prefix). Store in the operator vault."
+        },
+        {
+          "name": "User OAuth Token",
+          "secret": true,
+          "obtainedHow": "User OAuth token from the same page (xoxp- prefix). Store in the operator vault."
+        },
+        {
+          "name": "App-Level Token",
+          "secret": true,
+          "obtainedHow": "Socket-mode app-level token (xapp- prefix) generated on Basic Information \u2192 App-Level Tokens."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Create the Slack app from Entro's manifest",
+          "instruction": "At api.slack.com/apps, create an app from manifest, paste Entro's manifest, install it to the workspace, and generate the socket-mode app-level token.",
+          "evidence": "The workspace Apps list includes Entro Security",
+          "uncataloged": {
+            "evidence": "The workspace Apps list includes Entro Security"
+          }
+        },
+        {
+          "title": "Copy OAuth tokens into the vault",
+          "instruction": "On OAuth & Permissions, copy Bot and User tokens into the operator vault. Do not paste them into chat.",
+          "evidence": "OAuth & Permissions shows installed tokens (values stored outside the session)",
+          "uncataloged": {
+            "evidence": "OAuth & Permissions shows installed tokens (values stored outside the session)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Slack Enterprise Grid App",
+      "pathEvidence": "documentation-derived",
+      "implicit": false,
+      "configurationTools": [
+        {
+          "fit": "none"
+        }
+      ],
+      "connectionFields": [
+        {
+          "name": "Workspace",
+          "secret": false,
+          "obtainedHow": "Target workspace name selected in Entro after the Grid org install."
+        }
+      ],
+      "operatorInputs": [],
+      "hosting": "public",
+      "prepSteps": [
+        {
+          "title": "Install the Entro Grid app",
+          "instruction": "As an org admin, install Entro's Enterprise Grid Slack app at the org, then in Entro pick Worker Group and the target workspace.",
+          "evidence": "Slack org apps lists Entro and Entro shows the workspace selectable",
+          "uncataloged": {
+            "evidence": "Slack org apps lists Entro and Entro shows the workspace selectable"
+          }
+        }
+      ]
+    }
+  ],
+  "optionalCapabilities": [],
+  "configurationTools": [
+    {
+      "fit": "none"
+    }
+  ],
+  "hosting": "public",
+  "summary": "Connect a standard Slack workspace via an Entro Slack app installed from a manifest.",
+  "connectionFields": [
+    {
+      "name": "Bot User OAuth Token",
+      "secret": true,
+      "obtainedHow": "From the Slack app OAuth & Permissions page after install (xoxb- prefix). Store in the operator vault."
+    },
+    {
+      "name": "User OAuth Token",
+      "secret": true,
+      "obtainedHow": "User OAuth token from the same page (xoxp- prefix). Store in the operator vault."
+    },
+    {
+      "name": "App-Level Token",
+      "secret": true,
+      "obtainedHow": "Socket-mode app-level token (xapp- prefix) generated on Basic Information \u2192 App-Level Tokens."
+    }
+  ],
+  "captureRequired": false,
+  "pathEvidence": "documentation-derived"
+}
