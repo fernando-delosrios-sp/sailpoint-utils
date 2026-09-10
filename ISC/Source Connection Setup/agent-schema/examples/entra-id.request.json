@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "connector": "entra-id",
+  "config": {
+    "tenantId": "contoso.onmicrosoft.com",
+    "applicationName": "SailPoint ISC Entra ID",
+    "permissionMode": "Granular",
+    "features": ["MfaManagement"],
+    "directoryRole": "UserAdministrator",
+    "rotateSecret": true,
+    "outputDirectory": "./sourceConfig/entra-id-isc"
+  },
+  "decisions": {
+    "createNewApplication": true,
+    "allowGlobalAdministrator": false
+  }
+}

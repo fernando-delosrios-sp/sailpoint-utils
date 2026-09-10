@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "connector": "aws-ciem",
+  "config": {
+    "externalId": "11111111-2222-3333-4444-555555555555",
+    "cloudTrailBucket": "sailpoint-ciem-123456789012",
+    "scope": "Organization",
+    "ciemActivity": "OrganizationManagement",
+    "outputDirectory": "./sourceConfig/aws-ciem"
+  },
+  "decisions": {
+    "approveOrganizationScope": true,
+    "approveDestructive": false
+  }
+}

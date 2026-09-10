@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "connector": "aws-saas",
+  "config": {
+    "externalId": "11111111-2222-3333-4444-555555555555",
+    "roleName": "SailPointAWSRole",
+    "region": "us-east-1",
+    "policySet": "Mgo",
+    "features": ["ActivityInsights"],
+    "scope": "CurrentAccount",
+    "outputDirectory": "./sourceConfig/aws-isc"
+  },
+  "decisions": {
+    "updateExistingRole": true,
+    "approveOrganizationScope": false
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ISC Source Connection Setup Agent Plan",
+  "type": "object",
+  "required": ["status", "requestHash", "resolved"],
+  "properties": {
+    "status": { "type": "string", "enum": ["ready", "needsInput", "blocked"] },
+    "requestHash": { "type": "string" },
+    "resolved": { "type": "object" },
+    "discoveries": { "type": "object" },
+    "mutations": { "type": "array" },
+    "prerequisites": { "type": "array" },
+    "warnings": { "type": "array" },
+    "manualSteps": { "type": "array" },
+    "needsInput": { "type": "array" }
+  },
+  "additionalProperties": true
+}

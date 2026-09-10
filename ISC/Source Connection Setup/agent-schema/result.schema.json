@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ISC Source Connection Setup Agent Result",
+  "type": "object",
+  "required": ["status"],
+  "properties": {
+    "status": { "type": "string", "enum": ["ok", "whatIf", "error"] },
+    "connectionSettings": { "type": "object" },
+    "artifacts": { "type": "array" },
+    "secretArtifacts": { "type": "array" },
+    "manualSteps": { "type": "array" },
+    "verification": { "type": "object" },
+    "situation": { "type": "array" }
+  },
+  "additionalProperties": true
+}

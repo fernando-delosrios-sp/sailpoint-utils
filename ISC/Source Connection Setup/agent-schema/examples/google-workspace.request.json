@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "connector": "google-workspace",
+  "config": {
+    "grantType": "ServiceAccount",
+    "organizationId": "123456789012",
+    "projectId": "sailpoint-isc",
+    "impersonateUser": "admin@contoso.com",
+    "features": ["Gcp"],
+    "rotateKey": true,
+    "skipDomainWideDelegationWalkthrough": true,
+    "outputDirectory": "./sourceConfig/google-workspace-isc"
+  },
+  "secretRefs": {
+    "keyPassword": "env:ISC_GWS_KEY_PASSWORD"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "connector": "iqservice",
+  "config": {
+    "action": "Status",
+    "installPath": "C:\\SailPoint\\IQService"
+  },
+  "decisions": {
+    "approveDestructive": false
+  },
+  "secretRefs": {
+    "downloadUri": "file:./sourceConfig/iqservice-isc/agent-runs/latest/download-uri.txt"
+  }
+}

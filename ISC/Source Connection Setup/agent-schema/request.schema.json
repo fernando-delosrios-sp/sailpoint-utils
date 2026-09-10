@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ISC Source Connection Setup Agent Request",
+  "type": "object",
+  "required": ["schemaVersion", "connector", "config"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "connector": {
+      "type": "string",
+      "enum": ["entra-id", "aws-saas", "aws-ciem", "google-workspace", "iqservice"]
+    },
+    "runId": { "type": "string" },
+    "config": { "type": "object" },
+    "decisions": { "type": "object" },
+    "secretRefs": { "type": "object" }
+  },
+  "additionalProperties": false
+}

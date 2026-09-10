@@ -7,9 +7,86 @@ Operator scripts for SailPoint Identity Security Cloud (ISC) source connectivity
 ## Artifacts
 
 - `Entra ID.ps1` — Microsoft Graph script that creates or updates the Entra ID app registration, assigns the documented Graph application permissions, grants admin consent, assigns directory roles, and issues a client secret.
-- `AWS.ps1` — AWS Tools for PowerShell script that creates or updates the IAM role trusted by the Amazon Web Services SaaS connector, attaches documented aggregation / organization / provisioning policies, and optionally CIEM, Activity Insights, Bedrock discovery, and Identity Center packs.
+- `AWS.ps1` — AWS Tools for PowerShell script for the **Amazon Web Services SaaS** connector (native IAM role and `SP*` policies) or the **CIEM AWS** source (downloads and deploys SailPoint CloudFormation templates). Run one source type per invocation; each writes its own connection-settings file.
 - `Google Workspace.ps1` — gcloud script for both Google Workspace SaaS grant types: creates or updates the service account, enables documented APIs, attaches an organization custom IAM role, converts the JSON key to the encrypted RSA PEM ISC expects, or runs the OAuth authorization-code flow for a refresh token.
 - `IQService Control.ps1` — Windows operator script that downloads, installs, updates, and manages IQService (Integration Service) on a VA host.
+- `Agent Source Setup.ps1` — JSON-driven headless facade for AI agents (`Catalog`, `Plan`, `Apply`). Secrets are written only to restricted files under `sourceConfig/<connector>/agent-runs/<run-id>/`; agent-visible JSON never contains secret values.
+
+## Agent usage
+
+Agents should use `Agent Source Setup.ps1` instead of interactive wizards.
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+cd 'ISC/Source Connection Setup'
+
+# 1. Discover connector options
+.\Agent Source Setup.ps1 -Operation Catalog -Connector entra-id -OutputPath .\catalog.json
+
+# 2. Build a plan from a request document (read-only discovery)
+.\Agent Source Setup.ps1 -Operation Plan -Connector aws-saas `
+  -RequestPath .\agent-schema\examples\aws-saas.request.json -OutputPath .\plan.json
+
+# 3. Apply a ready plan (mutations; supports -WhatIf)
+.\Agent Source Setup.ps1 -Operation Apply -Connector entra-id `
+  -RequestPath .\request.json -PlanPath .\plan.json -OutputPath .\result.json
+```
+
+Request, plan, and result schemas live under `agent-schema/`. Example requests are in `agent-schema/examples/`.
+
+**Secret policy**
+
+- Pass sensitive inputs via `secretRefs` using `env:VARIABLE` or `file:/absolute/or/relative/path` only.
+- Generated secrets (Entra client secret, Google keys/tokens, full connection-settings files with secrets) are written to `sourceConfig/<connector>/agent-runs/<run-id>/` with owner-only permissions.
+- Agent stdout and JSON results contain labels and file paths only — never secret values or IQService signed download URLs.
+- Authentication stays operator-local (Microsoft Graph sign-in, `aws sso login`, `gcloud auth login`, Windows admin on IQService hosts).
+
+**Plan decisions**
+
+Plans return `needsInput` when live discovery finds ambiguous state. Supply explicit `decisions` in the request JSON, for example:
+
+| Connector | Decision fields |
+| --- | --- |
+| Entra ID | `targetAppObjectId`, `createNewApplication`, `allowGlobalAdministrator`, `createSecret` |
+| AWS SaaS / CIEM | `updateExistingRole`, `approveOrganizationScope` |
+| Google Workspace | `updateExistingServiceAccount` |
+| IQService | `approveDestructive` (required for `Update` / `Uninstall`) |
+
+## Modules
+
+Shared PowerShell modules live under `modules/`. Each `.ps1` orchestrator imports them at startup.
+
+| Module | Responsibility |
+| --- | --- |
+| `ISC.OperatorConsole.psm1` | Keyboard menus, Esc-back wizard, prompts, clipboard, completion copy/open menu |
+| `ISC.OperatorToolchain.psm1` | PSGallery bootstrap (Graph, AWS.Tools), CLI install via winget/Homebrew, IQService ZIP payload |
+| `ISC.AwsConnector.psm1` | AWS session, trust principals, Organizations context, IAM JSON helpers |
+| `ISC.AwsSaasConnector.psm1` | AWS SaaS IAM policy tables, feature packs, role/policy deployment |
+| `ISC.AwsCiemConnector.psm1` | Embedded CIEM (`-Feature Ciem`) and dedicated CIEM AWS source (CloudFormation) |
+| `ISC.EntraConnector.psm1` | Entra permission tables, Graph app registration, consent, directory roles, secrets |
+| `ISC.EntraCiemConnector.psm1` | Embedded CIEM (`-Feature Ciem`) — PIM group Graph permissions |
+| `ISC.GoogleWorkspaceConnector.psm1` | gcloud/IAM, PEM conversion, OAuth and domain-wide delegation flows |
+| `ISC.GoogleCiemConnector.psm1` | GCP/CIEM packs (`Gcp`, `Ciem`, `NhiDiscovery`, `AgentDiscovery`), org custom role |
+| `ISC.IQService.psm1` | IQService discovery, install/update, service control, trace, log streaming |
+| `ISC.AgentAdapter.psm1` | JSON envelope, request hashing, secret references, redaction, adapter dispatch |
+| `ISC.EntraSourceSetup.psm1` | Entra catalog/plan/apply/result orchestration (wizard + agent) |
+| `ISC.AwsSourceSetup.psm1` | AWS SaaS and CIEM catalog/plan/apply orchestration |
+| `ISC.GoogleSourceSetup.psm1` | Google Workspace catalog/plan/apply orchestration |
+| `ISC.IQServiceSourceSetup.psm1` | IQService catalog/plan/apply orchestration |
+
+Each `ISC.*CiemConnector.psm1` exports the same embedded-CIEM interface: `Test-EmbeddedCiemSelected`, `Get-EmbeddedCiemFeaturePack`, `Apply-EmbeddedCiemPrerequisites`, `Build-EmbeddedCiemConnectionSettings`. AWS adds `Apply-DedicatedCiemSourceDeployment` / `Build-DedicatedCiemConnectionSettings` for `-SourceType CiemAws`.
+
+Tests: `tests/Test-OperatorConsole.ps1`, `tests/Test-OperatorToolchain.ps1`, `tests/Test-EntraConnector.ps1`, `tests/Test-EntraCiemConnector.ps1`, `tests/Test-GoogleCiemConnector.ps1`, `tests/Test-AwsSaasConnector.ps1`, `tests/Test-AwsCiemConnector.ps1`, `tests/Test-AgentAdapter.ps1`, `tests/Test-EntraSourceSetup.ps1`, `tests/Test-AwsSourceSetup.ps1`.
+
+### Development verification
+
+From the repo root (no cloud credentials required for the unit tests):
+
+```powershell
+pwsh -NoProfile -File 'ISC/Source Connection Setup/tests/Invoke-AllSourceConnectionTests.ps1'
+```
+
+Each test prints `PASS (N assertions)` on success.
 
 ## Completion workflow (all scripts)
 
@@ -24,7 +101,7 @@ Controls:
 - **Enter** copies the value or opens the URL
 - **Esc** or **Done** finishes (the menu stays open after each copy/open so you can work through several fields)
 - **Ctrl+C** exits the script
-- Sensitive values (client secrets, refresh tokens, private keys, External ID) show as `***` in the menu but copy the full value
+- Sensitive values (client secrets, refresh tokens, private keys) show as `***` in the menu but copy the full value. External ID is shown in full.
 
 Fallbacks:
 
@@ -35,7 +112,8 @@ During setup prompts (not the completion menu): **Esc** returns to the previous 
 
 | Script | Copy into ISC | Open for pending work |
 | --- | --- | --- |
-| `AWS.ps1` | Role Name, Region, External ID, Management Account ID, AWS Accounts | IAM role console, Organizations console |
+| `AWS.ps1` (SaaS) | Role Name, Region, External ID, Management Account ID, AWS Accounts; with CIEM: CloudTrail ARN(s), bucket account ID | IAM role console, Organizations console, CIEM Settings |
+| `AWS.ps1` (CIEM) | Role ARN, External ID, CloudTrail ARN(s), bucket account ID, Single Account, Provision Identity Center | IAM role, CloudFormation, CIEM connect docs |
 | `Google Workspace.ps1` | Connection Settings fields (Grant Type, keys, scopes, delegation) | Admin console DWD, GCP service accounts |
 | `Entra ID.ps1` | Grant Type, Client ID, Client Secret, Domain Name | Entra app overview, API permissions (when consent pending) |
 | `IQService Control.ps1` | Host name, ports, install path, service name, Log On account | IQService docs, `services.msc` |
@@ -139,23 +217,36 @@ Default install path: `C:\SailPoint\IQService`, or the directory discovered from
 | After update, provisioning fails | Confirm TLS cert and service **Log On** account; update runs `IQService.exe -u`, which clears registry entries. |
 | Trace log not written | Set `-TraceFile` under the install path so the service account can write it (default `system32` may be inaccessible). |
 
-## AWS SaaS connector IAM role
+## AWS source connection (`AWS.ps1`)
+
+`AWS.ps1` supports two ISC sources. Pick **one per run** (`-SourceType AwsSaas` or `-SourceType CiemAws`). Each type writes a **different file** under a **different default directory** so a SaaS run cannot overwrite CIEM output:
+
+| Source type | Default output directory | Settings file |
+| --- | --- | --- |
+| `AwsSaas` (default) | `./sourceConfig/aws-isc` | `sailpoint-aws-connection-settings.txt` |
+| `CiemAws` | `./sourceConfig/aws-ciem` | `sailpoint-ciem-aws-connection-settings.txt` |
+
+Do not enable CIEM on the AWS SaaS source when you also use a dedicated CIEM AWS source for the same management account.
+
+The SaaS source governs **IAM** users and groups. **Identity Center** users and permission sets are governed by a **CIEM AWS** source (`-SourceType CiemAws`), so no SaaS option grants `sso:` or `identitystore:` permissions.
+
+### AWS SaaS connector IAM role
 
 The Amazon Web Services SaaS connector authenticates with **IAM Role** assumption: SailPoint assumes a role in your management account (and a role of the same name in each member account) using an External ID from the source Connection Settings.
 
-This script creates or updates that role and the documented customer-managed policies. It does not create the ISC source; copy the External ID from ISC first, then paste the printed role name back into Connection Settings.
+This path creates or updates that role and the documented customer-managed policies. It does not create the ISC source; copy the External ID from ISC first, then paste the printed role name back into Connection Settings.
 
 References:
 
 - [Integrating SailPoint and Amazon Web Services SaaS](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/introduction.html)
 - [Configuring AWS Manually](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/manual_configuration.html)
 - [Connection Settings](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/connection_settings.html)
+- [Cloud Infrastructure Entitlement Management (CIEM) Settings](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/ciem_settings.html)
 - [Multiple Group Object Source Policies](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/mgo_source_policies.html)
 - [Non Multiple-group Object Source Policies](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/non_mgo_policies.html)
 - [Machine Identity Governance Policies](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/machine_identity_governance_policies.html)
-- [AWS Permission Sets (CIEM)](https://documentation.sailpoint.com/saas/help/ciem/aws/config/aws_minimum_permissions.html)
 
-### Requirements
+#### SaaS requirements
 
 - Windows PowerShell 5.1 or PowerShell 7+
 - An AWS identity that can create IAM roles and customer-managed policies in the target account
@@ -163,37 +254,40 @@ References:
   - `AWS.Tools.SecurityToken`
   - `AWS.Tools.IdentityManagement`
   - `AWS.Tools.Organizations`
+- For `-Feature Ciem`: `AWS.Tools.CloudTrail` and `AWS.Tools.EC2` (the script offers to install them) plus the CloudTrail log **bucket name**
 - The **External ID** from the ISC AWS SaaS source **Connection Settings** (auto-populated there)
 - For organization-wide deployment: `organizations:ListAccounts` plus a member-account role this identity can assume (for example `OrganizationAccountAccessRole`)
 
-### Interactive usage
+#### SaaS interactive usage
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
 .\AWS.ps1
+# or explicitly:
+.\AWS.ps1 -SourceType AwsSaas
 ```
 
 The script prompts for:
 
-1. AWS profile (blank uses the default credential chain; run `aws sso login` first if you use IAM Identity Center)
-2. Commercial vs GovCloud (selects the SailPoint trust principal)
-3. Region for STS / Organizations (IAM is global; default `us-east-1` or `us-gov-west-1`)
-4. IAM role name (default `SailPointAWSRole` — this is the value ISC needs, not the ARN)
-5. External ID from ISC
-6. Policy set (multiple group objects vs non-MGO)
-7. Optional feature packs
-8. Whether to include provisioning
-9. Optional CloudTrail S3 bucket
-10. Current account vs entire AWS Organization
-11. Output directory (default `./sourceConfig/aws-isc`)
+1. Source type (when not passed)
+2. AWS profile (blank uses the default credential chain; run `aws sso login` first if you use IAM Identity Center)
+3. Commercial vs GovCloud (selects the SailPoint trust principal)
+4. Region for STS / Organizations (IAM is global; default `us-east-1` or `us-gov-west-1`)
+5. IAM role name (default `SailPointAWSRole` — this is the value ISC needs, not the ARN)
+6. External ID from the AWS SaaS source
+7. Policy set (multiple group objects vs non-MGO)
+8. Optional feature packs
+9. Whether to include provisioning
+10. Optional CloudTrail S3 bucket (required when the **CIEM** pack is selected)
+11. When CIEM is selected: the CloudTrail log bucket (create new, discover, or enter a name), the bucket account ID, and — unless the run is creating the trail — optional extra CloudTrail ARNs
+12. Current account vs entire AWS Organization
+13. Output directory (default `./sourceConfig/aws-isc`)
 
 Re-running with the same role name updates the trust policy and managed policies in place.
 
-Before it changes anything the script calls `organizations:DescribeOrganization` to report whether the signed-in account is the **management (root)** account, and afterwards it reads the stored role back to confirm the trust principal, the External ID condition, and that `organizations:ListAccounts` is granted — the three things the **AWS Accounts** (Cloud Scope) list depends on. It cannot perform SailPoint's own assume-role, because the trust policy only allows `ciem_universal`.
+Before it changes anything the script calls `organizations:DescribeOrganization` to report whether the signed-in account is the **management (root)** account, and afterwards it reads the stored role back to confirm the trust principal, the External ID condition, and that `organizations:ListAccounts` is granted — the three things the **AWS Accounts** (Cloud Scope) list depends on.
 
-When configuration finishes, Connection Settings are written under the output directory (`sailpoint-aws-connection-settings.txt`) and the completion menu copies them into ISC. Open the AWS console from that menu for any remaining manual steps (member accounts, Organizations).
-
-### Parameterized usage
+#### SaaS parameterized usage
 
 ```powershell
 .\AWS.ps1 `
@@ -201,6 +295,7 @@ When configuration finishes, Connection Settings are written under the output di
   -ExternalId '11111111-2222-3333-4444-555555555555' `
   -RoleName 'SailPointAWSRole' `
   -Feature ActivityInsights,Ciem `
+  -CloudTrailBucket 'my-org-cloudtrail-logs' `
   -NonInteractive
 ```
 
@@ -214,23 +309,26 @@ When configuration finishes, Connection Settings are written under the output di
 
 | Parameter | Purpose |
 | --- | --- |
+| `SourceType` | `AwsSaas` (default) or `CiemAws` |
 | `ProfileName` | AWS credential profile |
 | `Region` | STS / Organizations region (default `us-east-1`) |
 | `Cloud` | `Commercial` (default) or `GovCloud` |
 | `TrustPrincipal` | Replaces the default trusted SailPoint principal(s); accepts account IDs or full role ARNs |
-| `RoleName` | IAM role name for the ISC source (default `SailPointAWSRole`) |
+| `RoleName` | IAM role name for the ISC source (default `SailPointAWSRole` for SaaS) |
 | `ExternalId` | External ID from ISC Connection Settings |
-| `PolicySet` | `Mgo` (default) or `NonMgo` |
-| `Feature` | One or more optional packs (see below) |
-| `AggregationOnly` | Do not attach provisioning (or Identity Center provisioning) |
-| `CloudTrailBucket` | Existing CloudTrail log bucket for `s3:GetObject` / `ListBucket` |
+| `PolicySet` | `Mgo` (default) or `NonMgo` (SaaS only) |
+| `Feature` | One or more optional packs (SaaS only; see below) |
+| `AggregationOnly` | Do not attach provisioning (SaaS only) |
+| `CloudTrailBucket` | CloudTrail log bucket. SaaS: optional `SPCloudTrailBucketPolicy`; **required** with `-Feature Ciem`. CIEM AWS source: SailPoint `BucketName` (default `sailpoint-ciem-<account-id>`) |
+| `CloudTrailBucketAccountId` | SaaS CIEM: 12-digit account that hosts the CloudTrail bucket (ISC **AWS CloudTrail Bucket Account ID**). Defaults to the signed-in account |
+| `CloudTrailArn` | Extra CloudTrail ARN(s) for CIEM settings (SaaS CIEM or CIEM AWS). Ignored when this run creates the trail; otherwise trails are also discovered in this account |
 | `Scope` | `CurrentAccount` (default) or `Organization` |
-| `MemberAssumeRole` | Role to assume in member accounts when `Scope` is `Organization` |
-| `OutputDirectory` | Where to write the connection-settings file (default `./sourceConfig/aws-isc`) |
-| `NonInteractive` | Do not prompt; omitted `Feature` means no feature packs |
+| `MemberAssumeRole` | Role to assume in member accounts when SaaS `Scope` is `Organization` |
+| `OutputDirectory` | Connection-settings directory (type-specific default and filename) |
+| `NonInteractive` | Do not prompt |
 | `WhatIf` / `Confirm` | Standard PowerShell risk mitigation |
 
-### Required policies — always attached
+#### SaaS required policies — always attached
 
 `PolicySet Mgo` (the default) matches SailPoint's [multiple group object](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/mgo_source_policies.html) tables. Use this when you need groups plus AWS managed / customer / inline policies, roles, OUs, SCPs, and accounts.
 
@@ -263,14 +361,26 @@ Opt in with `-Feature` or the interactive multi-select. These map to features th
 | Pack | Policy | When |
 | --- | --- | --- |
 | `ActivityInsights` | `SPActivityInsightsPolicy` | CloudTrail `Get*` / `Describe*` / `List*` / `LookupEvents` |
-| `Ciem` | `SPCiemPolicy` | [CIEM minimum read permissions](https://documentation.sailpoint.com/saas/help/ciem/aws/config/aws_minimum_permissions.html) for cloud inventory and effective access (requires a CIEM license) |
+| `Ciem` | `SPCiemPolicy` | [CIEM minimum read permissions](https://documentation.sailpoint.com/saas/help/ciem/aws/config/aws_minimum_permissions.html) so you can turn on **Enable Cloud Infrastructure Entitlement Management** on the AWS SaaS source. Requires a CIEM license, `-CloudTrailBucket`, and CloudTrail ARN(s) plus the bucket account ID in [CIEM Settings](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/ciem_settings.html) |
 | `AgentDiscovery` | `SPAgentDiscoveryPolicy` | [Bedrock and AgentCore](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/machine_identity_governance_policies.html) machine-identity discovery |
-| `IdentityCenter` | `SPIdentityCenterPolicy` | Identity Center / Identity Store read APIs (CIEM AWS Identity Center views) |
-| `IdentityCenterProvisioning` | `SPIdentityCenterProvisioningPolicy` | Identity Center user and account-assignment provisioning |
 
-`-CloudTrailBucket` adds `SPCloudTrailBucketPolicy` for `s3:GetBucketLocation`, `s3:ListBucket`, and `s3:GetObject` on that bucket — the same S3 statements SailPoint's CloudFormation templates attach.
+There is no Identity Center pack here. SailPoint governs Identity Center users and permission sets through the **CIEM AWS** source, not the SaaS source — see [Connecting AWS and SailPoint CIEM](https://documentation.sailpoint.com/saas/help/ciem/aws/connect_aws.html). Earlier versions of this script offered `IdentityCenter` and `IdentityCenterProvisioning` packs; a re-run detaches `SPIdentityCenterPolicy` and `SPIdentityCenterProvisioningPolicy` from the SaaS role.
 
-### ISC source fields
+`-CloudTrailBucket` adds `SPCloudTrailBucketPolicy` for `s3:GetBucketLocation`, `s3:ListBucket`, and `s3:GetObject` on that bucket.
+
+##### How CloudTrail ARNs are chosen for CIEM settings
+
+The `Ciem` pack asks how to supply the log bucket, and that answer decides where the ARNs come from:
+
+| Bucket choice | CloudTrail ARN(s) in the output |
+| --- | --- |
+| Create a new CloudTrail and S3 bucket | Only the trail this run creates, taken from the CloudFormation output. The wizard does not ask for ARNs (the trail does not exist yet) and does not scan afterwards |
+| Use an existing bucket from CloudTrail in this account | The trails that log into the bucket you picked |
+| Enter a bucket name manually | Anything you pass at the ARN prompt or in `-CloudTrailArn`, plus the trails found writing to that bucket (up to 150) |
+
+`SPCloudTrailBucketPolicy` grants S3 read on the chosen bucket only, so a trail logging anywhere else is unreadable by ISC. Every scan is therefore scoped to that bucket and never pads the list with unrelated trails from elsewhere in the account.
+
+#### SaaS ISC source fields
 
 | Script output | ISC source field |
 | --- | --- |
@@ -279,21 +389,23 @@ Opt in with `-Feature` or the interactive multi-select. These map to features th
 | External ID | External ID (generated by ISC; you paste it into this script) |
 | Management Account ID | Management Account ID — must be the **organization management (root) account**, not a member |
 | AWS Accounts | Values that should appear under **AWS Account Settings → AWS Accounts** (Cloud Scope) |
-| Authentication | IAM Role (not a form field; the connector uses IAM Role authentication) |
-| Role ARN / AWS console | Extra verification output; do not paste the ARN into Role Name |
+| Enable CIEM | **Additional Settings → Enable Cloud Infrastructure Entitlement Management (CIEM)** — only when `-Feature Ciem` |
+| CloudTrail ARN(s) | CIEM Settings, up to 150 ARNs, comma-separated |
+| CloudTrail bucket account ID | **AWS CloudTrail Bucket Account ID** |
 
-### What the script does not do
+#### SaaS what the script does not do
 
-- It does not create the ISC source object; configure Connection Settings in ISC after the role exists.
-- It does not deploy CloudFormation StackSets; use `-Scope Organization` with `-MemberAssumeRole`, or run the script in each account.
-- It does not create a CloudTrail trail or S3 bucket; pass an existing bucket name if SailPoint should read logs.
+- It does not create the ISC source object; configure Connection Settings in ISC after the role exists. With `-Feature Ciem` it prints the Additional Settings values; you still flip **Enable Cloud Infrastructure Entitlement Management** in the UI.
+- It does not deploy CloudFormation StackSets (use `-SourceType CiemAws` for SailPoint CIEM templates).
+- It does not create a CloudTrail trail or S3 bucket.
 - It does not remove organization schema objects for a single-account source (that remains an ISC source-schema API change).
 
-### Troubleshooting
+#### SaaS troubleshooting
 
 | Symptom | Cause and fix |
 | --- | --- |
 | `AWS authentication failed` | Run `aws sso login` or `aws configure`, then pass `-ProfileName`. |
+| `Assembly with same name is already loaded` / `AWSSDK.Core` already loaded | This PowerShell process already loaded AWS SDK assemblies from a different AWS.Tools version (often after a mid-session install). **Close the terminal** and re-run `AWS.ps1` so every module loads together. Optional: `Update-AWSToolsModule -Scope CurrentUser -Force -Cleanup` before the new session. |
 | `Could not assume ... in <account>` | The member role is missing, or the current identity cannot assume it. Grant `sts:AssumeRole` or run the script in that account. |
 | Test connection fails with assume-role / External ID | Confirm the trust principal is `ciem_universal` in SailPoint's account, and that every role uses the **same** External ID shown in ISC. |
 | `is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::...:role/SailPointAWSRole` | The caller is a SailPoint `ciem_universal` account that is not in the trust policy. Commercial defaults already include CIEM (`874540850173`) and ISC SaaS (`706944607044`). If the AccessDenied principal is a third account ID, re-run with `-TrustPrincipal` including that ID plus the defaults you still need. |
@@ -301,6 +413,126 @@ Opt in with `-Feature` or the interactive multi-select. These map to features th
 | `Failed to get config options for key: cloudScope` / AWS Accounts dropdown empty | ISC lists accounts by assuming this role and calling `organizations:ListAccounts`. That API only works in the **management** account. Put `SailPointAWSRole` + `SPOrganizationPolicy` there, set Management Account ID to that 12-digit ID, then reopen AWS Account Settings. Member accounts or an SCP denying Organizations APIs also produce this error. |
 | `AWSOrganizationsNotInUseException` — *Your account is not a member of an organization* | The account is standalone, so `ListAccounts` can never succeed and Cloud Scope stays empty. SailPoint documents that [single-account configuration is not supported by AWS SaaS](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/non_mgo_policies.html). Either enable an organization in this account (`aws organizations create-organization --feature-set ALL`, which makes it the management account of a one-account org), or use an account that already belongs to one. The script warns about this before creating anything. |
 | Role name rejected | Enter the role **name** (`SailPointAWSRole`), not `arn:aws:iam::...:role/...`. |
+| `AwsSaas -Feature Ciem requires -CloudTrailBucket` | CIEM on the SaaS source needs S3 Get/List on the log bucket. Pass `-CloudTrailBucket` (and `-CloudTrailBucketAccountId` if the bucket is not in the signed-in account). |
+| CIEM toggle on but no activity / empty CloudTrail ARNs | No trail logs into the bucket you chose. Confirm the bucket name, pick **Create a new CloudTrail and S3 bucket**, or pass `-CloudTrailArn`. After test connection, mark Groups, AWSManagedPolicy, CustomerManagedPolicy, and InlinePolicy as cloud-enabled. |
+
+### CIEM AWS source (CloudFormation)
+
+The CIEM AWS source uses SailPoint's published [CloudFormation templates](https://documentation.sailpoint.com/saas/help/ciem/aws/config/config_aws_auto.html). With `-SourceType CiemAws`, the script downloads the matching JSON from SailPoint documentation and creates or updates a **stack** (single account) or **StackSet** (organization inventory) plus an optional **activity stack** in the management account.
+
+References:
+
+- [Configuring Amazon Web Services (CIEM)](https://documentation.sailpoint.com/saas/help/ciem/aws/config/index.html)
+- [Configuring AWS Automatically](https://documentation.sailpoint.com/saas/help/ciem/aws/config/config_aws_auto.html)
+- [AWS Permission Sets](https://documentation.sailpoint.com/saas/help/ciem/aws/config/aws_permission_sets.html)
+- [Connecting AWS and SailPoint CIEM](https://documentation.sailpoint.com/saas/help/ciem/aws/connect_aws.html)
+- [Verifying Your AWS Configuration](https://documentation.sailpoint.com/saas/help/ciem/aws/config/verify_aws_config.html)
+
+#### CIEM requirements
+
+- Everything in the SaaS AWS Tools list, plus `AWS.Tools.CloudFormation`, `AWS.Tools.CloudTrail`, and `AWS.Tools.EC2`
+- **External ID** from the CIEM AWS source Connection Settings
+- **CloudTrail S3 bucket name** (`-CloudTrailBucket`) — SailPoint template `BucketName` (default `sailpoint-ciem-<12-digit-account-id>`)
+- Organization inventory: CloudFormation StackSets with Organizations trusted access in the **management account** (the script activates it when missing; needs Organizations admin permissions)
+- Default IAM role name: `SailPointCIEMAuditRole` (template default)
+
+Published commercial templates trust only `arn:aws:iam::874540850173:role/ciem_universal`. Use `-TrustPrincipal` to add principals after deployment if needed.
+
+After deployment the script rewrites the role's trust policy to the documented commercial principals (CIEM `874540850173` **and** ISC SaaS runtime `706944607044`) with the External ID condition, then reads the policy back and reports each principal. SailPoint templates only write the first one, which fails Test Connection on tenants whose connector runtime assumes from the second. `-TrustPrincipal` replaces that list. With `Scope Organization`, only the role in the account you are signed in to is updated; member-account roles keep the template trust.
+
+After an organization inventory StackSet deploys, the script reads `SailPointCIEMRoleARN` from the **management-account stack instance** (not a constructed ARN).
+
+When an activity stack reports a trail (`SailPointCIEMCloudTrailARN`), that trail alone goes into the output. Otherwise the script scans all commercial/GovCloud regions (up to 150) and keeps only trails that log into `-CloudTrailBucket`, plus any `-CloudTrailArn` you passed. If nothing matches, it warns instead of substituting unrelated trails.
+
+#### CIEM collection modes
+
+| Scope | Mode | SailPoint template (commercial) |
+| --- | --- | --- |
+| Organization | Inventory | `commercial-inventory-collection.json` (StackSet, all accounts) |
+| Organization | Activity (optional) | `commercial-activity-collection.json` (stack in management account) |
+| Single account | Inventory only | `commercial-inventory-collection.json` (stack) |
+| Single account | Existing CloudTrail + bucket | `commercial-activity-collection-existing-cloudtrail.json` |
+| Single account | New trail + existing bucket | `commercial-activity-collection-new-cloudtrail-and-existing-bucket.json` |
+| Single account | New trail + new bucket | `commercial-activity-collection-new-cloudtrail-and-bucket.json` |
+
+GovCloud uses the `gov-*` equivalents. Do not deploy both inventory and activity stacks in a single account when both would create the same role name — activity templates already include inventory permissions.
+
+Keep the **same collection mode** when you re-run against an existing activity stack. Each mode is a different template: switching from `NewCloudTrailAndBucket` to `ExistingCloudTrail` on the same stack name removes the trail and bucket policy from the stack, which **deletes the CloudTrail** (the bucket itself is retained). To change modes, use a new `-ActivityStackName` or delete the old stack first. Re-running with identical values is a safe no-op.
+
+Organization activity templates accept `EnableIdentityStoreReadOnly` and `EnableIdentityStoreProvision` (default `true`).
+
+#### CIEM interactive usage
+
+```powershell
+.\AWS.ps1 -SourceType CiemAws
+```
+
+The first prompt after source type is the **External ID** from the CIEM AWS source Connection Settings. Later prompts include AWS profile, cloud, region, scope, collection mode, Identity Center permissions (Organization only), CloudTrail bucket name, stack names, and output directory (`./sourceConfig/aws-ciem`). Organization scope defaults **Yes** for the management-account activity stack.
+
+#### CIEM Identity Center permissions
+
+**Account instance (Single Account) and Identity Center are mutually exclusive** on the CIEM AWS source. Single-account runs skip the Identity Center questions, force both flags off, and strip any leftover `SailPointCIEMAuditIC*` inline policies.
+
+The `sso:` and `identitystore:` actions for **Provision Identity Center** exist in the organization activity template as `SailPointCIEMAuditICReadOnlyPolicy` and `SailPointCIEMAuditICProvisionPolicy`. The source has a single **Provision Identity Center** toggle, so the wizard asks **one** Identity Center question and sets read and provisioning together (provisioning calls the read APIs). It asks only when **Scope is Organization**:
+
+- **Management activity stack** — the answer becomes the `EnableIdentityStoreReadOnly` and `EnableIdentityStoreProvision` template parameters (default `Yes`, matching the template).
+- **Inventory only** — the answer attaches or removes the identical policies as inline role policies (default `No`).
+
+For read-only Identity Center without provisioning, pass `-EnableIdentityStoreReadOnly true -EnableIdentityStoreProvision false`; passing either parameter skips the prompt. Passing `-EnableIdentityStoreReadOnly true` or `-EnableIdentityStoreProvision true` with `-Scope CurrentAccount` is an error.
+
+#### CIEM parameterized example
+
+```powershell
+.\AWS.ps1 `
+  -SourceType CiemAws `
+  -ExternalId '11111111-2222-3333-4444-555555555555' `
+  -CloudTrailBucket 'my-org-cloudtrail-logs' `
+  -Scope Organization `
+  -CiemActivity OrganizationManagement `
+  -NonInteractive
+```
+
+| Parameter | Purpose |
+| --- | --- |
+| `InventoryStackName` | Stack or StackSet name for inventory (default `SailPointCiemInventory`) |
+| `ActivityStackName` | Activity stack name (default `SailPointCiemActivity`) |
+| `CiemActivity` | `None`, `OrganizationManagement`, `ExistingCloudTrail`, `NewCloudTrailExistingBucket`, `NewCloudTrailAndBucket` |
+| `EnableIdentityStoreReadOnly` | Organization only. Org activity template parameter, or `SailPointCIEMAuditICReadOnlyPolicy` on inventory-only org deploys |
+| `EnableIdentityStoreProvision` | Organization only. Org activity template parameter, or `SailPointCIEMAuditICProvisionPolicy` on inventory-only org deploys |
+| `TrailName` | New trail name when creating CloudTrail (default `sailpoint-ciem-cloud-trail`) |
+| `CloudTrailBucket` | CloudTrail S3 bucket (default `sailpoint-ciem-<account-id>`) |
+| `CloudTrailArn` | Extra CloudTrail ARN(s) to include in output. Superseded when the activity stack reports the trail it created |
+
+#### CIEM ISC source fields
+
+| Script output | ISC source field |
+| --- | --- |
+| Role ARN | Role ARN (management account when using Organizations) |
+| External ID | External ID |
+| CloudTrail ARN(s) | CloudTrail ARN (up to 150, comma-separated) |
+| CloudTrail bucket account ID | AWS account ID where the bucket is hosted |
+| Single Account | Enable **Single Account** (Account instance) when `Yes`. Do not enable Identity Center in that mode |
+| Provision Identity Center | Organization only. Matches the org activity template (or inline) provisioning flag |
+
+#### CIEM what the script does not do
+
+- It does not create the ISC CIEM AWS source object or enable the `PROVISIONING` feature string via API.
+- It does not configure both SaaS and CIEM in one run.
+- It does not modify SailPoint template JSON (trust principal overrides are applied to the created role after deployment).
+
+#### CIEM troubleshooting
+
+| Symptom | Cause and fix |
+| --- | --- |
+| `CiemAws requires -CloudTrailBucket` | Pass a bucket name, or accept the default `sailpoint-ciem-<account-id>`. Names must be 3–63 lowercase DNS characters. |
+| `Failed to get account authorization details, please check Role ARN and External Id` (and empty aggregations) | SailPoint could not assume the role. The published templates trust **only** `874540850173`, but some tenants call `sts:AssumeRole` from the ISC SaaS runtime account `706944607044`. Re-run the script: it now rewrites the trust policy to both commercial principals and verifies the External ID. If it still fails, open CloudTrail in the role's account, find the `AssumeRole` `AccessDenied` event, and re-run with `-TrustPrincipal` including that account ID. |
+| `You must enable organizations access to operate a service managed stack set` | CloudFormation StackSets trusted access is off. The script now calls `ActivateOrganizationsAccess` before deploying; if that call is denied, sign in to the **management account** with Organizations admin permissions, or activate trusted access in the CloudFormation console under **StackSets**, then re-run. |
+| Activity stack `UPDATE_ROLLBACK_*` with Identity Center policies already on the role | A previous run attached `SailPointCIEMAuditICReadOnlyPolicy` / `SailPointCIEMAuditICProvisionPolicy` as unmanaged inline policies. The script removes those before the org activity stack creates them. Wait until the stack is `UPDATE_ROLLBACK_COMPLETE`, then re-run. |
+| `No CloudTrail trail logs into <bucket>` | The activity stack reported no trail and nothing in the account writes to that bucket. Check `-CloudTrailBucket`, choose a mode that creates a trail (`NewCloudTrailExistingBucket` / `NewCloudTrailAndBucket`), or pass `-CloudTrailArn`. |
+| Template download fails | Confirm outbound HTTPS to `documentation.sailpoint.com` or deploy manually from [config_aws_auto](https://documentation.sailpoint.com/saas/help/ciem/aws/config/config_aws_auto.html). |
+| `Assembly with same name is already loaded` | Same as SaaS troubleshooting: synchronize with `Update-AWSToolsModule`, then start a **new** PowerShell session before re-running. |
+| Identity Center with Single Account / Account instance | Not supported. Use Organization scope for Identity Center, or keep Provision Identity Center off with Single Account. |
+| `Unable to provision Identity Center due to missing required permission(s): identitystore:*, sso:*` | The role lacks the Identity Center actions, or Single Account is on while Provision Identity Center is on. Re-run with Organization scope and answer **Yes** to the Identity Center questions, or turn Provision Identity Center off. |
 
 ## Google Workspace SaaS connector service account
 
