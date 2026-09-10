@@ -1,0 +1,421 @@
+{
+  "definition": {
+    "start": "Collect Details",
+    "steps": {
+      "Check New Identity": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account",
+            "variableA.$": "$.reviewDuplicates.formData.newIdentity",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Load Matched Identity",
+        "displayName": "Create new identity?",
+        "type": "choice"
+      },
+      "Check Duplicate Count": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Review Duplicates",
+            "variableA.$": "$.searchIdentities.identities.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Create Account",
+        "displayName": "Potential duplicates found?",
+        "type": "choice"
+      },
+      "Set Configuration": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Identity search query combining fuzzy name match and exact email.",
+              "name": "Identity Query",
+              "transforms": [],
+              "variableA": "(attributes.firstname:{{$.collectDetails.formData.firstName}}~2 AND attributes.lastname:{{$.collectDetails.formData.lastName}}~2) OR attributes.email:\"{{$.collectDetails.formData.email}}\""
+            },
+            {
+              "description": "ISC API base URL for account creation.",
+              "name": "ISC API URL",
+              "transforms": [],
+              "variableA": "https://company24509-poc.api.identitynow-demo.com"
+            },
+            {
+              "description": "ISC UI base URL for identity deep links.",
+              "name": "ISC UI URL",
+              "transforms": [],
+              "variableA": "https://company24509-poc.identitynow-demo.com"
+            },
+            {
+              "description": "Source ID for the accounts API (configure in tenant).",
+              "name": "Accounts Source",
+              "transforms": [],
+              "variableA": "xxx"
+            },
+            {
+              "description": "Display name as entered by the operator.",
+              "name": "Display Name",
+              "transforms": [],
+              "variableA": "{{$.collectDetails.formData.firstName}} {{$.collectDetails.formData.lastName}}"
+            },
+            {
+              "description": "Sanitized username for the new account.",
+              "name": "Account Name",
+              "transforms": [
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": " ",
+                    "replacement": ""
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "[^A-Za-z0-9.]",
+                    "replacement": ""
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "A",
+                    "replacement": "a"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "B",
+                    "replacement": "b"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "C",
+                    "replacement": "c"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "D",
+                    "replacement": "d"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "E",
+                    "replacement": "e"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "F",
+                    "replacement": "f"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "G",
+                    "replacement": "g"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "H",
+                    "replacement": "h"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "I",
+                    "replacement": "i"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "J",
+                    "replacement": "j"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "K",
+                    "replacement": "k"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "L",
+                    "replacement": "l"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "M",
+                    "replacement": "m"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "N",
+                    "replacement": "n"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "O",
+                    "replacement": "o"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "P",
+                    "replacement": "p"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "Q",
+                    "replacement": "q"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "R",
+                    "replacement": "r"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "S",
+                    "replacement": "s"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "T",
+                    "replacement": "t"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "U",
+                    "replacement": "u"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "V",
+                    "replacement": "v"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "W",
+                    "replacement": "w"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "X",
+                    "replacement": "x"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "Y",
+                    "replacement": "y"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "Z",
+                    "replacement": "z"
+                  }
+                }
+              ],
+              "variableA": "{{$.collectDetails.formData.firstName}}.{{$.collectDetails.formData.lastName}}"
+            }
+          ]
+        },
+        "displayName": "Set configuration",
+        "nextStep": "Search Identities",
+        "type": "Mutation"
+      },
+      "End Success": {
+        "actionId": "sp:operator-success",
+        "displayName": "Done",
+        "type": "success"
+      },
+      "Load Matched Identity": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.reviewDuplicates.formData.identities",
+          "resultSelector": [
+            "$.loadMatchedIdentity.attributes.lastname",
+            "$.loadMatchedIdentity.attributes.email",
+            "$.loadMatchedIdentity.attributes.displayName",
+            "$.loadMatchedIdentity.attributes.firstname"
+          ]
+        },
+        "displayName": "Load matched identity",
+        "nextStep": "Show Matched Identity",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Search Identities": {
+        "actionId": "sp:get-identities",
+        "attributes": {
+          "inputQuery.$": "$.setConfiguration.identityQuery",
+          "searchBy": "searchQuery"
+        },
+        "displayName": "Search for matching identities",
+        "nextStep": "Check Duplicate Count",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Create Account": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "firstname": "{{$.collectDetails.formData.firstName}}",
+              "lastname": "{{$.collectDetails.formData.lastName}}",
+              "email": "{{$.collectDetails.formData.email}}",
+              "displayName": "{{$.setConfiguration.displayName}}",
+              "name": "{{$.setConfiguration.accountName}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account on source",
+        "nextStep": "Show Account Created",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Collect Details": {
+        "actionId": "sp:interactive-form",
+        "attributes": {
+          "formDefinitionId": "cbd73c0c-ea5b-4bc4-8359-e733b2468a87",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 1 — New identity details</strong></span></p>\n<p>Enter the person's legal name, work email, and manager. We will search ISC for similar identities before creating an account on the configured source.</p>\n<p>The manager list includes identities where <strong>isManager:true</strong>.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "New identity details"
+        },
+        "displayName": "Collect identity details",
+        "nextStep": "Set Configuration",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Review Duplicates": {
+        "actionId": "sp:interactive-form",
+        "attributes": {
+          "formDefinitionId": "7e08da3e-f229-437d-82bc-c2f75274b447",
+          "inputForForm_array_identities.$": "$.searchIdentities.identities",
+          "inputForForm_array_identities_label": "$.name",
+          "inputForForm_array_identities_subLabel": "$.email",
+          "inputForForm_array_identities_value": "$.id",
+          "inputForForm_iscUiUrl.$": "$.setConfiguration.iSCUIURL",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 2 — Review possible duplicates</strong></span></p>\n<p>We found identities matching the name (fuzzy) or email you entered. Confirm whether this is the same person or a new hire.</p>\n<p>Use <strong>Open selected identity in ISC</strong> on the form to review accounts, manager, and lifecycle before deciding. The dropdown only shows name and email.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Possible duplicate identities"
+        },
+        "displayName": "Review possible duplicates",
+        "nextStep": "Check New Identity",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Show Matched Identity": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Matched existing identity</strong></span></p>\n<p>No new account was created. The selected person already exists in ISC.</p>\n<table>\n<tr><td><strong>Display name</strong></td><td>{{$.loadMatchedIdentity.attributes.displayName}}</td></tr>\n<tr><td><strong>First name</strong></td><td>{{$.loadMatchedIdentity.attributes.firstname}}</td></tr>\n<tr><td><strong>Last name</strong></td><td>{{$.loadMatchedIdentity.attributes.lastname}}</td></tr>\n<tr><td><strong>Email</strong></td><td>{{$.loadMatchedIdentity.attributes.email}}</td></tr>\n</table>\n<p><a href=\"{{$.setConfiguration.iSCUIURL}}/ui/a/admin/identities/{{$.loadMatchedIdentity.id}}\" target=\"_blank\" rel=\"noopener noreferrer\">Open identity in ISC</a></p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Matched existing identity"
+        },
+        "displayName": "Show matched identity",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Show Account Created": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Account submitted</strong></span></p>\n<p>A source account was created in ISC. Identity creation follows source aggregation and the identity profile mapping.</p>\n<table>\n<tr><td><strong>Display name</strong></td><td>{{$.setConfiguration.displayName}}</td></tr>\n<tr><td><strong>Email</strong></td><td>{{$.collectDetails.formData.email}}</td></tr>\n<tr><td><strong>Username</strong></td><td>{{$.setConfiguration.accountName}}</td></tr>\n<tr><td><strong>Manager</strong></td><td>{{$.collectDetails.formData.manager}}</td></tr>\n</table>\n<p><em>This does not provision downstream systems directly. Flat-file sources retain the account; connector sources may remove it on aggregation if the account is not on the target.</em></p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Account submitted"
+        },
+        "displayName": "Confirm account created",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      }
+    }
+  },
+  "trigger": {
+    "type": "EVENT",
+    "attributes": {
+      "filter.$": "$[?(@.workflowId == '5633af6d-7f3c-4e31-b7aa-76132327d60f')]",
+      "id": "idn:interactive-process-launched",
+      "integrationId": null
+    }
+  },
+  "id": "5633af6d-7f3c-4e31-b7aa-76132327d60f",
+  "name": "Identity Match & Onboard",
+  "description": "Interactive onboarding with duplicate identity check. Collects personal details, searches for matches, and either creates a source account or confirms an existing identity.",
+  "executionCount": 3,
+  "failureCount": 0,
+  "enabled": false
+}

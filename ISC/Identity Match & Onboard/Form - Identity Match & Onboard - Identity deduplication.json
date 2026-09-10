@@ -1,0 +1,165 @@
+[
+  {
+    "version": 1,
+    "self": {
+      "id": "7e08da3e-f229-437d-82bc-c2f75274b447",
+      "name": "Identity Match & Onboard - Identity deduplication",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "7e08da3e-f229-437d-82bc-c2f75274b447",
+      "name": "Identity Match & Onboard - Identity deduplication",
+      "description": "Review possible duplicate identities and confirm whether to create a new account.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "b41994df5dcf447483c8446436f29c79",
+        "name": "Fernando de los Ríos"
+      },
+      "usedBy": [],
+      "formInput": [
+        {
+          "id": "identities",
+          "type": "ARRAY",
+          "label": "Identities",
+          "description": "Candidate identities returned by the duplicate search."
+        },
+        {
+          "id": "iscUiUrl",
+          "type": "STRING",
+          "label": "ISC UI URL",
+          "description": "Tenant UI base URL for identity deep links."
+        }
+      ],
+      "formElements": [
+        {
+          "id": "1495932973375",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Possible matches found</strong></span></p><p>We searched ISC using fuzzy first and last name (<code>~2</code>) and exact work email. The list below shows display name and email only - ISC forms cannot show full identity attributes here.</p><p>Select a row and use <strong>Open selected identity in ISC</strong> to review accounts, manager, and lifecycle before deciding.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "3847291056381",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "formInputId": "identities",
+                      "sortBy": "ASC"
+                    },
+                    "dataSourceType": "FORM_INPUT"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Choose the identity that matches this person, or mark them as a new hire below.",
+                  "label": "Existing identity",
+                  "maximum": 1,
+                  "placeholder": "Select a matching identity...",
+                  "required": false
+                },
+                "elementType": "SELECT",
+                "id": "469892241994",
+                "key": "identities",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "description": "<p><a href=\"{{$.form.input.iscUiUrl}}/ui/a/admin/identities/{{$.form.data.identities}}\" target=\"_blank\" rel=\"noopener noreferrer\">Open selected identity in ISC</a></p><p><em>The link uses the selected identity id. If it does not refresh when you change the dropdown, re-select the person after the list loads.</em></p>",
+                  "label": "Identity link",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "5821938472610",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": false,
+                  "falseLabel": "No",
+                  "helpText": "Turn on to ignore the list and create a new account for a different person.",
+                  "label": "This is a new person",
+                  "trueLabel": "Yes"
+                },
+                "elementType": "TOGGLE",
+                "id": "131771748080",
+                "key": "newIdentity",
+                "validations": []
+              }
+            ],
+            "label": "Possible matches",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": [
+        {
+          "ruleOperator": "AND",
+          "rules": [
+            {
+              "sourceType": "ELEMENT",
+              "source": "newIdentity",
+              "operator": "EQ",
+              "valueType": "BOOLEAN",
+              "value": "true"
+            }
+          ],
+          "effects": [
+            {
+              "config": {
+                "element": "469892241994"
+              },
+              "effectType": "HIDE"
+            },
+            {
+              "config": {
+                "element": "5821938472610"
+              },
+              "effectType": "HIDE"
+            },
+            {
+              "config": {
+                "element": "469892241994"
+              },
+              "effectType": "OPTIONAL"
+            }
+          ]
+        },
+        {
+          "ruleOperator": "AND",
+          "rules": [
+            {
+              "sourceType": "ELEMENT",
+              "source": "newIdentity",
+              "operator": "EQ",
+              "valueType": "BOOLEAN",
+              "value": "false"
+            }
+          ],
+          "effects": [
+            {
+              "config": {
+                "element": "469892241994"
+              },
+              "effectType": "REQUIRE"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]
