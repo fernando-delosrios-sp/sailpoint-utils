@@ -1,0 +1,5 @@
+interface:
+  display_name: Openspec Init
+  short_description: Initialize or update an OpenSpec project — schema, config/rules, agent routing, companion skills.
+policy:
+  allow_implicit_invocation: false

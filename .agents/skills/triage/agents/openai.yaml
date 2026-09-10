@@ -1,0 +1,5 @@
+interface:
+  display_name: Triage
+  short_description: Move issues and external PRs through a state machine of triage roles, categorise, verify, grill if needed, and write agent-ready briefs.
+policy:
+  allow_implicit_invocation: false

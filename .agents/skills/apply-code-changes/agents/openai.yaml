@@ -1,0 +1,3 @@
+interface:
+  display_name: Apply Code Changes
+  short_description: Execute a planned change from tasks.md through verify last gate and handoff — OpenSpec ferspec apply via /opsx:apply, or any folder with tasks.md (Direct adapter).

@@ -1,0 +1,5 @@
+interface:
+  display_name: Code Review
+  short_description: Two-axis review (Standards and Spec) of changes since a fixed point.
+policy:
+  allow_implicit_invocation: false
