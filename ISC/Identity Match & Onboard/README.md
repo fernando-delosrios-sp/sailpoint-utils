@@ -8,7 +8,7 @@ Reference implementation for ISC **interactive identity onboarding** with a **du
 
 The **Identity Match & Onboard** workflow is launched from an interactive process. It:
 
-1. Collects first name, last name, work email, and manager.
+1. Collects first name, last name, work email, location, and manager.
 2. Searches ISC for identities with a fuzzy name match or exact email.
 3. If matches exist, presents a review form to pick an existing identity or mark the person as new.
 4. Creates a source account via `POST /accounts/v1`, or shows the matched identity with a deep link to the ISC admin UI.
@@ -21,10 +21,8 @@ Forms use HTML **DESCRIPTION** widgets for operator guidance. The duplicate-revi
 |---|---|---|
 | `Workflow - Identity Match & Onboard.json` | Workflow export | Interactive onboarding workflow |
 | `Forms - Identity Match & Onboard.json` | Form export (array) | Both forms — use for VS Code form import |
-| `Form - Identity Match & Onboard - Details input.json` | Form export (array) | Step 1 — personal details and manager |
-| `Form - Identity Match & Onboard - Identity deduplication.json` | Form export (array) | Step 2 — duplicate review and new-person toggle |
 
-> **Form import format:** The SailPoint VS Code extension expects form exports as a **JSON array** (`[{ version, self, object }, …]`), not a single object. Import `Forms - Identity Match & Onboard.json` to load both forms at once, or either individual form file. All fields (including DESCRIPTION widgets) must be nested inside a **SECTION** element. HTML ampersands must be escaped as `&amp;`.
+> **Form import format:** The SailPoint VS Code extension expects form exports as a **JSON array** (`[{ version, self, object }, …]`), not a single object. Import `Forms - Identity Match & Onboard.json` to load both forms at once. All fields (including DESCRIPTION widgets) must be nested inside a **SECTION** element. HTML ampersands must be escaped as `&amp;`.
 
 ### Exported objects
 
@@ -78,9 +76,10 @@ Collects:
 | First name | TEXT | User input |
 | Last name | TEXT | User input |
 | Work email | TEXT | User input |
-| Manager | SELECT | `SEARCH_V2` on identities, query `isManager:true` |
+| Location | TEXT | User input |
+| Manager | SELECT | `SEARCH_V2` on identities, query `* OR isManager:true` |
 
-The manager field stores the identity **name** (uid). Display name and email are shown in the dropdown.
+The manager field stores the identity **uid** (`attributes.uid`). Display name and email are shown via `attributes.displayName` and `attributes.email`.
 
 ### Identity deduplication
 
@@ -125,15 +124,21 @@ The **Create Account** HTTP step posts to:
 {ISC API URL}/accounts/v1
 ```
 
-Request body (attribute keys must match your **Accounts Source** schema):
+Request body attribute keys match this **Accounts Source** schema:
 
-| Source | Account attribute |
-|---|---|
-| Configuration variable | `sourceId` |
-| Form | `firstname`, `lastname`, `email`, `manager` |
-| Derived variable | `displayName`, `name` (username) |
+| Form / variable | Account attribute | Notes |
+|---|---|---|
+| Configuration | `sourceId` | Target source UUID (API field, not a schema attribute) |
+| Account Name (derived) | `id`, `name` | Unique account id and username (same generated value) |
+| First name | `givenName` | |
+| Last name | `familyName` | |
+| Work email | `e-mail` | Hyphenated schema name |
+| Location | `location` | |
+| Manager | `manager` | Identity **uid** (`attributes.uid`) |
 
-`manager` is the selected manager identity **name** (uid), suitable for manager correlation on a delimited-file source.
+`groups` is an entitlement attribute and is not set by this workflow.
+
+`manager` is the selected manager identity **uid**, suitable for manager correlation on a delimited-file source.
 
 > **Important:** The Accounts API creates a record **in ISC** on the named source. It does not provision downstream connector targets. On connector sources, aggregation may remove API-created accounts that do not exist on the target. Flat-file sources are the typical use case.
 
@@ -153,7 +158,7 @@ Configure OAuth credentials on the **Create Account** HTTP step (`paramID`, clie
 
 ### Prerequisites
 
-- Managers must be discoverable with `isManager:true` in the identities search index.
+- Manager search uses `* OR isManager:true` so operators can find managers (and still search broadly by name).
 - A delimited-file (or compatible) **Accounts Source** with attributes aligned to the HTTP body.
 - An **interactive process** that launches this workflow.
 - Identity profile on the source if you expect identities to be created after aggregation.
@@ -165,7 +170,7 @@ Configure OAuth credentials on the **Create Account** HTTP step (`paramID`, clie
 - [ ] Bind OAuth on the Create Account HTTP step.
 - [ ] Import both form definitions before the workflow (form definition IDs are referenced by the workflow).
 - [ ] Enable the workflow and link it to your interactive process.
-- [ ] Confirm account schema attribute names match the HTTP body (`firstname`, `lastname`, `email`, `name`, `manager`, etc.).
+- [ ] Confirm account schema attribute names match the HTTP body (`id`, `name`, `givenName`, `familyName`, `e-mail`, `location`, `manager`).
 - [ ] Test: no-match path creates account; match path shows review form and identity link.
 
 ## Limitations

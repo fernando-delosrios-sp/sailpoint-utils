@@ -313,11 +313,12 @@
           "jsonRequestBody": {
             "attributes": {
               "sourceId": "{{$.setConfiguration.accountsSource}}",
-              "firstname": "{{$.collectDetails.formData.firstName}}",
-              "lastname": "{{$.collectDetails.formData.lastName}}",
-              "email": "{{$.collectDetails.formData.email}}",
-              "displayName": "{{$.setConfiguration.displayName}}",
+              "id": "{{$.setConfiguration.accountName}}",
               "name": "{{$.setConfiguration.accountName}}",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
               "manager": "{{$.collectDetails.formData.manager}}"
             }
           },
@@ -346,11 +347,11 @@
         "attributes": {
           "formDefinitionId": "cbd73c0c-ea5b-4bc4-8359-e733b2468a87",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 1 — New identity details</strong></span></p>\n<p>Enter the person's legal name, work email, and manager. We will search ISC for similar identities before creating an account on the configured source.</p>\n<p>The manager list includes identities where <strong>isManager:true</strong>.</p>",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 1 of 2 — New hire details</strong></span></p><p>Enter the person's name, work email, location, and manager. We will check the directory for existing records before proceeding.</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
-          "title": "New identity details"
+          "title": "New hire details"
         },
-        "displayName": "Collect identity details",
+        "displayName": "New hire details",
         "nextStep": "Set Configuration",
         "type": "action",
         "versionNumber": 1
@@ -365,11 +366,11 @@
           "inputForForm_array_identities_value": "$.id",
           "inputForForm_iscUiUrl.$": "$.setConfiguration.iSCUIURL",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 2 — Review possible duplicates</strong></span></p>\n<p>We found identities matching the name (fuzzy) or email you entered. Confirm whether this is the same person or a new hire.</p>\n<p>Use <strong>Open selected identity in ISC</strong> on the form to review accounts, manager, and lifecycle before deciding. The dropdown only shows name and email.</p>",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 2 of 2 — Review possible matches</strong></span></p><p>We found people who may already be in the directory. Confirm whether your new hire is one of them, or select <strong>This is a new hire</strong> to continue onboarding.</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
-          "title": "Possible duplicate identities"
+          "title": "Review possible matches"
         },
-        "displayName": "Review possible duplicates",
+        "displayName": "Review possible matches",
         "nextStep": "Check New Identity",
         "type": "action",
         "versionNumber": 1
@@ -379,11 +380,11 @@
         "attributes": {
           "category": "INFO",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Matched existing identity</strong></span></p>\n<p>No new account was created. The selected person already exists in ISC.</p>\n<table>\n<tr><td><strong>Display name</strong></td><td>{{$.loadMatchedIdentity.attributes.displayName}}</td></tr>\n<tr><td><strong>First name</strong></td><td>{{$.loadMatchedIdentity.attributes.firstname}}</td></tr>\n<tr><td><strong>Last name</strong></td><td>{{$.loadMatchedIdentity.attributes.lastname}}</td></tr>\n<tr><td><strong>Email</strong></td><td>{{$.loadMatchedIdentity.attributes.email}}</td></tr>\n</table>\n<p><a href=\"{{$.setConfiguration.iSCUIURL}}/ui/a/admin/identities/{{$.loadMatchedIdentity.id}}\" target=\"_blank\" rel=\"noopener noreferrer\">Open identity in ISC</a></p>",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Already in the directory</strong></span></p><p>No new record was created. The person you selected already has a profile.</p><table><tr><td><strong>Name</strong></td><td>{{$.loadMatchedIdentity.attributes.displayName}}</td></tr><tr><td><strong>First name</strong></td><td>{{$.loadMatchedIdentity.attributes.firstname}}</td></tr><tr><td><strong>Last name</strong></td><td>{{$.loadMatchedIdentity.attributes.lastname}}</td></tr><tr><td><strong>Email</strong></td><td>{{$.loadMatchedIdentity.attributes.email}}</td></tr></table><p><a href=\"{{$.setConfiguration.iSCUIURL}}/ui/a/admin/identities/{{$.loadMatchedIdentity.id}}\" target=\"_blank\" rel=\"noopener noreferrer\">View full profile</a></p>",
           "ownerId.$": "$.trigger.launchedBy.id",
-          "title": "Matched existing identity"
+          "title": "Already in the directory"
         },
-        "displayName": "Show matched identity",
+        "displayName": "Confirm existing person",
         "nextStep": "End Success",
         "type": "action",
         "versionNumber": 1
@@ -393,11 +394,11 @@
         "attributes": {
           "category": "INFO",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Account submitted</strong></span></p>\n<p>A source account was created in ISC. Identity creation follows source aggregation and the identity profile mapping.</p>\n<table>\n<tr><td><strong>Display name</strong></td><td>{{$.setConfiguration.displayName}}</td></tr>\n<tr><td><strong>Email</strong></td><td>{{$.collectDetails.formData.email}}</td></tr>\n<tr><td><strong>Username</strong></td><td>{{$.setConfiguration.accountName}}</td></tr>\n<tr><td><strong>Manager</strong></td><td>{{$.collectDetails.formData.manager}}</td></tr>\n</table>\n<p><em>This does not provision downstream systems directly. Flat-file sources retain the account; connector sources may remove it on aggregation if the account is not on the target.</em></p>",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Onboarding request submitted</strong></span></p><p>Thank you. A record has been created for your new hire. Access and applications will be assigned according to your organisation's standard process.</p><table><tr><td><strong>Name</strong></td><td>{{$.setConfiguration.displayName}}</td></tr><tr><td><strong>Email</strong></td><td>{{$.collectDetails.formData.email}}</td></tr><tr><td><strong>Sign-in name</strong></td><td>{{$.setConfiguration.accountName}}</td></tr><tr><td><strong>Location</strong></td><td>{{$.collectDetails.formData.location}}</td></tr><tr><td><strong>Manager</strong></td><td>{{$.collectDetails.formData.manager}}</td></tr></table><p><em>Please allow a short time for the new record to appear across all systems.</em></p>",
           "ownerId.$": "$.trigger.launchedBy.id",
-          "title": "Account submitted"
+          "title": "Onboarding request submitted"
         },
-        "displayName": "Confirm account created",
+        "displayName": "Confirm submission",
         "nextStep": "End Success",
         "type": "action",
         "versionNumber": 1
@@ -414,7 +415,7 @@
   },
   "id": "5633af6d-7f3c-4e31-b7aa-76132327d60f",
   "name": "Identity Match & Onboard",
-  "description": "Interactive onboarding with duplicate identity check. Collects personal details, searches for matches, and either creates a source account or confirms an existing identity.",
+  "description": "Onboard new hires with a directory match check before creating a record.",
   "executionCount": 3,
   "failureCount": 0,
   "enabled": false

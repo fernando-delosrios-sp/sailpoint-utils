@@ -9,7 +9,7 @@
     "object": {
       "id": "cbd73c0c-ea5b-4bc4-8359-e733b2468a87",
       "name": "Identity Match & Onboard - Details input",
-      "description": "Collect personal details for a new identity before duplicate check and account creation.",
+      "description": "Capture details for a new hire, including location and manager.",
       "owner": {
         "type": "IDENTITY",
         "id": "b41994df5dcf447483c8446436f29c79",
@@ -27,7 +27,7 @@
             "formElements": [
               {
                 "config": {
-                  "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Identity Match &amp; Onboard</strong></span></p><p style=\"text-align: center;\"><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Enter the new person's details</strong></span></p><p>We will search ISC for identities with a similar name or the same work email before creating an account. If no match is found, an account is created on the configured source.</p><p>Please provide the legal first and last name, work email, and the person's manager.</p>",
+                  "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Identity Match &amp; Onboard</strong></span></p><p style=\"text-align: center;\"><span style=\"font-size: 18pt; color: #236fa1;\"><strong>New hire details</strong></span></p><p>Please enter the information below for the person you are onboarding. We will check whether they already appear in the company directory before creating their record.</p>",
                   "label": "Introduction",
                   "showLabel": false
                 },
@@ -40,7 +40,7 @@
                 "config": {
                   "default": "",
                   "description": "",
-                  "helpText": "Legal given name as it should appear on the identity.",
+                  "helpText": "Enter the name as it should appear in the directory.",
                   "label": "First name",
                   "placeholder": "e.g. Jane",
                   "required": true
@@ -58,7 +58,7 @@
                 "config": {
                   "default": "",
                   "description": "",
-                  "helpText": "Legal family name as it should appear on the identity.",
+                  "helpText": "Enter the name as it should appear in the directory.",
                   "label": "Last name",
                   "placeholder": "e.g. Smith",
                   "required": true
@@ -76,7 +76,7 @@
                 "config": {
                   "default": "",
                   "description": "",
-                  "helpText": "Corporate email address used for duplicate detection and account correlation.",
+                  "helpText": "The email address they will use at work.",
                   "label": "Work email",
                   "placeholder": "e.g. jane.smith@company.com",
                   "required": true
@@ -92,23 +92,41 @@
               },
               {
                 "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Office, city, or site where they will work.",
+                  "label": "Location",
+                  "placeholder": "e.g. London",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "6284910375641",
+                "key": "location",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
                   "dataSource": {
                     "config": {
                       "indices": [
                         "identities"
                       ],
-                      "label": "displayName",
-                      "query": "isManager:true",
-                      "sublabel": "email",
-                      "value": "name"
+                      "label": "attributes.displayName",
+                      "query": "* OR isManager:true",
+                      "sublabel": "attributes.email",
+                      "value": "attributes.uid"
                     },
                     "dataSourceType": "SEARCH_V2"
                   },
                   "forceSelect": true,
-                  "helpText": "Select the new person's manager. Only identities flagged as managers are listed.",
+                  "helpText": "Select the person who will be their line manager.",
                   "label": "Manager",
                   "maximum": 1,
-                  "placeholder": "Search managers...",
+                  "placeholder": "Start typing a manager name...",
                   "required": true
                 },
                 "elementType": "SELECT",
@@ -125,7 +143,7 @@
               },
               {
                 "config": {
-                  "description": "<p><strong>What happens next?</strong></p><ol><li>ISC searches for identities with a similar name or matching email.</li><li>If matches are found, you review them and confirm whether this is a new person.</li><li>If no match applies, a source account is created with a generated username.</li></ol>",
+                  "description": "<p><strong>What happens next?</strong></p><ol><li>We check the directory for anyone with a similar name or the same email.</li><li>If a possible match is found, you will be asked to confirm whether it is the same person.</li><li>If they are new, we create their record and notify you when the request is complete.</li></ol>",
                   "label": "Next steps",
                   "showLabel": false
                 },
@@ -135,7 +153,7 @@
                 "validations": []
               }
             ],
-            "label": "Personal details",
+            "label": "Employee details",
             "labelStyle": "h2",
             "showLabel": true
           },
@@ -155,7 +173,7 @@
     "object": {
       "id": "7e08da3e-f229-437d-82bc-c2f75274b447",
       "name": "Identity Match & Onboard - Identity deduplication",
-      "description": "Review possible duplicate identities and confirm whether to create a new account.",
+      "description": "Confirm whether the new hire already exists in the directory.",
       "owner": {
         "type": "IDENTITY",
         "id": "b41994df5dcf447483c8446436f29c79",
@@ -167,13 +185,13 @@
           "id": "identities",
           "type": "ARRAY",
           "label": "Identities",
-          "description": "Candidate identities returned by the duplicate search."
+          "description": "People who may match the details you entered."
         },
         {
           "id": "iscUiUrl",
           "type": "STRING",
           "label": "ISC UI URL",
-          "description": "Tenant UI base URL for identity deep links."
+          "description": "Used to open a person's profile in a new window."
         }
       ],
       "formElements": [
@@ -186,7 +204,7 @@
             "formElements": [
               {
                 "config": {
-                  "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Possible matches found</strong></span></p><p>We searched ISC using fuzzy first and last name (<code>~2</code>) and exact work email. The list below shows display name and email only - ISC forms cannot show full identity attributes here.</p><p>Select a row and use <strong>Open selected identity in ISC</strong> to review accounts, manager, and lifecycle before deciding.</p>",
+                  "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Possible matches found</strong></span></p><p>We found one or more people who may already be in the directory. Please review the list and confirm whether your new hire is already listed, or whether you are adding someone new.</p><p>Select a name to view their full profile before you decide.</p>",
                   "label": "Introduction",
                   "showLabel": false
                 },
@@ -205,10 +223,10 @@
                     "dataSourceType": "FORM_INPUT"
                   },
                   "forceSelect": true,
-                  "helpText": "Choose the identity that matches this person, or mark them as a new hire below.",
-                  "label": "Existing identity",
+                  "helpText": "Choose the person who matches your new hire, or indicate below that this is someone new.",
+                  "label": "Matching person",
                   "maximum": 1,
-                  "placeholder": "Select a matching identity...",
+                  "placeholder": "Select a person...",
                   "required": false
                 },
                 "elementType": "SELECT",
@@ -222,8 +240,8 @@
               },
               {
                 "config": {
-                  "description": "<p><a href=\"{{$.form.input.iscUiUrl}}/ui/a/admin/identities/{{$.form.data.identities}}\" target=\"_blank\" rel=\"noopener noreferrer\">Open selected identity in ISC</a></p><p><em>The link uses the selected identity id. If it does not refresh when you change the dropdown, re-select the person after the list loads.</em></p>",
-                  "label": "Identity link",
+                  "description": "<p><a href=\"{{$.form.input.iscUiUrl}}/ui/a/admin/identities/{{$.form.data.identities}}\" target=\"_blank\" rel=\"noopener noreferrer\">View full profile</a></p><p><em>Select someone from the list above to open their profile. If the link does not update, choose the name again.</em></p>",
+                  "label": "Profile link",
                   "showLabel": false
                 },
                 "elementType": "DESCRIPTION",
@@ -235,8 +253,8 @@
                 "config": {
                   "default": false,
                   "falseLabel": "No",
-                  "helpText": "Turn on to ignore the list and create a new account for a different person.",
-                  "label": "This is a new person",
+                  "helpText": "Choose Yes if you are onboarding someone who is not on the list.",
+                  "label": "This is a new hire",
                   "trueLabel": "Yes"
                 },
                 "elementType": "TOGGLE",
@@ -245,7 +263,7 @@
                 "validations": []
               }
             ],
-            "label": "Possible matches",
+            "label": "Review matches",
             "labelStyle": "h2",
             "showLabel": true
           },
