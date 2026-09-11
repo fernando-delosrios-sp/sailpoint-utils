@@ -27,7 +27,7 @@
             "formElements": [
               {
                 "config": {
-                  "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Identity Match &amp; Onboard</strong></span></p><p style=\"text-align: center;\"><span style=\"font-size: 18pt; color: #236fa1;\"><strong>New hire details</strong></span></p><p>Please enter the information below for the person you are onboarding. We will check whether they already appear in the company directory before creating their record.</p>",
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Enter the new hire's details. We will check the directory for existing records before creating anything new.</p>",
                   "label": "Introduction",
                   "showLabel": false
                 },
@@ -81,12 +81,15 @@
                   "placeholder": "e.g. jane.smith@company.com",
                   "required": true
                 },
-                "elementType": "TEXT",
+                "elementType": "EMAIL",
                 "id": "3847291056382",
                 "key": "email",
                 "validations": [
                   {
                     "validationType": "REQUIRED"
+                  },
+                  {
+                    "validationType": "EMAIL"
                   }
                 ]
               },
@@ -116,7 +119,7 @@
                         "identities"
                       ],
                       "label": "attributes.displayName",
-                      "query": "* OR isManager:true",
+                      "query": "isManager:true",
                       "sublabel": "attributes.email",
                       "value": "attributes.uid"
                     },
@@ -140,17 +143,6 @@
                     "validationType": "REQUIRED"
                   }
                 ]
-              },
-              {
-                "config": {
-                  "description": "<p><strong>What happens next?</strong></p><ol><li>We check the directory for anyone with a similar name or the same email.</li><li>If a possible match is found, you will be asked to confirm whether it is the same person.</li><li>If they are new, we create their record and notify you when the request is complete.</li></ol>",
-                  "label": "Next steps",
-                  "showLabel": false
-                },
-                "elementType": "DESCRIPTION",
-                "id": "5839201746382",
-                "key": "",
-                "validations": []
               }
             ],
             "label": "Employee details",
@@ -186,12 +178,6 @@
           "type": "ARRAY",
           "label": "Identities",
           "description": "People who may match the details you entered."
-        },
-        {
-          "id": "iscUiUrl",
-          "type": "STRING",
-          "label": "ISC UI URL",
-          "description": "Used to open a person's profile in a new window."
         }
       ],
       "formElements": [
@@ -204,12 +190,58 @@
             "formElements": [
               {
                 "config": {
-                  "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Possible matches found</strong></span></p><p>We found one or more people who may already be in the directory. Please review the list and confirm whether your new hire is already listed, or whether you are adding someone new.</p><p>Select a name to view their full profile before you decide.</p>",
+                  "description": "<p>We found people who may already be in the directory. Tell us whether this is someone new, or choose the matching person below.</p>",
                   "label": "Introduction",
                   "showLabel": false
                 },
                 "elementType": "DESCRIPTION",
                 "id": "3847291056381",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0;\"><strong>This is a new hire</strong></p>",
+                  "label": "New hire heading",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "9182736450010",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": false,
+                  "falseLabel": "No",
+                  "helpText": "Select Yes to create a new record. Select No if they already appear in the list.",
+                  "label": " ",
+                  "trueLabel": "Yes"
+                },
+                "elementType": "TOGGLE",
+                "id": "131771748080",
+                "key": "newIdentity",
+                "validations": []
+              },
+              {
+                "config": {
+                  "description": "<p style=\"margin: 12px 0 0 0; line-height: 1.5;\">You chose to add a new hire. We will create a new directory record with the details you entered.</p>",
+                  "label": "New hire confirmation",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "9182736450011",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "description": "<p style=\"margin: 12px 0 0 0; line-height: 1.5;\">Select the person who matches your new hire.</p>",
+                  "label": "Match helper",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "9182736450012",
                 "key": "",
                 "validations": []
               },
@@ -223,7 +255,7 @@
                     "dataSourceType": "FORM_INPUT"
                   },
                   "forceSelect": true,
-                  "helpText": "Choose the person who matches your new hire, or indicate below that this is someone new.",
+                  "helpText": "Choose the person who matches your new hire.",
                   "label": "Matching person",
                   "maximum": 1,
                   "placeholder": "Select a person...",
@@ -237,33 +269,9 @@
                     "validationType": "DATA_SOURCE"
                   }
                 ]
-              },
-              {
-                "config": {
-                  "description": "<p><a href=\"{{$.form.input.iscUiUrl}}/ui/a/admin/identities/{{$.form.data.identities}}\" target=\"_blank\" rel=\"noopener noreferrer\">View full profile</a></p><p><em>Select someone from the list above to open their profile. If the link does not update, choose the name again.</em></p>",
-                  "label": "Profile link",
-                  "showLabel": false
-                },
-                "elementType": "DESCRIPTION",
-                "id": "5821938472610",
-                "key": "",
-                "validations": []
-              },
-              {
-                "config": {
-                  "default": false,
-                  "falseLabel": "No",
-                  "helpText": "Choose Yes if you are onboarding someone who is not on the list.",
-                  "label": "This is a new hire",
-                  "trueLabel": "Yes"
-                },
-                "elementType": "TOGGLE",
-                "id": "131771748080",
-                "key": "newIdentity",
-                "validations": []
               }
             ],
-            "label": "Review matches",
+            "label": "Confirm",
             "labelStyle": "h2",
             "showLabel": true
           },
@@ -291,7 +299,7 @@
             },
             {
               "config": {
-                "element": "5821938472610"
+                "element": "9182736450012"
               },
               "effectType": "HIDE"
             },
@@ -315,6 +323,12 @@
             }
           ],
           "effects": [
+            {
+              "config": {
+                "element": "9182736450011"
+              },
+              "effectType": "HIDE"
+            },
             {
               "config": {
                 "element": "469892241994"
