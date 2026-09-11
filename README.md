@@ -62,6 +62,7 @@ Use `--skill` when installing so repo-root [`.agents/skills/`](.agents/skills/) 
 
 | Skill | Install path | Authoring |
 | --- | --- | --- |
+| [sail](skills/sail/) | `skills/sail/` | Definition-only; identical working copy at [`.agents/skills/sail/`](.agents/skills/sail/). Install: `npx skills add fernando-delosrios-sp/sailpoint-utils --skill sail` |
 | [entro-connect](skills/entro-connect/) | `skills/entro-connect/` | Dedicated project under [`Entro/entro-connect/`](Entro/entro-connect/); local working copy at `.agents/skills/entro-connect/`; [`Entro/entro-connect/skills`](Entro/entro-connect/skills) symlinks to repo-root `skills/` |
 
 **Adding a skill**

@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-11
+
+### ✨ New Features
+
+- **sail skill** — Model-invoked agent skill for the SailPoint CLI against ISC tenants (`skills/sail/`, identical copy at `.agents/skills/sail/`). Infers or asks for `sail` environments, passes `--env`, confirms mutating goals once, and discloses per-command-family guides. Install: `npx skills add fernando-delosrios-sp/sailpoint-utils --skill sail`.
+
 ## 2026-09-07
 
 ### 🔧 Improvements
