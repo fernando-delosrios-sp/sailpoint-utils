@@ -3,12 +3,12 @@
     "version": 1,
     "self": {
       "id": "cbd73c0c-ea5b-4bc4-8359-e733b2468a87",
-      "name": "Identity Match & Onboard - Details input",
+      "name": "Identity Match & Onboard - Onboarding",
       "type": "FORM_DEFINITION"
     },
     "object": {
       "id": "cbd73c0c-ea5b-4bc4-8359-e733b2468a87",
-      "name": "Identity Match & Onboard - Details input",
+      "name": "Identity Match & Onboard - Onboarding",
       "description": "Capture details for a new hire, including location and manager.",
       "owner": {
         "type": "IDENTITY",
@@ -225,7 +225,7 @@
               },
               {
                 "config": {
-                  "description": "<p style=\"margin: 12px 0 0 0; line-height: 1.5;\">You chose to add a new hire. We will create a new directory record with the details you entered.</p>",
+                  "description": "<p style=\"margin: 12px 0 0 0; line-height: 1.5;\">You chose to add a new hire. The selected manager will be asked to approve before we create a directory record.</p>",
                   "label": "New hire confirmation",
                   "showLabel": false
                 },
@@ -338,6 +338,148 @@
           ]
         }
       ]
+    }
+  },
+  {
+    "version": 1,
+    "self": {
+      "id": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+      "name": "Identity Match & Onboard - Manager approval",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+      "name": "Identity Match & Onboard - Manager approval",
+      "description": "Review and approve a new hire record before it is created.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "b41994df5dcf447483c8446436f29c79",
+        "name": "Fernando de los Ríos"
+      },
+      "usedBy": [],
+      "formInput": [
+        {
+          "id": "requestorName",
+          "type": "STRING",
+          "label": "Requestor name",
+          "description": "Operator who submitted the onboarding request."
+        },
+        {
+          "id": "displayName",
+          "type": "STRING",
+          "label": "Display name",
+          "description": "Proposed display name for the new hire."
+        },
+        {
+          "id": "firstName",
+          "type": "STRING",
+          "label": "First name",
+          "description": "Proposed first name."
+        },
+        {
+          "id": "lastName",
+          "type": "STRING",
+          "label": "Last name",
+          "description": "Proposed last name."
+        },
+        {
+          "id": "email",
+          "type": "STRING",
+          "label": "Work email",
+          "description": "Proposed work email."
+        },
+        {
+          "id": "location",
+          "type": "STRING",
+          "label": "Location",
+          "description": "Proposed work location."
+        },
+        {
+          "id": "accountName",
+          "type": "STRING",
+          "label": "Sign-in name",
+          "description": "Proposed account name."
+        }
+      ],
+      "formElements": [
+        {
+          "id": "2019384756101",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 8px 0 24px 0; line-height: 1.7; color: #475569;\">{{$.form.input.requestorName}} asked you to approve a new directory record for <strong>{{$.form.input.displayName}}</strong>. No account is created until you approve.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "2019384756102",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "description": "<table style=\"border-collapse: collapse; margin: 0 0 32px 0; width: 100%; max-width: 480px; line-height: 1.6;\"><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; width: 140px; color: #64748b;\">Name</td><td style=\"padding: 12px 0; vertical-align: top;\"><strong>{{$.form.input.displayName}}</strong></td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">First name</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.firstName}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Last name</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.lastName}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Email</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.email}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Sign-in name</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.accountName}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Location</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.location}}</td></tr></table>",
+                  "label": "Proposed details",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "2019384756103",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "description": "<p style=\"margin: 8px 0 16px 0; line-height: 1.7;\"><strong>Your decision</strong></p>",
+                  "label": "Decision heading",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "2019384756106",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": false,
+                  "falseLabel": "No",
+                  "helpText": "Select Yes to create the directory record. Select No to reject the request.",
+                  "label": "Approve this new hire",
+                  "trueLabel": "Yes"
+                },
+                "elementType": "TOGGLE",
+                "id": "2019384756104",
+                "key": "approvalDecision",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Optional comments for the operator.",
+                  "label": "Comments",
+                  "placeholder": "",
+                  "required": false,
+                  "resize": true,
+                  "rows": 3
+                },
+                "elementType": "TEXTAREA",
+                "id": "2019384756105",
+                "key": "approvalComments",
+                "validations": []
+              }
+            ],
+            "label": "Review request",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": []
     }
   }
 ]

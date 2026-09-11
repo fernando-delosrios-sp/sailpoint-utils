@@ -12,7 +12,7 @@
             "variableB": false
           }
         ],
-        "defaultStep": "Create Account",
+        "defaultStep": "Check Manager Approval Required",
         "displayName": "Identity exists?",
         "type": "choice"
       },
@@ -26,7 +26,7 @@
             "variableB": 0
           }
         ],
-        "defaultStep": "Create Account",
+        "defaultStep": "Check Manager Approval Required",
         "displayName": "Potential duplicates found?",
         "type": "choice"
       },
@@ -58,6 +58,12 @@
               "name": "Accounts Source",
               "transforms": [],
               "variableA": "xxx"
+            },
+            {
+              "description": "Set to true to require the selected manager to approve before the account is created. Any other value skips the approval form.",
+              "name": "Manager Approval Required",
+              "transforms": [],
+              "variableA": "true"
             },
             {
               "description": "Display name as entered by the operator.",
@@ -347,7 +353,7 @@
         "attributes": {
           "formDefinitionId": "cbd73c0c-ea5b-4bc4-8359-e733b2468a87",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 1 of 2</strong></span> — Enter the new hire's details.</p>",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 1 of 2</strong></span> \u2014 Enter the new hire's details.</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
           "title": "New hire details"
         },
@@ -365,7 +371,7 @@
           "inputForForm_array_identities_subLabel": "$.email",
           "inputForForm_array_identities_value": "$.id",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 2 of 2</strong></span> — Confirm whether this person is already in the directory.</p>",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 2 of 2</strong></span> \u2014 Confirm whether this person is already in the directory.</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
           "title": "Review possible matches"
         },
@@ -401,6 +407,107 @@
         "nextStep": "End Success",
         "type": "action",
         "versionNumber": 1
+      },
+      "Get Manager": {
+        "actionId": "sp:get-identities",
+        "attributes": {
+          "inputQuery": "attributes.uid:\"{{$.collectDetails.formData.manager}}\"",
+          "searchBy": "searchQuery"
+        },
+        "displayName": "Get selected manager",
+        "nextStep": "Get Operator",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Get Operator": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.trigger.launchedBy.id"
+        },
+        "displayName": "Get requesting operator",
+        "nextStep": "Notify Waiting For Approval",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Notify Waiting For Approval": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">The request for <strong>{{$.setConfiguration.displayName}}</strong> has been sent to <strong>{{$.getManager.identities[0].attributes.displayName}}</strong> for approval. Keep this window open, or return when you are notified of the decision.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Waiting for manager approval"
+        },
+        "displayName": "Waiting for manager approval",
+        "nextStep": "Manager Approval",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Manager Approval": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_accountName.$": "$.setConfiguration.accountName",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision."
+        },
+        "displayName": "Manager approval",
+        "nextStep": "Check Approved",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account",
+            "variableA.$": "$.managerApproval.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Approved?",
+        "type": "choice"
+      },
+      "Show Approval Rejected": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">The manager declined this onboarding request. No directory record was created.</p>\n<table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\">\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 120px; color: #64748b;\">Name</td>\n<td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.setConfiguration.displayName}}</strong></td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Manager</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.getManager.identities[0].attributes.displayName}}</td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Comments</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.managerApproval.formData.approvalComments}}</td>\n</tr>\n</table>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Onboarding declined"
+        },
+        "displayName": "Confirm declined",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Manager Approval Required": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Get Manager",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account",
+        "description": "Check the Set configuration variable Manager Approval Required. true sends the standalone approval form to the selected manager; any other value creates the account immediately.",
+        "displayName": "Manager approval required?",
+        "type": "choice"
       }
     }
   },
@@ -414,7 +521,7 @@
   },
   "id": "5633af6d-7f3c-4e31-b7aa-76132327d60f",
   "name": "Identity Match & Onboard",
-  "description": "Onboard new hires with a directory match check before creating a record.",
+  "description": "Onboard new hires with a directory match check and manager approval before creating a record.",
   "executionCount": 3,
   "failureCount": 0,
   "enabled": false
