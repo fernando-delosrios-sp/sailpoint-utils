@@ -583,12 +583,106 @@ function Get-CompletionPreview {
     return ($Value.Substring(0, 69) + '...')
 }
 
+function Get-CompletionSaveToDiskLabel {
+    param([string]$Path)
+
+    $name = if ([string]::IsNullOrWhiteSpace($Path)) { 'results.txt' } else { Split-Path -Leaf $Path }
+    return "Save to disk ($name)"
+}
+
+function Get-CompletionActionMenuChoices {
+    param(
+        [Parameter(Mandatory)][object[]]$Items,
+        [switch]$AllowSaveToDisk,
+        [string]$SavePath
+    )
+
+    $labels = [System.Collections.Generic.List[string]]::new()
+    foreach ($item in $Items) {
+        $preview = Get-CompletionPreview -Value ([string]$item.Value) -Mask:([bool]$item.Mask)
+        $verb = if ($item.Kind -eq 'Open') { 'Open' } else { 'Copy' }
+        $labels.Add(('{0}: {1} ({2})' -f $item.Label, $preview, $verb))
+    }
+    if ($AllowSaveToDisk) {
+        $labels.Add((Get-CompletionSaveToDiskLabel -Path $SavePath))
+    }
+    $labels.Add('Done')
+    return $labels.ToArray()
+}
+
+function Protect-CompletionResultsFile {
+    param([Parameter(Mandatory)][string]$Path)
+
+    $onWindows = $false
+    if ($PSVersionTable.PSObject.Properties['Platform']) {
+        $onWindows = $PSVersionTable.Platform -eq 'Win32NT'
+    }
+    elseif ($env:OS -like 'Windows*') {
+        $onWindows = $true
+    }
+
+    if ($onWindows) {
+        $acl = Get-Acl -LiteralPath $Path
+        $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+            [System.Security.Principal.WindowsIdentity]::GetCurrent().Name,
+            'FullControl',
+            'Allow'
+        )
+        $acl.SetAccessRule($rule)
+        $acl | Set-Acl -LiteralPath $Path
+    }
+    else {
+        & chmod 600 $Path
+    }
+}
+
+function Save-CompletionResultsToDisk {
+    param(
+        [Parameter(Mandatory)][object[]]$Items,
+        [Parameter(Mandatory)][string]$Path,
+        [string]$Title,
+        [string[]]$Situation
+    )
+
+    $directory = Split-Path -Parent $Path
+    if ($directory -and -not (Test-Path -LiteralPath $directory)) {
+        New-Item -ItemType Directory -Path $directory -Force | Out-Null
+    }
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    if ($Title) {
+        $lines.Add("### $Title")
+        $lines.Add('')
+    }
+    foreach ($line in @($Situation)) {
+        if (-not [string]::IsNullOrWhiteSpace($line)) {
+            $lines.Add($line)
+        }
+    }
+    if ($lines.Count -gt 0) {
+        $lines.Add('')
+    }
+
+    foreach ($item in $Items) {
+        $lines.Add("### $($item.Label)")
+        $lines.Add([string]$item.Value)
+        $lines.Add('')
+    }
+
+    Set-Content -LiteralPath $Path -Value ($lines -join [Environment]::NewLine) -Encoding UTF8
+    Protect-CompletionResultsFile -Path $Path
+    Write-Ok "Saved results (secrets included) to $Path"
+    return $Path
+}
+
 function Invoke-CompletionActionMenu {
     param(
         [Parameter(Mandatory)][string]$Title,
         [Parameter(Mandatory)][string[]]$Situation,
         [Parameter(Mandatory)][object[]]$Items,
-        [string]$Instruction = 'Copy each value into the matching ISC Connection Settings field, or open a link to finish pending manual steps.'
+        [string]$Instruction = 'Copy each value into the matching ISC Connection Settings field, or open a link to finish pending manual steps.',
+        [switch]$AllowSaveToDisk,
+        [string]$SavePath
     )
 
     Write-Host ''
@@ -613,22 +707,30 @@ function Invoke-CompletionActionMenu {
     }
 
     $doneLabel = 'Done'
+    $saveLabel = Get-CompletionSaveToDiskLabel -Path $SavePath
     while ($true) {
-        $labels = [System.Collections.Generic.List[string]]::new()
-        foreach ($item in $Items) {
-            $preview = Get-CompletionPreview -Value ([string]$item.Value) -Mask:([bool]$item.Mask)
-            $verb = if ($item.Kind -eq 'Open') { 'Open' } else { 'Copy' }
-            $labels.Add(('{0}: {1} ({2})' -f $item.Label, $preview, $verb))
-        }
-        $labels.Add($doneLabel)
+        $labels = @(Get-CompletionActionMenuChoices -Items $Items -AllowSaveToDisk:$AllowSaveToDisk -SavePath $SavePath)
 
         $picked = Read-Choice -Prompt 'Select a value to copy or a link to open:' `
-            -Options $labels.ToArray() `
+            -Options $labels `
             -Default $doneLabel `
             -EscapeMeansDefault
         if ($picked -eq $doneLabel) { return }
 
-        $index = [array]::IndexOf($labels.ToArray(), $picked)
+        if ($AllowSaveToDisk -and $picked -eq $saveLabel) {
+            $defaultPath = $SavePath
+            try {
+                $path = Read-InputString -Prompt 'File path for results (secrets included)' -Default $defaultPath -Required
+            }
+            catch {
+                if (Test-PromptBack $_) { continue }
+                throw
+            }
+            Save-CompletionResultsToDisk -Items $Items -Path $path -Title $Title -Situation $Situation | Out-Null
+            continue
+        }
+
+        $index = [array]::IndexOf($labels, $picked)
         if ($index -lt 0 -or $index -ge $Items.Count) { continue }
 
         $selected = $Items[$index]
@@ -677,5 +779,8 @@ Export-ModuleMember -Function @(
     'Open-Url'
     'Get-MaskedSecretDisplay'
     'Get-CompletionPreview'
+    'Get-CompletionSaveToDiskLabel'
+    'Get-CompletionActionMenuChoices'
+    'Save-CompletionResultsToDisk'
     'Invoke-CompletionActionMenu'
 )

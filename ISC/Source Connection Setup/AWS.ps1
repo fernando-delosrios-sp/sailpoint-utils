@@ -956,7 +956,9 @@ try {
 
         Invoke-CompletionActionMenu -Title 'Next: complete CIEM AWS Connection Settings' `
             -Situation $situation.ToArray() `
-            -Items $completionItems
+            -Items $completionItems `
+            -AllowSaveToDisk `
+            -SavePath $settingsOutput.FilePath
         return
     }
 
@@ -1091,7 +1093,9 @@ try {
 
     Invoke-CompletionActionMenu -Title 'Next: complete ISC Connection Settings' `
         -Situation $situation.ToArray() `
-        -Items $completionItems
+        -Items $completionItems `
+        -AllowSaveToDisk `
+        -SavePath $settingsPath
 }
 catch {
     if (Test-CancelledNavigation $_) {

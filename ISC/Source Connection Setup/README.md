@@ -99,9 +99,10 @@ Controls:
 
 - **Up/Down** (or `j`/`k`) move between items
 - **Enter** copies the value or opens the URL
-- **Esc** or **Done** finishes (the menu stays open after each copy/open so you can work through several fields)
+- **Save to disk (filename)** writes every menu value (unmasked secrets and Open links) to that connection-settings file under `sourceConfig/<source>`. AWS, Entra ID, and Google Workspace offer this; IQService Control does not.
+- **Esc** or **Done** finishes (the menu stays open after each copy/open/save so you can work through several fields)
 - **Ctrl+C** exits the script
-- Sensitive values (client secrets, refresh tokens, private keys) show as `***` in the menu but copy the full value. External ID is shown in full.
+- Sensitive values (client secrets, refresh tokens, private keys) show as `***` in the menu but copy the full value. External ID is shown in full. Save to disk writes those secrets in full.
 
 Fallbacks:
 

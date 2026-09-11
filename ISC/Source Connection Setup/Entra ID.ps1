@@ -324,9 +324,12 @@ try {
     }
     $result = Build-EntraSourceResult -Resolved $resolved -ApplyResult $applyResult -RunDirectory $runDir
 
+    $entraSavePath = Join-Path $OutputDirectory 'sailpoint-entra-connection-settings.txt'
     Invoke-CompletionActionMenu -Title 'Next: complete ISC Connection Settings' `
         -Situation $result.situation `
-        -Items $result.completionItems
+        -Items $result.completionItems `
+        -AllowSaveToDisk `
+        -SavePath $entraSavePath
 }
 catch {
     if (Test-CancelledNavigation $_) {

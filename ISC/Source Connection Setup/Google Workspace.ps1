@@ -960,7 +960,9 @@ try {
 
     Invoke-CompletionActionMenu -Title 'Next: complete ISC Connection Settings' `
         -Situation $situation.ToArray() `
-        -Items $completionItems.ToArray()
+        -Items $completionItems.ToArray() `
+        -AllowSaveToDisk `
+        -SavePath $settingsPath
 }
 catch {
     if (Test-CancelledNavigation $_) {

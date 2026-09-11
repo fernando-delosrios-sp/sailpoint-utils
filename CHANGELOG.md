@@ -9,6 +9,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 ### ✨ New Features
 
 - **sail skill** — Model-invoked agent skill for the SailPoint CLI against ISC tenants (`skills/sail/`, identical copy at `.agents/skills/sail/`). Infers or asks for `sail` environments, passes `--env`, confirms mutating goals once, and discloses per-command-family guides. Install: `npx skills add fernando-delosrios-sp/sailpoint-utils --skill sail`.
+- **Source Connection Setup** — The completion copy/open menu on AWS, Entra ID, and Google Workspace includes **Save to disk (filename)**. It writes every result value (unmasked secrets and Open links) to that connection-settings file; IQService Control does not offer this.
 
 ## 2026-09-07
 
