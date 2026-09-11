@@ -15,12 +15,15 @@ The **Identity Match & Onboard** workflow is launched from an interactive proces
 
 Forms use HTML **DESCRIPTION** widgets for operator guidance. The duplicate-review form lists name and email only; the full profile link appears after a match is confirmed.
 
+A demo recording of the end-to-end flow is included as [`Identity Match & Onboard.mov`](Identity%20Match%20%26%20Onboard.mov).
+
 ## Artifacts
 
 | File | Type | Purpose |
 |---|---|---|
 | `Workflow - Identity Match & Onboard.json` | Workflow export | Interactive onboarding workflow |
 | `Forms - Identity Match & Onboard.json` | Form export (array) | Both forms — use for VS Code form import |
+| `Identity Match & Onboard.mov` | Demo video | Walkthrough of the interactive experience |
 
 > **Form import format:** The SailPoint VS Code extension expects form exports as a **JSON array** (`[{ version, self, object }, …]`), not a single object. Import `Forms - Identity Match & Onboard.json` to load both forms at once. All fields (including DESCRIPTION widgets) must be nested inside a **SECTION** element. HTML ampersands must be escaped as `&amp;`.
 
