@@ -644,6 +644,24 @@ function Get-NormalizedCloudTrailArnList {
     return @($list)
 }
 
+function Select-CloudTrailLogBucketOption {
+    param(
+        [object[]]$Options,
+        [string]$PreferredBucket
+    )
+
+    $list = @($Options)
+    if ($list.Count -eq 0) { return $null }
+
+    if (-not [string]::IsNullOrWhiteSpace($PreferredBucket)) {
+        $match = @($list | Where-Object { $_.BucketName -eq $PreferredBucket } | Select-Object -First 1)
+        if ($match.Count -eq 1) { return $match[0] }
+    }
+
+    if ($list.Count -eq 1) { return $list[0] }
+    return $null
+}
+
 function Get-CloudTrailLogBucketOptions {
     param(
         [Parameter(Mandatory)][string]$HomeRegion,
@@ -651,10 +669,12 @@ function Get-CloudTrailLogBucketOptions {
         [string]$ScanScope = 'HomeRegion'
     )
 
-    Ensure-AwsToolsModules -ExtraModules @(
-        'AWS.Tools.CloudTrail'
-        'AWS.Tools.EC2'
-    )
+    if (-not (Get-Command Get-CTTrail -ErrorAction SilentlyContinue)) {
+        Ensure-AwsToolsModules -ExtraModules @(
+            'AWS.Tools.CloudTrail'
+            'AWS.Tools.EC2'
+        )
+    }
 
     $byBucket = @{}
     $regions = @($HomeRegion)
@@ -1087,10 +1107,13 @@ function Merge-CloudTrailDeliveryBucketPolicy {
     )
     $kept = [System.Collections.Generic.List[object]]::new()
     if (-not [string]::IsNullOrWhiteSpace($ExistingDocument)) {
-        $existing = ConvertFrom-IamPolicyDocument -Document $ExistingDocument
-        foreach ($stmt in @($existing.Statement)) {
-            if ($replaceSids -contains [string]$stmt.Sid) { continue }
-            $kept.Add($stmt)
+        $existingText = ConvertTo-NormalizedS3BucketPolicyDocument -Document $ExistingDocument
+        if (-not [string]::IsNullOrWhiteSpace($existingText)) {
+            $existing = ConvertFrom-IamPolicyDocument -Document $existingText
+            foreach ($stmt in @($existing.Statement)) {
+                if ($replaceSids -contains [string]$stmt.Sid) { continue }
+                $kept.Add($stmt)
+            }
         }
     }
     $delivery = $DeliveryDocument | ConvertFrom-Json
@@ -1112,11 +1135,15 @@ function Set-CloudTrailDeliveryBucketPolicy {
     )
 
     Ensure-AwsToolsModules -ExtraModules @('AWS.Tools.S3')
+    $bucketRegion = Resolve-AwsS3BucketRegion -BucketName $BucketName -FallbackRegion $RegionName
+    if ($bucketRegion -ne $RegionName) {
+        Write-Info "Bucket $BucketName is in $bucketRegion (session region is $RegionName)."
+    }
     $delivery = New-CloudTrailDeliveryBucketPolicyDocument -BucketName $BucketName `
         -AccountId $AccountId -Partition $Partition
     $existing = $null
     try {
-        $existing = Get-S3BucketPolicy -BucketName $BucketName -Region $RegionName -ErrorAction Stop
+        $existing = Get-S3BucketPolicy -BucketName $BucketName -Region $bucketRegion -Select Policy -ErrorAction Stop
     }
     catch {
         $msg = [string]$_.Exception.Message
@@ -1124,15 +1151,9 @@ function Set-CloudTrailDeliveryBucketPolicy {
             throw
         }
     }
-    $existingText = ''
-    if ($existing -is [string]) {
-        $existingText = $existing
-    }
-    elseif ($null -ne $existing -and $existing.PSObject.Properties['Policy']) {
-        $existingText = [string]$existing.Policy
-    }
+    $existingText = ConvertTo-NormalizedS3BucketPolicyDocument -Document $existing
     $merged = Merge-CloudTrailDeliveryBucketPolicy -ExistingDocument $existingText -DeliveryDocument $delivery
-    Write-S3BucketPolicy -BucketName $BucketName -Policy $merged -Region $RegionName -ErrorAction Stop
+    Write-S3BucketPolicy -BucketName $BucketName -Policy $merged -Region $bucketRegion -ErrorAction Stop
     Write-Ok "CloudTrail delivery policy applied on bucket $BucketName"
 }
 
@@ -1434,6 +1455,7 @@ Export-ModuleMember -Function @(
     'Get-NormalizedCloudTrailArnList',
     'Get-CiemCloudTrailArns',
     'Get-CloudTrailLogBucketOptions',
+    'Select-CloudTrailLogBucketOption',
     'Deploy-SaasCiemCloudTrailResources',
     'Get-SaasCiemCloudTrailArns',
     'Get-CiemTemplateFileName',

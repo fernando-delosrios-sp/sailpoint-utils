@@ -253,6 +253,54 @@ function Write-Banner {
     Write-Host ''
 }
 
+# SailPoint templates that read an existing trail (ExistingCloudTrail, OrganizationManagement) create
+# no trail and output no ARN, so the bucket and the ARNs both have to come from what already exists.
+function Read-DiscoveredCloudTrailBucket {
+    param(
+        [Parameter(Mandatory)][string]$HomeRegion,
+        [string]$PreferredBucket,
+        [string]$Prompt = 'Select CloudTrail log bucket:'
+    )
+
+    Write-Step 'CloudTrail discovery'
+    Write-Info 'Looking up existing CloudTrail trails and log buckets in this account...'
+    $bucketOptions = @(Get-CloudTrailLogBucketOptions -HomeRegion $HomeRegion -ScanScope HomeRegion)
+    if ($bucketOptions.Count -eq 0) {
+        Write-Info 'No trails in the home region. Scanning all AWS regions...'
+        $bucketOptions = @(Get-CloudTrailLogBucketOptions -HomeRegion $HomeRegion -ScanScope AllRegions)
+    }
+
+    $selected = Select-CloudTrailLogBucketOption -Options $bucketOptions -PreferredBucket $PreferredBucket
+    if (-not $selected -and $bucketOptions.Count -gt 0) {
+        $bucketNames = @($bucketOptions | ForEach-Object { $_.BucketName })
+        $bucketLabels = @($bucketOptions | ForEach-Object {
+            $trailCount = @($_.TrailArns).Count
+            $trailNames = @($_.TrailArns | ForEach-Object { ($_ -split '/')[-1] }) -join ', '
+            "$($_.BucketName) ($trailCount trail$(if ($trailCount -eq 1) { '' } else { 's' }): $trailNames)"
+        })
+        $pickedBucket = Read-Choice -Prompt $Prompt -Options $bucketNames -Labels $bucketLabels
+        $selected = Select-CloudTrailLogBucketOption -Options $bucketOptions -PreferredBucket $pickedBucket
+    }
+    return $selected
+}
+
+# NewCloudTrailExistingBucket creates the trail, so the bucket only has to exist - it usually has no
+# trail yet and CloudTrail discovery would never surface it.
+function Read-ExistingS3Bucket {
+    param(
+        [Parameter(Mandatory)][string]$HomeRegion,
+        [string]$PreferredBucket
+    )
+
+    Write-Step 'S3 bucket discovery'
+    Write-Info 'Listing S3 buckets in this account for the new CloudTrail...'
+    $bucketNames = @(Get-AwsS3BucketNames -RegionName $HomeRegion)
+    if ($bucketNames.Count -eq 0) { return $null }
+
+    $default = if ($PreferredBucket -and $bucketNames -contains $PreferredBucket) { $PreferredBucket } else { $bucketNames[0] }
+    return Read-Choice -Prompt 'Existing S3 bucket for the new CloudTrail:' -Options $bucketNames -Default $default
+}
+
 # -----------------------------------------------------------------------------
 # Main
 # -----------------------------------------------------------------------------
@@ -287,6 +335,20 @@ try {
     }
     elseif ($SourceType -eq 'AwsSaas' -and $RoleName -eq (Get-DefaultCiemRoleName)) {
         $RoleName = Get-DefaultSaasRoleName
+    }
+
+    # The two source types share this script but not their parameters, so say which ones this run drops
+    # rather than letting them look applied.
+    $otherTypeParameters = if ($SourceType -eq 'CiemAws') {
+        @('PolicySet', 'Feature', 'AggregationOnly', 'MemberAssumeRole', 'SaasCiemCloudTrailSetup', 'SaasCiemCloudTrailStackName')
+    }
+    else {
+        @('CiemActivity', 'InventoryStackName', 'ActivityStackName', 'EnableIdentityStoreReadOnly', 'EnableIdentityStoreProvision')
+    }
+    $ignoredParameters = @($otherTypeParameters | Where-Object { $PSBoundParameters.ContainsKey($_) })
+    if ($ignoredParameters.Count -gt 0) {
+        $otherType = if ($SourceType -eq 'CiemAws') { 'AwsSaas' } else { 'CiemAws' }
+        Write-Warning "Ignoring $($ignoredParameters -join ', '): those parameters belong to -SourceType $otherType."
     }
 
     $session = $null
@@ -339,8 +401,14 @@ try {
         Start-WizardPass
         try {
             if (Enter-WizardPrompt) {
-                if ($askExternalId -and $SourceType -eq 'CiemAws') {
-                    $ExternalId = Read-InputString -Prompt 'External ID from the CIEM AWS source Connection Settings' -Default $ExternalId -Required
+                if ($askExternalId) {
+                    $externalIdPrompt = if ($SourceType -eq 'CiemAws') {
+                        'External ID from the CIEM AWS source Connection Settings'
+                    }
+                    else {
+                        'External ID from the ISC AWS SaaS source Connection Settings'
+                    }
+                    $ExternalId = Read-InputString -Prompt $externalIdPrompt -Default $ExternalId -Required
                 }
                 Complete-WizardPrompt
             }
@@ -374,10 +442,6 @@ try {
             if (-not $session -or $nextConnectKey -ne $connectKey) {
                 $session = Connect-AwsSession -RequestedProfile $ProfileName -RequestedRegion $Region
                 $connectKey = $nextConnectKey
-            }
-            if ($SourceType -eq 'CiemAws' -and -not $PSBoundParameters.ContainsKey('CloudTrailBucket') -and
-                [string]::IsNullOrWhiteSpace($CloudTrailBucket) -and $session.Account) {
-                $CloudTrailBucket = Get-DefaultCiemCloudTrailBucketName -AccountId $session.Account
             }
             $partition = (Get-SailPointTrustConfig -Cloud $Cloud).Partition
             $defaultPrincipals = @((Get-SailPointTrustConfig -Cloud $Cloud).Principals)
@@ -456,13 +520,6 @@ try {
                 if ($askRoleName) {
                     $defaultRole = if ($SourceType -eq 'CiemAws') { Get-DefaultCiemRoleName } else { Get-DefaultSaasRoleName }
                     $RoleName = Read-InputString -Prompt 'IAM role name' -Default $(if ($RoleName) { $RoleName } else { $defaultRole }) -Required
-                }
-                Complete-WizardPrompt
-            }
-
-            if (Enter-WizardPrompt) {
-                if ($askExternalId -and $SourceType -eq 'AwsSaas') {
-                    $ExternalId = Read-InputString -Prompt 'External ID from the ISC AWS SaaS source Connection Settings' -Default $ExternalId -Required
                 }
                 Complete-WizardPrompt
             }
@@ -635,8 +692,43 @@ try {
                 if ($askCloudTrailBucket -or ($askSaasCiemCloudTrailSetup -and $saasCiem)) {
                     $bucketValidate = { param($v) Test-AwsS3BucketName $v }
                     if ($SourceType -eq 'CiemAws') {
-                        $bucketPrompt = 'CloudTrail S3 bucket name (required by SailPoint CIEM templates)'
-                        $CloudTrailBucket = Read-InputString -Prompt $bucketPrompt -Default $CloudTrailBucket -Required -Validate $bucketValidate
+                        # Each template needs a different bucket: one that an existing trail already
+                        # logs into, one that merely exists, or one the stack is about to create.
+                        $readsExistingTrail = $CiemActivity -in @('ExistingCloudTrail', 'OrganizationManagement')
+                        $needsExistingBucket = $CiemActivity -eq 'NewCloudTrailExistingBucket'
+
+                        if ($askCloudTrailBucket -and $readsExistingTrail) {
+                            $discovered = Read-DiscoveredCloudTrailBucket -HomeRegion $Region -PreferredBucket $CloudTrailBucket
+                            if ($discovered) {
+                                $CloudTrailBucket = $discovered.BucketName
+                                $CloudTrailArn = @($discovered.TrailArns)
+                                Write-Ok "Using bucket $CloudTrailBucket with $(@($discovered.TrailArns).Count) trail ARN(s)"
+                            }
+                            else {
+                                Write-Info 'No CloudTrail trails were found in this account. Enter the bucket the existing trail logs into.'
+                                $CloudTrailBucket = Read-InputString -Prompt 'Existing CloudTrail S3 bucket name' `
+                                    -Default $CloudTrailBucket -Required -Validate $bucketValidate
+                            }
+                        }
+                        elseif ($askCloudTrailBucket -and $needsExistingBucket) {
+                            $pickedBucket = Read-ExistingS3Bucket -HomeRegion $Region -PreferredBucket $CloudTrailBucket
+                            if ($pickedBucket) {
+                                $CloudTrailBucket = $pickedBucket
+                                Write-Ok "Trail $TrailName will be created in existing bucket $CloudTrailBucket"
+                            }
+                            else {
+                                Write-Info 'No S3 buckets were found in this account. Enter the bucket name.'
+                                $CloudTrailBucket = Read-InputString -Prompt 'Existing S3 bucket name for the new CloudTrail' `
+                                    -Default $CloudTrailBucket -Required -Validate $bucketValidate
+                            }
+                        }
+                        elseif ($askCloudTrailBucket) {
+                            if ([string]::IsNullOrWhiteSpace($CloudTrailBucket) -and $session.Account) {
+                                $CloudTrailBucket = Get-DefaultCiemCloudTrailBucketName -AccountId $session.Account
+                            }
+                            $bucketPrompt = 'CloudTrail S3 bucket name (required by SailPoint CIEM templates)'
+                            $CloudTrailBucket = Read-InputString -Prompt $bucketPrompt -Default $CloudTrailBucket -Required -Validate $bucketValidate
+                        }
                     }
                     elseif ($saasCiem) {
                         Write-Step 'CIEM CloudTrail'
@@ -823,6 +915,9 @@ try {
                     }
                 }
                 Write-Host "   CloudTrail bucket     : $CloudTrailBucket"
+                if ($CloudTrailArn -and @($CloudTrailArn).Count -gt 0) {
+                    Write-Host "   CloudTrail ARN(s)     : $((Get-NormalizedCloudTrailArnList -Value $CloudTrailArn) -join ', ')"
+                }
                 if ($Scope -eq 'CurrentAccount') {
                     Write-Host "   Identity Center       : off (unsupported with Single Account / Account instance)"
                 }
@@ -895,6 +990,12 @@ try {
     }
 
     if ($SourceType -eq 'CiemAws') {
+        # Every SailPoint CIEM template takes BucketName. Non-interactive runs never reach the bucket
+        # prompt, so they fall back to the template-style default instead of failing.
+        if ([string]::IsNullOrWhiteSpace($CloudTrailBucket) -and $session.Account) {
+            $CloudTrailBucket = Get-DefaultCiemCloudTrailBucketName -AccountId $session.Account
+            Write-Info "No -CloudTrailBucket given; using $CloudTrailBucket."
+        }
         if ([string]::IsNullOrWhiteSpace($CloudTrailBucket)) {
             throw 'CiemAws requires -CloudTrailBucket (SailPoint templates need BucketName).'
         }

@@ -271,11 +271,11 @@ Set-ExecutionPolicy -Scope Process Bypass
 The script prompts for:
 
 1. Source type (when not passed)
-2. AWS profile (blank uses the default credential chain; run `aws sso login` first if you use IAM Identity Center)
-3. Commercial vs GovCloud (selects the SailPoint trust principal)
-4. Region for STS / Organizations (IAM is global; default `us-east-1` or `us-gov-west-1`)
-5. IAM role name (default `SailPointAWSRole` — this is the value ISC needs, not the ARN)
-6. External ID from the AWS SaaS source
+2. External ID from the AWS SaaS source Connection Settings
+3. AWS profile (blank uses the default credential chain; run `aws sso login` first if you use IAM Identity Center)
+4. Commercial vs GovCloud (selects the SailPoint trust principal)
+5. Region for STS / Organizations (IAM is global; default `us-east-1` or `us-gov-west-1`)
+6. IAM role name (default `SailPointAWSRole` — this is the value ISC needs, not the ARN)
 7. Policy set (multiple group objects vs non-MGO)
 8. Optional feature packs
 9. Whether to include provisioning
@@ -415,6 +415,8 @@ The `Ciem` pack asks how to supply the log bucket, and that answer decides where
 | `AWSOrganizationsNotInUseException` — *Your account is not a member of an organization* | The account is standalone, so `ListAccounts` can never succeed and Cloud Scope stays empty. SailPoint documents that [single-account configuration is not supported by AWS SaaS](https://documentation.sailpoint.com/connectors/saas/aws/help/saas_connectivity/aws/non_mgo_policies.html). Either enable an organization in this account (`aws organizations create-organization --feature-set ALL`, which makes it the management account of a one-account org), or use an account that already belongs to one. The script warns about this before creating anything. |
 | Role name rejected | Enter the role **name** (`SailPointAWSRole`), not `arn:aws:iam::...:role/...`. |
 | `AwsSaas -Feature Ciem requires -CloudTrailBucket` | CIEM on the SaaS source needs S3 Get/List on the log bucket. Pass `-CloudTrailBucket` (and `-CloudTrailBucketAccountId` if the bucket is not in the signed-in account). |
+| `Conversion from JSON failed` / `Unexpected character encountered while parsing value: <` | `Get-S3BucketPolicy` returned XML or HTML. Re-run this script; it now reads the bucket region, unwraps an XML policy envelope, and writes CloudTrail `PutObject` / `GetBucketAcl` on that bucket (SailPoint's existing-bucket template does not). |
+| CloudTrail `Incorrect S3 bucket policy is detected` | The trail's log bucket has no CloudTrail write policy. Re-run so the script applies the delivery statements, then delete a `ROLLBACK_COMPLETE` stack if one remains. |
 | CIEM toggle on but no activity / empty CloudTrail ARNs | No trail logs into the bucket you chose. Confirm the bucket name, pick **Create a new CloudTrail and S3 bucket**, or pass `-CloudTrailArn`. After test connection, mark Groups, AWSManagedPolicy, CustomerManagedPolicy, and InlinePolicy as cloud-enabled. |
 
 ### CIEM AWS source (CloudFormation)
@@ -468,7 +470,17 @@ Organization activity templates accept `EnableIdentityStoreReadOnly` and `Enable
 .\AWS.ps1 -SourceType CiemAws
 ```
 
-The first prompt after source type is the **External ID** from the CIEM AWS source Connection Settings. Later prompts include AWS profile, cloud, region, scope, collection mode, Identity Center permissions (Organization only), CloudTrail bucket name, stack names, and output directory (`./sourceConfig/aws-ciem`). Organization scope defaults **Yes** for the management-account activity stack.
+The first prompt after source type is the **External ID** from the CIEM AWS source Connection Settings. Later prompts include AWS profile, cloud, region, scope, collection mode, Identity Center permissions (Organization only), stack names, and output directory (`./sourceConfig/aws-ciem`). Organization scope defaults **Yes** for the management-account activity stack.
+
+Every SailPoint CIEM template takes `BucketName`, but each mode needs a different kind of bucket, so the bucket question follows the collection mode:
+
+| Collection mode | What the template needs | What the wizard asks |
+| --- | --- | --- |
+| Organization activity, or single-account **existing CloudTrail** | A bucket an existing trail already logs into (neither template creates a trail or outputs its ARN) | Scans CloudTrail in this account, auto-selects a single match, otherwise lists bucket plus trail names. The discovered trail ARNs go straight into Connection Settings |
+| **New CloudTrail with existing S3 bucket** | A bucket that exists; the stack creates the trail | Lists the S3 buckets in this account (a bucket with no trail yet is the normal case here) |
+| **New CloudTrail and new S3 bucket**, or **inventory only** | A bucket name the stack will create, or just the name the read policy is scoped to | Asks for a name, defaulting to `sailpoint-ciem-<account-id>` |
+
+Non-interactive runs without `-CloudTrailBucket` use the same `sailpoint-ciem-<account-id>` default.
 
 #### CIEM Identity Center permissions
 

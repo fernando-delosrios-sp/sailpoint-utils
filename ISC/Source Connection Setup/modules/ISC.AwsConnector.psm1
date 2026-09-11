@@ -109,6 +109,168 @@ function Test-AwsS3BucketExistsInAccount {
     }
 }
 
+function Get-AwsS3BucketNames {
+    param([string]$RegionName = 'us-east-1')
+
+    if (-not (Get-Command Get-S3Bucket -ErrorAction SilentlyContinue)) {
+        Ensure-AwsToolsModules -ExtraModules @('AWS.Tools.S3')
+    }
+    try {
+        return @(
+            Get-S3Bucket -Region $RegionName -ErrorAction Stop |
+                ForEach-Object { [string]$_.BucketName } |
+                Where-Object { $_ } |
+                Sort-Object
+        )
+    }
+    catch {
+        Write-Verbose "Could not list S3 buckets: $($_.Exception.Message)"
+        return @()
+    }
+}
+
+function ConvertTo-AwsRegionNameFromS3Location {
+    param(
+        $Location,
+        [string]$FallbackRegion = 'us-east-1'
+    )
+
+    $text = ''
+    if ($null -eq $Location) {
+        $text = ''
+    }
+    elseif ($Location -is [string]) {
+        $text = $Location.Trim()
+    }
+    elseif ($Location.PSObject.Properties['Value'] -and $null -ne $Location.Value) {
+        $text = [string]$Location.Value
+    }
+    elseif ($Location.PSObject.Properties['LocationConstraint'] -and $null -ne $Location.LocationConstraint) {
+        $constraint = $Location.LocationConstraint
+        $text = if ($constraint.PSObject.Properties['Value']) { [string]$constraint.Value } else { [string]$constraint }
+    }
+    else {
+        $text = [string]$Location
+    }
+    $text = $text.Trim()
+    if ($text -eq 'None' -or $text -eq 'Amazon.S3.S3Region') {
+        $text = ''
+    }
+    if ($text.StartsWith('<')) {
+        try {
+            $xml = [xml]$text
+            $node = $xml.SelectSingleNode('//*[local-name()="LocationConstraint"]')
+            if ($node) { $text = [string]$node.InnerText }
+        }
+        catch {
+            $text = ''
+        }
+        $text = $text.Trim()
+    }
+
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        if ($FallbackRegion -match 'gov') { return $FallbackRegion }
+        return 'us-east-1'
+    }
+    if ($text -eq 'EU') { return 'eu-west-1' }
+    return $text
+}
+
+function ConvertTo-NormalizedS3BucketPolicyDocument {
+    param(
+        [AllowNull()]
+        [AllowEmptyString()]
+        $Document
+    )
+
+    if ($null -eq $Document) { return '' }
+
+    $text = ''
+    if ($Document -is [string]) {
+        $text = $Document
+    }
+    elseif ($Document -is [System.Xml.XmlNode]) {
+        $text = $Document.OuterXml
+    }
+    elseif ($Document.PSObject.Properties['Policy'] -and $null -ne $Document.Policy) {
+        $policy = $Document.Policy
+        $text = if ($policy -is [System.Xml.XmlNode]) { $policy.InnerText } else { [string]$policy }
+    }
+    else {
+        $text = [string]$Document
+    }
+    $text = $text.Trim()
+    if (-not $text -or $text -eq 'Amazon.S3.Model.GetBucketPolicyResponse') { return '' }
+
+    if ($text -match '^[\{\[]') { return $text }
+    if ($text -notmatch '^[\{\[]' -and $text -match '%7[Bb]') {
+        $decoded = [System.Uri]::UnescapeDataString($text).Trim()
+        if ($decoded -match '^[\{\[]') { return $decoded }
+        $text = $decoded
+    }
+
+    if ($text -match '(?is)^<(?:!DOCTYPE\s+html|html)\b') {
+        throw 'S3 bucket policy response was HTML, not JSON. Confirm the bucket region and that Get-S3BucketPolicy is not hitting an HTTP error page.'
+    }
+
+    if ($text.StartsWith('<')) {
+        $xml = $null
+        try { $xml = [xml]$text } catch { $xml = $null }
+        if ($null -ne $xml) {
+            $codeNode = $xml.SelectSingleNode('//*[local-name()="Code"]')
+            $messageNode = $xml.SelectSingleNode('//*[local-name()="Message"]')
+            $code = if ($codeNode) { [string]$codeNode.InnerText } else { '' }
+            $message = if ($messageNode) { [string]$messageNode.InnerText } else { '' }
+            if ($code -match 'NoSuchBucketPolicy') { return '' }
+            if ($code) {
+                $detail = if ($message) { "${code}: $message" } else { $code }
+                throw "S3 bucket policy request failed ($detail)."
+            }
+            $policyNode = $xml.SelectSingleNode('//*[local-name()="Policy"]')
+            if ($policyNode) {
+                $inner = [string]$policyNode.InnerText
+                if (-not $inner) { $inner = [string]$policyNode.InnerXml }
+                $inner = $inner.Trim()
+                if ($inner -match '^[\{\[]') { return $inner }
+            }
+        }
+        $start = $text.IndexOf('{')
+        $end = $text.LastIndexOf('}')
+        if ($start -ge 0 -and $end -gt $start) {
+            return $text.Substring($start, $end - $start + 1)
+        }
+        throw 'S3 bucket policy response was XML, not JSON.'
+    }
+
+    return $text
+}
+
+function Resolve-AwsS3BucketRegion {
+    param(
+        [Parameter(Mandatory)][string]$BucketName,
+        [string]$FallbackRegion = 'us-east-1'
+    )
+
+    Ensure-AwsToolsModules -ExtraModules @('AWS.Tools.S3')
+    $candidates = [System.Collections.Generic.List[string]]::new()
+    foreach ($region in @($FallbackRegion, 'us-east-1', 'us-gov-west-1')) {
+        if ([string]::IsNullOrWhiteSpace($region)) { continue }
+        if (-not $candidates.Contains($region)) { $candidates.Add($region) }
+    }
+    $lastError = $null
+    foreach ($region in $candidates) {
+        try {
+            $location = Get-S3BucketLocation -BucketName $BucketName -Region $region -ErrorAction Stop
+            return (ConvertTo-AwsRegionNameFromS3Location -Location $location -FallbackRegion $FallbackRegion)
+        }
+        catch {
+            $lastError = $_
+        }
+    }
+    if ($lastError) { throw $lastError }
+    return $FallbackRegion
+}
+
 function Test-AwsAccountId {
     param([string]$Value)
 
@@ -161,6 +323,9 @@ function ConvertFrom-IamPolicyDocument {
     if (-not $text) { throw 'IAM returned an empty policy document.' }
     if ($text -notmatch '^[\{\[]') {
         $text = [System.Uri]::UnescapeDataString($text)
+    }
+    if ($text.StartsWith('<')) {
+        throw 'Policy document is XML or HTML, not JSON.'
     }
     return ($text | ConvertFrom-Json)
 }
@@ -321,6 +486,10 @@ Export-ModuleMember -Function @(
     'Get-ConnectionSettingsOutput',
     'Test-AwsS3BucketName',
     'Test-AwsS3BucketExistsInAccount',
+    'Get-AwsS3BucketNames',
+    'ConvertTo-AwsRegionNameFromS3Location',
+    'ConvertTo-NormalizedS3BucketPolicyDocument',
+    'Resolve-AwsS3BucketRegion',
     'Test-AwsAccountId',
     'Connect-AwsSession',
     'ConvertTo-IamJson',

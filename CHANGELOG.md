@@ -11,6 +11,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 - **sail skill** — Model-invoked agent skill for the SailPoint CLI against ISC tenants (`skills/sail/`, identical copy at `.agents/skills/sail/`). Infers or asks for `sail` environments, passes `--env`, confirms mutating goals once, and discloses per-command-family guides. Install: `npx skills add fernando-delosrios-sp/sailpoint-utils --skill sail`.
 - **Source Connection Setup** — The completion copy/open menu on AWS, Entra ID, and Google Workspace includes **Save to disk (filename)**. It writes every result value (unmasked secrets and Open links) to that connection-settings file; IQService Control does not offer this.
 
+### 🐛 Fixes
+
+- **Source Connection Setup (AWS SaaS / CIEM)** — Applying CloudTrail write access on an existing log bucket no longer dies when `Get-S3BucketPolicy` returns XML or HTML (`Conversion from JSON failed … Unexpected character: <`). The script uses the bucket's region and unwraps the S3 XML envelope before merging the delivery policy.
+
 ## 2026-09-07
 
 ### 🔧 Improvements

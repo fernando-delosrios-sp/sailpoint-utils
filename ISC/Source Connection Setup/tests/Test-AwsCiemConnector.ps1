@@ -42,6 +42,21 @@ function Clear-CiemTrailScanMock {
     $script:MockCiemTrails = @()
 }
 
+function Mock-S3BucketList {
+    param([string[]]$BucketNames)
+
+    $script:MockS3Buckets = @($BucketNames | ForEach-Object { [PSCustomObject]@{ BucketName = $_ } })
+    Set-Item -Path function:global:Get-S3Bucket -Value {
+        [CmdletBinding()] param([string]$BucketName, [string]$Region)
+        $script:MockS3Buckets
+    }
+}
+
+function Clear-S3BucketListMock {
+    Remove-Item -Path function:global:Get-S3Bucket -ErrorAction SilentlyContinue
+    $script:MockS3Buckets = @()
+}
+
 Import-Module $ConsolePath -Force -WarningAction SilentlyContinue
 Import-Module $ConnectorPath -Force -WarningAction SilentlyContinue
 Import-Module $CiemPath -Force -WarningAction SilentlyContinue
@@ -96,9 +111,32 @@ try {
     $scoped = @(Get-SaasCiemCloudTrailArns -HomeRegion 'us-east-1' -BucketName 'picked-bucket')
     Assert-Equal 1 $scoped.Count 'discovery keeps only trails for the chosen bucket'
     Assert-Equal $bucketTrail $scoped[0] 'unrelated trails stay out of CIEM settings'
+
+    $options = @(Get-CloudTrailLogBucketOptions -HomeRegion 'us-east-1' -ScanScope HomeRegion)
+    Assert-Equal 2 $options.Count 'discovery lists each CloudTrail log bucket'
+    $picked = @($options | Where-Object { $_.BucketName -eq 'picked-bucket' })[0]
+    Assert-Equal $bucketTrail (@($picked.TrailArns)[0]) 'discovered bucket keeps its trail ARN'
+    $auto = Select-CloudTrailLogBucketOption -Options @($picked)
+    Assert-Equal 'picked-bucket' $auto.BucketName 'a single discovered bucket is selected without a prompt'
+    $many = Select-CloudTrailLogBucketOption -Options $options
+    Assert-True ($null -eq $many) 'multiple buckets stay unselected so the wizard can prompt'
+    $preferred = Select-CloudTrailLogBucketOption -Options $options -PreferredBucket 'picked-bucket'
+    Assert-Equal 'picked-bucket' $preferred.BucketName 'an explicit bucket name matches among discovered trails'
 }
 finally {
     Clear-CiemTrailScanMock
+}
+
+# NewCloudTrailExistingBucket needs a bucket that exists, with or without a trail, so that mode picks
+# from S3 rather than from CloudTrail.
+Mock-S3BucketList -BucketNames @('zeta-logs', 'alpha-logs')
+try {
+    $buckets = @(Get-AwsS3BucketNames -RegionName 'us-east-1')
+    Assert-Equal 2 $buckets.Count 'S3 discovery lists buckets in the account'
+    Assert-Equal 'alpha-logs' $buckets[0] 'S3 bucket names are sorted for the picker'
+}
+finally {
+    Clear-S3BucketListMock
 }
 
 $bucketPolicy = New-CloudTrailBucketPolicyDocument -BucketName 'my-bucket' -Partition 'aws'
@@ -114,6 +152,47 @@ Assert-True ($deliverySids -contains 'AWSCloudTrailAclCheck') 'delivery policy a
 Assert-True ($deliverySids -contains 'AWSCloudTrailWrite') 'delivery policy allows CloudTrail PutObject'
 Assert-True (($delivery | ConvertFrom-Json).Statement[1].Resource -eq 'arn:aws:s3:::sailpoint-ciem-063085096017/AWSLogs/063085096017/*') `
     'delivery PutObject is scoped to this account prefix'
+
+# Get-S3BucketPolicy (AWS.Tools v5 / S3 rest-xml) can return the XML envelope instead of JSON.
+# Feeding that to ConvertFrom-Json is: Unexpected character encountered while parsing value: <.
+$xmlWrapped = @'
+<GetBucketPolicyOutput>
+  <Policy>{"Version":"2012-10-17","Statement":[{"Sid":"KeepMe","Effect":"Allow","Action":"s3:GetObject","Resource":"arn:aws:s3:::other/*"}]}</Policy>
+</GetBucketPolicyOutput>
+'@
+$fromXml = ConvertTo-NormalizedS3BucketPolicyDocument -Document $xmlWrapped
+Assert-True ($fromXml.TrimStart().StartsWith('{')) 'XML-wrapped bucket policy extracts JSON'
+$xmlMerged = Merge-CloudTrailDeliveryBucketPolicy -ExistingDocument $fromXml -DeliveryDocument $delivery | ConvertFrom-Json
+Assert-True (@($xmlMerged.Statement | ForEach-Object { [string]$_.Sid }) -contains 'KeepMe') 'XML-wrapped existing policy still merges'
+
+$noPolicyXml = @'
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>NoSuchBucketPolicy</Code><Message>The bucket policy does not exist</Message></Error>
+'@
+Assert-Equal '' (ConvertTo-NormalizedS3BucketPolicyDocument -Document $noPolicyXml) 'NoSuchBucketPolicy XML is treated as no policy'
+
+try {
+    ConvertTo-NormalizedS3BucketPolicyDocument -Document '<html><body>Access Denied</body></html>' | Out-Null
+    throw 'should have rejected the document'
+}
+catch {
+    Assert-True ($_.Exception.Message -like '*HTML*not JSON*') 'HTML GetBucketPolicy body is rejected with a clear error'
+}
+
+try {
+    ConvertTo-NormalizedS3BucketPolicyDocument -Document @'
+<Error><Code>PermanentRedirect</Code><Message>The bucket you are attempting to access must be addressed using the specified endpoint.</Message><Endpoint>s3.eu-west-1.amazonaws.com</Endpoint></Error>
+'@ | Out-Null
+    throw 'should have rejected the document'
+}
+catch {
+    Assert-True ($_.Exception.Message -like '*PermanentRedirect*') 'S3 error XML surfaces the error code'
+}
+
+Assert-Equal 'us-east-1' (ConvertTo-AwsRegionNameFromS3Location -Location $null -FallbackRegion 'eu-west-1') 'empty LocationConstraint is us-east-1'
+Assert-Equal 'eu-west-1' (ConvertTo-AwsRegionNameFromS3Location -Location 'EU' -FallbackRegion 'us-east-1') 'legacy EU constraint is eu-west-1'
+Assert-Equal 'eu-west-1' (ConvertTo-AwsRegionNameFromS3Location -Location 'eu-west-1' -FallbackRegion 'us-east-1') 'region-name constraint is kept'
+Assert-Equal 'us-gov-west-1' (ConvertTo-AwsRegionNameFromS3Location -Location '' -FallbackRegion 'us-gov-west-1') 'empty GovCloud location keeps a gov fallback'
 
 $existingWithOther = ConvertTo-IamJson @{
     Version   = '2012-10-17'
