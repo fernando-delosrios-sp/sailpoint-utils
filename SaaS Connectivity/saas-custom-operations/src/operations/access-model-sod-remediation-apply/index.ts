@@ -11,6 +11,7 @@ import {
     expandAccessItemEntitlementsFromOfflineState,
     getFormInstanceByIdOffline,
 } from './offline-data'
+import { applyPersistIdentity } from './constants'
 import { parseFormInstance } from './parse-form-instance'
 import { readPriorTerminalApplyOutputs } from './prior-apply-status'
 
@@ -53,8 +54,7 @@ function buildOutputs(
             : {}),
         ...(plan.detachedAccessProfileIds.length > 0
             ? {
-                  'access-model-sod-remediation-apply:detached-access-profile-ids':
-                      plan.detachedAccessProfileIds,
+                  'access-model-sod-remediation-apply:detached-access-profile-ids': plan.detachedAccessProfileIds,
               }
             : {}),
         ...(auditLine ? { 'access-model-sod-remediation-apply:description-appended': auditLine } : {}),
@@ -79,7 +79,7 @@ export const accessModelSodRemediationApplyOperation = customOperation<AccessMod
         if (!offline) {
             const priorOutputs = await readPriorTerminalApplyOutputs(ctx, formInstanceId)
             if (priorOutputs) {
-                await ctx.persist(formInstanceId, priorOutputs)
+                await ctx.persist(applyPersistIdentity(formInstanceId), priorOutputs)
                 ctx.res.send({ status: 'success', ...priorOutputs })
                 return
             }
@@ -129,7 +129,7 @@ export const accessModelSodRemediationApplyOperation = customOperation<AccessMod
         const status = alreadyClean ? 'skipped-already-clean' : 'applied'
         const outputs = buildOutputs(status, parsed, plan, auditLine)
 
-        await ctx.persist(formInstanceId, outputs)
+        await ctx.persist(applyPersistIdentity(formInstanceId), outputs)
         ctx.res.send({ status: 'success', ...outputs })
     },
     { operationSchema: accessModelSodRemediationApplyOperationSchema }

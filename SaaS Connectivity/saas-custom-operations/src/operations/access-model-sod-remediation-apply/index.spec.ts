@@ -30,9 +30,19 @@ const persistAttributes = [
 
 const createAccountV1 = vi.fn().mockResolvedValue({})
 const putAccountV1 = vi.fn().mockResolvedValue({ data: { id: 'task-put-1' } })
+const persistedAccounts = new Map<string, Record<string, unknown>>()
+const listAccountsV1 = vi.fn().mockImplementation(async ({ filters }) => {
+    const match = /(?:nativeIdentity|id|name) eq "([^"]+)"/.exec(String(filters ?? ''))
+    const id = match?.[1]
+    if (!id || !persistedAccounts.has(id)) {
+        return { data: [] }
+    }
+    return {
+        data: [{ id: `isc-${id}`, sourceId: 'source-123', attributes: persistedAccounts.get(id) }],
+    }
+})
 const resolveSourceByName = vi.fn()
 const getSourceSchemasV1 = vi.fn()
-const persistedAccounts = new Map<string, Record<string, unknown>>()
 
 const patchRoleV1 = vi.fn().mockResolvedValue({})
 const patchAccessProfileV1 = vi.fn().mockResolvedValue({})
@@ -59,6 +69,52 @@ function listRowFromOffline(formInstanceId: string): Record<string, unknown> {
     }
 }
 
+function persistedIdentities(): string[] {
+    const fromCreate = createAccountV1.mock.calls.map((call) =>
+        String(
+            (call[0] as { accountAttributesCreate: { attributes: { id: unknown } } }).accountAttributesCreate.attributes
+                .id
+        )
+    )
+    const fromPut = putAccountV1.mock.calls.map((call) =>
+        String((call[0] as { accountAttributes: { attributes: { id: unknown } } }).accountAttributes.attributes.id)
+    )
+    return [...fromCreate, ...fromPut]
+}
+
+function accountLookupIdentities(): string[] {
+    const found: string[] = []
+    for (const [arg] of listAccountsV1.mock.calls) {
+        const filters = String((arg as { filters?: string } | undefined)?.filters ?? '')
+        for (const pattern of [/nativeIdentity eq "([^"]+)"/g, /name eq "([^"]+)"/g, /attributes\.id eq "([^"]+)"/g]) {
+            for (const match of filters.matchAll(pattern)) {
+                found.push(match[1])
+            }
+        }
+    }
+    return found
+}
+
+function seedPriorApplyAccount(
+    identity: string,
+    attrs: {
+        status: string
+        accessItemId: string
+        accessItemType?: string
+        descriptionAppended?: string
+    }
+): void {
+    persistedAccounts.set(identity, {
+        id: identity,
+        'access-model-sod-remediation-apply:status': attrs.status,
+        'access-model-sod-remediation-apply:access-item-id': attrs.accessItemId,
+        'access-model-sod-remediation-apply:access-item-type': attrs.accessItemType ?? 'ROLE',
+        ...(attrs.descriptionAppended
+            ? { 'access-model-sod-remediation-apply:description-appended': attrs.descriptionAppended }
+            : {}),
+    })
+}
+
 vi.mock('../../framework/result-source', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../framework/result-source')>()
     return {
@@ -75,16 +131,7 @@ vi.mock('../../framework/sdk-factory', () => ({
         },
         accounts: {
             createAccountV1: (...args: unknown[]) => createAccountV1(...args),
-            listAccountsV1: vi.fn().mockImplementation(async ({ filters }) => {
-                const match = /(?:nativeIdentity|id|name) eq "([^"]+)"/.exec(String(filters ?? ''))
-                const id = match?.[1]
-                if (!id || !persistedAccounts.has(id)) {
-                    return { data: [] }
-                }
-                return {
-                    data: [{ id: `isc-${id}`, sourceId: 'source-123', attributes: persistedAccounts.get(id) }],
-                }
-            }),
+            listAccountsV1: (...args: unknown[]) => listAccountsV1(...args),
             putAccountV1: (...args: unknown[]) => putAccountV1(...args),
             getAccountV1: vi.fn(),
         },
@@ -119,6 +166,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
         persistedAccounts.clear()
         createAccountV1.mockClear()
         putAccountV1.mockClear()
+        listAccountsV1.mockClear()
         patchRoleV1.mockClear()
         patchAccessProfileV1.mockClear()
         resolveSourceByName.mockResolvedValue('source-123')
@@ -205,7 +253,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                     'access-model-sod-remediation-apply:removed-entitlement-ids': ['ent-a'],
                 })
             )
-            expect(inhibitedPersists[0]?.identity).toBe('fi-role-group-a-direct')
+            expect(inhibitedPersists[0]?.identity).toBe('access-model-sod-remediation-apply:fi-role-group-a-direct')
             expect(searchFormDefinitionsByTenantV1).not.toHaveBeenCalled()
             expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
         } finally {
@@ -581,6 +629,217 @@ describe('accessModelSodRemediationApplyOperation', () => {
         )
     })
 
+    it('Persist on form instance id uses the apply persist identity', async () => {
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-apply-live',
+                    formInstanceId: 'fi-role-group-a-direct',
+                    formName: DEFAULT_FORM_NAME,
+                },
+                res as never
+            )
+        })
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                'access-model-sod-remediation-apply:status': 'applied',
+                'access-model-sod-remediation-apply:access-item-id': 'role-offline-1',
+            })
+        )
+        expect(persistedIdentities()).toContain('access-model-sod-remediation-apply:fi-role-group-a-direct')
+        expect(persistedIdentities()).not.toContain('fi-role-group-a-direct')
+        expect(persistedAccounts.has('fi-role-group-a-direct')).toBe(false)
+        expect(res.send.mock.calls[0][0]['access-model-sod-remediation-apply:description-appended']).toMatch(
+            /^\[access-model-sod-remediation-apply /
+        )
+    })
+
+    it('Persist identity ignores invoke requestId', async () => {
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'access-model-sod-remediation-apply-fi-1',
+                    formInstanceId: 'fi-role-group-a-direct',
+                    formName: DEFAULT_FORM_NAME,
+                },
+                res as never
+            )
+        })
+
+        expect(persistedIdentities()).toEqual(['access-model-sod-remediation-apply:fi-role-group-a-direct'])
+        expect(persistedIdentities()).not.toContain('access-model-sod-remediation-apply-fi-1')
+    })
+
+    it('Prefixed account short-circuits the apply path', async () => {
+        seedPriorApplyAccount('access-model-sod-remediation-apply:fi-1', {
+            status: 'applied',
+            accessItemId: 'role-prefixed',
+        })
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-prefixed-short-circuit',
+                    formInstanceId: 'fi-1',
+                    formName: DEFAULT_FORM_NAME,
+                },
+                res as never
+            )
+        })
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                'access-model-sod-remediation-apply:status': 'skipped-already-applied',
+                'access-model-sod-remediation-apply:access-item-id': 'role-prefixed',
+            })
+        )
+        expect(accountLookupIdentities()).toContain('access-model-sod-remediation-apply:fi-1')
+        expect(accountLookupIdentities()).not.toContain('fi-1')
+        expect(patchRoleV1).not.toHaveBeenCalled()
+        expect(patchAccessProfileV1).not.toHaveBeenCalled()
+        expect(searchFormDefinitionsByTenantV1).not.toHaveBeenCalled()
+    })
+
+    it('Legacy account keeps a pre-rename apply deduped', async () => {
+        const legacyAttrs = {
+            id: 'fi-1',
+            'access-model-sod-remediation-apply:status': 'applied',
+            'access-model-sod-remediation-apply:access-item-id': 'role-legacy',
+            'access-model-sod-remediation-apply:access-item-type': 'ROLE',
+            'access-model-sod-remediation-apply:description-appended':
+                '[access-model-sod-remediation-apply 2026-08-18T10:00:00.000Z] Policy "P" (p-1): corrected Group A side; form instance fi-1',
+        }
+        persistedAccounts.set('fi-1', { ...legacyAttrs })
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-legacy-fallback',
+                    formInstanceId: 'fi-1',
+                    formName: DEFAULT_FORM_NAME,
+                },
+                res as never
+            )
+        })
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                'access-model-sod-remediation-apply:status': 'skipped-already-applied',
+                'access-model-sod-remediation-apply:access-item-id': 'role-legacy',
+                'access-model-sod-remediation-apply:description-appended':
+                    legacyAttrs['access-model-sod-remediation-apply:description-appended'],
+            })
+        )
+        expect(patchRoleV1).not.toHaveBeenCalled()
+        expect(patchAccessProfileV1).not.toHaveBeenCalled()
+        expect(searchFormDefinitionsByTenantV1).not.toHaveBeenCalled()
+        expect(persistedIdentities()).toContain('access-model-sod-remediation-apply:fi-1')
+        expect(persistedIdentities()).not.toContain('fi-1')
+        expect(persistedAccounts.get('fi-1')).toEqual(legacyAttrs)
+    })
+
+    it('Prefixed account wins when both exist', async () => {
+        seedPriorApplyAccount('access-model-sod-remediation-apply:fi-1', {
+            status: 'applied',
+            accessItemId: 'role-prefixed',
+        })
+        seedPriorApplyAccount('fi-1', {
+            status: 'applied',
+            accessItemId: 'role-legacy',
+        })
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-prefixed-wins',
+                    formInstanceId: 'fi-1',
+                    formName: DEFAULT_FORM_NAME,
+                },
+                res as never
+            )
+        })
+
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                'access-model-sod-remediation-apply:status': 'skipped-already-applied',
+                'access-model-sod-remediation-apply:access-item-id': 'role-prefixed',
+            })
+        )
+        expect(res.send).toHaveBeenCalledWith(
+            expect.not.objectContaining({
+                'access-model-sod-remediation-apply:access-item-id': 'role-legacy',
+            })
+        )
+        expect(patchRoleV1).not.toHaveBeenCalled()
+    })
+
+    it('Non-terminal legacy account is not a prior apply', async () => {
+        seedPriorApplyAccount('fi-role-group-a-direct', {
+            status: 'failed',
+            accessItemId: 'role-legacy',
+        })
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-non-terminal-legacy',
+                    formInstanceId: 'fi-role-group-a-direct',
+                    formName: DEFAULT_FORM_NAME,
+                },
+                res as never
+            )
+        })
+
+        expect(searchFormDefinitionsByTenantV1).toHaveBeenCalled()
+        expect(searchFormInstancesByTenantV1).toHaveBeenCalled()
+        expect(patchRoleV1).toHaveBeenCalled()
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                'access-model-sod-remediation-apply:status': 'applied',
+            })
+        )
+    })
+
+    it('No account under either identity proceeds to definition lookup and PATCH', async () => {
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationApplyOperation(
+                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+                {
+                    requestId: 'req-neither-identity',
+                    formInstanceId: 'fi-role-group-a-direct',
+                    formName: DEFAULT_FORM_NAME,
+                },
+                res as never
+            )
+        })
+
+        expect(searchFormDefinitionsByTenantV1).toHaveBeenCalled()
+        expect(searchFormInstancesByTenantV1).toHaveBeenCalled()
+        expect(patchRoleV1).toHaveBeenCalled()
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                'access-model-sod-remediation-apply:status': 'applied',
+            })
+        )
+    })
+
     it.each([undefined, '   '])('Missing formName validation for %j', async (formName) => {
         const res = { send: vi.fn() }
 
@@ -616,10 +875,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
             join(process.cwd(), 'src/operations/access-model-sod-remediation/README.md'),
             'utf-8'
         )
-        const workflow = readFileSync(
-            join(process.cwd(), 'workflows/Access Model SOD - Remediation.json'),
-            'utf-8'
-        )
+        const workflow = readFileSync(join(process.cwd(), 'workflows/Access Model SOD - Remediation.json'), 'utf-8')
         const offlinePayload = readFileSync(
             join(process.cwd(), 'payloads/access-model-sod-remediation-apply-offline.json'),
             'utf-8'

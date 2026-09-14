@@ -16,11 +16,11 @@ Runs after `custom:access-model-sod-remediation` form submit in the access-model
 |---|---|---|
 | `formInstanceId` | Yes | Completed form instance id from the form trigger |
 | `formName` | Yes | Shared tenant form definition name; must match the name used by `custom:access-model-sod-remediation` |
-| `requestId` | Yes | Standard invoke id for logging; persist key is `formInstanceId`. In-flight dedupe also keys on `formInstanceId` for this command |
+| `requestId` | Yes | Standard invoke id for logging; **not** the persist identity. The apply persist identity is derived in code as `access-model-sod-remediation-apply:{formInstanceId}`. In-flight dedupe still keys on `formInstanceId` for this command |
 
 ## Output
 
-Persisted on result-source identity `{formInstanceId}` and returned on successful invoke:
+Persisted on the **apply persist identity** `access-model-sod-remediation-apply:{formInstanceId}` and returned on successful invoke:
 
 | Field | Description |
 |---|---|
@@ -29,7 +29,7 @@ Persisted on result-source identity `{formInstanceId}` and returned on successfu
 | `access-model-sod-remediation-apply:access-item-type` | `ROLE` or `ACCESS_PROFILE` |
 | `access-model-sod-remediation-apply:removed-entitlement-ids` | Optional; direct entitlements removed from role or AP |
 | `access-model-sod-remediation-apply:detached-access-profile-ids` | Optional; nested APs detached from role |
-| `access-model-sod-remediation-apply:description-appended` | Optional audit snippet appended to catalog description |
+| `access-model-sod-remediation-apply:description-appended` | Optional **description audit line** appended to the catalog description, opening with `[access-model-sod-remediation-apply {timestamp}]` |
 
 ## Remediation semantics
 
@@ -43,7 +43,7 @@ Never patches entitlement lists on nested access profiles when correcting a role
 
 ## Idempotency
 
-Before catalog PATCH, the handler checks the result-source account at `{formInstanceId}` for a prior terminal apply (`applied` or `skipped-already-applied`). When found, it skips the form definition lookup, tenant form instance list, and PATCH and returns `skipped-already-applied`. Concurrent invokes for the same `formInstanceId` dedupe in-flight via a framework key that includes `formInstanceId` (not `requestId`).
+Before catalog PATCH, the handler checks the result-source account at `access-model-sod-remediation-apply:{formInstanceId}` for a prior terminal apply (`applied` or `skipped-already-applied`). If that account is missing, it falls back to the **legacy apply persist identity** (bare `{formInstanceId}`) as read-only input. When either lookup is a terminal apply, it skips the form definition lookup, tenant form instance list, and PATCH and returns `skipped-already-applied`. Replay persist always writes the prefixed identity; the legacy account is never updated or deleted. Concurrent invokes for the same `formInstanceId` dedupe in-flight via a framework key that includes `formInstanceId` (not `requestId`).
 
 When no prior persist exists, the handler resolves the existing definition with `searchFormDefinitionsByTenantV1` filtered to `name eq "<formName>"`. It then lists tenant form instances with `searchFormInstancesByTenantV1` filtered to the resolved `formDefinitionId`, paginates until `formInstanceId` matches, and parses that row. Apply does not create or patch form definitions and does not call `getFormInstanceByKeyV1`.
 
@@ -81,7 +81,9 @@ Offline: [`payloads/access-model-sod-remediation-apply-offline.json`](../../../p
 |---|---|
 | Trigger | `sp:form-submitted`, filtered by **Access Model SOD Remediation** form definition ID |
 | Invoke | `custom:access-model-sod-remediation-apply` with `formInstanceId: {{$.trigger.formInstanceId}}` and `formName: Access Model SOD Remediation` |
-| Persist key | Result-source account at native identity `{formInstanceId}` |
+| Persist key | Result-source **apply persist identity** `access-model-sod-remediation-apply:{formInstanceId}` (derived in the handler, not from `requestId`) |
+
+The bundled workflow has no Get Accounts step, so this persist-key rename needs no workflow JSON edit. Manual account read-back must use the prefixed identity.
 
 The workflow does not read `formData` or `formInput` — the apply handler resolves `formName` to the existing definition ID, lists that definition's tenant form instances, and picks `formInstanceId`. It then derives the correction plan from stored launch inputs plus submitted `remediationSide`.
 
@@ -90,7 +92,7 @@ The workflow does not read `formData` or `formInput` — the apply handler resol
 ## Workflow integration
 
 1. After access-model SoD form completion (Wait for Form / trigger), invoke this command with `formInstanceId` from the trigger and the same `formName` used by the scan.
-2. Read `access-model-sod-remediation-apply:status` from the invoke response or Get Accounts on `{formInstanceId}`.
+2. Read `access-model-sod-remediation-apply:status` from the invoke response, or Get Accounts on native identity `access-model-sod-remediation-apply:{formInstanceId}` (not the bare form instance id).
 3. Branch on `applied`, `skipped-already-clean`, or `skipped-already-applied`. Retries and parallel workflow branches are safe — duplicate applies for the same form instance do not double-PATCH.
 
 ## Token scope requirements
