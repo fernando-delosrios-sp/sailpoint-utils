@@ -1,5 +1,6 @@
 import { findAccountOnSource } from '../../isc/accounts'
 import { RequestContext } from '../../framework/types'
+import { applyPersistIdentity } from './constants'
 import type { AccessModelSodRemediationApplyOperation } from './index'
 
 const STATUS_FIELD = 'access-model-sod-remediation-apply:status'
@@ -29,12 +30,9 @@ function readStringArray(value: unknown): string[] | undefined {
     return undefined
 }
 
-/** Returns skip outputs when a prior terminal apply persist exists for the form instance. */
-export async function readPriorTerminalApplyOutputs(
-    ctx: RequestContext<AccessModelSodRemediationApplyOperation['output']>,
-    formInstanceId: string
-): Promise<AccessModelSodRemediationApplyOperation['output'] | undefined> {
-    const account = await findAccountOnSource(ctx.sdk.accounts, ctx.sourceId, formInstanceId)
+function outputsFromAccount(
+    account: { attributes?: unknown } | undefined
+): AccessModelSodRemediationApplyOperation['output'] | undefined {
     const attrs = account?.attributes as Record<string, unknown> | undefined
     if (!attrs) {
         return undefined
@@ -73,4 +71,22 @@ export async function readPriorTerminalApplyOutputs(
     }
 
     return outputs
+}
+
+/** Returns skip outputs when a prior terminal apply persist exists for the form instance. */
+export async function readPriorTerminalApplyOutputs(
+    ctx: RequestContext<AccessModelSodRemediationApplyOperation['output']>,
+    formInstanceId: string
+): Promise<AccessModelSodRemediationApplyOperation['output'] | undefined> {
+    const prefixedAccount = await findAccountOnSource(
+        ctx.sdk.accounts,
+        ctx.sourceId,
+        applyPersistIdentity(formInstanceId)
+    )
+    if (prefixedAccount) {
+        return outputsFromAccount(prefixedAccount)
+    }
+
+    const legacyAccount = await findAccountOnSource(ctx.sdk.accounts, ctx.sourceId, formInstanceId)
+    return outputsFromAccount(legacyAccount)
 }
