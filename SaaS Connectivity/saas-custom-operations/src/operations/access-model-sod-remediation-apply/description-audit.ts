@@ -21,7 +21,9 @@ export function buildDescriptionAuditLine(input: DescriptionAuditInput): string 
 
     for (const profile of input.detachedProfiles) {
         detailParts.push(
-            `detached access profile "${profile.name}" (${profile.id}) — offending: ${profile.offendingEntitlementNames.join(', ')}`
+            `detached access profile "${profile.name}" (${
+                profile.id
+            }) — offending: ${profile.offendingEntitlementNames.join(', ')}`
         )
     }
 
@@ -32,7 +34,7 @@ export function buildDescriptionAuditLine(input: DescriptionAuditInput): string 
         detailParts.push(`removed direct entitlements: ${labels.join(', ')}`)
     }
 
-    let line = `[SOD remediation ${timestamp}] Policy "${input.policyName}" (${input.policyId}): corrected ${sideLabel} side`
+    let line = `[access-model-sod-remediation-apply ${timestamp}] Policy "${input.policyName}" (${input.policyId}): corrected ${sideLabel} side`
     if (detailParts.length > 0) {
         line += ` — ${detailParts.join('; ')}`
     }
