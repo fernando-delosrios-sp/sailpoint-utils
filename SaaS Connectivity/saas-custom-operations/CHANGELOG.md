@@ -2,6 +2,18 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-09-14 · v0.6.0
+
+### ⚠️ Breaking Changes
+
+- **Apply persist identity is prefixed** — `custom:access-model-sod-remediation-apply` now writes result-source accounts at `access-model-sod-remediation-apply:{formInstanceId}` instead of the bare form instance id. Invoke `requestId` is still not the persist identity. Legacy bare accounts are neither backfilled nor deleted; prior-apply lookup falls back to them as read-only, and replay persist writes the prefixed identity.
+  - Migration: Get Accounts and ad-hoc scripts that read apply output by native identity `{formInstanceId}` must switch to `access-model-sod-remediation-apply:{formInstanceId}`. The bundled Access Model SOD - Remediation workflow has no Get Accounts step and needs no JSON edit.
+
+- **Description audit line names the apply command** — Catalog description lines appended by apply now open with `[access-model-sod-remediation-apply {timestamp}]` instead of `[SOD remediation {timestamp}]`. Line body, append-not-replace behavior, and `access-model-sod-remediation-apply:description-appended` are otherwise unchanged.
+  - Migration: Anything parsing the old `[SOD remediation` prefix must match the command slug. Existing catalog descriptions keep their original lines.
+
+---
+
 ## 2026-09-02 · v0.5.0
 
 ### ⚠️ Breaking Changes
