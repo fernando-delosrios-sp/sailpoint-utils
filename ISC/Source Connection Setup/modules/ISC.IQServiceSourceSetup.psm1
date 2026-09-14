@@ -52,13 +52,16 @@ function Get-IQServiceResolvedConfig {
     $decisions = Get-AgentRequestValue -Object $Request -Name 'decisions' -Default @{}
     $secretRefs = Get-AgentRequestValue -Object $Request -Name 'secretRefs' -Default @{}
 
-    if (-not $script:DefaultInstallPath) {
-        Initialize-IQServiceData
+    $instanceName = $(if (Get-AgentRequestValue -Object $config -Name 'instanceName') { [string](Get-AgentRequestValue -Object $config -Name 'instanceName') } else { $null })
+    $installPath = $(if (Get-AgentRequestValue -Object $config -Name 'installPath') { [string](Get-AgentRequestValue -Object $config -Name 'installPath') } else { $null })
+    if (-not $installPath -and -not $instanceName) {
+        $installPath = Get-IQServiceDefaultInstallPath
     }
 
     return [PSCustomObject]@{
         Action            = [string](Get-AgentRequestValue -Object $config -Name 'action')
-        InstallPath       = if (Get-AgentRequestValue -Object $config -Name 'installPath') { [string](Get-AgentRequestValue -Object $config -Name 'installPath') } else { $script:DefaultInstallPath }
+        InstallPath       = $installPath
+        InstanceName      = $instanceName
         DownloadUriRef    = $(if (Get-AgentRequestValue -Object $secretRefs -Name 'downloadUri') { [string](Get-AgentRequestValue -Object $secretRefs -Name 'downloadUri') } else { $null })
         ZipPath           = $(if (Get-AgentRequestValue -Object $config -Name 'zipPath') { [string](Get-AgentRequestValue -Object $config -Name 'zipPath') } else { $null })
         Port              = Get-AgentRequestValue -Object $config -Name 'port'
@@ -96,7 +99,7 @@ function New-IQServiceAgentPlan {
         $needsInput.Add([ordered]@{ field = 'decisions.approveDestructive'; reason = 'Destructive IQService action requires explicit approval.' })
     }
 
-    $installPath = Resolve-IQServiceInstallPath -PreferredPath $resolved.InstallPath
+    $installPath = Resolve-IQServiceInstallPath -PreferredPath $resolved.InstallPath -InstanceName $resolved.InstanceName
     $snapshot = Get-IQServiceConfigurationSnapshot -InstallPath $installPath
 
     return [ordered]@{
@@ -142,7 +145,7 @@ function Invoke-IQServiceAgentApply {
         }
     }
 
-    $installPath = Resolve-IQServiceInstallPath -PreferredPath $resolved.InstallPath
+    $installPath = Resolve-IQServiceInstallPath -PreferredPath $resolved.InstallPath -InstanceName $resolved.InstanceName
     if ($WhatIf) {
         return [ordered]@{ status = 'whatIf'; action = $resolved.Action; installPath = $installPath }
     }

@@ -18,6 +18,15 @@ function Test-IQServiceNonInteractive {
     return [bool]$script:NonInteractive
 }
 
+function Get-IQServiceDefaultInstallPath {
+    $variable = Get-Variable -Name 'DefaultInstallPath' -Scope Script -ErrorAction SilentlyContinue
+    if (-not $variable -or [string]::IsNullOrWhiteSpace([string]$variable.Value)) {
+        Initialize-IQServiceData
+        $variable = Get-Variable -Name 'DefaultInstallPath' -Scope Script -ErrorAction SilentlyContinue
+    }
+    return [string]$variable.Value
+}
+
 function Assert-WindowsHost {
     if ($PSVersionTable.PSVersion.Major -ge 6 -and -not $IsWindows) {
         throw 'IQService Control must run on Windows.'
@@ -132,6 +141,10 @@ function Build-IQServiceResult {
     elseif ($serviceStatus -ne 'Running' -and $CompletedAction -notin @('Stop', 'Uninstall', 'Download')) {
         $situation.Add('Pending: IQService is not running. Start the service before testing from ISC.')
     }
+    $otherInstances = @($snapshot.OtherInstances)
+    if ($otherInstances.Count -gt 0) {
+        $situation.Add("This host runs $($otherInstances.Count) other IQService instance(s): $(($otherInstances | ForEach-Object { Get-IQServiceInstanceLabel -Instance $_ }) -join '; '). The ports and trace file below belong to $InstallPath only.")
+    }
     $situation.Add('In ISC: Connections > Sources > [source requiring IQService] > IQService / Integration Service.')
 
     $items = [System.Collections.Generic.List[object]]::new()
@@ -147,6 +160,9 @@ function Build-IQServiceResult {
     }
     if ($build) {
         $items.Add([PSCustomObject]@{ Label = 'ZIP build'; Value = $build; Kind = 'Copy'; Mask = $false })
+    }
+    if ($snapshot.Instance -and $snapshot.Instance.HasRegistry) {
+        $items.Add([PSCustomObject]@{ Label = 'Instance name'; Value = [string]$snapshot.Instance.InstanceName; Kind = 'Copy'; Mask = $false })
     }
     if ($primaryService) {
         $items.Add([PSCustomObject]@{ Label = 'Windows service name'; Value = $primaryService.Name; Kind = 'Copy'; Mask = $false })
@@ -276,10 +292,36 @@ function Get-IQServiceWindowsServices {
 }
 
 function Resolve-IQServiceInstallPath {
-    param([string]$PreferredPath)
+    param(
+        [string]$PreferredPath,
+        [string]$InstanceName
+    )
 
-    if (-not $script:DefaultInstallPath) {
-        Initialize-IQServiceData
+    $defaultPath = Get-IQServiceDefaultInstallPath
+
+    if (-not [string]::IsNullOrWhiteSpace($InstanceName)) {
+        $instances = @(Get-IQServiceInstances)
+        $matched = @($instances | Where-Object {
+            [string]$_.InstanceName -eq $InstanceName -or [string]$_.ServiceName -eq $InstanceName
+        })
+
+        if ($matched.Count -eq 0) {
+            $known = ($instances | ForEach-Object { Get-IQServiceInstanceLabel -Instance $_ }) -join '; '
+            if (-not $known) { $known = 'none detected' }
+            throw "IQService instance '$InstanceName' was not found on this host. Detected: $known"
+        }
+        if ($matched.Count -gt 1) {
+            throw "IQService instance name '$InstanceName' matched $($matched.Count) records on this host. Use -InstallPath instead."
+        }
+
+        $instancePath = [string]$matched[0].InstallPath
+        if ([string]::IsNullOrWhiteSpace($instancePath)) {
+            throw "IQService instance '$InstanceName' has no discoverable install path (no Windows service and no trace file). Use -InstallPath."
+        }
+        if (-not [string]::IsNullOrWhiteSpace($PreferredPath) -and -not (Test-SameIQServicePath -Left $PreferredPath -Right $instancePath)) {
+            throw "-InstanceName '$InstanceName' resolves to '$instancePath', which conflicts with -InstallPath '$PreferredPath'. Pass only one."
+        }
+        return $instancePath
     }
 
     if (-not [string]::IsNullOrWhiteSpace($PreferredPath)) {
@@ -289,22 +331,28 @@ function Resolve-IQServiceInstallPath {
         return (Resolve-Path -LiteralPath $PreferredPath).Path
     }
 
-    $services = @(Get-IQServiceWindowsServices)
-    foreach ($service in $services) {
-        if (Test-LooksLikeIQServiceDirectory -Path $service.InstallPath) {
-            return $service.InstallPath
+    $candidates = @(Get-IQServiceInstances | Where-Object { Test-LooksLikeIQServiceDirectory -Path $_.InstallPath })
+    if ($candidates.Count -eq 1) {
+        return [string]$candidates[0].InstallPath
+    }
+    if ($candidates.Count -gt 1) {
+        if (Test-IQServiceNonInteractive) {
+            $known = ($candidates | ForEach-Object { Get-IQServiceInstanceLabel -Instance $_ }) -join '; '
+            throw "This host has $($candidates.Count) IQService instances: $known. Pass -InstanceName or -InstallPath to choose one."
         }
+        $selected = Select-IQServiceInstance -Instances $candidates -Prompt 'Multiple IQService instances found. Select the one to manage:'
+        return [string]$selected.InstallPath
     }
 
-    if (Test-LooksLikeIQServiceDirectory -Path $script:DefaultInstallPath) {
-        return (Resolve-Path -LiteralPath $script:DefaultInstallPath).Path
+    if (Test-LooksLikeIQServiceDirectory -Path $defaultPath) {
+        return (Resolve-Path -LiteralPath $defaultPath).Path
     }
 
-    if (-not (Test-Path -LiteralPath $script:DefaultInstallPath)) {
-        New-Item -ItemType Directory -Path $script:DefaultInstallPath -Force | Out-Null
+    if (-not (Test-Path -LiteralPath $defaultPath)) {
+        New-Item -ItemType Directory -Path $defaultPath -Force | Out-Null
     }
 
-    return (Resolve-Path -LiteralPath $script:DefaultInstallPath).Path
+    return (Resolve-Path -LiteralPath $defaultPath).Path
 }
 
 function Get-IQServiceExecutable {
@@ -355,6 +403,203 @@ function Get-IQServiceRegistryInstances {
     }
 
     return $instances
+}
+
+# -----------------------------------------------------------------------------
+# Instance model
+#
+# A host can run several IQService instances, each in its own directory with its
+# own Windows service and its own key under 'IQService Instances'. Registry keys
+# do not record an install path, so instances are correlated to services by
+# service name first, then by the directory their trace file lives in.
+# -----------------------------------------------------------------------------
+
+function Get-IQServiceComparablePath {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) { return '' }
+    return $Path.Trim().TrimEnd('\', '/').ToLowerInvariant()
+}
+
+function Test-SameIQServicePath {
+    param(
+        [string]$Left,
+        [string]$Right
+    )
+
+    $left = Get-IQServiceComparablePath -Path $Left
+    $right = Get-IQServiceComparablePath -Path $Right
+    if (-not $left -or -not $right) { return $false }
+    return $left -eq $right
+}
+
+# Split-Path follows the running platform's separator, so parse both separators
+# here to keep Windows paths comparable when this runs on a non-Windows host.
+function Get-IQServiceParentPath {
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) { return '' }
+    $trimmed = $Path.Trim().TrimEnd('\', '/')
+    $index = $trimmed.LastIndexOfAny([char[]]@('\', '/'))
+    if ($index -lt 1) { return '' }
+    return $trimmed.Substring(0, $index)
+}
+
+function Resolve-IQServiceInstanceRecords {
+    param(
+        [object[]]$Services,
+        [object[]]$RegistryInstances
+    )
+
+    $serviceList = @(@($Services) | Where-Object { $_ })
+    $registryList = @(@($RegistryInstances) | Where-Object { $_ })
+    $records = [System.Collections.Generic.List[object]]::new()
+    $claimed = @{}
+
+    foreach ($service in $serviceList) {
+        $index = -1
+        $matchedBy = 'None'
+
+        for ($i = 0; $i -lt $registryList.Count; $i++) {
+            if ($claimed.ContainsKey($i)) { continue }
+            $instanceName = [string](Get-IQServiceRegistryValue -Properties $registryList[$i] -Name 'InstanceName')
+            if ($instanceName -and $instanceName -eq [string]$service.Name) {
+                $index = $i
+                $matchedBy = 'ServiceName'
+                break
+            }
+        }
+
+        if ($index -lt 0) {
+            for ($i = 0; $i -lt $registryList.Count; $i++) {
+                if ($claimed.ContainsKey($i)) { continue }
+                $traceDir = Get-IQServiceParentPath -Path ([string](Get-IQServiceRegistryValue -Properties $registryList[$i] -Name 'TraceFile'))
+                if (Test-SameIQServicePath -Left $traceDir -Right ([string]$service.InstallPath)) {
+                    $index = $i
+                    $matchedBy = 'TraceFilePath'
+                    break
+                }
+            }
+        }
+
+        if ($index -lt 0 -and $serviceList.Count -eq 1 -and $registryList.Count -eq 1 -and $claimed.Count -eq 0) {
+            $index = 0
+            $matchedBy = 'SoleInstance'
+        }
+
+        $registry = $null
+        if ($index -ge 0) {
+            $claimed[$index] = $true
+            $registry = $registryList[$index]
+        }
+
+        $registryName = [string](Get-IQServiceRegistryValue -Properties $registry -Name 'InstanceName')
+
+        $records.Add([PSCustomObject]@{
+            InstanceName    = if ($registryName) { $registryName } else { [string]$service.Name }
+            Name            = [string]$service.Name
+            ServiceName     = [string]$service.Name
+            DisplayName     = [string]$service.DisplayName
+            InstallPath     = [string]$service.InstallPath
+            ImagePath       = [string]$service.ImagePath
+            Status          = [string]$service.Status
+            StartType       = [string]$service.StartType
+            StartName       = $service.StartName
+            Port            = Get-IQServiceRegistryValue -Properties $registry -Name 'Port'
+            TlsPort         = Get-IQServiceRegistryValue -Properties $registry -Name 'TlsPort'
+            TraceFile       = Get-IQServiceRegistryValue -Properties $registry -Name 'TraceFile'
+            TraceLevel      = Get-IQServiceRegistryValue -Properties $registry -Name 'TraceLevel'
+            MaxTraceFiles   = Get-IQServiceRegistryValue -Properties $registry -Name 'MaxTraceFiles'
+            TraceFileSize   = Get-IQServiceRegistryValue -Properties $registry -Name 'TraceFileSize'
+            ClientAuthUsers = Get-IQServiceRegistryValue -Properties $registry -Name 'ClientAuthUsers'
+            HasService      = $true
+            HasRegistry     = [bool]$registry
+            MatchedBy       = $matchedBy
+        })
+    }
+
+    for ($i = 0; $i -lt $registryList.Count; $i++) {
+        if ($claimed.ContainsKey($i)) { continue }
+        $registry = $registryList[$i]
+        $registryName = [string](Get-IQServiceRegistryValue -Properties $registry -Name 'InstanceName')
+        $traceFile = Get-IQServiceRegistryValue -Properties $registry -Name 'TraceFile'
+
+        $records.Add([PSCustomObject]@{
+            InstanceName    = $registryName
+            Name            = $registryName
+            ServiceName     = ''
+            DisplayName     = $registryName
+            InstallPath     = Get-IQServiceParentPath -Path ([string]$traceFile)
+            ImagePath       = ''
+            Status          = 'Not registered'
+            StartType       = 'Unknown'
+            StartName       = $null
+            Port            = Get-IQServiceRegistryValue -Properties $registry -Name 'Port'
+            TlsPort         = Get-IQServiceRegistryValue -Properties $registry -Name 'TlsPort'
+            TraceFile       = $traceFile
+            TraceLevel      = Get-IQServiceRegistryValue -Properties $registry -Name 'TraceLevel'
+            MaxTraceFiles   = Get-IQServiceRegistryValue -Properties $registry -Name 'MaxTraceFiles'
+            TraceFileSize   = Get-IQServiceRegistryValue -Properties $registry -Name 'TraceFileSize'
+            ClientAuthUsers = Get-IQServiceRegistryValue -Properties $registry -Name 'ClientAuthUsers'
+            HasService      = $false
+            HasRegistry     = $true
+            MatchedBy       = 'None'
+        })
+    }
+
+    return $records.ToArray()
+}
+
+function Get-IQServiceInstances {
+    return @(Resolve-IQServiceInstanceRecords -Services (Get-IQServiceWindowsServices) -RegistryInstances (Get-IQServiceRegistryInstances))
+}
+
+function Get-IQServiceInstanceForPath {
+    param(
+        [Parameter(Mandatory)][string]$InstallPath,
+        [object[]]$Instances
+    )
+
+    $list = if ($PSBoundParameters.ContainsKey('Instances')) { @($Instances) } else { @(Get-IQServiceInstances) }
+    return @($list | Where-Object { Test-SameIQServicePath -Left $_.InstallPath -Right $InstallPath }) | Select-Object -First 1
+}
+
+function Get-IQServiceInstanceLabel {
+    param($Instance)
+
+    if (-not $Instance) { return '(unknown instance)' }
+
+    $name = if ($Instance.InstanceName) { [string]$Instance.InstanceName } else { '(unnamed)' }
+    $path = if ($Instance.InstallPath) { [string]$Instance.InstallPath } else { 'install path unknown' }
+    $detail = [System.Collections.Generic.List[string]]::new()
+    if ($Instance.Port) { $detail.Add("port $($Instance.Port)") }
+    if ($Instance.TlsPort) { $detail.Add("TLS $($Instance.TlsPort)") }
+    if ($Instance.Status) { $detail.Add([string]$Instance.Status) }
+
+    $label = "$name - $path"
+    if ($detail.Count -gt 0) { $label += " ($($detail -join ', '))" }
+    return $label
+}
+
+function Select-IQServiceInstance {
+    param(
+        [Parameter(Mandatory)][object[]]$Instances,
+        [string]$Prompt = 'Select an IQService instance:'
+    )
+
+    $list = @($Instances)
+    if ($list.Count -eq 0) { throw 'No IQService instances were detected on this host.' }
+    if ($list.Count -eq 1) { return $list[0] }
+
+    $options = @()
+    $labels = @()
+    for ($i = 0; $i -lt $list.Count; $i++) {
+        $options += [string]($i + 1)
+        $labels += (Get-IQServiceInstanceLabel -Instance $list[$i])
+    }
+
+    $choice = Read-Choice -Prompt $Prompt -Options $options -Labels $labels -Default $options[0]
+    return $list[([int]$choice - 1)]
 }
 
 function Get-IQServiceZipPath {
@@ -521,8 +766,11 @@ function Get-IQServiceConfigurationSnapshot {
         [string]$ExecutablePath
     )
 
-    $services = @(Get-IQServiceWindowsServices | Where-Object { $_.InstallPath -eq $InstallPath })
-    $registry = @(Get-IQServiceRegistryInstances)
+    $allServices = @(Get-IQServiceWindowsServices)
+    $allInstances = @(Resolve-IQServiceInstanceRecords -Services $allServices -RegistryInstances (Get-IQServiceRegistryInstances))
+    $services = @($allServices | Where-Object { Test-SameIQServicePath -Left $_.InstallPath -Right $InstallPath })
+    $scoped = @($allInstances | Where-Object { Test-SameIQServicePath -Left $_.InstallPath -Right $InstallPath })
+    $registry = @($scoped | Where-Object { $_.HasRegistry })
     $version = 'Not installed'
 
     if ($ExecutablePath -and (Test-Path -LiteralPath $ExecutablePath)) {
@@ -535,9 +783,12 @@ function Get-IQServiceConfigurationSnapshot {
     }
 
     return [PSCustomObject]@{
-        Version  = $version
-        Services = $services
-        Registry = $registry
+        Version        = $version
+        Services       = $services
+        Registry       = $registry
+        Instance       = @($scoped) | Select-Object -First 1
+        Instances      = $allInstances
+        OtherInstances = @($allInstances | Where-Object { -not (Test-SameIQServicePath -Left $_.InstallPath -Right $InstallPath) })
     }
 }
 
@@ -638,6 +889,13 @@ function Update-IQServiceInstance {
     Write-Info "Current version: $($snapshot.Version)"
 
     $primaryRegistry = $snapshot.Registry | Select-Object -First 1
+    if ($primaryRegistry) {
+        Write-Info "Reusing settings from instance '$($primaryRegistry.InstanceName)' (matched by $($primaryRegistry.MatchedBy))."
+    }
+    elseif (@($snapshot.Instances).Count -gt 0) {
+        Write-Warning "No registry instance could be attributed to '$InstallPath', so ports and trace settings from the other instance(s) on this host will not be reused. Pass -Port and -TlsPort if this instance needs them."
+    }
+
     $savedPort = if ($PSBoundParameters.ContainsKey('Port') -and $Port -gt 0) { $Port } elseif ($primaryRegistry -and $primaryRegistry.Port) { [int]$primaryRegistry.Port } else { 0 }
     $savedTlsPort = if ($PSBoundParameters.ContainsKey('TlsPort') -and $TlsPort -gt 0) { $TlsPort } elseif ($primaryRegistry -and $primaryRegistry.TlsPort) { [int]$primaryRegistry.TlsPort } else { 0 }
     $savedTraceLevel = if ($primaryRegistry -and $null -ne $primaryRegistry.TraceLevel) { [int]$primaryRegistry.TraceLevel } else { $null }
@@ -749,10 +1007,10 @@ function Set-IQServiceTraceLevel {
     $numeric = $script:LogLevelMap[$Level]
 
     if ([string]::IsNullOrWhiteSpace($TraceFile)) {
-        $TraceFile = Join-Path -Path $InstallPath -ChildPath 'iqtrace.log'
+        $TraceFile = Resolve-IQServiceTraceFile -InstallPath $InstallPath
     }
 
-    $services = @(Get-IQServiceWindowsServices | Where-Object { $_.InstallPath -eq $InstallPath })
+    $services = @(Get-IQServiceWindowsServices | Where-Object { Test-SameIQServicePath -Left $_.InstallPath -Right $InstallPath })
     $wasRunning = @($services | Where-Object { $_.Status -eq 'Running' }).Count -gt 0
     $doRestart = $RestartIfRunning -or ($wasRunning -and -not (Test-IQServiceNonInteractive) -and (Read-YesNo -Prompt 'Restart IQService to apply the new log level?' -Default $true))
 
@@ -790,18 +1048,20 @@ function Show-IQServiceStatus {
 function Resolve-IQServiceTraceFile {
     param(
         [Parameter(Mandatory)][string]$InstallPath,
-        [string]$TraceFile
+        [string]$TraceFile,
+        $Instance
     )
 
     if (-not [string]::IsNullOrWhiteSpace($TraceFile)) {
         return $TraceFile
     }
 
-    foreach ($instance in @(Get-IQServiceRegistryInstances)) {
-        $candidate = [string]$instance.TraceFile
-        if (-not [string]::IsNullOrWhiteSpace($candidate)) {
-            return $candidate
-        }
+    # Only this install path's own instance; another instance's trace file is not a fallback.
+    if (-not $PSBoundParameters.ContainsKey('Instance')) {
+        $Instance = Get-IQServiceInstanceForPath -InstallPath $InstallPath
+    }
+    if ($Instance -and -not [string]::IsNullOrWhiteSpace([string]$Instance.TraceFile)) {
+        return [string]$Instance.TraceFile
     }
 
     foreach ($name in @('iqtrace.log', 'IQTrace.log')) {
@@ -970,19 +1230,17 @@ function Show-IQServiceLogStream {
         [int]$TailLines = 50
     )
 
-    $path = Resolve-IQServiceTraceFile -InstallPath $InstallPath -TraceFile $TraceFile
+    $instance = Get-IQServiceInstanceForPath -InstallPath $InstallPath
+    $path = Resolve-IQServiceTraceFile -InstallPath $InstallPath -TraceFile $TraceFile -Instance $instance
     $encoding = [System.Text.Encoding]::Default
 
     Write-Step "Streaming $path"
+    if ($instance) {
+        Write-Info "Instance: $(Get-IQServiceInstanceLabel -Instance $instance)"
+    }
     Write-Info 'Ctrl+C, Q, or Esc to stop.'
 
-    $traceLevel = $null
-    foreach ($instance in @(Get-IQServiceRegistryInstances)) {
-        if ($null -ne $instance.TraceLevel) {
-            $traceLevel = [int]$instance.TraceLevel
-            break
-        }
-    }
+    $traceLevel = if ($instance -and $null -ne $instance.TraceLevel) { [int]$instance.TraceLevel } else { $null }
     if ($traceLevel -eq 0) {
         Write-Host '   Trace level is Off; the file may stay empty until you set Error, Info, or Debug.' -ForegroundColor Yellow
     }
@@ -1115,23 +1373,39 @@ function Show-InteractiveMenu {
 
     while ($true) {
         Write-IQServiceMenuHeader
+
+        $instances = @(Get-IQServiceInstances | Where-Object { Test-LooksLikeIQServiceDirectory -Path $_.InstallPath })
+        $current = Get-IQServiceInstanceForPath -InstallPath $ResolvedInstallPath -Instances $instances
+
         Write-Info "Install path: $ResolvedInstallPath"
+        if ($current) {
+            Write-Info "Instance: $(Get-IQServiceInstanceLabel -Instance $current)"
+        }
+        if ($instances.Count -gt 1) {
+            Write-Info "$($instances.Count) IQService instances on this host. Every action applies to the install path above."
+        }
         Write-Host ''
 
+        $options = @('Status', 'Download', 'Install', 'Update', 'Service', 'SetLogLevel', 'StreamLogs', 'Unblock')
+        $labels = @(
+            'Status'
+            'Download ZIP'
+            'Install / register'
+            'Update (backup, replace, reinstall)'
+            'Start / Stop / Restart'
+            'Set log level'
+            'Stream logs'
+            'Unblock Utils.dll and other binaries'
+        )
+        if ($instances.Count -gt 1) {
+            $options += 'Instance'
+            $labels += 'Switch instance'
+        }
+        $options += 'Exit'
+        $labels += 'Exit'
+
         try {
-            $choice = Read-Choice -Prompt 'Select an action:' -Options @(
-                'Status', 'Download', 'Install', 'Update', 'Service', 'SetLogLevel', 'StreamLogs', 'Unblock', 'Exit'
-            ) -Labels @(
-                'Status'
-                'Download ZIP'
-                'Install / register'
-                'Update (backup, replace, reinstall)'
-                'Start / Stop / Restart'
-                'Set log level'
-                'Stream logs'
-                'Unblock Utils.dll and other binaries'
-                'Exit'
-            ) -Default 'Status'
+            $choice = Read-Choice -Prompt 'Select an action:' -Options $options -Labels $labels -Default 'Status'
         }
         catch {
             if (Test-PromptBack $_) { return }
@@ -1226,6 +1500,11 @@ function Show-InteractiveMenu {
                 $remaining = [Math]::Max(0, $result.Checked - $result.Unblocked)
                 Show-IQServiceCompletion -InstallPath $ResolvedInstallPath -CompletedAction 'Unblock' -BlockedFilesRemaining $remaining
             }
+            'Instance' {
+                $selected = Select-IQServiceInstance -Instances $instances -Prompt 'Select the IQService instance to manage:'
+                $ResolvedInstallPath = [string]$selected.InstallPath
+                Write-Ok "Now managing $(Get-IQServiceInstanceLabel -Instance $selected)"
+            }
             'Exit' {
                 return
             }
@@ -1249,9 +1528,18 @@ Export-ModuleMember -Function @(
     'Show-IQServiceCompletion'
     'Test-LooksLikeIQServiceDirectory'
     'Get-IQServiceWindowsServices'
+    'Get-IQServiceDefaultInstallPath'
     'Resolve-IQServiceInstallPath'
     'Get-IQServiceExecutable'
     'Get-IQServiceRegistryInstances'
+    'Get-IQServiceComparablePath'
+    'Test-SameIQServicePath'
+    'Get-IQServiceParentPath'
+    'Resolve-IQServiceInstanceRecords'
+    'Get-IQServiceInstances'
+    'Get-IQServiceInstanceForPath'
+    'Get-IQServiceInstanceLabel'
+    'Select-IQServiceInstance'
     'Get-IQServiceZipPath'
     'Get-IQServiceBuildFromPath'
     'Invoke-IQServiceCommand'

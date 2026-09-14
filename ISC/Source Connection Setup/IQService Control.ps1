@@ -20,7 +20,12 @@
 
 .PARAMETER InstallPath
     IQService installation directory. Default: C:\SailPoint\IQService, or the path discovered
-    from an existing Windows service.
+    from an existing Windows service. On a host with several instances, the interactive menu
+    asks which one to manage and non-interactive runs require this or -InstanceName.
+
+.PARAMETER InstanceName
+    Selects an existing instance by its 'IQService Instances' registry key or Windows service
+    name instead of by path. Mutually exclusive with -InstallPath.
 
 .PARAMETER DownloadUri
     Pre-signed ISC VA-image URL for IQService.zip. Never commit or share these URLs; they expire.
@@ -79,6 +84,9 @@ param(
 
     [Parameter()]
     [string]$InstallPath,
+
+    [Parameter()]
+    [string]$InstanceName,
 
     [Parameter()]
     [string]$DownloadUri,
@@ -142,7 +150,7 @@ try {
     Assert-WindowsHost
     Write-Banner
 
-    $resolvedPath = Resolve-IQServiceInstallPath -PreferredPath $InstallPath
+    $resolvedPath = Resolve-IQServiceInstallPath -PreferredPath $InstallPath -InstanceName $InstanceName
     if (-not $Action) {
         Show-InteractiveMenu -ResolvedInstallPath $resolvedPath -TraceFile $TraceFile -TailLines $Tail
         return

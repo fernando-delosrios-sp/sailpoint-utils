@@ -159,13 +159,34 @@ The menu supports:
 3. **Install / register** — extract, unblock binaries, run `IQService.exe -i`
 4. **Update** — backup the install tree, stop/uninstall, extract the new build, reinstall, restore trace settings
 5. **Start / Stop / Restart** — wraps `IQService.exe -s`, `-k`, `-t`
-6. **Set log level** — `Off`, `Error`, `Info`, or `Debug` via `-l` / `-f` (default trace file: `{InstallPath}\iqtrace.log`)
+6. **Set log level** — `Off`, `Error`, `Info`, or `Debug` via `-l` / `-f` (default trace file: the instance's current `tracefile`, else `{InstallPath}\iqtrace.log`)
 7. **Stream logs** — follow the trace file with colored `ERROR` / `INFO` / `DEBUG` lines (Ctrl+C, Q, or Esc to stop)
 8. **Unblock** — clears the `Zone.Identifier` stream from `Utils.dll`, other `.dll`/`.exe` files, and `IQService.zip`
+9. **Switch instance** — only shown when the host runs more than one IQService instance
 
 After every action except **Stream logs**, the script shows the shared completion menu: a situation statement (pending TLS, Log On account, service start, ISC IQService panel) plus copy/open actions for host name, ports, paths, and admin links. Pick **Done** to return to the main menu.
 
 Default install path: `C:\SailPoint\IQService`, or the directory discovered from an existing IQService Windows service.
+
+### Hosts with more than one instance
+
+A host can run several IQService instances, each in its own directory with its own Windows service and
+its own key under `HKLM:\SOFTWARE\SailPoint\IQService Instances`. Every action targets exactly one
+instance, identified by its install path:
+
+- The interactive menu asks which instance to manage when it finds more than one, shows the selected
+  instance and its ports in the header, and offers **Switch instance** to move between them.
+- Non-interactive runs on a multi-instance host require `-InstanceName` or `-InstallPath`; the script
+  will not pick one for you.
+- Registry keys do not record an install path, so instances are matched to services by service name
+  first, then by the directory holding the instance's `tracefile`.
+- Ports, trace level, and trace file reported by **Status** and reused by **Update** always come from
+  the selected instance. When no registry key can be attributed to it, **Update** warns and re-registers
+  without ports rather than borrowing another instance's settings — pass `-Port` and `-TlsPort` in that case.
+
+Installing an *additional* named instance is out of scope; this script manages instances that already
+exist plus the single default installation. Create extra instances with the documented
+`IQService.exe` instance-name flag, then manage them here.
 
 ### Parameterized usage
 
@@ -183,12 +204,15 @@ Default install path: `C:\SailPoint\IQService`, or the directory discovered from
 .\IQService Control.ps1 -Action StreamLogs -Tail 100
 
 .\IQService Control.ps1 -Action Unblock
+
+.\IQService Control.ps1 -Action Status -InstanceName 'SailPointIQService2'
 ```
 
 | Parameter | Purpose |
 | --- | --- |
 | `Action` | `Download`, `Install`, `Update`, `Uninstall`, `Start`, `Stop`, `Restart`, `SetLogLevel`, `StreamLogs`, `Status`, or `Unblock` |
 | `InstallPath` | IQService directory (default `C:\SailPoint\IQService` or auto-discovered) |
+| `InstanceName` | Selects an existing instance by registry key or Windows service name instead of by path; mutually exclusive with `InstallPath` |
 | `DownloadUri` | Pre-signed ISC VA-image URL for `IQService.zip` |
 | `ZipPath` | Local `IQService.zip` instead of downloading |
 | `Port` | Non-TLS port for `IQService.exe -i` / `-p` |
@@ -207,6 +231,7 @@ Default install path: `C:\SailPoint\IQService`, or the directory discovered from
 - It does not create or update the ISC source object; configure the source separately after IQService is running.
 - It does not configure gMSA or ScriptExecutor service toggles (`-g`).
 - It cannot recover the IQService **Log On** password after uninstall; if the service account changes, set it again in `services.msc`.
+- It does not create additional named instances; it manages instances that already exist on the host.
 
 ### Troubleshooting
 
@@ -217,6 +242,8 @@ Default install path: `C:\SailPoint\IQService`, or the directory discovered from
 | `Administrator privileges are required` | Re-run PowerShell as Administrator for install, update, or service actions. |
 | After update, provisioning fails | Confirm TLS cert and service **Log On** account; update runs `IQService.exe -u`, which clears registry entries. |
 | Trace log not written | Set `-TraceFile` under the install path so the service account can write it (default `system32` may be inaccessible). |
+| `This host has N IQService instances` | A non-interactive run found several instances. Pass `-InstanceName` or `-InstallPath` to pick one. |
+| Status shows no ports on a multi-instance host | No registry key could be matched to that install path. Check that the instance's `tracefile` points inside its own directory, or pass `-Port` / `-TlsPort` on the next update. |
 
 ## AWS source connection (`AWS.ps1`)
 
