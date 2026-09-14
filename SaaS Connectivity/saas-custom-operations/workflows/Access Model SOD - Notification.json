@@ -4,11 +4,6 @@
   "description": "Access Model SOD - Notification",
   "created": "2026-08-18T09:10:00.660612953Z",
   "modified": "2026-08-18T10:08:46.837706525Z",
-  "modifiedBy": {
-    "type": "IDENTITY",
-    "id": "49d1b304294449769e5551c8ece08896",
-    "name": "fernando.delosrios"
-  },
   "definition": {
     "start": "Send Email",
     "steps": {
@@ -35,11 +30,6 @@
   },
   "enabled": true,
   "creator": {
-    "type": "IDENTITY",
-    "id": "49d1b304294449769e5551c8ece08896",
-    "name": "fernando.delosrios"
-  },
-  "owner": {
     "type": "IDENTITY",
     "id": "49d1b304294449769e5551c8ece08896",
     "name": "fernando.delosrios"

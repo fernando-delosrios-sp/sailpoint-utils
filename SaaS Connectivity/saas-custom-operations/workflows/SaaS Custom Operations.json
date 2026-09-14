@@ -31,11 +31,6 @@
         "description": "",
         "created": "2026-08-03T13:24:58.079349998Z",
         "modified": "2026-08-03T13:37:00.861069292Z",
-        "modifiedBy": {
-          "type": "IDENTITY",
-          "id": "fed0f8932606496e8e6ceab8a242c29e",
-          "name": "fernando.delosrios"
-        },
         "definition": {
           "start": "Configuration",
           "steps": {
@@ -139,11 +134,6 @@
         },
         "enabled": false,
         "creator": {
-          "type": "IDENTITY",
-          "id": "fed0f8932606496e8e6ceab8a242c29e",
-          "name": "fernando.delosrios"
-        },
-        "owner": {
           "type": "IDENTITY",
           "id": "fed0f8932606496e8e6ceab8a242c29e",
           "name": "fernando.delosrios"

@@ -4,11 +4,6 @@
   "description": "Access Model SOD - Analysis",
   "created": "2026-08-17T10:57:47.039610656Z",
   "modified": "2026-08-18T15:11:04.122392716Z",
-  "modifiedBy": {
-    "type": "IDENTITY",
-    "id": "49d1b304294449769e5551c8ece08896",
-    "name": "fernando.delosrios"
-  },
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -64,7 +59,7 @@
               "description": "",
               "name": "API URL",
               "transforms": [],
-              "variableA": "https://company23429-poc.api.identitynow-demo.com"
+              "variableA": "https://tenant.api.identitynow-demo.com"
             },
             {
               "description": "",
@@ -76,7 +71,7 @@
               "description": "",
               "name": "SaaS Custom Operations Connector ID",
               "transforms": [],
-              "variableA": "b1657227-260e-47f8-9ce5-1b955c18d529"
+              "variableA": "<CONNECTOR ID>"
             }
           ]
         },
@@ -118,11 +113,6 @@
   },
   "enabled": false,
   "creator": {
-    "type": "IDENTITY",
-    "id": "49d1b304294449769e5551c8ece08896",
-    "name": "fernando.delosrios"
-  },
-  "owner": {
     "type": "IDENTITY",
     "id": "49d1b304294449769e5551c8ece08896",
     "name": "fernando.delosrios"

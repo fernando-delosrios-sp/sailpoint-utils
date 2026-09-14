@@ -1,7 +1,7 @@
 {
     "type": "custom:sod-remediation",
     "config": {
-        "apiUrl": "https://company23429-poc.api.identitynow-demo.com",
+        "apiUrl": "https://tenant.api.identitynow-demo.com",
         "token": "<access-token>",
         "sourceName": "SaaS Custom Operations",
         "testMode": true

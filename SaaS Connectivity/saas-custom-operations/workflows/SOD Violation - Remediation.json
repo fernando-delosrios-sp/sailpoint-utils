@@ -4,11 +4,6 @@
   "description": "SOD Violation - Remediation",
   "created": "2026-08-11T13:44:48.24316682Z",
   "modified": "2026-08-18T11:08:40.75040114Z",
-  "modifiedBy": {
-    "type": "IDENTITY",
-    "id": "49d1b304294449769e5551c8ece08896",
-    "name": "fernando.delosrios"
-  },
   "definition": {
     "start": "Define Variable 1",
     "steps": {
@@ -65,7 +60,7 @@
               "description": "",
               "name": "API URL",
               "transforms": [],
-              "variableA": "https://company23429-poc.api.identitynow-demo.com"
+              "variableA": "https://tenant.api.identitynow-demo.com"
             }
           ]
         },
@@ -183,11 +178,6 @@
   },
   "enabled": true,
   "creator": {
-    "type": "IDENTITY",
-    "id": "49d1b304294449769e5551c8ece08896",
-    "name": "fernando.delosrios"
-  },
-  "owner": {
     "type": "IDENTITY",
     "id": "49d1b304294449769e5551c8ece08896",
     "name": "fernando.delosrios"

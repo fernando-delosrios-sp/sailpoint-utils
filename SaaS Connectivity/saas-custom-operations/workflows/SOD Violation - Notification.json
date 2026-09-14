@@ -4,11 +4,6 @@
   "description": "SOD Violation - Notification",
   "created": "2026-08-11T09:29:14.035521017Z",
   "modified": "2026-08-18T18:11:49.202315147Z",
-  "modifiedBy": {
-    "type": "IDENTITY",
-    "id": "49d1b304294449769e5551c8ece08896",
-    "name": "fernando.delosrios"
-  },
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -24,7 +19,6 @@
             "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
             "input": {
               "formName": "{{$.configuration.formName}}",
-              "owner": "49d1b304294449769e5551c8ece08896",
               "requestId": "{{$.configuration.requestID}}",
               "violationId": "{{$.configuration.violationID}}"
             },
@@ -61,7 +55,7 @@
               "description": "",
               "name": "API URL",
               "transforms": [],
-              "variableA": "https://company23429-poc.api.identitynow-demo.com"
+              "variableA": "https://tenant.api.identitynow-demo.com"
             },
             {
               "description": "",
@@ -73,7 +67,7 @@
               "description": "",
               "name": "SaaS Custom Operations Connector ID",
               "transforms": [],
-              "variableA": "b1657227-260e-47f8-9ce5-1b955c18d529"
+              "variableA": "<CONNECTOR ID>"
             },
             {
               "description": "",
@@ -97,8 +91,7 @@
             {
               "description": "",
               "name": "Override Owner ID",
-              "transforms": [],
-              "variableA": "49d1b304294449769e5551c8ece08896"
+              "transforms": []
             },
             {
               "description": "",
@@ -183,11 +176,6 @@
   },
   "enabled": false,
   "creator": {
-    "type": "IDENTITY",
-    "id": "49d1b304294449769e5551c8ece08896",
-    "name": "fernando.delosrios"
-  },
-  "owner": {
     "type": "IDENTITY",
     "id": "49d1b304294449769e5551c8ece08896",
     "name": "fernando.delosrios"
