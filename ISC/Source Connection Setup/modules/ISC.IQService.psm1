@@ -318,6 +318,18 @@ function Get-IQServiceExecutable {
     return $exePath
 }
 
+function Get-IQServiceRegistryValue {
+    param(
+        $Properties,
+        [Parameter(Mandatory)][string]$Name
+    )
+
+    if (-not $Properties) { return $null }
+    $prop = $Properties.PSObject.Properties[$Name]
+    if (-not $prop) { return $null }
+    return $prop.Value
+}
+
 function Get-IQServiceRegistryInstances {
     $instances = @()
     $root = 'HKLM:\SOFTWARE\SailPoint\IQService Instances'
@@ -332,13 +344,13 @@ function Get-IQServiceRegistryInstances {
 
         $instances += [PSCustomObject]@{
             InstanceName    = $key.PSChildName
-            Port            = $props.port
-            TlsPort         = $props.tlsPort
-            TraceFile       = $props.tracefile
-            TraceLevel      = $props.tracelevel
-            MaxTraceFiles   = $props.maxTraceFiles
-            TraceFileSize   = $props.traceFileSize
-            ClientAuthUsers = $props.clientAuthUsers
+            Port            = Get-IQServiceRegistryValue -Properties $props -Name 'port'
+            TlsPort         = Get-IQServiceRegistryValue -Properties $props -Name 'tlsPort'
+            TraceFile       = Get-IQServiceRegistryValue -Properties $props -Name 'tracefile'
+            TraceLevel      = Get-IQServiceRegistryValue -Properties $props -Name 'tracelevel'
+            MaxTraceFiles   = Get-IQServiceRegistryValue -Properties $props -Name 'maxTraceFiles'
+            TraceFileSize   = Get-IQServiceRegistryValue -Properties $props -Name 'traceFileSize'
+            ClientAuthUsers = Get-IQServiceRegistryValue -Properties $props -Name 'clientAuthUsers'
         }
     }
 
@@ -626,10 +638,10 @@ function Update-IQServiceInstance {
     Write-Info "Current version: $($snapshot.Version)"
 
     $primaryRegistry = $snapshot.Registry | Select-Object -First 1
-    $savedPort = if ($PSBoundParameters.ContainsKey('Port') -and $Port -gt 0) { $Port } elseif ($primaryRegistry.Port) { [int]$primaryRegistry.Port } else { 0 }
-    $savedTlsPort = if ($PSBoundParameters.ContainsKey('TlsPort') -and $TlsPort -gt 0) { $TlsPort } elseif ($primaryRegistry.TlsPort) { [int]$primaryRegistry.TlsPort } else { 0 }
-    $savedTraceLevel = if ($null -ne $primaryRegistry.TraceLevel) { [int]$primaryRegistry.TraceLevel } else { $null }
-    $savedTraceFile = [string]$primaryRegistry.TraceFile
+    $savedPort = if ($PSBoundParameters.ContainsKey('Port') -and $Port -gt 0) { $Port } elseif ($primaryRegistry -and $primaryRegistry.Port) { [int]$primaryRegistry.Port } else { 0 }
+    $savedTlsPort = if ($PSBoundParameters.ContainsKey('TlsPort') -and $TlsPort -gt 0) { $TlsPort } elseif ($primaryRegistry -and $primaryRegistry.TlsPort) { [int]$primaryRegistry.TlsPort } else { 0 }
+    $savedTraceLevel = if ($primaryRegistry -and $null -ne $primaryRegistry.TraceLevel) { [int]$primaryRegistry.TraceLevel } else { $null }
+    $savedTraceFile = if ($primaryRegistry) { [string]$primaryRegistry.TraceFile } else { '' }
     if ([string]::IsNullOrWhiteSpace($savedTraceFile)) {
         $savedTraceFile = Join-Path -Path $InstallPath -ChildPath 'iqtrace.log'
     }
