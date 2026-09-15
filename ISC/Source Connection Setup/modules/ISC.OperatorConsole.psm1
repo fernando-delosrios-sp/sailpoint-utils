@@ -207,6 +207,15 @@ function Get-MenuWidth {
     return $width - 1
 }
 
+# A label carrying newlines or tabs would print taller or wider than the row count the redraw
+# moves back over, leaving a stale copy of the menu behind on every keystroke.
+function ConvertTo-MenuLine {
+    param([AllowNull()][string]$Text)
+
+    if ([string]::IsNullOrEmpty($Text)) { return '' }
+    return ($Text -replace '[\r\n\t]+', ' ')
+}
+
 function Invoke-ConsoleMenu {
     param(
         [Parameter(Mandatory)][string]$Prompt,
@@ -218,6 +227,9 @@ function Invoke-ConsoleMenu {
 
     $count = $Labels.Count
     if ($count -eq 0) { return , @() }
+
+    $Prompt = ConvertTo-MenuLine $Prompt
+    $Labels = @(foreach ($label in $Labels) { ConvertTo-MenuLine $label })
 
     $selected = New-Object 'bool[]' $count
     $cursor = [Math]::Min([Math]::Max($InitialIndex, 0), $count - 1)
@@ -579,6 +591,7 @@ function Get-CompletionPreview {
 
     if ($Mask) { return Get-MaskedSecretDisplay -Value $Value }
     if ([string]::IsNullOrEmpty($Value)) { return '(empty)' }
+    $Value = ConvertTo-MenuLine $Value
     if ($Value.Length -le 72) { return $Value }
     return ($Value.Substring(0, 69) + '...')
 }
@@ -673,6 +686,33 @@ function Save-CompletionResultsToDisk {
     Protect-CompletionResultsFile -Path $Path
     Write-Ok "Saved results (secrets included) to $Path"
     return $Path
+}
+
+function Write-CompletionSummary {
+    param(
+        [Parameter(Mandatory)][string]$Title,
+        [Parameter(Mandatory)][string[]]$Situation,
+        [Parameter(Mandatory)][object[]]$Items
+    )
+
+    Write-Host ''
+    Write-Host "  $Title" -ForegroundColor Cyan
+    Write-Host ('  ' + ('-' * [Math]::Min($Title.Length, 60))) -ForegroundColor Cyan
+    foreach ($line in $Situation) {
+        Write-Host "  $line" -ForegroundColor White
+    }
+
+    if ($Items.Count -eq 0) { return }
+
+    Write-Host ''
+    $labelWidth = ($Items | ForEach-Object { ([string]$_.Label).Length } | Measure-Object -Maximum).Maximum
+    foreach ($item in $Items) {
+        $valueLines = @(([string]$item.Value) -split "`r?`n")
+        Write-Host ("  {0} : {1}" -f ([string]$item.Label).PadRight($labelWidth), $valueLines[0]) -ForegroundColor Yellow
+        foreach ($extra in ($valueLines | Select-Object -Skip 1)) {
+            Write-Host ("  {0}   {1}" -f (' ' * $labelWidth), $extra.Trim()) -ForegroundColor Yellow
+        }
+    }
 }
 
 function Invoke-CompletionActionMenu {
@@ -782,5 +822,7 @@ Export-ModuleMember -Function @(
     'Get-CompletionSaveToDiskLabel'
     'Get-CompletionActionMenuChoices'
     'Save-CompletionResultsToDisk'
+    'Write-CompletionSummary'
     'Invoke-CompletionActionMenu'
+    'ConvertTo-MenuLine'
 )

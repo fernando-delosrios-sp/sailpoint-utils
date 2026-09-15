@@ -10,6 +10,7 @@ function Initialize-IQServiceData {
         Error = 1
         Info  = 2
         Debug = 3
+        Trace = 4
     }
     $script:NonInteractive = [bool]$NonInteractive
 }
@@ -178,12 +179,11 @@ function Build-IQServiceResult {
     }
 
     $items.Add([PSCustomObject]@{
-        Label = 'IQService install documentation'
+        Label = 'Install documentation'
         Value = 'https://documentation.sailpoint.com/connectors/iqservice/help/integrating_iqservice_admin/install_register.html'
-        Kind  = 'Open'
+        Kind  = 'Copy'
         Mask  = $false
     })
-    $items.Add([PSCustomObject]@{ Label = 'Windows Services (services.msc)'; Value = 'services.msc'; Kind = 'Open'; Mask = $false })
 
     $connectionSettings = [ordered]@{
         'Host name' = $hostName
@@ -218,7 +218,7 @@ function Show-IQServiceCompletion {
         -RestartPendingForLogLevel:$RestartPendingForLogLevel `
         -BlockedFilesRemaining $BlockedFilesRemaining
 
-    Invoke-CompletionActionMenu -Title 'Next: configure ISC IQService connection' `
+    Write-CompletionSummary -Title 'Next: configure ISC IQService connection' `
         -Situation $result.situation `
         -Items $result.completionItems
 }
@@ -855,12 +855,12 @@ function Install-IQServiceInstance {
     Write-Step 'Registering IQService Windows service'
     if (-not $PSCmdlet.ShouldProcess($InstallPath, 'Install IQService')) { return }
 
-    Invoke-IQServiceCommand -ExecutablePath $exe -Arguments $installArgs
+    $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments $installArgs
     Write-Ok 'IQService registered'
 
     if ($StartAfterInstall) {
         Write-Step 'Starting IQService'
-        Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-s')
+        $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-s')
         Write-Ok 'IQService started'
     }
 }
@@ -916,9 +916,9 @@ function Update-IQServiceInstance {
 
     if ($exe) {
         Write-Step 'Stopping IQService'
-        Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-k') -AllowNonZeroExit
+        $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-k') -AllowNonZeroExit
         Write-Step 'Uninstalling IQService registration'
-        Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-u') -AllowNonZeroExit
+        $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-u') -AllowNonZeroExit
     }
 
     if (-not [string]::IsNullOrWhiteSpace($DownloadUri) -or -not [string]::IsNullOrWhiteSpace($ZipPath)) {
@@ -935,14 +935,14 @@ function Update-IQServiceInstance {
 
     Write-Step 'Re-registering IQService'
     if (-not $PSCmdlet.ShouldProcess($InstallPath, 'Reinstall IQService')) { return }
-    Invoke-IQServiceCommand -ExecutablePath $exe -Arguments $installArgs
+    $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments $installArgs
     Write-Ok 'IQService re-registered'
 
     if ($null -ne $savedTraceLevel) {
         $logName = ($script:LogLevelMap.GetEnumerator() | Where-Object { $_.Value -eq $savedTraceLevel } | Select-Object -First 1).Name
         if ($logName) {
             Write-Step "Restoring trace level $logName ($savedTraceLevel)"
-            Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-l', [string]$savedTraceLevel, '-f', $savedTraceFile)
+            $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-l', [string]$savedTraceLevel, '-f', $savedTraceFile)
         }
     }
 
@@ -950,7 +950,7 @@ function Update-IQServiceInstance {
 
     if ($StartAfterInstall) {
         Write-Step 'Starting IQService'
-        Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-s')
+        $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-s')
         Write-Ok 'IQService started'
     }
     else {
@@ -988,7 +988,7 @@ function Invoke-IQServiceServiceAction {
     if (-not $PSCmdlet.ShouldProcess($InstallPath, "$ServiceAction IQService")) { return }
 
     Write-Step "$ServiceAction IQService"
-    Invoke-IQServiceCommand -ExecutablePath $exe -Arguments $argMap[$ServiceAction] -AllowNonZeroExit:($ServiceAction -in @('Stop', 'Uninstall'))
+    $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments $argMap[$ServiceAction] -AllowNonZeroExit:($ServiceAction -in @('Stop', 'Uninstall'))
     Write-Ok "$ServiceAction completed"
 }
 
@@ -996,7 +996,7 @@ function Set-IQServiceTraceLevel {
     [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Low')]
     param(
         [Parameter(Mandatory)][string]$InstallPath,
-        [Parameter(Mandatory)][ValidateSet('Off', 'Error', 'Info', 'Debug')]
+        [Parameter(Mandatory)][ValidateSet('Off', 'Error', 'Info', 'Debug', 'Trace')]
         [string]$Level,
         [string]$TraceFile,
         [switch]$RestartIfRunning
@@ -1019,12 +1019,12 @@ function Set-IQServiceTraceLevel {
     }
 
     Write-Step "Setting trace level to $Level ($numeric)"
-    Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-l', [string]$numeric, '-f', $TraceFile)
+    $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-l', [string]$numeric, '-f', $TraceFile)
     Write-Ok "Trace file: $TraceFile"
 
     if ($doRestart) {
         Write-Step 'Restarting IQService'
-        Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-t') -AllowNonZeroExit
+        $null = Invoke-IQServiceCommand -ExecutablePath $exe -Arguments @('-t') -AllowNonZeroExit
         Write-Ok 'IQService restarted'
         return [PSCustomObject]@{ RestartPending = $false }
     }
@@ -1242,7 +1242,7 @@ function Show-IQServiceLogStream {
 
     $traceLevel = if ($instance -and $null -ne $instance.TraceLevel) { [int]$instance.TraceLevel } else { $null }
     if ($traceLevel -eq 0) {
-        Write-Host '   Trace level is Off; the file may stay empty until you set Error, Info, or Debug.' -ForegroundColor Yellow
+        Write-Host '   Trace level is Off; the file may stay empty until you set Error, Info, Debug, or Trace.' -ForegroundColor Yellow
     }
 
     $treatCtrlC = $null
@@ -1485,7 +1485,7 @@ function Show-InteractiveMenu {
                 Show-IQServiceCompletion -InstallPath $ResolvedInstallPath -CompletedAction $completionAction
             }
             'SetLogLevel' {
-                $level = Read-Choice -Prompt 'Trace level:' -Options @('Off', 'Error', 'Info', 'Debug') -Default 'Info'
+                $level = Read-Choice -Prompt 'Trace level:' -Options @('Off', 'Error', 'Info', 'Debug', 'Trace') -Default 'Info'
                 $logResult = Set-IQServiceTraceLevel -InstallPath $ResolvedInstallPath -Level $level -RestartIfRunning
                 Show-IQServiceCompletion -InstallPath $ResolvedInstallPath -CompletedAction 'SetLogLevel' `
                     -RestartPendingForLogLevel:([bool]$logResult.RestartPending)

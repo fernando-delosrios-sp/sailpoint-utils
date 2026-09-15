@@ -25,6 +25,9 @@ Initialize-OperatorConsole -NonInteractive
 Assert-Equal '***' (Get-MaskedSecretDisplay -Value 'abcd') 'short secrets mask fully'
 Assert-Equal '***wxyz' (Get-MaskedSecretDisplay -Value 'abcdefghijwxyz') 'long secrets keep suffix'
 
+Assert-Equal 'arn example' (ConvertTo-MenuLine "arn`r`nexample") 'menu lines flatten CR/LF'
+Assert-Equal 'a b' (ConvertTo-MenuLine "a`tb") 'menu lines flatten tabs'
+
 $preview = Get-CompletionPreview -Value ('x' * 80) -Mask
 Assert-True ($preview.Length -le 72) 'masked preview stays short'
 

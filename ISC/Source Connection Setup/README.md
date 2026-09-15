@@ -88,9 +88,9 @@ pwsh -NoProfile -File 'ISC/Source Connection Setup/tests/Invoke-AllSourceConnect
 
 Each test prints `PASS (N assertions)` on success.
 
-## Completion workflow (all scripts)
+## Completion workflow (cloud IAM scripts)
 
-Every script ends with the same interactive pattern:
+`Entra ID.ps1`, `AWS.ps1`, and `Google Workspace.ps1` end with the same interactive pattern. `IQService Control.ps1` is an on-host admin tool and prints a read-only summary instead — see [IQService Control](#iqservice-control).
 
 1. **Situation statement** — high-contrast white/yellow text describing what is done and what manual steps remain (never dim gray).
 2. **Copy / Open menu** — arrow-key list of values and links formatted like `Role Name: SailPointAWSRole (Copy)` or `IAM role in AWS console: https://... (Open)`.
@@ -99,7 +99,7 @@ Controls:
 
 - **Up/Down** (or `j`/`k`) move between items
 - **Enter** copies the value or opens the URL
-- **Save to disk (filename)** writes every menu value (unmasked secrets and Open links) to that connection-settings file under `sourceConfig/<source>`. AWS, Entra ID, and Google Workspace offer this; IQService Control does not.
+- **Save to disk (filename)** writes every menu value (unmasked secrets and Open links) to that connection-settings file under `sourceConfig/<source>`. AWS, Entra ID, and Google Workspace offer this.
 - **Esc** or **Done** finishes (the menu stays open after each copy/open/save so you can work through several fields)
 - **Ctrl+C** exits the script
 - Sensitive values (client secrets, refresh tokens, private keys) show as `***` in the menu but copy the full value. External ID is shown in full. Save to disk writes those secrets in full.
@@ -117,7 +117,6 @@ During setup prompts (not the completion menu): **Esc** returns to the previous 
 | `AWS.ps1` (CIEM) | Role ARN, External ID, CloudTrail ARN(s), bucket account ID, Single Account, Provision Identity Center | IAM role, CloudFormation, CIEM connect docs |
 | `Google Workspace.ps1` | Connection Settings fields (Grant Type, keys, scopes, delegation) | Admin console DWD, GCP service accounts |
 | `Entra ID.ps1` | Grant Type, Client ID, Client Secret, Domain Name | Entra app overview, API permissions (when consent pending) |
-| `IQService Control.ps1` | Host name, ports, install path, service name, Log On account | IQService docs, `services.msc` |
 
 ## IQService Control
 
@@ -159,12 +158,12 @@ The menu supports:
 3. **Install / register** — extract, unblock binaries, run `IQService.exe -i`
 4. **Update** — backup the install tree, stop/uninstall, extract the new build, reinstall, restore trace settings
 5. **Start / Stop / Restart** — wraps `IQService.exe -s`, `-k`, `-t`
-6. **Set log level** — `Off`, `Error`, `Info`, or `Debug` via `-l` / `-f` (default trace file: the instance's current `tracefile`, else `{InstallPath}\iqtrace.log`)
+6. **Set log level** — `Off`, `Error`, `Info`, `Debug`, or `Trace` (IQService levels 0-4) via `-l` / `-f` (default trace file: the instance's current `tracefile`, else `{InstallPath}\iqtrace.log`)
 7. **Stream logs** — follow the trace file with colored `ERROR` / `INFO` / `DEBUG` lines (Ctrl+C, Q, or Esc to stop)
 8. **Unblock** — clears the `Zone.Identifier` stream from `Utils.dll`, other `.dll`/`.exe` files, and `IQService.zip`
 9. **Switch instance** — only shown when the host runs more than one IQService instance
 
-After every action except **Stream logs**, the script shows the shared completion menu: a situation statement (pending TLS, Log On account, service start, ISC IQService panel) plus copy/open actions for host name, ports, paths, and admin links. Pick **Done** to return to the main menu.
+After every action except **Stream logs**, the script prints a read-only summary: situation (pending TLS, Log On account, service start, ISC IQService panel) plus host, ports, paths, version, service name, and Log On account. It does not offer copy/open menu actions.
 
 Default install path: `C:\SailPoint\IQService`, or the directory discovered from an existing IQService Windows service.
 
@@ -218,7 +217,7 @@ exist plus the single default installation. Create extra instances with the docu
 | `Port` | Non-TLS port for `IQService.exe -i` / `-p` |
 | `TlsPort` | TLS port for `IQService.exe -i` / `-o` |
 | `SkipSecondary` | Pass `-b` to skip the secondary fallback instance |
-| `LogLevel` | `Off`, `Error`, `Info`, or `Debug` |
+| `LogLevel` | `Off`, `Error`, `Info`, `Debug`, or `Trace` (IQService levels 0-4) |
 | `TraceFile` | Trace log path (default: registry `tracefile`, else `{InstallPath}\iqtrace.log`) |
 | `Tail` | Existing lines to print before following (`StreamLogs` only; default `50`) |
 | `StartAfterInstall` | Start the service after install or update |

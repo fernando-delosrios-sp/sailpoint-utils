@@ -43,7 +43,7 @@
     Pass -b to IQService.exe -i to skip installing the secondary fallback instance.
 
 .PARAMETER LogLevel
-    Off, Error, Info, or Debug (maps to IQService trace levels 0-3).
+    Off, Error, Info, Debug, or Trace (maps to IQService trace levels 0-4).
 
 .PARAMETER TraceFile
     Trace log file path for -l / -f and StreamLogs. Default: registry tracefile, else {InstallPath}\iqtrace.log
@@ -104,7 +104,7 @@ param(
     [switch]$SkipSecondary,
 
     [Parameter()]
-    [ValidateSet('Off', 'Error', 'Info', 'Debug')]
+    [ValidateSet('Off', 'Error', 'Info', 'Debug', 'Trace')]
     [string]$LogLevel,
 
     [Parameter()]
@@ -196,7 +196,7 @@ try {
         }
         'SetLogLevel' {
             if (-not $LogLevel) {
-                throw 'SetLogLevel requires -LogLevel (Off, Error, Info, or Debug) in non-interactive mode.'
+                throw 'SetLogLevel requires -LogLevel (Off, Error, Info, Debug, or Trace) in non-interactive mode.'
             }
             $logResult = Set-IQServiceTraceLevel -InstallPath $resolvedPath -Level $LogLevel -TraceFile $TraceFile -RestartIfRunning
             Show-IQServiceCompletion -InstallPath $resolvedPath -CompletedAction 'SetLogLevel' `
