@@ -4,6 +4,23 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-15
+
+### ✨ New Features
+
+- **Source Connection Setup — Microsoft 365 Access Profiles** — Interactive PSSailpoint wizard (`Microsoft 365 Access Profiles.ps1`) that selects an ISC environment from `~/.sailpoint/config.yaml` (or `SAIL_*` / `config.json`), finds Entra sources with `servicePlan` entitlements, Space-selects plans by Microsoft friendly name, and creates prefixed requestable access profiles with an optional source app.
+
+### 🔧 Improvements
+
+- **Microsoft 365 Access Profiles** — Access profiles and the source app are owned by the current PAT identity (optional `-OwnerId` override). After a run, save either the JSON or CSV manifest instead of copying ids and using Save to disk.
+- **Microsoft 365 Access Profiles** — Previous JSON or CSV manifests can be replayed through the main wizard with `-PreviousManifestPath`, replacing the one-off rename utility. Existing profiles and applications can be skipped or fully reconciled, including owner, source, entitlement mapping, settings, and app membership.
+
+### 🐛 Fixes
+
+- **Microsoft 365 Access Profiles** — Newly created access profiles were never linked to the source app, and the manifest recorded empty `AccessProfileId` and `Application.Id` values. Create responses arrive as a hashtable (`ConvertFrom-Json -AsHashtable`) or with no body at all, and the id was read via `PSObject.Properties['id']`, which a hashtable never exposes — so every id read as null and both the link step and the source-app owner assignment were skipped silently. Access profile and source app ids now resolve from either response shape and fall back to a lookup by name when the response has no body; an unlinked profile or app is reported instead of skipped. The same hashtable blindness also broke source and account-source scoping when matching existing profiles and apps by name, which made reruns miss objects they should reuse.
+
+---
+
 ## 2026-09-11
 
 ### ✨ New Features

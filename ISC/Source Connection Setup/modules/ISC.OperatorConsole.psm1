@@ -167,6 +167,8 @@ function Read-MenuKey {
 
     $name = switch ($code) {
         8       { 'Backspace' }
+        33      { 'PageUp' }
+        34      { 'PageDown' }
         38      { 'Up' }
         40      { 'Down' }
         36      { 'Home' }
@@ -234,7 +236,7 @@ function Invoke-ConsoleMenu {
     $selected = New-Object 'bool[]' $count
     $cursor = [Math]::Min([Math]::Max($InitialIndex, 0), $count - 1)
     $hint = if ($MultiSelect) {
-        'Up/Down move   Space select   A all   N none   Enter confirm   Esc back   Ctrl+C exit'
+        'Up/Down move   Space select   A all   N none   PgUp/PgDn page   Enter confirm   Esc back   Ctrl+C exit'
     }
     elseif ($EscapeMeansDefault) {
         'Up/Down move   Enter select   Esc done   Ctrl+C exit'
@@ -243,28 +245,70 @@ function Invoke-ConsoleMenu {
         'Up/Down move   Enter select   Esc back   Ctrl+C exit'
     }
 
-    $rows = $count + 2
+    # Scroll long lists instead of falling back to numbered prompts.
+    # Chrome: prompt + hint + status line; keep a usable viewport in short terminals.
+    $chromeRows = 3
     $windowHeight = (Get-MenuWindowSize).Height
-    if ($windowHeight -gt 0 -and $windowHeight -le $rows) {
-        $script:MenuBlockerDetail = "the console is $windowHeight rows tall and this menu needs $($rows + 1)"
+    $minWindow = 8
+    if ($windowHeight -gt 0 -and $windowHeight -lt $minWindow) {
+        $script:MenuBlockerDetail = "the console is $windowHeight rows tall (need at least $minWindow)"
         return $null
+    }
+
+    $maxBody = if ($windowHeight -gt 0) {
+        [Math]::Max(3, $windowHeight - $chromeRows - 1)
+    }
+    else {
+        $count
+    }
+    $pageSize = [Math]::Min($count, $maxBody)
+    $rows = $chromeRows + $pageSize
+    $scrollTop = [ref]0
+
+    $ensureCursorVisible = {
+        if ($cursor -lt $scrollTop.Value) {
+            $scrollTop.Value = $cursor
+        }
+        elseif ($cursor -ge ($scrollTop.Value + $pageSize)) {
+            $scrollTop.Value = $cursor - $pageSize + 1
+        }
+        if ($scrollTop.Value -lt 0) { $scrollTop.Value = 0 }
+        $maxTop = [Math]::Max(0, $count - $pageSize)
+        if ($scrollTop.Value -gt $maxTop) { $scrollTop.Value = $maxTop }
     }
 
     $drawn = $false
     $draw = {
+        . $ensureCursorVisible
+        $top = $scrollTop.Value
         $width = Get-MenuWidth
         if ($drawn) { Write-Host ("{0}[{1}A" -f $script:Esc, $rows) -NoNewline }
         $drawn = $true
 
+        $from = $top + 1
+        $to = [Math]::Min($top + $pageSize, $count)
+        $status = if ($count -gt $pageSize) {
+            "   showing $from-$to of $count   (scroll with Up/Down)"
+        }
+        else {
+            "   $count option$(if ($count -eq 1) { '' } else { 's' })"
+        }
+
         $lines = @(, @($Prompt, [System.ConsoleColor]::White))
         $lines += , @("   $hint", [System.ConsoleColor]::DarkGray)
-        for ($i = 0; $i -lt $count; $i++) {
+        $lines += , @($status, [System.ConsoleColor]::DarkGray)
+
+        for ($i = $top; $i -lt ($top + $pageSize) -and $i -lt $count; $i++) {
             $marker = if ($i -eq $cursor) { '>' } else { ' ' }
             $box = if ($MultiSelect) { if ($selected[$i]) { '[x] ' } else { '[ ] ' } } else { '' }
             $color = if ($i -eq $cursor) { [System.ConsoleColor]::Cyan }
                 elseif ($MultiSelect -and $selected[$i]) { [System.ConsoleColor]::Green }
                 else { [System.ConsoleColor]::Gray }
             $lines += , @(("  {0} {1}{2}" -f $marker, $box, $Labels[$i]), $color)
+        }
+        # Pad to fixed height when the last page is short (keeps ANSI cursor math stable).
+        while ($lines.Count -lt $rows) {
+            $lines += , @('', [System.ConsoleColor]::Gray)
         }
 
         foreach ($line in $lines) {
@@ -293,6 +337,12 @@ function Invoke-ConsoleMenu {
             }
             elseif ($key.Name -eq 'Down' -or $key.Char -eq 'j') {
                 $cursor = ($cursor + 1) % $count
+            }
+            elseif ($key.Name -eq 'PageUp') {
+                $cursor = [Math]::Max(0, $cursor - $pageSize)
+            }
+            elseif ($key.Name -eq 'PageDown') {
+                $cursor = [Math]::Min($count - 1, $cursor + $pageSize)
             }
             elseif ($key.Name -eq 'Home') {
                 $cursor = 0
@@ -415,6 +465,9 @@ function Read-Choice {
     )
 
     if (-not $Labels) { $Labels = $Options }
+    if ($Labels.Count -ne $Options.Count) {
+        throw "Read-Choice requires Labels and Options to have the same length (Labels=$($Labels.Count), Options=$($Options.Count)). If you passed a single string as -Options, wrap it as [string[]]@(...). "
+    }
     if ($script:NonInteractive) {
         if ([string]::IsNullOrWhiteSpace($Default)) {
             throw "Non-interactive mode requires a choice for: $Prompt"
@@ -472,12 +525,20 @@ function Read-Choice {
 
 function Read-MultiChoice {
     param(
+        [Parameter(Mandatory)][AllowEmptyCollection()][AllowEmptyString()][string[]]$Options,
         [Parameter(Mandatory)][string]$Prompt,
-        [Parameter(Mandatory)][string[]]$Options,
-        [string[]]$Labels
+        [AllowEmptyCollection()][AllowEmptyString()][string[]]$Labels
     )
 
+    $Options = [string[]]@($Options)
     if (-not $Labels) { $Labels = $Options }
+    else { $Labels = [string[]]@($Labels) }
+    if ($Labels.Count -ne $Options.Count) {
+        throw "Read-MultiChoice requires Labels and Options to have the same length (Labels=$($Labels.Count), Options=$($Options.Count))."
+    }
+    if ($Options.Count -eq 0 -or ($Options | Where-Object { [string]::IsNullOrWhiteSpace($_) })) {
+        throw 'Read-MultiChoice requires non-empty option values (a lone empty string often means entitlement ids failed to resolve).'
+    }
     if ($script:NonInteractive) { return @() }
 
     $script:PromptCount++

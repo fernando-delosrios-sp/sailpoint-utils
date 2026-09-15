@@ -24,6 +24,7 @@ pnpm-debug.log*
 .env.*
 !.env.example
 *.local
+config.json
 
 # Source Connection Setup run artifacts (keys, PEMs, connection settings)
 sourceConfig/

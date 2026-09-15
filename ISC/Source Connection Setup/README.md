@@ -2,11 +2,12 @@
 
 ## Purpose
 
-Operator scripts for SailPoint Identity Security Cloud (ISC) source connectivity: cloud IAM setup for Entra ID, AWS, and Google Workspace SaaS connectors, and on-host IQService management for VA-based connectors.
+Operator scripts for SailPoint Identity Security Cloud (ISC) source connectivity: cloud IAM setup for Entra ID, AWS, and Google Workspace SaaS connectors; Microsoft 365 service-plan access profile creation; and on-host IQService management for VA-based connectors.
 
 ## Artifacts
 
 - `Entra ID.ps1` — Microsoft Graph script that creates or updates the Entra ID app registration, assigns the documented Graph application permissions, grants admin consent, assigns directory roles, and issues a client secret.
+- `Microsoft 365 Access Profiles.ps1` — PSSailpoint wizard that finds Entra ISC sources with `servicePlan` entitlements, maps Microsoft friendly names, Space-selects plans, and creates prefixed requestable access profiles (optionally grouped under a source app).
 - `AWS.ps1` — AWS Tools for PowerShell script for the **Amazon Web Services SaaS** connector (native IAM role and `SP*` policies) or the **CIEM AWS** source (downloads and deploys SailPoint CloudFormation templates). Run one source type per invocation; each writes its own connection-settings file.
 - `Google Workspace.ps1` — gcloud script for both Google Workspace SaaS grant types: creates or updates the service account, enables documented APIs, attaches an organization custom IAM role, converts the JSON key to the encrypted RSA PEM ISC expects, or runs the OAuth authorization-code flow for a refresh token.
 - `IQService Control.ps1` — Windows operator script that downloads, installs, updates, and manages IQService (Integration Service) on a VA host.
@@ -64,6 +65,8 @@ Shared PowerShell modules live under `modules/`. Each `.ps1` orchestrator import
 | `ISC.AwsSaasConnector.psm1` | AWS SaaS IAM policy tables, feature packs, role/policy deployment |
 | `ISC.AwsCiemConnector.psm1` | Embedded CIEM (`-Feature Ciem`) and dedicated CIEM AWS source (CloudFormation) |
 | `ISC.EntraConnector.psm1` | Entra permission tables, Graph app registration, consent, directory roles, secrets |
+| `ISC.SailPointSdk.psm1` | `~/.sailpoint/config.yaml` env listing, PSSailpoint credential bridge (`SAIL_*` / `config.json`), SDK bootstrap |
+| `ISC.Microsoft365AccessProfiles.psm1` | Entra+servicePlan discovery, Microsoft licensing CSV friendly names, access profile + source-app create/link |
 | `ISC.EntraCiemConnector.psm1` | Embedded CIEM (`-Feature Ciem`) — PIM group Graph permissions |
 | `ISC.GoogleWorkspaceConnector.psm1` | gcloud/IAM, PEM conversion, OAuth and domain-wide delegation flows |
 | `ISC.GoogleCiemConnector.psm1` | GCP/CIEM packs (`Gcp`, `Ciem`, `NhiDiscovery`, `AgentDiscovery`), org custom role |
@@ -76,7 +79,7 @@ Shared PowerShell modules live under `modules/`. Each `.ps1` orchestrator import
 
 Each `ISC.*CiemConnector.psm1` exports the same embedded-CIEM interface: `Test-EmbeddedCiemSelected`, `Get-EmbeddedCiemFeaturePack`, `Apply-EmbeddedCiemPrerequisites`, `Build-EmbeddedCiemConnectionSettings`. AWS adds `Apply-DedicatedCiemSourceDeployment` / `Build-DedicatedCiemConnectionSettings` for `-SourceType CiemAws`.
 
-Tests: `tests/Test-OperatorConsole.ps1`, `tests/Test-OperatorToolchain.ps1`, `tests/Test-EntraConnector.ps1`, `tests/Test-EntraCiemConnector.ps1`, `tests/Test-GoogleCiemConnector.ps1`, `tests/Test-AwsSaasConnector.ps1`, `tests/Test-AwsCiemConnector.ps1`, `tests/Test-AgentAdapter.ps1`, `tests/Test-EntraSourceSetup.ps1`, `tests/Test-AwsSourceSetup.ps1`.
+Tests: `tests/Test-OperatorConsole.ps1`, `tests/Test-OperatorToolchain.ps1`, `tests/Test-EntraConnector.ps1`, `tests/Test-EntraCiemConnector.ps1`, `tests/Test-GoogleCiemConnector.ps1`, `tests/Test-AwsSaasConnector.ps1`, `tests/Test-AwsCiemConnector.ps1`, `tests/Test-AgentAdapter.ps1`, `tests/Test-EntraSourceSetup.ps1`, `tests/Test-AwsSourceSetup.ps1`, `tests/Test-Microsoft365AccessProfiles.ps1`.
 
 ### Development verification
 
@@ -811,6 +814,104 @@ The refresh token belongs to the authorizing user, so the source inherits that u
 | `Google returned an access token without a refresh token` | The user already consented, so Google skipped the refresh token. Remove the app under [myaccount.google.com/permissions](https://myaccount.google.com/permissions) and authorize again. |
 | `Could not listen on http://localhost:8088/` | The port is taken. Pass a free port with `-RedirectUri` (and register it on the OAuth client), or use the Playground redirect. |
 | No clipboard tool available | `Set-Clipboard` is Windows-only; install `xclip` or `wl-copy` on Linux. macOS uses `pbcopy`. Values remain in the completion menu output and in saved files under the output directory. |
+
+## Microsoft 365 Access Profiles
+
+Creates requestable ISC access profiles from Entra `servicePlan` entitlements and optionally groups them under a source application. Uses the [SailPoint PowerShell SDK](https://developer.sailpoint.com/docs/tools/sdk/powershell/) (`PSSailpoint`) — **not** the `sail` CLI.
+
+Friendly names come from Microsoft’s published [licensing service plan reference CSV](https://learn.microsoft.com/en-us/entra/identity/users/licensing-service-plan-reference).
+
+### Requirements
+
+- PowerShell 7+ recommended (`PSSailpoint` requires 6.2+)
+- `PSSailpoint` from the PowerShell Gallery (the script offers to install it)
+- A PAT (or client credentials) that can read sources/entitlements/identities and manage access profiles and source apps
+- Credentials available as one of:
+  1. Process env `SAIL_BASE_URL`, `SAIL_CLIENT_ID`, `SAIL_CLIENT_SECRET`
+  2. A local `config.json` (`BaseURL`, `ClientId`, `ClientSecret`) via CWD or `-ConfigPath`
+  3. Interactive prompt (secrets stay in process env for the run)
+
+Environment **URLs** can be listed/created in `~/.sailpoint/config.yaml` (same catalog the sail CLI uses). The SDK does not read PAT secrets from that YAML; only URLs are written there by this script.
+
+### Interactive usage
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+cd 'ISC/Source Connection Setup'
+.\Microsoft 365 Access Profiles.ps1
+```
+
+Wizard steps:
+
+1. Select (or create) an ISC environment from `~/.sailpoint/config.yaml`
+2. Resolve PSSailpoint credentials and smoke-test the connection
+3. Pick an Entra source that already has `servicePlan` entitlements
+4. **Space**-select plans shown with Microsoft friendly names
+5. Set an access profile name prefix (default `M365 - `)
+6. Optionally create/reuse a source app with a custom name
+7. Choose whether existing access profiles and the app are skipped or fully updated
+
+Access profiles and the source app use the **current PAT identity** as owner (override with `-OwnerId` if needed). After the run, choose **Save JSON manifest** or **Save CSV manifest** (or skip).
+
+To replay an earlier run without selecting the source or entitlements again, pass its JSON or CSV manifest:
+
+```powershell
+.\Microsoft 365 Access Profiles.ps1 `
+  -PreviousManifestPath '.\sourceConfig\m365-access-profiles\m365-access-profiles-20260915-190716.json'
+```
+
+A JSON manifest restores the environment, source, naming prefix, application, and plans. A CSV manifest restores the plans and infers each naming prefix from the previous name; the wizard still asks for metadata that CSV does not contain. Names are rebuilt through the current naming rules, and current source entitlements are resolved again rather than trusting stale names or object ids.
+
+Menu controls match the other wizards: **Up/Down**, **Space** (multi-select), **A**/**N**, **Enter**, **Esc** back, **Ctrl+C** exit.
+
+### Parameterized usage
+
+```powershell
+$env:SAIL_BASE_URL = 'https://tenant.api.identitynow.com'
+$env:SAIL_CLIENT_ID = '<pat-client-id>'
+$env:SAIL_CLIENT_SECRET = '<pat-client-secret>'
+
+.\Microsoft 365 Access Profiles.ps1 `
+  -Environment emea-tes-team `
+  -SourceId fd753b8266b64d09805d101b77bc35df `
+  -PlanValues FLOW_O365_P3,TEAMS1,EXCHANGE_S_ENTERPRISE `
+  -AccessProfilePrefix 'M365 - ' `
+  -ApplicationName 'Microsoft 365 @emea-tes-team.cloud (Users)' `
+  -NonInteractive
+```
+
+| Parameter | Description |
+| --- | --- |
+| `-Environment` | Named env from `~/.sailpoint/config.yaml` |
+| `-ConfigPath` | Path to PSSailpoint `config.json` |
+| `-SourceId` | Skip source picker |
+| `-PlanValues` | Service plan GUIDs or internal names to select |
+| `-AccessProfilePrefix` | Prefix for AP names (default `M365 - `) |
+| `-ApplicationName` | Source app to create/reuse |
+| `-SkipApplication` | Do not create or link a source app |
+| `-OwnerId` | Override owner identity id (default: current PAT identity) |
+| `-PreviousManifestPath` | Replay a previous JSON or CSV manifest |
+| `-ExistingItemAction` | Existing item behavior: `Ask`, `Skip`, or `Update` |
+| `-OutputDirectory` | Manifest folder (default `./sourceConfig/m365-access-profiles`) |
+| `-WhatIf` | Show creates without mutating |
+| `-NonInteractive` | Require parameters / env credentials; no prompts |
+
+### Behaviour notes
+
+- Access profiles are **enabled** and **requestable**.
+- **Skip** leaves existing access profiles and an existing app unchanged while still creating missing items.
+- **Update** fully reconciles existing access profiles (name, owner, description, enabled/requestable state, source, and entitlement) and the source app (name, owner, description, account source, and membership).
+- Interactive runs prompt to save a JSON or CSV manifest; `-NonInteractive` writes both. Manifests under `sourceConfig/m365-access-profiles/` contain ids and names only — never secrets.
+- `config.json` files with credentials must not be committed (see `.gitignore`).
+
+### Troubleshooting
+
+| Symptom | What to try |
+| --- | --- |
+| `ClientId, ClientSecret or TokenUrl Missing` | Set `SAIL_*` or provide `-ConfigPath` / answer the credential prompts |
+| No Entra sources listed | Confirm the source connector type/name looks like Entra/Azure AD and that service-plan entitlements were aggregated |
+| Friendly names look like internal ids | Check outbound access to Microsoft’s licensing CSV URL, or retry later |
+| Source app API errors | Experimental Source Apps APIs require the `X-SailPoint-Experimental` header (enabled by the script) and a PAT that can manage apps |
 
 ## Entra ID connector application
 
