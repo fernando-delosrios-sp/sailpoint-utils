@@ -11,9 +11,9 @@ Operator scripts for SailPoint Identity Security Cloud (ISC) source connectivity
 - `Google Workspace.ps1` — gcloud script for both Google Workspace SaaS grant types: creates or updates the service account, enables documented APIs, attaches an organization custom IAM role, converts the JSON key to the encrypted RSA PEM ISC expects, or runs the OAuth authorization-code flow for a refresh token.
 - `IQService Control.ps1` — Windows operator script that downloads, installs, updates, and manages IQService (Integration Service) on a VA host.
 
-## Completion workflow (all scripts)
+## Completion workflow (cloud IAM scripts)
 
-Every script ends with the same interactive pattern:
+`Entra ID.ps1`, `AWS.ps1`, and `Google Workspace.ps1` end with the same interactive pattern. `IQService Control.ps1` is an on-host admin tool and prints a read-only summary instead — see [IQService Control](#iqservice-control).
 
 1. **Situation statement** — high-contrast white/yellow text describing what is done and what manual steps remain (never dim gray).
 2. **Copy / Open menu** — arrow-key list of values and links formatted like `Role Name: SailPointAWSRole (Copy)` or `IAM role in AWS console: https://... (Open)`.
@@ -38,7 +38,6 @@ During setup prompts (not the completion menu): **Esc** returns to the previous 
 | `AWS.ps1` | Role Name, Region, External ID, Management Account ID, AWS Accounts | IAM role console, Organizations console |
 | `Google Workspace.ps1` | Connection Settings fields (Grant Type, keys, scopes, delegation) | Admin console DWD, GCP service accounts |
 | `Entra ID.ps1` | Grant Type, Client ID, Client Secret, Domain Name | Entra app overview, API permissions (when consent pending) |
-| `IQService Control.ps1` | Host name, ports, install path, service name, Log On account | IQService docs, `services.msc` |
 
 ## IQService Control
 
@@ -84,7 +83,7 @@ The menu supports:
 7. **Stream logs** — follow the trace file with colored `ERROR` / `INFO` / `DEBUG` lines (Ctrl+C, Q, or Esc to stop)
 8. **Unblock** — clears the `Zone.Identifier` stream from `Utils.dll`, other `.dll`/`.exe` files, and `IQService.zip`
 
-After every action except **Stream logs**, the script shows the shared completion menu: a situation statement (pending TLS, Log On account, service start, ISC IQService panel) plus copy/open actions for host name, ports, paths, and admin links. Pick **Done** to return to the main menu.
+After every action except **Stream logs**, the script prints a read-only summary: a situation statement (pending TLS, Log On account, service start, ISC IQService panel) followed by host name, ports, install and trace paths, version, Windows service name, and Log On account. There is no copy/open menu here — this is an admin tool run on the host, so the values are printed for reference and the main menu comes straight back.
 
 Default install path: `C:\SailPoint\IQService`, or the directory discovered from an existing IQService Windows service.
 
