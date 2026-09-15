@@ -8,7 +8,7 @@ The **Services Standard IdentityNow BeforeProvisioning Rule** is a generic, high
 Instead of writing custom code for every target application's edge cases, this rule relies on a JSON-based configuration structure defined directly on the Source (Application) object. It evaluates a set of **Triggers** against each `AccountRequest` in the plan and, if all triggers match, it applies a set of **Actions**.
 
 ### Version Information
-- **Version:** 1.8.0
+- **Version:** 1.9.0
 - **Language:** BeanShell
 
 ---
@@ -96,8 +96,9 @@ If the triggers match, the rule iterates through the `eventActions` list and exe
 
 | Action | Attribute | Value | Description |
 | :--- | :--- | :--- | :--- |
-| **ADMoveAccount** | N/A | The new OU string | Updates the request to set `AC_NewParent` to move an AD account. |
-| **ADRenameAccount** | N/A | The new name string | Updates the request to set `AC_NewName` to rename an AD account. |
+| **ADMoveAccount** | N/A | The new OU string | Updates the request to set `AC_NewParent` to move an AD account. Skips if the parsed parent of the current native identity already matches. |
+| **ADRenameAccount** | N/A | The new name string (`CN=value` or bare `value`) | Updates the request to set `AC_NewName` (always as `CN=...`). Skips if the current CN already matches. |
+| **DistinguishedNameSync** | Optional source attribute (default `distinguishedName`) | N/A | Reads the DN attribute from the plan, splits it into CN and OU, sets `AC_NewName` / `AC_NewParent` when those parts changed, and removes the source attribute from the plan. |
 | **ChangeOperation** | N/A | New Operation (e.g. `Modify`) | Changes the operation of the `AccountRequest`. |
 | **RemoveEntitlements**| Name of entitlement attribute | N/A | Evaluates the user's existing entitlements for the specified attribute and issues a `Remove` request for all of them. |
 | **RemoveADEntitlements**| N/A | Domain Users Group DN | Replaces all AD group memberships with a single specified Domain Users group. |
@@ -135,7 +136,7 @@ The rule supports dynamic value replacement in `Value` strings. This is highly u
 Each example below is a complete `cloudServicesIDNSetup` fragment. `eventActions` run in order; later actions see the effects of earlier ones.
 
 #### ADMoveAccount
-Sets `AC_NewParent` so IQService moves the AD account to the given OU. Skips the move if the account already lives in that OU. `Value` supports substitution.
+Sets `AC_NewParent` so IQService moves the AD account to the given OU. Skips the move if the account already lives in that OU (compares the **parsed parent** of the current native identity, not a substring match). `Value` supports substitution.
 
 ```json
 {
@@ -156,7 +157,7 @@ Sets `AC_NewParent` so IQService moves the AD account to the given OU. Skips the
 ```
 
 #### ADRenameAccount
-Sets `AC_NewName` so IQService renames the AD account (typically the CN/RDN). `Value` supports substitution.
+Sets `AC_NewName` so IQService renames the AD account. `Value` may be either `CN=#{identity.displayName}` or `#{identity.displayName}`; both become `AC_NewName=CN=...`. Skips the rename when the native identity CN already matches. `Value` supports substitution.
 
 ```json
 {
@@ -168,6 +169,46 @@ Sets `AC_NewName` so IQService renames the AD account (typically the CN/RDN). `V
                     {
                         "Action": "ADRenameAccount",
                         "Value": "CN=#{identity.displayName}"
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+#### DistinguishedNameSync
+Converts a plan `distinguishedName` update (typically from Attribute Sync) into AD rename/move requests. Parses CN and OU from the DN, removes `distinguishedName` from the plan, then sets `AC_NewName` and/or `AC_NewParent` only for parts that changed. If the DN cannot be parsed, the attribute is left on the plan. Optional `Attribute` overrides the source attribute name (default `distinguishedName`).
+
+**Input plan:**
+```text
+Modify
+  - distinguishedName = "CN=John.Doe,OU=Users,DC=company,DC=com"
+```
+
+**Output plan (when both CN and OU changed):**
+```text
+Modify
+  - AC_NewName = "CN=John.Doe"
+  - AC_NewParent = "OU=Users,DC=company,DC=com"
+```
+
+```json
+{
+    "cloudServicesIDNSetup": {
+        "eventConfigurations": [
+            {
+                "Operation": "Modify",
+                "Account Attribute Update Triggers": [
+                    {
+                        "Attribute": "distinguishedName",
+                        "Operation": "ne",
+                        "Value": ""
+                    }
+                ],
+                "eventActions": [
+                    {
+                        "Action": "DistinguishedNameSync"
                     }
                 ]
             }

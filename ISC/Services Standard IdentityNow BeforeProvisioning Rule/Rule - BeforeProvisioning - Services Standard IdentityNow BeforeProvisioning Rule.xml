@@ -12,12 +12,16 @@
 	import sailpoint.object.ProvisioningPlan.AttributeRequest;
 	import sailpoint.tools.GeneralException;
 	import java.text.SimpleDateFormat;
+	import java.util.ArrayList;
+	import java.util.HashMap;
+	import java.util.regex.Matcher;
+	import java.util.regex.Pattern;
 	import sailpoint.rule.Account;
 	import sailpoint.rule.ManagedAttributeDetails;
 
 	/*
-	 * Version 1.8.0
-	 * Last Updated: 07/02/2026
+	 * Version 1.9.0
+	 * Last Updated: 15/09/2026
 	 */
 	
 	/*
@@ -38,6 +42,7 @@
 	 * 		Action: This configuration determines what to do if this event should be applied. Available options are
 	 * 			Move AD Account: Adds AC_NewParent to the specified OU
 	 * 			Rename AD Account: Adds AC_NewName to the specified name
+	 * 			Distinguished Name Sync: Splits distinguishedName into AC_NewName and AC_NewParent, removes distinguishedName from the plan
 	 * 			Change Operation: changes the AccountRequest Operation to the specified operation
 	 * 			Remove Entitlements: removes all entitlements based on the account in IdentityNow
 	 * 			Remove AD Entitlements: sets the memberOf attribute to a list containing the one group
@@ -93,6 +98,7 @@
 					switch(action) {
 					case "ADMoveAccount":moveADAccount(identity, accountRequest, value);break;
 					case "ADRenameAccount":renameADAccount(identity, accountRequest, value);break;
+					case "DistinguishedNameSync":syncDistinguishedName(identity, accountRequest, attribute);break;
 					case "ChangeOperation":changeOperation(accountRequest, value);break;
 					case "RemoveEntitlements":removeEntitlements(identity, accountRequest, attribute);break;
 					case "RemoveADEntitlements":removeADEntitlements(identity, accountRequest, value);break;
@@ -112,6 +118,78 @@
 	/*
 	 * Helper Action Methods 
 	 */
+	public Map parseAdDn(String dn) {
+		if(dn == null || "".equals(dn)) {
+			return null;
+		}
+		String PATTERN = "^(?<cn>CN=.*?)(?:,(?<ou>[A-Z]+=.+)|$)";
+		Pattern pattern = Pattern.compile(PATTERN, Pattern.CASE_INSENSITIVE);
+		Matcher matcher = pattern.matcher(dn);
+		if(!matcher.matches()) {
+			return null;
+		}
+		Map result = new HashMap();
+		result.put("cn", matcher.group("cn"));
+		result.put("ou", matcher.group("ou"));
+		return result;
+	}
+	public String normalizeADName(String name) {
+		if(name == null || "".equals(name)) {
+			return name;
+		}
+		if(name.regionMatches(true, 0, "CN=", 0, 3)) {
+			return name;
+		}
+		return "CN=" + name;
+	}
+	public void applyADNewName(AccountRequest accountRequest, String newName) {
+		if(accountRequest == null) {
+			log.error("applyADNewName: Invalid Arguments: accountRequest is null");
+			return;
+		}
+		if(newName == null || "".equals(newName)) {
+			log.error("applyADNewName: Invalid Arguments: newName is null");
+			return;
+		}
+		String normalizedName = normalizeADName(newName);
+		String currentNativeIdentity = accountRequest.getNativeIdentity();
+		if(currentNativeIdentity != null) {
+			Map parsed = parseAdDn(currentNativeIdentity);
+			if(parsed != null) {
+				String currentCn = (String) parsed.get("cn");
+				if(normalizedName.equals(currentCn)) {
+					log.info("applyADNewName: Account already has CN " + normalizedName);
+					return;
+				}
+			}
+		}
+		accountRequest.add(new AttributeRequest("AC_NewName", ProvisioningPlan.Operation.Set, normalizedName));
+	}
+	public void applyADNewParent(AccountRequest accountRequest, String newOU) {
+		if(accountRequest == null) {
+			log.error("applyADNewParent: Invalid Arguments: accountRequest is null");
+			return;
+		}
+		if(newOU == null || "".equals(newOU)) {
+			log.error("applyADNewParent: Invalid Arguments: newOU is null");
+			return;
+		}
+		String currentNativeIdentity = accountRequest.getNativeIdentity();
+		if(currentNativeIdentity == null) {
+			log.error("applyADNewParent: Invalid State: Current Native Identity is null");
+			return;
+		}
+		Map parsed = parseAdDn(currentNativeIdentity);
+		if(parsed != null) {
+			String currentOu = (String) parsed.get("ou");
+			if(newOU.equals(currentOu)) {
+				log.info("applyADNewParent: Account already lives in OU");
+				return;
+			}
+		}
+		//TODO: Uniqueness checks and serialization
+		accountRequest.add(new AttributeRequest("AC_NewParent", ProvisioningPlan.Operation.Set, newOU));
+	}
 	public void moveADAccount(Identity identity, AccountRequest accountRequest, Object value) {
 		log.debug("Enter MoveADAccount: " + value);
 		if(accountRequest == null) {
@@ -122,22 +200,7 @@
 			log.debug("MoveADAccount: value is a string, send through replace");
 			String newOU = replaceIdentityValue(identity, accountRequest, (String) value);
 			log.info("MoveADAccount: replaced new value: " + newOU);
-			String currentNativeIdentity = accountRequest.getNativeIdentity();
-			if(currentNativeIdentity == null) {
-				log.error("moveADAccount: Invalid State: Current Native Identity is null");
-				return;
-			}
-			if(newOU == null || "".equals(newOU)) {
-				log.error("moveADAccount: Invalid Arguments: newOU is null");
-				return;
-			}
-			int indexOfCurrentOU = currentNativeIdentity.indexOf(newOU);
-			if(indexOfCurrentOU > 0 && !currentNativeIdentity.substring(0, indexOfCurrentOU).contains("OU=")) {
-				log.info("moveADAccount: Account already lives in OU");
-				return;
-			}
-			//TODO: Uniqueness checks and serialization
-			accountRequest.add(new AttributeRequest("AC_NewParent", ProvisioningPlan.Operation.Set, newOU));
+			applyADNewParent(accountRequest, newOU);
 		}
 		else{
 			log.error("MoveADAccount: value is not a string or is null: " + value);
@@ -154,16 +217,65 @@
 			log.debug("RenameADAccount: value is a string, send through replace");
 			String newName = replaceIdentityValue(identity, accountRequest, (String) value);
 			log.info("RenameADAccount: replaced new value: " + newName);
-			if(newName == null || "".equals(newName)) {
-				log.error("RenameADAccount: Invalid Arguments: newName is null");
-				return;
-			}
-			accountRequest.add(new AttributeRequest("AC_NewName", ProvisioningPlan.Operation.Set, newName));
+			applyADNewName(accountRequest, newName);
 		}
 		else{
 			log.error("RenameADAccount: value is not a string or is null: " + value);
 		}
 		log.debug("Exit RenameADAccount");
+	}
+	public void syncDistinguishedName(Identity identity, AccountRequest accountRequest, String attribute) {
+		log.debug("Enter DistinguishedNameSync: " + attribute);
+		if(accountRequest == null) {
+			log.error("DistinguishedNameSync: Invalid Arguments: accountRequest is null");
+			return;
+		}
+		String sourceAttribute = attribute;
+		if(sourceAttribute == null || "".equals(sourceAttribute)) {
+			sourceAttribute = "distinguishedName";
+		}
+		List attrReqs = accountRequest.getAttributeRequests();
+		if(attrReqs == null || attrReqs.isEmpty()) {
+			log.info("DistinguishedNameSync: No attribute requests");
+			return;
+		}
+		AttributeRequest dnReq = null;
+		for(AttributeRequest attrReq: attrReqs) {
+			if(sourceAttribute.equals(attrReq.getName())) {
+				dnReq = attrReq;
+				break;
+			}
+		}
+		if(dnReq == null) {
+			log.info("DistinguishedNameSync: No " + sourceAttribute + " attribute request found");
+			return;
+		}
+		Object dnValue = dnReq.getValue();
+		if(!(dnValue instanceof String) || "".equals(dnValue)) {
+			log.error("DistinguishedNameSync: Invalid " + sourceAttribute + " value: " + dnValue);
+			return;
+		}
+		Map parsed = parseAdDn((String) dnValue);
+		if(parsed == null) {
+			log.error("DistinguishedNameSync: " + dnValue + " does not match DN pattern; leaving " + sourceAttribute + " on plan");
+			return;
+		}
+		List kept = new ArrayList();
+		for(AttributeRequest attrReq: attrReqs) {
+			if(!sourceAttribute.equals(attrReq.getName())) {
+				kept.add(attrReq);
+			}
+		}
+		accountRequest.setAttributeRequests(kept);
+		String cn = (String) parsed.get("cn");
+		String ou = (String) parsed.get("ou");
+		if(cn != null) {
+			applyADNewName(accountRequest, cn);
+		}
+		if(ou != null) {
+			applyADNewParent(accountRequest, ou);
+		}
+		log.debug("Exit DistinguishedNameSync");
 	}
 	public void changeOperation(AccountRequest accountRequest, Object value) {
 		log.debug("Enter changeOperation: " + value);
