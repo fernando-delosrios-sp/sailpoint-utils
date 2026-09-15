@@ -198,9 +198,9 @@ Normal rule logic usually needs only `Request` and `Application`. Advanced code 
 
 - `$ctx.Options.PwshSilentError`, `$ctx.Options.PwshUnsafePayloadLogging`, and `$ctx.Options.PwshReplay`.
 - The matching `*Source` properties, which contain `script`, `application`, `default`, or a rule-specific override source.
-- `$ctx.Runtime.Phase`, `LogFile`, `EmergencyLogFile`, `ArtifactsDirectory`, `ScriptDumpPath`, and `ReplayScriptPath`.
-- `$ctx.Runtime.BaseName`, `ScriptPath`, `ScriptResolved`, and `ScriptReason`.
-- `$ctx.Runtime.IQServiceDirectory`, `IQServiceDirectorySource`, and `ReplayMode`.
+- `$ctx.Session.Phase`, `LogFile`, `EmergencyLogFile`, `ArtifactsDirectory`, `ScriptDumpPath`, and `ReplayScriptPath`.
+- `$ctx.Session.BaseName`, `ScriptPath`, `ScriptResolved`, and `ScriptReason`.
+- `$ctx.Session.IQServiceDirectory`, `IQServiceDirectorySource`, and `ReplayMode`.
 
 The source configuration names remain `PwshSilentError`, `PwshUnsafePayloadLogging`, and `PwshReplay`. `$ctx.Options` contains their resolved values after script override, application value, and default precedence is applied.
 
@@ -211,7 +211,7 @@ The original `$env:Request` and `$env:Application` strings remain available. Use
 If code must construct SailPoint's typed `AccountRequest`—for example, to use behavior implemented by that class—load `Utils.dll` and parse `$env:Request` explicitly:
 
 ```powershell
-Add-Type -Path (Join-Path $ctx.Runtime.IQServiceDirectory "Utils.dll")
+Add-Type -Path (Join-Path $ctx.Session.IQServiceDirectory "Utils.dll")
 $reader = New-Object System.IO.StringReader([string]$env:Request)
 $xmlReader = [System.Xml.XmlTextReader]([sailpoint.utils.xml.XmlUtil]::getReader($reader))
 $requestObject = New-Object Sailpoint.Utils.objects.AccountRequest($xmlReader)
@@ -229,19 +229,19 @@ Malformed input errors report the XML error without echoing the source payload.
 
 Existing deployed scripts do not change. Migration is needed only when copying the new bootstrap into a rule that directly referenced the old internal variables.
 
-- `$script:RuleLogFile` → `$ctx.Runtime.LogFile`
-- `$script:RuleEmergencyLogFile` → `$ctx.Runtime.EmergencyLogFile`
-- `$script:RuleArtifactsDirectory` → `$ctx.Runtime.ArtifactsDirectory`
-- `$script:RuleRuntimeBaseName` → `$ctx.Runtime.BaseName`
-- `$script:RuleRuntimeScriptPath` → `$ctx.Runtime.ScriptPath`
-- `$script:RuleRuntimeScriptResolved` → `$ctx.Runtime.ScriptResolved`
-- `$script:RuleRuntimeScriptReason` → `$ctx.Runtime.ScriptReason`
-- `$script:RuleScriptDumpPath` → `$ctx.Runtime.ScriptDumpPath`
-- `$script:RuleReplayScriptPath` → `$ctx.Runtime.ReplayScriptPath`
-- `$script:RuleIQServiceDirectory` → `$ctx.Runtime.IQServiceDirectory`
-- `$script:RuleIQServiceDirectorySource` → `$ctx.Runtime.IQServiceDirectorySource`
-- `$script:RulePhase` → `$ctx.Runtime.Phase`
-- `$script:RuleReplayMode` → `$ctx.Runtime.ReplayMode`
+- `$script:RuleLogFile` → `$ctx.Session.LogFile`
+- `$script:RuleEmergencyLogFile` → `$ctx.Session.EmergencyLogFile`
+- `$script:RuleArtifactsDirectory` → `$ctx.Session.ArtifactsDirectory`
+- `$script:RuleRuntimeBaseName` → `$ctx.Session.BaseName`
+- `$script:RuleRuntimeScriptPath` → `$ctx.Session.ScriptPath`
+- `$script:RuleRuntimeScriptResolved` → `$ctx.Session.ScriptResolved`
+- `$script:RuleRuntimeScriptReason` → `$ctx.Session.ScriptReason`
+- `$script:RuleScriptDumpPath` → `$ctx.Session.ScriptDumpPath`
+- `$script:RuleReplayScriptPath` → `$ctx.Session.ReplayScriptPath`
+- `$script:RuleIQServiceDirectory` → `$ctx.Session.IQServiceDirectory`
+- `$script:RuleIQServiceDirectorySource` → `$ctx.Session.IQServiceDirectorySource`
+- `$script:RulePhase` → `$ctx.Session.Phase`
+- `$script:RuleReplayMode` → `$ctx.Session.ReplayMode`
 - `$script:PwshSilentError` and its source → `$ctx.Options.PwshSilentError` and `$ctx.Options.PwshSilentErrorSource`
 - `$script:PwshUnsafePayloadLogging` and its source → `$ctx.Options.PwshUnsafePayloadLogging` and `$ctx.Options.PwshUnsafePayloadLoggingSource`
 - `$script:PwshReplay` and its source → `$ctx.Options.PwshReplay` and `$ctx.Options.PwshReplaySource`
