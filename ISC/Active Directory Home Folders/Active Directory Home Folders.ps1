@@ -71,7 +71,8 @@ $ctx = [PSCustomObject]@{
         PwshReplay                     = $false
         PwshReplaySource               = "default"
     }
-    Runtime = [PSCustomObject]@{
+    # Named "Session" because ISC rejects rule source that dereferences a member named Runtime
+    Session = [PSCustomObject]@{
         LogFile                  = $null
         EmergencyLogFile         = $null
         ArtifactsDirectory       = $null
@@ -125,7 +126,7 @@ function Write-RuleLog {
 
     $activePhase = $Phase
     if ([string]::IsNullOrWhiteSpace($activePhase)) {
-        $activePhase = $ctx.Runtime.Phase
+        $activePhase = $ctx.Session.Phase
     }
 
     $timestampLocal = Get-Date -Format "yyyy-MM-dd HH:mm:ss.fff"
@@ -133,8 +134,8 @@ function Write-RuleLog {
     $line = "[$timestampLocal | $timestampUtc UTC] [$Level] [$activePhase] $Message"
 
     $targets = @()
-    if ($ctx.Runtime.LogFile) { $targets += $ctx.Runtime.LogFile }
-    if ($ctx.Runtime.EmergencyLogFile) { $targets += $ctx.Runtime.EmergencyLogFile }
+    if ($ctx.Session.LogFile) { $targets += $ctx.Session.LogFile }
+    if ($ctx.Session.EmergencyLogFile) { $targets += $ctx.Session.EmergencyLogFile }
 
     foreach ($target in $targets) {
         try {
@@ -144,7 +145,7 @@ function Write-RuleLog {
         }
     }
 
-    if (-not $ctx.Runtime.LogFile -and -not $ctx.Runtime.EmergencyLogFile) {
+    if (-not $ctx.Session.LogFile -and -not $ctx.Session.EmergencyLogFile) {
         try {
             Write-Host $line
         } catch {
@@ -360,7 +361,7 @@ function Resolve-IQServiceDirectory {
         }
 
         if (Test-LooksLikeIQServiceDirectory -Path $resolved) {
-            $ctx.Runtime.IQServiceDirectorySource = "IQService.exe or Utils.dll found in the directory"
+            $ctx.Session.IQServiceDirectorySource = "IQService.exe or Utils.dll found in the directory"
             return $resolved
         }
     }
@@ -369,7 +370,7 @@ function Resolve-IQServiceDirectory {
         # Nothing carried an IQService marker, so this is the first readable candidate and may well be
         # the working directory rather than the install directory. Say so in the log instead of implying
         # the lookup succeeded.
-        $ctx.Runtime.IQServiceDirectorySource = "first readable candidate, no IQService marker found in any of: $($attempted -join '; ')"
+        $ctx.Session.IQServiceDirectorySource = "first readable candidate, no IQService marker found in any of: $($attempted -join '; ')"
         return $fallback
     }
 
@@ -392,7 +393,7 @@ function Initialize-EmergencyLogFile {
         if (-not (Test-Path -LiteralPath $path)) {
             New-Item -ItemType File -Path $path -Force -ErrorAction Stop | Out-Null
         }
-        $ctx.Runtime.EmergencyLogFile = $path
+        $ctx.Session.EmergencyLogFile = $path
         return $path
     } catch {
         return $null
@@ -405,28 +406,28 @@ function Initialize-RuleArtifacts {
         [hashtable] $runtimeIdentity
     )
 
-    $ctx.Runtime.BaseName = $runtimeIdentity.BaseName
-    $ctx.Runtime.ScriptPath = $runtimeIdentity.ScriptPath
-    $ctx.Runtime.IQServiceDirectory = Resolve-IQServiceDirectory -preferredPath $PSScriptRoot
-    $ctx.Runtime.ArtifactsDirectory = Join-Path -Path $ctx.Runtime.IQServiceDirectory -ChildPath $scriptsSubfolder
+    $ctx.Session.BaseName = $runtimeIdentity.BaseName
+    $ctx.Session.ScriptPath = $runtimeIdentity.ScriptPath
+    $ctx.Session.IQServiceDirectory = Resolve-IQServiceDirectory -preferredPath $PSScriptRoot
+    $ctx.Session.ArtifactsDirectory = Join-Path -Path $ctx.Session.IQServiceDirectory -ChildPath $scriptsSubfolder
 
-    if (-not (Test-Path -LiteralPath $ctx.Runtime.ArtifactsDirectory)) {
-        Write-RuleLog -Level INFO -Phase bootstrap -Message "Creating scripts directory: $($ctx.Runtime.ArtifactsDirectory)"
-        New-Item -ItemType Directory -Path $ctx.Runtime.ArtifactsDirectory -Force -ErrorAction Stop | Out-Null
+    if (-not (Test-Path -LiteralPath $ctx.Session.ArtifactsDirectory)) {
+        Write-RuleLog -Level INFO -Phase bootstrap -Message "Creating scripts directory: $($ctx.Session.ArtifactsDirectory)"
+        New-Item -ItemType Directory -Path $ctx.Session.ArtifactsDirectory -Force -ErrorAction Stop | Out-Null
     }
 
-    $probeFile = Join-Path -Path $ctx.Runtime.ArtifactsDirectory -ChildPath (".write-test-" + [Guid]::NewGuid().ToString("N") + ".tmp")
+    $probeFile = Join-Path -Path $ctx.Session.ArtifactsDirectory -ChildPath (".write-test-" + [Guid]::NewGuid().ToString("N") + ".tmp")
     try {
         New-Item -ItemType File -Path $probeFile -Force -ErrorAction Stop | Out-Null
         Remove-Item -LiteralPath $probeFile -Force -ErrorAction Stop
     } catch {
-        throw "The IQService Run As account cannot write to '$($ctx.Runtime.ArtifactsDirectory)'. $($_.Exception.Message)"
+        throw "The IQService Run As account cannot write to '$($ctx.Session.ArtifactsDirectory)'. $($_.Exception.Message)"
     }
 
     $stamp = Get-Date -Format "yyyyMMdd_HHmmssfff"
     $artifactBaseName = Get-RuleArtifactBaseName -FallbackBaseName $runtimeIdentity.BaseName
-    $ctx.Runtime.LogFile = Join-Path -Path $ctx.Runtime.ArtifactsDirectory -ChildPath ($artifactBaseName + "_" + $stamp + ".log")
-    New-Item -ItemType File -Path $ctx.Runtime.LogFile -Force -ErrorAction Stop | Out-Null
+    $ctx.Session.LogFile = Join-Path -Path $ctx.Session.ArtifactsDirectory -ChildPath ($artifactBaseName + "_" + $stamp + ".log")
+    New-Item -ItemType File -Path $ctx.Session.LogFile -Force -ErrorAction Stop | Out-Null
 
     $dumpExtension = ".ps1"
     if (-not [string]::IsNullOrWhiteSpace($runtimeIdentity.FileName)) {
@@ -436,8 +437,8 @@ function Initialize-RuleArtifacts {
         }
     }
 
-    $ctx.Runtime.ScriptDumpPath = Join-Path -Path $ctx.Runtime.ArtifactsDirectory -ChildPath ($artifactBaseName + $dumpExtension)
-    $ctx.Runtime.ReplayScriptPath = Join-Path -Path $ctx.Runtime.ArtifactsDirectory -ChildPath ($artifactBaseName + "_" + $stamp + ".replay.ps1")
+    $ctx.Session.ScriptDumpPath = Join-Path -Path $ctx.Session.ArtifactsDirectory -ChildPath ($artifactBaseName + $dumpExtension)
+    $ctx.Session.ReplayScriptPath = Join-Path -Path $ctx.Session.ArtifactsDirectory -ChildPath ($artifactBaseName + "_" + $stamp + ".replay.ps1")
 }
 
 function Copy-RuntimeScriptDump {
@@ -502,7 +503,7 @@ function Write-ReplayScript {
         [string] $destinationPath
     )
 
-    if ($ctx.Runtime.ReplayMode) {
+    if ($ctx.Session.ReplayMode) {
         Write-RuleLog -Level INFO -Phase bootstrap -Message "Skipping replay script write because this run is already a replay."
         return
     }
@@ -628,7 +629,7 @@ function Get-PayloadForLog {
 }
 
 function Write-RuleContextBlock {
-    $ctx.Runtime.Phase = "context"
+    $ctx.Session.Phase = "context"
 
     Write-RuleLog -Level INFO -Message "=== Rule context ==="
 
@@ -677,30 +678,30 @@ function Write-RuleContextBlock {
         }
 
         Write-RuleLog -Level INFO -Message ("PSScriptRoot               : {0}" -f $PSScriptRoot)
-        if ($ctx.Runtime.ScriptResolved) {
-            Write-RuleLog -Level INFO -Message ("RuntimeScriptPath          : {0}" -f $ctx.Runtime.ScriptPath)
+        if ($ctx.Session.ScriptResolved) {
+            Write-RuleLog -Level INFO -Message ("RuntimeScriptPath          : {0}" -f $ctx.Session.ScriptPath)
         } else {
-            Write-RuleLog -Level WARN -Message ("RuntimeScriptPath          : <unresolved> {0}" -f $ctx.Runtime.ScriptReason)
+            Write-RuleLog -Level WARN -Message ("RuntimeScriptPath          : <unresolved> {0}" -f $ctx.Session.ScriptReason)
         }
-        Write-RuleLog -Level INFO -Message ("RuntimeScriptName          : {0}" -f $ctx.Runtime.BaseName)
-        Write-RuleLog -Level INFO -Message ("IQServiceDirectory         : {0}" -f $ctx.Runtime.IQServiceDirectory)
-        Write-RuleLog -Level INFO -Message ("IQServiceDirectorySource   : {0}" -f $ctx.Runtime.IQServiceDirectorySource)
-        Write-RuleLog -Level INFO -Message ("ArtifactsDirectory         : {0}" -f $ctx.Runtime.ArtifactsDirectory)
-        Write-RuleLog -Level INFO -Message ("LogFile                    : {0}" -f $ctx.Runtime.LogFile)
-        Write-RuleLog -Level INFO -Message ("ScriptDumpPath             : {0}" -f $ctx.Runtime.ScriptDumpPath)
-        if ($ctx.Options.PwshReplay -and -not $ctx.Runtime.ReplayMode) {
-            Write-RuleLog -Level INFO -Message ("ReplayScriptPath           : {0}" -f $ctx.Runtime.ReplayScriptPath)
+        Write-RuleLog -Level INFO -Message ("RuntimeScriptName          : {0}" -f $ctx.Session.BaseName)
+        Write-RuleLog -Level INFO -Message ("IQServiceDirectory         : {0}" -f $ctx.Session.IQServiceDirectory)
+        Write-RuleLog -Level INFO -Message ("IQServiceDirectorySource   : {0}" -f $ctx.Session.IQServiceDirectorySource)
+        Write-RuleLog -Level INFO -Message ("ArtifactsDirectory         : {0}" -f $ctx.Session.ArtifactsDirectory)
+        Write-RuleLog -Level INFO -Message ("LogFile                    : {0}" -f $ctx.Session.LogFile)
+        Write-RuleLog -Level INFO -Message ("ScriptDumpPath             : {0}" -f $ctx.Session.ScriptDumpPath)
+        if ($ctx.Options.PwshReplay -and -not $ctx.Session.ReplayMode) {
+            Write-RuleLog -Level INFO -Message ("ReplayScriptPath           : {0}" -f $ctx.Session.ReplayScriptPath)
         } else {
             Write-RuleLog -Level INFO -Message "ReplayScriptPath           : <not written>"
         }
-        Write-RuleLog -Level INFO -Message ("ReplayMode                 : {0}" -f $ctx.Runtime.ReplayMode)
+        Write-RuleLog -Level INFO -Message ("ReplayMode                 : {0}" -f $ctx.Session.ReplayMode)
 
-        if ($ctx.Runtime.EmergencyLogFile) {
-            Write-RuleLog -Level WARN -Message ("EmergencyLogFile           : {0}" -f $ctx.Runtime.EmergencyLogFile)
+        if ($ctx.Session.EmergencyLogFile) {
+            Write-RuleLog -Level WARN -Message ("EmergencyLogFile           : {0}" -f $ctx.Session.EmergencyLogFile)
         }
 
-        if ($ctx.Runtime.ScriptPath) {
-            Write-RuleLog -Level INFO -Message ("RuntimeScriptSha256        : {0}" -f (Get-FileSha256 $ctx.Runtime.ScriptPath))
+        if ($ctx.Session.ScriptPath) {
+            Write-RuleLog -Level INFO -Message ("RuntimeScriptSha256        : {0}" -f (Get-FileSha256 $ctx.Session.ScriptPath))
         }
 
         if ($ctx.Options.PwshUnsafePayloadLogging) {
@@ -1245,8 +1246,8 @@ function Resolve-HomeFolderPath {
 ###############################################################################################################################
 
 trap {
-    if (-not $ctx.Runtime.LogFile -and -not $ctx.Runtime.EmergencyLogFile) {
-        Initialize-EmergencyLogFile -runtimeBaseName (Get-RuleArtifactBaseName -FallbackBaseName $ctx.Runtime.BaseName) | Out-Null
+    if (-not $ctx.Session.LogFile -and -not $ctx.Session.EmergencyLogFile) {
+        Initialize-EmergencyLogFile -runtimeBaseName (Get-RuleArtifactBaseName -FallbackBaseName $ctx.Session.BaseName) | Out-Null
     }
 
     Write-RuleLog -Level ERROR -Phase bootstrap -Message ("Unhandled error: $(Format-RuleErrorRecord $_)")
@@ -1259,10 +1260,10 @@ if ([string]::IsNullOrWhiteSpace($ruleRuntimeScriptPath)) {
 }
 
 $runtimeIdentity = Resolve-RuntimeScriptIdentity -ScriptPath $ruleRuntimeScriptPath
-$ctx.Runtime.ScriptPath = $runtimeIdentity.ScriptPath
-$ctx.Runtime.ScriptResolved = $runtimeIdentity.Resolved
-$ctx.Runtime.ScriptReason = $runtimeIdentity.Reason
-$ctx.Runtime.ReplayMode = ($env:SAILPOINT_RULE_REPLAY -eq "1")
+$ctx.Session.ScriptPath = $runtimeIdentity.ScriptPath
+$ctx.Session.ScriptResolved = $runtimeIdentity.Resolved
+$ctx.Session.ScriptReason = $runtimeIdentity.Reason
+$ctx.Session.ReplayMode = ($env:SAILPOINT_RULE_REPLAY -eq "1")
 
 try {
     Initialize-RuleArtifacts -scriptsSubfolder $ScriptsSubfolder -runtimeIdentity $runtimeIdentity
@@ -1284,20 +1285,20 @@ try {
 
 Initialize-RequestContext
 
-if ($ctx.Runtime.ReplayMode) {
+if ($ctx.Session.ReplayMode) {
     Write-RuleLog -Level INFO -Phase bootstrap -Message "Replay mode: restoring captured Request/Application and skipping dump/replay writes."
-} elseif (-not $ctx.Runtime.ScriptResolved) {
-    Write-RuleLog -Level WARN -Phase bootstrap -Message ("Skipping the script dump and replay script because the runtime script path is unresolved. {0} Logging and rule logic are unaffected." -f $ctx.Runtime.ScriptReason)
+} elseif (-not $ctx.Session.ScriptResolved) {
+    Write-RuleLog -Level WARN -Phase bootstrap -Message ("Skipping the script dump and replay script because the runtime script path is unresolved. {0} Logging and rule logic are unaffected." -f $ctx.Session.ScriptReason)
 } else {
     try {
-        Copy-RuntimeScriptDump -sourcePath $ctx.Runtime.ScriptPath -destinationPath $ctx.Runtime.ScriptDumpPath
+        Copy-RuntimeScriptDump -sourcePath $ctx.Session.ScriptPath -destinationPath $ctx.Session.ScriptDumpPath
     } catch {
         Write-RuleLog -Level WARN -Phase bootstrap -Message ("Script dump failed: $(Format-RuleErrorRecord $_). Continuing without it.")
     }
 
     if ($ctx.Options.PwshReplay) {
         try {
-            Write-ReplayScript -sourcePath $ctx.Runtime.ScriptPath -destinationPath $ctx.Runtime.ReplayScriptPath
+            Write-ReplayScript -sourcePath $ctx.Session.ScriptPath -destinationPath $ctx.Session.ReplayScriptPath
         } catch {
             Write-RuleLog -Level WARN -Phase bootstrap -Message ("Replay script write failed: $(Format-RuleErrorRecord $_). The hash-verified script dump is still available.")
         }
@@ -1312,7 +1313,7 @@ Write-RuleContextBlock
 # CUSTOM PROCESS CODE — Active Directory home folder provisioning
 ###############################################################################################################################
 
-$ctx.Runtime.Phase = "process"
+$ctx.Session.Phase = "process"
 
 try {
     Write-RuleLog -Level INFO -Message "Starting Active Directory home folder provisioning."
