@@ -1,6 +1,8 @@
 param(
     [string] $TemplatePath = (Join-Path (Split-Path -Parent $PSScriptRoot) "PowerShell Rule Template.ps1"),
-    [string] $HomeFolderPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory Home Folders/Active Directory Home Folders.ps1")
+    [string] $HomeFolderPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory Home Folders/Active Directory Home Folders.ps1"),
+    [string] $OuCreatePath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory OU Management/ConnectorBeforeCreate - Create Active Directory OU.ps1"),
+    [string] $OuModifyPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory OU Management/ConnectorBeforeModify - Create Active Directory OU.ps1")
 )
 
 $ErrorActionPreference = "Stop"
@@ -350,6 +352,98 @@ Assert-Equal 0 $homeFolderSkip.ExitCode "Home Folders must skip non-Create reque
 Assert-True ($homeFolderSkip.LogText -match "Current operation: Modify") "Home Folders must use the hydrated operation"
 Assert-True ($homeFolderSkip.LogText -notmatch "Loaded SailPoint Utils|Utils.dll could not be loaded") "Home Folders must not load Utils.dll"
 
+$resolvedOuCreatePath = (Resolve-Path -LiteralPath $OuCreatePath).Path
+$resolvedOuModifyPath = (Resolve-Path -LiteralPath $OuModifyPath).Path
+
+foreach ($ouPath in @($resolvedOuCreatePath, $resolvedOuModifyPath)) {
+    $ouTokens = $null
+    $ouParseErrors = $null
+    [void][System.Management.Automation.Language.Parser]::ParseFile($ouPath, [ref]$ouTokens, [ref]$ouParseErrors)
+    Assert-Equal 0 $ouParseErrors.Count "OU rule '$ouPath' must parse without syntax errors"
+}
+
+$ouCreateTokens = $null
+$ouCreateParseErrors = $null
+$ouCreateAst = [System.Management.Automation.Language.Parser]::ParseFile($resolvedOuCreatePath, [ref]$ouCreateTokens, [ref]$ouCreateParseErrors)
+$ouFunctionDefinitions = $ouCreateAst.FindAll({
+    param($node)
+    return ($node -is [System.Management.Automation.Language.FunctionDefinitionAst])
+}, $true)
+
+$splitOuDefinition = $ouFunctionDefinitions |
+    Where-Object { $_.Name -eq "Split-OrganizationalUnitPath" } |
+    Select-Object -First 1
+Assert-True ($null -ne $splitOuDefinition) "OU management function 'Split-OrganizationalUnitPath' must exist"
+Invoke-Expression $splitOuDefinition.Extent.Text
+
+$createTarget = Split-OrganizationalUnitPath -DistinguishedName "CN=Jane Smith,OU=People,DC=example,DC=com"
+Assert-Equal 1 $createTarget.OrganizationalUnits.Count "Create NativeIdentity must yield one OU component"
+Assert-Equal "OU=People" $createTarget.OrganizationalUnits[0] "Create NativeIdentity must ignore the CN RDN"
+Assert-Equal "DC=example,DC=com" $createTarget.BasePath "Create NativeIdentity must keep domain components as the base path"
+
+$moveTarget = Split-OrganizationalUnitPath -DistinguishedName "OU=Sales,OU=People,DC=example,DC=com"
+Assert-Equal 2 $moveTarget.OrganizationalUnits.Count "AC_NewParent must preserve every OU RDN"
+Assert-Equal "OU=Sales" $moveTarget.OrganizationalUnits[0] "AC_NewParent must keep leaf-first DN order before reverse"
+Assert-Equal "DC=example,DC=com" $moveTarget.BasePath "AC_NewParent must keep domain components as the base path"
+
+$escapedTarget = Split-OrganizationalUnitPath -DistinguishedName "OU=Sales\, West,OU=People,DC=example,DC=com"
+Assert-Equal "OU=Sales\, West" $escapedTarget.OrganizationalUnits[0] "escaped commas in an OU name must not split the DN"
+
+function Invoke-OuRuleCase {
+    param(
+        [string] $ScriptPath,
+        [string] $RequestXml,
+        [string] $ApplicationXml
+    )
+
+    $caseDirectory = Join-Path ([System.IO.Path]::GetTempPath()) ("ou-management-context-" + [Guid]::NewGuid().ToString("N"))
+    New-Item -ItemType Directory -Path $caseDirectory -Force | Out-Null
+
+    $oldRequest = $env:Request
+    $oldApplication = $env:Application
+    $hadRequest = Test-Path Env:Request
+    $hadApplication = Test-Path Env:Application
+
+    try {
+        $caseScript = Join-Path $caseDirectory "OuManagement.ps1"
+        Copy-Item -LiteralPath $ScriptPath -Destination $caseScript
+        New-Item -ItemType File -Path (Join-Path $caseDirectory "Utils.dll") -Force | Out-Null
+
+        $env:Request = $RequestXml
+        $env:Application = $ApplicationXml
+
+        $powerShellExecutable = (Get-Process -Id $PID).Path
+        & $powerShellExecutable -NoProfile -File $caseScript *> $null
+        $exitCode = $LASTEXITCODE
+
+        $logText = @(
+            Get-ChildItem -LiteralPath (Join-Path $caseDirectory "scripts") -Filter "*.log" |
+                ForEach-Object { [System.IO.File]::ReadAllText($_.FullName) }
+        ) -join "`n"
+
+        return [PSCustomObject]@{
+            ExitCode = $exitCode
+            LogText  = $logText
+        }
+    } finally {
+        if ($hadRequest) { $env:Request = $oldRequest } else { Remove-Item Env:Request -ErrorAction SilentlyContinue }
+        if ($hadApplication) { $env:Application = $oldApplication } else { Remove-Item Env:Application -ErrorAction SilentlyContinue }
+        Remove-Item -LiteralPath $caseDirectory -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+$ouCreateDisabled = Invoke-OuRuleCase -ScriptPath $resolvedOuCreatePath -RequestXml $createRequest -ApplicationXml "<Map><entry key=`"OUDebugEnabled`" value=`"true`" /></Map>"
+Assert-Equal 0 $ouCreateDisabled.ExitCode "OU Create must skip when OUCreationEnabled is omitted"
+Assert-True ($ouCreateDisabled.LogText -match "OUCreationEnabled is not true") "OU Create must log the disabled skip"
+Assert-True ($ouCreateDisabled.LogText -match "ConnectorBeforeCreate") "OU Create must log its connector rule type"
+Assert-True ($ouCreateDisabled.LogText -notmatch "Loaded SailPoint Utils|Utils.dll could not be loaded") "OU Create must not load Utils.dll"
+
+$ouModifyEmptyParent = Invoke-OuRuleCase -ScriptPath $resolvedOuModifyPath -RequestXml ([System.IO.File]::ReadAllText((Join-Path $fixturesDirectory "request-modify.xml"))) -ApplicationXml "<Map><entry key=`"OUCreationEnabled`" value=`"true`" /><entry key=`"OUDebugEnabled`" value=`"true`" /></Map>"
+Assert-Equal 0 $ouModifyEmptyParent.ExitCode "OU Modify must skip when AC_NewParent is absent"
+Assert-True ($ouModifyEmptyParent.LogText -match "Target distinguished name is empty") "OU Modify must use Get-RequestAttribute AC_NewParent"
+Assert-True ($ouModifyEmptyParent.LogText -match "ConnectorBeforeModify") "OU Modify must log its connector rule type"
+Assert-True ($ouModifyEmptyParent.LogText -notmatch "Import-Module") "OU Modify must not import ActiveDirectory when the target DN is empty"
+
 $analyzer = Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue
 if ($analyzer) {
     $compatibilitySettings = @{
@@ -360,7 +454,7 @@ if ($analyzer) {
             }
         }
     }
-    foreach ($path in @($resolvedTemplatePath, $resolvedHomeFolderPath)) {
+    foreach ($path in @($resolvedTemplatePath, $resolvedHomeFolderPath, $resolvedOuCreatePath, $resolvedOuModifyPath)) {
         $compatibilityProblems = @(
             Invoke-ScriptAnalyzer -Path $path -Settings $compatibilitySettings |
                 Where-Object { $_.RuleName -eq "PSUseCompatibleSyntax" }
