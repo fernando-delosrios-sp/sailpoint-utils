@@ -288,6 +288,15 @@ function Get-MenuWidth {
     return $width - 1
 }
 
+# A label carrying newlines or tabs would print taller or wider than the row count the redraw
+# moves back over, leaving a stale copy of the menu behind on every keystroke.
+function ConvertTo-MenuLine {
+    param([AllowNull()][string]$Text)
+
+    if ([string]::IsNullOrEmpty($Text)) { return '' }
+    return ($Text -replace '[\r\n\t]+', ' ')
+}
+
 # Returns the picked indices, an empty array when the user pressed Escape, or $null when the
 # console is too small to host the menu and the caller should prompt for numbers instead.
 function Invoke-ConsoleMenu {
@@ -301,6 +310,9 @@ function Invoke-ConsoleMenu {
 
     $count = $Labels.Count
     if ($count -eq 0) { return , @() }
+
+    $Prompt = ConvertTo-MenuLine $Prompt
+    $Labels = @(foreach ($label in $Labels) { ConvertTo-MenuLine $label })
 
     $selected = New-Object 'bool[]' $count
     $cursor = [Math]::Min([Math]::Max($InitialIndex, 0), $count - 1)
@@ -558,69 +570,7 @@ function Read-YesNo {
     return (Read-Choice -Prompt $Prompt -Options @('Yes', 'No') -Default $defaultOption) -eq 'Yes'
 }
 
-function Copy-ToClipboard {
-    param([Parameter(Mandatory)][AllowEmptyString()][string]$Text)
-
-    $setClipboard = Get-Command Set-Clipboard -ErrorAction SilentlyContinue
-    if ($setClipboard) {
-        try {
-            Set-Clipboard -Value $Text -ErrorAction Stop
-            return $true
-        }
-        catch { }
-    }
-
-    foreach ($tool in @('pbcopy', 'wl-copy', 'xclip')) {
-        $cmd = Get-Command $tool -ErrorAction SilentlyContinue
-        if (-not $cmd) { continue }
-        try {
-            $toolArgs = if ($tool -eq 'xclip') { @('-selection', 'clipboard') } else { @() }
-            $Text | & $cmd.Source @toolArgs
-            return $true
-        }
-        catch { }
-    }
-
-    return $false
-}
-
-function Open-Url {
-    param([Parameter(Mandatory)][string]$Url)
-
-    try {
-        if ($Url -match '\.(msc|exe)$' -or $Url -eq 'services.msc') {
-            Start-Process $Url -ErrorAction Stop | Out-Null
-            return $true
-        }
-        Start-Process $Url -ErrorAction Stop | Out-Null
-        return $true
-    }
-    catch {
-        return $false
-    }
-}
-
-function Get-MaskedSecretDisplay {
-    param([AllowNull()][string]$Value)
-
-    if ([string]::IsNullOrEmpty($Value)) { return '(empty)' }
-    if ($Value.Length -le 4) { return '***' }
-    return ('***' + $Value.Substring($Value.Length - 4))
-}
-
-function Get-CompletionPreview {
-    param(
-        [AllowNull()][string]$Value,
-        [switch]$Mask
-    )
-
-    if ($Mask) { return Get-MaskedSecretDisplay -Value $Value }
-    if ([string]::IsNullOrEmpty($Value)) { return '(empty)' }
-    if ($Value.Length -le 72) { return $Value }
-    return ($Value.Substring(0, 69) + '...')
-}
-
-function Invoke-CompletionActionMenu {
+function Write-CompletionSummary {
     param(
         [Parameter(Mandatory)][string]$Title,
         [Parameter(Mandatory)][string[]]$Situation,
@@ -633,56 +583,16 @@ function Invoke-CompletionActionMenu {
     foreach ($line in $Situation) {
         Write-Host "  $line" -ForegroundColor White
     }
-    Write-Host ''
-    Write-Host '  Copy host and port values into the ISC source IQService panel, or open a link to finish pending manual steps.' -ForegroundColor Yellow
 
     if ($Items.Count -eq 0) { return }
 
-    if ($NonInteractive) {
-        Write-Host ''
-        foreach ($item in $Items) {
-            $preview = Get-CompletionPreview -Value ([string]$item.Value) -Mask:([bool]$item.Mask)
-            $verb = if ($item.Kind -eq 'Open') { 'Open' } else { 'Copy' }
-            Write-Host "  $($item.Label): $preview ($verb)" -ForegroundColor Yellow
-        }
-        return
-    }
-
-    $doneLabel = 'Done'
-    while ($true) {
-        $labels = [System.Collections.Generic.List[string]]::new()
-        foreach ($item in $Items) {
-            $preview = Get-CompletionPreview -Value ([string]$item.Value) -Mask:([bool]$item.Mask)
-            $verb = if ($item.Kind -eq 'Open') { 'Open' } else { 'Copy' }
-            $labels.Add(('{0}: {1} ({2})' -f $item.Label, $preview, $verb))
-        }
-        $labels.Add($doneLabel)
-
-        $picked = Read-Choice -Prompt 'Select a value to copy or a link to open:' `
-            -Options $labels.ToArray() `
-            -Default $doneLabel `
-            -EscapeMeansDefault
-        if ($picked -eq $doneLabel) { return }
-
-        $index = [array]::IndexOf($labels.ToArray(), $picked)
-        if ($index -lt 0 -or $index -ge $Items.Count) { continue }
-
-        $selected = $Items[$index]
-        if ($selected.Kind -eq 'Open') {
-            if (Open-Url -Url ([string]$selected.Value)) {
-                Write-Ok "Opened $($selected.Label)"
-            }
-            else {
-                Write-Warning "Could not open $($selected.Label). Target: $($selected.Value)"
-            }
-        }
-        else {
-            if (Copy-ToClipboard -Text ([string]$selected.Value)) {
-                Write-Ok "$($selected.Label) copied to the clipboard"
-            }
-            else {
-                Write-Warning 'No clipboard tool is available (Set-Clipboard). Copy from the list above.'
-            }
+    Write-Host ''
+    $labelWidth = ($Items | ForEach-Object { ([string]$_.Label).Length } | Measure-Object -Maximum).Maximum
+    foreach ($item in $Items) {
+        $valueLines = @(([string]$item.Value) -split "`r?`n")
+        Write-Host ("  {0} : {1}" -f ([string]$item.Label).PadRight($labelWidth), $valueLines[0]) -ForegroundColor Yellow
+        foreach ($extra in ($valueLines | Select-Object -Skip 1)) {
+            Write-Host ("  {0}   {1}" -f (' ' * $labelWidth), $extra.Trim()) -ForegroundColor Yellow
         }
     }
 }
@@ -782,41 +692,38 @@ function Show-IQServiceCompletion {
     $situation.Add('In ISC: Connections > Sources > [source requiring IQService] > IQService / Integration Service.')
 
     $items = [System.Collections.Generic.List[object]]::new()
-    $items.Add([PSCustomObject]@{ Label = 'Host name'; Value = $hostName; Kind = 'Copy'; Mask = $false })
-    if ($port) { $items.Add([PSCustomObject]@{ Label = 'Port (non-TLS)'; Value = $port; Kind = 'Copy'; Mask = $false }) }
-    if ($tlsPort) { $items.Add([PSCustomObject]@{ Label = 'TLS port'; Value = $tlsPort; Kind = 'Copy'; Mask = $false }) }
-    $items.Add([PSCustomObject]@{ Label = 'Install path'; Value = $InstallPath; Kind = 'Copy'; Mask = $false })
+    $items.Add([PSCustomObject]@{ Label = 'Host name'; Value = $hostName })
+    if ($port) { $items.Add([PSCustomObject]@{ Label = 'Port (non-TLS)'; Value = $port }) }
+    if ($tlsPort) { $items.Add([PSCustomObject]@{ Label = 'TLS port'; Value = $tlsPort }) }
+    $items.Add([PSCustomObject]@{ Label = 'Install path'; Value = $InstallPath })
     if ($hasExe) {
-        $items.Add([PSCustomObject]@{ Label = 'IQService.exe path'; Value = $exePath; Kind = 'Copy'; Mask = $false })
+        $items.Add([PSCustomObject]@{ Label = 'IQService.exe path'; Value = $exePath })
     }
     if ($snapshot.Version -and $snapshot.Version -ne 'Not installed') {
-        $items.Add([PSCustomObject]@{ Label = 'Version'; Value = $snapshot.Version; Kind = 'Copy'; Mask = $false })
+        $items.Add([PSCustomObject]@{ Label = 'Version'; Value = $snapshot.Version })
     }
     if ($build) {
-        $items.Add([PSCustomObject]@{ Label = 'ZIP build'; Value = $build; Kind = 'Copy'; Mask = $false })
+        $items.Add([PSCustomObject]@{ Label = 'ZIP build'; Value = $build })
     }
     if ($primaryService) {
-        $items.Add([PSCustomObject]@{ Label = 'Windows service name'; Value = $primaryService.Name; Kind = 'Copy'; Mask = $false })
+        $items.Add([PSCustomObject]@{ Label = 'Windows service name'; Value = $primaryService.Name })
         if ($primaryService.StartName) {
-            $items.Add([PSCustomObject]@{ Label = 'Log On account'; Value = $primaryService.StartName; Kind = 'Copy'; Mask = $false })
+            $items.Add([PSCustomObject]@{ Label = 'Log On account'; Value = $primaryService.StartName })
         }
     }
     if ($traceFile) {
-        $items.Add([PSCustomObject]@{ Label = 'Trace log file'; Value = $traceFile; Kind = 'Copy'; Mask = $false })
+        $items.Add([PSCustomObject]@{ Label = 'Trace log file'; Value = $traceFile })
     }
     if (Test-Path -LiteralPath $zipPath) {
-        $items.Add([PSCustomObject]@{ Label = 'IQService.zip path'; Value = $zipPath; Kind = 'Copy'; Mask = $false })
+        $items.Add([PSCustomObject]@{ Label = 'IQService.zip path'; Value = $zipPath })
     }
 
     $items.Add([PSCustomObject]@{
-        Label = 'IQService install documentation'
+        Label = 'Install documentation'
         Value = 'https://documentation.sailpoint.com/connectors/iqservice/help/integrating_iqservice_admin/install_register.html'
-        Kind  = 'Open'
-        Mask  = $false
     })
-    $items.Add([PSCustomObject]@{ Label = 'Windows Services (services.msc)'; Value = 'services.msc'; Kind = 'Open'; Mask = $false })
 
-    Invoke-CompletionActionMenu -Title 'Next: configure ISC IQService connection' `
+    Write-CompletionSummary -Title 'Next: configure ISC IQService connection' `
         -Situation $situation.ToArray() `
         -Items $items.ToArray()
 }

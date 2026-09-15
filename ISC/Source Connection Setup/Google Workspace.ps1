@@ -521,6 +521,15 @@ function Get-MenuWidth {
     return $width - 1
 }
 
+# A label carrying newlines or tabs would print taller or wider than the row count the redraw
+# moves back over, leaving a stale copy of the menu behind on every keystroke.
+function ConvertTo-MenuLine {
+    param([AllowNull()][string]$Text)
+
+    if ([string]::IsNullOrEmpty($Text)) { return '' }
+    return ($Text -replace '[\r\n\t]+', ' ')
+}
+
 function Invoke-ConsoleMenu {
     param(
         [Parameter(Mandatory)][string]$Prompt,
@@ -532,6 +541,9 @@ function Invoke-ConsoleMenu {
 
     $count = $Labels.Count
     if ($count -eq 0) { return , @() }
+
+    $Prompt = ConvertTo-MenuLine $Prompt
+    $Labels = @(foreach ($label in $Labels) { ConvertTo-MenuLine $label })
 
     $selected = New-Object 'bool[]' $count
     $cursor = [Math]::Min([Math]::Max($InitialIndex, 0), $count - 1)
