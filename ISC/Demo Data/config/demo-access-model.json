@@ -1,0 +1,4599 @@
+{
+  "version": 1,
+  "tenantReference": "emea-tes-team",
+  "notes": [
+    "Catalog seeded from emea-tes-team identity search.",
+    "Entitlement names are related to roles but never identical, except Workplace User.",
+    "Title role membership uses CONTAINS on attribute.titleHistory with bracketed tokens (e.g. [Accounts Payable Analyst])."
+  ],
+  "sources": [
+    {
+      "key": "departmentServices",
+      "name": "Department Services",
+      "description": "Delimited-file entitlements supporting department birthright roles",
+      "entitlementAttribute": "capability",
+      "csvFile": "department-services.csv",
+      "applicationName": "Department Services",
+      "applicationDescription": "Department capability access application"
+    },
+    {
+      "key": "workforceAccess",
+      "name": "Workforce Access",
+      "description": "Delimited-file entitlements supporting job-title birthright roles",
+      "entitlementAttribute": "capability",
+      "csvFile": "workforce-access.csv",
+      "applicationName": "Workforce Access",
+      "applicationDescription": "Workforce capability access application"
+    },
+    {
+      "key": "workplaceAccess",
+      "name": "Workplace Access",
+      "description": "Delimited-file entitlements for workplace user and city dimensions",
+      "entitlementAttribute": "capability",
+      "csvFile": "workplace-access.csv",
+      "applicationName": "Workplace Access",
+      "applicationDescription": "Workplace and city access application"
+    },
+    {
+      "key": "customer360",
+      "name": "Customer 360",
+      "description": "Delimited-file entitlements for requestable customer relationship management access",
+      "entitlementAttribute": "capability",
+      "csvFile": "customer-360.csv",
+      "applicationName": "Customer 360",
+      "applicationDescription": "Requestable customer relationship management application"
+    }
+  ],
+  "entitlements": {
+    "departmentServices": [
+      {
+        "id": "DEPT-LEDGER_CLOSE_DESK",
+        "name": "Ledger Close Desk",
+        "description": "Period-end ledger close workspace"
+      },
+      {
+        "id": "DEPT-VENDOR_MASTER_DESK",
+        "name": "Vendor Master Desk",
+        "description": "Vendor master data maintenance"
+      },
+      {
+        "id": "DEPT-DESIGN_REVIEW_BOARD",
+        "name": "Design Review Board",
+        "description": "Engineering design review workspace"
+      },
+      {
+        "id": "DEPT-BUILD_PIPELINE_GATE",
+        "name": "Build Pipeline Gate",
+        "description": "Release candidate promotion gate"
+      },
+      {
+        "id": "DEPT-PEOPLE_CASE_DESK",
+        "name": "People Case Desk",
+        "description": "HR case and inquiry desk"
+      },
+      {
+        "id": "DEPT-POLICY_LIBRARY_DESK",
+        "name": "Policy Library Desk",
+        "description": "HR policy publishing desk"
+      },
+      {
+        "id": "DEPT-SERVICE_DESK_CONSOLE",
+        "name": "Service Desk Console",
+        "description": "IT service request console"
+      },
+      {
+        "id": "DEPT-CHANGE_ADVISORY_BOARD",
+        "name": "Change Advisory Board",
+        "description": "IT change review board"
+      },
+      {
+        "id": "DEPT-CLOSE_CALENDAR",
+        "name": "Close Calendar",
+        "description": "Financial close calendar"
+      },
+      {
+        "id": "DEPT-FORECAST_WORKBENCH",
+        "name": "Forecast Workbench",
+        "description": "Budget and forecast workbench"
+      },
+      {
+        "id": "DEPT-STOCK_MOVEMENT_DESK",
+        "name": "Stock Movement Desk",
+        "description": "Inventory movement tracking"
+      },
+      {
+        "id": "DEPT-CYCLE_COUNT_DESK",
+        "name": "Cycle Count Desk",
+        "description": "Cycle count execution desk"
+      },
+      {
+        "id": "DEPT-PORTFOLIO_MONITOR",
+        "name": "Portfolio Monitor",
+        "description": "Asset portfolio monitoring"
+      },
+      {
+        "id": "DEPT-CAPEX_PIPELINE",
+        "name": "CapEx Pipeline",
+        "description": "Capital expenditure pipeline"
+      },
+      {
+        "id": "DEPT-OPPORTUNITY_PIPELINE",
+        "name": "Opportunity Pipeline",
+        "description": "Sales opportunity tracking"
+      },
+      {
+        "id": "DEPT-QUOTE_BUILDER_DESK",
+        "name": "Quote Builder Desk",
+        "description": "Customer quote builder"
+      },
+      {
+        "id": "DEPT-CONTACT_QUEUE_DESK",
+        "name": "Contact Queue Desk",
+        "description": "Inbound contact queue"
+      },
+      {
+        "id": "DEPT-CARE_CHART_DESK",
+        "name": "Care Chart Desk",
+        "description": "Patient care charting"
+      },
+      {
+        "id": "DEPT-REGION_OPS_DESK",
+        "name": "Region Ops Desk",
+        "description": "Regional operations coordination"
+      },
+      {
+        "id": "DEPT-SITE_ESCALATION_DESK",
+        "name": "Site Escalation Desk",
+        "description": "Site incident escalation"
+      },
+      {
+        "id": "DEPT-CLINICAL_ORDER_DESK",
+        "name": "Clinical Order Desk",
+        "description": "Clinical order entry"
+      },
+      {
+        "id": "DEPT-BOARD_PACK_DESK",
+        "name": "Board Pack Desk",
+        "description": "Executive board pack assembly"
+      },
+      {
+        "id": "DEPT-STRATEGY_WAR_ROOM",
+        "name": "Strategy War Room",
+        "description": "Executive strategy workspace"
+      }
+    ],
+    "workforceAccess": [
+      {
+        "id": "TITLE-SOFTPHONE_AGENT_SEAT",
+        "name": "Softphone Agent Seat",
+        "description": "Agent softphone seat"
+      },
+      {
+        "id": "TITLE-CALL_WRAP_SCRIPT",
+        "name": "Call Wrap Script",
+        "description": "Post-call wrap-up scripts"
+      },
+      {
+        "id": "TITLE-THREAT_TRIAGE_DESK",
+        "name": "Threat Triage Desk",
+        "description": "Security alert triage"
+      },
+      {
+        "id": "TITLE-VULNERABILITY_QUEUE",
+        "name": "Vulnerability Queue",
+        "description": "Vulnerability remediation queue"
+      },
+      {
+        "id": "TITLE-ERP_CONFIG_DESK",
+        "name": "ERP Config Desk",
+        "description": "Financial ERP configuration"
+      },
+      {
+        "id": "TITLE-CASH_POSITION_DESK",
+        "name": "Cash Position Desk",
+        "description": "Daily cash position"
+      },
+      {
+        "id": "TITLE-BANK_PORTAL_ACCESS",
+        "name": "Bank Portal Access",
+        "description": "Corporate bank portal"
+      },
+      {
+        "id": "TITLE-INVOICE_SETTLEMENT_QUEUE",
+        "name": "Invoice Settlement Queue",
+        "description": "AP invoice settlement"
+      },
+      {
+        "id": "TITLE-VENDOR_PAYMENT_RELEASE",
+        "name": "Vendor Payment Release",
+        "description": "Vendor payment release"
+      },
+      {
+        "id": "TITLE-STOCK_AGING_REPORT",
+        "name": "Stock Aging Report",
+        "description": "Inventory aging reports"
+      },
+      {
+        "id": "TITLE-BUDGET_MODEL_DESK",
+        "name": "Budget Model Desk",
+        "description": "FP&A budget models"
+      },
+      {
+        "id": "TITLE-SCENARIO_PLANNER",
+        "name": "Scenario Planner",
+        "description": "Financial scenario planning"
+      },
+      {
+        "id": "TITLE-PURCHASE_REQUISITION_DESK",
+        "name": "Purchase Requisition Desk",
+        "description": "Purchase requisition processing"
+      },
+      {
+        "id": "TITLE-SUPPLIER_CATALOG_DESK",
+        "name": "Supplier Catalog Desk",
+        "description": "Supplier catalog browsing"
+      },
+      {
+        "id": "TITLE-LEARNING_PATH_BUILDER",
+        "name": "Learning Path Builder",
+        "description": "Learning path authoring"
+      },
+      {
+        "id": "TITLE-SOLUTION_DEMO_LAB",
+        "name": "Solution Demo Lab",
+        "description": "Pre-sales demo lab"
+      },
+      {
+        "id": "TITLE-RFP_RESPONSE_DESK",
+        "name": "RFP Response Desk",
+        "description": "Technical RFP responses"
+      },
+      {
+        "id": "TITLE-TAX_PROVISION_DESK",
+        "name": "Tax Provision Desk",
+        "description": "Tax provision worksheets"
+      },
+      {
+        "id": "TITLE-RETURN_FILING_DESK",
+        "name": "Return Filing Desk",
+        "description": "Tax return filing workspace"
+      },
+      {
+        "id": "TITLE-BENEFITS_ENROLLMENT_DESK",
+        "name": "Benefits Enrollment Desk",
+        "description": "Benefits enrollment processing"
+      },
+      {
+        "id": "TITLE-PORTFOLIO_ALLOCATION_DESK",
+        "name": "Portfolio Allocation Desk",
+        "description": "Investment allocation"
+      },
+      {
+        "id": "TITLE-DEAL_MEMO_DESK",
+        "name": "Deal Memo Desk",
+        "description": "Investment deal memos"
+      },
+      {
+        "id": "TITLE-COMP_BAND_DESK",
+        "name": "Comp Band Desk",
+        "description": "Compensation band maintenance"
+      },
+      {
+        "id": "TITLE-SAVINGS_TRACKER_DESK",
+        "name": "Savings Tracker Desk",
+        "description": "Cost savings tracking"
+      },
+      {
+        "id": "TITLE-SPEND_DEEP_DIVE",
+        "name": "Spend Deep Dive",
+        "description": "Spend analytics workspace"
+      },
+      {
+        "id": "TITLE-ENTERPRISE_ACCOUNT_DESK",
+        "name": "Enterprise Account Desk",
+        "description": "Enterprise account management"
+      },
+      {
+        "id": "TITLE-EXECUTIVE_SPONSOR_PACK",
+        "name": "Executive Sponsor Pack",
+        "description": "Executive sponsor materials"
+      },
+      {
+        "id": "TITLE-TERRITORY_PIPELINE_DESK",
+        "name": "Territory Pipeline Desk",
+        "description": "Regional territory pipeline"
+      },
+      {
+        "id": "TITLE-STAGING_TEST_RACK",
+        "name": "Staging Test Rack",
+        "description": "Staging environment test rack"
+      },
+      {
+        "id": "TITLE-DEFECT_TRIAGE_BOARD",
+        "name": "Defect Triage Board",
+        "description": "Staging defect triage"
+      },
+      {
+        "id": "TITLE-COLLECTIONS_QUEUE",
+        "name": "Collections Queue",
+        "description": "AR collections queue"
+      },
+      {
+        "id": "TITLE-CREDIT_MEMO_DESK",
+        "name": "Credit Memo Desk",
+        "description": "Credit memo processing"
+      },
+      {
+        "id": "TITLE-PRODUCTION_TEST_BENCH",
+        "name": "Production Test Bench",
+        "description": "Production test bench"
+      },
+      {
+        "id": "TITLE-CANDIDATE_PIPELINE_DESK",
+        "name": "Candidate Pipeline Desk",
+        "description": "Recruiting candidate pipeline"
+      },
+      {
+        "id": "TITLE-INTERVIEW_SCHEDULER",
+        "name": "Interview Scheduler",
+        "description": "Interview scheduling desk"
+      },
+      {
+        "id": "TITLE-DOMAIN_OPS_CONSOLE",
+        "name": "Domain Ops Console",
+        "description": "Windows domain operations"
+      },
+      {
+        "id": "TITLE-PATCH_RING_DESK",
+        "name": "Patch Ring Desk",
+        "description": "Windows patch rings"
+      },
+      {
+        "id": "TITLE-SHIFT_CHART_DESK",
+        "name": "Shift Chart Desk",
+        "description": "Nursing shift charting"
+      },
+      {
+        "id": "TITLE-FRANCHISE_SCORECARD",
+        "name": "Franchise Scorecard",
+        "description": "Franchise performance scorecard"
+      },
+      {
+        "id": "TITLE-ROYALTY_DESK",
+        "name": "Royalty Desk",
+        "description": "Franchise royalty reporting"
+      },
+      {
+        "id": "TITLE-AUDIT_WORKPAPER_DESK",
+        "name": "Audit Workpaper Desk",
+        "description": "Internal audit workpapers"
+      },
+      {
+        "id": "TITLE-CONTROL_TEST_DESK",
+        "name": "Control Test Desk",
+        "description": "Control testing workspace"
+      },
+      {
+        "id": "TITLE-LEASE_ABSTRACT_DESK",
+        "name": "Lease Abstract Desk",
+        "description": "Lease abstract management"
+      },
+      {
+        "id": "TITLE-SITE_ACQUISITION_DESK",
+        "name": "Site Acquisition Desk",
+        "description": "Site acquisition pipeline"
+      },
+      {
+        "id": "TITLE-INBOUND_DOCK_DESK",
+        "name": "Inbound Dock Desk",
+        "description": "Inbound receiving dock"
+      },
+      {
+        "id": "TITLE-PATENT_DOCKET_DESK",
+        "name": "Patent Docket Desk",
+        "description": "Patent docket management"
+      },
+      {
+        "id": "TITLE-IP_DISCLOSURE_DESK",
+        "name": "IP Disclosure Desk",
+        "description": "Invention disclosure desk"
+      },
+      {
+        "id": "TITLE-ER_CASE_DESK",
+        "name": "ER Case Desk",
+        "description": "Employee relations cases"
+      },
+      {
+        "id": "TITLE-REPLENISHMENT_PLANNER",
+        "name": "Replenishment Planner",
+        "description": "Inventory replenishment planning"
+      },
+      {
+        "id": "TITLE-SKU_HEALTH_DESK",
+        "name": "SKU Health Desk",
+        "description": "SKU health monitoring"
+      },
+      {
+        "id": "TITLE-ENCOUNTER_NOTE_DESK",
+        "name": "Encounter Note Desk",
+        "description": "Clinical encounter notes"
+      },
+      {
+        "id": "TITLE-PAYROLL_RUN_DESK",
+        "name": "Payroll Run Desk",
+        "description": "Payroll run processing"
+      },
+      {
+        "id": "TITLE-GARNISHMENT_DESK",
+        "name": "Garnishment Desk",
+        "description": "Wage garnishment processing"
+      },
+      {
+        "id": "TITLE-CONTROL_BLUEPRINT_DESK",
+        "name": "Control Blueprint Desk",
+        "description": "Security architecture blueprints"
+      },
+      {
+        "id": "TITLE-ZERO_TRUST_DESIGN_DESK",
+        "name": "Zero Trust Design Desk",
+        "description": "Zero trust design workspace"
+      },
+      {
+        "id": "TITLE-WAREHOUSE_OPS_DESK",
+        "name": "Warehouse Ops Desk",
+        "description": "Warehouse operations oversight"
+      },
+      {
+        "id": "TITLE-CIRCUIT_INVENTORY_DESK",
+        "name": "Circuit Inventory Desk",
+        "description": "Network circuit inventory"
+      },
+      {
+        "id": "TITLE-WAN_HEALTH_DESK",
+        "name": "WAN Health Desk",
+        "description": "WAN health monitoring"
+      },
+      {
+        "id": "TITLE-SPEND_CATEGORY_DESK",
+        "name": "Spend Category Desk",
+        "description": "Procurement category analysis"
+      },
+      {
+        "id": "TITLE-TEST_CASE_LIBRARY",
+        "name": "Test Case Library",
+        "description": "QA test case library"
+      },
+      {
+        "id": "TITLE-RELEASE_SIGNOFF_DESK",
+        "name": "Release Signoff Desk",
+        "description": "QA release sign-off"
+      },
+      {
+        "id": "TITLE-SOURCING_EVENT_DESK",
+        "name": "Sourcing Event Desk",
+        "description": "Sourcing event management"
+      },
+      {
+        "id": "TITLE-CONTRACT_DESK",
+        "name": "Contract Desk",
+        "description": "Procurement contract desk"
+      },
+      {
+        "id": "TITLE-DEMAND_SENSING_DESK",
+        "name": "Demand Sensing Desk",
+        "description": "Advanced demand sensing"
+      },
+      {
+        "id": "TITLE-SAFETY_STOCK_DESK",
+        "name": "Safety Stock Desk",
+        "description": "Safety stock optimization"
+      },
+      {
+        "id": "TITLE-STAGING_CODE_BENCH",
+        "name": "Staging Code Bench",
+        "description": "Staging development bench"
+      },
+      {
+        "id": "TITLE-ORG_CHART_DESK",
+        "name": "Org Chart Desk",
+        "description": "Organization chart management"
+      },
+      {
+        "id": "TITLE-WORKFORCE_PLAN_DESK",
+        "name": "Workforce Plan Desk",
+        "description": "Workforce planning"
+      },
+      {
+        "id": "TITLE-FIREWALL_CHANGE_DESK",
+        "name": "Firewall Change Desk",
+        "description": "Firewall change requests"
+      },
+      {
+        "id": "TITLE-DNS_OPS_DESK",
+        "name": "DNS Ops Desk",
+        "description": "DNS operations desk"
+      },
+      {
+        "id": "TITLE-STAGING_RELEASE_BOARD",
+        "name": "Staging Release Board",
+        "description": "Staging release board"
+      },
+      {
+        "id": "TITLE-UNIT_CENSUS_DESK",
+        "name": "Unit Census Desk",
+        "description": "Nursing unit census"
+      },
+      {
+        "id": "TITLE-SHIFT_HANDOFF_DESK",
+        "name": "Shift Handoff Desk",
+        "description": "Charge nurse handoff"
+      },
+      {
+        "id": "TITLE-PLAN_DESIGN_DESK",
+        "name": "Plan Design Desk",
+        "description": "Benefits plan design"
+      },
+      {
+        "id": "TITLE-EDGE_OPS_DESK",
+        "name": "Edge Ops Desk",
+        "description": "Distributed systems operations"
+      },
+      {
+        "id": "TITLE-SITE_RELIABILITY_BOARD",
+        "name": "Site Reliability Board",
+        "description": "Site reliability board"
+      },
+      {
+        "id": "TITLE-PAYROLL_EXCEPTION_DESK",
+        "name": "Payroll Exception Desk",
+        "description": "Complex payroll exceptions"
+      },
+      {
+        "id": "TITLE-TAX_FILING_DESK",
+        "name": "Tax Filing Desk",
+        "description": "Payroll tax filing"
+      },
+      {
+        "id": "TITLE-FEATURE_BACKLOG_DESK",
+        "name": "Feature Backlog Desk",
+        "description": "Product feature backlog"
+      },
+      {
+        "id": "TITLE-AR_AGING_DESK",
+        "name": "AR Aging Desk",
+        "description": "AR aging oversight"
+      },
+      {
+        "id": "TITLE-CASH_APP_DESK",
+        "name": "Cash App Desk",
+        "description": "Cash application oversight"
+      },
+      {
+        "id": "TITLE-AP_CONTROL_DESK",
+        "name": "AP Control Desk",
+        "description": "AP control oversight"
+      },
+      {
+        "id": "TITLE-QUALITY_GATE_BOARD",
+        "name": "Quality Gate Board",
+        "description": "Internal QA gate board"
+      },
+      {
+        "id": "TITLE-DEFECT_TREND_DESK",
+        "name": "Defect Trend Desk",
+        "description": "Defect trend analysis"
+      },
+      {
+        "id": "TITLE-OPS_KPI_DESK",
+        "name": "Ops KPI Desk",
+        "description": "Operations KPI tracking"
+      },
+      {
+        "id": "TITLE-SERVER_PATCH_DESK",
+        "name": "Server Patch Desk",
+        "description": "Unix server patching"
+      },
+      {
+        "id": "TITLE-SHELL_OPS_DESK",
+        "name": "Shell Ops Desk",
+        "description": "Unix shell operations"
+      },
+      {
+        "id": "TITLE-PRODUCTION_CODE_BENCH",
+        "name": "Production Code Bench",
+        "description": "Production development bench"
+      },
+      {
+        "id": "TITLE-HOTFIX_DESK",
+        "name": "Hotfix Desk",
+        "description": "Production hotfix desk"
+      },
+      {
+        "id": "TITLE-AUDIT_PLAN_DESK",
+        "name": "Audit Plan Desk",
+        "description": "Internal audit planning"
+      },
+      {
+        "id": "TITLE-PAYROLL_CALENDAR_DESK",
+        "name": "Payroll Calendar Desk",
+        "description": "Payroll calendar management"
+      },
+      {
+        "id": "TITLE-TIME_KEEP_DESK",
+        "name": "Time Keep Desk",
+        "description": "Timekeeping oversight"
+      },
+      {
+        "id": "TITLE-EXECUTIVE_BRIEF_DESK",
+        "name": "Executive Brief Desk",
+        "description": "Executive briefing materials"
+      },
+      {
+        "id": "TITLE-TEAM_QUOTA_DESK",
+        "name": "Team Quota Desk",
+        "description": "Sales team quota tracking"
+      },
+      {
+        "id": "TITLE-DEAL_DESK",
+        "name": "Deal Desk",
+        "description": "Sales deal desk"
+      },
+      {
+        "id": "TITLE-STAGING_FEATURE_BENCH",
+        "name": "Staging Feature Bench",
+        "description": "Advanced staging features"
+      },
+      {
+        "id": "TITLE-INTEGRATION_HARNESS",
+        "name": "Integration Harness",
+        "description": "Staging integration harness"
+      },
+      {
+        "id": "TITLE-ER_TRIAGE_DESK",
+        "name": "ER Triage Desk",
+        "description": "Emergency room triage"
+      },
+      {
+        "id": "TITLE-OPS_COMMAND_DESK",
+        "name": "Ops Command Desk",
+        "description": "Operations command desk"
+      },
+      {
+        "id": "TITLE-CAPACITY_PLAN_DESK",
+        "name": "Capacity Plan Desk",
+        "description": "Capacity planning"
+      },
+      {
+        "id": "TITLE-QUEUE_PERFORMANCE_DESK",
+        "name": "Queue Performance Desk",
+        "description": "Call center queue performance"
+      },
+      {
+        "id": "TITLE-DBA_CONSOLE_DESK",
+        "name": "DBA Console Desk",
+        "description": "Oracle DBA console"
+      },
+      {
+        "id": "TITLE-SCHEMA_CHANGE_DESK",
+        "name": "Schema Change Desk",
+        "description": "Oracle schema changes"
+      },
+      {
+        "id": "TITLE-LINE_SCHEDULE_DESK",
+        "name": "Line Schedule Desk",
+        "description": "Production line scheduling"
+      },
+      {
+        "id": "TITLE-YIELD_TRACKER_DESK",
+        "name": "Yield Tracker Desk",
+        "description": "Production yield tracking"
+      },
+      {
+        "id": "TITLE-PRODUCT_SPRINT_DESK",
+        "name": "Product Sprint Desk",
+        "description": "Product sprint workspace"
+      },
+      {
+        "id": "TITLE-ARCHITECTURE_LAB_DESK",
+        "name": "Architecture Lab Desk",
+        "description": "Product architecture lab"
+      },
+      {
+        "id": "TITLE-TECH_DEBT_BOARD",
+        "name": "Tech Debt Board",
+        "description": "Technical debt board"
+      },
+      {
+        "id": "TITLE-CLINICAL_GOVERNANCE_DESK",
+        "name": "Clinical Governance Desk",
+        "description": "Clinical governance oversight"
+      },
+      {
+        "id": "TITLE-TOTAL_REWARDS_DESK",
+        "name": "Total Rewards Desk",
+        "description": "Total rewards design"
+      },
+      {
+        "id": "TITLE-EQUITY_PLAN_DESK",
+        "name": "Equity Plan Desk",
+        "description": "Equity plan administration"
+      },
+      {
+        "id": "TITLE-SHIFT_ROSTER_DESK",
+        "name": "Shift Roster Desk",
+        "description": "Operations shift roster"
+      },
+      {
+        "id": "TITLE-BUILD_SCRIPT_DESK",
+        "name": "Build Script Desk",
+        "description": "Production build scripts"
+      },
+      {
+        "id": "TITLE-CI_PIPELINE_DESK",
+        "name": "CI Pipeline Desk",
+        "description": "Continuous integration desk"
+      },
+      {
+        "id": "TITLE-MAINFRAME_ACCESS_DESK",
+        "name": "Mainframe Access Desk",
+        "description": "RACF access administration"
+      },
+      {
+        "id": "TITLE-SQL_OPS_CONSOLE",
+        "name": "SQL Ops Console",
+        "description": "SQL Server operations"
+      },
+      {
+        "id": "TITLE-BACKUP_RESTORE_DESK",
+        "name": "Backup Restore Desk",
+        "description": "Database backup restore"
+      },
+      {
+        "id": "TITLE-UNIT_STAFFING_DESK",
+        "name": "Unit Staffing Desk",
+        "description": "Nursing unit staffing"
+      },
+      {
+        "id": "TITLE-CARE_QUALITY_DESK",
+        "name": "Care Quality Desk",
+        "description": "Nursing care quality"
+      },
+      {
+        "id": "TITLE-ASSET_ALLOCATION_DESK",
+        "name": "Asset Allocation Desk",
+        "description": "Asset allocation oversight"
+      },
+      {
+        "id": "TITLE-DATA_PLATFORM_DESK",
+        "name": "Data Platform Desk",
+        "description": "Database platform oversight"
+      },
+      {
+        "id": "TITLE-REPLICATION_DESK",
+        "name": "Replication Desk",
+        "description": "Database replication desk"
+      },
+      {
+        "id": "TITLE-TICKET_TRIAGE_DESK",
+        "name": "Ticket Triage Desk",
+        "description": "Helpdesk ticket triage"
+      },
+      {
+        "id": "TITLE-FINANCE_OPS_DESK",
+        "name": "Finance Ops Desk",
+        "description": "Senior finance operations"
+      },
+      {
+        "id": "TITLE-AUDIT_LIAISON_DESK",
+        "name": "Audit Liaison Desk",
+        "description": "External audit liaison"
+      },
+      {
+        "id": "TITLE-PLANT_OPS_DESK",
+        "name": "Plant Ops Desk",
+        "description": "Plant operations oversight"
+      },
+      {
+        "id": "TITLE-HIRING_PLAN_DESK",
+        "name": "Hiring Plan Desk",
+        "description": "Employment hiring plans"
+      },
+      {
+        "id": "TITLE-OFFER_DESK",
+        "name": "Offer Desk",
+        "description": "Employment offer desk"
+      },
+      {
+        "id": "TITLE-ADVANCED_TEST_BENCH",
+        "name": "Advanced Test Bench",
+        "description": "Advanced production testing"
+      },
+      {
+        "id": "TITLE-FIXTURE_LAB_DESK",
+        "name": "Fixture Lab Desk",
+        "description": "Test fixture laboratory"
+      },
+      {
+        "id": "TITLE-MARKET_RESEARCH_DESK",
+        "name": "Market Research Desk",
+        "description": "Treasury market research"
+      }
+    ],
+    "workplaceAccess": [
+      {
+        "id": "WORKPLACE-USER",
+        "name": "Workplace User",
+        "description": "Baseline workplace access for active employees and contractors"
+      },
+      {
+        "id": "CITY-LONE_STAR_BADGE_GATE",
+        "name": "Lone Star Badge Gate",
+        "description": "Austin badge access gate"
+      },
+      {
+        "id": "CITY-HILL_COUNTRY_PRINTERS",
+        "name": "Hill Country Printers",
+        "description": "Austin floor printers"
+      },
+      {
+        "id": "CITY-BAY_CAMPUS_BADGE",
+        "name": "Bay Campus Badge",
+        "description": "San Jose campus badge"
+      },
+      {
+        "id": "CITY-EU_HUB_BADGE_GATE",
+        "name": "EU Hub Badge Gate",
+        "description": "Brussels hub badge"
+      },
+      {
+        "id": "CITY-ATOMIUM_MEETING_ROOMS",
+        "name": "Atomium Meeting Rooms",
+        "description": "Brussels meeting rooms"
+      },
+      {
+        "id": "CITY-THAMES_HUB_ENTRY",
+        "name": "Thames Hub Entry",
+        "description": "London Thames hub entry"
+      },
+      {
+        "id": "CITY-FLEET_STREET_PRINTERS",
+        "name": "Fleet Street Printers",
+        "description": "London floor printers"
+      },
+      {
+        "id": "CITY-PAULISTA_BADGE_GATE",
+        "name": "Paulista Badge Gate",
+        "description": "Sao Paulo badge access"
+      },
+      {
+        "id": "CITY-MARINA_BAY_BADGE",
+        "name": "Marina Bay Badge",
+        "description": "Singapore Marina Bay badge"
+      },
+      {
+        "id": "CITY-ORCHARD_MEETING_ROOMS",
+        "name": "Orchard Meeting Rooms",
+        "description": "Singapore meeting rooms"
+      },
+      {
+        "id": "CITY-SHIBUYA_BADGE_GATE",
+        "name": "Shibuya Badge Gate",
+        "description": "Tokyo Shibuya badge"
+      },
+      {
+        "id": "CITY-XINYI_BADGE_GATE",
+        "name": "Xinyi Badge Gate",
+        "description": "Taipei Xinyi badge"
+      },
+      {
+        "id": "CITY-TAIPEI_PRINTERS",
+        "name": "Taipei Printers",
+        "description": "Taipei floor printers"
+      },
+      {
+        "id": "CITY-ISAR_CAMPUS_BADGE",
+        "name": "Isar Campus Badge",
+        "description": "Munich Isar campus badge"
+      },
+      {
+        "id": "CITY-HUDSON_BADGE_GATE",
+        "name": "Hudson Badge Gate",
+        "description": "New York Hudson badge"
+      },
+      {
+        "id": "CITY-BROADWAY_MEETING_ROOMS",
+        "name": "Broadway Meeting Rooms",
+        "description": "New York meeting rooms"
+      }
+    ],
+    "customer360": [
+      {
+        "id": "C360-CUSTOMER_RECORD_VIEWER",
+        "name": "Customer Record Viewer",
+        "description": "Read-only access to customer profiles and account history"
+      },
+      {
+        "id": "C360-CASE_DESK",
+        "name": "Customer Case Desk",
+        "description": "Create and manage customer service cases"
+      },
+      {
+        "id": "C360-CASE_SUPERVISOR",
+        "name": "Customer Case Supervisor",
+        "description": "Reassign cases and approve escalations"
+      },
+      {
+        "id": "C360-LEAD_MANAGEMENT",
+        "name": "Lead Management",
+        "description": "Create, qualify, and route sales leads"
+      },
+      {
+        "id": "C360-OPPORTUNITY_MANAGEMENT",
+        "name": "Opportunity Management",
+        "description": "Create and update sales opportunities"
+      },
+      {
+        "id": "C360-QUOTE_MANAGEMENT",
+        "name": "Quote Management",
+        "description": "Build and revise customer quotes"
+      },
+      {
+        "id": "C360-CAMPAIGN_MANAGEMENT",
+        "name": "Campaign Management",
+        "description": "Create and manage customer campaigns"
+      },
+      {
+        "id": "C360-BILLING_VIEW",
+        "name": "Customer Billing View",
+        "description": "Read-only access to customer billing status and history"
+      },
+      {
+        "id": "C360-DATA_EXPORT",
+        "name": "Customer Data Export",
+        "description": "Export customer and sales data"
+      },
+      {
+        "id": "C360-ADMINISTRATION",
+        "name": "Customer 360 Administration",
+        "description": "Configure Customer 360 security and application settings"
+      }
+    ]
+  },
+  "requestableAccessProfiles": [
+    {
+      "name": "Customer Record Viewer",
+      "description": "Request read-only access to customer profiles and account history",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-CUSTOMER_RECORD_VIEWER"]
+    },
+    {
+      "name": "Customer Case Desk",
+      "description": "Request access to create and manage customer service cases",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-CASE_DESK"]
+    },
+    {
+      "name": "Customer Case Supervisor",
+      "description": "Request access to supervise customer cases and escalations",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-CASE_SUPERVISOR"]
+    },
+    {
+      "name": "Lead Management",
+      "description": "Request access to create, qualify, and route sales leads",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-LEAD_MANAGEMENT"]
+    },
+    {
+      "name": "Opportunity Management",
+      "description": "Request access to create and update sales opportunities",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-OPPORTUNITY_MANAGEMENT"]
+    },
+    {
+      "name": "Quote Management",
+      "description": "Request access to build and revise customer quotes",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-QUOTE_MANAGEMENT"]
+    },
+    {
+      "name": "Campaign Management",
+      "description": "Request access to create and manage customer campaigns",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-CAMPAIGN_MANAGEMENT"]
+    },
+    {
+      "name": "Customer Billing View",
+      "description": "Request read-only access to customer billing details",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-BILLING_VIEW"]
+    },
+    {
+      "name": "Customer Data Export",
+      "description": "Request permission to export customer and sales data",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-DATA_EXPORT"]
+    },
+    {
+      "name": "Customer 360 Administration",
+      "description": "Request administrative access to Customer 360",
+      "sourceKey": "customer360",
+      "entitlementIds": ["C360-ADMINISTRATION"]
+    }
+  ],
+  "departmentRoles": [
+    {
+      "name": "Accounting Department",
+      "description": "Birthright access for the Accounting department",
+      "attribute": "department",
+      "attributeValue": "Accounting",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-LEDGER_CLOSE_DESK",
+        "DEPT-VENDOR_MASTER_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Accounting"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Engineering Department",
+      "description": "Birthright access for the Engineering department",
+      "attribute": "department",
+      "attributeValue": "Engineering",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-DESIGN_REVIEW_BOARD",
+        "DEPT-BUILD_PIPELINE_GATE"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Engineering"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Human Resources Department",
+      "description": "Birthright access for the Human Resources department",
+      "attribute": "department",
+      "attributeValue": "Human Resources",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-PEOPLE_CASE_DESK",
+        "DEPT-POLICY_LIBRARY_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Human Resources"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Information Technology Department",
+      "description": "Birthright access for the Information Technology department",
+      "attribute": "department",
+      "attributeValue": "Information Technology",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-SERVICE_DESK_CONSOLE",
+        "DEPT-CHANGE_ADVISORY_BOARD"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Information Technology"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Finance Department",
+      "description": "Birthright access for the Finance department",
+      "attribute": "department",
+      "attributeValue": "Finance",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-CLOSE_CALENDAR",
+        "DEPT-FORECAST_WORKBENCH"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Finance"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Inventory Department",
+      "description": "Birthright access for the Inventory department",
+      "attribute": "department",
+      "attributeValue": "Inventory",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-STOCK_MOVEMENT_DESK",
+        "DEPT-CYCLE_COUNT_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Inventory"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Asset Management Department",
+      "description": "Birthright access for the Asset Management department",
+      "attribute": "department",
+      "attributeValue": "Asset Management",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-PORTFOLIO_MONITOR",
+        "DEPT-CAPEX_PIPELINE"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Asset Management"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Sales Department",
+      "description": "Birthright access for the Sales department",
+      "attribute": "department",
+      "attributeValue": "Sales",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-OPPORTUNITY_PIPELINE",
+        "DEPT-QUOTE_BUILDER_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Sales"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Call Center Department",
+      "description": "Birthright access for the Call Center department",
+      "attribute": "department",
+      "attributeValue": "Call Center",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-CONTACT_QUEUE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Call Center"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Nursing Department",
+      "description": "Birthright access for the Nursing department",
+      "attribute": "department",
+      "attributeValue": "Nursing",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-CARE_CHART_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Nursing"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Regional Operations Department",
+      "description": "Birthright access for the Regional Operations department",
+      "attribute": "department",
+      "attributeValue": "Regional Operations",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-REGION_OPS_DESK",
+        "DEPT-SITE_ESCALATION_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Regional Operations"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Doctors Department",
+      "description": "Birthright access for the Doctors department",
+      "attribute": "department",
+      "attributeValue": "Doctors",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-CLINICAL_ORDER_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Doctors"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Executive Management Department",
+      "description": "Birthright access for the Executive Management department",
+      "attribute": "department",
+      "attributeValue": "Executive Management",
+      "sourceKey": "departmentServices",
+      "entitlementIds": [
+        "DEPT-BOARD_PACK_DESK",
+        "DEPT-STRATEGY_WAR_ROOM"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.department"
+              },
+              "stringValue": "Executive Management"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "titleRoles": [
+    {
+      "name": "Call Center Representative",
+      "description": "Birthright access for the Call Center Representative job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Call Center Representative",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-SOFTPHONE_AGENT_SEAT",
+        "TITLE-CALL_WRAP_SCRIPT"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Call Center Representative]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Information Security Analyst",
+      "description": "Birthright access for the Information Security Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Information Security Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-THREAT_TRIAGE_DESK",
+        "TITLE-VULNERABILITY_QUEUE"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Information Security Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Financial Systems Analyst",
+      "description": "Birthright access for the Financial Systems Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Financial Systems Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-ERP_CONFIG_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Financial Systems Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Treasury Analyst",
+      "description": "Birthright access for the Treasury Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Treasury Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-CASH_POSITION_DESK",
+        "TITLE-BANK_PORTAL_ACCESS"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Treasury Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Accounts Payable Analyst",
+      "description": "Birthright access for the Accounts Payable Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Accounts Payable Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-INVOICE_SETTLEMENT_QUEUE",
+        "TITLE-VENDOR_PAYMENT_RELEASE"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Accounts Payable Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Inventory Analyst I",
+      "description": "Birthright access for the Inventory Analyst I job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Inventory Analyst I",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-STOCK_AGING_REPORT"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Inventory Analyst I]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Financial Planning Analyst",
+      "description": "Birthright access for the Financial Planning Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Financial Planning Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-BUDGET_MODEL_DESK",
+        "TITLE-SCENARIO_PLANNER"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Financial Planning Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Procurement Buyer",
+      "description": "Birthright access for the Procurement Buyer job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Procurement Buyer",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PURCHASE_REQUISITION_DESK",
+        "TITLE-SUPPLIER_CATALOG_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Procurement Buyer]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Training & Development Specialist",
+      "description": "Birthright access for the Training & Development Specialist job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Training & Development Specialist",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-LEARNING_PATH_BUILDER"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Training & Development Specialist]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Sales Engineer",
+      "description": "Birthright access for the Sales Engineer job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Sales Engineer",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-SOLUTION_DEMO_LAB",
+        "TITLE-RFP_RESPONSE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Sales Engineer]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Tax Accountant",
+      "description": "Birthright access for the Tax Accountant job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Tax Accountant",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-TAX_PROVISION_DESK",
+        "TITLE-RETURN_FILING_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Tax Accountant]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Benefits Clerk",
+      "description": "Birthright access for the Benefits Clerk job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Benefits Clerk",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-BENEFITS_ENROLLMENT_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Benefits Clerk]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Investment Manager",
+      "description": "Birthright access for the Investment Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Investment Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PORTFOLIO_ALLOCATION_DESK",
+        "TITLE-DEAL_MEMO_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Investment Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Compensation",
+      "description": "Birthright access for the Compensation job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Compensation",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-COMP_BAND_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Compensation]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Cost Savings Analyst",
+      "description": "Birthright access for the Cost Savings Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Cost Savings Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-SAVINGS_TRACKER_DESK",
+        "TITLE-SPEND_DEEP_DIVE"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Cost Savings Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Enterprise Sales Executive",
+      "description": "Birthright access for the Enterprise Sales Executive job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Enterprise Sales Executive",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-ENTERPRISE_ACCOUNT_DESK",
+        "TITLE-EXECUTIVE_SPONSOR_PACK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Enterprise Sales Executive]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Regional Sales Executive",
+      "description": "Birthright access for the Regional Sales Executive job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Regional Sales Executive",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-TERRITORY_PIPELINE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Regional Sales Executive]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Staging Test Engineer I",
+      "description": "Birthright access for the Staging Test Engineer I job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Staging Test Engineer I",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-STAGING_TEST_RACK",
+        "TITLE-DEFECT_TRIAGE_BOARD"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Staging Test Engineer I]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Accounts Receivable Analyst",
+      "description": "Birthright access for the Accounts Receivable Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Accounts Receivable Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-COLLECTIONS_QUEUE",
+        "TITLE-CREDIT_MEMO_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Accounts Receivable Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Production Test Engineer I",
+      "description": "Birthright access for the Production Test Engineer I job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Production Test Engineer I",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PRODUCTION_TEST_BENCH"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Production Test Engineer I]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Recruiter",
+      "description": "Birthright access for the Recruiter job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Recruiter",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-CANDIDATE_PIPELINE_DESK",
+        "TITLE-INTERVIEW_SCHEDULER"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Recruiter]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Windows Administrator",
+      "description": "Birthright access for the Windows Administrator job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Windows Administrator",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-DOMAIN_OPS_CONSOLE",
+        "TITLE-PATCH_RING_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Windows Administrator]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Nurse Staff",
+      "description": "Birthright access for the Nurse Staff job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Nurse Staff",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-SHIFT_CHART_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Nurse Staff]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Franchise Manager",
+      "description": "Birthright access for the Franchise Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Franchise Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-FRANCHISE_SCORECARD",
+        "TITLE-ROYALTY_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Franchise Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Internal Auditor",
+      "description": "Birthright access for the Internal Auditor job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Internal Auditor",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-AUDIT_WORKPAPER_DESK",
+        "TITLE-CONTROL_TEST_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Internal Auditor]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Real Estate Manager",
+      "description": "Birthright access for the Real Estate Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Real Estate Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-LEASE_ABSTRACT_DESK",
+        "TITLE-SITE_ACQUISITION_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Real Estate Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Receiving Analyst",
+      "description": "Birthright access for the Receiving Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Receiving Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-INBOUND_DOCK_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Receiving Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Intellectual Property Manager",
+      "description": "Birthright access for the Intellectual Property Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Intellectual Property Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PATENT_DOCKET_DESK",
+        "TITLE-IP_DISCLOSURE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Intellectual Property Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Employee Relations Manager",
+      "description": "Birthright access for the Employee Relations Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Employee Relations Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-ER_CASE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Employee Relations Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Inventory Analyst II",
+      "description": "Birthright access for the Inventory Analyst II job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Inventory Analyst II",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-REPLENISHMENT_PLANNER",
+        "TITLE-SKU_HEALTH_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Inventory Analyst II]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Doctor",
+      "description": "Birthright access for the Doctor job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Doctor",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-ENCOUNTER_NOTE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Doctor]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Payroll Analyst I",
+      "description": "Birthright access for the Payroll Analyst I job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Payroll Analyst I",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PAYROLL_RUN_DESK",
+        "TITLE-GARNISHMENT_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Payroll Analyst I]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Security Architect",
+      "description": "Birthright access for the Security Architect job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Security Architect",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-CONTROL_BLUEPRINT_DESK",
+        "TITLE-ZERO_TRUST_DESIGN_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Security Architect]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Inventory Manager",
+      "description": "Birthright access for the Inventory Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Inventory Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-WAREHOUSE_OPS_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Inventory Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Data Communications Analyst",
+      "description": "Birthright access for the Data Communications Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Data Communications Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-CIRCUIT_INVENTORY_DESK",
+        "TITLE-WAN_HEALTH_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Data Communications Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Procurement Analyst",
+      "description": "Birthright access for the Procurement Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Procurement Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-SPEND_CATEGORY_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Procurement Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "QA Analyst",
+      "description": "Birthright access for the QA Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "QA Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-TEST_CASE_LIBRARY",
+        "TITLE-RELEASE_SIGNOFF_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[QA Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Procurement Manager",
+      "description": "Birthright access for the Procurement Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Procurement Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-SOURCING_EVENT_DESK",
+        "TITLE-CONTRACT_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Procurement Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Inventory Analyst III",
+      "description": "Birthright access for the Inventory Analyst III job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Inventory Analyst III",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-DEMAND_SENSING_DESK",
+        "TITLE-SAFETY_STOCK_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Inventory Analyst III]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Staging Developer I",
+      "description": "Birthright access for the Staging Developer I job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Staging Developer I",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-STAGING_CODE_BENCH"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Staging Developer I]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "HR Manager",
+      "description": "Birthright access for the HR Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "HR Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-ORG_CHART_DESK",
+        "TITLE-WORKFORCE_PLAN_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[HR Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Network Systems Administrator",
+      "description": "Birthright access for the Network Systems Administrator job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Network Systems Administrator",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-FIREWALL_CHANGE_DESK",
+        "TITLE-DNS_OPS_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Network Systems Administrator]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Staging Manager",
+      "description": "Birthright access for the Staging Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Staging Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-STAGING_RELEASE_BOARD"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Staging Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Nurse Charge",
+      "description": "Birthright access for the Nurse Charge job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Nurse Charge",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-UNIT_CENSUS_DESK",
+        "TITLE-SHIFT_HANDOFF_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Nurse Charge]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Benefits Manager",
+      "description": "Birthright access for the Benefits Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Benefits Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PLAN_DESIGN_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Benefits Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "IT Distributed Systems Manager",
+      "description": "Birthright access for the IT Distributed Systems Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "IT Distributed Systems Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-EDGE_OPS_DESK",
+        "TITLE-SITE_RELIABILITY_BOARD"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[IT Distributed Systems Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Senior Payroll Analyst",
+      "description": "Birthright access for the Senior Payroll Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Senior Payroll Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PAYROLL_EXCEPTION_DESK",
+        "TITLE-TAX_FILING_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Senior Payroll Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Product Developer I",
+      "description": "Birthright access for the Product Developer I job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Product Developer I",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-FEATURE_BACKLOG_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Product Developer I]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AR Accounting Manager",
+      "description": "Birthright access for the AR Accounting Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "AR Accounting Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-AR_AGING_DESK",
+        "TITLE-CASH_APP_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[AR Accounting Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "AP Accounting Manager",
+      "description": "Birthright access for the AP Accounting Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "AP Accounting Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-AP_CONTROL_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[AP Accounting Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Internal QA Manager",
+      "description": "Birthright access for the Internal QA Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Internal QA Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-QUALITY_GATE_BOARD",
+        "TITLE-DEFECT_TREND_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Internal QA Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Operations Analyst",
+      "description": "Birthright access for the Operations Analyst job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Operations Analyst",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-OPS_KPI_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Operations Analyst]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Unix Administrator",
+      "description": "Birthright access for the Unix Administrator job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Unix Administrator",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-SERVER_PATCH_DESK",
+        "TITLE-SHELL_OPS_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Unix Administrator]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Production Developer II",
+      "description": "Birthright access for the Production Developer II job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Production Developer II",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PRODUCTION_CODE_BENCH",
+        "TITLE-HOTFIX_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Production Developer II]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Internal Audit Manager",
+      "description": "Birthright access for the Internal Audit Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Internal Audit Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-AUDIT_PLAN_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Internal Audit Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Payroll Manager",
+      "description": "Birthright access for the Payroll Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Payroll Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PAYROLL_CALENDAR_DESK",
+        "TITLE-TIME_KEEP_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Payroll Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Senior Executive",
+      "description": "Birthright access for the Senior Executive job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Senior Executive",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-EXECUTIVE_BRIEF_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Senior Executive]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Sales Manager",
+      "description": "Birthright access for the Sales Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Sales Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-TEAM_QUOTA_DESK",
+        "TITLE-DEAL_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Sales Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Staging Developer II",
+      "description": "Birthright access for the Staging Developer II job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Staging Developer II",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-STAGING_FEATURE_BENCH",
+        "TITLE-INTEGRATION_HARNESS"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Staging Developer II]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Nurse Staff-ER",
+      "description": "Birthright access for the Nurse Staff-ER job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Nurse Staff-ER",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-ER_TRIAGE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Nurse Staff-ER]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Operations Director",
+      "description": "Birthright access for the Operations Director job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Operations Director",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-OPS_COMMAND_DESK",
+        "TITLE-CAPACITY_PLAN_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Operations Director]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Call Center Manager",
+      "description": "Birthright access for the Call Center Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Call Center Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-QUEUE_PERFORMANCE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Call Center Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Oracle Administrator",
+      "description": "Birthright access for the Oracle Administrator job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Oracle Administrator",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-DBA_CONSOLE_DESK",
+        "TITLE-SCHEMA_CHANGE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Oracle Administrator]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Production Manager",
+      "description": "Birthright access for the Production Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Production Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-LINE_SCHEDULE_DESK",
+        "TITLE-YIELD_TRACKER_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Production Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Product Developer II",
+      "description": "Birthright access for the Product Developer II job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Product Developer II",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PRODUCT_SPRINT_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Product Developer II]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Product Developer III",
+      "description": "Birthright access for the Product Developer III job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Product Developer III",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-ARCHITECTURE_LAB_DESK",
+        "TITLE-TECH_DEBT_BOARD"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Product Developer III]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Doctor Chief",
+      "description": "Birthright access for the Doctor Chief job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Doctor Chief",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-CLINICAL_GOVERNANCE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Doctor Chief]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Compensation & Benefits Manager",
+      "description": "Birthright access for the Compensation & Benefits Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Compensation & Benefits Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-TOTAL_REWARDS_DESK",
+        "TITLE-EQUITY_PLAN_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Compensation & Benefits Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Operations Manager",
+      "description": "Birthright access for the Operations Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Operations Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-SHIFT_ROSTER_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Operations Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Production Developer I",
+      "description": "Birthright access for the Production Developer I job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Production Developer I",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-BUILD_SCRIPT_DESK",
+        "TITLE-CI_PIPELINE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Production Developer I]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "RACF Security Administrator",
+      "description": "Birthright access for the RACF Security Administrator job title",
+      "attribute": "titleHistory",
+      "attributeValue": "RACF Security Administrator",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-MAINFRAME_ACCESS_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[RACF Security Administrator]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "SQL Server Administrator",
+      "description": "Birthright access for the SQL Server Administrator job title",
+      "attribute": "titleHistory",
+      "attributeValue": "SQL Server Administrator",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-SQL_OPS_CONSOLE",
+        "TITLE-BACKUP_RESTORE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[SQL Server Administrator]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Nurse Manager",
+      "description": "Birthright access for the Nurse Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Nurse Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-UNIT_STAFFING_DESK",
+        "TITLE-CARE_QUALITY_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Nurse Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Asset Management Manager",
+      "description": "Birthright access for the Asset Management Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Asset Management Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-ASSET_ALLOCATION_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Asset Management Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "IT Database Manager",
+      "description": "Birthright access for the IT Database Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "IT Database Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-DATA_PLATFORM_DESK",
+        "TITLE-REPLICATION_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[IT Database Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Helpdesk Associate",
+      "description": "Birthright access for the Helpdesk Associate job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Helpdesk Associate",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-TICKET_TRIAGE_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Helpdesk Associate]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Senior Finance Manager",
+      "description": "Birthright access for the Senior Finance Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Senior Finance Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-FINANCE_OPS_DESK",
+        "TITLE-AUDIT_LIAISON_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Senior Finance Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Senior Production Manager",
+      "description": "Birthright access for the Senior Production Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Senior Production Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-PLANT_OPS_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Senior Production Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Employment Manager",
+      "description": "Birthright access for the Employment Manager job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Employment Manager",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-HIRING_PLAN_DESK",
+        "TITLE-OFFER_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Employment Manager]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Production Test Engineer II",
+      "description": "Birthright access for the Production Test Engineer II job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Production Test Engineer II",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-ADVANCED_TEST_BENCH",
+        "TITLE-FIXTURE_LAB_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Production Test Engineer II]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Treasury Researcher",
+      "description": "Birthright access for the Treasury Researcher job title",
+      "attribute": "titleHistory",
+      "attributeValue": "Treasury Researcher",
+      "sourceKey": "workforceAccess",
+      "entitlementIds": [
+        "TITLE-MARKET_RESEARCH_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": {
+          "operation": "AND",
+          "children": [
+            {
+              "operation": "EQUALS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.cloudLifecycleState"
+              },
+              "stringValue": "active"
+            },
+            {
+              "operation": "CONTAINS",
+              "key": {
+                "type": "IDENTITY",
+                "property": "attribute.titleHistory"
+              },
+              "values": [
+                "[Treasury Researcher]"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "workplaceRole": {
+    "name": "Workplace User",
+    "description": "Dimensional workplace access for active employees and contractors",
+    "dimensional": true,
+    "sourceKey": "workplaceAccess",
+    "entitlementIds": [
+      "WORKPLACE-USER"
+    ],
+    "membership": {
+      "type": "STANDARD",
+      "criteria": {
+        "operation": "AND",
+        "children": [
+          {
+            "operation": "EQUALS",
+            "key": {
+              "type": "IDENTITY",
+              "property": "attribute.cloudLifecycleState"
+            },
+            "stringValue": "active"
+          },
+          {
+            "operation": "OR",
+            "children": [
+              {
+                "operation": "EQUALS",
+                "key": {
+                  "type": "IDENTITY",
+                  "property": "attribute.userType"
+                },
+                "stringValue": "Employee"
+              },
+              {
+                "operation": "EQUALS",
+                "key": {
+                  "type": "IDENTITY",
+                  "property": "attribute.userType"
+                },
+                "stringValue": "Contractor"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "dimensionSchema": {
+      "dimensionAttributes": [
+        {
+          "name": "city",
+          "displayName": "City",
+          "derived": true
+        }
+      ]
+    },
+    "dimensions": [
+      {
+        "name": "Austin",
+        "description": "Workplace access for identities in Austin",
+        "attribute": "city",
+        "attributeValue": "Austin",
+        "entitlementIds": [
+          "CITY-LONE_STAR_BADGE_GATE",
+          "CITY-HILL_COUNTRY_PRINTERS"
+        ]
+      },
+      {
+        "name": "San Jose",
+        "description": "Workplace access for identities in San Jose",
+        "attribute": "city",
+        "attributeValue": "San Jose",
+        "entitlementIds": [
+          "CITY-BAY_CAMPUS_BADGE"
+        ]
+      },
+      {
+        "name": "Brussels",
+        "description": "Workplace access for identities in Brussels",
+        "attribute": "city",
+        "attributeValue": "Brussels",
+        "entitlementIds": [
+          "CITY-EU_HUB_BADGE_GATE",
+          "CITY-ATOMIUM_MEETING_ROOMS"
+        ]
+      },
+      {
+        "name": "London",
+        "description": "Workplace access for identities in London",
+        "attribute": "city",
+        "attributeValue": "London",
+        "entitlementIds": [
+          "CITY-THAMES_HUB_ENTRY",
+          "CITY-FLEET_STREET_PRINTERS"
+        ]
+      },
+      {
+        "name": "Sao Paulo",
+        "description": "Workplace access for identities in Sao Paulo",
+        "attribute": "city",
+        "attributeValue": "Sao Paulo",
+        "entitlementIds": [
+          "CITY-PAULISTA_BADGE_GATE"
+        ]
+      },
+      {
+        "name": "Singapore",
+        "description": "Workplace access for identities in Singapore",
+        "attribute": "city",
+        "attributeValue": "Singapore",
+        "entitlementIds": [
+          "CITY-MARINA_BAY_BADGE",
+          "CITY-ORCHARD_MEETING_ROOMS"
+        ]
+      },
+      {
+        "name": "Tokyo",
+        "description": "Workplace access for identities in Tokyo",
+        "attribute": "city",
+        "attributeValue": "Tokyo",
+        "entitlementIds": [
+          "CITY-SHIBUYA_BADGE_GATE"
+        ]
+      },
+      {
+        "name": "Taipei",
+        "description": "Workplace access for identities in Taipei",
+        "attribute": "city",
+        "attributeValue": "Taipei",
+        "entitlementIds": [
+          "CITY-XINYI_BADGE_GATE",
+          "CITY-TAIPEI_PRINTERS"
+        ]
+      },
+      {
+        "name": "Munich",
+        "description": "Workplace access for identities in Munich",
+        "attribute": "city",
+        "attributeValue": "Munich",
+        "entitlementIds": [
+          "CITY-ISAR_CAMPUS_BADGE"
+        ]
+      },
+      {
+        "name": "New York",
+        "description": "Workplace access for identities in New York",
+        "attribute": "city",
+        "attributeValue": "New York",
+        "entitlementIds": [
+          "CITY-HUDSON_BADGE_GATE",
+          "CITY-BROADWAY_MEETING_ROOMS"
+        ]
+      }
+    ]
+  }
+}

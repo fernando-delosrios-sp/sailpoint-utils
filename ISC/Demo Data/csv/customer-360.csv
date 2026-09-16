@@ -1,0 +1,11 @@
+id,name,displayName,created,description,modified,entitlements,groups,permissions
+C360-CUSTOMER_RECORD_VIEWER,Customer Record Viewer,Customer Record Viewer,,Read-only access to customer profiles and account history,,,,
+C360-CASE_DESK,Customer Case Desk,Customer Case Desk,,Create and manage customer service cases,,,,
+C360-CASE_SUPERVISOR,Customer Case Supervisor,Customer Case Supervisor,,Reassign cases and approve escalations,,,,
+C360-LEAD_MANAGEMENT,Lead Management,Lead Management,,Create qualify and route sales leads,,,,
+C360-OPPORTUNITY_MANAGEMENT,Opportunity Management,Opportunity Management,,Create and update sales opportunities,,,,
+C360-QUOTE_MANAGEMENT,Quote Management,Quote Management,,Build and revise customer quotes,,,,
+C360-CAMPAIGN_MANAGEMENT,Campaign Management,Campaign Management,,Create and manage customer campaigns,,,,
+C360-BILLING_VIEW,Customer Billing View,Customer Billing View,,Read-only access to customer billing status and history,,,,
+C360-DATA_EXPORT,Customer Data Export,Customer Data Export,,Export customer and sales data,,,,
+C360-ADMINISTRATION,Customer 360 Administration,Customer 360 Administration,,Configure Customer 360 security and application settings,,,,

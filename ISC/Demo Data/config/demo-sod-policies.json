@@ -1,0 +1,729 @@
+{
+  "version": 1,
+  "notes": [
+    "Conflicting-access SoD policies for the Demo Data entitlement catalog.",
+    "Policies are entitlement-vs-entitlement (CONFLICTING_ACCESS_BASED).",
+    "SOD-FIN-01 and SOD-SCM-03 conflict within a single birthright role; expect violations until those roles are split.",
+    "Mitigating controls are created via /controls/v1 and assigned on policies as allowedControls with type COMPENSATING_CONTROL."
+  ],
+  "ownerAlias": "slpt.services",
+  "tags": [
+    "demo-data",
+    "sod"
+  ],
+  "policies": [
+    {
+      "id": "SOD-FIN-01",
+      "name": "AP settlement vs payment release",
+      "description": "Invoice settlement must not combine with vendor payment release.",
+      "severity": "Critical",
+      "domain": "Finance",
+      "state": "ENFORCED",
+      "sameRoleBundle": true,
+      "left": {
+        "name": "AP settlement",
+        "entitlementNames": [
+          "Invoice Settlement Queue"
+        ],
+        "roles": [
+          "Accounts Payable Analyst"
+        ]
+      },
+      "right": {
+        "name": "Payment release",
+        "entitlementNames": [
+          "Vendor Payment Release"
+        ],
+        "roles": [
+          "Accounts Payable Analyst"
+        ]
+      },
+      "compensatingControls": "Split AP preparer and AP releaser duties; manager dual approval on payments.",
+      "correctionAdvice": "Remove either Invoice Settlement Queue or Vendor Payment Release from the identity.",
+      "allowedControlIds": [
+        "CTRL-MGR-DUAL",
+        "CTRL-TREASURY",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-FIN-02",
+      "name": "Vendor master vs payment release",
+      "description": "Vendor master maintenance must not combine with vendor payment release.",
+      "severity": "High",
+      "domain": "Finance",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Vendor master",
+        "entitlementNames": [
+          "Vendor Master Desk"
+        ],
+        "roles": [
+          "Accounting Department"
+        ]
+      },
+      "right": {
+        "name": "Payment release",
+        "entitlementNames": [
+          "Vendor Payment Release"
+        ],
+        "roles": [
+          "Accounts Payable Analyst"
+        ]
+      },
+      "compensatingControls": "Independent vendor master approval; treasury review of new payees.",
+      "correctionAdvice": "Remove either Vendor Master Desk or Vendor Payment Release.",
+      "allowedControlIds": [
+        "CTRL-MGR-DUAL",
+        "CTRL-TREASURY",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-FIN-03",
+      "name": "Payment release vs bank portal",
+      "description": "ERP payment release must not combine with corporate bank portal access.",
+      "severity": "Critical",
+      "domain": "Finance",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Payment release",
+        "entitlementNames": [
+          "Vendor Payment Release"
+        ],
+        "roles": [
+          "Accounts Payable Analyst"
+        ]
+      },
+      "right": {
+        "name": "Bank portal",
+        "entitlementNames": [
+          "Bank Portal Access"
+        ],
+        "roles": [
+          "Treasury Analyst"
+        ]
+      },
+      "compensatingControls": "Treasury dual control on bank portal; separate ERP releasers from bank operators.",
+      "correctionAdvice": "Remove either Vendor Payment Release or Bank Portal Access.",
+      "allowedControlIds": [
+        "CTRL-TREASURY",
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-FIN-04",
+      "name": "AR credit memo vs cash application",
+      "description": "Credit memo processing must not combine with cash application.",
+      "severity": "Medium",
+      "domain": "Finance",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Credit memos",
+        "entitlementNames": [
+          "Credit Memo Desk"
+        ],
+        "roles": [
+          "Accounts Receivable Analyst"
+        ]
+      },
+      "right": {
+        "name": "Cash application",
+        "entitlementNames": [
+          "Cash App Desk"
+        ],
+        "roles": [
+          "AR Accounting Manager"
+        ]
+      },
+      "compensatingControls": "Manager approval on credit memos above threshold.",
+      "correctionAdvice": "Remove either Credit Memo Desk or Cash App Desk.",
+      "allowedControlIds": [
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-FIN-05",
+      "name": "Ledger close vs audit workpapers",
+      "description": "Ledger close authority must not combine with internal audit workpapers.",
+      "severity": "Low",
+      "domain": "Finance",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Ledger close",
+        "entitlementNames": [
+          "Ledger Close Desk"
+        ],
+        "roles": [
+          "Accounting Department"
+        ]
+      },
+      "right": {
+        "name": "Audit workpapers",
+        "entitlementNames": [
+          "Audit Workpaper Desk"
+        ],
+        "roles": [
+          "Internal Auditor"
+        ]
+      },
+      "compensatingControls": "Audit independence; workpapers owned by Internal Audit only.",
+      "correctionAdvice": "Remove either Ledger Close Desk or Audit Workpaper Desk.",
+      "allowedControlIds": [
+        "CTRL-AUDIT",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-FIN-06",
+      "name": "ERP config vs control testing",
+      "description": "Financial ERP configuration must not combine with control testing.",
+      "severity": "Medium",
+      "domain": "Finance",
+      "state": "ENFORCED",
+      "left": {
+        "name": "ERP configuration",
+        "entitlementNames": [
+          "ERP Config Desk"
+        ],
+        "roles": [
+          "Financial Systems Analyst"
+        ]
+      },
+      "right": {
+        "name": "Control testing",
+        "entitlementNames": [
+          "Control Test Desk"
+        ],
+        "roles": [
+          "Internal Auditor"
+        ]
+      },
+      "compensatingControls": "Independent control testing by Internal Audit.",
+      "correctionAdvice": "Remove either ERP Config Desk or Control Test Desk.",
+      "allowedControlIds": [
+        "CTRL-AUDIT",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-HR-01",
+      "name": "Payroll run vs compensation bands",
+      "description": "Payroll run processing must not combine with compensation band maintenance.",
+      "severity": "High",
+      "domain": "HR / Payroll",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Payroll run",
+        "entitlementNames": [
+          "Payroll Run Desk"
+        ],
+        "roles": [
+          "Payroll Analyst I"
+        ]
+      },
+      "right": {
+        "name": "Compensation bands",
+        "entitlementNames": [
+          "Comp Band Desk"
+        ],
+        "roles": [
+          "Compensation"
+        ]
+      },
+      "compensatingControls": "Comp changes approved outside payroll; payroll reconciliations by a second person.",
+      "correctionAdvice": "Remove either Payroll Run Desk or Comp Band Desk.",
+      "allowedControlIds": [
+        "CTRL-COMP",
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-HR-02",
+      "name": "Payroll processing vs equity plan admin",
+      "description": "Payroll processing entitlements must not combine with equity plan administration.",
+      "severity": "Medium",
+      "domain": "HR / Payroll",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Payroll processing",
+        "entitlementNames": [
+          "Payroll Run Desk",
+          "Payroll Exception Desk",
+          "Payroll Calendar Desk"
+        ],
+        "roles": [
+          "Payroll Analyst I",
+          "Senior Payroll Analyst",
+          "Payroll Manager"
+        ]
+      },
+      "right": {
+        "name": "Equity plan admin",
+        "entitlementNames": [
+          "Equity Plan Desk"
+        ],
+        "roles": [
+          "Compensation & Benefits Manager"
+        ]
+      },
+      "compensatingControls": "Equity grants approved by Compensation Committee; payroll cannot alter equity plans.",
+      "correctionAdvice": "Remove payroll processing entitlements or Equity Plan Desk.",
+      "allowedControlIds": [
+        "CTRL-COMP",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-HR-03",
+      "name": "Offer desk vs payroll calendar",
+      "description": "Employment offer authority must not combine with payroll calendar control.",
+      "severity": "Low",
+      "domain": "HR / Payroll",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Offers",
+        "entitlementNames": [
+          "Offer Desk"
+        ],
+        "roles": [
+          "Employment Manager"
+        ]
+      },
+      "right": {
+        "name": "Payroll calendar",
+        "entitlementNames": [
+          "Payroll Calendar Desk"
+        ],
+        "roles": [
+          "Payroll Manager"
+        ]
+      },
+      "compensatingControls": "Offer compensation validated by Compensation before payroll setup.",
+      "correctionAdvice": "Remove either Offer Desk or Payroll Calendar Desk.",
+      "allowedControlIds": [
+        "CTRL-COMP",
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-HR-04",
+      "name": "ER cases vs payroll exceptions",
+      "description": "Employee relations cases must not combine with payroll exception processing.",
+      "severity": "Low",
+      "domain": "HR / Payroll",
+      "state": "ENFORCED",
+      "left": {
+        "name": "ER cases",
+        "entitlementNames": [
+          "ER Case Desk"
+        ],
+        "roles": [
+          "Employee Relations Manager"
+        ]
+      },
+      "right": {
+        "name": "Payroll exceptions",
+        "entitlementNames": [
+          "Payroll Exception Desk"
+        ],
+        "roles": [
+          "Senior Payroll Analyst"
+        ]
+      },
+      "compensatingControls": "ER settlements require payroll manager approval for pay adjustments.",
+      "correctionAdvice": "Remove either ER Case Desk or Payroll Exception Desk.",
+      "allowedControlIds": [
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-SEC-01",
+      "name": "Domain admin vs audit workpapers",
+      "description": "Windows domain operations must not combine with internal audit workpapers.",
+      "severity": "Critical",
+      "domain": "Security / IT",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Domain operations",
+        "entitlementNames": [
+          "Domain Ops Console"
+        ],
+        "roles": [
+          "Windows Administrator"
+        ]
+      },
+      "right": {
+        "name": "Audit workpapers",
+        "entitlementNames": [
+          "Audit Workpaper Desk"
+        ],
+        "roles": [
+          "Internal Auditor"
+        ]
+      },
+      "compensatingControls": "Audit independence from privileged IT operations.",
+      "correctionAdvice": "Remove either Domain Ops Console or Audit Workpaper Desk.",
+      "allowedControlIds": [
+        "CTRL-AUDIT",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-SEC-02",
+      "name": "RACF admin vs audit planning",
+      "description": "Mainframe RACF administration must not combine with internal audit planning.",
+      "severity": "High",
+      "domain": "Security / IT",
+      "state": "ENFORCED",
+      "left": {
+        "name": "RACF administration",
+        "entitlementNames": [
+          "Mainframe Access Desk"
+        ],
+        "roles": [
+          "RACF Security Administrator"
+        ]
+      },
+      "right": {
+        "name": "Audit planning",
+        "entitlementNames": [
+          "Audit Plan Desk"
+        ],
+        "roles": [
+          "Internal Audit Manager"
+        ]
+      },
+      "compensatingControls": "Audit plan ownership restricted to Internal Audit leadership.",
+      "correctionAdvice": "Remove either Mainframe Access Desk or Audit Plan Desk.",
+      "allowedControlIds": [
+        "CTRL-AUDIT",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-SEC-03",
+      "name": "Firewall change vs security architecture",
+      "description": "Firewall change execution must not combine with security control blueprint ownership.",
+      "severity": "Medium",
+      "domain": "Security / IT",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Firewall changes",
+        "entitlementNames": [
+          "Firewall Change Desk"
+        ],
+        "roles": [
+          "Network Systems Administrator"
+        ]
+      },
+      "right": {
+        "name": "Security blueprints",
+        "entitlementNames": [
+          "Control Blueprint Desk"
+        ],
+        "roles": [
+          "Security Architect"
+        ]
+      },
+      "compensatingControls": "Architecture approves design; operations implements under change control.",
+      "correctionAdvice": "Remove either Firewall Change Desk or Control Blueprint Desk.",
+      "allowedControlIds": [
+        "CTRL-CAB",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-SEC-04",
+      "name": "Schema change vs backup restore",
+      "description": "Database schema change must not combine with backup restore authority across platforms.",
+      "severity": "High",
+      "domain": "Security / IT",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Schema changes",
+        "entitlementNames": [
+          "Schema Change Desk"
+        ],
+        "roles": [
+          "Oracle Administrator"
+        ]
+      },
+      "right": {
+        "name": "Backup restore",
+        "entitlementNames": [
+          "Backup Restore Desk"
+        ],
+        "roles": [
+          "SQL Server Administrator"
+        ]
+      },
+      "compensatingControls": "Separate change and restore duties; logged restore approvals.",
+      "correctionAdvice": "Remove either Schema Change Desk or Backup Restore Desk.",
+      "allowedControlIds": [
+        "CTRL-CAB",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-ENG-01",
+      "name": "Production hotfix vs QA release signoff",
+      "description": "Production hotfix authority must not combine with QA release sign-off.",
+      "severity": "Critical",
+      "domain": "Engineering",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Production hotfixes",
+        "entitlementNames": [
+          "Hotfix Desk"
+        ],
+        "roles": [
+          "Production Developer II"
+        ]
+      },
+      "right": {
+        "name": "QA release signoff",
+        "entitlementNames": [
+          "Release Signoff Desk"
+        ],
+        "roles": [
+          "QA Analyst"
+        ]
+      },
+      "compensatingControls": "Independent QA sign-off for production changes.",
+      "correctionAdvice": "Remove either Hotfix Desk or Release Signoff Desk.",
+      "allowedControlIds": [
+        "CTRL-CAB",
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-ENG-02",
+      "name": "Build pipeline gate vs QA release signoff",
+      "description": "Build pipeline promotion must not combine with QA release sign-off.",
+      "severity": "Medium",
+      "domain": "Engineering",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Build pipeline gate",
+        "entitlementNames": [
+          "Build Pipeline Gate"
+        ],
+        "roles": [
+          "Engineering Department"
+        ]
+      },
+      "right": {
+        "name": "QA release signoff",
+        "entitlementNames": [
+          "Release Signoff Desk"
+        ],
+        "roles": [
+          "QA Analyst"
+        ]
+      },
+      "compensatingControls": "QA acceptance independent of engineering promotion rights.",
+      "correctionAdvice": "Remove either Build Pipeline Gate or Release Signoff Desk.",
+      "allowedControlIds": [
+        "CTRL-CAB",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-ENG-03",
+      "name": "Staging code vs staging release board",
+      "description": "Staging development must not combine with staging release board authority.",
+      "severity": "Low",
+      "domain": "Engineering",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Staging development",
+        "entitlementNames": [
+          "Staging Code Bench"
+        ],
+        "roles": [
+          "Staging Developer I"
+        ]
+      },
+      "right": {
+        "name": "Staging release board",
+        "entitlementNames": [
+          "Staging Release Board"
+        ],
+        "roles": [
+          "Staging Manager"
+        ]
+      },
+      "compensatingControls": "Release board chaired by staging management, not committers.",
+      "correctionAdvice": "Remove either Staging Code Bench or Staging Release Board.",
+      "allowedControlIds": [
+        "CTRL-CAB",
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-SCM-01",
+      "name": "Purchase requisition vs contract desk",
+      "description": "Purchase requisitioning must not combine with procurement contract finalization.",
+      "severity": "High",
+      "domain": "Supply chain",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Purchase requisitions",
+        "entitlementNames": [
+          "Purchase Requisition Desk"
+        ],
+        "roles": [
+          "Procurement Buyer"
+        ]
+      },
+      "right": {
+        "name": "Contracts",
+        "entitlementNames": [
+          "Contract Desk"
+        ],
+        "roles": [
+          "Procurement Manager"
+        ]
+      },
+      "compensatingControls": "Contract desk approval separate from requisitioner.",
+      "correctionAdvice": "Remove either Purchase Requisition Desk or Contract Desk.",
+      "allowedControlIds": [
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-SCM-02",
+      "name": "Inbound receiving vs stock movement",
+      "description": "Inbound receiving must not combine with inventory stock movement posting.",
+      "severity": "Medium",
+      "domain": "Supply chain",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Inbound receiving",
+        "entitlementNames": [
+          "Inbound Dock Desk"
+        ],
+        "roles": [
+          "Receiving Analyst"
+        ]
+      },
+      "right": {
+        "name": "Stock movement",
+        "entitlementNames": [
+          "Stock Movement Desk"
+        ],
+        "roles": [
+          "Inventory Department"
+        ]
+      },
+      "compensatingControls": "Blind receiving; independent inventory posting.",
+      "correctionAdvice": "Remove either Inbound Dock Desk or Stock Movement Desk.",
+      "allowedControlIds": [
+        "CTRL-BLIND",
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-SCM-03",
+      "name": "Stock movement vs cycle count",
+      "description": "Stock movement posting must not combine with cycle count execution.",
+      "severity": "Low",
+      "domain": "Supply chain",
+      "state": "ENFORCED",
+      "sameRoleBundle": true,
+      "left": {
+        "name": "Stock movement",
+        "entitlementNames": [
+          "Stock Movement Desk"
+        ],
+        "roles": [
+          "Inventory Department"
+        ]
+      },
+      "right": {
+        "name": "Cycle count",
+        "entitlementNames": [
+          "Cycle Count Desk"
+        ],
+        "roles": [
+          "Inventory Department"
+        ]
+      },
+      "compensatingControls": "Split movers and counters into separate roles before relying on preventive SoD.",
+      "correctionAdvice": "Remove either Stock Movement Desk or Cycle Count Desk.",
+      "allowedControlIds": [
+        "CTRL-BLIND",
+        "CTRL-MGR-DUAL",
+        "CTRL-REMEDIATE"
+      ]
+    }
+  ],
+  "mitigatingControls": [
+    {
+      "id": "CTRL-MGR-DUAL",
+      "name": "Manager dual review",
+      "type": "Mitigation",
+      "description": "Manager reviews and attests the conflicting access combination for a limited period.",
+      "expiration": "14d",
+      "justificationRequired": true
+    },
+    {
+      "id": "CTRL-TREASURY",
+      "name": "Treasury dual control",
+      "type": "Mitigation",
+      "description": "Treasury performs dual control review of payments and bank portal activity while the conflict remains.",
+      "expiration": "7d",
+      "justificationRequired": true
+    },
+    {
+      "id": "CTRL-AUDIT",
+      "name": "Audit independence attestation",
+      "type": "Mitigation",
+      "description": "Internal Audit lead attests independence and documents why audit and operational access coexist temporarily.",
+      "expiration": "30d",
+      "justificationRequired": true
+    },
+    {
+      "id": "CTRL-CAB",
+      "name": "Privileged change with CAB approval",
+      "type": "Mitigation",
+      "description": "CAB-approved change ticket covers the privileged conflict; access reviewed at change close.",
+      "expiration": "7d",
+      "justificationRequired": true
+    },
+    {
+      "id": "CTRL-COMP",
+      "name": "Compensation committee exception",
+      "type": "Mitigation",
+      "description": "Compensation committee documents an approved exception for payroll/comp conflict.",
+      "expiration": "30d",
+      "justificationRequired": true
+    },
+    {
+      "id": "CTRL-BLIND",
+      "name": "Blind count with second verifier",
+      "type": "Mitigation",
+      "description": "Inventory movements require a second-person blind count verification while conflict is mitigated.",
+      "expiration": "14d",
+      "justificationRequired": true
+    },
+    {
+      "id": "CTRL-REMEDIATE",
+      "name": "Remediate conflicting access",
+      "type": "Remediation",
+      "description": "Certification campaign to remove one side of the conflicting access combination.",
+      "expiration": "30d",
+      "justificationRequired": true
+    }
+  ]
+}
