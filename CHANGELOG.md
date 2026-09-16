@@ -6,6 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 ## 2026-09-16
 
+### ✨ New Features
+
+- **Active Directory Privileged Tasks** — Tenant export under `ISC/Active Directory Privileged Tasks`: interactive workflows to create an AD security group (Privileged Action Gateway) or a CIFS shared folder (access request plus `ConnectorBeforeModify - Create Shared Folder in Active Directory`), with forms and an entitlement-aggregation child workflow.
+
+- **Demo Data** — Bootstrap package under `ISC/Demo Data` seeded from the emea-tes-team catalog: Department Services, Workforce Access, and Workplace Access delimited sources; related (non-identical) entitlements; birthright title and department roles; dimensional Workplace User with city dimensions; 20 conflicting-access SoD policies; and 7 mitigating controls assigned to those policies (`config/demo-sod-policies.json`). Includes offline tests and a PSSailpoint apply script.
+
+### 🔧 Improvements
+
+- **Active Directory Privileged Tasks** — Clearer forms, validation, progress and recovery messages, truthful partial-success handling, dynamic group scope, and one fewer introduction screen. `ConnectorBeforeModify - Create Shared Folder in Active Directory` now uses the PowerShell Rule Template (`$ctx`, `<IQService>\scripts` logs, `Exit-Rule`, no `Utils.dll`) with safer metadata/path checks, SMB conflict detection, and inheritable NTFS ACLs. Group and shared-folder workflows now call a shared Microsoft Active Directory entitlement-aggregation workflow through its external trigger token. Tenant API calls use Parameter Storage OAuth (`1.4` / `3.1`), while group-creation PAG actions use an Active Directory credential parameter (`1.1`) instead of Credential Provider `secrets://` references.
+- **Active Directory Home Folders** — Rule file and `$ConnectorRuleName` now follow the type-prefixed convention: `ConnectorAfterCreate - Create Active Directory Home Folder`.
+
 ### 📚 Documentation
 
 - **Optimistic Provisioning Generic SDIM** — Configuration steps now follow the Generic SDIM integration UI: keep the default Sample Description Velocity template, map Failed/Queued/Committed to the same SDIM statuses, and check ticket status with `/get?status=Committed`.
