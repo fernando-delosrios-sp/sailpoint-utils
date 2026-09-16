@@ -4,6 +4,14 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-16
+
+### 📚 Documentation
+
+- **Optimistic Provisioning Generic SDIM** — Configuration steps now follow the Generic SDIM integration UI: keep the default Sample Description Velocity template, map Failed/Queued/Committed to the same SDIM statuses, and check ticket status with `/get?status=Committed`.
+
+---
+
 ## 2026-09-15
 
 ### ✨ New Features
