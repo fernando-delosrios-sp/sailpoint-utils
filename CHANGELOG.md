@@ -21,7 +21,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 ### 🔧 Improvements
 
 - **Microsoft 365 Access Profiles** — Access profiles and the source app are owned by the current PAT identity (optional `-OwnerId` override). After a run, save either the JSON or CSV manifest instead of copying ids and using Save to disk.
-- **Microsoft 365 Access Profiles** — Previous JSON or CSV manifests can be replayed through the main wizard with `-PreviousManifestPath`, replacing the one-off rename utility. Existing profiles and applications can be skipped or fully reconciled, including owner, source, entitlement mapping, settings, and app membership.
+- **Microsoft 365 Access Profiles** — Previous JSON or CSV manifests can be replayed through the main wizard with `-PreviousManifestPath`, replacing the one-off rename utility. Existing profiles and applications can be skipped or fully reconciled, including owner, source, entitlement mapping, settings, and app membership. Passing a new `-AccessProfilePrefix` on replay finds the previous names and patches `/name` instead of creating duplicates.
 
 ### 🐛 Fixes
 

@@ -348,7 +348,10 @@ try {
                         }
                         $desiredName = Get-M365ReplayAccessProfileName -ManifestRow $manifestRow `
                             -CurrentFriendlyName $matched[0].FriendlyName `
-                            -ManifestPrefix $previousManifest.Prefix
+                            -ManifestPrefix $prefix
+                        $lookupNames = @(Get-M365AccessProfileLookupNames -ManifestRow $manifestRow `
+                                -CurrentFriendlyName $matched[0].FriendlyName `
+                                -ManifestPrefix $previousManifest.Prefix)
                         $selectedList.Add([pscustomobject]@{
                                 Id                       = $matched[0].Id
                                 InternalName             = $matched[0].InternalName
@@ -356,6 +359,7 @@ try {
                                 Value                    = $matched[0].Value
                                 Label                    = $matched[0].Label
                                 DesiredAccessProfileName = $desiredName
+                                PreviousNames            = $lookupNames
                             })
                     }
                     $selectedRows = @($selectedList.ToArray())
@@ -486,8 +490,13 @@ try {
             New-AccessProfileName -Prefix $prefix -FriendlyName $row.FriendlyName
         }
         Write-Step $apName
+        $previousNames = @()
+        if ($previousManifest -and $row.PSObject.Properties['PreviousNames'] -and $row.PreviousNames) {
+            $previousNames = @($row.PreviousNames)
+        }
         $outcome = Resolve-OrCreateAccessProfileForPlan -Name $apName -SourceId $source.Id -SourceName $source.Name `
-            -OwnerId $owner -EntitlementId $row.Id -ExistingItemAction $existingAction -WhatIf:$WhatIfPreference
+            -OwnerId $owner -EntitlementId $row.Id -ExistingItemAction $existingAction `
+            -PreviousNames $previousNames -WhatIf:$WhatIfPreference
         Write-Ok "$($outcome.Status): $($outcome.Message)"
         $results.Add([pscustomobject]@{
                 InternalName      = $row.InternalName

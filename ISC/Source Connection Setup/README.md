@@ -860,7 +860,7 @@ To replay an earlier run without selecting the source or entitlements again, pas
   -PreviousManifestPath '.\sourceConfig\m365-access-profiles\m365-access-profiles-20260915-190716.json'
 ```
 
-A JSON manifest restores the environment, source, naming prefix, application, and plans. A CSV manifest restores the plans and infers each naming prefix from the previous name; the wizard still asks for metadata that CSV does not contain. Names are rebuilt through the current naming rules, and current source entitlements are resolved again rather than trusting stale names or object ids.
+A JSON manifest restores the environment, source, naming prefix, application, and plans. A CSV manifest restores the plans and infers each naming prefix from the previous name; the wizard still asks for metadata that CSV does not contain. Names are rebuilt through the current naming rules, and current source entitlements are resolved again rather than trusting stale names or object ids. Pass a new `-AccessProfilePrefix` with `-ExistingItemAction Update` to rename existing profiles instead of creating duplicates.
 
 Menu controls match the other wizards: **Up/Down**, **Space** (multi-select), **A**/**N**, **Enter**, **Esc** back, **Ctrl+C** exit.
 

@@ -151,6 +151,13 @@ Assert-equal 'Microsoft 365 @emea-tes-team.cloud - Exchange Online (Plan 2)' `
 Assert-equal 'M365 - Microsoft Teams' `
     (Get-M365ReplayAccessProfileName -ManifestRow $oldManifestRow -CurrentFriendlyName 'Microsoft Teams' -ManifestPrefix 'M365 -') `
     'JSON replay rebuilds the name from manifest prefix and current friendly name'
+$lookupNames = @(Get-M365AccessProfileLookupNames -ManifestRow $oldManifestRow `
+        -CurrentFriendlyName 'Exchange Online (Plan 2)' `
+        -ManifestPrefix 'Microsoft 365 @emea-tes-team.cloud -')
+Assert-True ($lookupNames -contains 'Microsoft 365 @emea-tes-team.cloud -Exchange Online (Plan 2)') `
+    'lookup includes the raw previous name'
+Assert-True ($lookupNames -contains 'Microsoft 365 @emea-tes-team.cloud - Exchange Online (Plan 2)') `
+    'lookup includes the spaced previous prefix name'
 
 # Previous JSON and CSV manifests load as replay inputs
 $tmpManifestDir = Join-Path ([System.IO.Path]::GetTempPath()) ("m365-replay-{0}" -f [guid]::NewGuid())
@@ -230,6 +237,32 @@ $entitlementOp = @($script:updatedAccessProfile.Operations | Where-Object { $_.p
 Assert-Equal 'ent-other' $entitlementOp.value[0].id 'existing AP entitlement replaced'
 $sourceOp = @($script:updatedAccessProfile.Operations | Where-Object { $_.path -eq '/source' })[0]
 Assert-Equal 'src-1' $sourceOp.value.id 'existing AP source reconciled'
+
+$script:renamedFromPrevious = $null
+$oldNamedAp = [pscustomobject]@{
+    id           = 'ap-old'
+    name         = 'Microsoft 365 @t.cloud - Microsoft Teams'
+    source       = [pscustomobject]@{ id = 'src-1' }
+    entitlements = @([pscustomobject]@{ id = 'ent-teams' })
+}
+$renamed = Resolve-OrCreateAccessProfileForPlan -Name 'Microsoft 365 @t.cloud (Users) - Microsoft Teams' `
+    -SourceId 'src-1' -SourceName 'Entra' -OwnerId 'owner-1' -EntitlementId 'ent-teams' `
+    -ExistingItemAction Update `
+    -PreviousNames @('Microsoft 365 @t.cloud - Microsoft Teams', 'Microsoft 365 @t.cloud -Microsoft Teams') `
+    -AccessProfileFetcher {
+        param($f)
+        if ($f -match 'Users') { @() } else { @($oldNamedAp) }
+    } `
+    -PatchFetcher {
+        param($id, $ops)
+        $script:renamedFromPrevious = [pscustomobject]@{ Id = $id; Operations = $ops }
+        $ops
+    }
+Assert-Equal 'updated' $renamed.Status 'previous-name lookup updates instead of creating'
+Assert-Equal 'ap-old' $script:renamedFromPrevious.Id 'rename patches the previous profile'
+Assert-Equal 'Microsoft 365 @t.cloud (Users) - Microsoft Teams' `
+    (@($script:renamedFromPrevious.Operations | Where-Object { $_.path -eq '/name' })[0].value) `
+    'rename sets the new prefix'
 
 $createdPayload = $null
 $created = Resolve-OrCreateAccessProfileForPlan -Name 'M365 - Flow for Office 365' -SourceId 'src-1' -SourceName 'Entra' `

@@ -474,6 +474,31 @@ function Get-M365ReplayAccessProfileName {
     return New-AccessProfileName -Prefix '' -FriendlyName $CurrentFriendlyName
 }
 
+function Get-M365AccessProfileLookupNames {
+    param(
+        [Parameter(Mandatory)]$ManifestRow,
+        [Parameter(Mandatory)][string]$CurrentFriendlyName,
+        [AllowEmptyString()][string]$ManifestPrefix
+    )
+
+    $names = [System.Collections.Generic.List[string]]::new()
+    $add = {
+        param([string]$Candidate)
+        if ([string]::IsNullOrWhiteSpace($Candidate)) { return }
+        if (-not $names.Contains($Candidate)) { $names.Add($Candidate) }
+    }
+
+    & $add ([string](Get-ObjectPropertySafe -Object $ManifestRow -Name 'AccessProfileName'))
+    if (-not [string]::IsNullOrWhiteSpace($ManifestPrefix)) {
+        & $add (New-AccessProfileName -Prefix $ManifestPrefix -FriendlyName $CurrentFriendlyName)
+    }
+    & $add (Get-M365ReplayAccessProfileName -ManifestRow $ManifestRow `
+            -CurrentFriendlyName $CurrentFriendlyName -ManifestPrefix $ManifestPrefix)
+    & $add (Get-M365ReplayAccessProfileName -ManifestRow $ManifestRow `
+            -CurrentFriendlyName $CurrentFriendlyName -ManifestPrefix '')
+    return [string[]]@($names)
+}
+
 function Find-AccessProfilesByName {
     param(
         [Parameter(Mandatory)][string]$Name,
@@ -590,6 +615,7 @@ function Resolve-OrCreateAccessProfileForPlan {
         [string]$Description,
         [ValidateSet('Skip', 'Update')]
         [string]$ExistingItemAction = 'Skip',
+        [string[]]$PreviousNames = @(),
         [switch]$WhatIf,
         [scriptblock]$AccessProfileFetcher,
         [scriptblock]$CreateFetcher,
@@ -597,7 +623,19 @@ function Resolve-OrCreateAccessProfileForPlan {
         [scriptblock]$PatchFetcher
     )
 
-    $existing = @(Find-AccessProfilesByName -Name $Name -SourceId $SourceId -AccessProfileFetcher $AccessProfileFetcher)
+    $lookupNames = [System.Collections.Generic.List[string]]::new()
+    foreach ($candidate in @($Name) + @($PreviousNames)) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) { continue }
+        if (-not $lookupNames.Contains($candidate)) { $lookupNames.Add($candidate) }
+    }
+
+    $existing = @()
+    foreach ($candidate in $lookupNames) {
+        $hits = @(Find-AccessProfilesByName -Name $candidate -SourceId $SourceId -AccessProfileFetcher $AccessProfileFetcher)
+        if ($hits.Count -eq 0) { continue }
+        $existing = $hits
+        break
+    }
     if ($existing.Count -gt 1) {
         return [pscustomobject]@{
             Status          = 'conflict'
@@ -1164,6 +1202,7 @@ Export-ModuleMember -Function @(
     'Build-ServicePlanSelectionRows'
     'New-AccessProfileName'
     'Get-M365ReplayAccessProfileName'
+    'Get-M365AccessProfileLookupNames'
     'Find-AccessProfilesByName'
     'Get-AccessProfileEntitlementIds'
     'Build-AccessProfileCreatePayload'

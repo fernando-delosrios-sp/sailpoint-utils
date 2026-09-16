@@ -39,7 +39,7 @@ function ConvertFrom-SailpointSimpleYaml {
             continue
         }
 
-        if ($inEnvironments -and $line -match '^  ([^:\s][^:]*):\s*$') {
+        if ($inEnvironments -and $line -match '^ {2,4}([^:\s][^:]*):\s*$') {
             $currentEnv = $Matches[1].Trim()
             if (-not $environments.Contains($currentEnv)) {
                 $environments[$currentEnv] = [ordered]@{
@@ -52,7 +52,7 @@ function ConvertFrom-SailpointSimpleYaml {
             continue
         }
 
-        if ($inEnvironments -and $currentEnv -and $line -match '^    ([A-Za-z0-9_]+):\s*(.*)\s*$') {
+        if ($inEnvironments -and $currentEnv -and $line -match '^ {4,8}([A-Za-z0-9_]+):\s*(.*)\s*$') {
             $key = $Matches[1].Trim().ToLowerInvariant()
             $value = $Matches[2].Trim().Trim('"').Trim("'")
             switch ($key) {
