@@ -1,0 +1,387 @@
+[
+  {
+    "version": 1,
+    "self": {
+      "id": "043e1d6b-30fb-4ed4-9736-830050d86934",
+      "name": "New Security Group Details",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "043e1d6b-30fb-4ed4-9736-830050d86934",
+      "name": "New Security Group Details",
+      "description": "Collects the name, manager, type, and location for a new Active Directory security group.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "9d86f225e3a24b1a9e3d10d92ec12005",
+        "name": "fernando.delosrios"
+      },
+      "usedBy": [],
+      "formInput": [
+        {
+          "id": "locations",
+          "type": "ARRAY",
+          "label": "locations",
+          "description": "List of Organizational Unit objects fetched via a PAG."
+        }
+      ],
+      "formElements": [
+        {
+          "id": "1093420843919",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Create a security group directly in Active Directory. Choose a unique name, manager, group type, and organizational unit.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">All fields are required. We validate the name before creating anything and notify the manager when complete.</p>",
+                  "label": "Instructions",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "910366814581",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Used for the group CN, sAMAccountName, and display name. Maximum 64 characters.",
+                  "label": "Group name",
+                  "placeholder": "e.g. Finance Report Readers",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "743881035847",
+                "key": "name",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  },
+                  {
+                    "config": {
+                      "message": "Use 1-64 letters, numbers, spaces, periods, underscores, or hyphens. Start and end with a letter or number.",
+                      "regex": "^[A-Za-z0-9]([A-Za-z0-9 _.-]{0,62}[A-Za-z0-9])?$"
+                    },
+                    "validationType": "REGEX"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "objectType": "IDENTITY"
+                    },
+                    "dataSourceType": "INTERNAL"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Select the user to set as the group manager. They will receive a notification once the group is created.",
+                  "label": "Group manager",
+                  "maximum": 1,
+                  "placeholder": "Start typing a person's name...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "50372023181",
+                "key": "managerIdentity",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "options": [
+                        {
+                          "label": "Global",
+                          "subLabel": "",
+                          "value": "Global Security"
+                        },
+                        {
+                          "label": "Universal",
+                          "subLabel": "",
+                          "value": "Universal Security"
+                        },
+                        {
+                          "label": "Domain Local",
+                          "subLabel": "",
+                          "value": "Domain Local Security"
+                        }
+                      ]
+                    },
+                    "dataSourceType": "STATIC"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Choose the group scope that matches how the group will be used.",
+                  "label": "Group type",
+                  "maximum": 1,
+                  "placeholder": "Select a group type...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "1683611067788",
+                "key": "type",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "formInputId": "locations",
+                      "sortBy": "ASC"
+                    },
+                    "dataSourceType": "FORM_INPUT"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Choose the organizational unit where the group will be created.",
+                  "label": "Organizational unit",
+                  "maximum": 1,
+                  "placeholder": "Select an organizational unit...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "221382798682",
+                "key": "organizationalUnit",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              }
+            ],
+            "label": "Security group details",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  },
+  {
+    "version": 1,
+    "self": {
+      "id": "36d437ba-621d-4acd-b720-0ef63daab4ea",
+      "name": "Supply Email Address",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "36d437ba-621d-4acd-b720-0ef63daab4ea",
+      "name": "Supply Email Address",
+      "description": "Collects a notification address when the selected manager has no email in ISC.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "9d86f225e3a24b1a9e3d10d92ec12005",
+        "name": "fernando.delosrios"
+      },
+      "usedBy": [],
+      "formInput": [
+        {
+          "id": "comment",
+          "type": "STRING",
+          "label": "Guidance",
+          "description": "Explains why a notification address is required."
+        }
+      ],
+      "formElements": [
+        {
+          "id": "795112953218",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "The selected manager has no email address in ISC.",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">{{ $.form.input.comment }}</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Enter an address so the manager still receives the new group details.</p>",
+                  "label": "Notification guidance",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "210389602542",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "The group details will be sent to this address.",
+                  "label": "Manager email address",
+                  "placeholder": "e.g. manager@company.com",
+                  "required": true
+                },
+                "elementType": "EMAIL",
+                "id": "210389602543",
+                "key": "managerEmailAddress",
+                "validations": [
+                  {
+                    "validationType": "EMAIL"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              }
+            ],
+            "label": "Where should we send the notification?",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  },
+  {
+    "version": 1,
+    "self": {
+      "id": "429d54c3-50f1-4099-afd0-325b334a9c86",
+      "name": "Create Shared Folder in Active Directory",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "429d54c3-50f1-4099-afd0-325b334a9c86",
+      "name": "Create Shared Folder in Active Directory",
+      "description": "Collects the path and share details for a new Active Directory-backed SMB folder.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "9d86f225e3a24b1a9e3d10d92ec12005",
+        "name": "fernando.delosrios"
+      },
+      "usedBy": [],
+      "formInput": [],
+      "formElements": [
+        {
+          "id": "103000536909",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "Creates the folder, SMB share, and three permission groups.",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Create a shared folder and matching Read Only, Read Write, and Full Access groups.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Choose the parent location, then provide a clear folder name and a short SMB share name.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "28728615485",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Directory name created under the selected parent folder.",
+                  "label": "Folder name",
+                  "placeholder": "e.g. Finance Reports",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "28728615486",
+                "key": "folderName",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  },
+                  {
+                    "config": {
+                      "message": "Use 1-64 letters, numbers, spaces, periods, underscores, or hyphens. Start and end with a letter or number.",
+                      "regex": "^[A-Za-z0-9]([A-Za-z0-9 _.-]{0,62}[A-Za-z0-9])?$"
+                    },
+                    "validationType": "REGEX"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "options": [
+                        {
+                          "label": "C:\\Shared folders",
+                          "subLabel": "",
+                          "value": "C:\\Shared folders"
+                        }
+                      ]
+                    },
+                    "dataSourceType": "STATIC"
+                  },
+                  "forceSelect": true,
+                  "helpText": "The IQService host must be able to access and manage this location.",
+                  "label": "Parent folder",
+                  "maximum": 1,
+                  "placeholder": "Select a parent folder...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "1430348005941",
+                "key": "parentFolder",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "SMB name used in \\\\server\\share. Keep it short and do not include spaces.",
+                  "label": "SMB share name",
+                  "placeholder": "e.g. finance-reports",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "1557489047850",
+                "key": "shareName",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  },
+                  {
+                    "config": {
+                      "message": "Use 1-40 letters, numbers, hyphens, or underscores. Start with a letter or number.",
+                      "regex": "^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$"
+                    },
+                    "validationType": "REGEX"
+                  }
+                ]
+              }
+            ],
+            "label": "Shared folder details",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  }
+]

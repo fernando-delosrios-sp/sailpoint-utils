@@ -1,0 +1,761 @@
+{
+  "definition": {
+    "start": "Define Variable",
+    "steps": {
+      "Compare Numbers": {
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Interactive Form",
+            "variableA.$": "$.listOus.result.count",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Interactive Message 15",
+        "description": "The search results are evaluated to determine if any organizational units were found in Active Directory. If one or more organizational units are found, it evaluates to True, otherwise False.",
+        "displayName": "Organizational Units Found?",
+        "type": "choice"
+      },
+      "Define Variable": {
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Domain controller hostname or IP address reachable by PAG.",
+              "name": "Domain Controller Address",
+              "transforms": [],
+              "variableA": "YOUR_DOMAIN_CONTROLLER"
+            },
+            {
+              "description": "Active Directory DNS domain used by PAG.",
+              "name": "Domain FQDN",
+              "transforms": [],
+              "variableA": "ad.example.com"
+            },
+            {
+              "description": "Base distinguished name whose direct child OUs are offered to the operator.",
+              "name": "Search Base DN",
+              "transforms": [],
+              "variableA": "OU=Demo,DC=example,DC=com"
+            },
+            {
+              "description": "ISC API base URL used to start the shared entitlement-aggregation workflow.",
+              "name": "url",
+              "transforms": [],
+              "variableA": "https://{tenant}.api.identitynow-demo.com"
+            }
+          ]
+        },
+        "displayName": "Configuration",
+        "nextStep": "Interactive Message 3",
+        "type": "Mutation"
+      },
+      "Define Variable 1": {
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "Distinguished Name",
+              "transforms": [],
+              "variableA": "CN={{$.interactiveForm.formData.name}},{{$.interactiveForm.formData.organizationalUnit}}"
+            },
+            {
+              "description": "",
+              "name": "Manager Distinguished Name",
+              "transforms": [],
+              "variableA.$": "$.defineVariable2.activeDirectoryManagerAccount"
+            }
+          ]
+        },
+        "displayName": "Group Details",
+        "nextStep": "createGroup",
+        "type": "Mutation"
+      },
+      "Define Variable 2": {
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "Active Directory Manager Account",
+              "transforms": [],
+              "variableA.$": "$.getAccounts.accounts[?(@.sourceName == 'YOUR_AD_SOURCE_NAME')].nativeIdentity"
+            }
+          ]
+        },
+        "displayName": "Get Active Directory Manager Account",
+        "nextStep": "Verify Data Type",
+        "type": "Mutation"
+      },
+      "End Step - Failure": {
+        "description": "The workflow cannot continue as the group was not created. The workflow ends in a failed state.",
+        "displayName": "Failure: Create Group Failed",
+        "failureName": "Create Group Failed",
+        "type": "failure"
+      },
+      "End Step - Failure 1": {
+        "description": "The workflow could not continue as the provided manager does not have an account in Active Directory. The workflow ends in a failed state.",
+        "displayName": "Failure: Manager Not Found",
+        "failureName": "Manager Not Found",
+        "type": "failure"
+      },
+      "End Step - Failure 3": {
+        "description": "The workflow cannot continue as a group already exists with the provided name. The workflow ends in a failed state.\n\nThe user will need to launch the workflow again and provide a different name.",
+        "displayName": "Failure: Group Name Taken",
+        "failureName": "Group Name Taken",
+        "type": "failure"
+      },
+      "End Step - Failure 4": {
+        "description": "The workflow cannot continue as setting the group's manager failed. The workflow ends in a failed state.",
+        "displayName": "Failure: Set Manager Error",
+        "failureName": "Set Manager Error",
+        "type": "failure"
+      },
+      "End Step - Failure 5": {
+        "description": "The workflow cannot continue as no organizational units were found in Active Directory. The workflow ends in a failed state.",
+        "displayName": "Failure: No Organizational Units",
+        "failureName": "No Organizational Units Found",
+        "type": "failure"
+      },
+      "End Step - Failure 6": {
+        "description": "The workflow cannot continue as a command error occurred and no organizational units were found in Active Directory. The workflow ends in a failed state.",
+        "displayName": "Failure: List Organizational Units Error",
+        "failureName": "List Organizational Units Failed",
+        "type": "failure"
+      },
+      "End Step - Success": {
+        "description": "The new group has been created and the manager has been set and notified. The workflow completed successfully.",
+        "displayName": "Success: Group Created",
+        "type": "success"
+      },
+      "End Step - Success With Warning": {
+        "description": "The group and manager assignment succeeded, but the email notification failed.",
+        "displayName": "Success: Group Created; Notification Failed",
+        "type": "success"
+      },
+      "Get Accounts": {
+        "actionId": "sp:get-accounts",
+        "attributes": {
+          "filterCriteria": "identityId",
+          "getAccountsBy": "specificIdentity",
+          "identity.$": "$.getIdentity.id",
+          "operator": null
+        },
+        "catch": [
+          {
+            "next": "Interactive Message - Manager Accounts Failed"
+          }
+        ],
+        "displayName": "Get Manager Accounts",
+        "nextStep": "Define Variable 2",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Get Identity": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.interactiveForm.formData.managerIdentity",
+          "method": "GET",
+          "path": "v2026/identities/{{ $.id }}",
+          "service": "mice"
+        },
+        "catch": [
+          {
+            "next": "Interactive Message - Manager Identity Failed"
+          }
+        ],
+        "description": "The full identity of the manager provided in the New Group Details interactive form is retrieved.",
+        "displayName": "Get Manager Identity",
+        "nextStep": "Get Accounts",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Interactive Form": {
+        "actionId": "sp:interactive-form",
+        "attributes": {
+          "formDefinitionId": "043e1d6b-30fb-4ed4-9736-830050d86934",
+          "inputForForm": "{{ $.inputForForm }}",
+          "inputForForm_array_locations.$": "$.listOus.result.data",
+          "inputForForm_array_locations_label": "$.name",
+          "inputForForm_array_locations_value": "$.distinguishedName",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Create a security group"
+        },
+        "description": "This interactive form allows the user to provide details about the new group.\n\nThe user will need to enter a name, group type, manager, and location.",
+        "displayName": "Form: Get Group Details",
+        "nextStep": "Interactive Message 2",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Form 1": {
+        "actionId": "sp:interactive-form",
+        "attributes": {
+          "formDefinitionId": "36d437ba-621d-4acd-b720-0ef63daab4ea",
+          "inputForForm_comment": "The selected manager does not have an email address in ISC.",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Manager notification"
+        },
+        "description": "This interactive form allows the user to provide the manager\u2019s email address as their email was not configured in Active Directory.",
+        "displayName": "Form: Manager Email Address",
+        "nextStep": "Interactive Message 14",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Creating <strong>{{ $.interactiveForm.formData.name }}</strong> in Active Directory.</p><p>This normally takes only a few seconds.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udd27  Creating Group"
+        },
+        "description": "This interactive message notifies the user that the workflow is currently creating the new group in Active Directory.",
+        "displayName": "Message: Creating Group",
+        "nextStep": "Define Variable 1",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 10": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Sending email to {{ $.getIdentity.attributes.email }}...</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udce8  Sending Manager Notification"
+        },
+        "description": "This interactive message notifies the user that the workflow is currently sending an email to the new group's manager.",
+        "displayName": "Message: Emailing Manager (AD)",
+        "nextStep": "Send Email",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 11": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p><strong>{{ $.getIdentity.name }}</strong> does not have an account on the configured Active Directory source.</p><p>No group was created. Choose a manager with an Active Directory account and try again.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Manager account not found"
+        },
+        "description": "This interactive message notifies the user that an error has occurred as the manager could not be found in Active Directory.",
+        "displayName": "Message: Manager Not Found",
+        "nextStep": "End Step - Failure 1",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 12": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Setting group manager to '{{ $.getIdentity.name }}'...</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udd27  Setting Manager"
+        },
+        "description": "This interactive message notifies the user that the workflow is currently setting the group's manager in Active Directory.",
+        "displayName": "Message: Setting Group Manager",
+        "nextStep": "setGroupManager",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 13": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The group was created, but Active Directory could not assign <strong>{{ $.getIdentity.name }}</strong> as its manager.</p><p><strong>Status:</strong> {{ $.setGroupManager.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.setGroupManager.error.workflowErrorMessage }}</p><p>Ask an administrator to review the group and complete the manager assignment.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Group created; manager not assigned"
+        },
+        "description": "This interactive message notifies the user that an error occurred, and setting the manager failed.",
+        "displayName": "Message: Setting Manager Failed",
+        "nextStep": "End Step - Failure 4",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 14": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Sending email to {{ $.interactiveForm1.formData.managerEmailAddress }}...</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udce8  Sending Manager Notification"
+        },
+        "description": "This interactive message notifies the user that the workflow is currently sending an email to the new group's manager.",
+        "displayName": "Message: Emailing Manager (Form)",
+        "nextStep": "Send Email 1",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 15": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>No organizational units were found under the configured search base.</p><p>No group was created. Ask an administrator to check <strong>Search Base DN</strong> and the PAG search scope.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  No organizational units available"
+        },
+        "description": "This interactive message notifies the user that an error has occurred, which may be due to the selected search base or scope.",
+        "displayName": "Message: Empty Results",
+        "nextStep": "End Step - Failure 5",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 16": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Active Directory organizational units could not be loaded.</p><p><strong>Status:</strong> {{ $.listOus.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.listOus.error.workflowErrorMessage }}</p><p>No group was created. Ask an administrator to verify PAG connectivity and credentials.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Could not load organizational units"
+        },
+        "description": "This interactive message notifies the user that no organizational units were found due to a command error.",
+        "displayName": "Message: Get Organizational Units Failed",
+        "nextStep": "End Step - Failure 6",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 2": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Checking whether the supplied group name is unique...</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udd0e  Validating Group Name"
+        },
+        "description": "This interactive message notifies the user that the workflow is currently looking for groups with the same name as the one provided in the interactive form.",
+        "displayName": "Message: Looking for Existing Group",
+        "nextStep": "getGroupBySamaccountname",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 3": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Loading the available organizational units from Active Directory.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udd0e  Getting Organizational Units"
+        },
+        "description": "This interactive message notifies the user that the workflow is currently retrieving organizational units from Active Directory.",
+        "displayName": "Message: Get Organizational Units",
+        "nextStep": "listOus",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 4": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Active Directory could not create <strong>{{ $.interactiveForm.formData.name }}</strong>.</p><p><strong>Status:</strong> {{ $.createGroup.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.createGroup.error.workflowErrorMessage }}</p><p>No group was created. Review the details or ask an administrator to check PAG connectivity and permissions.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Group creation failed"
+        },
+        "description": "This interactive message notifies the user that an error occurred, and the new group was not created.",
+        "displayName": "Message: Create Group Failed",
+        "nextStep": "End Step - Failure",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 5": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Confirming that <strong>{{ $.getIdentity.name }}</strong> has an account in Active Directory.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udd0e  Locating Manager"
+        },
+        "description": "This interactive message notifies the user that the workflow is locating the provided manager\u2019s account in Active Directory.",
+        "displayName": "Message: Locating Manager Account",
+        "nextStep": "Get Identity",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 6": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The supplied group name is available.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u2705  Group Name Available"
+        },
+        "description": "This interactive message notifies the user that the group name is available.",
+        "displayName": "Message: Group Name Available",
+        "nextStep": "Interactive Message 5",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 7": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; color: #475569;\">The security group is ready and its manager has been notified.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Name</td><td style=\"padding: 6px 0;\"><strong>{{ $.interactiveForm.formData.name }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Type</td><td style=\"padding: 6px 0;\">{{ $.interactiveForm.formData.type }}</td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Manager</td><td style=\"padding: 6px 0;\">{{ $.getIdentity.attributes.displayName }}</td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Distinguished name</td><td style=\"padding: 6px 0; word-break: break-word;\">CN={{ $.interactiveForm.formData.name }},{{ $.interactiveForm.formData.organizationalUnit }}</td></tr></table>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u2705  Security group created"
+        },
+        "description": "This interactive message displays the new group\u2019s details to the user.",
+        "displayName": "Message: Display New Group",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message 9": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>A group named <strong>{{ $.interactiveForm.formData.name }}</strong> already exists.</p><p>No changes were made. Start again with a different group name.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Group name already in use"
+        },
+        "description": "This interactive message notifies the user that an error has occurred as the provided group name is already taken.\n\nThe user will need to run the workflow again and provide a different name.",
+        "displayName": "Message: Group Name Taken",
+        "nextStep": "End Step - Failure 3",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Manager Accounts Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>ISC could not load the selected manager\u2019s accounts.</p><p><strong>Status:</strong> {{ $.getAccounts.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getAccounts.error.workflowErrorMessage }}</p><p>No group was created. Try again or ask an administrator to check account visibility.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Could not verify manager account"
+        },
+        "description": "Reports a manager-account lookup failure before group creation.",
+        "displayName": "Message: Manager Accounts Failed",
+        "nextStep": "End Step - Failure 1",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Manager Identity Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>ISC could not load the selected manager.</p><p><strong>Status:</strong> {{ $.getIdentity.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getIdentity.error.workflowErrorMessage }}</p><p>No group was created. Try selecting the manager again.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Could not load manager"
+        },
+        "description": "Reports an identity lookup failure before group creation.",
+        "displayName": "Message: Manager Identity Failed",
+        "nextStep": "End Step - Failure 1",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Notification Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p><strong>{{ $.interactiveForm.formData.name }}</strong> was created and its manager was assigned, but the notification email could not be sent.</p><p>Tell the manager manually or ask an administrator to review workflow email delivery.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Group created; notification failed"
+        },
+        "description": "Confirms the successful group operation while making the email failure explicit.",
+        "displayName": "Message: Notification Failed",
+        "nextStep": "End Step - Success With Warning",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Scheduling Entitlement Refresh": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The group and manager assignment are complete.</p><p>Scheduling an Active Directory entitlement refresh so the new group becomes available in ISC.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udd04  Scheduling entitlement refresh"
+        },
+        "description": "Explains that the shared entitlement-aggregation workflow is being started.",
+        "displayName": "Message: Scheduling Entitlement Refresh",
+        "nextStep": "HTTP Request - Schedule Entitlement Refresh",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Entitlement Refresh Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The group was created and its manager was assigned, but the entitlement refresh could not be scheduled.</p><p><strong>Status:</strong> {{ $.httpRequestScheduleEntitlementRefresh.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.httpRequestScheduleEntitlementRefresh.error.workflowErrorMessage }}</p><p>The manager notification will continue. Ask an administrator to aggregate the Active Directory group entitlements manually.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Group created; refresh not scheduled"
+        },
+        "description": "Reports a non-blocking entitlement-refresh scheduling failure.",
+        "displayName": "Message: Entitlement Refresh Failed",
+        "nextStep": "Verify Data Type 5",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "HTTP Request - Schedule Entitlement Refresh": {
+        "actionId": "sp:http",
+        "attributes": {
+          "method": "post",
+          "param_authenticationRef": "none",
+          "requestHeaders": {
+            "Authorization": "Bearer YOUR_AGGREGATION_EXTERNAL_TRIGGER_TOKEN"
+          },
+          "url": "{{$.defineVariable.url}}/v2026/workflows/execute/external/YOUR_AGGREGATION_WORKFLOW_ID"
+        },
+        "catch": [
+          {
+            "next": "Interactive Message - Entitlement Refresh Failed"
+          }
+        ],
+        "description": "Starts the shared workflow that waits for Active Directory changes and reloads group entitlements.",
+        "displayName": "Schedule Active Directory Entitlement Refresh",
+        "nextStep": "Verify Data Type 5",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Send Email": {
+        "actionId": "sp:send-email",
+        "attributes": {
+          "body": "<div style=\"font-family: Arial, sans-serif; color: #1f2937;\"><h2 style=\"margin-bottom: 8px;\">You manage a new Active Directory group</h2><p>You have been assigned as the manager of <strong>{{ $.interactiveForm.formData.name }}</strong>.</p><p><strong>Type:</strong> {{ $.interactiveForm.formData.type }}<br><strong>Distinguished name:</strong><br>CN={{ $.interactiveForm.formData.name }},{{ $.interactiveForm.formData.organizationalUnit }}</p><p>No action is required.</p></div>",
+          "context": null,
+          "from": null,
+          "method": "POST",
+          "path": "notification/send-notification",
+          "recipientEmailList.$": "$.getIdentity.attributes.email",
+          "replyTo": null,
+          "service": "hermes",
+          "subject": "You manage a new Active Directory group: {{ $.interactiveForm.formData.name }}",
+          "useInternalClient": true
+        },
+        "catch": [
+          {
+            "next": "Interactive Message - Notification Failed"
+          }
+        ],
+        "description": "An email is sent to the group\u2019s manager notifying them they have been assigned as the manager of the new group. The email also contains the new group\u2019s details.",
+        "displayName": "Send Manager Email (AD)",
+        "nextStep": "Interactive Message 7",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Send Email 1": {
+        "actionId": "sp:send-email",
+        "attributes": {
+          "body": "<div style=\"font-family: Arial, sans-serif; color: #1f2937;\"><h2 style=\"margin-bottom: 8px;\">You manage a new Active Directory group</h2><p>You have been assigned as the manager of <strong>{{ $.interactiveForm.formData.name }}</strong>.</p><p><strong>Type:</strong> {{ $.interactiveForm.formData.type }}<br><strong>Distinguished name:</strong><br>CN={{ $.interactiveForm.formData.name }},{{ $.interactiveForm.formData.organizationalUnit }}</p><p>No action is required.</p></div>",
+          "context": null,
+          "from": null,
+          "method": "POST",
+          "path": "notification/send-notification",
+          "recipientEmailList.$": "$.interactiveForm1.formData.managerEmailAddress",
+          "replyTo": null,
+          "service": "hermes",
+          "subject": "You manage a new Active Directory group: {{ $.interactiveForm.formData.name }}",
+          "useInternalClient": true
+        },
+        "catch": [
+          {
+            "next": "Interactive Message - Notification Failed"
+          }
+        ],
+        "description": "An email is sent to the group\u2019s manager notifying them they have been assigned as the manager of the new group. The email also contains the new group\u2019s details.",
+        "displayName": "Send Manager Email (Form)",
+        "nextStep": "Interactive Message 7",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Verify Data Type": {
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Interactive Message",
+            "variableA.$": "$.defineVariable2.activeDirectoryManagerAccount"
+          }
+        ],
+        "defaultStep": "Interactive Message 11",
+        "displayName": "Manager Account Exists",
+        "type": "choice"
+      },
+      "Verify Data Type 5": {
+        "choiceList": [
+          {
+            "comparator": "IsNull",
+            "nextStep": "Interactive Form 1",
+            "variableA.$": "$.getIdentity.attributes.email"
+          }
+        ],
+        "defaultStep": "Interactive Message 10",
+        "description": "The manager\u2019s Active Directory account is evaluated to determine if their email address is empty. If their email address is not configured, it evaluates to True, otherwise False.",
+        "displayName": "Is Manager Email Empty?",
+        "type": "choice"
+      },
+      "createGroup": {
+        "actionId": "sp:pag-active-directory",
+        "attributes": {
+          "inputForPag_address.$": "$.defineVariable.domainControllerAddress",
+          "inputForPag_distinguishedName.$": "$.defineVariable1.distinguishedName",
+          "inputForPag_domain.$": "$.defineVariable.domainFQDN",
+          "inputForPag_groupType.$": "$.interactiveForm.formData.type",
+          "inputForPag_name.$": "$.interactiveForm.formData.name",
+          "inputForPag_port": 636,
+          "inputForPag_sAMAccountName.$": "$.interactiveForm.formData.name",
+          "pagCommandType": "pag:active_directory:create_group",
+          "pagInstanceId": "YOUR_PAG_INSTANCE_ID",
+          "pagSpecId": "YOUR_PAG_SPEC_ID",
+          "inputForPag_verify_cert": false,
+          "param_connType": "paramInline",
+          "param_credential": {
+            "mapping": {
+              "auth_password": "password",
+              "auth_username": "username"
+            },
+            "paramID": "YOUR_AD_CREDENTIAL_PARAMETER_ID",
+            "paramType": "1.1"
+          },
+          "param_credentialType": "paramSPS"
+        },
+        "catch": [
+          {
+            "next": "Interactive Message 4"
+          }
+        ],
+        "description": "The Privileged Action Gateway creates the new group using the details provided in the New Group Details interactive form.",
+        "displayName": "PAG: Create Group",
+        "nextStep": "Interactive Message 12",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "getGroupBySamaccountname": {
+        "actionId": "sp:pag-active-directory",
+        "attributes": {
+          "inputForPag_address.$": "$.defineVariable.domainControllerAddress",
+          "inputForPag_domain.$": "$.defineVariable.domainFQDN",
+          "inputForPag_port": 636,
+          "inputForPag_sAMAccountName.$": "$.interactiveForm.formData.name",
+          "pagCommandType": "pag:active_directory:get_group_by_samaccountname",
+          "pagInstanceId": "YOUR_PAG_INSTANCE_ID",
+          "pagSpecId": "YOUR_PAG_SPEC_ID",
+          "inputForPag_verify_cert": false,
+          "param_connType": "paramInline",
+          "param_credential": {
+            "mapping": {
+              "auth_password": "password",
+              "auth_username": "username"
+            },
+            "paramID": "YOUR_AD_CREDENTIAL_PARAMETER_ID",
+            "paramType": "1.1"
+          },
+          "param_credentialType": "paramSPS"
+        },
+        "catch": [
+          {
+            "next": "Interactive Message 6"
+          }
+        ],
+        "description": "The Privileged Action Gateway searches for groups in Active Directory with the same name as the one provided in the interactive form.",
+        "displayName": "PAG: Find Duplicate Groups",
+        "nextStep": "Interactive Message 9",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "listOus": {
+        "actionId": "sp:pag-active-directory",
+        "attributes": {
+          "inputForPag_address.$": "$.defineVariable.domainControllerAddress",
+          "inputForPag_domain.$": "$.defineVariable.domainFQDN",
+          "inputForPag_limit": 100,
+          "inputForPag_port": 636,
+          "inputForPag_search_base_dn.$": "$.defineVariable.searchBaseDN",
+          "inputForPag_search_scope": "One Level",
+          "pagCommandType": "pag:active_directory:list_ous",
+          "pagInstanceId": "YOUR_PAG_INSTANCE_ID",
+          "pagSpecId": "YOUR_PAG_SPEC_ID",
+          "inputForPag_verify_cert": false,
+          "param_connType": "paramInline",
+          "param_credential": {
+            "mapping": {
+              "auth_password": "password",
+              "auth_username": "username"
+            },
+            "paramID": "YOUR_AD_CREDENTIAL_PARAMETER_ID",
+            "paramType": "1.1"
+          },
+          "param_credentialType": "paramSPS"
+        },
+        "catch": [
+          {
+            "next": "Interactive Message 16"
+          }
+        ],
+        "description": "The Privileged Action Gateway retrieves organizational units from Active Directory.\nThe directory location to search in and the depth of the search can be controlled using the Search Base DN and Search Scope inputs.",
+        "displayName": "PAG: Get Organizational Units",
+        "nextStep": "Compare Numbers",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "setGroupManager": {
+        "actionId": "sp:pag-active-directory",
+        "attributes": {
+          "inputForPag_address.$": "$.defineVariable.domainControllerAddress",
+          "inputForPag_distinguishedName.$": "$.defineVariable1.distinguishedName",
+          "inputForPag_domain.$": "$.defineVariable.domainFQDN",
+          "inputForPag_manager_distinguishedName.$": "$.defineVariable2.activeDirectoryManagerAccount",
+          "inputForPag_port": 636,
+          "pagCommandType": "pag:active_directory:set_group_manager",
+          "pagInstanceId": "YOUR_PAG_INSTANCE_ID",
+          "pagSpecId": "YOUR_PAG_SPEC_ID",
+          "inputForPag_verify_cert": false,
+          "param_connType": "paramInline",
+          "param_credential": {
+            "mapping": {
+              "auth_password": "password",
+              "auth_username": "username"
+            },
+            "paramID": "YOUR_AD_CREDENTIAL_PARAMETER_ID",
+            "paramType": "1.1"
+          },
+          "param_credentialType": "paramSPS"
+        },
+        "catch": [
+          {
+            "next": "Interactive Message 13"
+          }
+        ],
+        "description": "The Privileged Action Gateway sets the group's manager in Active Directory.",
+        "displayName": "PAG: Set Group Manager",
+        "nextStep": "Interactive Message - Scheduling Entitlement Refresh",
+        "type": "action",
+        "versionNumber": 1
+      }
+    }
+  },
+  "owner": {
+    "type": "IDENTITY",
+    "id": "YOUR_OWNER_IDENTITY_ID",
+    "name": "YOUR_OWNER_NAME"
+  },
+  "trigger": {
+    "type": "EVENT",
+    "attributes": {
+      "filter.$": "$[?(@.workflowId == 'YOUR_GROUP_WORKFLOW_ID')]",
+      "id": "idn:interactive-process-launched",
+      "integrationId": null
+    }
+  },
+  "id": "7a997b10-fe2d-4df0-a027-44e433f8160a",
+  "name": "Create a Group in Active Directory",
+  "description": "Guides an operator through validating and creating an Active Directory security group, assigning its manager, and sending a confirmation.",
+  "enabled": false
+}

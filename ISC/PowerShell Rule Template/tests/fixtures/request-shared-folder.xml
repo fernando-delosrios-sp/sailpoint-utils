@@ -1,0 +1,9 @@
+<AccountRequest application="Active Directory" nativeIdentity="CN=Jane Smith,OU=People,DC=example,DC=com" op="Modify">
+  <AttributeRequest name="memberOf" op="Add" comments="{&quot;folderName&quot;:&quot;finance&quot;,&quot;parentFolder&quot;:&quot;C:\\Shared folders&quot;,&quot;shareName&quot;:&quot;finance&quot;}">
+    <value>
+      <List>
+        <String>CN=CIFS Shared Folder,OU=Groups,DC=example,DC=com</String>
+      </List>
+    </value>
+  </AttributeRequest>
+</AccountRequest>

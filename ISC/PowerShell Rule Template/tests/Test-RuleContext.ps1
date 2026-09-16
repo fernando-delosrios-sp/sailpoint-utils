@@ -1,8 +1,9 @@
 param(
     [string] $TemplatePath = (Join-Path (Split-Path -Parent $PSScriptRoot) "PowerShell Rule Template.ps1"),
-    [string] $HomeFolderPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory Home Folders/Active Directory Home Folders.ps1"),
+    [string] $HomeFolderPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory Home Folders/ConnectorAfterCreate - Create Active Directory Home Folder.ps1"),
     [string] $OuCreatePath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory OU Management/ConnectorBeforeCreate - Create Active Directory OU.ps1"),
-    [string] $OuModifyPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory OU Management/ConnectorBeforeModify - Create Active Directory OU.ps1")
+    [string] $OuModifyPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory OU Management/ConnectorBeforeModify - Create Active Directory OU.ps1"),
+    [string] $SharedFolderPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory Privileged Tasks/ConnectorBeforeModify - Create Shared Folder in Active Directory.ps1")
 )
 
 $ErrorActionPreference = "Stop"
@@ -444,6 +445,74 @@ Assert-True ($ouModifyEmptyParent.LogText -match "Target distinguished name is e
 Assert-True ($ouModifyEmptyParent.LogText -match "ConnectorBeforeModify") "OU Modify must log its connector rule type"
 Assert-True ($ouModifyEmptyParent.LogText -notmatch "Import-Module") "OU Modify must not import ActiveDirectory when the target DN is empty"
 
+$resolvedSharedFolderPath = (Resolve-Path -LiteralPath $SharedFolderPath).Path
+$sharedTokens = $null
+$sharedParseErrors = $null
+$sharedAst = [System.Management.Automation.Language.Parser]::ParseFile(
+    $resolvedSharedFolderPath,
+    [ref]$sharedTokens,
+    [ref]$sharedParseErrors
+)
+Assert-Equal 0 $sharedParseErrors.Count "the shared-folder rule must parse without syntax errors"
+
+$sharedFunctionDefinitions = $sharedAst.FindAll({
+    param($node)
+    return ($node -is [System.Management.Automation.Language.FunctionDefinitionAst])
+}, $true)
+
+foreach ($functionName in @("Get-SharedFolderRequestComments", "ConvertFrom-SharedFolderMetadata", "Assert-SharedFolderParentAllowed")) {
+    $definition = $sharedFunctionDefinitions |
+        Where-Object { $_.Name -eq $functionName } |
+        Select-Object -First 1
+    Assert-True ($null -ne $definition) "shared-folder rule function '$functionName' must exist"
+    Invoke-Expression $definition.Extent.Text
+}
+
+$env:Request = [System.IO.File]::ReadAllText((Join-Path $fixturesDirectory "request-shared-folder.xml"))
+$sharedComments = Get-SharedFolderRequestComments
+Assert-True ($sharedComments -match '"shareName":"finance"') "shared-folder rule must read memberOf comments from the account request XML"
+$sharedMetadata = ConvertFrom-SharedFolderMetadata -Comments $sharedComments
+Assert-Equal "finance" $sharedMetadata.FolderName "shared-folder rule must parse folderName"
+Assert-Equal "finance" $sharedMetadata.ShareName "shared-folder rule must parse shareName"
+Assert-Equal "C:\Shared folders\finance" $sharedMetadata.FullPath "shared-folder rule must join parent and folder without requiring a local C: drive"
+
+Assert-SharedFolderParentAllowed -ParentFolder "C:\Shared folders" -AllowedPaths @("D:\Department shares", "C:\Shared folders")
+$disallowedParentRejected = $false
+try {
+    Assert-SharedFolderParentAllowed -ParentFolder "C:\Other" -AllowedPaths @("C:\Shared folders")
+} catch {
+    $disallowedParentRejected = $true
+}
+Assert-True $disallowedParentRejected "shared-folder rule must reject parent folders outside the source allowlist"
+
+foreach ($invalidMetadata in @(
+    '{"folderName":"..","parentFolder":"C:\\Shared folders","shareName":"finance"}',
+    '{"folderName":"Finance/Reports","parentFolder":"C:\\Shared folders","shareName":"finance"}',
+    '{"folderName":"Finance","parentFolder":"relative","shareName":"finance"}',
+    '{"folderName":"Finance","parentFolder":"C:\\Shared folders","shareName":"finance reports"}',
+    '{"folderName":"Finance","parentFolder":"C:\\Shared folders","shareName":"abcdefghijklmnopqrstuvwxyz123456789012345"}'
+)) {
+    $rejected = $false
+    try {
+        [void](ConvertFrom-SharedFolderMetadata -Comments $invalidMetadata)
+    } catch {
+        $rejected = $true
+    }
+    Assert-True $rejected "shared-folder rule must reject unsafe or unsupported metadata: $invalidMetadata"
+}
+
+$sharedFolderSkip = Invoke-OuRuleCase -ScriptPath $resolvedSharedFolderPath -RequestXml $createRequest -ApplicationXml "<Map><entry key=`"SharedFolderDebugEnabled`" value=`"true`" /></Map>"
+Assert-Equal 0 $sharedFolderSkip.ExitCode "shared-folder rule must skip non-Modify requests successfully"
+Assert-True ($sharedFolderSkip.LogText -match "Current operation: Create") "shared-folder rule must use the hydrated operation"
+Assert-True ($sharedFolderSkip.LogText -match "ConnectorBeforeModify") "shared-folder rule must log its connector rule type"
+Assert-True ($sharedFolderSkip.LogText -notmatch "Loaded SailPoint Utils|Utils.dll could not be loaded") "shared-folder rule must not load Utils.dll"
+Assert-True ($sharedFolderSkip.LogText -notmatch "Import-Module") "shared-folder rule must not import ActiveDirectory when skipping"
+
+$sharedFolderNoComments = Invoke-OuRuleCase -ScriptPath $resolvedSharedFolderPath -RequestXml ([System.IO.File]::ReadAllText((Join-Path $fixturesDirectory "request-modify.xml"))) -ApplicationXml "<Map />"
+Assert-Equal 0 $sharedFolderNoComments.ExitCode "shared-folder rule must skip Modify requests without metadata comments"
+Assert-True ($sharedFolderNoComments.LogText -match "No memberOf comments") "shared-folder rule must log the missing-comments skip"
+Assert-True ($sharedFolderNoComments.LogText -notmatch "Import-Module") "shared-folder rule must not import ActiveDirectory when comments are absent"
+
 $analyzer = Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue
 if ($analyzer) {
     $compatibilitySettings = @{
@@ -454,7 +523,7 @@ if ($analyzer) {
             }
         }
     }
-    foreach ($path in @($resolvedTemplatePath, $resolvedHomeFolderPath, $resolvedOuCreatePath, $resolvedOuModifyPath)) {
+    foreach ($path in @($resolvedTemplatePath, $resolvedHomeFolderPath, $resolvedOuCreatePath, $resolvedOuModifyPath, $resolvedSharedFolderPath)) {
         $compatibilityProblems = @(
             Invoke-ScriptAnalyzer -Path $path -Settings $compatibilitySettings |
                 Where-Object { $_.RuleName -eq "PSUseCompatibleSyntax" }

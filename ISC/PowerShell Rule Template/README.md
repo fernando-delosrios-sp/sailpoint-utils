@@ -30,7 +30,7 @@ Use this as the starting point for:
 | `ConnectorAfterModify`  | After account modification  |
 | `ConnectorAfterDelete`  | After account deletion      |
 
-Examples built from this template are [Active Directory Home Folders](../Active%20Directory%20Home%20Folders/README.md) and [Active Directory OU Management](../Active%20Directory%20OU%20Management/README.md).
+Examples built from this template are [Active Directory Home Folders](../Active%20Directory%20Home%20Folders/README.md), [Active Directory OU Management](../Active%20Directory%20OU%20Management/README.md), and [Create Shared Folder in Active Directory](../Active%20Directory%20Privileged%20Tasks/README.md).
 
 ## Script
 
@@ -473,12 +473,13 @@ On macOS or Linux with PowerShell installed:
 pwsh -NoProfile -File "./ISC/PowerShell Rule Template/tests/Test-RuleContext.ps1"
 ```
 
-The test script covers supported application roots, simple/list/nested values, Create and repeated Modify inputs, helper defaults, malformed-input safety, option precedence, redaction, replay, exit handling, and the Home Folders and OU Management migrations. When PSScriptAnalyzer is installed, it also checks those rule scripts against the Windows PowerShell 5.1 syntax profile.
+The test script covers supported application roots, simple/list/nested values, Create and repeated Modify inputs, helper defaults, malformed-input safety, option precedence, redaction, replay, exit handling, and the Home Folders, OU Management, and Create Shared Folder migrations. When PSScriptAnalyzer is installed, it also checks those rule scripts against the Windows PowerShell 5.1 syntax profile.
 
 ## References
 
 - [Active Directory Home Folders](../Active%20Directory%20Home%20Folders/README.md) — After Create example built from this template
 - [Active Directory OU Management](../Active%20Directory%20OU%20Management/README.md) — Before Create and Before Modify examples built from this template
+- [Active Directory Privileged Tasks](../Active%20Directory%20Privileged%20Tasks/README.md) — Before Modify shared-folder example built from this template
 - [SailPoint Identity Security Cloud VS Code extension](https://marketplace.visualstudio.com/items?itemName=yannick-beot-sp.vscode-sailpoint-identitynow)
 - [Connector executed Rules](https://developer.sailpoint.com/docs/extensibility/rules/connector-rules)
 - [Before and after operations on source account Rule](https://developer.sailpoint.com/docs/extensibility/rules/connector-rules/before-and-after-rule-operations)

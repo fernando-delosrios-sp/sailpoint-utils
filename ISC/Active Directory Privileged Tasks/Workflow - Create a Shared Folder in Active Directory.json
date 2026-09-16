@@ -1,0 +1,275 @@
+{
+  "definition": {
+    "start": "Interactive Form",
+    "steps": {
+      "Define Variable": {
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Active Directory source that owns the trigger entitlement and runs ConnectorBeforeModify - Create Shared Folder in Active Directory.",
+              "name": "Active Directory Source",
+              "transforms": [],
+              "variableA": "YOUR_AD_SOURCE_ID"
+            },
+            {
+              "description": "Requestable dummy entitlement whose grant invokes the Create Shared Folder BeforeModify rule.",
+              "name": "Entitlement",
+              "transforms": [],
+              "variableA": "YOUR_TRIGGER_ENTITLEMENT_ID"
+            },
+            {
+              "description": "Folder name supplied by the operator.",
+              "name": "folderName",
+              "transforms": [],
+              "variableA.$": "$.interactiveForm.formData.folderName"
+            },
+            {
+              "description": "Parent path supplied by the operator, escaped for the JSON access-request comment.",
+              "name": "parentFolder",
+              "transforms": [
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "\\\\",
+                    "replacement": "\\\\\\\\"
+                  }
+                }
+              ],
+              "variableA.$": "$.interactiveForm.formData.parentFolder"
+            },
+            {
+              "description": "SMB share name supplied by the operator.",
+              "name": "shareName",
+              "transforms": [],
+              "variableA.$": "$.interactiveForm.formData.shareName"
+            },
+            {
+              "description": "Removal time for the temporary trigger entitlement.",
+              "name": "sunset",
+              "transforms": [
+                {
+                  "id": "sp:transform:addTime:time",
+                  "input": {
+                    "length": 3,
+                    "unit": "minutes"
+                  }
+                }
+              ],
+              "variableA.$": "$.now()"
+            },
+            {
+              "description": "ISC API base URL used by the HTTP actions.",
+              "name": "url",
+              "transforms": [],
+              "variableA": "https://{tenant}.api.identitynow-demo.com"
+            }
+          ]
+        },
+        "displayName": "Variables",
+        "nextStep": "Interactive Message - Submitting",
+        "type": "Mutation"
+      },
+      "End Step - Success": {
+        "description": "The provisioning request was accepted and an entitlement refresh was scheduled.",
+        "displayName": "Success: Shared Folder Requested",
+        "type": "success"
+      },
+      "End Step - Failure": {
+        "description": "The access request could not be submitted, so shared-folder provisioning did not start.",
+        "displayName": "Failure: Shared Folder Request",
+        "failureName": "Shared Folder Request Failed",
+        "type": "failure"
+      },
+      "End Step - Partial Failure": {
+        "description": "The access request was accepted, but the entitlement-refresh workflow could not be started.",
+        "displayName": "Failure: Entitlement Refresh",
+        "failureName": "Entitlement Refresh Failed",
+        "type": "failure"
+      },
+      "HTTP Request": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "requestType": "GRANT_ACCESS",
+            "requestedFor": [
+              "{{$.trigger.launchedBy.id}}"
+            ],
+            "requestedItems": [
+              {
+                "clientMetadata": {
+                  "folderName": "{{$.defineVariable.folderName}}",
+                  "parentFolder": "{{$.defineVariable.parentFolder}}",
+                  "shareName": "{{$.defineVariable.shareName}}"
+                },
+                "comment": "{\r\n        \"folderName\": \"{{$.defineVariable.folderName}}\",\r\n        \"parentFolder\": \"{{$.defineVariable.parentFolder}}\",\r\n        \"shareName\": \"{{$.defineVariable.shareName}}\"\r\n      }",
+                "id": "{{$.defineVariable.entitlement}}",
+                "removeDate": "{{$.defineVariable.sunset}}",
+                "type": "ENTITLEMENT"
+              }
+            ]
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "url": "{{$.defineVariable.url}}/v2026/access-requests"
+        },
+        "catch": [
+          {
+            "next": "Interactive Message - Request Failed"
+          }
+        ],
+        "description": "Submits a temporary entitlement request carrying the shared-folder metadata consumed by ConnectorBeforeModify - Create Shared Folder in Active Directory.",
+        "displayName": "Submit Shared Folder Request",
+        "nextStep": "Interactive Message - Refreshing",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "HTTP Request 2": {
+        "actionId": "sp:http",
+        "attributes": {
+          "method": "post",
+          "param_authenticationRef": "none",
+          "requestHeaders": {
+            "Authorization": "Bearer YOUR_AGGREGATION_EXTERNAL_TRIGGER_TOKEN"
+          },
+          "url": "{{$.defineVariable.url}}/v2026/workflows/execute/external/YOUR_AGGREGATION_WORKFLOW_ID"
+        },
+        "catch": [
+          {
+            "next": "Interactive Message - Refresh Failed"
+          }
+        ],
+        "description": "Starts the child workflow that waits for provisioning and reloads AD group entitlements.",
+        "displayName": "Schedule Entitlement Refresh",
+        "nextStep": "Interactive Message - Complete",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Interactive Message - Complete": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; color: #475569;\">Your provisioning request was accepted. Active Directory work continues in the background.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Folder</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.interactiveForm.formData.parentFolder }}\\{{ $.interactiveForm.formData.folderName }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">SMB share</td><td style=\"padding: 6px 0;\">{{ $.interactiveForm.formData.shareName }}</td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Permission groups</td><td style=\"padding: 6px 0;\">Read Only, Read Write, Full Access</td></tr></table><p style=\"margin: 16px 0 0 0; color: #475569;\">The permission groups will appear in ISC after the scheduled entitlement refresh.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u2705  Shared folder request submitted"
+        },
+        "description": "Confirms the accepted request and explains the asynchronous provisioning behavior.",
+        "displayName": "Message: Request Submitted",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Refresh Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The shared-folder request was accepted, but the entitlement refresh could not be scheduled.</p><p><strong>Status:</strong> {{ $.httpRequest2.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.httpRequest2.error.workflowErrorMessage }}</p><p>Provisioning may still complete. Ask an administrator to aggregate the Active Directory group entitlements manually.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Request submitted; refresh not scheduled"
+        },
+        "description": "Explains the partial failure and gives the operator a recovery action.",
+        "displayName": "Message: Entitlement Refresh Failed",
+        "nextStep": "End Step - Partial Failure",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Refreshing": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The provisioning request was accepted.</p><p>Scheduling an Active Directory entitlement refresh so the new permission groups become available in ISC.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udd04  Scheduling entitlement refresh"
+        },
+        "description": "Tells the operator that provisioning was accepted and the refresh is being scheduled.",
+        "displayName": "Message: Scheduling Refresh",
+        "nextStep": "HTTP Request 2",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Request Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The request for <strong>{{ $.interactiveForm.formData.folderName }}</strong> could not be submitted.</p><p><strong>Status:</strong> {{ $.httpRequest.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.httpRequest.error.workflowErrorMessage }}</p><p>No provisioning was started. Review the folder details or ask an administrator to check the OAuth client and trigger entitlement.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Shared folder request failed"
+        },
+        "description": "Reports access-request errors and confirms that provisioning did not start.",
+        "displayName": "Message: Request Failed",
+        "nextStep": "End Step - Failure",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Submitting": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Submitting a provisioning request for <strong>{{ $.interactiveForm.formData.folderName }}</strong>.</p><p>This creates the folder, SMB share, and Read Only, Read Write, and Full Access groups.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udee0\ufe0f  Creating shared folder"
+        },
+        "description": "Summarizes the work before the provisioning request is submitted.",
+        "displayName": "Message: Submitting Request",
+        "nextStep": "HTTP Request",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Form": {
+        "actionId": "sp:interactive-form",
+        "attributes": {
+          "formDefinitionId": "429d54c3-50f1-4099-afd0-325b334a9c86",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Create a shared folder"
+        },
+        "description": "Collects the folder path and SMB share name from the operator.",
+        "displayName": "Form: Shared Folder Details",
+        "nextStep": "Define Variable",
+        "type": "action",
+        "versionNumber": 1
+      }
+    }
+  },
+  "owner": {
+    "type": "IDENTITY",
+    "id": "YOUR_OWNER_IDENTITY_ID",
+    "name": "YOUR_OWNER_NAME"
+  },
+  "trigger": {
+    "type": "EVENT",
+    "attributes": {
+      "filter.$": "$[?(@.workflowId == 'YOUR_SHARED_FOLDER_WORKFLOW_ID')]",
+      "id": "idn:interactive-process-launched",
+      "integrationId": null
+    }
+  },
+  "id": "8b4b57b5-1c79-4d1a-99de-461cad257aea",
+  "name": "Create a Shared Folder in Active Directory",
+  "description": "Guides an operator through requesting an Active Directory-backed SMB share and schedules an entitlement refresh for its permission groups.",
+  "enabled": false
+}

@@ -1,0 +1,106 @@
+{
+  "definition": {
+    "start": "Define Variable",
+    "steps": {
+      "Define Variable": {
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Microsoft Active Directory source whose group entitlements are reloaded.",
+              "name": "Active Directory Source",
+              "transforms": [],
+              "variableA": "YOUR_AD_SOURCE_ID"
+            },
+            {
+              "description": "ISC API base URL used by the entitlement aggregation request.",
+              "name": "url",
+              "transforms": [],
+              "variableA": "https://{tenant}.api.identitynow-demo.com"
+            }
+          ]
+        },
+        "displayName": "Configuration",
+        "nextStep": "Wait",
+        "type": "Mutation"
+      },
+      "End Step - Success": {
+        "description": "The Active Directory entitlement refresh was accepted.",
+        "displayName": "Success: Entitlement Refresh Started",
+        "type": "success"
+      },
+      "End Step - Failure": {
+        "description": "The Active Directory entitlement refresh request failed.",
+        "displayName": "Failure: Entitlement Refresh",
+        "failureName": "Entitlement Refresh Failed",
+        "type": "failure"
+      },
+      "HTTP Request 1": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody.$": "",
+          "method": "post",
+          "requestContentType": "json",
+          "url": "{{$.defineVariable.url}}/v2026/sources/{{$.defineVariable.activeDirectorySource}}/load-entitlements",
+          "authenticationType": "OAuth",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          }
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Requests a reload of group entitlements from the configured Active Directory source.",
+        "displayName": "Reload Active Directory Entitlements",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Wait": {
+        "actionId": "sp:sleep",
+        "attributes": {
+          "duration": "1m",
+          "type": "waitFor"
+        },
+        "description": "Allows the calling workflow's Active Directory changes to become available before aggregation starts.",
+        "displayName": "Wait for Active Directory Changes",
+        "nextStep": "HTTP Request 1",
+        "type": "action",
+        "versionNumber": 1
+      }
+    }
+  },
+  "owner": {
+    "type": "IDENTITY",
+    "id": "YOUR_OWNER_IDENTITY_ID",
+    "name": "YOUR_OWNER_NAME"
+  },
+  "trigger": {
+    "type": "EXTERNAL",
+    "attributes": {
+      "id": "idn:external-http",
+      "integrationId": null
+    }
+  },
+  "id": "04f33766-97cd-4686-9fc8-d9eeeebda139",
+  "name": "Aggregate Microsoft Active Directory entitlements",
+  "description": "Shared external workflow that waits for Microsoft Active Directory changes, then reloads the configured source's group entitlements in ISC.",
+  "enabled": false
+}
