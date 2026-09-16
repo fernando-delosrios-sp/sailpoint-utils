@@ -10,7 +10,7 @@ This rule is built from [PowerShell Rule Template](../PowerShell%20Rule%20Templa
 
 ## Script
 
-- **`Active Directory Home Folders.ps1`**: ConnectorAfterCreate rule source. Runs after a successful AD account creation, resolves the target folder path, creates the directory tree if needed, breaks inheritance, and grants Full Control to the new user and `BUILTIN\Administrators`.
+- **`ConnectorAfterCreate - Create Active Directory Home Folder.ps1`**: ConnectorAfterCreate rule source. Runs after a successful AD account creation, resolves the target folder path, creates the directory tree if needed, breaks inheritance, and grants Full Control to the new user and `BUILTIN\Administrators`.
 
 ## Installation
 
@@ -39,9 +39,9 @@ The rule does not need `Utils.dll` or the `ActiveDirectory` module, so neither a
 In VS Code, using the SailPoint Identity Security Cloud extension:
 
 1. Open **Connector Rules** for your tenant.
-2. Create a new connector rule named `Active Directory Home Folders`.
+2. Create a new connector rule named `ConnectorAfterCreate - Create Active Directory Home Folder`.
 3. Set the rule type to **ConnectorAfterCreate**.
-4. Import or paste the contents of `Active Directory Home Folders.ps1` into the rule script.
+4. Import or paste the contents of `ConnectorAfterCreate - Create Active Directory Home Folder.ps1` into the rule script.
 5. Save the rule to the tenant.
 
 The extension handles script export/import and rule upload; you do not need to prepare JSON payloads or call the Connector Rule REST APIs manually.
@@ -50,7 +50,7 @@ The extension handles script export/import and rule upload; you do not need to p
 
 In the extension, open your Active Directory source and edit **Native Rules** (`connectorAttributes.nativeRules`):
 
-1. Add `Active Directory Home Folders` to the native rules list.
+1. Add `ConnectorAfterCreate - Create Active Directory Home Folder` to the native rules list.
 2. Include **every** Before/After Create/Modify/Delete native rule that source should run, not only this one.
 3. Save the source.
 
@@ -78,12 +78,12 @@ Provision a new AD account and confirm:
 
 ### Script constants
 
-These live at the top of `Active Directory Home Folders.ps1`. They are not source attributes.
+These live at the top of `ConnectorAfterCreate - Create Active Directory Home Folder.ps1`. They are not source attributes.
 
 | Constant             | Value in this rule                | Description                                                                                                                                                                                  |
 | :------------------- | :-------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `$ConnectorRuleType` | `"ConnectorAfterCreate"`          | Must match the connector rule type configured in ISC.                                                                                                                                        |
-| `$ConnectorRuleName` | `"Active Directory Home Folders"` | ISC rule display name. Used as the script dump filename and as the prefix for the timestamped log and replay script. Falls back to the runtime GUID if empty. Also included in the log body. |
+| `$ConnectorRuleName` | `"ConnectorAfterCreate - Create Active Directory Home Folder"` | ISC rule display name. Used as the script dump filename and as the prefix for the timestamped log and replay script. Falls back to the runtime GUID if empty. Also included in the log body. |
 | `$ScriptsSubfolder`  | `"scripts"`                       | Folder under the IQService install directory where script dumps and logs are stored.                                                                                                         |
 
 Optional script overrides. If defined, they win over the matching source attributes (`PwshSilentError`, `PwshUnsafePayloadLogging`, `PwshReplay`). Leave them commented out to use the source.
@@ -130,7 +130,7 @@ Relative path (equivalent to the original hardcoded layout):
     "HomeFolderBasePath": "C:\\Shared Folders",
     "HomeFolderTemplate": "$department\\Personal\\$sAMAccountName",
     "HomeFolderDebugEnabled": "true",
-    "nativeRules": ["Active Directory Home Folders"]
+    "nativeRules": ["ConnectorAfterCreate - Create Active Directory Home Folder"]
   }
 }
 ```
@@ -142,7 +142,7 @@ Absolute path (base path ignored):
   "connectorAttributes": {
     "HomeFolderTemplate": "\\\\fileserver\\users$\\$sAMAccountName",
     "HomeFolderDebugEnabled": "false",
-    "nativeRules": ["Active Directory Home Folders"]
+    "nativeRules": ["ConnectorAfterCreate - Create Active Directory Home Folder"]
   }
 }
 ```
@@ -154,7 +154,7 @@ Fallback when template is missing or unresolvable:
   "connectorAttributes": {
     "HomeFolderBasePath": "C:\\Shared Folders\\Personal",
     "HomeFolderTemplate": "",
-    "nativeRules": ["Active Directory Home Folders"]
+    "nativeRules": ["ConnectorAfterCreate - Create Active Directory Home Folder"]
   }
 }
 ```
@@ -186,8 +186,8 @@ For a runtime file named `Script_496b999e-a4b7-4b58-8abf-47da35b69b13.ps1`:
 C:\SailPoint\IQService-IDN\
   Script_496b999e-a4b7-4b58-8abf-47da35b69b13.ps1   # generated runtime copy (IQService)
   scripts\
-    Active Directory Home Folders.ps1
-    Active Directory Home Folders_20260825_040053123.log
+    ConnectorAfterCreate - Create Active Directory Home Folder.ps1
+    ConnectorAfterCreate - Create Active Directory Home Folder_20260825_040053123.log
 ```
 
 When `$ConnectorRuleName` is empty, those files are `Script_496b999e-a4b7-4b58-8abf-47da35b69b13.ps1` and `Script_496b999e-a4b7-4b58-8abf-47da35b69b13_20260825_040053123.log`.
@@ -260,8 +260,8 @@ If the IQService log shows a non-zero exit code but no rule log appears, establi
 
 1. Confirm the updated rule was uploaded to the tenant.
 2. Confirm the rule name appears in `connectorAttributes.nativeRules`.
-3. Search the whole IQService host for `Active Directory Home Folders_*.log`, not just `<IQService>\scripts`. The rule derives its artifacts directory at runtime, so a log written somewhere unexpected means the resolved IQService directory was wrong. The `IQServiceDirectorySource` line says whether a normal IQService marker was found or the directory was only a fallback guess.
-4. Check for an emergency log under `%TEMP%` named `Active Directory Home Folders_<timestamp>.emergency.log`, or `Script_<GUID>_<timestamp>.emergency.log` if `$ConnectorRuleName` is empty. `%TEMP%` is resolved for the IQService **Run As** account, so look under that account's profile (or `C:\Windows\Temp` for `LOCAL SYSTEM`), not your own.
+3. Search the whole IQService host for `ConnectorAfterCreate - Create Active Directory Home Folder_*.log`, not just `<IQService>\scripts`. The rule derives its artifacts directory at runtime, so a log written somewhere unexpected means the resolved IQService directory was wrong. The `IQServiceDirectorySource` line says whether a normal IQService marker was found or the directory was only a fallback guess.
+4. Check for an emergency log under `%TEMP%` named `ConnectorAfterCreate - Create Active Directory Home Folder_<timestamp>.emergency.log`, or `Script_<GUID>_<timestamp>.emergency.log` if `$ConnectorRuleName` is empty. `%TEMP%` is resolved for the IQService **Run As** account, so look under that account's profile (or `C:\Windows\Temp` for `LOCAL SYSTEM`), not your own.
 5. Confirm the IQService Run As account can create and write under `<IQService>\scripts`.
 
 If nothing appears at any of those paths, the script never ran. The rule was not re-uploaded or is not in `nativeRules`, the PowerShell execution policy or antivirus is blocking it, or the uploaded rule body is malformed.

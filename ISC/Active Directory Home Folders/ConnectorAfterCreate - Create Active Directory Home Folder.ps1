@@ -4,7 +4,7 @@
 # Built from ISC/PowerShell Rule Template. Keep the template bootstrap and helper functions unchanged.
 # Home-folder logic lives in HOME FOLDER HELPERS and CUSTOM PROCESS CODE.
 #
-# Upload this script as a Connector Rule (type: ConnectorAfterCreate) using the
+# Upload this script as a Connector Rule (type: ConnectorAfterCreate, name: ConnectorAfterCreate - Create Active Directory Home Folder) using the
 # SailPoint Identity Security Cloud VS Code extension:
 # https://marketplace.visualstudio.com/items?itemName=yannick-beot-sp.vscode-sailpoint-identitynow
 # Attach the rule to your AD source through connectorAttributes.nativeRules.
@@ -38,7 +38,7 @@
 $ConnectorRuleType = "ConnectorAfterCreate"
 
 # Optional display name from the ISC connector rule. Used as the artifact filename prefix when set; otherwise the runtime GUID is used.
-$ConnectorRuleName = "Active Directory Home Folders"
+$ConnectorRuleName = "ConnectorAfterCreate - Create Active Directory Home Folder"
 
 # Optional script overrides. Define any of these to take precedence over the source connectorAttributes
 # of the same name. Leave them undefined to use PwshSilentError, PwshUnsafePayloadLogging, and
