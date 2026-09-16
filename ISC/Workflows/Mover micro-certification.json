@@ -1,0 +1,143 @@
+{
+  "definition": {
+    "start": "Set Configuration",
+    "steps": {
+      "Check Manager": {
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Get Manager Identity",
+            "variableA.$": "$.getIdentity.managerRef.id"
+          }
+        ],
+        "defaultStep": "Create Governance Group Certification",
+        "description": "If the identity has a manager, that manager reviews the access. Otherwise the fallback governance group is the reviewer.",
+        "displayName": "Manager assigned?",
+        "type": "choice"
+      },
+      "Create Governance Group Certification": {
+        "actionId": "sp:create-campaign",
+        "attributes": {
+          "activateUponCreation": true,
+          "description": "{{$.getIdentity.attributes.displayName}}'s job title changed from \"{{$.trigger.changes[0].oldValue}}\" to \"{{$.trigger.changes[0].newValue}}\". No manager is assigned, so this review was routed to the fallback governance group. Review their current access and revoke anything that is no longer appropriate for the new role.",
+          "duration": "1w",
+          "emailNotificationEnabled": true,
+          "name": "Mover access review — {{$.getIdentity.attributes.displayName}}",
+          "recommendationsEnabled": true,
+          "reviewerCertificationType": "GOVERNANCE_GROUP",
+          "reviewerId.$": "$.setConfiguration.governanceGroupID",
+          "reviewerIdentitiesToCertify.$": "$.getIdentity.id",
+          "type": "REVIEWER_IDENTITY",
+          "undecidedAccess": false
+        },
+        "description": "Creates a one-week identity certification for the mover, assigned to the configured governance group, and activates it immediately. Built-in campaign emails notify the group members.",
+        "displayName": "Create governance group certification",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Create Manager Certification": {
+        "actionId": "sp:create-campaign",
+        "attributes": {
+          "activateUponCreation": true,
+          "description": "{{$.getIdentity.attributes.displayName}}'s job title changed from \"{{$.trigger.changes[0].oldValue}}\" to \"{{$.trigger.changes[0].newValue}}\". Review their current access and revoke anything that is no longer appropriate for the new role.",
+          "duration": "1w",
+          "emailNotificationEnabled": true,
+          "name": "Mover access review — {{$.getIdentity.attributes.displayName}}",
+          "recommendationsEnabled": true,
+          "reviewerCertificationType": "IDENTITY",
+          "reviewerId.$": "$.getIdentity.managerRef.id",
+          "reviewerIdentitiesToCertify.$": "$.getIdentity.id",
+          "type": "REVIEWER_IDENTITY",
+          "undecidedAccess": false
+        },
+        "description": "Creates a one-week identity certification for the mover, assigned to their manager, and activates it immediately.",
+        "displayName": "Create manager certification",
+        "nextStep": "Email Manager",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Email Manager": {
+        "actionId": "sp:send-email",
+        "attributes": {
+          "body": "<div>\n<div>Hello {{$.getManagerIdentity.attributes.displayName}},</div>\n<div>&nbsp;</div>\n<div>{{$.getIdentity.attributes.displayName}}'s job title changed from <strong>{{$.trigger.changes[0].oldValue}}</strong> to <strong>{{$.trigger.changes[0].newValue}}</strong>.</div>\n<div>&nbsp;</div>\n<div>A one-week access review has been assigned to you. Please complete it in Identity Security Cloud and revoke any access that is no longer appropriate.</div>\n<div>&nbsp;</div>\n<div>Campaign: Mover access review — {{$.getIdentity.attributes.displayName}}</div>\n<div>&nbsp;</div>\n<div>Thank you</div>\n</div>",
+          "context": {},
+          "from": null,
+          "recipientEmailList.$": "$.getManagerIdentity.attributes.email",
+          "replyTo": null,
+          "subject": "Access review required: {{$.getIdentity.attributes.displayName}} job title changed"
+        },
+        "description": "Notifies the manager that a mover access review is waiting for them, including the previous and new job title.",
+        "displayName": "Email manager",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "End Step - Success": {
+        "displayName": "Success",
+        "type": "success"
+      },
+      "Get Identity": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.trigger.identity.id"
+        },
+        "description": "Loads the identity whose job title changed so the workflow can certify their access and resolve their manager.",
+        "displayName": "Get mover identity",
+        "nextStep": "Check Manager",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Get Manager Identity": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.getIdentity.managerRef.id"
+        },
+        "catch": [
+          {
+            "next": "Create Governance Group Certification"
+          }
+        ],
+        "description": "Loads the mover's manager so the notification can be sent to their email address. If the manager identity cannot be loaded, the review is routed to the fallback governance group.",
+        "displayName": "Get manager identity",
+        "nextStep": "Create Manager Certification",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Set Configuration": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Governance group that reviews the mover's access when no manager is assigned. Replace YOUR_GOVERNANCE_GROUP_ID with the workgroup ID from Admin > Governance Groups.",
+              "name": "Governance Group ID",
+              "transforms": [],
+              "variableA": "YOUR_GOVERNANCE_GROUP_ID"
+            }
+          ]
+        },
+        "description": "Tenant-specific settings. Set the fallback governance group before enabling the workflow.",
+        "displayName": "Set configuration",
+        "nextStep": "Get Identity",
+        "type": "Mutation"
+      }
+    }
+  },
+  "trigger": {
+    "type": "EVENT",
+    "mode": "advanced",
+    "attributes": {
+      "attributeToFilter": "jobTitle",
+      "filter.$": "$.changes[?(@.attribute == 'jobTitle' && @.newValue != null)]",
+      "id": "idn:identity-attributes-changed",
+      "integrationId": null
+    }
+  },
+  "id": "6b28456b-8911-428f-af11-f4680fc02ad2",
+  "name": "Mover Micro-Certification",
+  "description": "When an identity's job title changes, assign a one-week micro-certification of their access to the manager, or to a configured governance group if no manager is found. Do not import this export as-is; rebuild it with the prospect.",
+  "executionCount": 111,
+  "failureCount": 0,
+  "enabled": true
+}
