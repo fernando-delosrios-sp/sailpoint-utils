@@ -513,6 +513,12 @@ Assert-Equal 0 $sharedFolderNoComments.ExitCode "shared-folder rule must skip Mo
 Assert-True ($sharedFolderNoComments.LogText -match "No memberOf comments") "shared-folder rule must log the missing-comments skip"
 Assert-True ($sharedFolderNoComments.LogText -notmatch "Import-Module") "shared-folder rule must not import ActiveDirectory when comments are absent"
 
+$sharedFolderOrdinaryComment = Invoke-OuRuleCase -ScriptPath $resolvedSharedFolderPath -RequestXml ([System.IO.File]::ReadAllText((Join-Path $fixturesDirectory "request-modify-memberof-comment.xml"))) -ApplicationXml "<Map />"
+Assert-Equal 0 $sharedFolderOrdinaryComment.ExitCode "shared-folder rule must skip Modify requests whose memberOf comments are not shared-folder JSON"
+Assert-True ($sharedFolderOrdinaryComment.LogText -match "not shared-folder metadata") "shared-folder rule must log the ordinary-comment skip"
+Assert-True ($sharedFolderOrdinaryComment.LogText -notmatch "Process error") "shared-folder rule must not treat ordinary memberOf comments as a process failure"
+Assert-True ($sharedFolderOrdinaryComment.LogText -notmatch "Import-Module") "shared-folder rule must not import ActiveDirectory for ordinary memberOf comments"
+
 $analyzer = Get-Command Invoke-ScriptAnalyzer -ErrorAction SilentlyContinue
 if ($analyzer) {
     $compatibilitySettings = @{

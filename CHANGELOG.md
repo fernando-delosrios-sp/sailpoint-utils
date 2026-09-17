@@ -10,6 +10,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 - **Source Connection Setup (IQService Control)** — Added **Enable AD LDAPS** (`-Action EnableLdaps`): on a domain controller, select or create a Schannel certificate with the required Server Authentication / Key Usage / KeyExchange uses, open TCP 636, export the full chain as PEM for manual VA truststore install, and print SailPoint VA TLS steps. Does not copy files onto the VA.
 
+### 🐛 Fixes
+
+- **Active Directory Privileged Tasks** — `ConnectorBeforeModify - Create Shared Folder in Active Directory` no longer treats ordinary `memberOf` comments (for example sunset `fix`) as shared-folder JSON. Invalid or incomplete comments skip with exit 0 so IQService can still remove the dummy **Folder Request** group.
+
 ### 🔧 Improvements
 
 - **Source Connection Setup (IQService Control)** — Enable AD LDAPS interactively lists LDAPS-usable certificates for selection (plus create self-signed), instead of requiring a typed thumbprint.

@@ -1099,6 +1099,30 @@ function Get-SharedFolderRequestComments {
     return $null
 }
 
+function Test-SharedFolderMetadataComments {
+    param([string] $Comments)
+
+    if ([string]::IsNullOrWhiteSpace($Comments)) {
+        return $false
+    }
+
+    try {
+        $parsed = $Comments | ConvertFrom-Json
+    } catch {
+        return $false
+    }
+
+    if ($null -eq $parsed -or $parsed -is [string]) {
+        return $false
+    }
+
+    return -not (
+        [string]::IsNullOrWhiteSpace([string]$parsed.folderName) -or
+        [string]::IsNullOrWhiteSpace([string]$parsed.parentFolder) -or
+        [string]::IsNullOrWhiteSpace([string]$parsed.shareName)
+    )
+}
+
 function ConvertFrom-SharedFolderMetadata {
     param([string] $Comments)
 
@@ -1346,6 +1370,8 @@ try {
         $comments = Get-SharedFolderRequestComments
         if ([string]::IsNullOrWhiteSpace($comments)) {
             Write-RuleLog -Level INFO -Message "No memberOf comments with shared-folder metadata. Skipping."
+        } elseif (-not (Test-SharedFolderMetadataComments -Comments $comments)) {
+            Write-RuleLog -Level INFO -Message "memberOf comments are not shared-folder metadata. Skipping."
         } else {
             $metadata = ConvertFrom-SharedFolderMetadata -Comments $comments
             $allowedParentPaths = Get-ApplicationAttribute "SharedFolderAllowedParentPaths"

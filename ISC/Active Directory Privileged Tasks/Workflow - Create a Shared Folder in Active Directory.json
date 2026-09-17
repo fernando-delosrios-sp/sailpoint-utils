@@ -184,7 +184,7 @@
         "attributes": {
           "category": "ERROR",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p>The shared-folder request was accepted, but the entitlement refresh could not be scheduled.</p><p><strong>Status:</strong> {{ $.httpRequest2.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.httpRequest2.error.workflowErrorMessage }}</p><p>Provisioning may still complete. Ask an administrator to aggregate the Active Directory group entitlements manually.</p>",
+          "message": "<p>The shared-folder request was accepted, but the entitlement refresh could not be scheduled.</p><p><strong>Status:</strong> {{ $.hTTPRequest2.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.hTTPRequest2.error.workflowErrorMessage }}</p><p>Provisioning may still complete. Ask an administrator to aggregate the Active Directory group entitlements manually.</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
           "title": "\u26a0\ufe0f  Request submitted; refresh not scheduled"
         },
@@ -214,7 +214,7 @@
         "attributes": {
           "category": "ERROR",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p>The request for <strong>{{ $.interactiveForm.formData.folderName }}</strong> could not be submitted.</p><p><strong>Status:</strong> {{ $.httpRequest.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.httpRequest.error.workflowErrorMessage }}</p><p>No provisioning was started. Review the folder details or ask an administrator to check the OAuth client and trigger entitlement.</p>",
+          "message": "<p>The request for <strong>{{ $.interactiveForm.formData.folderName }}</strong> could not be submitted.</p><p><strong>Status:</strong> {{ $.hTTPRequest.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.hTTPRequest.error.workflowErrorMessage }}</p><p>No provisioning was started. Review the folder details or ask an administrator to check the OAuth client and trigger entitlement.</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
           "title": "\u26a0\ufe0f  Shared folder request failed"
         },

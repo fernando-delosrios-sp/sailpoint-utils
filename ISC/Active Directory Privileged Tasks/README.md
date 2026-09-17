@@ -319,6 +319,10 @@ sail api get '/beta/entitlements?filters=source.id eq "<sourceId>"&limit=250' --
   --jsonpath '$[?(@.requestable == true)].name'
 ```
 
+### Dummy **Folder Request** entitlement is not removed after sunset
+
+IQService runs this BeforeModify rule on every Modify, including the later `memberOf` Remove for the trigger group. A non-empty comment that is not shared-folder JSON (ISC often sends `fix` on generated revokes) used to make `ConvertFrom-Json` throw, `Exit-Rule 1`, and abort the pending Remove. The rule now skips those comments with exit 0. Re-upload the updated script to ISC, then retry the revoke or wait for the next sunset.
+
 ### No log under `<IQService>\scripts`
 
 Follow the [PowerShell Rule Template troubleshooting steps](../PowerShell%20Rule%20Template/README.md). A missing log means the script never ran, which usually points back to the rule-resolution failure above rather than to the script.
@@ -328,7 +332,7 @@ Follow the [PowerShell Rule Template troubleshooting steps](../PowerShell%20Rule
 - **Manager dropdown size** — `sp:get-identities` returns a single search page, so at most 250 identities are offered as managers. Large directories need a narrower query (an identity attribute or a saved search) instead of `@accounts(source.name:…)`.
 - **Dummy entitlement** from the source tenant was not present at export time (`404`). You must create a requestable stand-in on your AD source.
 - **PAG duplicate lookup contract** — The exported `get_group_by_samaccountname` action treats its success path as “group exists” and its catch path as “name available.” Confirm that your PAG command reports a missing group through catch; do not enable the workflow if other command errors use the same catch path.
-- **Create Shared Folder** skips non-Modify operations and Modify plans with no `memberOf` comments. It rejects unsafe folder/share names, relative or non-allowlisted parent paths, invalid JSON, missing metadata, and an invalid `SharedFolderGroupOU` (`PwshSilentError` still applies). Existing groups get inheritable NTFS ACLs applied again rather than being skipped.
+- **Create Shared Folder** skips non-Modify operations, Modify plans with no `memberOf` comments, and Modify plans whose comments are not shared-folder JSON (`folderName`, `parentFolder`, `shareName`). Ordinary access-request comments such as `fix` must skip with exit 0 so IQService still applies the pending `memberOf` change (for example, sunset removal of the dummy **Folder Request** group). It still rejects unsafe folder/share names, relative or non-allowlisted parent paths, and an invalid `SharedFolderGroupOU` (`PwshSilentError` still applies). Existing groups get inheritable NTFS ACLs applied again rather than being skipped.
 - **Sunset of 3 minutes** on the access request is demo-oriented; lengthen it if IQService may not finish before access is removed.
 - **PAG** is not exported as an object. You need a Privileged Action Gateway instance that supports the four Active Directory commands above.
 - **Owner identity references** in the JSON are placeholders (`YOUR_OWNER_IDENTITY_ID`, `YOUR_OWNER_NAME`).
