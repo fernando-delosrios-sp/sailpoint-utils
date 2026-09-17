@@ -149,30 +149,32 @@ $noKey = New-MockCert -HasPrivateKey $false
 $badKey = Test-AdLdapsCertificateUses -Certificate $noKey
 Assert-True (-not $badKey.Ok) 'certificate without private key is rejected'
 
+$fqdn = 'dc1.contoso.local'
+
 # --- Ranking: NTDS preferred, then longest validity ---
 $now = Get-Date
-$myOld = New-MockCert -Thumbprint 'MYOLD' -NotAfter $now.AddMonths(1) -DnsNames @('dc1.contoso.local')
-$ntdsNew = New-MockCert -Thumbprint 'NTDSNEW' -NotAfter $now.AddYears(2) -DnsNames @('dc1.contoso.local')
-$myLonger = New-MockCert -Thumbprint 'MYLONG' -NotAfter $now.AddYears(3) -DnsNames @('dc1.contoso.local')
+$myOld = New-MockCert -Thumbprint 'MYOLD' -NotAfter $now.AddMonths(1) -DnsNames @($fqdn)
+$ntdsNew = New-MockCert -Thumbprint 'NTDSNEW' -NotAfter $now.AddYears(2) -DnsNames @($fqdn)
+$myLonger = New-MockCert -Thumbprint 'MYLONG' -NotAfter $now.AddYears(3) -DnsNames @($fqdn)
 
-$found = Find-AdLdapsCertificate -DnsName @('dc1.contoso.local') -Candidates @(
+$found = Find-AdLdapsCertificate -DnsName @($fqdn) -RequiredDnsName $fqdn -Candidates @(
     [PSCustomObject]@{ Certificate = $myLonger; StoreName = 'My' }
     [PSCustomObject]@{ Certificate = $ntdsNew; StoreName = 'NTDS' }
     [PSCustomObject]@{ Certificate = $myOld; StoreName = 'My' }
 ) -Now $now
 Assert-equal 'NTDSNEW' $found.Thumbprint 'NTDS store ranks above My even when My has longer validity'
 
-$foundMy = Find-AdLdapsCertificate -DnsName @('dc1.contoso.local') -Candidates @(
+$foundMy = Find-AdLdapsCertificate -DnsName @($fqdn) -RequiredDnsName $fqdn -Candidates @(
     [PSCustomObject]@{ Certificate = $myOld; StoreName = 'My' }
     [PSCustomObject]@{ Certificate = $myLonger; StoreName = 'My' }
 ) -Now $now
 Assert-equal 'MYLONG' $foundMy.Thumbprint 'among My-store certs, longest NotAfter wins'
 
 # --- Thumbprint pin still enforces uses gate ---
-$pinnedBad = New-MockCert -Thumbprint 'BADPIN' -KeySpec 'Signature'
+$pinnedBad = New-MockCert -Thumbprint 'BADPIN' -KeySpec 'Signature' -DnsNames @($fqdn)
 $threw = $false
 try {
-    Find-AdLdapsCertificate -Thumbprint 'BADPIN' -DnsName @('dc1.contoso.local') -Candidates @(
+    Find-AdLdapsCertificate -Thumbprint 'BADPIN' -DnsName @($fqdn) -RequiredDnsName $fqdn -Candidates @(
         [PSCustomObject]@{ Certificate = $pinnedBad; StoreName = 'My' }
     ) -Now $now | Out-Null
 }
@@ -184,11 +186,22 @@ Assert-True $threw 'pinned signature-only cert throws'
 
 # --- Name mismatch rejected from accepted set ---
 $wrongHost = New-MockCert -Thumbprint 'WRONG' -DnsNames @('other.contoso.local')
-$foundNone = Find-AdLdapsCertificate -DnsName @('dc1.contoso.local') -Candidates @(
+$foundNone = Find-AdLdapsCertificate -DnsName @($fqdn) -RequiredDnsName $fqdn -Candidates @(
     [PSCustomObject]@{ Certificate = $wrongHost; StoreName = 'My' }
 ) -Now $now
 Assert-True ($null -eq $foundNone.Certificate) 'name mismatch yields no accepted certificate'
 Assert-equal 1 $foundNone.Rejected.Count 'name mismatch is recorded as rejected'
+
+# --- Short name alone is not enough (AD DS needs FQDN) ---
+$shortOnly = New-MockCert -Thumbprint 'SHORT' -DnsNames @('dc1')
+$shortCheck = Test-AdLdapsCertificateCandidate -Certificate $shortOnly -HostNames @($fqdn, 'dc1') -RequiredDnsName $fqdn -Now $now
+Assert-True (-not $shortCheck.Ok) 'short-name-only cert fails candidate gate'
+Assert-True ($shortCheck.Reasons -join ' ' -match 'FQDN|short name') 'short-name rejection mentions FQDN'
+
+$foundShort = Find-AdLdapsCertificate -DnsName @($fqdn) -RequiredDnsName $fqdn -Candidates @(
+    [PSCustomObject]@{ Certificate = $shortOnly; StoreName = 'My' }
+) -Now $now
+Assert-True ($null -eq $foundShort.Certificate) 'short-name-only cert is not selectable'
 
 # --- Choice labels ---
 $labelEntry = [PSCustomObject]@{
@@ -204,18 +217,23 @@ Assert-Contains '…' $label 'choice label truncates extra DNS and long thumbpri
 Assert-Contains 'expires 2027-06-15' $label 'choice label includes expiry'
 
 # --- Interactive selection defaults (NonInteractive uses Default) ---
-$pickExisting = Select-AdLdapsCertificate -DnsName @('dc1.contoso.local') -Candidates @(
+$pickExisting = Select-AdLdapsCertificate -DnsName @($fqdn) -RequiredDnsName $fqdn -Candidates @(
     [PSCustomObject]@{ Certificate = $ntdsNew; StoreName = 'NTDS' }
     [PSCustomObject]@{ Certificate = $myLonger; StoreName = 'My' }
 ) -Now $now
 Assert-equal 'NTDSNEW' $pickExisting.Thumbprint 'selection defaults to top-ranked usable cert'
 Assert-True (-not $pickExisting.CreateSelfSigned) 'selection of existing cert is not CreateSelfSigned'
 
-$pickCreate = Select-AdLdapsCertificate -DnsName @('dc1.contoso.local') -Candidates @(
+$pickCreate = Select-AdLdapsCertificate -DnsName @($fqdn) -RequiredDnsName $fqdn -Candidates @(
     [PSCustomObject]@{ Certificate = $wrongHost; StoreName = 'My' }
 ) -Now $now
 Assert-True $pickCreate.CreateSelfSigned 'when nothing is usable, selection defaults to create'
 Assert-True ($null -eq $pickCreate.Thumbprint) 'create selection has no thumbprint'
+
+# --- Schannel ready: FQDN required; untrusted-root soft for self-signed path is separate ---
+$schannelShort = Test-AdLdapsCertificateSchannelReady -Certificate $shortOnly -DnsName $fqdn
+Assert-True (-not $schannelShort.Ok) 'Schannel ready rejects short-name-only cert'
+Assert-True ($schannelShort.Reasons -join ' ' -match 'FQDN|Short name') 'Schannel ready message mentions FQDN'
 
 # --- NTDS service store registry paths ---
 $ntdsRoot = Get-AdLdapsNtdsServiceCertificateRegistryPath

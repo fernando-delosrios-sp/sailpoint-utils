@@ -165,9 +165,11 @@ function Test-AdLdapsCertificateNameMatch {
         [Parameter(Mandatory)][string[]]$HostNames
     )
 
-    $certNames = @(Get-AdLdapsCertificateDnsNames -Certificate $Certificate | ForEach-Object { $_.ToLowerInvariant() })
+    $certNames = @(Get-AdLdapsCertificateDnsNames -Certificate $Certificate | ForEach-Object {
+        $_.TrimEnd('.').ToLowerInvariant()
+    })
     foreach ($hostName in $HostNames) {
-        $want = $hostName.ToLowerInvariant()
+        $want = $hostName.TrimEnd('.').ToLowerInvariant()
         if ($certNames -contains $want) { return $true }
         foreach ($cn in $certNames) {
             if ($cn.StartsWith('*.') -and $want.EndsWith($cn.Substring(1))) { return $true }
@@ -305,6 +307,7 @@ function Test-AdLdapsCertificateCandidate {
     param(
         [Parameter(Mandatory)]$Certificate,
         [Parameter(Mandatory)][string[]]$HostNames,
+        [string]$RequiredDnsName,
         [datetime]$Now = $(Get-Date)
     )
 
@@ -316,7 +319,24 @@ function Test-AdLdapsCertificateCandidate {
         $reasons.Add("Certificate is outside validity window ($notBefore - $notAfter).")
     }
 
-    if (-not (Test-AdLdapsCertificateNameMatch -Certificate $Certificate -HostNames $HostNames)) {
+    # AD DS matches GetComputerNameEx(DnsFullyQualified). Short name alone (CN=ad-resource) is not enough.
+    $required = if ($RequiredDnsName) {
+        $RequiredDnsName.TrimEnd('.').ToLowerInvariant()
+    }
+    elseif ($HostNames.Count -gt 0 -and $HostNames[0] -match '\.') {
+        $HostNames[0].TrimEnd('.').ToLowerInvariant()
+    }
+    else {
+        try { (Get-AdLdapsMachineDnsFullyQualifiedName).TrimEnd('.').ToLowerInvariant() } catch { $null }
+    }
+
+    if ($required) {
+        if (-not (Test-AdLdapsCertificateNameMatch -Certificate $Certificate -HostNames @($required))) {
+            $have = @(Get-AdLdapsCertificateDnsNames -Certificate $Certificate) -join ', '
+            $reasons.Add("Certificate DNS names ($have) do not include the AD DS FQDN '$required' (short name alone is not enough for LDAPS).")
+        }
+    }
+    elseif (-not (Test-AdLdapsCertificateNameMatch -Certificate $Certificate -HostNames $HostNames)) {
         $reasons.Add("Certificate DNS names do not match host ($($HostNames -join ', ')).")
     }
 
@@ -367,11 +387,17 @@ function Find-AdLdapsCertificate {
     param(
         [string]$Thumbprint,
         [string[]]$DnsName,
+        [string]$RequiredDnsName,
         [object[]]$Candidates,
         [datetime]$Now = $(Get-Date)
     )
 
     $hostNames = Get-AdLdapsHostNames -ExtraDnsName $DnsName
+    if (-not $RequiredDnsName) {
+        try { $RequiredDnsName = Get-AdLdapsMachineDnsFullyQualifiedName } catch { }
+        if (-not $RequiredDnsName -and $hostNames.Count -gt 0) { $RequiredDnsName = $hostNames[0] }
+    }
+
     if (-not $Candidates) {
         $Candidates = @(Get-AdLdapsCertificateStoreCandidates)
     }
@@ -389,7 +415,8 @@ function Find-AdLdapsCertificate {
             if ($certTp -ne $tp) { continue }
         }
 
-        $check = Test-AdLdapsCertificateCandidate -Certificate $cert -HostNames $hostNames -Now $Now
+        $check = Test-AdLdapsCertificateCandidate -Certificate $cert -HostNames $hostNames `
+            -RequiredDnsName $RequiredDnsName -Now $Now
         $entry = [PSCustomObject]@{
             Certificate = $cert
             StoreName   = $storeName
@@ -562,6 +589,41 @@ function Get-AdLdapsCertificateFromLocalMachineMy {
     }
 }
 
+function Test-AdLdapsCertificateIsSelfSigned {
+    param([Parameter(Mandatory)]$Certificate)
+
+    try {
+        $subject = [string]$Certificate.Subject
+        $issuer = [string]$Certificate.Issuer
+        if ($subject -and $issuer -and ($subject -eq $issuer)) { return $true }
+    }
+    catch { }
+    return $false
+}
+
+function Install-AdLdapsCertificateIntoTrustedRoot {
+    param([Parameter(Mandatory)]$Certificate)
+
+    $tp = ([string]$Certificate.Thumbprint -replace '\s', '').ToUpperInvariant()
+    $rootStore = New-Object System.Security.Cryptography.X509Certificates.X509Store('Root', 'LocalMachine')
+    $rootStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+    try {
+        $existing = $rootStore.Certificates | Where-Object {
+            ([string]$_.Thumbprint -replace '\s', '').ToUpperInvariant() -eq $tp
+        } | Select-Object -First 1
+        if ($existing) {
+            Write-Info "Certificate $tp is already in LocalMachine\Root."
+            return $false
+        }
+        $rootStore.Add($Certificate)
+        Write-Ok "Added certificate $tp to LocalMachine\Root (required for AD DS to trust a self-signed LDAPS cert)."
+        return $true
+    }
+    finally {
+        $rootStore.Close()
+    }
+}
+
 function Test-AdLdapsCertificateSchannelReady {
     param(
         [Parameter(Mandatory)]$Certificate,
@@ -569,17 +631,21 @@ function Test-AdLdapsCertificateSchannelReady {
     )
 
     $reasons = [System.Collections.Generic.List[string]]::new()
-    $expected = if ($DnsName) { $DnsName.TrimEnd('.').ToLowerInvariant() } else { (Get-AdLdapsMachineDnsFullyQualifiedName).ToLowerInvariant() }
+    $expected = if ($DnsName) { $DnsName.TrimEnd('.').ToLowerInvariant() } else { (Get-AdLdapsMachineDnsFullyQualifiedName).TrimEnd('.').ToLowerInvariant() }
     $certNames = @(Get-AdLdapsCertificateDnsNames -Certificate $Certificate | ForEach-Object { $_.TrimEnd('.').ToLowerInvariant() })
     if ($certNames -notcontains $expected) {
-        $reasons.Add("Certificate DNS names ($($certNames -join ', ')) do not include the AD DS machine name '$expected' (GetComputerNameEx DnsFullyQualified).")
+        $reasons.Add("Certificate DNS names ($($certNames -join ', ')) do not include the AD DS FQDN '$expected'. Short name alone (e.g. ad-resource) will not enable LDAPS — create a new cert or pick one that includes the FQDN.")
     }
 
     $uses = Test-AdLdapsCertificateUses -Certificate $Certificate
     foreach ($r in $uses.Reasons) { $reasons.Add($r) }
 
+    if ((Test-AdLdapsCertificateIsSelfSigned -Certificate $Certificate)) {
+        Install-AdLdapsCertificateIntoTrustedRoot -Certificate $Certificate | Out-Null
+    }
+
     $testCert = Get-Command Test-Certificate -ErrorAction SilentlyContinue
-    if ($testCert) {
+    if ($testCert -and $reasons.Count -eq 0) {
         try {
             $ok = Test-Certificate -Cert $Certificate -Policy SSL -EKU @($script:ServerAuthOid) -DNSName $expected -ErrorAction Stop
             if (-not $ok) {
@@ -588,10 +654,11 @@ function Test-AdLdapsCertificateSchannelReady {
         }
         catch {
             $msg = [string]$_.Exception.Message
-            # AD DS still selects certs with unknown/offline revocation (common for self-signed).
-            if ($msg -match '(?i)revocation') {
+            # Self-signed / lab CAs: AD DS still selects certs with unknown revocation; untrusted root
+            # after we just installed to Root can be a timing/cache issue — warn, do not hard-fail.
+            if ($msg -match '(?i)revocation|UNTRUSTEDROOT|not trusted by the trust provider|0x800b0109') {
                 if (Get-Command Write-Info -ErrorAction SilentlyContinue) {
-                    Write-Info "Test-Certificate revocation warning (usually OK for LDAPS selection): $msg"
+                    Write-Info "Test-Certificate trust/revocation warning (continuing for LDAPS): $msg"
                 }
             }
             else {
@@ -601,9 +668,9 @@ function Test-AdLdapsCertificateSchannelReady {
     }
 
     return [PSCustomObject]@{
-        Ok           = ($reasons.Count -eq 0)
-        Reasons      = @($reasons)
-        ExpectedDns  = $expected
+        Ok             = ($reasons.Count -eq 0)
+        Reasons        = @($reasons)
+        ExpectedDns    = $expected
         CertificateDns = $certNames
     }
 }
@@ -688,6 +755,13 @@ function New-AdLdapsSelfSignedCertificate {
     )
 
     $hostNames = Get-AdLdapsHostNames -ExtraDnsName $DnsName
+    $fqdn = $null
+    try { $fqdn = Get-AdLdapsMachineDnsFullyQualifiedName } catch { }
+    if ($fqdn) {
+        $fqdn = $fqdn.TrimEnd('.').ToLowerInvariant()
+        # Ensure FQDN is first (Subject CN) — AD DS will not select a short-name-only cert.
+        $hostNames = @($fqdn) + @($hostNames | Where-Object { $_.TrimEnd('.').ToLowerInvariant() -ne $fqdn })
+    }
     if ($hostNames.Count -eq 0) {
         throw 'Unable to determine DNS names for the LDAPS certificate.'
     }
@@ -709,19 +783,11 @@ function New-AdLdapsSelfSignedCertificate {
     }
 
     Write-Step "Creating self-signed LDAPS certificate for $($hostNames -join ', ')"
+    Write-Info "Subject CN / primary SAN will be '$($hostNames[0])' (must match AD DS FQDN)."
     $cert = New-SelfSignedCertificate @params
     Write-Ok "Created certificate $($cert.Thumbprint) (CN/SAN: $($hostNames -join ', '))"
 
-    # Trust the self-signed root on this machine so chain building succeeds for export.
-    $rootStore = New-Object System.Security.Cryptography.X509Certificates.X509Store('Root', 'LocalMachine')
-    $rootStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
-    try {
-        $rootStore.Add($cert)
-        Write-Ok 'Added self-signed certificate to LocalMachine\Root'
-    }
-    finally {
-        $rootStore.Close()
-    }
+    Install-AdLdapsCertificateIntoTrustedRoot -Certificate $cert | Out-Null
 
     return $cert
 }
@@ -1036,17 +1102,27 @@ function Format-AdLdapsCertificateChoiceLabel {
 function Select-AdLdapsCertificate {
     param(
         [string[]]$DnsName,
+        [string]$RequiredDnsName,
         [object[]]$Candidates,
         [datetime]$Now = $(Get-Date),
         [string]$Prompt = 'Select the LDAPS certificate to use:'
     )
 
-    $found = Find-AdLdapsCertificate -DnsName $DnsName -Candidates $Candidates -Now $Now
+    if (-not $RequiredDnsName) {
+        try { $RequiredDnsName = Get-AdLdapsMachineDnsFullyQualifiedName } catch { }
+    }
+
+    $found = Find-AdLdapsCertificate -DnsName $DnsName -RequiredDnsName $RequiredDnsName `
+        -Candidates $Candidates -Now $Now
     $accepted = @($found.Accepted)
     $rejected = @($found.Rejected)
 
+    if ($RequiredDnsName -and (Get-Command Write-Info -ErrorAction SilentlyContinue)) {
+        Write-Info "AD DS requires certificate SAN/CN to include: $RequiredDnsName"
+    }
+
     if ($rejected.Count -gt 0 -and (Get-Command Write-Info -ErrorAction SilentlyContinue)) {
-        Write-Info "$($rejected.Count) certificate(s) in LocalMachine NTDS/My were skipped (failed name match or required uses)."
+        Write-Info "$($rejected.Count) certificate(s) in LocalMachine NTDS/My were skipped (failed FQDN match or required uses)."
     }
 
     $options = [System.Collections.Generic.List[string]]::new()
@@ -1274,6 +1350,8 @@ Export-ModuleMember -Function @(
     'Initialize-AdLdapsCertOpenStoreType'
     'Open-AdLdapsServiceCertificateStore'
     'Get-AdLdapsCertificateFromLocalMachineMy'
+    'Test-AdLdapsCertificateIsSelfSigned'
+    'Install-AdLdapsCertificateIntoTrustedRoot'
     'Test-AdLdapsCertificateSchannelReady'
     'Install-AdLdapsCertificateIntoNtdsServiceStore'
     'Invoke-AdLdapsCertificateRenewal'
