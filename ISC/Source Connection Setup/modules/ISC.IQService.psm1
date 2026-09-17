@@ -1360,7 +1360,7 @@ function Show-IQServiceLogStream {
 function Write-IQServiceMenuHeader {
     Write-Host ''
     Write-Host '  SailPoint ISC  -  IQService Control' -ForegroundColor Cyan
-    Write-Host '  Download, install, update, and manage IQService on this host.' -ForegroundColor DarkCyan
+    Write-Host '  Download, install, update, manage IQService, and enable AD LDAPS.' -ForegroundColor DarkCyan
     Write-Host ''
 }
 
@@ -1386,7 +1386,7 @@ function Show-InteractiveMenu {
         }
         Write-Host ''
 
-        $options = @('Status', 'Download', 'Install', 'Update', 'Service', 'SetLogLevel', 'StreamLogs', 'Unblock')
+        $options = @('Status', 'Download', 'Install', 'Update', 'Service', 'SetLogLevel', 'StreamLogs', 'Unblock', 'EnableLdaps')
         $labels = @(
             'Status'
             'Download ZIP'
@@ -1396,6 +1396,7 @@ function Show-InteractiveMenu {
             'Set log level'
             'Stream logs'
             'Unblock Utils.dll and other binaries'
+            'Enable AD LDAPS (636) + export VA PEM'
         )
         if ($instances.Count -gt 1) {
             $options += 'Instance'
@@ -1499,6 +1500,24 @@ function Show-InteractiveMenu {
                 Write-Ok "Unblocked $($result.Unblocked) of $($result.Checked) file(s)"
                 $remaining = [Math]::Max(0, $result.Checked - $result.Unblocked)
                 Show-IQServiceCompletion -InstallPath $ResolvedInstallPath -CompletedAction 'Unblock' -BlockedFilesRemaining $remaining
+            }
+            'EnableLdaps' {
+                $pemPath = $null
+                if (Read-YesNo -Prompt 'Use a custom PEM output directory?' -Default $false) {
+                    $pemPath = Read-InputString -Prompt 'PEM output directory' -Required
+                }
+                $thumb = $null
+                if (Read-YesNo -Prompt 'Pin an existing certificate by thumbprint?' -Default $false) {
+                    $thumb = Read-InputString -Prompt 'Certificate thumbprint' -Required
+                }
+                $extraDns = $null
+                if (Read-YesNo -Prompt 'Add extra DNS names for the certificate?' -Default $false) {
+                    $rawDns = Read-InputString -Prompt 'Comma-separated DNS names' -Required
+                    $extraDns = @($rawDns -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+                }
+                $restartNtds = Read-YesNo -Prompt 'Restart NTDS if a new certificate is created? (brief AD outage)' -Default $false
+                Enable-AdLdaps -InstallPath $ResolvedInstallPath -PemOutputPath $pemPath `
+                    -Thumbprint $thumb -DnsName $extraDns -RestartNtds:$restartNtds | Out-Null
             }
             'Instance' {
                 $selected = Select-IQServiceInstance -Instances $instances -Prompt 'Select the IQService instance to manage:'

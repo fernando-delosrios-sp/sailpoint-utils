@@ -29,6 +29,7 @@ function Initialize-IQServiceSourceSetup {
     Import-SourceSetupModule -ModuleRoot $ModuleRoot -Name 'ISC.OperatorConsole' -FileName 'ISC.OperatorConsole.psm1'
     Import-SourceSetupModule -ModuleRoot $ModuleRoot -Name 'ISC.OperatorToolchain' -FileName 'ISC.OperatorToolchain.psm1'
     Import-SourceSetupModule -ModuleRoot $ModuleRoot -Name 'ISC.IQService' -FileName 'ISC.IQService.psm1'
+    Import-SourceSetupModule -ModuleRoot $ModuleRoot -Name 'ISC.AdLdaps' -FileName 'ISC.AdLdaps.psm1'
     Initialize-IQServiceData -NonInteractive:$NonInteractive
     Initialize-OperatorConsole -NonInteractive:$NonInteractive
 }
@@ -36,11 +37,11 @@ function Initialize-IQServiceSourceSetup {
 function Get-IQServiceAgentCatalog {
     Initialize-IQServiceSourceSetup
     return [ordered]@{
-        actions        = @('Status', 'Download', 'Install', 'Update', 'Uninstall', 'Start', 'Stop', 'Restart', 'SetLogLevel', 'Unblock')
+        actions        = @('Status', 'Download', 'Install', 'Update', 'Uninstall', 'Start', 'Stop', 'Restart', 'SetLogLevel', 'Unblock', 'EnableLdaps')
         unsupported    = @('StreamLogs')
         requiredConfig = @('action')
         secretFields   = @('downloadUri')
-        manualSteps    = @('tlsConfiguration', 'serviceLogOnAccount', 'iscSourcePanel')
+        manualSteps    = @('tlsConfiguration', 'serviceLogOnAccount', 'iscSourcePanel', 'vaPemImport')
     }
 }
 
@@ -70,6 +71,10 @@ function Get-IQServiceResolvedConfig {
         LogLevel          = $(if (Get-AgentRequestValue -Object $config -Name 'logLevel') { [string](Get-AgentRequestValue -Object $config -Name 'logLevel') } else { $null })
         TraceFile         = $(if (Get-AgentRequestValue -Object $config -Name 'traceFile') { [string](Get-AgentRequestValue -Object $config -Name 'traceFile') } else { $null })
         StartAfterInstall = [bool](Get-AgentRequestValue -Object $config -Name 'startAfterInstall' -Default $false)
+        PemOutputPath     = $(if (Get-AgentRequestValue -Object $config -Name 'pemOutputPath') { [string](Get-AgentRequestValue -Object $config -Name 'pemOutputPath') } else { $null })
+        Thumbprint        = $(if (Get-AgentRequestValue -Object $config -Name 'thumbprint') { [string](Get-AgentRequestValue -Object $config -Name 'thumbprint') } else { $null })
+        DnsName           = $(if (Get-AgentRequestValue -Object $config -Name 'dnsName') { @(Get-AgentRequestValue -Object $config -Name 'dnsName') } else { @() })
+        RestartNtds       = [bool](Get-AgentRequestValue -Object $config -Name 'restartNtds' -Default $false)
         ApproveDestructive = [bool](Get-AgentRequestValue -Object $decisions -Name 'approveDestructive' -Default $false)
     }
 }
@@ -204,6 +209,22 @@ function Invoke-IQServiceAgentApply {
             $unblock = Unblock-IQServiceFiles -InstallPath $installPath
             return Build-IQServiceAgentResult -InstallPath $installPath -CompletedAction 'Unblock' `
                 -Extra ([ordered]@{ unblocked = $unblock.Unblocked; checked = $unblock.Checked })
+        }
+        'EnableLdaps' {
+            $ldaps = Enable-AdLdaps -InstallPath $installPath -PemOutputPath $resolved.PemOutputPath `
+                -Thumbprint $resolved.Thumbprint -DnsName $resolved.DnsName `
+                -RestartNtds:$resolved.RestartNtds -NonInteractive
+            return [ordered]@{
+                status          = 'ok'
+                action          = 'EnableLdaps'
+                thumbprint      = $ldaps.Thumbprint
+                pemDirectory    = $ldaps.Export.OutputPath
+                pemChainPath    = $ldaps.Export.ChainPath
+                createdCert     = $ldaps.CreatedCertificate
+                ntdsRestarted   = $ldaps.NtdsRestarted
+                portListening   = [bool]$ldaps.PortCheck.Listening
+                manualSteps     = @(Get-AdLdapsVaManualSteps -ChainPath $ldaps.Export.ChainPath -PemDirectory $ldaps.Export.OutputPath)
+            }
         }
         default {
             throw "Unsupported IQService action '$($resolved.Action)'."

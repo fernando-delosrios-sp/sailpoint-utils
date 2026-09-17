@@ -8,15 +8,16 @@
     Azure AD, Windows Local, SharePoint, or Domino connectors.
 
     Supports downloading IQService from a pasted ISC pre-signed ZIP URL, extracting and
-    unblocking binaries (including Utils.dll),     registering or upgrading the Windows service,
-    start/stop/restart, log-level configuration, colored log streaming, and status reporting.
+    unblocking binaries (including Utils.dll), registering or upgrading the Windows service,
+    start/stop/restart, log-level configuration, colored log streaming, status reporting,
+    and enabling Active Directory LDAPS (TCP 636) with PEM export for VA truststore install.
 
     Pre-signed download URLs expire (typically within an hour). Obtain a fresh link from
     Connections > Sources > [source requiring IQService] > IQService / Integration Service > Download.
 
 .PARAMETER Action
-    Download, Install, Update, Uninstall, Start, Stop, Restart, SetLogLevel, StreamLogs, Status, or Unblock.
-    When omitted, an interactive menu is shown.
+    Download, Install, Update, Uninstall, Start, Stop, Restart, SetLogLevel, StreamLogs, Status,
+    Unblock, or EnableLdaps. When omitted, an interactive menu is shown.
 
 .PARAMETER InstallPath
     IQService installation directory. Default: C:\SailPoint\IQService, or the path discovered
@@ -54,6 +55,19 @@
 .PARAMETER StartAfterInstall
     Start the service after install or update.
 
+.PARAMETER PemOutputPath
+    Directory for LDAPS PEM export (EnableLdaps). Default: {InstallPath}\va-certificates.
+
+.PARAMETER Thumbprint
+    Pin an existing LocalMachine certificate for LDAPS (EnableLdaps). Must still pass the
+    Server Authentication / Key Usage / KeyExchange gate.
+
+.PARAMETER DnsName
+    Extra DNS names for LDAPS certificate match or self-signed creation (EnableLdaps).
+
+.PARAMETER RestartNtds
+    Restart the NTDS service after creating a new LDAPS certificate (EnableLdaps).
+
 .PARAMETER NonInteractive
     Do not prompt; required parameters must be supplied.
 
@@ -72,14 +86,17 @@
 .EXAMPLE
     .\IQService Control.ps1 -Action StreamLogs -Tail 100
 
+.EXAMPLE
+    .\IQService Control.ps1 -Action EnableLdaps -RestartNtds
+
 .NOTES
-    Install, update, uninstall, and service control require an elevated PowerShell session.
+    Install, update, uninstall, service control, and EnableLdaps require an elevated PowerShell session.
     Reference: https://documentation.sailpoint.com/connectors/iqservice/help/integrating_iqservice_admin/
 #>
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 param(
     [Parameter()]
-    [ValidateSet('Download', 'Install', 'Update', 'Uninstall', 'Start', 'Stop', 'Restart', 'SetLogLevel', 'StreamLogs', 'Status', 'Unblock')]
+    [ValidateSet('Download', 'Install', 'Update', 'Uninstall', 'Start', 'Stop', 'Restart', 'SetLogLevel', 'StreamLogs', 'Status', 'Unblock', 'EnableLdaps')]
     [string]$Action,
 
     [Parameter()]
@@ -118,6 +135,18 @@ param(
     [switch]$StartAfterInstall,
 
     [Parameter()]
+    [string]$PemOutputPath,
+
+    [Parameter()]
+    [string]$Thumbprint,
+
+    [Parameter()]
+    [string[]]$DnsName,
+
+    [Parameter()]
+    [switch]$RestartNtds,
+
+    [Parameter()]
     [switch]$NonInteractive
 )
 
@@ -128,6 +157,7 @@ $script:ModuleRoot = Join-Path $PSScriptRoot 'modules'
 Import-Module (Join-Path $script:ModuleRoot 'ISC.OperatorConsole.psm1') -Force -WarningAction SilentlyContinue
 Import-IscModule -Path (Join-Path $script:ModuleRoot 'ISC.OperatorToolchain.psm1') -Force
 Import-IscModule -Path (Join-Path $script:ModuleRoot 'ISC.IQService.psm1') -Force
+Import-IscModule -Path (Join-Path $script:ModuleRoot 'ISC.AdLdaps.psm1') -Force
 Initialize-OperatorConsole -NonInteractive:$NonInteractive
 Initialize-IQServiceData -NonInteractive:$NonInteractive
 
@@ -139,7 +169,7 @@ Initialize-IQServiceData -NonInteractive:$NonInteractive
 function Write-Banner {
     Write-Host ''
     Write-Host '  SailPoint ISC  -  IQService Control' -ForegroundColor Cyan
-    Write-Host '  Download, install, update, and manage IQService on this host.' -ForegroundColor DarkCyan
+    Write-Host '  Download, install, update, manage IQService, and enable AD LDAPS.' -ForegroundColor DarkCyan
     Write-Host ''
 }
 
@@ -211,6 +241,11 @@ try {
             Write-Ok "Unblocked $($result.Unblocked) of $($result.Checked) file(s)"
             $remaining = [Math]::Max(0, $result.Checked - $result.Unblocked)
             Show-IQServiceCompletion -InstallPath $resolvedPath -CompletedAction 'Unblock' -BlockedFilesRemaining $remaining
+        }
+        'EnableLdaps' {
+            Enable-AdLdaps -InstallPath $resolvedPath -PemOutputPath $PemOutputPath `
+                -Thumbprint $Thumbprint -DnsName $DnsName -RestartNtds:$RestartNtds `
+                -NonInteractive:$NonInteractive | Out-Null
         }
     }
 }
