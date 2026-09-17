@@ -10,7 +10,7 @@ Interactive ISC workflows that let an operator create an Active Directory **secu
 
 Two operator-facing interactive processes:
 
-1. **Create a Group in Active Directory** — Collects name, manager, group type, and OU. Privileged Action Gateway (PAG) lists OUs, checks the name is free, creates the group, sets `managedBy`, and emails the manager.
+1. **Create a Group in Active Directory** — Collects name, manager, group type, and OU. Privileged Action Gateway (PAG) lists OUs, checks the name is free, creates the group, sets `managedBy`, and emails the manager. The manager dropdown only offers identities that already have an account on the configured AD source, because `managedBy` needs their distinguished name.
 2. **Create a Shared Folder in Active Directory** — Collects folder, parent path, and share name. Submits a short-lived access request whose `memberOf` comments carry folder metadata. The AD source **ConnectorBeforeModify - Create Shared Folder in Active Directory** rule creates the directory, SMB share, and three permission groups. A child workflow then aggregates AD entitlements.
 
 ## Artifacts
@@ -48,12 +48,15 @@ flowchart TD
   msgOUs --> listOus[PAG list_ous]
   listOus --> hasOUs{OUs found?}
   hasOUs -->|no| failOUs[Failure: no OUs]
-  hasOUs -->|yes| details[New Group Details form]
+  hasOUs -->|yes| mgrs[Search identities with an AD account]
+  mgrs --> hasMgrs{Eligible managers found?}
+  hasMgrs -->|no| failMgrs[Failure: no eligible managers]
+  hasMgrs -->|yes| details[New Group Details form]
   details --> lookup[PAG get_group_by_samaccountname]
   lookup --> taken{Name taken?}
   taken -->|yes| failName[Failure: name taken]
   taken -->|no| getMgr[Get manager identity and AD account]
-  getMgr --> hasAcct{AD account present?}
+  getMgr --> hasAcct{Manager DN resolved?}
   hasAcct -->|no| failMgr[Failure: manager not found]
   hasAcct -->|yes| create[PAG create_group]
   create --> setMgr[PAG set_group_manager]
@@ -118,7 +121,18 @@ PAG steps use `param_credentialType` `paramSPS` and a **Username and Password** 
 | Domain Controller Address | `YOUR_DOMAIN_CONTROLLER` | Host for PAG LDAP (port **636**; `verify_cert` is **false** in the export) |
 | Domain FQDN | `ad.example.com` | AD DNS name |
 | Search Base DN | `OU=Demo,DC=example,DC=com` | OU listing scope (One Level) |
-| AD source name | `YOUR_AD_SOURCE_NAME` | Replace in the manager-account JSONPath with the exact source display name |
+| Active Directory Source Name | `YOUR_AD_SOURCE_NAME` | Exact source display name. Drives the eligible-manager search on **Get Eligible Managers** |
+
+`YOUR_AD_SOURCE_NAME` appears **twice**, and both must carry the same value:
+
+1. The **Active Directory Source Name** configuration variable, read by the `sp:get-identities` search query `@accounts(source.name:"{{ $.defineVariable.activeDirectorySourceName }}")`.
+2. The JSONPath filter on **Get Active Directory Manager Account**: `$.getAccounts.accounts[?(@.sourceName == 'YOUR_AD_SOURCE_NAME')].nativeIdentity`. A JSONPath filter cannot read a workflow variable, so this one is a literal.
+
+Get the exact name from the tenant rather than typing it:
+
+```bash
+sail api get '/v3/sources?filters=type eq "active-directory-direct"' --env <env> --jsonpath '$[*].name'
+```
 
 Also replace `YOUR_PAG_INSTANCE_ID`, `YOUR_PAG_SPEC_ID`, `YOUR_GROUP_WORKFLOW_ID`, `YOUR_AGGREGATION_WORKFLOW_ID`, and `YOUR_AGGREGATION_EXTERNAL_TRIGGER_TOKEN`. The selected form value drives PAG `groupType` (Global, Universal, or Domain Local).
 
@@ -146,8 +160,11 @@ Working bind values from tenant `emea-tes-team` (`company24509-poc`). Copy the p
 | Domain Controller Address | `10.0.0.250` |
 | Domain FQDN | `seri.sailpointdemo.com` |
 | Search Base DN | `OU=emea-tes-team,OU=Demo,DC=seri,DC=sailpointdemo,DC=com` |
-| AD source name (JSONPath) | `Microsoft Active Directory @emea-tes-team (Users)` |
+| AD source name (config variable and JSONPath) | `Microsoft Active Directory @emea-tes-team (Users)` |
 | AD source id | `a67f790e42c04da3bdba05d7dd7ccdd9` |
+| Trigger entitlement | `a99894dc5bf937d093b1c081c636f111` (`Folder Request`, requestable) |
+| `SharedFolderAllowedParentPaths` | `["C:\\Shared folders"]` |
+| `SharedFolderGroupOU` | `OU=Groups,OU=emea-tes-team,OU=Demo,DC=seri,DC=sailpointdemo,DC=com` |
 | API url | `https://company24509-poc.api.identitynow-demo.com` |
 | PAG instance id | `10eb65ee-c9b7-498d-9f98-59cf9ac4624b` |
 | PAG spec id | `7e479f41-e367-4e20-85c8-9e2936aa4658` |
@@ -167,7 +184,7 @@ Secrets stay in Parameter Storage. The export never stores the bind password or 
 | Field | Type | Notes |
 |---|---|---|
 | Group name | TEXT | Required; 1–64 safe characters. Used as sAMAccountName and CN |
-| Group manager | SELECT | Required INTERNAL identity |
+| Group manager | SELECT | Required FORM_INPUT `managers` from `sp:get-identities` (`label` = `displayName`, `value` = identity `id`) |
 | Group type | SELECT | Required: Global / Universal / Domain Local Security; passed to PAG |
 | Organizational unit | SELECT | Required FORM_INPUT `locations` from PAG `list_ous` (`label` = name, `value` = distinguishedName) |
 
@@ -196,7 +213,7 @@ Import order matters. Workflows reference form definition IDs from this export; 
    - Optional `SharedFolderDebugEnabled`: `true` adds process debug lines.
 3. Import the three workflow JSON files.
 4. Create a requestable dummy entitlement on the AD source and put its id in the shared-folder workflow **Entitlement** variable.
-5. Bind PAG instance/spec, Parameter Storage AD credential (`1.1`) and OAuth/scopes (`1.4` / `3.1`) ids, domain, AD source name, API URL, shared aggregation workflow ID and external trigger token in both parent workflows, and imported form IDs.
+5. Bind PAG instance/spec, Parameter Storage AD credential (`1.1`) and OAuth/scopes (`1.4` / `3.1`) ids, domain, API URL, shared aggregation workflow ID and external trigger token in both parent workflows, and imported form IDs. Set the AD source name in both places listed under [Group workflow](#group-workflow).
 6. Create two **interactive processes** that launch the group and shared-folder workflows.
 7. Enable the workflows. Put the aggregation workflow id into the group and shared-folder execute URLs (`.../execute/external/{id}`) and its external trigger token into their `Authorization` headers.
 
@@ -223,10 +240,12 @@ Template source attributes control failure reporting and diagnostics:
 ## Post-import checklist
 
 - [ ] Forms imported; workflow `formDefinitionId` values updated to the new ids.
-- [ ] PAG instance, spec, DC, FQDN, base DN, AD source name, workflow ids, Parameter Storage AD credential (`1.1`), and OAuth/scopes (`1.4` / `3.1`) set on the group workflow.
+- [ ] PAG instance, spec, DC, FQDN, base DN, workflow ids, Parameter Storage AD credential (`1.1`), and OAuth/scopes (`1.4` / `3.1`) set on the group workflow.
+- [ ] AD source name set in **both** places: the **Active Directory Source Name** variable and the **Get Active Directory Manager Account** JSONPath. Launch the process once and confirm the manager dropdown is populated; an empty dropdown means the name is wrong.
 - [ ] AD source id, dummy entitlement, API URL, workflow id, and aggregation workflow id set on the shared-folder workflow.
 - [ ] Tenant API HTTP Request actions are v3 and bind Parameter Storage OAuth (`1.4`) and scopes (`3.1`) ids; the two `execute/external` calls use the aggregation external trigger token. Secrets stay in the tenant, not git.
-- [ ] `ConnectorBeforeModify - Create Shared Folder in Active Directory` attached on the AD source; confirm a per-run log under `<IQService>\scripts`.
+- [ ] `ConnectorBeforeModify - Create Shared Folder in Active Directory` exists in the tenant **and** its exact name is in the AD source `nativeRules`; confirm a per-run log under `<IQService>\scripts`.
+- [ ] `SharedFolderAllowedParentPaths` and `SharedFolderGroupOU` set on the AD source. Both are required; the rule throws without them.
 - [ ] Parent folder options on the form exist on the IQService host and exactly match `SharedFolderAllowedParentPaths`.
 - [ ] Interactive processes linked; workflows enabled.
 - [ ] Test group path: unique name creates a group and emails the manager; duplicate name fails.
@@ -234,8 +253,79 @@ Template source attributes control failure reporting and diagnostics:
 - [ ] Test share path: folder and three groups appear; entitlement aggregation runs after the wait.
 - [ ] Test share recovery: access-request failure creates nothing; refresh failure explains that provisioning may still complete.
 
+## Troubleshooting
+
+### `Null Object XML returned from cloud for type [Rule] with identifier[…]`
+
+The access request fails on the AD source before any PowerShell runs. IQService resolves every `connectorAttributes.nativeRules` entry by name against the tenant, and one name resolved to nothing. The rule was never created, was deleted, or its ISC display name does not match the `nativeRules` string exactly.
+
+List the tenant's rules and compare against the source:
+
+```bash
+sail api get /beta/connector-rules --env <env> --jsonpath '$[*].name'
+sail api get /v3/sources/<sourceId> --env <env> --jsonpath '$.connectorAttributes.nativeRules'
+```
+
+Every entry in the second list must appear in the first, character for character. If the rule is missing, create it from the `.ps1`; if the name differs, fix whichever side is wrong. The script body is not implicated — check it separately with `POST /beta/connector-rules/validate` (`{"version":"1.0","script":"…"}`), which returns `{"state":"OK"}` for a well-formed rule.
+
+### `Parent folder '…' is not listed in SharedFolderAllowedParentPaths`
+
+`SharedFolderAllowedParentPaths` is unset or does not contain the value the form submitted. Matching is exact after trimming whitespace and trailing separators, and is case-insensitive. The form's **Parent folder** options and this allowlist must be kept in sync.
+
+### `SharedFolderGroupOU must be an organizational-unit distinguished name…`
+
+`SharedFolderGroupOU` is unset or does not match `OU=…,DC=…`. Set it to an OU that already exists; the rule creates groups in it but does not create the OU itself.
+
+### `supplied distinguished name input value must not be empty` when setting the manager
+
+The group was created and `set_group_manager` was called with an empty `manager_distinguishedName`. The manager-account JSONPath on **Get Active Directory Manager Account** matched none of the manager's accounts, almost always because its `sourceName` literal is still `YOUR_AD_SOURCE_NAME` or does not match the source display name character for character. Compare the filter against the accounts the step actually returned:
+
+```bash
+sail api get /beta/workflow-executions/<executionId>/history --env <env> \
+  --jsonpath '$[?(@.attributes.stepName == "getAccounts")].attributes.result'
+```
+
+An unresolved JSONPath leaves the variable as an **empty string**, not null, so `IsPresent` and `IsNull` both wave it through. The gate before `create_group` therefore compares the value with `StringStartsWith` `CN=`; keep it that way, or a manager without an AD account will leave an unmanaged group behind in the directory.
+
+### A failure message shows `{{ $.someStep.error.… }}` literally
+
+The JSONPath did not resolve, so the engine printed the template instead of a value. Step references use the **runtime step key**, which is the display name with separators removed and only the *first character* lowercased. An acronym keeps its remaining capitals:
+
+| Step name | Runtime key |
+|---|---|
+| `Define Variable` | `defineVariable` |
+| `HTTP Request` | `hTTPRequest` |
+| `HTTP Request 2` | `hTTPRequest2` |
+| `HTTP Request - Schedule Entitlement Refresh` | `hTTPRequestScheduleEntitlementRefresh` |
+
+`$.httpRequest` looks right and is wrong. Read the authoritative key from an execution history entry, where each event carries `stepName`:
+
+```bash
+sail api get /beta/workflow-executions/<executionId>/history --env <env> --jsonpath '$[*].attributes.stepName'
+```
+
+### PAG returns `auth_username.$ is not a valid input`
+
+A PAG step has `inputForPag_auth_username` / `inputForPag_auth_password` attributes pointing at variables that do not exist. An unresolvable `.$` reference is passed through with the key intact, so PAG receives an input literally named `auth_username.$` and rejects it as Bad Configuration.
+
+Delete both attributes. When `param_credentialType` is `paramSPS`, Parameter Storage already supplies those two inputs through `param_credential.mapping`; the step must not also set them itself. The workflow builder can reintroduce them when you edit a PAG step in the UI, so re-diff against this export after UI edits.
+
+### Access request fails immediately with no provisioning
+
+Check that the **Entitlement** variable holds an entitlement id and not the source id — they are easy to transpose, and the export ships both as placeholders. The entitlement must also be requestable:
+
+```bash
+sail api get '/beta/entitlements?filters=source.id eq "<sourceId>"&limit=250' --env <env> \
+  --jsonpath '$[?(@.requestable == true)].name'
+```
+
+### No log under `<IQService>\scripts`
+
+Follow the [PowerShell Rule Template troubleshooting steps](../PowerShell%20Rule%20Template/README.md). A missing log means the script never ran, which usually points back to the rule-resolution failure above rather than to the script.
+
 ## Limitations
 
+- **Manager dropdown size** — `sp:get-identities` returns a single search page, so at most 250 identities are offered as managers. Large directories need a narrower query (an identity attribute or a saved search) instead of `@accounts(source.name:…)`.
 - **Dummy entitlement** from the source tenant was not present at export time (`404`). You must create a requestable stand-in on your AD source.
 - **PAG duplicate lookup contract** — The exported `get_group_by_samaccountname` action treats its success path as “group exists” and its catch path as “name available.” Confirm that your PAG command reports a missing group through catch; do not enable the workflow if other command errors use the same catch path.
 - **Create Shared Folder** skips non-Modify operations and Modify plans with no `memberOf` comments. It rejects unsafe folder/share names, relative or non-allowlisted parent paths, invalid JSON, missing metadata, and an invalid `SharedFolderGroupOU` (`PwshSilentError` still applies). Existing groups get inheritable NTFS ACLs applied again rather than being skipped.

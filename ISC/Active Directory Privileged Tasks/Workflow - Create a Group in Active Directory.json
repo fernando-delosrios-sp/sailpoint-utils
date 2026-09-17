@@ -6,7 +6,7 @@
         "choiceList": [
           {
             "comparator": "NumericGreaterThan",
-            "nextStep": "Interactive Form",
+            "nextStep": "Interactive Message - Loading Managers",
             "variableA.$": "$.listOus.result.count",
             "variableB": 0
           }
@@ -43,6 +43,12 @@
               "name": "url",
               "transforms": [],
               "variableA": "https://{tenant}.api.identitynow-demo.com"
+            },
+            {
+              "description": "Display name of the Active Directory source in ISC. Managers are limited to identities with an account on this source. The same name must be set in the JSONPath on Get Active Directory Manager Account.",
+              "name": "Active Directory Source Name",
+              "transforms": [],
+              "variableA": "YOUR_AD_SOURCE_NAME"
             }
           ]
         },
@@ -84,6 +90,7 @@
             }
           ]
         },
+        "description": "The manager's distinguished name is read from their account on the configured Active Directory source. A JSONPath filter cannot read a workflow variable, so the source name is a literal here and must match the Active Directory Source Name configuration value. A name that matches no account yields an empty string, which the next step rejects.",
         "displayName": "Get Active Directory Manager Account",
         "nextStep": "Verify Data Type",
         "type": "Mutation"
@@ -124,6 +131,12 @@
         "failureName": "List Organizational Units Failed",
         "type": "failure"
       },
+      "End Step - Failure 7": {
+        "description": "The workflow cannot continue as no identity has an account on the configured Active Directory source, so no manager could be offered. The workflow ends in a failed state.",
+        "displayName": "Failure: No Eligible Managers",
+        "failureName": "No Eligible Managers Found",
+        "type": "failure"
+      },
       "End Step - Success": {
         "description": "The new group has been created and the manager has been set and notified. The workflow completed successfully.",
         "displayName": "Success: Group Created",
@@ -152,6 +165,29 @@
         "type": "action",
         "versionNumber": 1
       },
+      "Get Identities": {
+        "actionId": "sp:get-identities",
+        "attributes": {
+          "inputQuery": "@accounts(source.name:\"{{ $.defineVariable.activeDirectorySourceName }}\")",
+          "resultSelector": [
+            "$.getIdentities.identities[*].id",
+            "$.getIdentities.identities[*].displayName",
+            "$.getIdentities.error.workflowErrorMessage",
+            "$.getIdentities.error.workflowStatusCode"
+          ],
+          "searchBy": "searchQuery"
+        },
+        "catch": [
+          {
+            "next": "Interactive Message - Manager List Failed"
+          }
+        ],
+        "description": "Identities with an account on the configured Active Directory source are retrieved. They become the only manager options on the interactive form, so an operator cannot pick a manager whose distinguished name cannot be resolved.",
+        "displayName": "Get Eligible Managers",
+        "nextStep": "Verify Data Type 1",
+        "type": "action",
+        "versionNumber": 2
+      },
       "Get Identity": {
         "actionId": "sp:get-identity",
         "attributes": {
@@ -179,6 +215,9 @@
           "inputForForm_array_locations.$": "$.listOus.result.data",
           "inputForForm_array_locations_label": "$.name",
           "inputForForm_array_locations_value": "$.distinguishedName",
+          "inputForForm_array_managers.$": "$.getIdentities.identities",
+          "inputForForm_array_managers_label": "$.displayName",
+          "inputForForm_array_managers_value": "$.id",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
           "message": "",
           "ownerId.$": "$.trigger.launchedBy.id",
@@ -240,11 +279,11 @@
         "attributes": {
           "category": "ERROR",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p><strong>{{ $.getIdentity.name }}</strong> does not have an account on the configured Active Directory source.</p><p>No group was created. Choose a manager with an Active Directory account and try again.</p>",
+          "message": "<p>ISC did not return an Active Directory distinguished name for <strong>{{ $.getIdentity.name }}</strong> on the configured source.</p><p>No group was created. Choose a manager with an Active Directory account and try again, or ask an administrator to check the configured Active Directory source name.</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
           "title": "\u26a0\ufe0f  Manager account not found"
         },
-        "description": "This interactive message notifies the user that an error has occurred as the manager could not be found in Active Directory.",
+        "description": "This interactive message notifies the user that an error has occurred as the manager's Active Directory distinguished name could not be resolved.",
         "displayName": "Message: Manager Not Found",
         "nextStep": "End Step - Failure 1",
         "type": "action",
@@ -460,6 +499,51 @@
         "type": "action",
         "versionNumber": 1
       },
+      "Interactive Message - Loading Managers": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>Loading the identities that have an Active Directory account.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\ud83d\udd0e  Getting Eligible Managers"
+        },
+        "description": "This interactive message notifies the user that the workflow is retrieving the identities that can be offered as managers.",
+        "displayName": "Message: Get Eligible Managers",
+        "nextStep": "Get Identities",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - Manager List Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>ISC could not load the identities that have an Active Directory account.</p><p><strong>Status:</strong> {{ $.getIdentities.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getIdentities.error.workflowErrorMessage }}</p><p>No group was created. Try again or ask an administrator to check the configured Active Directory source name.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  Could not load managers"
+        },
+        "description": "Reports an eligible-manager search failure before the form is shown.",
+        "displayName": "Message: Manager List Failed",
+        "nextStep": "End Step - Failure 7",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Interactive Message - No Eligible Managers": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>No identity has an account on the configured Active Directory source, so no manager can be assigned.</p><p>No group was created. Ask an administrator to check the <strong>Active Directory Source Name</strong> configuration value and that the source has aggregated accounts.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "\u26a0\ufe0f  No eligible managers available"
+        },
+        "description": "This interactive message notifies the user that the eligible-manager search returned nothing, which usually means the configured source name is wrong.",
+        "displayName": "Message: No Eligible Managers",
+        "nextStep": "End Step - Failure 7",
+        "type": "action",
+        "versionNumber": 1
+      },
       "Interactive Message - Notification Failed": {
         "actionId": "sp:interactive-message",
         "attributes": {
@@ -495,7 +579,7 @@
         "attributes": {
           "category": "ERROR",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p>The group was created and its manager was assigned, but the entitlement refresh could not be scheduled.</p><p><strong>Status:</strong> {{ $.httpRequestScheduleEntitlementRefresh.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.httpRequestScheduleEntitlementRefresh.error.workflowErrorMessage }}</p><p>The manager notification will continue. Ask an administrator to aggregate the Active Directory group entitlements manually.</p>",
+          "message": "<p>The group was created and its manager was assigned, but the entitlement refresh could not be scheduled.</p><p><strong>Status:</strong> {{ $.hTTPRequestScheduleEntitlementRefresh.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.hTTPRequestScheduleEntitlementRefresh.error.workflowErrorMessage }}</p><p>The manager notification will continue. Ask an administrator to aggregate the Active Directory group entitlements manually.</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
           "title": "\u26a0\ufe0f  Group created; refresh not scheduled"
         },
@@ -577,15 +661,32 @@
         "versionNumber": 2
       },
       "Verify Data Type": {
+        "actionId": "sp:compare-strings",
         "choiceList": [
           {
-            "comparator": "IsPresent",
+            "comparator": "StringStartsWith",
             "nextStep": "Interactive Message",
-            "variableA.$": "$.defineVariable2.activeDirectoryManagerAccount"
+            "variableA.$": "$.defineVariable2.activeDirectoryManagerAccount",
+            "variableB": "CN="
           }
         ],
         "defaultStep": "Interactive Message 11",
-        "displayName": "Manager Account Exists",
+        "description": "The manager's distinguished name is checked before anything is created in Active Directory. An unresolved lookup leaves an empty string, so this must be a value test and not IsPresent \u2014 an empty string exists and would let the group be created without a manager.",
+        "displayName": "Manager Distinguished Name Resolved?",
+        "type": "choice"
+      },
+      "Verify Data Type 1": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Interactive Form",
+            "variableA.$": "$.getIdentities.identities[0].id"
+          }
+        ],
+        "defaultStep": "Interactive Message - No Eligible Managers",
+        "description": "The eligible-manager search results are evaluated. If at least one identity has an Active Directory account, the form is shown, otherwise the workflow stops before anything is created.",
+        "displayName": "Eligible Managers Found?",
         "type": "choice"
       },
       "Verify Data Type 5": {

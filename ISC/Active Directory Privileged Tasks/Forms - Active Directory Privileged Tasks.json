@@ -22,6 +22,12 @@
           "type": "ARRAY",
           "label": "locations",
           "description": "List of Organizational Unit objects fetched via a PAG."
+        },
+        {
+          "id": "managers",
+          "type": "ARRAY",
+          "label": "managers",
+          "description": "Identities with an account on the configured Active Directory source, fetched by the workflow."
         }
       ],
       "formElements": [
@@ -72,15 +78,16 @@
                 "config": {
                   "dataSource": {
                     "config": {
-                      "objectType": "IDENTITY"
+                      "formInputId": "managers",
+                      "sortBy": "ASC"
                     },
-                    "dataSourceType": "INTERNAL"
+                    "dataSourceType": "FORM_INPUT"
                   },
                   "forceSelect": true,
-                  "helpText": "Select the user to set as the group manager. They will receive a notification once the group is created.",
+                  "helpText": "Only identities with an account on the configured Active Directory source are listed. They will receive a notification once the group is created.",
                   "label": "Group manager",
                   "maximum": 1,
-                  "placeholder": "Start typing a person's name...",
+                  "placeholder": "Select a manager...",
                   "required": true
                 },
                 "elementType": "SELECT",
