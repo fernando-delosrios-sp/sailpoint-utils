@@ -16,6 +16,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 - **Source Connection Setup (IQService Control)** — Enable AD LDAPS now links the certificate into the **NTDS service** Personal store (`Cryptography\Services\NTDS\...`), triggers `renewServerCertificate`, and prefers the DC FQDN for the cert SAN. The previous LocalMachine `NTDS` store copy did not make AD DS listen on TCP 636.
 - **Source Connection Setup (IQService Control)** — Enable AD LDAPS installs into `NTDS\My` via CertOpenStore with the private key (not registry-only), matches `GetComputerNameEx` DNS FQDN, validates Schannel readiness, and errors if TCP 636 still does not listen.
 - **Source Connection Setup (IQService Control)** — Enable AD LDAPS requires the AD DS DNS FQDN in the certificate SAN/CN (short name alone is rejected), trusts self-signed certs into LocalMachine\Root, and treats Test-Certificate untrusted-root/revocation warnings as non-fatal for lab certs.
+- **Source Connection Setup (IQService Control)** — Enable AD LDAPS removes competing NTDS\My certificates (e.g. RabbitMQ/FAM/short-name) and verifies a TLS handshake to the DC FQDN, not only TCP listen on 636.
 
 ---
 

@@ -677,7 +677,8 @@ function Test-AdLdapsCertificateSchannelReady {
 
 function Install-AdLdapsCertificateIntoNtdsServiceStore {
     param(
-        [Parameter(Mandatory)][string]$Thumbprint
+        [Parameter(Mandatory)][string]$Thumbprint,
+        [switch]$RemoveCompetingCertificates
     )
 
     $tp = ($Thumbprint -replace '\s', '').ToUpperInvariant()
@@ -688,9 +689,26 @@ function Install-AdLdapsCertificateIntoNtdsServiceStore {
     # cert without a usable key, and AD DS silently skips it (no listener on 636).
     $store = $null
     $added = $false
+    $removed = [System.Collections.Generic.List[string]]::new()
     try {
         $store = Open-AdLdapsServiceCertificateStore -ServiceName 'NTDS' -StoreName 'My' `
             -OpenFlags ([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+
+        # RabbitMQ / FAM / short-name certs in NTDS\My win selection or break TLS even when
+        # TCP 636 is open. Keep only the LDAPS cert we intend AD DS to present.
+        if ($RemoveCompetingCertificates) {
+            $competitors = @($store.Certificates | Where-Object {
+                ([string]$_.Thumbprint -replace '\s', '').ToUpperInvariant() -ne $tp
+            })
+            foreach ($other in $competitors) {
+                $otherTp = ([string]$other.Thumbprint -replace '\s', '').ToUpperInvariant()
+                $label = if ($other.Subject) { $other.Subject } else { $otherTp }
+                Write-Info "Removing competing NTDS\My certificate: $label ($otherTp)"
+                $store.Remove($other)
+                $removed.Add($otherTp)
+            }
+        }
+
         $existing = @($store.Certificates | Where-Object {
             ([string]$_.Thumbprint -replace '\s', '').ToUpperInvariant() -eq $tp
         })
@@ -719,6 +737,15 @@ function Install-AdLdapsCertificateIntoNtdsServiceStore {
         if (-not (Test-Path -LiteralPath $destRoot)) {
             New-Item -Path $destRoot -Force | Out-Null
         }
+        if ($RemoveCompetingCertificates -and (Test-Path -LiteralPath $destRoot)) {
+            Get-ChildItem -LiteralPath $destRoot -ErrorAction SilentlyContinue | ForEach-Object {
+                if ($_.PSChildName.ToUpperInvariant() -ne $tp) {
+                    Write-Info "Removing competing NTDS registry cert $($_.PSChildName)"
+                    Remove-Item -LiteralPath $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue
+                    $removed.Add($_.PSChildName.ToUpperInvariant())
+                }
+            }
+        }
         $source = Get-AdLdapsLocalMachineCertificateRegistryPath -Thumbprint $tp
         $dest = Join-Path $destRoot $tp
         if (-not (Test-Path -LiteralPath $dest)) {
@@ -731,7 +758,10 @@ function Install-AdLdapsCertificateIntoNtdsServiceStore {
         if ($store) { $store.Close() }
     }
 
-    return $added
+    return [PSCustomObject]@{
+        Added              = $added
+        RemovedThumbprints = @($removed)
+    }
 }
 
 function Invoke-AdLdapsCertificateRenewal {
@@ -854,6 +884,86 @@ function Test-AdLdapsPort {
     }
     finally {
         if ($client) { $client.Dispose() }
+    }
+}
+
+function Test-AdLdapsTlsHandshake {
+    param(
+        [string]$HostName,
+        [int]$Port = 636,
+        [string]$ExpectedThumbprint,
+        [int]$TimeoutMs = 5000
+    )
+
+    if (-not $HostName) {
+        $HostName = Get-AdLdapsMachineDnsFullyQualifiedName
+    }
+    $HostName = $HostName.TrimEnd('.')
+
+    $tcp = $null
+    $ssl = $null
+    $state = @{ Cert = $null }
+    try {
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        $async = $tcp.BeginConnect($HostName, $Port, $null, $null)
+        if (-not $async.AsyncWaitHandle.WaitOne($TimeoutMs, $false)) {
+            return [PSCustomObject]@{
+                Ok         = $false
+                Detail     = "TLS probe timed out connecting to ${HostName}:$Port"
+                Thumbprint = $null
+                Subject    = $null
+            }
+        }
+        $tcp.EndConnect($async)
+
+        $ssl = New-Object System.Net.Security.SslStream($tcp.GetStream(), $false, {
+            param($sender, $certificate, $chain, $errors)
+            if ($certificate) {
+                $state.Cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certificate)
+            }
+            return $true
+        }.GetNewClosure())
+        $ssl.AuthenticateAsClient($HostName)
+        $cert = $state.Cert
+
+        if (-not $cert) {
+            return [PSCustomObject]@{
+                Ok         = $false
+                Detail     = "TLS connected to ${HostName}:$Port but no server certificate was presented."
+                Thumbprint = $null
+                Subject    = $null
+            }
+        }
+
+        $tp = ([string]$cert.Thumbprint -replace '\s', '').ToUpperInvariant()
+        $expected = if ($ExpectedThumbprint) { ($ExpectedThumbprint -replace '\s', '').ToUpperInvariant() } else { $null }
+        if ($expected -and $tp -ne $expected) {
+            return [PSCustomObject]@{
+                Ok         = $false
+                Detail     = "TLS on ${HostName}:$Port presented unexpected cert $tp ($($cert.Subject)); expected $expected. Competing NTDS\My certificates may still be selected."
+                Thumbprint = $tp
+                Subject    = [string]$cert.Subject
+            }
+        }
+
+        return [PSCustomObject]@{
+            Ok         = $true
+            Detail     = "TLS handshake to ${HostName}:$Port succeeded; presented $tp ($($cert.Subject))"
+            Thumbprint = $tp
+            Subject    = [string]$cert.Subject
+        }
+    }
+    catch {
+        return [PSCustomObject]@{
+            Ok         = $false
+            Detail     = "TLS handshake to ${HostName}:$Port failed: $($_.Exception.Message)"
+            Thumbprint = $null
+            Subject    = $null
+        }
+    }
+    finally {
+        if ($ssl) { $ssl.Dispose() }
+        if ($tcp) { $tcp.Dispose() }
     }
 }
 
@@ -1034,13 +1144,24 @@ function Show-AdLdapsCompletion {
     elseif ($Result.CreatedCertificate -or ($Result.PSObject.Properties['NtdsLinkCreated'] -and $Result.NtdsLinkCreated)) {
         $situation.Add('Pending: restart NTDS (or reboot) if TCP 636 is not listening yet.')
     }
+    if ($Result.PSObject.Properties['CompetingRemoved'] -and @($Result.CompetingRemoved).Count -gt 0) {
+        $situation.Add("Removed $(@($Result.CompetingRemoved).Count) competing certificate(s) from NTDS\My so AD DS presents this LDAPS cert.")
+    }
     if ($Result.PortCheck) {
         if ($Result.PortCheck.Listening) {
             $situation.Add("Port $($script:LdapsPort): $($Result.PortCheck.Detail)")
         }
         else {
             $situation.Add("Port $($script:LdapsPort) not accepting connections yet: $($Result.PortCheck.Detail)")
-            $situation.Add('Check netstat -an | findstr 636 and Event Viewer (Directory Service) for LDAP over SSL / Schannel errors.')
+        }
+    }
+    if ($Result.PSObject.Properties['TlsCheck'] -and $Result.TlsCheck) {
+        if ($Result.TlsCheck.Ok) {
+            $situation.Add("TLS: $($Result.TlsCheck.Detail)")
+        }
+        else {
+            $situation.Add("TLS handshake failed: $($Result.TlsCheck.Detail)")
+            $situation.Add('TCP 636 can be open while the wrong cert is presented — check certutil -store -service NTDS My.')
         }
     }
     $situation.Add("Exported $($Result.Export.ChainCount) certificate(s) as PEM under $($Result.Export.OutputPath).")
@@ -1229,9 +1350,7 @@ function Enable-AdLdaps {
     }
     Write-Ok "Certificate passes Schannel readiness checks for '$machineDns'."
 
-    # Ensure the private-key cert lives in LocalMachine\My, then add it to NTDS\My via
-    # CertOpenStore so the private key is available to the NTDS service.
-    Write-Step 'Installing certificate into the NTDS service Personal store (NTDS\My) with private key'
+    Write-Step 'Installing certificate into NTDS\My (private key) and removing competing NTDS certs'
     $myStore = New-Object System.Security.Cryptography.X509Certificates.X509Store('My', 'LocalMachine')
     $myStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
     try {
@@ -1247,7 +1366,11 @@ function Enable-AdLdaps {
         $myStore.Close()
     }
 
-    $ntdsLinked = Install-AdLdapsCertificateIntoNtdsServiceStore -Thumbprint $cert.Thumbprint
+    $ntdsInstall = Install-AdLdapsCertificateIntoNtdsServiceStore -Thumbprint $cert.Thumbprint -RemoveCompetingCertificates
+    $ntdsLinked = [bool]$ntdsInstall.Added -or ($ntdsInstall.RemovedThumbprints.Count -gt 0)
+    if ($ntdsInstall.RemovedThumbprints.Count -gt 0) {
+        Write-Ok "Removed $($ntdsInstall.RemovedThumbprints.Count) competing certificate(s) from NTDS\My (e.g. RabbitMQ / short-name)."
+    }
     $renewed = Invoke-AdLdapsCertificateRenewal
 
     Write-Step 'Ensuring inbound LDAPS firewall rule'
@@ -1263,22 +1386,24 @@ function Enable-AdLdaps {
     $ntdsStatus = $dc.NtdsStatus
     Start-Sleep -Seconds 1
     $portCheck = Test-AdLdapsPort -Port $script:LdapsPort
-    $needsRestart = $created -or $ntdsLinked -or -not $portCheck.Listening
+    $tlsCheck = Test-AdLdapsTlsHandshake -HostName $machineDns -Port $script:LdapsPort -ExpectedThumbprint $cert.Thumbprint
+    $needsRestart = $created -or $ntdsLinked -or -not $portCheck.Listening -or -not $tlsCheck.Ok
     if ($needsRestart) {
         $shouldRestart = [bool]$RestartNtds
         if (-not $NonInteractive -and -not $RestartNtds) {
-            $shouldRestart = Read-YesNo -Prompt "Restart NTDS so AD DS binds LDAPS on TCP $($script:LdapsPort)? (brief AD outage)" -Default $true
+            $shouldRestart = Read-YesNo -Prompt "Restart NTDS so AD DS presents the LDAPS certificate on TCP $($script:LdapsPort)? (brief AD outage)" -Default $true
         }
-        elseif ($NonInteractive -and -not $RestartNtds -and -not $portCheck.Listening) {
-            Write-Info "TCP $($script:LdapsPort) is not listening yet. Pass -RestartNtds (recommended) after installing the certificate."
+        elseif ($NonInteractive -and -not $RestartNtds -and (-not $portCheck.Listening -or -not $tlsCheck.Ok)) {
+            Write-Info "LDAPS is not healthy yet. Pass -RestartNtds (recommended) after installing the certificate."
         }
         if ($shouldRestart) {
             $ntdsStatus = Restart-AdNtdsService
             $ntdsRestarted = $true
             Start-Sleep -Seconds 3
             $renewed = (Invoke-AdLdapsCertificateRenewal) -or $renewed
-            Start-Sleep -Seconds 1
+            Start-Sleep -Seconds 2
             $portCheck = Test-AdLdapsPort -Port $script:LdapsPort
+            $tlsCheck = Test-AdLdapsTlsHandshake -HostName $machineDns -Port $script:LdapsPort -ExpectedThumbprint $cert.Thumbprint
         }
     }
 
@@ -1293,34 +1418,41 @@ function Enable-AdLdaps {
         MachineDnsName         = $machineDns
         CreatedCertificate     = $created
         NtdsServiceLinked      = [bool](Test-AdLdapsCertificateInNtdsServiceStore -Thumbprint $cert.Thumbprint)
-        NtdsLinkCreated        = $ntdsLinked
+        NtdsLinkCreated        = [bool]$ntdsInstall.Added
+        CompetingRemoved       = @($ntdsInstall.RemovedThumbprints)
         RenewServerCertificate = $renewed
         FirewallRuleCreated    = $fwCreated
         NtdsRestarted          = $ntdsRestarted
         NtdsStatus             = $ntdsStatus
         PortCheck              = $portCheck
+        TlsCheck               = $tlsCheck
         Export                 = $export
         SchannelCheck          = $schannel
     }
 
-    if ($portCheck.Listening) {
+    $healthy = $portCheck.Listening -and $tlsCheck.Ok
+    if ($healthy) {
         Write-Ok $portCheck.Detail
+        Write-Ok $tlsCheck.Detail
         Show-AdLdapsCompletion -Result $result
         return $result
     }
 
-    $diag = @(
-        "TCP $($script:LdapsPort) is still not listening after certificate install."
-        "Machine DNS name AD DS expects: $machineDns"
-        "Certificate thumbprint: $($cert.Thumbprint)"
-        "Certificate DNS names: $((@(Get-AdLdapsCertificateDnsNames -Certificate $cert)) -join ', ')"
-        "In NTDS service store: $($result.NtdsServiceLinked)"
-        "Port check: $($portCheck.Detail)"
-        'Run: Get-NetTCPConnection -LocalPort 636 -State Listen'
-        'Run: certutil -store -service NTDS My'
-        'Check Event Viewer > Directory Service and System for Schannel / LDAP over SSL.'
-        'If still down after NTDS restart, reboot the domain controller once.'
-    )
+    $diag = [System.Collections.Generic.List[string]]::new()
+    if (-not $portCheck.Listening) {
+        $diag.Add("TCP $($script:LdapsPort) is not listening: $($portCheck.Detail)")
+    }
+    else {
+        $diag.Add("TCP $($script:LdapsPort) is open, but TLS is not healthy: $($tlsCheck.Detail)")
+        $diag.Add('lsass can listen on 636 while presenting a wrong cert (RabbitMQ/FAM/short-name). Clients then fall back to LDAP 389.')
+    }
+    $diag.Add("Machine DNS name AD DS expects: $machineDns")
+    $diag.Add("Certificate thumbprint: $($cert.Thumbprint)")
+    $diag.Add("Certificate DNS names: $((@(Get-AdLdapsCertificateDnsNames -Certificate $cert)) -join ', ')")
+    $diag.Add("In NTDS service store: $($result.NtdsServiceLinked)")
+    $diag.Add('Run: certutil -store -service NTDS My')
+    $diag.Add("Run: Test-AdLdapsTlsHandshake -HostName $machineDns -ExpectedThumbprint $($cert.Thumbprint)")
+    $diag.Add('If still failing after NTDS restart, reboot the domain controller once.')
     foreach ($line in $diag) {
         Write-Host "   $line" -ForegroundColor Yellow
     }
@@ -1358,6 +1490,7 @@ Export-ModuleMember -Function @(
     'New-AdLdapsSelfSignedCertificate'
     'Enable-AdLdapsFirewallRule'
     'Test-AdLdapsPort'
+    'Test-AdLdapsTlsHandshake'
     'Restart-AdNtdsService'
     'ConvertTo-X509Pem'
     'Get-AdLdapsCertificateChain'
