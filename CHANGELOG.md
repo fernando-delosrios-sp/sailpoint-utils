@@ -13,6 +13,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 ### 🔧 Improvements
 
 - **Source Connection Setup (IQService Control)** — Enable AD LDAPS interactively lists LDAPS-usable certificates for selection (plus create self-signed), instead of requiring a typed thumbprint.
+- **Source Connection Setup (IQService Control)** — Enable AD LDAPS now links the certificate into the **NTDS service** Personal store (`Cryptography\Services\NTDS\...`), triggers `renewServerCertificate`, and prefers the DC FQDN for the cert SAN. The previous LocalMachine `NTDS` store copy did not make AD DS listen on TCP 636.
 
 ---
 

@@ -244,10 +244,11 @@ Run on a **domain controller** (elevated). The action:
 
 1. Finds an in-date computer certificate in `LocalMachine\NTDS` or `My` that matches this host’s FQDN and has the **required uses**: Server Authentication EKU (or no EKU), DigitalSignature + KeyEncipherment (or no Key Usage), and KeyExchange (not signature-only). Interactively, usable certs are listed for arrow-key selection (plus **Create a new self-signed…**); non-interactive runs use `-Thumbprint` or auto-pick / `-CreateSelfSigned`.
 2. If none qualify (or `-CreateSelfSigned`), creates a self-signed Schannel certificate with those uses, trusts it in `Root`, and copies it into `NTDS` when that store exists.
-3. Ensures an inbound Windows Firewall allow for TCP **636**.
-4. Optionally restarts **NTDS** when a new cert was created (`-RestartNtds` or interactive confirm).
-5. Exports the **full chain** as PEM under `PemOutputPath` (per-member files plus a concatenated `*-chain.pem`).
-6. Prints manual VA install steps: copy PEM to `/home/sailpoint/certificates` on every VA, `sudo systemctl restart ccg`, watch `ccg-start.log`. It does **not** copy files to the VA.
+3. Ensures the certificate is in `LocalMachine\My` and **links it into the NTDS service Personal store** (`HKLM:\Software\Microsoft\Cryptography\Services\NTDS\SystemCertificates\My\Certificates`) — the store AD DS actually uses for LDAPS. Triggers `renewServerCertificate` when possible.
+4. Ensures an inbound Windows Firewall allow for TCP **636**.
+5. Optionally restarts **NTDS** when the cert was created/linked or when 636 is not yet listening (`-RestartNtds` or interactive confirm).
+6. Exports the **full chain** as PEM under `PemOutputPath` (per-member files plus a concatenated `*-chain.pem`).
+7. Prints manual VA install steps: copy PEM to `/home/sailpoint/certificates` on every VA, `sudo systemctl restart ccg`, watch `ccg-start.log`. It does **not** copy files to the VA.
 
 In ISC, set the Active Directory Forest/Domain hostname to match the certificate (not an IP), port **636**, and enable **Use Transport Layer Security (TLS)**.
 
@@ -273,6 +274,7 @@ In ISC, set the Active Directory Forest/Domain hostname to match the certificate
 | Status shows no ports on a multi-instance host | No registry key could be matched to that install path. Check that the instance's `tracefile` points inside its own directory, or pass `-Port` / `-TlsPort` on the next update. |
 | `EnableLdaps requires a domain controller` | Run on a DC (NTDS present or DomainRole 4/5), not a member IQService host alone. |
 | Thumbprint rejected for required LDAPS uses | Cert lacks Server Authentication, Key Encipherment, and/or KeyExchange. Pick another thumbprint or omit `-Thumbprint` to create a self-signed cert. |
+| TCP 636 still not listening after EnableLdaps | AD DS only binds LDAPS when the cert is in the **NTDS service** Personal store (`HKLM:\Software\Microsoft\Cryptography\Services\NTDS\SystemCertificates\My\Certificates`), not a LocalMachine store named NTDS. Re-run EnableLdaps (it now links there and can trigger `renewServerCertificate`), then restart NTDS. Confirm CN/SAN is the DC FQDN (`COMPUTERNAME.USERDNSDOMAIN`). Check `netstat -an \| findstr 636` and Directory Service events. |
 | VA TLS fails with hostname / IP | Source Hostname must match the cert SAN/CN and must not be an IP when IQService is enabled. |
 | `ccg-start.log` import error | PEM format invalid or incomplete chain. Re-export and copy leaf + intermediates + root (or the concatenated chain file). |
 

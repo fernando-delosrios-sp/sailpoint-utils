@@ -11,17 +11,29 @@ function Get-AdLdapsHostNames {
     param([string[]]$ExtraDnsName)
 
     $names = [System.Collections.Generic.List[string]]::new()
-    $fqdn = $env:COMPUTERNAME
+    $candidates = [System.Collections.Generic.List[string]]::new()
+
+    # Prefer the AD DNS hostname (COMPUTERNAME + USERDNSDOMAIN). GetHostEntry('localhost')
+    # can return a value that is not the DC FQDN Schannel expects for LDAPS.
+    if (-not [string]::IsNullOrWhiteSpace($env:USERDNSDOMAIN) -and -not [string]::IsNullOrWhiteSpace($env:COMPUTERNAME)) {
+        $candidates.Add("$($env:COMPUTERNAME).$($env:USERDNSDOMAIN)")
+    }
     try {
-        $resolved = [System.Net.Dns]::GetHostEntry('localhost').HostName
-        if ($resolved) { $fqdn = $resolved }
+        $byName = [System.Net.Dns]::GetHostEntry($env:COMPUTERNAME).HostName
+        if ($byName) { $candidates.Add($byName) }
     }
     catch { }
+    try {
+        $byLocal = [System.Net.Dns]::GetHostEntry('localhost').HostName
+        if ($byLocal -and $byLocal -ne 'localhost') { $candidates.Add($byLocal) }
+    }
+    catch { }
+    if ($env:COMPUTERNAME) { $candidates.Add($env:COMPUTERNAME) }
 
-    $short = $env:COMPUTERNAME
-    foreach ($name in @($fqdn, $short) + @($ExtraDnsName)) {
+    foreach ($name in @($candidates) + @($ExtraDnsName)) {
         if ([string]::IsNullOrWhiteSpace($name)) { continue }
         $normalized = $name.Trim().ToLowerInvariant()
+        if ($normalized -eq 'localhost') { continue }
         if ($names -notcontains $normalized) {
             $names.Add($normalized)
         }
@@ -389,6 +401,71 @@ function Find-AdLdapsCertificate {
     }
 }
 
+function Get-AdLdapsNtdsServiceCertificateRegistryPath {
+    return 'HKLM:\Software\Microsoft\Cryptography\Services\NTDS\SystemCertificates\My\Certificates'
+}
+
+function Get-AdLdapsLocalMachineCertificateRegistryPath {
+    param([Parameter(Mandatory)][string]$Thumbprint)
+
+    $tp = ($Thumbprint -replace '\s', '').ToUpperInvariant()
+    return "HKLM:\Software\Microsoft\SystemCertificates\My\Certificates\$tp"
+}
+
+function Test-AdLdapsCertificateInNtdsServiceStore {
+    param([Parameter(Mandatory)][string]$Thumbprint)
+
+    $tp = ($Thumbprint -replace '\s', '').ToUpperInvariant()
+    $path = Join-Path (Get-AdLdapsNtdsServiceCertificateRegistryPath) $tp
+    return Test-Path -LiteralPath $path
+}
+
+function Install-AdLdapsCertificateIntoNtdsServiceStore {
+    param(
+        [Parameter(Mandatory)][string]$Thumbprint
+    )
+
+    $tp = ($Thumbprint -replace '\s', '').ToUpperInvariant()
+    $source = Get-AdLdapsLocalMachineCertificateRegistryPath -Thumbprint $tp
+    if (-not (Test-Path -LiteralPath $source)) {
+        throw "Certificate $tp is not present under LocalMachine\My (registry path missing). AD DS needs the cert in the computer Personal store before it can be linked into the NTDS service store."
+    }
+
+    $destRoot = Get-AdLdapsNtdsServiceCertificateRegistryPath
+    if (-not (Test-Path -LiteralPath $destRoot)) {
+        New-Item -Path $destRoot -Force | Out-Null
+        Write-Ok "Created NTDS service certificate store at $destRoot"
+    }
+
+    $dest = Join-Path $destRoot $tp
+    if (Test-Path -LiteralPath $dest) {
+        Write-Info "Certificate $tp is already in the NTDS service Personal store."
+        return $false
+    }
+
+    # Documented Microsoft / community method: copy the LocalMachine\My registry blob into the
+    # NTDS *service* store. X509Store('NTDS','LocalMachine') is NOT this store and will not
+    # make AD DS listen on TCP 636.
+    Copy-Item -Path $source -Destination $destRoot -ErrorAction Stop
+    Write-Ok "Linked certificate $tp into the NTDS service Personal store (Cryptography\\Services\\NTDS\\...\\My)."
+    return $true
+}
+
+function Invoke-AdLdapsCertificateRenewal {
+    # Ask AD DS to reload SSL certificates without a full reboot (Server 2008+).
+    try {
+        $rootDse = New-Object System.DirectoryServices.DirectoryEntry('LDAP://localhost/RootDSE')
+        $rootDse.Properties['renewServerCertificate'].Value = 1
+        $rootDse.CommitChanges()
+        Write-Ok 'Triggered RootDSE renewServerCertificate so AD DS reloads the LDAPS certificate.'
+        return $true
+    }
+    catch {
+        Write-Info "Could not trigger renewServerCertificate ($($_.Exception.Message)). NTDS restart may still be required."
+        return $false
+    }
+}
+
 function New-AdLdapsSelfSignedCertificate {
     param(
         [string[]]$DnsName,
@@ -418,7 +495,7 @@ function New-AdLdapsSelfSignedCertificate {
 
     Write-Step "Creating self-signed LDAPS certificate for $($hostNames -join ', ')"
     $cert = New-SelfSignedCertificate @params
-    Write-Ok "Created certificate $($cert.Thumbprint)"
+    Write-Ok "Created certificate $($cert.Thumbprint) (CN/SAN: $($hostNames -join ', '))"
 
     # Trust the self-signed root on this machine so chain building succeeds for export.
     $rootStore = New-Object System.Security.Cryptography.X509Certificates.X509Store('Root', 'LocalMachine')
@@ -429,22 +506,6 @@ function New-AdLdapsSelfSignedCertificate {
     }
     finally {
         $rootStore.Close()
-    }
-
-    # Prefer NTDS store when present so Schannel for LDAP finds it first.
-    try {
-        $ntdsStore = New-Object System.Security.Cryptography.X509Certificates.X509Store('NTDS', 'LocalMachine')
-        $ntdsStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
-        try {
-            $ntdsStore.Add($cert)
-            Write-Ok 'Copied certificate into LocalMachine\NTDS'
-        }
-        finally {
-            $ntdsStore.Close()
-        }
-    }
-    catch {
-        Write-Info "NTDS certificate store not available: $($_.Exception.Message)"
     }
 
     return $cert
@@ -653,14 +714,23 @@ function Show-AdLdapsCompletion {
     else {
         $situation.Add("Reused existing LDAPS-capable certificate ($($Result.Thumbprint)) from LocalMachine\$($Result.StoreName).")
     }
+    if ($Result.PSObject.Properties['NtdsServiceLinked'] -and $Result.NtdsServiceLinked) {
+        $situation.Add('Certificate is linked in the NTDS service Personal store (Cryptography\\Services\\NTDS\\...\\My).')
+    }
+    else {
+        $situation.Add('Pending: certificate is not in the NTDS service Personal store — AD DS will not bind TCP 636 until it is.')
+    }
+    if ($Result.PSObject.Properties['RenewServerCertificate'] -and $Result.RenewServerCertificate) {
+        $situation.Add('Triggered RootDSE renewServerCertificate to reload SSL certificates.')
+    }
     if ($Result.FirewallRuleCreated) {
         $situation.Add("Opened inbound TCP $($script:LdapsPort) in Windows Firewall.")
     }
     if ($Result.NtdsRestarted) {
         $situation.Add("NTDS was restarted (status: $($Result.NtdsStatus)).")
     }
-    elseif ($Result.CreatedCertificate) {
-        $situation.Add('Pending: restart NTDS (or reboot) so Schannel binds the new certificate to LDAPS.')
+    elseif ($Result.CreatedCertificate -or ($Result.PSObject.Properties['NtdsLinkCreated'] -and $Result.NtdsLinkCreated)) {
+        $situation.Add('Pending: restart NTDS (or reboot) if TCP 636 is not listening yet.')
     }
     if ($Result.PortCheck) {
         if ($Result.PortCheck.Listening) {
@@ -668,6 +738,7 @@ function Show-AdLdapsCompletion {
         }
         else {
             $situation.Add("Port $($script:LdapsPort) not accepting connections yet: $($Result.PortCheck.Detail)")
+            $situation.Add('Check netstat -an | findstr 636 and Event Viewer (Directory Service) for LDAP over SSL / Schannel errors.')
         }
     }
     $situation.Add("Exported $($Result.Export.ChainCount) certificate(s) as PEM under $($Result.Export.OutputPath).")
@@ -833,6 +904,28 @@ function Enable-AdLdaps {
         }
     }
 
+    # Ensure the private-key cert lives in LocalMachine\My, then link it into the NTDS *service*
+    # Personal store (registry under Cryptography\Services\NTDS). That is what AD DS actually
+    # searches for LDAPS — not X509Store('NTDS','LocalMachine').
+    Write-Step 'Installing certificate into the NTDS service Personal store for LDAPS'
+    $myStore = New-Object System.Security.Cryptography.X509Certificates.X509Store('My', 'LocalMachine')
+    $myStore.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+    try {
+        $inMy = $myStore.Certificates | Where-Object {
+            ([string]$_.Thumbprint -replace '\s', '').ToUpperInvariant() -eq ([string]$cert.Thumbprint -replace '\s', '').ToUpperInvariant()
+        } | Select-Object -First 1
+        if (-not $inMy) {
+            $myStore.Add($cert)
+            Write-Ok "Copied certificate into LocalMachine\My"
+        }
+    }
+    finally {
+        $myStore.Close()
+    }
+
+    $ntdsLinked = Install-AdLdapsCertificateIntoNtdsServiceStore -Thumbprint $cert.Thumbprint
+    $renewed = Invoke-AdLdapsCertificateRenewal
+
     Write-Step 'Ensuring inbound LDAPS firewall rule'
     $fwCreated = $false
     try {
@@ -844,14 +937,22 @@ function Enable-AdLdaps {
 
     $ntdsRestarted = $false
     $ntdsStatus = $dc.NtdsStatus
-    if ($created) {
+    $portCheck = Test-AdLdapsPort -Port $script:LdapsPort
+    $needsRestart = $created -or $ntdsLinked -or -not $portCheck.Listening
+    if ($needsRestart) {
         $shouldRestart = [bool]$RestartNtds
         if (-not $NonInteractive -and -not $RestartNtds) {
-            $shouldRestart = Read-YesNo -Prompt 'Restart NTDS now so LDAPS can use the new certificate? (brief AD outage)' -Default $false
+            $defaultRestart = -not $portCheck.Listening
+            $shouldRestart = Read-YesNo -Prompt "Restart NTDS so AD DS binds LDAPS on TCP $($script:LdapsPort)? (brief AD outage)" -Default $defaultRestart
+        }
+        elseif ($NonInteractive -and -not $RestartNtds -and -not $portCheck.Listening) {
+            Write-Info "TCP $($script:LdapsPort) is not listening yet. Pass -RestartNtds to restart AD DS after linking the certificate."
         }
         if ($shouldRestart) {
             $ntdsStatus = Restart-AdNtdsService
             $ntdsRestarted = $true
+            Start-Sleep -Seconds 2
+            $portCheck = Test-AdLdapsPort -Port $script:LdapsPort
         }
     }
 
@@ -859,12 +960,15 @@ function Enable-AdLdaps {
     $export = Export-AdLdapsCertificateChain -Certificate $cert -OutputPath $PemOutputPath
     Write-Ok "Wrote $($export.Files.Count) PEM file(s); chain: $($export.ChainPath)"
 
-    $portCheck = Test-AdLdapsPort -Port $script:LdapsPort
     if ($portCheck.Listening) {
         Write-Ok $portCheck.Detail
     }
     else {
-        Write-Info $portCheck.Detail
+        Write-Host ''
+        Write-Host "   TCP $($script:LdapsPort) is still not accepting connections." -ForegroundColor Yellow
+        Write-Host '   Verify: netstat -an | findstr 636' -ForegroundColor Yellow
+        Write-Host "   Confirm the cert is under HKLM:\\Software\\Microsoft\\Cryptography\\Services\\NTDS\\SystemCertificates\\My\\Certificates\\$($cert.Thumbprint)" -ForegroundColor Yellow
+        Write-Host '   Confirm CN/SAN matches this DC FQDN, then restart AD DS (NTDS) again.' -ForegroundColor Yellow
     }
 
     $result = [PSCustomObject]@{
@@ -872,6 +976,9 @@ function Enable-AdLdaps {
         StoreName            = $storeName
         DnsNames             = @(Get-AdLdapsCertificateDnsNames -Certificate $cert)
         CreatedCertificate   = $created
+        NtdsServiceLinked    = [bool](Test-AdLdapsCertificateInNtdsServiceStore -Thumbprint $cert.Thumbprint)
+        NtdsLinkCreated      = $ntdsLinked
+        RenewServerCertificate = $renewed
         FirewallRuleCreated  = $fwCreated
         NtdsRestarted        = $ntdsRestarted
         NtdsStatus           = $ntdsStatus
@@ -898,6 +1005,11 @@ Export-ModuleMember -Function @(
     'Find-AdLdapsCertificate'
     'Format-AdLdapsCertificateChoiceLabel'
     'Select-AdLdapsCertificate'
+    'Get-AdLdapsNtdsServiceCertificateRegistryPath'
+    'Get-AdLdapsLocalMachineCertificateRegistryPath'
+    'Test-AdLdapsCertificateInNtdsServiceStore'
+    'Install-AdLdapsCertificateIntoNtdsServiceStore'
+    'Invoke-AdLdapsCertificateRenewal'
     'New-AdLdapsSelfSignedCertificate'
     'Enable-AdLdapsFirewallRule'
     'Test-AdLdapsPort'

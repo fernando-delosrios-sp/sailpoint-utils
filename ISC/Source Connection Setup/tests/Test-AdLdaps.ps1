@@ -217,4 +217,10 @@ $pickCreate = Select-AdLdapsCertificate -DnsName @('dc1.contoso.local') -Candida
 Assert-True $pickCreate.CreateSelfSigned 'when nothing is usable, selection defaults to create'
 Assert-True ($null -eq $pickCreate.Thumbprint) 'create selection has no thumbprint'
 
+# --- NTDS service store registry paths ---
+$ntdsRoot = Get-AdLdapsNtdsServiceCertificateRegistryPath
+Assert-Contains 'Cryptography\Services\NTDS\SystemCertificates\My\Certificates' $ntdsRoot 'NTDS service store path uses Cryptography\\Services\\NTDS'
+$myReg = Get-AdLdapsLocalMachineCertificateRegistryPath -Thumbprint 'aa bb cc'
+Assert-Contains 'SystemCertificates\My\Certificates\AABBCC' $myReg 'LocalMachine My registry path normalizes thumbprint'
+
 Write-Host "PASS ($script:AssertionCount assertions)"
