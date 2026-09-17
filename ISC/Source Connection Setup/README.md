@@ -167,7 +167,7 @@ The menu supports:
 6. **Set log level** — `Off`, `Error`, `Info`, `Debug`, or `Trace` (IQService levels 0-4) via `-l` / `-f` (default trace file: the instance's current `tracefile`, else `{InstallPath}\iqtrace.log`)
 7. **Stream logs** — follow the trace file with colored `ERROR` / `INFO` / `DEBUG` lines (Ctrl+C, Q, or Esc to stop)
 8. **Unblock** — clears the `Zone.Identifier` stream from `Utils.dll`, other `.dll`/`.exe` files, and `IQService.zip`
-9. **Enable AD LDAPS** — on a domain controller: select or create a Schannel certificate (Server Authentication, DigitalSignature + KeyEncipherment, KeyExchange), open TCP 636, export the full chain as PEM for manual VA import, and print SailPoint VA truststore steps
+9. **Enable AD LDAPS** — on a domain controller: pick an LDAPS-usable certificate from a list (or create a self-signed Schannel cert with Server Authentication, DigitalSignature + KeyEncipherment, KeyExchange), open TCP 636, export the full chain as PEM for manual VA import, and print SailPoint VA truststore steps
 10. **Switch instance** — only shown when the host runs more than one IQService instance
 
 After every action except **Stream logs**, the script prints a read-only summary. **Enable AD LDAPS** prints PEM paths and VA import steps instead of the IQService connection summary.
@@ -234,6 +234,7 @@ exist plus the single default installation. Create extra instances with the docu
 | `Thumbprint` | Pin an existing LocalMachine cert for LDAPS; must still pass the required-uses gate |
 | `DnsName` | Extra DNS names for cert match or self-signed creation (`EnableLdaps`) |
 | `RestartNtds` | Restart NTDS after creating a new LDAPS certificate |
+| `CreateSelfSigned` | Force a new self-signed Schannel certificate instead of reusing one |
 | `NonInteractive` | Do not prompt |
 | `WhatIf` / `Confirm` | Standard PowerShell risk mitigation |
 
@@ -241,8 +242,8 @@ exist plus the single default installation. Create extra instances with the docu
 
 Run on a **domain controller** (elevated). The action:
 
-1. Finds an in-date computer certificate in `LocalMachine\NTDS` or `My` that matches this host’s FQDN and has the **required uses**: Server Authentication EKU (or no EKU), DigitalSignature + KeyEncipherment (or no Key Usage), and KeyExchange (not signature-only).
-2. If none qualify, creates a self-signed Schannel certificate with those uses, trusts it in `Root`, and copies it into `NTDS` when that store exists.
+1. Finds an in-date computer certificate in `LocalMachine\NTDS` or `My` that matches this host’s FQDN and has the **required uses**: Server Authentication EKU (or no EKU), DigitalSignature + KeyEncipherment (or no Key Usage), and KeyExchange (not signature-only). Interactively, usable certs are listed for arrow-key selection (plus **Create a new self-signed…**); non-interactive runs use `-Thumbprint` or auto-pick / `-CreateSelfSigned`.
+2. If none qualify (or `-CreateSelfSigned`), creates a self-signed Schannel certificate with those uses, trusts it in `Root`, and copies it into `NTDS` when that store exists.
 3. Ensures an inbound Windows Firewall allow for TCP **636**.
 4. Optionally restarts **NTDS** when a new cert was created (`-RestartNtds` or interactive confirm).
 5. Exports the **full chain** as PEM under `PemOutputPath` (per-member files plus a concatenated `*-chain.pem`).

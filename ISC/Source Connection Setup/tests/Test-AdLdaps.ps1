@@ -190,4 +190,31 @@ $foundNone = Find-AdLdapsCertificate -DnsName @('dc1.contoso.local') -Candidates
 Assert-True ($null -eq $foundNone.Certificate) 'name mismatch yields no accepted certificate'
 Assert-equal 1 $foundNone.Rejected.Count 'name mismatch is recorded as rejected'
 
+# --- Choice labels ---
+$labelEntry = [PSCustomObject]@{
+    StoreName  = 'NTDS'
+    DnsNames   = @('dc1.contoso.local', 'dc1', 'extra.contoso.local')
+    NotAfter   = [datetime]'2027-06-15'
+    Thumbprint = 'AABBCCDDEEFF00112233445566778899AABBCCDD'
+}
+$label = Format-AdLdapsCertificateChoiceLabel -Entry $labelEntry -IncludeThumbprint
+Assert-Contains 'NTDS' $label 'choice label includes store'
+Assert-Contains 'dc1.contoso.local' $label 'choice label includes primary DNS'
+Assert-Contains '…' $label 'choice label truncates extra DNS and long thumbprint'
+Assert-Contains 'expires 2027-06-15' $label 'choice label includes expiry'
+
+# --- Interactive selection defaults (NonInteractive uses Default) ---
+$pickExisting = Select-AdLdapsCertificate -DnsName @('dc1.contoso.local') -Candidates @(
+    [PSCustomObject]@{ Certificate = $ntdsNew; StoreName = 'NTDS' }
+    [PSCustomObject]@{ Certificate = $myLonger; StoreName = 'My' }
+) -Now $now
+Assert-equal 'NTDSNEW' $pickExisting.Thumbprint 'selection defaults to top-ranked usable cert'
+Assert-True (-not $pickExisting.CreateSelfSigned) 'selection of existing cert is not CreateSelfSigned'
+
+$pickCreate = Select-AdLdapsCertificate -DnsName @('dc1.contoso.local') -Candidates @(
+    [PSCustomObject]@{ Certificate = $wrongHost; StoreName = 'My' }
+) -Now $now
+Assert-True $pickCreate.CreateSelfSigned 'when nothing is usable, selection defaults to create'
+Assert-True ($null -eq $pickCreate.Thumbprint) 'create selection has no thumbprint'
+
 Write-Host "PASS ($script:AssertionCount assertions)"

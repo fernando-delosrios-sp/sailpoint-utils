@@ -75,6 +75,7 @@ function Get-IQServiceResolvedConfig {
         Thumbprint        = $(if (Get-AgentRequestValue -Object $config -Name 'thumbprint') { [string](Get-AgentRequestValue -Object $config -Name 'thumbprint') } else { $null })
         DnsName           = $(if (Get-AgentRequestValue -Object $config -Name 'dnsName') { @(Get-AgentRequestValue -Object $config -Name 'dnsName') } else { @() })
         RestartNtds       = [bool](Get-AgentRequestValue -Object $config -Name 'restartNtds' -Default $false)
+        CreateSelfSigned  = [bool](Get-AgentRequestValue -Object $config -Name 'createSelfSigned' -Default $false)
         ApproveDestructive = [bool](Get-AgentRequestValue -Object $decisions -Name 'approveDestructive' -Default $false)
     }
 }
@@ -213,7 +214,7 @@ function Invoke-IQServiceAgentApply {
         'EnableLdaps' {
             $ldaps = Enable-AdLdaps -InstallPath $installPath -PemOutputPath $resolved.PemOutputPath `
                 -Thumbprint $resolved.Thumbprint -DnsName $resolved.DnsName `
-                -RestartNtds:$resolved.RestartNtds -NonInteractive
+                -RestartNtds:$resolved.RestartNtds -CreateSelfSigned:$resolved.CreateSelfSigned -NonInteractive
             return [ordered]@{
                 status          = 'ok'
                 action          = 'EnableLdaps'

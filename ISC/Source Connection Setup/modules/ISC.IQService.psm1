@@ -1506,18 +1506,19 @@ function Show-InteractiveMenu {
                 if (Read-YesNo -Prompt 'Use a custom PEM output directory?' -Default $false) {
                     $pemPath = Read-InputString -Prompt 'PEM output directory' -Required
                 }
-                $thumb = $null
-                if (Read-YesNo -Prompt 'Pin an existing certificate by thumbprint?' -Default $false) {
-                    $thumb = Read-InputString -Prompt 'Certificate thumbprint' -Required
-                }
                 $extraDns = $null
                 if (Read-YesNo -Prompt 'Add extra DNS names for the certificate?' -Default $false) {
                     $rawDns = Read-InputString -Prompt 'Comma-separated DNS names' -Required
                     $extraDns = @($rawDns -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
                 }
-                $restartNtds = Read-YesNo -Prompt 'Restart NTDS if a new certificate is created? (brief AD outage)' -Default $false
+                $selection = Select-AdLdapsCertificate -DnsName $extraDns
+                $restartNtds = $false
+                if ($selection.CreateSelfSigned) {
+                    $restartNtds = Read-YesNo -Prompt 'Restart NTDS after creating the new certificate? (brief AD outage)' -Default $false
+                }
                 Enable-AdLdaps -InstallPath $ResolvedInstallPath -PemOutputPath $pemPath `
-                    -Thumbprint $thumb -DnsName $extraDns -RestartNtds:$restartNtds | Out-Null
+                    -Thumbprint $selection.Thumbprint -DnsName $extraDns `
+                    -CreateSelfSigned:$selection.CreateSelfSigned -RestartNtds:$restartNtds | Out-Null
             }
             'Instance' {
                 $selected = Select-IQServiceInstance -Instances $instances -Prompt 'Select the IQService instance to manage:'

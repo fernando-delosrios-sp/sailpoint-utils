@@ -691,12 +691,98 @@ function Show-AdLdapsCompletion {
         -Items $items.ToArray()
 }
 
+function Format-AdLdapsCertificateChoiceLabel {
+    param(
+        [Parameter(Mandatory)]$Entry,
+        [switch]$IncludeThumbprint
+    )
+
+    $store = if ($Entry.PSObject.Properties['StoreName'] -and $Entry.StoreName) { [string]$Entry.StoreName } else { 'My' }
+    $dns = @()
+    if ($Entry.PSObject.Properties['DnsNames'] -and $Entry.DnsNames) {
+        $dns = @($Entry.DnsNames)
+    }
+    elseif ($Entry.PSObject.Properties['Certificate'] -and $Entry.Certificate) {
+        $dns = @(Get-AdLdapsCertificateDnsNames -Certificate $Entry.Certificate)
+    }
+    $dnsText = if ($dns.Count -gt 0) { ($dns | Select-Object -First 2) -join ', ' } else { '(no DNS)' }
+    if ($dns.Count -gt 2) { $dnsText += ', …' }
+
+    $expires = $null
+    if ($Entry.PSObject.Properties['NotAfter'] -and $Entry.NotAfter) {
+        $expires = ([datetime]$Entry.NotAfter).ToString('yyyy-MM-dd')
+    }
+    elseif ($Entry.PSObject.Properties['Certificate'] -and $Entry.Certificate -and $Entry.Certificate.NotAfter) {
+        $expires = ([datetime]$Entry.Certificate.NotAfter).ToString('yyyy-MM-dd')
+    }
+    $expiryText = if ($expires) { "expires $expires" } else { 'expiry unknown' }
+
+    $label = "$store | $dnsText | $expiryText"
+    if ($IncludeThumbprint) {
+        $tp = if ($Entry.PSObject.Properties['Thumbprint']) { [string]$Entry.Thumbprint } else { [string]$Entry.Certificate.Thumbprint }
+        $short = if ($tp.Length -gt 12) { $tp.Substring(0, 12) + '…' } else { $tp }
+        $label = "$label | $short"
+    }
+    return $label
+}
+
+function Select-AdLdapsCertificate {
+    param(
+        [string[]]$DnsName,
+        [object[]]$Candidates,
+        [datetime]$Now = $(Get-Date),
+        [string]$Prompt = 'Select the LDAPS certificate to use:'
+    )
+
+    $found = Find-AdLdapsCertificate -DnsName $DnsName -Candidates $Candidates -Now $Now
+    $accepted = @($found.Accepted)
+    $rejected = @($found.Rejected)
+
+    if ($rejected.Count -gt 0 -and (Get-Command Write-Info -ErrorAction SilentlyContinue)) {
+        Write-Info "$($rejected.Count) certificate(s) in LocalMachine NTDS/My were skipped (failed name match or required uses)."
+    }
+
+    $options = [System.Collections.Generic.List[string]]::new()
+    $labels = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($entry in $accepted) {
+        $options.Add([string]$entry.Thumbprint)
+        $labels.Add((Format-AdLdapsCertificateChoiceLabel -Entry $entry -IncludeThumbprint))
+    }
+
+    $options.Add('__CREATE__')
+    $labels.Add('Create a new self-signed Schannel certificate')
+
+    $default = if ($accepted.Count -gt 0) { [string]$accepted[0].Thumbprint } else { '__CREATE__' }
+
+    if ($accepted.Count -eq 0 -and (Get-Command Write-Info -ErrorAction SilentlyContinue)) {
+        Write-Info 'No LDAPS-usable certificate found. You can create a self-signed Schannel certificate.'
+    }
+
+    $choice = Read-Choice -Prompt $Prompt -Options @($options) -Labels @($labels) -Default $default
+    if ($choice -eq '__CREATE__') {
+        return [PSCustomObject]@{
+            Thumbprint       = $null
+            CreateSelfSigned = $true
+            Entry            = $null
+        }
+    }
+
+    $selected = $accepted | Where-Object { [string]$_.Thumbprint -eq $choice } | Select-Object -First 1
+    return [PSCustomObject]@{
+        Thumbprint       = $choice
+        CreateSelfSigned = $false
+        Entry            = $selected
+    }
+}
+
 function Enable-AdLdaps {
     param(
         [string]$PemOutputPath,
         [string]$Thumbprint,
         [string[]]$DnsName,
         [switch]$RestartNtds,
+        [switch]$CreateSelfSigned,
         [switch]$NonInteractive,
         [string]$InstallPath
     )
@@ -715,22 +801,36 @@ function Enable-AdLdaps {
     }
 
     Write-Step 'Selecting LDAPS certificate (Server Auth + DigitalSignature + KeyEncipherment + KeyExchange)'
-    $found = Find-AdLdapsCertificate -Thumbprint $Thumbprint -DnsName $DnsName
     $created = $false
-    $cert = $found.Certificate
-    $storeName = $found.StoreName
+    $cert = $null
+    $storeName = $null
 
-    if (-not $cert) {
+    if ($CreateSelfSigned) {
         if ($Thumbprint) {
-            throw "No usable LDAPS certificate matched thumbprint '$Thumbprint'."
+            throw 'Specify either -Thumbprint or -CreateSelfSigned, not both.'
         }
-        Write-Info 'No existing LDAPS-capable certificate found; creating a self-signed Schannel certificate.'
+        Write-Info 'Creating a new self-signed Schannel certificate as requested.'
         $cert = New-AdLdapsSelfSignedCertificate -DnsName $DnsName
         $created = $true
         $storeName = 'My'
     }
     else {
-        Write-Ok "Using certificate $($cert.Thumbprint) from LocalMachine\$storeName"
+        $found = Find-AdLdapsCertificate -Thumbprint $Thumbprint -DnsName $DnsName
+        $cert = $found.Certificate
+        $storeName = $found.StoreName
+
+        if (-not $cert) {
+            if ($Thumbprint) {
+                throw "No usable LDAPS certificate matched thumbprint '$Thumbprint'."
+            }
+            Write-Info 'No existing LDAPS-capable certificate found; creating a self-signed Schannel certificate.'
+            $cert = New-AdLdapsSelfSignedCertificate -DnsName $DnsName
+            $created = $true
+            $storeName = 'My'
+        }
+        else {
+            Write-Ok "Using certificate $($cert.Thumbprint) from LocalMachine\$storeName"
+        }
     }
 
     Write-Step 'Ensuring inbound LDAPS firewall rule'
@@ -796,6 +896,8 @@ Export-ModuleMember -Function @(
     'Test-AdLdapsCertificateCandidate'
     'Get-AdLdapsCertificateStoreCandidates'
     'Find-AdLdapsCertificate'
+    'Format-AdLdapsCertificateChoiceLabel'
+    'Select-AdLdapsCertificate'
     'New-AdLdapsSelfSignedCertificate'
     'Enable-AdLdapsFirewallRule'
     'Test-AdLdapsPort'

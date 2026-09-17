@@ -68,6 +68,9 @@
 .PARAMETER RestartNtds
     Restart the NTDS service after creating a new LDAPS certificate (EnableLdaps).
 
+.PARAMETER CreateSelfSigned
+    Force creation of a new self-signed Schannel certificate instead of reusing one (EnableLdaps).
+
 .PARAMETER NonInteractive
     Do not prompt; required parameters must be supplied.
 
@@ -145,6 +148,9 @@ param(
 
     [Parameter()]
     [switch]$RestartNtds,
+
+    [Parameter()]
+    [switch]$CreateSelfSigned,
 
     [Parameter()]
     [switch]$NonInteractive
@@ -245,7 +251,7 @@ try {
         'EnableLdaps' {
             Enable-AdLdaps -InstallPath $resolvedPath -PemOutputPath $PemOutputPath `
                 -Thumbprint $Thumbprint -DnsName $DnsName -RestartNtds:$RestartNtds `
-                -NonInteractive:$NonInteractive | Out-Null
+                -CreateSelfSigned:$CreateSelfSigned -NonInteractive:$NonInteractive | Out-Null
         }
     }
 }
