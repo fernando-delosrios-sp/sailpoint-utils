@@ -26,11 +26,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 
 - **Identity Match & Onboard** — After a new source account is created, wait for the identity cube, then run a single `POST /v2025/identities/process` for that identity so attributes and roles evaluate immediately.
+
+- **MelonHRM HR source** — The feed is now a generic PostgreSQL table `public.melonhrm` loaded from one self-contained `melonhrm.sql` (schema plus 30 rows). Deploy with `psql` or the Supabase SQL editor; the script applies `service_role` read-only grants only when that role exists. SailPoint aggregation uses `/rest/v1/melonhrm`.
 ---
 
 ## 2026-09-16
 
 ### ✨ New Features
+
+- **MelonHRM Supabase source** — Supabase overlay of the OrangeHRM JDBC source (`16174a3603db4750b0b126104524f6ae`) for Identity Fusion NG testing. One flattened `public."MelonHRM"` table emits the same 27 account attributes as the OrangeHRM aggregation result. The 30 identities are 8 exact and 7 fuzzy overlays of the real OrangeHRM subtree under Jerry Bennett, 4 lookalikes that share a name but report elsewhere, and 11 MelonHRM-only people. Overlay matching is manager-closed, so both sources agree on the manager of every expected duplicate. Includes deployment guidance, an account schema cloned from the live source, an expected-outcome fixture, RLS/grants, and pgTAP verification.
 
 - **Active Directory Privileged Tasks** — Tenant export under `ISC/Active Directory Privileged Tasks`: interactive workflows to create an AD security group (Privileged Action Gateway) or a CIFS shared folder (access request plus `ConnectorBeforeModify - Create Shared Folder in Active Directory`), with forms and an entitlement-aggregation child workflow.
 

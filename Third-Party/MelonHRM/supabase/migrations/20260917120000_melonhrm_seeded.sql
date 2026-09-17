@@ -1,0 +1,1 @@
+-- Account feed is applied from ../melonhrm.sql (see [db.seed] sql_paths).

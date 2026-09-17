@@ -44,6 +44,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 
 | Integration | Description |
 | --- | --- |
+| [MelonHRM HR source](Third-Party/MelonHRM/) | PostgreSQL HR feed (`melonhrm.sql`) with 30 identities and partial OrangeHRM overlap for Identity Fusion NG |
 | [OrangeHRM → ISC aggregation](Third-Party/OrangeHRM/) | Triggers SailPoint account aggregation after OrangeHRM employee lifecycle events |
 
 ## Entro

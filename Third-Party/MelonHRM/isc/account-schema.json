@@ -1,0 +1,201 @@
+{
+  "name": "account",
+  "nativeObjectType": "melonhrm",
+  "identityAttribute": "employee_id",
+  "displayAttribute": "username",
+  "hierarchyAttribute": null,
+  "includePermissions": false,
+  "features": [],
+  "configuration": {},
+  "attributes": [
+    {
+      "name": "employee_id",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "employeenumber",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "firstname",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "lastname",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "middlename",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "nickname",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "email",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "other_email",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "title",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "country",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "city",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "manager",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "type",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "empstatus",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "otherid",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "zipcode",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "home_phone",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "mobile",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "telephone",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "username",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "department",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "term",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "ftostart",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "ftoend",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "contractStartDate",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "contractEndDate",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    },
+    {
+      "name": "category",
+      "type": "STRING",
+      "isMulti": false,
+      "isEntitlement": false,
+      "isGroup": false
+    }
+  ]
+}
