@@ -151,6 +151,18 @@
       "skillPath": "skills/productivity/structured-choices/SKILL.md",
       "computedHash": "0a2dbc7bba8edec968f62132b5557a01bfe7ad84c1d6090b95bb836d647fa46a"
     },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "583344c20e90f3654dbb0632f088d89fd9f1dde8ac85e8a644dd12eee59b1380"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "e14e276241805c97dbcfe40dcbea1a3035269cc7293cac4b1832dda41a835e60"
+    },
     "tdd": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",
