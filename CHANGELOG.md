@@ -18,6 +18,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 - **Source Connection Setup (IQService Control)** — Enable AD LDAPS requires the AD DS DNS FQDN in the certificate SAN/CN (short name alone is rejected), trusts self-signed certs into LocalMachine\Root, and treats Test-Certificate untrusted-root/revocation warnings as non-fatal for lab certs.
 - **Source Connection Setup (IQService Control)** — Enable AD LDAPS removes competing NTDS\My certificates (e.g. RabbitMQ/FAM/short-name) and verifies a TLS handshake to the DC FQDN, not only TCP listen on 636.
 - **Source Connection Setup (IQService Control)** — Fix self-signed LDAPS creation: stop using the legacy SChannel CSP (which often left HasPrivateKey false), re-open the cert from LocalMachine\My after create, import a public-only copy into Root, and treat EnhancedKeyUsageList friendly names as Server Authentication.
+- **Source Connection Setup (IQService Control)** — Purge unusable SailPoint self-signed LDAPS certificates from LocalMachine\My/Root/NTDS before listing or recreating, and require a real private-key probe (not HasPrivateKey alone) so broken leftovers no longer appear in the picker.
 
 ---
 

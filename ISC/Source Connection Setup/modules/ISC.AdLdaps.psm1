@@ -6,6 +6,7 @@ $script:VaTlsConfigUrl = 'https://documentation.sailpoint.com/connectors/iqservi
 $script:VaConfigTlsUrl = 'https://documentation.sailpoint.com/saas/help/va/config_va.html#transport-layer-security'
 $script:LdapsPort = 636
 $script:FirewallRuleName = 'SailPoint AD LDAPS (TCP 636)'
+$script:ManagedFriendlyNamePrefix = 'SailPoint AD LDAPS'
 
 function Get-AdLdapsMachineDnsFullyQualifiedName {
     if (-not ('AdLdapsNative' -as [type])) {
@@ -265,9 +266,8 @@ function Get-AdLdapsEnhancedKeyUsages {
 function Test-AdLdapsCertificateHasPrivateKey {
     param([Parameter(Mandatory)]$Certificate)
 
-    if ($Certificate.PSObject.Properties['HasPrivateKey'] -and [bool]$Certificate.HasPrivateKey) {
-        return $true
-    }
+    # Prefer probing the actual key. HasPrivateKey alone is unreliable after a bad CSP
+    # create or Root-store Add() — it can stay $true while GetRSAPrivateKey returns null.
     try {
         $rsa = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($Certificate)
         if ($rsa) { return $true }
@@ -277,7 +277,29 @@ function Test-AdLdapsCertificateHasPrivateKey {
         if ($Certificate.PrivateKey) { return $true }
     }
     catch { }
+
+    $isRealCert = $Certificate -is [System.Security.Cryptography.X509Certificates.X509Certificate2]
+    if ($isRealCert) {
+        return $false
+    }
+
+    # Unit-test mocks expose HasPrivateKey without a real key handle.
+    if ($Certificate.PSObject.Properties['HasPrivateKey'] -and [bool]$Certificate.HasPrivateKey) {
+        return $true
+    }
     return $false
+}
+
+function Test-AdLdapsManagedCertificate {
+    param([Parameter(Mandatory)]$Certificate)
+
+    if (-not $Certificate.PSObject.Properties['FriendlyName'] -or -not $Certificate.FriendlyName) {
+        return $false
+    }
+    return ([string]$Certificate.FriendlyName).StartsWith(
+        $script:ManagedFriendlyNamePrefix,
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
 }
 
 function Get-AdLdapsKeyUsageFlags {
@@ -470,6 +492,25 @@ function Find-AdLdapsCertificate {
 
         $check = Test-AdLdapsCertificateCandidate -Certificate $cert -HostNames $hostNames `
             -RequiredDnsName $RequiredDnsName -Now $Now
+
+        # Re-open from My so we never offer a public-only / broken-key leftover from a failed create.
+        if ($check.Ok -and $storeName -eq 'My' -and
+            ($cert -is [System.Security.Cryptography.X509Certificates.X509Certificate2])) {
+            try {
+                $cert = Get-AdLdapsCertificateFromLocalMachineMy -Thumbprint $cert.Thumbprint
+            }
+            catch {
+                $check = [PSCustomObject]@{
+                    Ok      = $false
+                    Reasons = @($_.Exception.Message)
+                    Uses    = $null
+                }
+                if (Test-AdLdapsManagedCertificate -Certificate $item.Certificate) {
+                    $null = Remove-AdLdapsCertificateByThumbprint -Thumbprint ([string]$item.Certificate.Thumbprint)
+                }
+            }
+        }
+
         $entry = [PSCustomObject]@{
             Certificate = $cert
             StoreName   = $storeName
@@ -632,7 +673,7 @@ function Get-AdLdapsCertificateFromLocalMachineMy {
         if (-not $cert) {
             throw "Certificate $tp was not found in LocalMachine\My."
         }
-        if (-not $cert.HasPrivateKey) {
+        if (-not (Test-AdLdapsCertificateHasPrivateKey -Certificate $cert)) {
             throw "Certificate $tp in LocalMachine\My has no private key. AD DS cannot use it for LDAPS."
         }
         return $cert
@@ -652,6 +693,101 @@ function Test-AdLdapsCertificateIsSelfSigned {
     }
     catch { }
     return $false
+}
+
+function Remove-AdLdapsCertificateByThumbprint {
+    param(
+        [Parameter(Mandatory)][string]$Thumbprint,
+        [string[]]$StoreNames = @('My', 'Root')
+    )
+
+    $tp = ($Thumbprint -replace '\s', '').ToUpperInvariant()
+    $removed = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($storeName in $StoreNames) {
+        $store = $null
+        try {
+            $store = New-Object System.Security.Cryptography.X509Certificates.X509Store($storeName, 'LocalMachine')
+            $store.Open([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+            $matches = @($store.Certificates | Where-Object {
+                ([string]$_.Thumbprint -replace '\s', '').ToUpperInvariant() -eq $tp
+            })
+            foreach ($cert in $matches) {
+                $store.Remove($cert)
+                $removed.Add("$storeName")
+            }
+        }
+        catch { }
+        finally {
+            if ($store) { $store.Close() }
+        }
+    }
+
+    try {
+        $ntds = Open-AdLdapsServiceCertificateStore -ServiceName 'NTDS' -StoreName 'My' `
+            -OpenFlags ([System.Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
+        try {
+            $matches = @($ntds.Certificates | Where-Object {
+                ([string]$_.Thumbprint -replace '\s', '').ToUpperInvariant() -eq $tp
+            })
+            foreach ($cert in $matches) {
+                $ntds.Remove($cert)
+                $removed.Add('NTDS\My')
+            }
+        }
+        finally {
+            $ntds.Close()
+        }
+    }
+    catch { }
+
+    $regPath = Join-Path (Get-AdLdapsNtdsServiceCertificateRegistryPath) $tp
+    if (Test-Path -LiteralPath $regPath) {
+        Remove-Item -LiteralPath $regPath -Recurse -Force -ErrorAction SilentlyContinue
+        $removed.Add('NTDS-registry')
+    }
+
+    return [string[]]@($removed | Select-Object -Unique)
+}
+
+function Clear-AdLdapsUnusableManagedCertificates {
+    $removed = [System.Collections.Generic.List[string]]::new()
+    $candidates = @(Get-AdLdapsCertificateStoreCandidates -StoreNames @('My'))
+    foreach ($item in $candidates) {
+        $cert = $item.Certificate
+        if (-not (Test-AdLdapsManagedCertificate -Certificate $cert)) { continue }
+        $uses = Test-AdLdapsCertificateUses -Certificate $cert
+        if ($uses.Ok) { continue }
+
+        $tp = ([string]$cert.Thumbprint -replace '\s', '').ToUpperInvariant()
+        $why = ($uses.Reasons | Select-Object -First 1)
+        if (Get-Command Write-Info -ErrorAction SilentlyContinue) {
+            Write-Info "Removing unusable managed LDAPS certificate $tp ($why)"
+        }
+        $null = Remove-AdLdapsCertificateByThumbprint -Thumbprint $tp
+        $removed.Add($tp)
+    }
+    return [string[]]@($removed)
+}
+
+function Clear-AdLdapsManagedCertificates {
+    param([string]$KeepThumbprint)
+
+    $keep = if ($KeepThumbprint) { ($KeepThumbprint -replace '\s', '').ToUpperInvariant() } else { $null }
+    $removed = [System.Collections.Generic.List[string]]::new()
+    $candidates = @(Get-AdLdapsCertificateStoreCandidates -StoreNames @('My'))
+    foreach ($item in $candidates) {
+        $cert = $item.Certificate
+        if (-not (Test-AdLdapsManagedCertificate -Certificate $cert)) { continue }
+        $tp = ([string]$cert.Thumbprint -replace '\s', '').ToUpperInvariant()
+        if ($keep -and $tp -eq $keep) { continue }
+        if (Get-Command Write-Info -ErrorAction SilentlyContinue) {
+            Write-Info "Removing previous managed LDAPS certificate $tp ($($cert.FriendlyName))"
+        }
+        $null = Remove-AdLdapsCertificateByThumbprint -Thumbprint $tp
+        $removed.Add($tp)
+    }
+    return [string[]]@($removed)
 }
 
 function Install-AdLdapsCertificateIntoTrustedRoot {
@@ -869,6 +1005,9 @@ function New-AdLdapsSelfSignedCertificate {
         CertStoreLocation = 'Cert:\LocalMachine\My'
         FriendlyName      = $friendly
     }
+
+    # Replace prior SailPoint-created LDAPS certs so a broken create does not linger in the picker.
+    $null = Clear-AdLdapsManagedCertificates
 
     Write-Step "Creating self-signed LDAPS certificate for $($hostNames -join ', ')"
     Write-Info "Subject CN / primary SAN will be '$($hostNames[0])' (must match AD DS FQDN)."
@@ -1262,6 +1401,11 @@ function Format-AdLdapsCertificateChoiceLabel {
     )
 
     $store = if ($Entry.PSObject.Properties['StoreName'] -and $Entry.StoreName) { [string]$Entry.StoreName } else { 'My' }
+    $friendly = $null
+    if ($Entry.PSObject.Properties['Certificate'] -and $Entry.Certificate -and
+        $Entry.Certificate.PSObject.Properties['FriendlyName'] -and $Entry.Certificate.FriendlyName) {
+        $friendly = [string]$Entry.Certificate.FriendlyName
+    }
     $dns = @()
     if ($Entry.PSObject.Properties['DnsNames'] -and $Entry.DnsNames) {
         $dns = @($Entry.DnsNames)
@@ -1281,7 +1425,11 @@ function Format-AdLdapsCertificateChoiceLabel {
     }
     $expiryText = if ($expires) { "expires $expires" } else { 'expiry unknown' }
 
-    $label = "$store | $dnsText | $expiryText"
+    $subject = if ($friendly) { $friendly } else { $dnsText }
+    $label = "$store | $subject | $expiryText"
+    if ($friendly -and $dnsText -and $friendly -ne $dnsText) {
+        $label = "$store | $friendly | $dnsText | $expiryText"
+    }
     if ($IncludeThumbprint) {
         $tp = if ($Entry.PSObject.Properties['Thumbprint']) { [string]$Entry.Thumbprint } else { [string]$Entry.Certificate.Thumbprint }
         $short = if ($tp.Length -gt 12) { $tp.Substring(0, 12) + '…' } else { $tp }
@@ -1301,6 +1449,11 @@ function Select-AdLdapsCertificate {
 
     if (-not $RequiredDnsName) {
         try { $RequiredDnsName = Get-AdLdapsMachineDnsFullyQualifiedName } catch { }
+    }
+
+    # Drop prior SailPoint self-signed LDAPS certs that have no usable private key / uses.
+    if (-not $Candidates) {
+        $null = Clear-AdLdapsUnusableManagedCertificates
     }
 
     $found = Find-AdLdapsCertificate -DnsName $DnsName -RequiredDnsName $RequiredDnsName `
@@ -1378,6 +1531,9 @@ function Enable-AdLdaps {
     $created = $false
     $cert = $null
     $storeName = $null
+
+    # Purge SailPoint self-signed LDAPS certs that cannot present a private key.
+    $null = Clear-AdLdapsUnusableManagedCertificates
 
     if ($CreateSelfSigned) {
         if ($Thumbprint) {
@@ -1540,6 +1696,7 @@ Export-ModuleMember -Function @(
     'Get-AdLdapsKeySpec'
     'Get-AdLdapsEnhancedKeyUsages'
     'Test-AdLdapsCertificateHasPrivateKey'
+    'Test-AdLdapsManagedCertificate'
     'Get-AdLdapsKeyUsageFlags'
     'Test-AdLdapsCertificateUses'
     'Test-AdLdapsCertificateCandidate'
@@ -1554,6 +1711,9 @@ Export-ModuleMember -Function @(
     'Open-AdLdapsServiceCertificateStore'
     'Get-AdLdapsCertificateFromLocalMachineMy'
     'Test-AdLdapsCertificateIsSelfSigned'
+    'Remove-AdLdapsCertificateByThumbprint'
+    'Clear-AdLdapsUnusableManagedCertificates'
+    'Clear-AdLdapsManagedCertificates'
     'Install-AdLdapsCertificateIntoTrustedRoot'
     'Test-AdLdapsCertificateSchannelReady'
     'Install-AdLdapsCertificateIntoNtdsServiceStore'

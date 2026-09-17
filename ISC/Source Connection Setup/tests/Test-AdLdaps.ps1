@@ -48,6 +48,7 @@ function New-MockCert {
         [datetime]$NotBefore = $(Get-Date).AddDays(-1),
         [datetime]$NotAfter = $(Get-Date).AddYears(1),
         [string]$Subject = 'CN=dc1.contoso.local',
+        [string]$FriendlyName = $null,
         [byte[]]$RawData = $null,
         $ChainCertificates = $null
     )
@@ -66,6 +67,7 @@ function New-MockCert {
         NotBefore             = $NotBefore
         NotAfter              = $NotAfter
         Subject               = $Subject
+        FriendlyName          = $FriendlyName
         RawData               = $RawData
         ChainCertificates     = $ChainCertificates
         Extensions            = $null
@@ -245,5 +247,29 @@ Assert-Contains 'SystemCertificates\My\Certificates\AABBCC' $myReg 'LocalMachine
 $friendlyEku = New-MockCert -EnhancedKeyUsageList @('Server Authentication')
 $okFriendly = Test-AdLdapsCertificateUses -Certificate $friendlyEku
 Assert-True $okFriendly.Ok 'Server Authentication friendly name is accepted as Server Auth EKU'
+
+# --- Managed SailPoint LDAPS cert detection + labels ---
+$managed = New-MockCert -Thumbprint 'MANAGED1' -FriendlyName 'SailPoint AD LDAPS (dc1.contoso.local)' -DnsNames @($fqdn)
+Assert-True (Test-AdLdapsManagedCertificate -Certificate $managed) 'SailPoint AD LDAPS friendly name is managed'
+$other = New-MockCert -Thumbprint 'OTHER1' -FriendlyName 'File Access Manager RabbitMQ' -DnsNames @($fqdn)
+Assert-True (-not (Test-AdLdapsManagedCertificate -Certificate $other)) 'RabbitMQ friendly name is not managed'
+$managedLabel = Format-AdLdapsCertificateChoiceLabel -Entry ([PSCustomObject]@{
+    StoreName   = 'My'
+    Certificate = $managed
+    DnsNames    = @($fqdn)
+    NotAfter    = $now.AddYears(1)
+    Thumbprint  = 'MANAGED1'
+}) -IncludeThumbprint
+Assert-Contains 'SailPoint AD LDAPS' $managedLabel 'choice label surfaces managed friendly name'
+
+# --- Unusable managed cert fails uses (picker purge relies on this) ---
+$brokenManaged = New-MockCert -Thumbprint 'BROKEN1' -HasPrivateKey:$false `
+    -FriendlyName 'SailPoint AD LDAPS (dc1.contoso.local)' -DnsNames @($fqdn)
+$brokenUses = Test-AdLdapsCertificateUses -Certificate $brokenManaged
+Assert-True (-not $brokenUses.Ok) 'managed cert without private key fails uses'
+$foundBroken = Find-AdLdapsCertificate -DnsName @($fqdn) -RequiredDnsName $fqdn -Candidates @(
+    [PSCustomObject]@{ Certificate = $brokenManaged; StoreName = 'My' }
+) -Now $now
+Assert-True ($null -eq $foundBroken.Certificate) 'broken managed cert is not selectable'
 
 Write-Host "PASS ($script:AssertionCount assertions)"
