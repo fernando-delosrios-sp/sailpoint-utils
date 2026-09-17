@@ -4,6 +4,14 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-17
+
+### ✨ New Features
+
+- **Source Connection Setup (IQService Control)** — Added **Enable AD LDAPS** (`-Action EnableLdaps`): on a domain controller, select or create a Schannel certificate with the required Server Authentication / Key Usage / KeyExchange uses, open TCP 636, export the full chain as PEM for manual VA truststore install, and print SailPoint VA TLS steps. Does not copy files onto the VA.
+
+---
+
 ## 2026-09-16
 
 ### ✨ New Features

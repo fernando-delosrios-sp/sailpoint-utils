@@ -10,7 +10,7 @@ Operator scripts for SailPoint Identity Security Cloud (ISC) source connectivity
 - `Microsoft 365 Access Profiles.ps1` — PSSailpoint wizard that finds Entra ISC sources with `servicePlan` entitlements, maps Microsoft friendly names, Space-selects plans, and creates prefixed requestable access profiles (optionally grouped under a source app).
 - `AWS.ps1` — AWS Tools for PowerShell script for the **Amazon Web Services SaaS** connector (native IAM role and `SP*` policies) or the **CIEM AWS** source (downloads and deploys SailPoint CloudFormation templates). Run one source type per invocation; each writes its own connection-settings file.
 - `Google Workspace.ps1` — gcloud script for both Google Workspace SaaS grant types: creates or updates the service account, enables documented APIs, attaches an organization custom IAM role, converts the JSON key to the encrypted RSA PEM ISC expects, or runs the OAuth authorization-code flow for a refresh token.
-- `IQService Control.ps1` — Windows operator script that downloads, installs, updates, and manages IQService (Integration Service) on a VA host.
+- `IQService Control.ps1` — Windows operator script that downloads, installs, updates, and manages IQService (Integration Service) on a VA host, and can enable AD LDAPS with PEM export for VA truststore install.
 - `Agent Source Setup.ps1` — JSON-driven headless facade for AI agents (`Catalog`, `Plan`, `Apply`). Secrets are written only to restricted files under `sourceConfig/<connector>/agent-runs/<run-id>/`; agent-visible JSON never contains secret values.
 
 ## Agent usage
@@ -71,6 +71,7 @@ Shared PowerShell modules live under `modules/`. Each `.ps1` orchestrator import
 | `ISC.GoogleWorkspaceConnector.psm1` | gcloud/IAM, PEM conversion, OAuth and domain-wide delegation flows |
 | `ISC.GoogleCiemConnector.psm1` | GCP/CIEM packs (`Gcp`, `Ciem`, `NhiDiscovery`, `AgentDiscovery`), org custom role |
 | `ISC.IQService.psm1` | IQService discovery, install/update, service control, trace, log streaming |
+| `ISC.AdLdaps.psm1` | AD LDAPS (TCP 636) cert selection/creation, PEM chain export, VA truststore instructions |
 | `ISC.AgentAdapter.psm1` | JSON envelope, request hashing, secret references, redaction, adapter dispatch |
 | `ISC.EntraSourceSetup.psm1` | Entra catalog/plan/apply/result orchestration (wizard + agent) |
 | `ISC.AwsSourceSetup.psm1` | AWS SaaS and CIEM catalog/plan/apply orchestration |
@@ -79,7 +80,7 @@ Shared PowerShell modules live under `modules/`. Each `.ps1` orchestrator import
 
 Each `ISC.*CiemConnector.psm1` exports the same embedded-CIEM interface: `Test-EmbeddedCiemSelected`, `Get-EmbeddedCiemFeaturePack`, `Apply-EmbeddedCiemPrerequisites`, `Build-EmbeddedCiemConnectionSettings`. AWS adds `Apply-DedicatedCiemSourceDeployment` / `Build-DedicatedCiemConnectionSettings` for `-SourceType CiemAws`.
 
-Tests: `tests/Test-OperatorConsole.ps1`, `tests/Test-OperatorToolchain.ps1`, `tests/Test-EntraConnector.ps1`, `tests/Test-EntraCiemConnector.ps1`, `tests/Test-GoogleCiemConnector.ps1`, `tests/Test-AwsSaasConnector.ps1`, `tests/Test-AwsCiemConnector.ps1`, `tests/Test-AgentAdapter.ps1`, `tests/Test-EntraSourceSetup.ps1`, `tests/Test-AwsSourceSetup.ps1`, `tests/Test-Microsoft365AccessProfiles.ps1`.
+Tests: `tests/Test-OperatorConsole.ps1`, `tests/Test-OperatorToolchain.ps1`, `tests/Test-EntraConnector.ps1`, `tests/Test-EntraCiemConnector.ps1`, `tests/Test-GoogleCiemConnector.ps1`, `tests/Test-AwsSaasConnector.ps1`, `tests/Test-AwsCiemConnector.ps1`, `tests/Test-AgentAdapter.ps1`, `tests/Test-EntraSourceSetup.ps1`, `tests/Test-AwsSourceSetup.ps1`, `tests/Test-Microsoft365AccessProfiles.ps1`, `tests/Test-IQService.ps1`, `tests/Test-AdLdaps.ps1`.
 
 ### Development verification
 
@@ -123,15 +124,17 @@ During setup prompts (not the completion menu): **Esc** returns to the previous 
 
 ## IQService Control
 
-IQService is the native Windows service that lets ISC reach Active Directory, Azure AD, Windows Local, SharePoint, and Domino through Windows APIs. Use this script on each IQService host for download, install, upgrade, service control, trace logging, log streaming, and `Utils.dll` unblock.
+IQService is the native Windows service that lets ISC reach Active Directory, Azure AD, Windows Local, SharePoint, and Domino through Windows APIs. Use this script on each IQService host for download, install, upgrade, service control, trace logging, log streaming, `Utils.dll` unblock, and **Active Directory LDAPS** (TCP 636) certificate preparation for VA truststore install.
 
 Reference: [Installing and Registering IQService](https://documentation.sailpoint.com/connectors/iqservice/help/integrating_iqservice_admin/install_register.html)
+
+AD LDAPS / VA TLS: [Configuring Virtual Appliances — Transport Layer Security](https://documentation.sailpoint.com/saas/help/va/config_va.html#transport-layer-security) · [TLS Configuration on Virtual Appliances](https://documentation.sailpoint.com/connectors/iqservice/help/common/va_topics_and_snippets/tls_config_on_va.html)
 
 ### Requirements
 
 - Windows Server with IQService support (.NET Framework 4.8 recommended)
 - Windows PowerShell 5.1 or PowerShell 7+
-- **Administrator** elevation for install, update, uninstall, and service start/stop/restart
+- **Administrator** elevation for install, update, uninstall, service start/stop/restart, and EnableLdaps
 - A fresh IQService ZIP from ISC: **Connections → Sources → [source requiring IQService] → IQService / Integration Service → Download**
 
 Pre-signed download URLs look like:
@@ -164,9 +167,10 @@ The menu supports:
 6. **Set log level** — `Off`, `Error`, `Info`, `Debug`, or `Trace` (IQService levels 0-4) via `-l` / `-f` (default trace file: the instance's current `tracefile`, else `{InstallPath}\iqtrace.log`)
 7. **Stream logs** — follow the trace file with colored `ERROR` / `INFO` / `DEBUG` lines (Ctrl+C, Q, or Esc to stop)
 8. **Unblock** — clears the `Zone.Identifier` stream from `Utils.dll`, other `.dll`/`.exe` files, and `IQService.zip`
-9. **Switch instance** — only shown when the host runs more than one IQService instance
+9. **Enable AD LDAPS** — on a domain controller: select or create a Schannel certificate (Server Authentication, DigitalSignature + KeyEncipherment, KeyExchange), open TCP 636, export the full chain as PEM for manual VA import, and print SailPoint VA truststore steps
+10. **Switch instance** — only shown when the host runs more than one IQService instance
 
-After every action except **Stream logs**, the script prints a read-only summary: situation (pending TLS, Log On account, service start, ISC IQService panel) plus host, ports, paths, version, service name, and Log On account. It does not offer copy/open menu actions.
+After every action except **Stream logs**, the script prints a read-only summary. **Enable AD LDAPS** prints PEM paths and VA import steps instead of the IQService connection summary.
 
 Default install path: `C:\SailPoint\IQService`, or the directory discovered from an existing IQService Windows service.
 
@@ -207,13 +211,15 @@ exist plus the single default installation. Create extra instances with the docu
 
 .\IQService Control.ps1 -Action Unblock
 
+.\IQService Control.ps1 -Action EnableLdaps -RestartNtds
+
 .\IQService Control.ps1 -Action Status -InstanceName 'SailPointIQService2'
 ```
 
 | Parameter | Purpose |
 | --- | --- |
-| `Action` | `Download`, `Install`, `Update`, `Uninstall`, `Start`, `Stop`, `Restart`, `SetLogLevel`, `StreamLogs`, `Status`, or `Unblock` |
-| `InstallPath` | IQService directory (default `C:\SailPoint\IQService` or auto-discovered) |
+| `Action` | `Download`, `Install`, `Update`, `Uninstall`, `Start`, `Stop`, `Restart`, `SetLogLevel`, `StreamLogs`, `Status`, `Unblock`, or `EnableLdaps` |
+| `InstallPath` | IQService directory (default `C:\SailPoint\IQService` or auto-discovered); also used as the parent for default PEM output |
 | `InstanceName` | Selects an existing instance by registry key or Windows service name instead of by path; mutually exclusive with `InstallPath` |
 | `DownloadUri` | Pre-signed ISC VA-image URL for `IQService.zip` |
 | `ZipPath` | Local `IQService.zip` instead of downloading |
@@ -224,12 +230,30 @@ exist plus the single default installation. Create extra instances with the docu
 | `TraceFile` | Trace log path (default: registry `tracefile`, else `{InstallPath}\iqtrace.log`) |
 | `Tail` | Existing lines to print before following (`StreamLogs` only; default `50`) |
 | `StartAfterInstall` | Start the service after install or update |
+| `PemOutputPath` | Directory for LDAPS PEM files (`EnableLdaps`; default `{InstallPath}\va-certificates`) |
+| `Thumbprint` | Pin an existing LocalMachine cert for LDAPS; must still pass the required-uses gate |
+| `DnsName` | Extra DNS names for cert match or self-signed creation (`EnableLdaps`) |
+| `RestartNtds` | Restart NTDS after creating a new LDAPS certificate |
 | `NonInteractive` | Do not prompt |
 | `WhatIf` / `Confirm` | Standard PowerShell risk mitigation |
 
+### Enable AD LDAPS (`-Action EnableLdaps`)
+
+Run on a **domain controller** (elevated). The action:
+
+1. Finds an in-date computer certificate in `LocalMachine\NTDS` or `My` that matches this host’s FQDN and has the **required uses**: Server Authentication EKU (or no EKU), DigitalSignature + KeyEncipherment (or no Key Usage), and KeyExchange (not signature-only).
+2. If none qualify, creates a self-signed Schannel certificate with those uses, trusts it in `Root`, and copies it into `NTDS` when that store exists.
+3. Ensures an inbound Windows Firewall allow for TCP **636**.
+4. Optionally restarts **NTDS** when a new cert was created (`-RestartNtds` or interactive confirm).
+5. Exports the **full chain** as PEM under `PemOutputPath` (per-member files plus a concatenated `*-chain.pem`).
+6. Prints manual VA install steps: copy PEM to `/home/sailpoint/certificates` on every VA, `sudo systemctl restart ccg`, watch `ccg-start.log`. It does **not** copy files to the VA.
+
+In ISC, set the Active Directory Forest/Domain hostname to match the certificate (not an IP), port **636**, and enable **Use Transport Layer Security (TLS)**.
+
 ### What the script does not do
 
-- It does not configure TLS certificates, client authentication (`-a` / `-x`), or UpdateService (`-z`).
+- It does not configure **IQService** TLS certificates, client authentication (`-a` / `-x`), or UpdateService (`-z`). (AD LDAPS on 636 is separate from IQService’s own TLS port.)
+- It does not SCP or otherwise install PEM files onto the VA; operators must copy them manually.
 - It does not create or update the ISC source object; configure the source separately after IQService is running.
 - It does not configure gMSA or ScriptExecutor service toggles (`-g`).
 - It cannot recover the IQService **Log On** password after uninstall; if the service account changes, set it again in `services.msc`.
@@ -241,11 +265,15 @@ exist plus the single default installation. Create extra instances with the docu
 | --- | --- |
 | `Could not load file or assembly 'Utils.dll'` | DLL is blocked from a downloaded ZIP. Run **Unblock** or unblock `IQService.zip` before extracting. |
 | Download fails with 403 / expired | Pre-signed ISC URLs expire. Copy a fresh link from the source IQService Download panel. |
-| `Administrator privileges are required` | Re-run PowerShell as Administrator for install, update, or service actions. |
+| `Administrator privileges are required` | Re-run PowerShell as Administrator for install, update, service actions, or EnableLdaps. |
 | After update, provisioning fails | Confirm TLS cert and service **Log On** account; update runs `IQService.exe -u`, which clears registry entries. |
 | Trace log not written | Set `-TraceFile` under the install path so the service account can write it (default `system32` may be inaccessible). |
 | `This host has N IQService instances` | A non-interactive run found several instances. Pass `-InstanceName` or `-InstallPath` to pick one. |
 | Status shows no ports on a multi-instance host | No registry key could be matched to that install path. Check that the instance's `tracefile` points inside its own directory, or pass `-Port` / `-TlsPort` on the next update. |
+| `EnableLdaps requires a domain controller` | Run on a DC (NTDS present or DomainRole 4/5), not a member IQService host alone. |
+| Thumbprint rejected for required LDAPS uses | Cert lacks Server Authentication, Key Encipherment, and/or KeyExchange. Pick another thumbprint or omit `-Thumbprint` to create a self-signed cert. |
+| VA TLS fails with hostname / IP | Source Hostname must match the cert SAN/CN and must not be an IP when IQService is enabled. |
+| `ccg-start.log` import error | PEM format invalid or incomplete chain. Re-export and copy leaf + intermediates + root (or the concatenated chain file). |
 
 ## AWS source connection (`AWS.ps1`)
 
