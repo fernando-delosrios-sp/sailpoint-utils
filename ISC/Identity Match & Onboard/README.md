@@ -53,7 +53,12 @@ flowchart TD
   approved -->|yes| createAcct
   approved -->|no| showRejected[Confirm declined]
   loadMatch --> showMatch[Show matched identity]
-  createAcct --> showCreated[Confirm account created]
+  createAcct --> waitId[Wait for identity]
+  waitId --> findId[Find created identity]
+  findId --> cubeReady{Identity cube ready?}
+  cubeReady -->|yes| refreshId[Refresh created identity]
+  cubeReady -->|no| showCreated[Confirm account created]
+  refreshId --> showCreated
   showMatch --> doneNode[Success]
   showCreated --> doneNode
   showRejected --> doneNode
@@ -76,6 +81,10 @@ flowchart TD
 | Manager Approval | Standalone form | `sp:forms` assigned to the manager identity |
 | Check Approved | — | Branches on the approval toggle |
 | Create Account | — | `POST /accounts/v1` with OAuth (after approval, or immediately when the flag is off) |
+| Wait For Identity | — | 1 minute pause so the identity cube can appear |
+| Find Created Identity | — | Search by work email or generated uid |
+| Check Identity Created | — | Skips refresh when no identity is found yet |
+| Refresh Created Identity | — | `POST /v2025/identities/process` for that identity id (OAuth; experimental header). Failures still show the created confirmation |
 | Show Approval Rejected | Interactive message | Decline summary; no account created |
 | Load Matched Identity | — | `sp:get-identity` for selected duplicate |
 | Show Matched Identity | Interactive message | Summary + ISC admin link |
@@ -159,7 +168,7 @@ Accented characters are stripped rather than transliterated. Adjust transforms i
 
 ## Account creation
 
-The **Create Account** HTTP step runs after the manager approves, or immediately when **Manager Approval Required** is not `true`. It posts to:
+The **Create Account** HTTP step runs after the manager approves, or immediately when **Manager Approval Required** is not `true`. After the account is created, the workflow waits one minute, looks up the new identity by email or uid, and calls `POST /v2025/identities/process` for that identity so lifecycle, roles, and manager correlation run without waiting for the next scheduled processing window. The match and reject paths do not refresh an identity. It posts to:
 
 ```
 {ISC API URL}/accounts/v1
@@ -205,7 +214,7 @@ Import order matters. The workflow references form definition IDs, so forms must
 
 ### OAuth
 
-Configure OAuth credentials on the **Create Account** HTTP step (`paramID`, client id/secret, token URL). The client needs permission to create accounts on the target source.
+Configure OAuth credentials on the **Create Account** and **Refresh Created Identity** HTTP steps (`paramID`, client id/secret, token URL). The client needs permission to create accounts on the target source and to process identities.
 
 ### Prerequisites
 
@@ -220,7 +229,7 @@ Configure OAuth credentials on the **Create Account** HTTP step (`paramID`, clie
 - [ ] Forms imported before the workflow.
 - [ ] Replace `Accounts Source` placeholder (`xxx`) with your source UUID.
 - [ ] Set **ISC API URL** and **ISC UI URL** for your tenant.
-- [ ] Bind OAuth on the Create Account HTTP step.
+- [ ] Bind OAuth on the Create Account and Refresh Created Identity HTTP steps.
 - [ ] Enable the workflow and link it to your interactive process.
 - [ ] Confirm account schema attribute names match the HTTP body (`id`, `name`, `givenName`, `familyName`, `e-mail`, `location`, `manager`).
 - [ ] Set **Manager Approval Required** (`true` or skip).
@@ -230,7 +239,8 @@ Configure OAuth credentials on the **Create Account** HTTP step (`paramID`, clie
 
 - **Match path is informational** — selecting an existing identity does not correlate accounts, request access, or update records.
 - **Interactive process stays open** on the approval path until the manager submits the form (or the 2-day deadline expires). When **Manager Approval Required** is not `true`, the operator is not blocked.
-- **No HTTP error branch** — failed account creation is not handled in this sample.
+- **No HTTP error branch** — failed account creation is not handled in this sample. A failed identity refresh still shows the account-created confirmation.
+- **Identity refresh can miss** — `POST /accounts/v1` is asynchronous. If the identity cube is not searchable after the one-minute wait, processing is skipped.
 - **Fuzzy name search** can over-match; there is no birthdate or employee-id tie-breaker.
 - **Match confirmation** includes a reliable profile link using the loaded identity id (`…/identities/{id}/details/attributes`).
 - **OAuth `paramID`** is tenant-specific and left empty in the export.

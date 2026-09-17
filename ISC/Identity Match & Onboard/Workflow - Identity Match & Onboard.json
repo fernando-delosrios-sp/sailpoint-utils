@@ -344,6 +344,83 @@
           "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
         },
         "displayName": "Create account on source",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Wait For Identity": {
+        "actionId": "sp:sleep",
+        "attributes": {
+          "duration": "1m",
+          "type": "waitFor"
+        },
+        "description": "Gives ISC time to create the identity cube from the new source account before processing it.",
+        "displayName": "Wait for identity to appear",
+        "nextStep": "Find Created Identity",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Find Created Identity": {
+        "actionId": "sp:get-identities",
+        "attributes": {
+          "inputQuery": "attributes.email:\"{{$.collectDetails.formData.email}}\" OR attributes.uid:\"{{$.setConfiguration.accountName}}\"",
+          "searchBy": "searchQuery"
+        },
+        "description": "Resolves the identity created from the new account so a single identity refresh can run.",
+        "displayName": "Find created identity",
+        "nextStep": "Check Identity Created",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Check Identity Created": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Refresh Created Identity",
+            "variableA.$": "$.findCreatedIdentity.identities.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Show Account Created",
+        "description": "Skips identity processing when the new account has not yet produced an identity cube.",
+        "displayName": "Identity cube ready?",
+        "type": "choice"
+      },
+      "Refresh Created Identity": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "identityIds": [
+              "{{$.findCreatedIdentity.identities[0].id}}"
+            ]
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "requestHeaders": {
+            "X-SailPoint-Experimental": "true"
+          },
+          "url": "{{$.setConfiguration.iSCAPIURL}}/v2025/identities/process"
+        },
+        "catch": [
+          {
+            "next": "Show Account Created"
+          }
+        ],
+        "description": "Runs a single identity refresh for the new hire so attributes, roles, and manager correlation evaluate immediately.",
+        "displayName": "Refresh created identity",
         "nextStep": "Show Account Created",
         "type": "action",
         "versionNumber": 3

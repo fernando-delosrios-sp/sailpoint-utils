@@ -24,6 +24,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 - **Source Connection Setup (IQService Control)** — Fix self-signed LDAPS creation: stop using the legacy SChannel CSP (which often left HasPrivateKey false), re-open the cert from LocalMachine\My after create, import a public-only copy into Root, and treat EnhancedKeyUsageList friendly names as Server Authentication.
 - **Source Connection Setup (IQService Control)** — Purge unusable SailPoint self-signed LDAPS certificates from LocalMachine\My/Root/NTDS before listing or recreating, and require a real private-key probe (not HasPrivateKey alone) so broken leftovers no longer appear in the picker.
 
+
+- **Identity Match & Onboard** — After a new source account is created, wait for the identity cube, then run a single `POST /v2025/identities/process` for that identity so attributes and roles evaluate immediately.
 ---
 
 ## 2026-09-16
