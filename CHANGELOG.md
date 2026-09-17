@@ -32,7 +32,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 - **Active Directory Privileged Tasks** — Tenant export under `ISC/Active Directory Privileged Tasks`: interactive workflows to create an AD security group (Privileged Action Gateway) or a CIFS shared folder (access request plus `ConnectorBeforeModify - Create Shared Folder in Active Directory`), with forms and an entitlement-aggregation child workflow.
 
-- **Demo Data** — Bootstrap package under `ISC/Demo Data` seeded from the emea-tes-team catalog: Department Services, Workforce Access, and Workplace Access delimited sources; related (non-identical) entitlements; birthright title and department roles; dimensional Workplace User with city dimensions; 20 conflicting-access SoD policies; and 7 mitigating controls assigned to those policies (`config/demo-sod-policies.json`). Includes offline tests and a PSSailpoint apply script.
+- **Demo Data** — Bootstrap package under `ISC/Demo Data` seeded from the emea-tes-team catalog: Department Services, Workforce Access, and Workplace Access delimited sources; related (non-identical) entitlements; birthright title and department roles; dimensional Workplace User with city dimensions; five requestable SoD Demo roles that each contain a named policy violation; 20 conflicting-access SoD policies; and 7 mitigating controls assigned to those policies (`config/demo-sod-policies.json`). Includes offline tests and a PSSailpoint apply script.
 
 ### 🔧 Improvements
 

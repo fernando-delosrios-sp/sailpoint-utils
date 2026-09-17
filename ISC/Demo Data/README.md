@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Reusable bootstrap for a small ISC access model seeded from the **emea-tes-team** tenant catalog: delimited-file sources, creative entitlements, source applications, birthright title and department roles, and one dimensional **Workplace User** role with city dimensions.
+Reusable bootstrap for a small ISC access model seeded from the **emea-tes-team** tenant catalog: delimited-file sources, creative entitlements, source applications, birthright title and department roles, one dimensional **Workplace User** role with city dimensions, and five requestable **SoD Demo** roles that each contain a policy violation.
 
 ## Overview
 
@@ -12,6 +12,7 @@ Reusable bootstrap for a small ISC access model seeded from the **emea-tes-team*
 | Job titles | **Workforce Access** | `<title>` (81) |
 | Offices | **Workplace Access** | Dimensional **Workplace User** + one city dimension each |
 | Customer relationship management | **Customer 360** | 10 requestable access profiles |
+| SoD demo | **Workforce Access** entitlements | 5 requestable **SoD Demo** roles (each violates one policy) |
 
 Entitlement names describe related capabilities and are never identical to the role or attribute value (except the shared **Workplace User** entitlement). Each department role, title role, and city dimension carries **one or two** entitlements.
 
@@ -67,6 +68,7 @@ Birthright title roles use **`titleHistory`** (multi-value / bracketed tokens su
 | `<title>` | `cloudLifecycleState == active` AND `titleHistory CONTAINS [<value>]` |
 | **Workplace User** | `cloudLifecycleState == active` AND (`userType == Employee` OR `userType == Contractor`) |
 | City dimension | `city == <city>` (applies only to Workplace User members) |
+| **SoD Demo** roles | No automatic membership (requestable only) |
 
 Enable **city** as a dimension attribute for Dynamic Access Roles before creating dimensions.
 
@@ -118,8 +120,9 @@ pwsh -File "./tests/Test-DemoData.ps1"
 4. Create 10 requestable **Customer 360** access profiles
 5. Create source applications
 6. Create standard title and department roles with entitlements attached directly
-7. Create dimensional **Workplace User** role, then city dimensions
-8. Create / update **SoD mitigating controls**, then conflicting-access **SoD policies**, from `config/demo-sod-policies.json`
+7. Create five requestable **SoD Demo** roles (each bundles both sides of one SoD policy)
+8. Create dimensional **Workplace User** role, then city dimensions
+9. Create / update **SoD mitigating controls**, then conflicting-access **SoD policies**, from `config/demo-sod-policies.json`
 
 If entitlements are not yet searchable after import, the script reports `missing` / `manual` rows. Re-aggregate, then re-run with `-ExistingItemAction Update`.
 
@@ -131,26 +134,26 @@ Twenty preventive **CONFLICTING_ACCESS_BASED** policies cover Finance, HR/Payrol
 | --- | --- | --- | --- | --- |
 | SOD-FIN-01 | Invoice Settlement Queue | Vendor Payment Release | Accounts Payable Analyst *(same-role bundle)* | Manager dual review, Treasury dual control, Remediate |
 | SOD-FIN-02 | Vendor Master Desk | Vendor Payment Release | Accounting Department ↔ Accounts Payable Analyst | Manager dual review, Treasury dual control, Remediate |
-| SOD-FIN-03 | Vendor Payment Release | Bank Portal Access | Accounts Payable Analyst ↔ Treasury Analyst | Treasury dual control, Manager dual review, Remediate |
+| SOD-FIN-03 | Vendor Payment Release | Bank Portal Access | Accounts Payable Analyst ↔ Treasury Analyst; **SoD Demo — Payment Release and Bank Portal** | Treasury dual control, Manager dual review, Remediate |
 | SOD-FIN-04 | Credit Memo Desk | Cash App Desk | Accounts Receivable Analyst ↔ AR Accounting Manager | Manager dual review, Remediate |
 | SOD-FIN-05 | Ledger Close Desk | Audit Workpaper Desk | Accounting Department ↔ Internal Auditor | Audit independence attestation, Remediate |
 | SOD-FIN-06 | ERP Config Desk | Control Test Desk | Financial Systems Analyst ↔ Internal Auditor | Audit independence attestation, Remediate |
-| SOD-HR-01 | Payroll Run Desk | Comp Band Desk | Payroll Analyst I ↔ Compensation | Compensation committee exception, Manager dual review, Remediate |
+| SOD-HR-01 | Payroll Run Desk | Comp Band Desk | Payroll Analyst I ↔ Compensation; **SoD Demo — Payroll Run and Compensation Bands** | Compensation committee exception, Manager dual review, Remediate |
 | SOD-HR-02 | Payroll Run / Exception / Calendar desks | Equity Plan Desk | Payroll Analyst I, Senior Payroll Analyst, Payroll Manager ↔ Compensation & Benefits Manager | Compensation committee exception, Remediate |
 | SOD-HR-03 | Offer Desk | Payroll Calendar Desk | Employment Manager ↔ Payroll Manager | Compensation committee exception, Manager dual review, Remediate |
 | SOD-HR-04 | ER Case Desk | Payroll Exception Desk | Employee Relations Manager ↔ Senior Payroll Analyst | Manager dual review, Remediate |
-| SOD-SEC-01 | Domain Ops Console | Audit Workpaper Desk | Windows Administrator ↔ Internal Auditor | Audit independence attestation, Remediate |
+| SOD-SEC-01 | Domain Ops Console | Audit Workpaper Desk | Windows Administrator ↔ Internal Auditor; **SoD Demo — Domain Admin and Audit Workpapers** | Audit independence attestation, Remediate |
 | SOD-SEC-02 | Mainframe Access Desk | Audit Plan Desk | RACF Security Administrator ↔ Internal Audit Manager | Audit independence attestation, Remediate |
 | SOD-SEC-03 | Firewall Change Desk | Control Blueprint Desk | Network Systems Administrator ↔ Security Architect | Privileged change with CAB approval, Remediate |
 | SOD-SEC-04 | Schema Change Desk | Backup Restore Desk | Oracle Administrator ↔ SQL Server Administrator | Privileged change with CAB approval, Remediate |
-| SOD-ENG-01 | Hotfix Desk | Release Signoff Desk | Production Developer II ↔ QA Analyst | Privileged change with CAB approval, Manager dual review, Remediate |
+| SOD-ENG-01 | Hotfix Desk | Release Signoff Desk | Production Developer II ↔ QA Analyst; **SoD Demo — Production Hotfix and QA Signoff** | Privileged change with CAB approval, Manager dual review, Remediate |
 | SOD-ENG-02 | Build Pipeline Gate | Release Signoff Desk | Engineering Department ↔ QA Analyst | Privileged change with CAB approval, Remediate |
 | SOD-ENG-03 | Staging Code Bench | Staging Release Board | Staging Developer I ↔ Staging Manager | Privileged change with CAB approval, Manager dual review, Remediate |
-| SOD-SCM-01 | Purchase Requisition Desk | Contract Desk | Procurement Buyer ↔ Procurement Manager | Manager dual review, Remediate |
+| SOD-SCM-01 | Purchase Requisition Desk | Contract Desk | Procurement Buyer ↔ Procurement Manager; **SoD Demo — Requisition and Contract Desks** | Manager dual review, Remediate |
 | SOD-SCM-02 | Inbound Dock Desk | Stock Movement Desk | Receiving Analyst ↔ Inventory Department | Blind count with second verifier, Manager dual review, Remediate |
 | SOD-SCM-03 | Stock Movement Desk | Cycle Count Desk | Inventory Department *(same-role bundle)* | Blind count with second verifier, Manager dual review, Remediate |
 
-**Same-role bundles:** `SOD-FIN-01` and `SOD-SCM-03` will violate for every assignee of those birthright roles until the entitlements are split onto separate roles. Enable them for demo visibility, or split first for clean preventive SoD.
+**Same-role bundles:** `SOD-FIN-01` and `SOD-SCM-03` will violate for every assignee of those birthright roles until the entitlements are split onto separate roles. Five requestable **SoD Demo** roles also bundle both sides of `SOD-FIN-03`, `SOD-HR-01`, `SOD-SEC-01`, `SOD-ENG-01`, and `SOD-SCM-01`; each role description names the policy violation.
 
 Workplace / city entitlements are intentionally excluded (not meaningful SoD boundaries).
 
@@ -174,6 +177,7 @@ Seven Active SOD Controls (experimental `/controls/v1`) are available for violat
 - Each delimited source has a Create Account provisioning policy (`uid`/`displayName` + profile fields)
 - Title and department roles list the expected capability entitlements (no intermediate access profiles)
 - Title and department roles show STANDARD membership with `active` plus department `EQUALS` / titleHistory `CONTAINS [value]`
+- Five requestable **SoD Demo** roles exist; each description names the policy it violates
 - Workplace User is dimensional, carries the **Workplace User** entitlement, and has ten city dimensions
 - Set dimension criteria to **city** on Workplace User in the UI (the roles API accepts `dimensionSchema` but does not persist it on this tenant)
 - SoD policies from `demo-sod-policies.json` exist and are **ENFORCED**

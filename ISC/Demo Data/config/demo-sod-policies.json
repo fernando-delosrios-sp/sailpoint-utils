@@ -4,6 +4,7 @@
     "Conflicting-access SoD policies for the Demo Data entitlement catalog.",
     "Policies are entitlement-vs-entitlement (CONFLICTING_ACCESS_BASED).",
     "SOD-FIN-01 and SOD-SCM-03 conflict within a single birthright role; expect violations until those roles are split.",
+    "Five requestable SoD Demo roles in demo-access-model.json deliberately bundle both sides of SOD-FIN-03, SOD-HR-01, SOD-SEC-01, SOD-ENG-01, and SOD-SCM-01.",
     "Mitigating controls are created via /controls/v1 and assigned on policies as allowedControls with type COMPENSATING_CONTROL."
   ],
   "ownerAlias": "slpt.services",
@@ -92,7 +93,8 @@
           "Vendor Payment Release"
         ],
         "roles": [
-          "Accounts Payable Analyst"
+          "Accounts Payable Analyst",
+          "SoD Demo — Payment Release and Bank Portal"
         ]
       },
       "right": {
@@ -101,7 +103,8 @@
           "Bank Portal Access"
         ],
         "roles": [
-          "Treasury Analyst"
+          "Treasury Analyst",
+          "SoD Demo — Payment Release and Bank Portal"
         ]
       },
       "compensatingControls": "Treasury dual control on bank portal; separate ERP releasers from bank operators.",
@@ -221,7 +224,8 @@
           "Payroll Run Desk"
         ],
         "roles": [
-          "Payroll Analyst I"
+          "Payroll Analyst I",
+          "SoD Demo — Payroll Run and Compensation Bands"
         ]
       },
       "right": {
@@ -230,7 +234,8 @@
           "Comp Band Desk"
         ],
         "roles": [
-          "Compensation"
+          "Compensation",
+          "SoD Demo — Payroll Run and Compensation Bands"
         ]
       },
       "compensatingControls": "Comp changes approved outside payroll; payroll reconciliations by a second person.",
@@ -355,7 +360,8 @@
           "Domain Ops Console"
         ],
         "roles": [
-          "Windows Administrator"
+          "Windows Administrator",
+          "SoD Demo — Domain Admin and Audit Workpapers"
         ]
       },
       "right": {
@@ -364,7 +370,8 @@
           "Audit Workpaper Desk"
         ],
         "roles": [
-          "Internal Auditor"
+          "Internal Auditor",
+          "SoD Demo — Domain Admin and Audit Workpapers"
         ]
       },
       "compensatingControls": "Audit independence from privileged IT operations.",
@@ -483,7 +490,8 @@
           "Hotfix Desk"
         ],
         "roles": [
-          "Production Developer II"
+          "Production Developer II",
+          "SoD Demo — Production Hotfix and QA Signoff"
         ]
       },
       "right": {
@@ -492,7 +500,8 @@
           "Release Signoff Desk"
         ],
         "roles": [
-          "QA Analyst"
+          "QA Analyst",
+          "SoD Demo — Production Hotfix and QA Signoff"
         ]
       },
       "compensatingControls": "Independent QA sign-off for production changes.",
@@ -581,7 +590,8 @@
           "Purchase Requisition Desk"
         ],
         "roles": [
-          "Procurement Buyer"
+          "Procurement Buyer",
+          "SoD Demo — Requisition and Contract Desks"
         ]
       },
       "right": {
@@ -590,7 +600,8 @@
           "Contract Desk"
         ],
         "roles": [
-          "Procurement Manager"
+          "Procurement Manager",
+          "SoD Demo — Requisition and Contract Desks"
         ]
       },
       "compensatingControls": "Contract desk approval separate from requisitioner.",

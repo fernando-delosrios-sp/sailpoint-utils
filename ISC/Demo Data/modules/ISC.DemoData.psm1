@@ -225,6 +225,38 @@ function Test-DemoAccessModelInvariants {
         }
     }
 
+    $sodRoles = @($Model['sodViolationRoles'])
+    if ($sodRoles.Count -ne 5) {
+        $errors.Add("Exactly 5 sodViolationRoles are required (found $($sodRoles.Count)).")
+    }
+    foreach ($role in $sodRoles) {
+        $roleName = [string]$role['name']
+        $ids = @($role['entitlementIds'])
+        if ($ids.Count -ne 2) {
+            $errors.Add("SoD violation role '$roleName' must have exactly 2 entitlements (found $($ids.Count)).")
+        }
+        $reqVal = Get-ObjectPropertySafe -Object $role -Name 'requestable'
+        if ($null -eq $reqVal -or -not [bool]$reqVal) {
+            $errors.Add("SoD violation role '$roleName' must be requestable.")
+        }
+        $desc = [string]$role['description']
+        if ($desc -notmatch 'policy violation') {
+            $errors.Add("SoD violation role '$roleName' description must indicate a policy violation.")
+        }
+        $policyId = [string]$role['sodPolicyId']
+        if ($policyId -notmatch '^SOD-') {
+            $errors.Add("SoD violation role '$roleName' must set sodPolicyId.")
+        }
+        elseif ($desc -notlike "*$policyId*") {
+            $errors.Add("SoD violation role '$roleName' description must name $policyId.")
+        }
+        foreach ($id in $ids) {
+            if (-not $catalog.ContainsKey([string]$id)) {
+                $errors.Add("SoD violation role '$roleName' references unknown entitlement '$id'.")
+            }
+        }
+    }
+
     return [pscustomobject]@{
         Ok     = ($errors.Count -eq 0)
         Errors = @($errors.ToArray())
@@ -1058,7 +1090,7 @@ function Invoke-DemoDataBootstrap {
         return , $live.ToArray()
     }
 
-    $standardRoles = @($Model['departmentRoles']) + @($Model['titleRoles'])
+    $standardRoles = @($Model['departmentRoles']) + @($Model['titleRoles']) + @($Model['sodViolationRoles'])
     foreach ($role in $standardRoles) {
         $roleName = [string]$role['name']
         $modelEntIds = @($role['entitlementIds'])
@@ -1079,8 +1111,12 @@ function Invoke-DemoDataBootstrap {
                 }
             } `
             -CreatePayloadBuilder {
+                $requestable = $false
+                $reqVal = Get-ObjectPropertySafe -Object $role -Name 'requestable'
+                if ($null -ne $reqVal) { $requestable = [bool]$reqVal }
                 Build-StandardRolePayload -Name $roleName -Description ([string]$role['description']) `
-                    -OwnerId $OwnerId -EntitlementIds $liveEntIds -Membership $membership
+                    -OwnerId $OwnerId -EntitlementIds $liveEntIds -Membership $membership `
+                    -Requestable $requestable
             } `
             -CreateFetcher {
                 param($payload)

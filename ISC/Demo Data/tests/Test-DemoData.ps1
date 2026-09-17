@@ -35,6 +35,7 @@ Assert-equal 81 @($model['titleRoles']).Count '81 title roles'
 Assert-equal 10 @($model['workplaceRole']['dimensions']).Count '10 city dimensions'
 Assert-equal 10 @($model['entitlements']['customer360']).Count '10 Customer 360 entitlements'
 Assert-equal 10 @($model['requestableAccessProfiles']).Count '10 Customer 360 requestable access profiles'
+Assert-equal 5 @($model['sodViolationRoles']).Count '5 SoD violation demo roles'
 Assert-True ([bool]$model['workplaceRole']['dimensional']) 'office role is dimensional'
 Assert-equal 'Workplace User' ([string]$model['workplaceRole']['name']) 'office role name'
 
@@ -52,6 +53,14 @@ foreach ($role in @($model['departmentRoles']) + @($model['titleRoles'])) {
 }
 Assert-True ($counts -contains 1) 'at least one role has a single entitlement'
 Assert-True ($counts -contains 2) 'at least one role has two entitlements'
+
+foreach ($role in @($model['sodViolationRoles'])) {
+    $ids = @($role['entitlementIds'])
+    Assert-equal 2 $ids.Count ("SoD demo role '{0}' has 2 entitlements" -f $role['name'])
+    Assert-True ([bool]$role['requestable']) ("SoD demo role '{0}' is requestable" -f $role['name'])
+    Assert-True ([string]$role['description'] -match 'policy violation') ("SoD demo role '{0}' description names a policy violation" -f $role['name'])
+    Assert-True ([string]$role['description'] -like ('*{0}*' -f $role['sodPolicyId'])) ("SoD demo role '{0}' description names {1}" -f $role['name'], $role['sodPolicyId'])
+}
 
 $officeBaseId = [string]@($model['workplaceRole']['entitlementIds'])[0]
 Assert-equal 'Workplace User' ([string]$catalog[$officeBaseId].Name) 'office base entitlement is Workplace User'
@@ -119,6 +128,12 @@ $rolePayload = Build-StandardRolePayload -Name 'Finance Department' -Description
 Assert-equal $false $rolePayload.dimensional 'standard role not dimensional'
 Assert-equal 'ENTITLEMENT' $rolePayload.entitlements[0].type 'role entitlement ref type'
 Assert-equal 0 @($rolePayload.accessProfiles).Count 'standard role has no access profiles'
+Assert-equal $false $rolePayload.requestable 'birthright role not requestable'
+
+$sodDemo = @($model['sodViolationRoles'])[0]
+$sodRolePayload = Build-StandardRolePayload -Name ([string]$sodDemo['name']) -Description ([string]$sodDemo['description']) `
+    -OwnerId 'owner-1' -EntitlementIds @('e1', 'e2') -Membership $sodDemo['membership'] -Requestable $true
+Assert-True ([bool]$sodRolePayload.requestable) 'SoD demo role payload is requestable'
 
 $createPolicy = Build-CreateAccountProvisioningPolicyPayload
 Assert-equal 'CREATE' $createPolicy.usageType 'create policy usage'
@@ -202,6 +217,9 @@ Assert-equal 10 $dimRows.Count 'ten city dimensions planned'
 $customerProfileRows = @($bootstrap.Results | Where-Object { $_.Kind -eq 'access-profile' })
 Assert-equal 10 $customerProfileRows.Count 'ten requestable Customer 360 access profiles planned'
 Assert-True (@($customerProfileRows | Where-Object { $_.Status -eq 'would-create' }).Count -eq 10) 'Customer 360 access profiles would create'
+$sodDemoRows = @($bootstrap.Results | Where-Object { $_.Kind -eq 'role' -and $_.Name -like 'SoD Demo*' })
+Assert-equal 5 $sodDemoRows.Count 'five SoD demo roles planned'
+Assert-True (@($sodDemoRows | Where-Object { $_.Status -eq 'would-create' }).Count -eq 5) 'SoD demo roles would create'
 
 # --- Invalid model fails invariants ---
 $bad = Import-DemoAccessModel
@@ -227,6 +245,17 @@ $severitySet = @($sod['policies'] | ForEach-Object { [string]$_['severity'] } | 
 Assert-True ($severitySet.Count -ge 4) 'SoD severities include mixed risk levels'
 Assert-True ([bool]$fin01['sameRoleBundle']) 'SOD-FIN-01 marked same-role bundle'
 Assert-True (@($fin01['allowedControlIds']).Count -ge 2) 'SOD-FIN-01 has allowed controls'
+
+foreach ($role in @($model['sodViolationRoles'])) {
+    $policyId = [string]$role['sodPolicyId']
+    $policy = @($sod['policies'] | Where-Object { $_['id'] -eq $policyId })[0]
+    Assert-True ($null -ne $policy) ("SoD demo role '{0}' maps to {1}" -f $role['name'], $policyId)
+    $roleEntNames = @($role['entitlementIds'] | ForEach-Object { [string]$catalog[[string]$_].Name })
+    $leftHit = @($policy['left']['entitlementNames'] | Where-Object { $roleEntNames -contains $_ }).Count -ge 1
+    $rightHit = @($policy['right']['entitlementNames'] | Where-Object { $roleEntNames -contains $_ }).Count -ge 1
+    Assert-True $leftHit ("SoD demo role '{0}' includes left-side entitlement of {1}" -f $role['name'], $policyId)
+    Assert-True $rightHit ("SoD demo role '{0}' includes right-side entitlement of {1}" -f $role['name'], $policyId)
+}
 
 $ctrlPayload = Build-SodControlPayload -Control $sod['mitigatingControls'][0] -OwnerId 'owner-1'
 Assert-equal 'IDENTITY' $ctrlPayload.owner.type 'control owner type'

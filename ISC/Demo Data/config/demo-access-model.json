@@ -4,7 +4,8 @@
   "notes": [
     "Catalog seeded from emea-tes-team identity search.",
     "Entitlement names are related to roles but never identical, except Workplace User.",
-    "Title role membership uses CONTAINS on attribute.titleHistory with bracketed tokens (e.g. [Accounts Payable Analyst])."
+    "Title role membership uses CONTAINS on attribute.titleHistory with bracketed tokens (e.g. [Accounts Payable Analyst]).",
+    "sodViolationRoles are requestable roles that deliberately bundle both sides of an SoD policy for demo violations."
   ],
   "sources": [
     {
@@ -4595,5 +4596,77 @@
         ]
       }
     ]
-  }
+  },
+  "sodViolationRoles": [
+    {
+      "name": "SoD Demo — Payment Release and Bank Portal",
+      "description": "Contains a policy violation of SOD-FIN-03 (Vendor Payment Release vs Bank Portal Access). Requestable demo role; do not use in production.",
+      "sodPolicyId": "SOD-FIN-03",
+      "requestable": true,
+      "entitlementIds": [
+        "TITLE-VENDOR_PAYMENT_RELEASE",
+        "TITLE-BANK_PORTAL_ACCESS"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": null
+      }
+    },
+    {
+      "name": "SoD Demo — Payroll Run and Compensation Bands",
+      "description": "Contains a policy violation of SOD-HR-01 (Payroll Run Desk vs Comp Band Desk). Requestable demo role; do not use in production.",
+      "sodPolicyId": "SOD-HR-01",
+      "requestable": true,
+      "entitlementIds": [
+        "TITLE-PAYROLL_RUN_DESK",
+        "TITLE-COMP_BAND_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": null
+      }
+    },
+    {
+      "name": "SoD Demo — Domain Admin and Audit Workpapers",
+      "description": "Contains a policy violation of SOD-SEC-01 (Domain Ops Console vs Audit Workpaper Desk). Requestable demo role; do not use in production.",
+      "sodPolicyId": "SOD-SEC-01",
+      "requestable": true,
+      "entitlementIds": [
+        "TITLE-DOMAIN_OPS_CONSOLE",
+        "TITLE-AUDIT_WORKPAPER_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": null
+      }
+    },
+    {
+      "name": "SoD Demo — Production Hotfix and QA Signoff",
+      "description": "Contains a policy violation of SOD-ENG-01 (Hotfix Desk vs Release Signoff Desk). Requestable demo role; do not use in production.",
+      "sodPolicyId": "SOD-ENG-01",
+      "requestable": true,
+      "entitlementIds": [
+        "TITLE-HOTFIX_DESK",
+        "TITLE-RELEASE_SIGNOFF_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": null
+      }
+    },
+    {
+      "name": "SoD Demo — Requisition and Contract Desks",
+      "description": "Contains a policy violation of SOD-SCM-01 (Purchase Requisition Desk vs Contract Desk). Requestable demo role; do not use in production.",
+      "sodPolicyId": "SOD-SCM-01",
+      "requestable": true,
+      "entitlementIds": [
+        "TITLE-PURCHASE_REQUISITION_DESK",
+        "TITLE-CONTRACT_DESK"
+      ],
+      "membership": {
+        "type": "STANDARD",
+        "criteria": null
+      }
+    }
+  ]
 }

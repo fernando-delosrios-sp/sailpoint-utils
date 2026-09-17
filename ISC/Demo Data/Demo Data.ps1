@@ -9,6 +9,7 @@
       - Entitlement CSV import / aggregation guidance
       - Source applications and Create Account provisioning policies
       - Birthright title and department roles (entitlements attached directly)
+      - Five requestable SoD Demo roles (each contains a named policy violation)
       - Dimensional Workplace User role with city dimensions
       - Conflicting-access SoD policies and mitigating controls from config/demo-sod-policies.json
 
