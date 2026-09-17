@@ -241,4 +241,9 @@ Assert-Contains 'Cryptography\Services\NTDS\SystemCertificates\My\Certificates' 
 $myReg = Get-AdLdapsLocalMachineCertificateRegistryPath -Thumbprint 'aa bb cc'
 Assert-Contains 'SystemCertificates\My\Certificates\AABBCC' $myReg 'LocalMachine My registry path normalizes thumbprint'
 
+# --- EKU list may stringify to friendly names; still detect Server Authentication ---
+$friendlyEku = New-MockCert -EnhancedKeyUsageList @('Server Authentication')
+$okFriendly = Test-AdLdapsCertificateUses -Certificate $friendlyEku
+Assert-True $okFriendly.Ok 'Server Authentication friendly name is accepted as Server Auth EKU'
+
 Write-Host "PASS ($script:AssertionCount assertions)"

@@ -210,8 +210,37 @@ function Get-AdLdapsKeySpec {
 function Get-AdLdapsEnhancedKeyUsages {
     param([Parameter(Mandatory)]$Certificate)
 
-    if ($Certificate.PSObject.Properties['EnhancedKeyUsageList'] -and $null -ne $Certificate.EnhancedKeyUsageList) {
-        return [string[]]@($Certificate.EnhancedKeyUsageList | ForEach-Object { [string]$_ })
+    $oids = [System.Collections.Generic.List[string]]::new()
+
+    foreach ($item in @(
+        $(if ($Certificate.PSObject.Properties['EnhancedKeyUsageList'] -and $null -ne $Certificate.EnhancedKeyUsageList) {
+            @($Certificate.EnhancedKeyUsageList)
+        } else { @() })
+    )) {
+        if ($null -eq $item) { continue }
+        if ($item -is [System.Security.Cryptography.Oid] -and $item.Value) {
+            $oids.Add([string]$item.Value)
+            continue
+        }
+        if ($item.PSObject.Properties['Value'] -and [string]$item.Value -match '^\d+(\.\d+)+$') {
+            $oids.Add([string]$item.Value)
+            continue
+        }
+        if ($item.PSObject.Properties['ObjectId'] -and $item.ObjectId) {
+            $oids.Add([string]$item.ObjectId)
+            continue
+        }
+        $text = [string]$item
+        if ($text -match '^\d+(\.\d+)+$') {
+            $oids.Add($text)
+        }
+        elseif ($text -match '(?i)Server Authentication') {
+            $oids.Add($script:ServerAuthOid)
+        }
+    }
+
+    if ($oids.Count -gt 0) {
+        return [string[]]@($oids | Select-Object -Unique)
     }
 
     if (-not $Certificate.PSObject.Properties['Extensions'] -or -not $Certificate.Extensions) {
@@ -224,7 +253,31 @@ function Get-AdLdapsEnhancedKeyUsages {
     }
 
     $eku = New-Object System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension($ekuExt, $false)
-    return [string[]]@($eku.EnhancedKeyUsages | ForEach-Object { $_.Value })
+    foreach ($item in @($eku.EnhancedKeyUsages)) {
+        if ($item -and $item.Value) {
+            $oids.Add([string]$item.Value)
+        }
+    }
+    if ($oids.Count -eq 0) { return $null }
+    return [string[]]@($oids | Select-Object -Unique)
+}
+
+function Test-AdLdapsCertificateHasPrivateKey {
+    param([Parameter(Mandatory)]$Certificate)
+
+    if ($Certificate.PSObject.Properties['HasPrivateKey'] -and [bool]$Certificate.HasPrivateKey) {
+        return $true
+    }
+    try {
+        $rsa = [System.Security.Cryptography.X509Certificates.RSACertificateExtensions]::GetRSAPrivateKey($Certificate)
+        if ($rsa) { return $true }
+    }
+    catch { }
+    try {
+        if ($Certificate.PrivateKey) { return $true }
+    }
+    catch { }
+    return $false
 }
 
 function Get-AdLdapsKeyUsageFlags {
@@ -253,7 +306,7 @@ function Test-AdLdapsCertificateUses {
     $reasons = [System.Collections.Generic.List[string]]::new()
     $details = [ordered]@{}
 
-    $hasPrivateKey = [bool]$Certificate.HasPrivateKey
+    $hasPrivateKey = Test-AdLdapsCertificateHasPrivateKey -Certificate $Certificate
     $details['HasPrivateKey'] = $hasPrivateKey
     if (-not $hasPrivateKey) {
         $reasons.Add('Certificate has no associated private key.')
@@ -615,7 +668,10 @@ function Install-AdLdapsCertificateIntoTrustedRoot {
             Write-Info "Certificate $tp is already in LocalMachine\Root."
             return $false
         }
-        $rootStore.Add($Certificate)
+        # Public-only copy — never push the private-key handle into the Root store.
+        $publicBytes = $Certificate.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
+        $publicCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2(,$publicBytes)
+        $rootStore.Add($publicCert)
         Write-Ok "Added certificate $tp to LocalMachine\Root (required for AD DS to trust a self-signed LDAPS cert)."
         return $true
     }
@@ -797,27 +853,41 @@ function New-AdLdapsSelfSignedCertificate {
     }
 
     $friendly = "SailPoint AD LDAPS ($($hostNames[0]))"
+    # Prefer the default CNG/Schannel-capable provider. The legacy "Microsoft RSA SChannel
+    # Cryptographic Provider" often yields a cert whose private key is not visible to the
+    # creating process (HasPrivateKey=$false), which then fails Schannel validation.
     $params = @{
-        Subject            = "CN=$($hostNames[0])"
-        DnsName            = $hostNames
-        KeyAlgorithm       = 'RSA'
-        KeyLength          = 2048
-        KeyExportPolicy    = 'Exportable'
-        KeySpec            = 'KeyExchange'
-        KeyUsage           = @('DigitalSignature', 'KeyEncipherment')
-        TextExtension      = @("2.5.29.37={text}$($script:ServerAuthOid)")
-        NotAfter           = $NotAfter
-        CertStoreLocation  = 'Cert:\LocalMachine\My'
-        FriendlyName       = $friendly
-        Provider           = 'Microsoft RSA SChannel Cryptographic Provider'
+        Subject           = "CN=$($hostNames[0])"
+        DnsName           = $hostNames
+        KeyAlgorithm      = 'RSA'
+        KeyLength         = 2048
+        KeyExportPolicy   = 'Exportable'
+        KeySpec           = 'KeyExchange'
+        KeyUsage          = @('DigitalSignature', 'KeyEncipherment')
+        TextExtension     = @("2.5.29.37={text}$($script:ServerAuthOid)")
+        NotAfter          = $NotAfter
+        CertStoreLocation = 'Cert:\LocalMachine\My'
+        FriendlyName      = $friendly
     }
 
     Write-Step "Creating self-signed LDAPS certificate for $($hostNames -join ', ')"
     Write-Info "Subject CN / primary SAN will be '$($hostNames[0])' (must match AD DS FQDN)."
-    $cert = New-SelfSignedCertificate @params
-    Write-Ok "Created certificate $($cert.Thumbprint) (CN/SAN: $($hostNames -join ', '))"
+    $created = New-SelfSignedCertificate @params
+    $thumb = [string]$created.Thumbprint
+
+    # Re-open from LocalMachine\My so we hold a cert object with a usable private key after
+    # any subsequent public-only Root store import.
+    $cert = Get-AdLdapsCertificateFromLocalMachineMy -Thumbprint $thumb
+    Write-Ok "Created certificate $thumb (CN/SAN: $($hostNames -join ', '))"
+
+    $uses = Test-AdLdapsCertificateUses -Certificate $cert
+    if (-not $uses.Ok) {
+        throw "Newly created certificate $thumb failed LDAPS uses checks: $($uses.Reasons -join ' ')"
+    }
 
     Install-AdLdapsCertificateIntoTrustedRoot -Certificate $cert | Out-Null
+    # Refresh again after Root import.
+    $cert = Get-AdLdapsCertificateFromLocalMachineMy -Thumbprint $thumb
 
     return $cert
 }
@@ -1469,6 +1539,7 @@ Export-ModuleMember -Function @(
     'Test-AdLdapsCertificateNameMatch'
     'Get-AdLdapsKeySpec'
     'Get-AdLdapsEnhancedKeyUsages'
+    'Test-AdLdapsCertificateHasPrivateKey'
     'Get-AdLdapsKeyUsageFlags'
     'Test-AdLdapsCertificateUses'
     'Test-AdLdapsCertificateCandidate'
