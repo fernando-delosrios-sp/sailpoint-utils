@@ -11,7 +11,11 @@
 
     All permissions from SailPoint's required-permissions table are granted by default. Optional feature
     packs (access packages, MFA management, CIEM, NHI discovery, Teams / SharePoint scanning, Copilot
-    discovery, Defender hunting) are opt-in because they map to features that must be licensed or enabled.
+    discovery, Agent 365, Defender hunting) are opt-in because they map to features that must be licensed
+    or enabled.
+
+    The Agent 365 pack also grants delegated permissions and runs an authorization-code flow, because the
+    Microsoft Agent 365 catalog rejects application tokens and ISC needs a refresh token for it.
 
     Existing applications with the same display name are updated in place rather than duplicated.
 
@@ -47,6 +51,14 @@
 .PARAMETER OutputDirectory
     Directory for the Connection Settings file. Default: ./sourceConfig/entra-id-isc
 
+.PARAMETER Agent365RedirectUri
+    Loopback redirect URI registered on the application and used by the -Feature Agent365
+    authorization-code flow. Default: http://localhost:8400/
+
+.PARAMETER PowerPlatformEnvironmentUrl
+    Dataverse org URL (https://org.crm.dynamics.com) to configure for Copilot Studio agent
+    discovery. Omit it and the environments are discovered through the Global Discovery Service.
+
 .PARAMETER NonInteractive
     Fail instead of prompting when required values are missing.
 
@@ -55,6 +67,9 @@
 
 .EXAMPLE
     .\Entra ID.ps1 -ApplicationName 'SailPoint ISC Entra ID' -Feature AccessPackages,MfaManagement -NonInteractive
+
+.EXAMPLE
+    .\Entra ID.ps1 -ApplicationName 'SailPoint ISC Entra ID' -Feature CopilotDiscovery,Agent365 -RotateSecret
 
 .NOTES
     Sign in as an account that can create applications, grant admin consent, and assign directory roles
@@ -74,9 +89,9 @@ param(
     [string]$PermissionMode = 'Granular',
 
     [Parameter()]
-    [ValidateSet('AccessPackages', 'MfaManagement', 'Ciem', 'ActivityInsights', 'AdministrativeUnits',
-        'ServicePrincipalProvisioning', 'ExchangeOnline', 'NhiDiscovery', 'TeamsSecretScanning',
-        'TeamsMessaging', 'SharePointScanning', 'CopilotDiscovery', 'DefenderHunting')]
+    [ValidateSet('AccessPackages', 'ActivityInsights', 'AdministrativeUnits', 'Agent365', 'Ciem',
+        'CopilotDiscovery', 'DefenderHunting', 'ExchangeOnline', 'MfaManagement', 'NhiDiscovery',
+        'ServicePrincipalProvisioning', 'SharePointScanning', 'TeamsMessaging', 'TeamsSecretScanning')]
     [string[]]$Feature,
 
     [Parameter()]
@@ -95,6 +110,12 @@ param(
 
     [Parameter()]
     [string]$OutputDirectory,
+
+    [Parameter()]
+    [string]$Agent365RedirectUri = 'http://localhost:8400/',
+
+    [Parameter()]
+    [string]$PowerPlatformEnvironmentUrl,
 
     [Parameter()]
     [switch]$NonInteractive
@@ -241,12 +262,19 @@ try {
                 Complete-WizardPrompt
             }
 
+            $needsAgent365 = Test-Agent365Selected -FeatureNames $Feature
+
             if (Enter-WizardPrompt) {
                 $createSecret = $true
                 if ($isUpdate) {
                     $createSecret = [bool]$RotateSecret
                     if (-not $NonInteractive -and -not $RotateSecret) {
-                        $createSecret = Read-YesNo -Prompt 'Create a new client secret?' -Default $false
+                        # The Agent 365 flow exchanges its authorization code with the client secret,
+                        # and Entra never shows an existing one again.
+                        if ($needsAgent365) {
+                            Write-Info 'Agent 365 needs the client secret to mint the refresh token. Answer No only if you still have the current one.'
+                        }
+                        $createSecret = Read-YesNo -Prompt 'Create a new client secret?' -Default $needsAgent365
                     }
                 }
                 Complete-WizardPrompt
@@ -261,6 +289,7 @@ try {
             }
 
             $permissions = @(Get-SelectedPermissions -Mode $PermissionMode -FeatureNames $Feature)
+            $delegated = @(Get-SelectedDelegatedPermissions -FeatureNames $Feature)
             $roleNames = @($catalog.DirectoryRoleMap[$DirectoryRole])
 
             $planAction = if ($isUpdate) { 'Update existing application' } else { 'Create application' }
@@ -276,9 +305,19 @@ try {
             Write-Host "   Feature packs  : $planFeatures"
             Write-Host "   Directory role : $planRoles"
             Write-Host "   Client secret  : $planSecret"
+            if ($needsAgent365) {
+                Write-Host "   Agent 365      : refresh token via $Agent365RedirectUri"
+            }
+            if (Test-CopilotStudioSelected -FeatureNames $Feature) {
+                $planEnvironment = if ($PowerPlatformEnvironmentUrl) { $PowerPlatformEnvironmentUrl } else { 'discovered environments' }
+                Write-Host "   Copilot Studio : Dataverse application user in $planEnvironment"
+            }
             Write-Host ''
             foreach ($group in ($permissions | Group-Object Resource)) {
                 Write-Info "$($catalog.Resources[$group.Name].Name): $(($group.Group.Value | Sort-Object) -join ', ')"
+            }
+            foreach ($group in ($delegated | Group-Object Resource)) {
+                Write-Info "$($catalog.Resources[$group.Name].Name) (delegated): $(($group.Group.Value | Sort-Object) -join ', ')"
             }
 
             if (Enter-WizardPrompt) {
@@ -315,6 +354,11 @@ try {
         RotateSecret         = [bool]$RotateSecret
         OutputDirectory      = $OutputDirectory
         CreateSecret         = [bool]$createSecret
+        Agent365RedirectUri  = $Agent365RedirectUri
+        PowerPlatformEnvironmentUrl = $PowerPlatformEnvironmentUrl
+        # Secret references are an agent-path concept; the wizard asks the operator instead.
+        ClientSecretRef         = $null
+        Agent365RefreshTokenRef = $null
     }
 
     $applyResult = Invoke-EntraSourceApply -Resolved $resolved -TargetAppObjectId $targetAppObjectId -CreateSecret $createSecret

@@ -743,7 +743,7 @@ function Write-DomainWideDelegationValues {
 function Wait-Continue {
     param([Parameter(Mandatory)][string]$Prompt)
 
-    if ($script:NonInteractive) { return }
+    if (Test-OperatorNonInteractive) { return }
     $null = Read-TypedLine $Prompt
 }
 
@@ -785,7 +785,7 @@ function Invoke-OAuthAudienceWalkthrough {
         [string]$SignInAccount
     )
 
-    if ($script:NonInteractive) { return }
+    if (Test-OperatorNonInteractive) { return }
 
     Write-Info 'Audience: an External app in Testing only lets accounts listed as test users sign in.'
     Write-Info 'Internal apps (Workspace organization projects) allow everyone in the organization, so they need nothing here.'
@@ -823,7 +823,7 @@ function Invoke-OAuthClientWalkthrough {
         [string]$SignInAccount
     )
 
-    if ($script:NonInteractive) { return $null }
+    if (Test-OperatorNonInteractive) { return $null }
 
     Write-Step 'OAuth client (Cloud Console — Google has no API for this)'
     Write-Info $Reason
@@ -951,6 +951,38 @@ function Add-ConnectorIamBinding {
     }
 }
 
+# The connector only queries the regions configured on the source, so a region list that misses
+# where the agents actually run aggregates zero agents without reporting an error. Cloud Asset
+# answers this org-wide in one call; it needs cloudasset.googleapis.com enabled on the operator's
+# current project, which is not guaranteed this early, so callers fall back on an empty result.
+function Get-GoogleVertexAgentRegions {
+    param([Parameter(Mandatory)][string]$OrgId)
+
+    $names = @()
+    try {
+        $names = @(Invoke-GCloud -GcloudArgs @(
+            'asset', 'search-all-resources',
+            "--scope=organizations/$OrgId",
+            '--asset-types=aiplatform.googleapis.com/ReasoningEngine',
+            '--format=value(name)',
+            '--quiet'
+        ))
+    }
+    catch {
+        Write-Verbose "Could not search for Vertex AI agents: $($_.Exception.Message)"
+        return @()
+    }
+
+    $regions = [System.Collections.Generic.List[string]]::new()
+    foreach ($name in $names) {
+        if ([string]$name -match '/locations/([^/]+)/') {
+            $region = $Matches[1]
+            if (-not $regions.Contains($region)) { $regions.Add($region) }
+        }
+    }
+    return @($regions | Sort-Object)
+}
+
 function Get-GoogleWorkspaceCatalog {
     $packs = [ordered]@{}
     foreach ($key in $script:FeaturePacks.Keys) { $packs[$key] = $script:FeaturePacks[$key] }
@@ -968,8 +1000,12 @@ function Get-GoogleWorkspaceCatalog {
             $customRoleId = $ciemCatalog.CustomRoleId
         }
     }
+    $sorted = [ordered]@{}
+    foreach ($key in @($packs.Keys | Sort-Object { [string]$packs[$_].Label })) {
+        $sorted[$key] = $packs[$key]
+    }
     return [PSCustomObject]@{
-        FeaturePacks       = $packs
+        FeaturePacks       = $sorted
         CoreScopes         = $script:CoreScopes
         GcpScopes          = $gcpScopes
         CoreApis           = $script:CoreApis
@@ -997,10 +1033,12 @@ Export-ModuleMember -Function @(
     'Test-GCloudAuth'
     'Connect-GoogleCloud'
     'ConvertTo-EncryptedRsaPem'
+    'Get-JsonProperty'
     'New-KeyPassword'
     'Get-SelectedScopes'
     'Get-SelectedApis'
     'Get-CustomRolePermissions'
+    'Get-GoogleVertexAgentRegions'
     'ConvertTo-RoleYaml'
     'Get-ServiceAccountEmail'
     'Get-ExistingServiceAccount'

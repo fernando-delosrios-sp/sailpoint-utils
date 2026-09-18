@@ -164,7 +164,7 @@ param(
     [string]$PolicySet = 'Mgo',
 
     [Parameter()]
-    [ValidateSet('ActivityInsights', 'Ciem', 'AgentDiscovery')]
+    [ValidateSet('ActivityInsights', 'AgentDiscovery', 'Ciem')]
     [string[]]$Feature,
 
     [Parameter()]

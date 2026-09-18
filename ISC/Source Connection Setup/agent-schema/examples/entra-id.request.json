@@ -5,13 +5,17 @@
     "tenantId": "contoso.onmicrosoft.com",
     "applicationName": "SailPoint ISC Entra ID",
     "permissionMode": "Granular",
-    "features": ["MfaManagement"],
+    "features": ["MfaManagement", "CopilotDiscovery", "Agent365"],
     "directoryRole": "UserAdministrator",
     "rotateSecret": true,
-    "outputDirectory": "./sourceConfig/entra-id-isc"
+    "outputDirectory": "./sourceConfig/entra-id-isc",
+    "agent365RedirectUri": "http://localhost:8400/"
   },
   "decisions": {
     "createNewApplication": true,
     "allowGlobalAdministrator": false
+  },
+  "secretRefs": {
+    "agent365RefreshToken": "env:AGENT365_REFRESH_TOKEN"
   }
 }

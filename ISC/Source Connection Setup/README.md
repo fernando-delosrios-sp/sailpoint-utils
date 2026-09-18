@@ -64,7 +64,7 @@ Shared PowerShell modules live under `modules/`. Each `.ps1` orchestrator import
 | `ISC.AwsConnector.psm1` | AWS session, trust principals, Organizations context, IAM JSON helpers |
 | `ISC.AwsSaasConnector.psm1` | AWS SaaS IAM policy tables, feature packs, role/policy deployment |
 | `ISC.AwsCiemConnector.psm1` | Embedded CIEM (`-Feature Ciem`) and dedicated CIEM AWS source (CloudFormation) |
-| `ISC.EntraConnector.psm1` | Entra permission tables, Graph app registration, consent, directory roles, secrets |
+| `ISC.EntraConnector.psm1` | Entra permission tables, Graph app registration, consent, directory roles, secrets, Agent 365 delegated OAuth |
 | `ISC.SailPointSdk.psm1` | `~/.sailpoint/config.yaml` env listing, PSSailpoint credential bridge (`SAIL_*` / `config.json`), SDK bootstrap |
 | `ISC.Microsoft365AccessProfiles.psm1` | Entra+servicePlan discovery, Microsoft licensing CSV friendly names, access profile + source-app create/link |
 | `ISC.EntraCiemConnector.psm1` | Embedded CIEM (`-Feature Ciem`) — PIM group Graph permissions |
@@ -763,11 +763,11 @@ Opt in with `-Feature` or the interactive multi-select. These map to features th
 | `ActivityInsights` | `admin.reports.audit.readonly` and `admin.reports.usage.readonly` |
 | `DomainManagement` | `admin.directory.domain` (impersonate user needs Super Admin) |
 | `NhiDiscovery` | Extra APIs (Asset, API Keys, Recommender, Logging, Secret Manager, Cloud Functions, Drive) and documented built-in roles. Viewer / Organization Viewer bind at the organization; roles GCP rejects at org scope are bound on the service-account project instead. Secret Manager Viewer is `roles/secretmanager.viewer`; API Keys Viewer is `roles/serviceusage.apiKeysViewer`. Requires SailPoint Agentic Fabric. |
-| `AgentDiscovery` | Vertex AI API plus `aiplatform.agents.get` / `aiplatform.agents.list` on the custom role |
+| `AgentDiscovery` | Vertex AI API plus `aiplatform.agents.get` / `aiplatform.agents.list` on the custom role. The script searches Cloud Asset for deployed Agent Engine instances (`aiplatform.googleapis.com/ReasoningEngine`) and offers the regions they actually run in as the default region list. |
 
 `Gcp`, `Ciem`, `NhiDiscovery`, and `AgentDiscovery` require a GCP organization. `-AggregationOnly` only affects GCP write permissions on that custom role; Workspace OAuth scopes stay as documented for test connection and aggregation.
 
-The custom role is bound at **organization** scope — to the service account under Service Account, and to the authorizing user under Client Credentials, because that grant type calls Google as that user. NHI built-in roles that GCP does not allow on an organization are bound on the project instead. If a role is not available at either scope, the script warns and continues.
+The custom role is bound at **organization** scope. Under Service Account it goes to **both the service account and the impersonate user**: the connector signs its JWT as the service account but sets the impersonate user as the subject (`jwt_subject`), so Google evaluates GCP IAM against that user and the service account's own bindings do not apply to those calls. Under Client Credentials it goes to the authorizing user, because that grant type calls Google as that user. NHI built-in roles that GCP does not allow on an organization are bound on the project instead. If a role is not available at either scope, the script warns and continues.
 
 ### Domain-wide delegation and impersonate user
 
@@ -836,6 +836,8 @@ The refresh token belongs to the authorizing user, so the source inherits that u
 | Test connection fails with unauthorized_client / invalid_grant | Domain-wide delegation is missing, uses the email instead of the numeric client ID, or the scope list does not match what the connector requests. |
 | Test connection fails on Admin SDK | Enable `admin.googleapis.com` and `groupssettings.googleapis.com` in the project (the script does this). Confirm the impersonate user has User Management Admin / Groups Admin. |
 | CIEM or cloud scope empty | Re-run with `-Feature Gcp,Ciem`, confirm the custom role is bound at the **organization**, and keep Grant Type = Service Account. |
+| Machine identity aggregation finds no agents and reports no error | The connector only queries the regions in **GCP Regions** (`agentGcpRegion`), and an empty region is not an error. List the deployed agents with `gcloud asset search-all-resources --scope=organizations/<org> --asset-types=aiplatform.googleapis.com/ReasoningEngine --format='value(name)'` and add every region in the output. Agent Garden lists pre-built blueprints, not your deployments — check **Deployments** / **Your deployed agents** instead. |
+| `InsufficientPermissionException ... 403 ... The caller does not have permission` on a GCP dataset (projects, folders, service accounts, Vertex agents) | The org role is bound to the service account but not to the impersonate user. Under Service Account the connector calls GCP as `jwt_subject`, so that user needs the same organization bindings. Re-run the script (it now binds both), or grant them with `gcloud organizations add-iam-policy-binding <org> --member=user:<impersonate user> --role=<role>`. The connector retries 403 five times with back-off before failing, so the aggregation takes ~90s to surface the error. |
 | ISC rejects the private key | Paste the **RSA PEM** (`Proc-Type: 4,ENCRYPTED`), not the JSON `private_key`, and the passphrase from this run. |
 | Private Key is missing from the output | The service account already existed and you answered **N**. Google cannot recover the old PEM. Re-run and answer **Y**, or pass `-RotateKey`. |
 | `redirect_uri_mismatch` during the OAuth flow | The redirect URI on the OAuth client must match `-RedirectUri` exactly. Add `http://localhost:8088` (or the Playground URL) under Authorized redirect URIs and retry. |
@@ -981,7 +983,7 @@ The list prompts are keyboard menus: **Up/Down** (or `j`/`k`) moves, **Space** s
 prompt, and **Ctrl+C** exits. Hosts that cannot read single keystrokes - the ISE, redirected or piped
 sessions - fall back to numbered prompts (`b` goes back) and say so on the line above the list.
 
-It ends with the shared completion menu for **Grant Type**, **Client ID**, **Client Secret** (masked), and **Domain Name**. The same fields are written to `sailpoint-entra-connection-settings.txt` under the output directory. The secret is shown once when created; store it in a vault.
+It ends with the shared completion menu for **Grant Type**, **Client ID**, **Client Secret** (masked), and **Domain Name** — plus the **Agent 365 Refresh Token** when that pack is selected. The same fields are written to `sailpoint-entra-connection-settings.txt` under the output directory. The secret is shown once when created; store it in a vault.
 
 Re-running with the same display name updates permissions and consent in place. Pass `-RotateSecret` when you need a new secret.
 
@@ -1007,6 +1009,8 @@ Re-running with the same display name updates permissions and consent in place. 
 | `SecretValidityMonths` | Secret lifetime, 1–24 months (default `24`) |
 | `RotateSecret` | On update, create a new client secret |
 | `OutputDirectory` | Where to write the connection-settings file (default `./sourceConfig/entra-id-isc`) |
+| `Agent365RedirectUri` | Loopback redirect URI for the `Agent365` authorization-code flow (default `http://localhost:8400/`) |
+| `PowerPlatformEnvironmentUrl` | Dataverse org URL to configure for Copilot Studio discovery; omit it to discover environments automatically |
 | `NonInteractive` | Do not prompt; omitted `Feature` means no feature packs |
 | `WhatIf` / `Confirm` | Standard PowerShell risk mitigation |
 
@@ -1050,11 +1054,83 @@ Opt in with `-Feature` or the interactive multi-select. These map to features th
 | `TeamsMessaging` | `TeamsAppInstallation.ReadWriteForTeam.All`, `TeamsAppInstallation.ReadWriteForUser.All`, `TeamsAppInstallation.ReadWriteSelfForUser.All` |
 | `SharePointScanning` | `Files.Read.All`, `Sites.Read.All` |
 | `CopilotDiscovery` | `AiEnterpriseInteraction.Read.All`, `Reports.Read.All`, `ExternalConnection.Read.All`, `AppCatalog.Read.All` |
+| `Agent365` | **Delegated:** `CopilotPackages.Read.All`, `CopilotPackages.ReadWrite.All`, `User.Read`, `offline_access`. Adds no application permissions; also registers a loopback redirect URI and mints the Agent 365 refresh token. |
 | `DefenderHunting` | `Machine.Read.All` and `AdvancedQuery.Read.All` on the **WindowsDefenderATP** API, plus `ThreatHunting.Read.All` on Microsoft Graph |
 
 `Ciem` supports SailPoint CIEM's PIM-group eligibility analysis. `MfaManagement` comes from the [Azure Active Directory connector permissions](https://documentation.sailpoint.com/connectors/microsoft/azure_ad/help/integrating_azure_active_directory/administrator_permission.html). The remaining `Nhi*`, `Teams*`, `SharePoint*`, `Copilot*`, and `Defender*` packs support SailPoint Non-Human Identity discovery.
 
 If a permission does not exist in your tenant (for example, the WindowsDefenderATP service principal is not provisioned), the script warns and skips it instead of failing.
+
+### Microsoft Agent 365 refresh token
+
+`CopilotDiscovery` covers Foundry and Copilot Studio agents (see [Agent discovery prerequisites](#agent-discovery-prerequisites) for what they need beyond Graph permissions). The **Microsoft Agent 365** dataset is different: its catalog endpoints (`/beta/copilot/admin/catalog/packages`) accept delegated tokens only. That is why ISC asks for a refresh token in **Machine Identity Governance Settings**, and why a source that has Agent 365 enabled but no token fails aggregation with `Microsoft Agent 365 aggregation requires a refresh token when Connection Settings uses Client Credentials`.
+
+`-Feature Agent365` produces that token:
+
+1. Adds the delegated permissions above to the app registration and grants tenant-wide admin consent for them (one `oauth2PermissionGrant`, merged rather than duplicated if the app already has one).
+2. Registers `-Agent365RedirectUri` (default `http://localhost:8400/`) as a Web redirect URI.
+3. Opens the Entra authorization endpoint with `scope=offline_access https://graph.microsoft.com/.default`, listens on the loopback address for the redirect, and exchanges the authorization code for a refresh token using the app's client secret.
+4. Offers the token in the completion menu as **Agent 365 Refresh Token (Machine Identity Governance Settings)** and writes it to `agent365-refresh-token.txt` in the run directory.
+
+Because the token is redeemed by ISC as a confidential client, the exchange needs the client secret. On a new application the script has just created one; when updating an existing application it defaults the secret prompt to **yes**, and falls back to asking you to paste the current secret. Answering neither skips the token and reports it as pending rather than failing the run.
+
+The browser sign-in must be a user who holds **AI Administrator** or **Global Administrator** *and* a Microsoft Agent 365 license. The license is evaluated on the calling user, so a correctly scoped token from an unlicensed admin still returns `403` from the catalog API. The token is bound to that user's identity — deactivating the account invalidates aggregation.
+
+`-NonInteractive` cannot run a browser flow. Supply an existing token through the agent request instead (`secretRefs.agent365RefreshToken`, an `env:` or `file:` reference), or run the wizard interactively.
+
+Reference: [Machine Identity Governance Settings](https://documentation.sailpoint.com/connectors/saas/msentraid/help/saas_connectivity/microsoft_entra_id/machine_identity_governance_settings.html) and [Generating a Refresh Token](https://documentation.sailpoint.com/connectors/microsoft/entra_id/help/integrating_entra_id/generating_refresh_tokens.html).
+
+### Agent discovery prerequisites
+
+Graph permissions alone do not make Foundry or Copilot Studio agents appear. Each platform has its own gate, and a source can look perfectly healthy while discovering nothing.
+
+**Azure AI Foundry** reads two different planes, so the app registration needs Azure RBAC that this script does not assign:
+
+| Requirement | Where |
+|---|---|
+| `Reader` | Every Azure subscription holding a Foundry account — enumerates the accounts and their projects through ARM |
+| `Cognitive Services Data Contributor (Preview)` | Same subscriptions — the agents data plane, which does not accept API keys |
+| `user_impersonation` on the Azure Service Management API | Delegated permission on the app registration |
+
+Without all three the `azure:foundry` dataset aggregation returns nothing and reports no error worth noticing. Microsoft's own [Foundry RBAC guidance](https://learn.microsoft.com/azure/foundry/concepts/rbac-foundry) steers away from `Cognitive Services`-prefixed roles in favour of `Foundry User`; SailPoint's connector documentation asks for `Cognitive Services Data Contributor (Preview)`, so follow SailPoint's list unless their docs change.
+
+**Microsoft Copilot Studio** is not an Azure workload at all, so none of the above applies to it. Its agents are designed in Copilot Studio, stored in **Dataverse**, and identified in Entra — and the connector reads them out of Dataverse. That means the app registration needs an identity *inside each Power Platform environment* holding agents:
+
+| Requirement | What it is |
+|---|---|
+| Application user | The app registration added as a Dataverse application user in the environment, bound to a business unit |
+| `Global Discovery Service Role` | Lets it call the Global Discovery API and enumerate instances |
+| A custom `BotReader` role | Organization-level (`Global` depth) Read on `bot` and `botcomponent` |
+
+**Do not use the built-in `Bot Viewer` role.** Dataverse grants it `prvReadbot` at `Basic` depth, which restricts reads to records the user *owns*. An application user owns no agents, so it authenticates successfully, returns HTTP 200, and reads zero bots — a silent failure that looks identical to having no agents at all. Only `Global` depth works, which is why SailPoint documents a custom role. Verify depth rather than trusting the role name:
+
+```
+GET {environmentUrl}/api/data/v9.2/RetrieveRolePrivilegesRole(RoleId={roleId})
+```
+
+and confirm `prvReadbot` reports `"Depth": "Global"`.
+
+**The script does this for you.** Selecting the Copilot Studio feature pack adds a `configure-copilot-studio-dataverse-access` step that discovers your Power Platform environments through the Global Discovery Service, lets you pick which ones hold agents, and creates the application user along with a `SailPoint BotReader` role holding `Global` depth on both privileges. It checks the actual privilege depth of every role already assigned, so an existing role that grants organization-level bot read — a hand-built `BotReader`, or `Bot Contributor` — is reused rather than duplicated. The step is idempotent, so re-running an already configured environment writes nothing.
+
+Because Dataverse is a different token audience from Microsoft Graph, this step gets its token from the Azure CLI. Run `az login` as a Power Platform administrator before applying; the script installs the CLI through winget or Homebrew if it is not on PATH. Pass `-PowerPlatformEnvironmentUrl` to skip discovery and target one org directly. An environment that cannot be reached is reported as a pending item rather than failing the run, so a partially reachable tenant still finishes configuring the application.
+
+To check whether the app is already an application user by hand, query the environment's Web API:
+
+```
+GET {environmentUrl}/api/data/v9.2/systemusers?$filter=applicationid eq {clientId}
+```
+
+An empty `value` array means the connector has no identity there and will discover nothing, however its Entra permissions are configured.
+
+**Agent identities are not `Application` service principals.** Foundry and Copilot Studio both mint their agents a real Entra identity typed `servicePrincipalType eq 'ServiceIdentity'` — Foundry one per project plus one per published agent, Copilot Studio one per published agent. The connector's default **Service Principal Account Filter** is `servicePrincipalType eq 'Application'`, which excludes every one of them. To govern agent identities as accounts, widen it:
+
+```
+servicePrincipalType eq 'Application' or servicePrincipalType eq 'ServiceIdentity'
+```
+
+Note that this filter governs the *accounts*; the agents themselves arrive as `std:agent` resources from the dataset aggregations, so widening the filter alone does not make agents appear.
+
+Reference: [Azure AI Foundry Agents Management](https://documentation.sailpoint.com/connectors/saas/msentraid/help/saas_connectivity/microsoft_entra_id/agent_governance_settings.html) and [Service Principal Accounts Management](https://documentation.sailpoint.com/connectors/microsoft/entra_id/help/integrating_entra_id/service_principal_account_mgmt.html).
 
 ### Directory roles
 
@@ -1079,6 +1155,7 @@ For read-only access to Azure cloud objects, assign the built-in **Reader** role
 | Client ID | Client ID |
 | Client Secret | Client Secret |
 | Domain Name | Domain Name (initial verified domain, typically `*.onmicrosoft.com`) |
+| Agent 365 Refresh Token | **Machine Identity Governance Settings** → refresh token (not Connection Settings); only with `-Feature Agent365` |
 
 VA-based Azure Active Directory sources that still call Azure AD Graph must set `useMSGraphAPI` to `true`. The Microsoft Entra SaaS connector already uses Microsoft Graph.
 
@@ -1086,7 +1163,8 @@ VA-based Azure Active Directory sources that still call Azure AD Graph must set 
 
 - It does not create the ISC source object; paste the credentials into the source UI or API.
 - It does not configure certificate credentials.
-- It does not grant delegated OAuth scopes or perform user consent flows.
+- It does not grant delegated OAuth scopes outside `-Feature Agent365`, which is the only pack that needs them.
+- It does not toggle anything inside ISC; enabling Microsoft Agent 365 and pasting the refresh token in Machine Identity Governance Settings stays a manual step.
 - It does not assign Azure RBAC roles such as the tenant root **Reader** role.
 
 ## Troubleshooting
@@ -1097,3 +1175,18 @@ VA-based Azure Active Directory sources that still call Azure AD Graph must set 
 | `<API> does not expose '<permission>' as an application permission` | The permission is delegated-only or unavailable in your tenant. It is skipped; grant it in the portal if the feature needs it. |
 | `Grant admin consent manually in the Entra portal for: ...` | Your account can create the app but cannot consent. Ask a Privileged Role Administrator to select **Grant admin consent** on the app's API permissions page. |
 | Run failed after the app was created | The script reports the created client ID. Re-run with the same display name and choose **update** to finish configuration. |
+| `Microsoft Agent 365 aggregation requires a refresh token when Connection Settings uses Client Credentials` | The source has **Enable Microsoft Agent 365** on but no `agent365RefreshToken`. The Agent 365 catalog API rejects application tokens. Re-run with `-Feature Agent365` (add `-RotateSecret` when updating an existing app) and paste the resulting token into **Machine Identity Governance Settings**. |
+| `AADSTS50011` / `redirect_uri` mismatch during the Agent 365 sign-in | The value sent must match the registered Web redirect URI exactly, trailing slash included. Re-run the script so it registers `-Agent365RedirectUri`, or add it under **Authentication → Web** yourself. |
+| Agent 365 aggregation returns `403` although the token has `CopilotPackages.Read.All` | The Package Management API also checks the authorizing user: they need **AI Administrator** (or Global Administrator) and a Microsoft Agent 365 license. Re-mint the token while signed in as a licensed admin. |
+| Foundry agents never appear although the source is healthy | The app registration has no Azure RBAC. Check with `az role assignment list --assignee <clientId> --all`; an empty result means the `azure:foundry` aggregation cannot reach ARM. Assign `Reader` and `Cognitive Services Data Contributor (Preview)` per [Agent discovery prerequisites](#agent-discovery-prerequisites). |
+| Agent identities never aggregate as accounts | The Service Principal Account Filter still uses the `servicePrincipalType eq 'Application'` default, which excludes the `ServiceIdentity` type Entra assigns to agent identities. Widen the filter. |
+| No service principals aggregate although **Manage Microsoft Entra Service Principals as Accounts** is on | The account schema has no `spn_*` attributes, so the connector emits users only. Open **Account Schema** on the source and select **Include Attributes in Schema for managing azure Service Principal as account**, then aggregate. See [Service Principal as Accounts Attributes](https://documentation.sailpoint.com/connectors/microsoft/entra_id/help/integrating_entra_id/service_principal_attr.html). |
+| `[ConnectorError] Error occurrend while fetching page during aggregation : Request failed with status code 400` | **Enable Delta Aggregation** is on together with a User Filter or a Service Principal Account Filter. Graph's `/users/delta` and `/servicePrincipals/delta` reject every `$filter` with `Request_UnsupportedQuery`, so no page is ever fetched. Turn delta off, or drop the filters. |
+| Aggregation reports `SUCCESS` with `total: 0` and the source stays empty | The User Filter matches no users and the service principal read is separately broken, so both halves of the account aggregation return nothing and the run still looks clean. Check each half on its own: clear the User Filter and aggregate to prove users flow, then fix the schema for service principals. `accountEnabled eq true and accountEnabled eq false` is a deliberate way to suppress users on an NHI-only source and is fine once service principals work. |
+| Copilot Studio agents never appear although Foundry agents do | The two use entirely different access paths. Foundry needs Azure RBAC; Copilot Studio needs a Dataverse application user, which no Entra permission substitutes for. Query `systemusers?$filter=applicationid eq {clientId}` against the environment — an empty result is the cause. Re-run with the Copilot Studio feature pack, or add the application user and its roles by hand. |
+| The Dataverse application user exists but the dataset still aggregates 0 agents | The assigned role almost certainly grants `prvReadbot` at `Basic` depth — `Bot Viewer` does. The app reads only bots it owns, which is none. Confirm by requesting an app-only token for the environment and calling `/api/data/v9.2/bots`: 0 rows for the app while an admin sees them is conclusive. Assign a role with `Global` depth. |
+| `Could not get a Dataverse token` during the Copilot Studio step | The Azure CLI is not signed in, or the signed-in account is not a Power Platform administrator. Run `az login` with an account that can administer the environment and re-run. |
+| `AADSTS7000215: Invalid client secret provided` during the Agent 365 token exchange | A secret created moments earlier has not replicated to the token endpoint yet. The script now waits for the secret to activate before opening the browser and retries the exchange, so this should resolve itself; if it still times out, re-run the script. |
+| `Entra returned an access token without a refresh token` | `offline_access` was not consented on the application. Confirm it under **API permissions → Delegated**, grant admin consent, and re-run. |
+| `Could not listen on http://localhost:8400/` | Another process holds the port. Pass a free one with `-Agent365RedirectUri` — the script registers whatever you pass on the app registration. |
+| Agent 365 refresh token stops working after a while | Refresh tokens are revoked by password resets, Conditional Access revocation events, and removal of the authorizing user. Re-run with `-Feature Agent365` to mint a new one. |

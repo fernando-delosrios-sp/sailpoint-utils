@@ -122,6 +122,13 @@ function Ensure-GCloudCommand {
         -ManualHint 'Install the Google Cloud SDK from https://cloud.google.com/sdk/docs/install and run gcloud init.'
 }
 
+function Ensure-AzCliCommand {
+    return Ensure-CliCommand -CommandNames @('az', 'az.cmd') `
+        -WingetPackageId 'Microsoft.AzureCLI' `
+        -BrewPackage 'azure-cli' `
+        -ManualHint 'Install the Azure CLI from https://learn.microsoft.com/cli/azure/install-azure-cli and run az login.'
+}
+
 function Ensure-OpenSslCommand {
     param([string]$OpenSslPath)
 
@@ -539,6 +546,7 @@ Export-ModuleMember -Function @(
     'Resolve-CliCommand'
     'Ensure-CliCommand'
     'Ensure-GCloudCommand'
+    'Ensure-AzCliCommand'
     'Ensure-OpenSslCommand'
     'Install-PowerShellGalleryModuleSet'
     'Import-PowerShellGalleryModuleSet'

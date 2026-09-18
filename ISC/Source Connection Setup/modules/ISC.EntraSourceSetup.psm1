@@ -32,6 +32,7 @@ function Initialize-EntraSourceSetup {
     Import-SourceSetupModule -ModuleRoot $ModuleRoot -Name 'ISC.OperatorToolchain' -FileName 'ISC.OperatorToolchain.psm1'
     Import-SourceSetupModule -ModuleRoot $ModuleRoot -Name 'ISC.EntraConnector' -FileName 'ISC.EntraConnector.psm1'
     Import-SourceSetupModule -ModuleRoot $ModuleRoot -Name 'ISC.EntraCiemConnector' -FileName 'ISC.EntraCiemConnector.psm1'
+    Import-SourceSetupModule -ModuleRoot $ModuleRoot -Name 'ISC.PowerPlatformConnector' -FileName 'ISC.PowerPlatformConnector.psm1'
     Initialize-OperatorConsole -NonInteractive:$NonInteractive
     Initialize-EntraConnectorData
     Initialize-EntraCiemConnectorData
@@ -45,9 +46,23 @@ function Get-EntraAgentCatalog {
         featurePacks    = @($catalog.FeaturePacks.Keys)
         directoryRoles  = @($catalog.DirectoryRoleMap.Keys)
         requiredConfig  = @('applicationName')
-        optionalConfig  = @('tenantId', 'permissionMode', 'features', 'directoryRole', 'rotateSecret', 'outputDirectory')
-        secretFields    = @('clientSecret')
+        optionalConfig  = @('tenantId', 'permissionMode', 'features', 'directoryRole', 'rotateSecret', 'outputDirectory', 'agent365RedirectUri', 'powerPlatformEnvironmentUrl')
+        secretFields    = @('clientSecret', 'agent365RefreshToken')
     }
+}
+
+function Test-Agent365Selected {
+    param([string[]]$FeatureNames)
+
+    return @($FeatureNames) -contains 'Agent365'
+}
+
+# CopilotDiscovery is the pack that turns on Copilot Studio agent aggregation, and Copilot Studio is
+# the only part of it that needs anything outside Entra.
+function Test-CopilotStudioSelected {
+    param([string[]]$FeatureNames)
+
+    return @($FeatureNames) -contains 'CopilotDiscovery'
 }
 
 function Get-EntraResolvedConfig {
@@ -56,6 +71,7 @@ function Get-EntraResolvedConfig {
     Import-AgentAdapterModule
     $config = Get-AgentRequestValue -Object $Request -Name 'config' -Default @{}
     $decisions = Get-AgentRequestValue -Object $Request -Name 'decisions' -Default @{}
+    $secretRefs = Get-AgentRequestValue -Object $Request -Name 'secretRefs' -Default @{}
     return [PSCustomObject]@{
         TenantId             = $(if (Get-AgentRequestValue -Object $config -Name 'tenantId') { [string](Get-AgentRequestValue -Object $config -Name 'tenantId') } else { $null })
         ApplicationName      = [string](Get-AgentRequestValue -Object $config -Name 'applicationName')
@@ -66,6 +82,10 @@ function Get-EntraResolvedConfig {
         SecretValidityMonths = if (Get-AgentRequestValue -Object $config -Name 'secretValidityMonths') { [int](Get-AgentRequestValue -Object $config -Name 'secretValidityMonths') } else { 24 }
         RotateSecret         = [bool](Get-AgentRequestValue -Object $config -Name 'rotateSecret' -Default $false)
         OutputDirectory      = if (Get-AgentRequestValue -Object $config -Name 'outputDirectory') { [string](Get-AgentRequestValue -Object $config -Name 'outputDirectory') } else { (Join-Path (Get-Location) (Join-Path 'sourceConfig' 'entra-id-isc')) }
+        Agent365RedirectUri  = if (Get-AgentRequestValue -Object $config -Name 'agent365RedirectUri') { [string](Get-AgentRequestValue -Object $config -Name 'agent365RedirectUri') } else { 'http://localhost:8400/' }
+        PowerPlatformEnvironmentUrl = $(if (Get-AgentRequestValue -Object $config -Name 'powerPlatformEnvironmentUrl') { [string](Get-AgentRequestValue -Object $config -Name 'powerPlatformEnvironmentUrl') } else { $null })
+        ClientSecretRef      = $(if (Get-AgentRequestValue -Object $secretRefs -Name 'clientSecret') { [string](Get-AgentRequestValue -Object $secretRefs -Name 'clientSecret') } else { $null })
+        Agent365RefreshTokenRef = $(if (Get-AgentRequestValue -Object $secretRefs -Name 'agent365RefreshToken') { [string](Get-AgentRequestValue -Object $secretRefs -Name 'agent365RefreshToken') } else { $null })
         TargetAppObjectId    = $(if (Get-AgentRequestValue -Object $decisions -Name 'targetAppObjectId') { [string](Get-AgentRequestValue -Object $decisions -Name 'targetAppObjectId') } else { $null })
         CreateNewApplication = $(if ($null -ne (Get-AgentRequestValue -Object $decisions -Name 'createNewApplication')) { [bool](Get-AgentRequestValue -Object $decisions -Name 'createNewApplication') } else { $null })
         AllowGlobalAdmin     = [bool](Get-AgentRequestValue -Object $decisions -Name 'allowGlobalAdministrator' -Default $false)
@@ -94,6 +114,22 @@ function New-EntraAgentPlan {
     $mutations = @('connect-graph', 'resolve-permissions', 'create-or-update-app', 'grant-consent', 'assign-directory-roles')
     if ($resolved.CreateSecret -or $resolved.RotateSecret) {
         $mutations += 'create-client-secret'
+    }
+    if (Test-Agent365Selected -FeatureNames $resolved.Feature) {
+        $mutations += @('register-redirect-uri', 'grant-delegated-consent', 'issue-agent365-refresh-token')
+        if (-not $resolved.Agent365RefreshTokenRef) {
+            if (-not ($resolved.CreateSecret -or $resolved.RotateSecret) -and -not $resolved.ClientSecretRef) {
+                $needsInput.Add([ordered]@{
+                    field  = 'secretRefs.clientSecret'
+                    reason = 'Minting the Agent 365 refresh token needs the client secret. Supply it, rotate the secret, or pass secretRefs.agent365RefreshToken.'
+                })
+            }
+            $manualSteps.Add('Agent 365: a browser sign-in as an AI Administrator with a Microsoft Agent 365 license is required during Apply.')
+        }
+    }
+    if (Test-CopilotStudioSelected -FeatureNames $resolved.Feature) {
+        $mutations += 'configure-copilot-studio-dataverse-access'
+        $manualSteps.Add('Copilot Studio: the Azure CLI must be signed in (az login) as a Power Platform administrator so the Dataverse application user can be created.')
     }
 
     if (-not [string]::IsNullOrWhiteSpace($resolved.ApplicationName)) {
@@ -158,7 +194,13 @@ function Invoke-EntraSourceApply {
     )
 
     $catalog = Get-EntraConnectorCatalog
-    $session = Connect-EntraGraph -RequestedTenantId $Resolved.TenantId
+    $needsAgent365 = Test-Agent365Selected -FeatureNames $Resolved.Feature
+    $delegated = @(Get-SelectedDelegatedPermissions -FeatureNames $Resolved.Feature)
+
+    # Writing an oauth2PermissionGrant needs a scope the base sign-in does not request, so it is only
+    # asked for when delegated permissions are actually in play.
+    $extraScopes = if ($delegated.Count -gt 0) { @('DelegatedPermissionGrant.ReadWrite.All') } else { @() }
+    $session = Connect-EntraGraph -RequestedTenantId $Resolved.TenantId -AdditionalScopes $extraScopes
     $TenantId = $session.TenantId
     $isUpdate = [bool]$TargetAppObjectId
     $permissions = @(Get-SelectedPermissions -Mode $Resolved.PermissionMode -FeatureNames $Resolved.Feature)
@@ -166,15 +208,19 @@ function Invoke-EntraSourceApply {
 
     if ($WhatIf) {
         return [PSCustomObject]@{
-            Session         = $session
-            IsUpdate        = $isUpdate
-            Permissions     = $permissions
-            RoleNames       = $roleNames
-            ConsentFailures = @()
-            Pair            = $null
-            SecretValue     = $null
-            SecretExpires   = $null
-            AssignedRoles   = @()
+            Session              = $session
+            IsUpdate             = $isUpdate
+            Permissions          = $permissions
+            DelegatedPermissions = $delegated
+            RoleNames            = $roleNames
+            ConsentFailures      = @()
+            Pair                 = $null
+            SecretValue          = $null
+            SecretExpires        = $null
+            AssignedRoles        = @()
+            Agent365RefreshToken = $null
+            Agent365Pending      = $null
+            CopilotStudioAccess  = @()
         }
     }
 
@@ -200,6 +246,26 @@ function Invoke-EntraSourceApply {
         $resourceServicePrincipals[$resourceKey] = $resourceSp
     }
 
+    $scopesByResource = @{}
+    if ($delegated.Count -gt 0) {
+        Write-Step 'Resolving delegated permissions'
+        foreach ($group in ($delegated | Group-Object Resource)) {
+            $resourceKey = $group.Name
+            $resource = $catalog.Resources[$resourceKey]
+            if (-not $resourceServicePrincipals.ContainsKey($resourceKey)) {
+                $resourceSp = Get-ApiServicePrincipal -AppId $resource.AppId -Name $resource.Name
+                if (-not $resourceSp) {
+                    Write-Warning "The $($resource.Name) service principal was not found; skipping its delegated permissions."
+                    continue
+                }
+                $resourceServicePrincipals[$resourceKey] = $resourceSp
+            }
+            $scopes = @(Resolve-DelegatedScopes -ServicePrincipal $resourceServicePrincipals[$resourceKey] `
+                -PermissionValues @($group.Group.Value) -ResourceName $resource.Name)
+            if ($scopes.Count -gt 0) { $scopesByResource[$resourceKey] = $scopes }
+        }
+    }
+
     Write-Step $(if ($isUpdate) { 'Updating application' } else { 'Creating application' })
     if ($isUpdate) {
         $pair = Get-EntraConnectorApplication -ApplicationObjectId $TargetAppObjectId
@@ -211,8 +277,13 @@ function Invoke-EntraSourceApply {
     }
 
     Write-Step 'Updating requested API permissions'
-    Set-RequiredResourceAccess -Application $pair.Application -RolesByResource $rolesByResource
+    Set-RequiredResourceAccess -Application $pair.Application -RolesByResource $rolesByResource -ScopesByResource $scopesByResource
     Write-Ok 'Application manifest updated'
+
+    if ($needsAgent365) {
+        Write-Step 'Registering the Agent 365 redirect URI'
+        Set-EntraRedirectUri -Application $pair.Application -RedirectUri $Resolved.Agent365RedirectUri | Out-Null
+    }
 
     Write-Step 'Granting admin consent'
     $consentFailures = [System.Collections.Generic.List[string]]::new()
@@ -220,6 +291,12 @@ function Invoke-EntraSourceApply {
         $result = Grant-AppRoleConsent -ServicePrincipal $pair.ServicePrincipal `
             -ResourceServicePrincipal $resourceServicePrincipals[$resourceKey] `
             -AppRoles $rolesByResource[$resourceKey]
+        foreach ($failure in $result.Failed) { $consentFailures.Add($failure) }
+    }
+    foreach ($resourceKey in $scopesByResource.Keys) {
+        $result = Grant-DelegatedConsent -ServicePrincipal $pair.ServicePrincipal `
+            -ResourceServicePrincipal $resourceServicePrincipals[$resourceKey] `
+            -Scopes $scopesByResource[$resourceKey]
         foreach ($failure in $result.Failed) { $consentFailures.Add($failure) }
     }
 
@@ -239,17 +316,136 @@ function Invoke-EntraSourceApply {
         $secretExpires = $secret.EndDateTime
     }
 
-    return [PSCustomObject]@{
-        Session         = $session
-        IsUpdate        = $isUpdate
-        Permissions     = $permissions
-        RoleNames       = $roleNames
-        ConsentFailures = @($consentFailures)
-        Pair            = $pair
-        SecretValue     = $secretValue
-        SecretExpires   = $secretExpires
-        AssignedRoles   = $assignedRoles
+    $copilotStudioAccess = @()
+    if (Test-CopilotStudioSelected -FeatureNames $Resolved.Feature) {
+        Write-Step 'Copilot Studio Dataverse access'
+        $copilotStudioAccess = @(Set-CopilotStudioAccessForApply -Resolved $Resolved -ClientId $pair.Application.AppId -WhatIf:$WhatIf)
     }
+
+    $agent365Token = $null
+    $agent365Pending = $null
+    if ($needsAgent365) {
+        Write-Step 'Microsoft Agent 365 refresh token'
+        $agent365 = Get-Agent365RefreshTokenForApply -Resolved $Resolved -TenantId $TenantId -ClientId $pair.Application.AppId -SecretValue $secretValue
+        $agent365Token = $agent365.Token
+        $agent365Pending = $agent365.Pending
+    }
+
+    return [PSCustomObject]@{
+        Session              = $session
+        IsUpdate             = $isUpdate
+        Permissions          = $permissions
+        DelegatedPermissions = $delegated
+        RoleNames            = $roleNames
+        ConsentFailures      = @($consentFailures)
+        Pair                 = $pair
+        SecretValue          = $secretValue
+        SecretExpires        = $secretExpires
+        AssignedRoles        = $assignedRoles
+        Agent365RefreshToken = $agent365Token
+        Agent365Pending      = $agent365Pending
+        CopilotStudioAccess  = @($copilotStudioAccess)
+    }
+}
+
+# The refresh token is redeemed by ISC with the same client credentials, so it has to be minted as a
+# confidential client: without the secret value there is nothing to exchange the authorization code
+# with, and Entra never shows an existing secret again.
+function Get-Agent365RefreshTokenForApply {
+    param(
+        [Parameter(Mandatory)]$Resolved,
+        [Parameter(Mandatory)][string]$TenantId,
+        [Parameter(Mandatory)][string]$ClientId,
+        [string]$SecretValue
+    )
+
+    if ($Resolved.Agent365RefreshTokenRef) {
+        Import-AgentAdapterModule
+        Write-Ok 'Using the supplied refresh token'
+        return [PSCustomObject]@{ Token = (Resolve-AgentSecretReference -Reference $Resolved.Agent365RefreshTokenRef); Pending = $null }
+    }
+
+    $clientSecret = $SecretValue
+    if (-not $clientSecret -and $Resolved.ClientSecretRef) {
+        Import-AgentAdapterModule
+        $clientSecret = Resolve-AgentSecretReference -Reference $Resolved.ClientSecretRef
+    }
+    if (-not $clientSecret -and -not (Test-OperatorNonInteractive)) {
+        Write-Info 'Minting the token needs the client secret of this application, which Entra displays only once.'
+        $clientSecret = Read-InputString -Prompt 'Existing client secret (blank to skip the refresh token)'
+    }
+    if (-not $clientSecret) {
+        $pending = 'no client secret was available to mint it. Re-run with -RotateSecret'
+        Write-Warning "Agent 365 refresh token skipped: $pending"
+        return [PSCustomObject]@{ Token = $null; Pending = $pending }
+    }
+
+    try {
+        $token = Get-EntraAgent365RefreshToken -TenantId $TenantId -ClientId $ClientId `
+            -ClientSecret $clientSecret -RedirectUri $Resolved.Agent365RedirectUri
+        Write-Ok 'Refresh token issued'
+        return [PSCustomObject]@{ Token = $token; Pending = $null }
+    }
+    catch {
+        $pending = $_.Exception.Message
+        Write-Warning "Agent 365 refresh token not issued: $pending"
+        return [PSCustomObject]@{ Token = $null; Pending = $pending }
+    }
+}
+
+# Copilot Studio agents are read out of Dataverse, so the application needs an application user in
+# every Power Platform environment that holds agents. Environments are discovered rather than asked
+# for, because an operator rarely knows the Dataverse org URL by heart.
+function Set-CopilotStudioAccessForApply {
+    param(
+        [Parameter(Mandatory)]$Resolved,
+        [Parameter(Mandatory)][string]$ClientId,
+        [switch]$WhatIf
+    )
+
+    $results = [System.Collections.Generic.List[object]]::new()
+    try {
+        $azPath = Ensure-AzCliCommand
+    }
+    catch {
+        Write-Warning "Skipping the Copilot Studio Dataverse setup: $($_.Exception.Message)"
+        return @($results)
+    }
+
+    $environments = @()
+    if ($Resolved.PowerPlatformEnvironmentUrl) {
+        $environments = @([PSCustomObject]@{ Name = $Resolved.PowerPlatformEnvironmentUrl; Url = $Resolved.PowerPlatformEnvironmentUrl })
+    }
+    else {
+        try {
+            $environments = @(Get-PowerPlatformEnvironment -AzPath $azPath)
+        }
+        catch {
+            Write-Warning "Could not discover Power Platform environments: $($_.Exception.Message)"
+            return @($results)
+        }
+    }
+
+    if ($environments.Count -eq 0) {
+        Write-Warning 'No Power Platform environments were found for the signed-in account.'
+        return @($results)
+    }
+
+    $selected = $environments
+    if ($environments.Count -gt 1 -and -not (Test-OperatorNonInteractive)) {
+        $labels = @($environments | ForEach-Object { "$($_.Name) - $($_.Url)" })
+        $chosen = @(Read-MultiChoice -Options @($environments.Url) -Labels $labels `
+            -Prompt 'Power Platform environments holding Copilot Studio agents')
+        if ($chosen.Count -gt 0) {
+            $selected = @($environments | Where-Object { $chosen -contains $_.Url })
+        }
+    }
+
+    foreach ($environment in $selected) {
+        $results.Add((Set-CopilotStudioDataverseAccess -EnvironmentUrl $environment.Url -ClientId $ClientId `
+            -EnvironmentName $environment.Name -WhatIf:$WhatIf -AzPath $azPath))
+    }
+    return @($results)
 }
 
 function Build-EntraSourceResult {
@@ -258,6 +454,9 @@ function Build-EntraSourceResult {
         [Parameter(Mandatory)]$ApplyResult,
         [string]$RunDirectory
     )
+
+    # Secrets are written through the agent adapter, which the wizard does not load on its own.
+    Import-AgentAdapterModule
 
     $pair = $ApplyResult.Pair
     $domainName = if ($ApplyResult.Session.DomainName) { $ApplyResult.Session.DomainName } else { $ApplyResult.Session.TenantId }
@@ -275,6 +474,16 @@ function Build-EntraSourceResult {
     if ($ApplyResult.SecretValue) {
         $situation.Add('Store the client secret now — Microsoft will not display it again.')
     }
+    $copilotAccess = @()
+    if ($ApplyResult.PSObject.Properties['CopilotStudioAccess']) { $copilotAccess = @($ApplyResult.CopilotStudioAccess) }
+    foreach ($environment in $copilotAccess) {
+        if ($environment.Error) {
+            $situation.Add("Pending: Copilot Studio access in $($environment.Environment) could not be configured ($($environment.Error)).")
+        }
+        elseif ($environment.RolesMissing.Count -gt 0) {
+            $situation.Add("Pending: assign $($environment.RolesMissing -join ', ') to the application user in $($environment.Environment).")
+        }
+    }
 
     $fields = [ordered]@{
         'Grant Type'  = 'Client Credentials'
@@ -288,6 +497,17 @@ function Build-EntraSourceResult {
         Set-AgentRestrictedFile -Path $secretPath -Content $ApplyResult.SecretValue
         $fields['Client Secret'] = $ApplyResult.SecretValue
         $secretArtifacts += [ordered]@{ label = 'Client Secret'; path = $secretPath }
+    }
+
+    if ($ApplyResult.Agent365RefreshToken) {
+        $tokenPath = Join-Path $RunDirectory 'agent365-refresh-token.txt'
+        Set-AgentRestrictedFile -Path $tokenPath -Content $ApplyResult.Agent365RefreshToken
+        $fields['Agent 365 Refresh Token'] = $ApplyResult.Agent365RefreshToken
+        $secretArtifacts += [ordered]@{ label = 'Agent 365 Refresh Token'; path = $tokenPath }
+        $situation.Add('The Agent 365 refresh token belongs in Machine Identity Governance Settings, not Connection Settings.')
+    }
+    elseif ($ApplyResult.Agent365Pending) {
+        $situation.Add("Pending: the Agent 365 refresh token was not issued ($($ApplyResult.Agent365Pending)). Aggregation fails until it is set.")
     }
 
     if (-not (Test-Path -LiteralPath $Resolved.OutputDirectory)) {
@@ -320,6 +540,14 @@ function Build-EntraSourceResult {
     )
     if ($ApplyResult.SecretValue) {
         $completionItems += [PSCustomObject]@{ Label = 'Client Secret'; Value = $ApplyResult.SecretValue; Kind = 'Copy'; Mask = $true }
+    }
+    if ($ApplyResult.Agent365RefreshToken) {
+        $completionItems += [PSCustomObject]@{
+            Label = 'Agent 365 Refresh Token (Machine Identity Governance Settings)'
+            Value = $ApplyResult.Agent365RefreshToken
+            Kind  = 'Copy'
+            Mask  = $true
+        }
     }
     $completionItems += [PSCustomObject]@{ Label = 'Entra app overview'; Value = $portalUrl; Kind = 'Open'; Mask = $false }
     if ($ApplyResult.ConsentFailures.Count -gt 0) {
@@ -367,6 +595,9 @@ function Invoke-EntraAgentApply {
 
 Export-ModuleMember -Function @(
     'Initialize-EntraSourceSetup'
+    'Test-Agent365Selected'
+    'Test-CopilotStudioSelected'
+    'Set-CopilotStudioAccessForApply'
     'Get-EntraAgentCatalog'
     'Get-EntraResolvedConfig'
     'New-EntraAgentPlan'

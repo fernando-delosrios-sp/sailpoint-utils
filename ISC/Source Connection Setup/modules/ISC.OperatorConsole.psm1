@@ -32,6 +32,10 @@ function Initialize-OperatorConsole {
     $script:InWizardPrompt = $false
 }
 
+function Test-OperatorNonInteractive {
+    return [bool]$script:NonInteractive
+}
+
 $script:Esc = [char]27
 $script:AnsiEraseLine = "$([char]27)[K"
 $script:PromptBackToken = 'PROMPT_BACK'
@@ -857,6 +861,7 @@ function Invoke-CompletionActionMenu {
 Export-ModuleMember -Function @(
     'Import-IscModule'
     'Initialize-OperatorConsole'
+    'Test-OperatorNonInteractive'
     'Write-Step'
     'Write-Ok'
     'Write-Info'

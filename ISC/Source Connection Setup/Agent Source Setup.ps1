@@ -48,26 +48,28 @@ param(
 
     [string]$RequestPath,
     [string]$PlanPath,
-    [string]$OutputPath,
-    [switch]$WhatIf
+    [string]$OutputPath
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $script:ModuleRoot = Join-Path $PSScriptRoot 'modules'
-Import-Module (Join-Path $script:ModuleRoot 'ISC.AgentAdapter.psm1') -Force -Global -WarningAction SilentlyContinue
-Import-AgentConnectorModule -ModuleRoot $script:ModuleRoot -Connector $Connector
 
+# Module loading stays inside the try so a missing or broken connector module reaches the caller
+# as a single stderr line and exit code 1, the same as any other failure of this facade.
 try {
+    Import-Module (Join-Path $script:ModuleRoot 'ISC.AgentAdapter.psm1') -Force -Global -WarningAction SilentlyContinue
+    Import-AgentConnectorModule -ModuleRoot $script:ModuleRoot -Connector $Connector
+
     $envelope = Invoke-AgentAdapter -Operation $Operation -Connector $Connector `
-        -RequestPath $RequestPath -PlanPath $PlanPath -OutputPath $OutputPath -WhatIf:$WhatIf
+        -RequestPath $RequestPath -PlanPath $PlanPath -OutputPath $OutputPath -WhatIf:$WhatIfPreference
 
     if (-not $OutputPath) {
         $envelope | ConvertTo-Json -Depth 20
     }
 }
 catch {
-    Write-Error $_
+    Write-Error -ErrorRecord $_ -ErrorAction Continue
     exit 1
 }

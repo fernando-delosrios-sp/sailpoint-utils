@@ -340,8 +340,12 @@ function Set-SailPointIamRole {
 
 
 function Get-AwsSaasCatalog {
+    $packs = [ordered]@{}
+    foreach ($key in @($script:FeaturePacks.Keys | Sort-Object { [string]$script:FeaturePacks[$_].Label })) {
+        $packs[$key] = $script:FeaturePacks[$key]
+    }
     return [PSCustomObject]@{
-        FeaturePacks       = $script:FeaturePacks
+        FeaturePacks       = $packs
         ManagedPolicyNames = $script:ManagedPolicyNames
     }
 }

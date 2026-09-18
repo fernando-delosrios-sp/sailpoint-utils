@@ -31,6 +31,11 @@ Initialize-AwsSaasConnectorData
 $catalog = Get-AwsSaasCatalog
 Assert-True ($catalog.FeaturePacks.Contains('ActivityInsights')) 'ActivityInsights pack exists'
 Assert-True ($catalog.FeaturePacks.Contains('AgentDiscovery')) 'AgentDiscovery pack exists'
+$packLabels = @($catalog.FeaturePacks.Keys | ForEach-Object { [string]$catalog.FeaturePacks[$_].Label })
+$script:AssertionCount++
+if (($packLabels -join '|') -ne (($packLabels | Sort-Object) -join '|')) {
+    throw "Assertion failed: feature packs are ordered by label. Expected '$(($packLabels | Sort-Object) -join '|')', got '$($packLabels -join '|')'."
+}
 
 # Identity Center belongs to the CIEM AWS source, so the SaaS role never grants sso: / identitystore:.
 Assert-True (-not $catalog.FeaturePacks.Contains('IdentityCenter')) 'no Identity Center pack on SaaS'

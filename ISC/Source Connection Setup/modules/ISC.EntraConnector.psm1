@@ -11,6 +11,7 @@ $script:Resources = [ordered]@{
     Graph    = @{ AppId = '00000003-0000-0000-c000-000000000000'; Name = 'Microsoft Graph'; Required = $true }
     Defender = @{ AppId = 'fc780465-2017-40d4-a0c5-307022471b92'; Name = 'WindowsDefenderATP'; Required = $false }
     Exchange = @{ AppId = '00000002-0000-0ff1-ce00-000000000000'; Name = 'Office 365 Exchange Online'; Required = $false }
+    AzureServiceManagement = @{ AppId = '797f4846-ba00-4fd7-ba43-dac1f8f63013'; Name = 'Windows Azure Service Management API'; Required = $false }
 }
 
 # -----------------------------------------------------------------------------
@@ -131,6 +132,24 @@ $script:FeaturePacks = [ordered]@{
             @{ Value = 'ExternalConnection.Read.All' }
             @{ Value = 'AppCatalog.Read.All' }
         )
+        # Foundry agent aggregation reaches Azure Resource Manager to enumerate accounts and
+        # projects, which the connector documentation gates behind this delegated scope. The Azure
+        # RBAC roles it also needs (Reader, Cognitive Services Data Contributor) stay manual.
+        DelegatedPermissions = @(
+            @{ Value = 'user_impersonation'; Resource = 'AzureServiceManagement' }
+        )
+    }
+    Agent365 = @{
+        # The Agent 365 catalog endpoints reject application tokens, so this pack grants delegated
+        # permissions and mints the refresh token ISC asks for in Machine Identity Governance Settings.
+        Label                = 'Machine identity governance - Microsoft Agent 365 catalog (delegated refresh token)'
+        Permissions          = @()
+        DelegatedPermissions = @(
+            @{ Value = 'CopilotPackages.Read.All' }
+            @{ Value = 'CopilotPackages.ReadWrite.All' }
+            @{ Value = 'User.Read' }
+            @{ Value = 'offline_access' }
+        )
     }
     DefenderHunting = @{
         Label       = 'NHI discovery - Microsoft Defender (WindowsDefenderATP API)'
@@ -153,14 +172,18 @@ $script:DirectoryRoleMap = [ordered]@{
 }
 
 function Connect-EntraGraph {
-    param([string]$RequestedTenantId)
+    param(
+        [string]$RequestedTenantId,
+        [string[]]$AdditionalScopes = @()
+    )
 
     $scopes = @(
         'Application.ReadWrite.All'
         'AppRoleAssignment.ReadWrite.All'
         'Directory.Read.All'
         'RoleManagement.ReadWrite.Directory'
-    )
+    ) + @($AdditionalScopes | Where-Object { $_ })
+    $scopes = @($scopes | Select-Object -Unique)
 
     $context = Get-MgContext -ErrorAction SilentlyContinue
     $needsConnect = $true
@@ -261,6 +284,31 @@ function Get-SelectedPermissions {
     return @($selected | Sort-Object Resource, Value -Unique)
 }
 
+# Delegated permissions are kept apart from the application permissions above because they are
+# consented and carried differently: they only take effect inside a user token, which this script
+# obtains through the authorization-code flow rather than through client credentials.
+function Get-SelectedDelegatedPermissions {
+    param([string[]]$FeatureNames)
+
+    $selected = [System.Collections.Generic.List[object]]::new()
+    foreach ($name in @($FeatureNames)) {
+        if ([string]::IsNullOrWhiteSpace($name)) { continue }
+        if (-not $script:FeaturePacks.Contains($name)) { continue }
+        $pack = $script:FeaturePacks[$name]
+        if (-not $pack.Contains('DelegatedPermissions')) { continue }
+        foreach ($permission in $pack.DelegatedPermissions) {
+            $resource = if ($permission.ContainsKey('Resource')) { $permission.Resource } else { 'Graph' }
+            $selected.Add([PSCustomObject]@{
+                Resource = $resource
+                Value    = $permission.Value
+                Pack     = $name
+            })
+        }
+    }
+
+    return @($selected | Sort-Object Resource, Value -Unique)
+}
+
 function Get-EntraIscFeatureChecklist {
     param([string[]]$FeatureNames)
 
@@ -279,7 +327,9 @@ function Get-EntraIscFeatureChecklist {
     }
     if (@($FeatureNames) -contains 'ServicePrincipalProvisioning') {
         $items.Add('Feature Management: enable Manage Microsoft Entra Service Principals as Accounts.')
-        $items.Add('Service Principal Account Filter: servicePrincipalType eq ''Application'' (default).')
+        # Entra types the identities Foundry and Copilot Studio mint for agents as ServiceIdentity,
+        # so the connector default silently drops every agent identity.
+        $items.Add('Service Principal Account Filter: the default servicePrincipalType eq ''Application'' excludes agent identities. Use servicePrincipalType eq ''Application'' or servicePrincipalType eq ''ServiceIdentity'' to govern Foundry and Copilot Studio agents.')
     }
     if (@($FeatureNames) -contains 'ExchangeOnline') {
         $items.Add('Feature Management: enable Manage Exchange Online (requires IQService + certificate on the app).')
@@ -293,8 +343,20 @@ function Get-EntraIscFeatureChecklist {
     }
     if (@($FeatureNames) -contains 'CopilotDiscovery') {
         $items.Add('Machine Identity Governance: enable Azure AI Foundry Agents and/or Microsoft Copilot Studio Agents.')
-        $items.Add('For Agent 365: paste a refresh token in Machine Identity Governance (delegated OAuth; see SailPoint docs).')
-        $items.Add('For Foundry: assign Reader and Cognitive Services Data Contributor on each Azure subscription.')
+        $items.Add('For Agent 365 catalog aggregation, add -Feature Agent365 so the delegated refresh token is issued.')
+        $items.Add('For Foundry: assign Reader and Cognitive Services Data Contributor (Preview) on each Azure subscription. Without both, the Foundry dataset aggregation reaches neither ARM nor the agents data plane and returns nothing.')
+        $items.Add('For Foundry: add the Azure Service Management user_impersonation delegated permission to the app registration.')
+        $items.Add('Agent identities are servicePrincipalType ServiceIdentity; widen the Service Principal Account Filter or they never aggregate as accounts.')
+        # Copilot Studio agents live in Dataverse, not Azure, so Entra permissions alone never reach
+        # them. The connector authenticates to each Power Platform environment as an application user.
+        $items.Add('For Copilot Studio: add the app registration as a Dataverse application user in every Power Platform environment that holds agents.')
+        $items.Add('For Copilot Studio: give that application user the Global Discovery Service Role plus a custom BotReader role granting organization-level Read on bot and botcomponent.')
+        $items.Add('For Copilot Studio: do not rely on the built-in Bot Viewer role; it reads only owned records, so an application user sees zero agents.')
+    }
+    if (@($FeatureNames) -contains 'Agent365') {
+        $items.Add('Machine Identity Governance: enable Microsoft Agent 365 and select the catalog platforms.')
+        $items.Add('Machine Identity Governance: paste the Agent 365 refresh token. Client Credentials sources fail aggregation without it.')
+        $items.Add('The account that authorized the refresh token needs AI Administrator (or Global Administrator) and a Microsoft Agent 365 license.')
     }
     $nhiPacks = @('NhiDiscovery', 'TeamsSecretScanning', 'SharePointScanning', 'DefenderHunting')
     if (@($FeatureNames | Where-Object { $nhiPacks -contains $_ }).Count -gt 0) {
@@ -397,6 +459,32 @@ function Resolve-AppRoles {
     return @($resolved)
 }
 
+function Resolve-DelegatedScopes {
+    param(
+        [Parameter(Mandatory)]$ServicePrincipal,
+        [Parameter(Mandatory)][string[]]$PermissionValues,
+        [Parameter(Mandatory)][string]$ResourceName
+    )
+
+    $scopeProperty = $ServicePrincipal.PSObject.Properties['Oauth2PermissionScopes']
+    $scopes = @()
+    if ($scopeProperty) { $scopes = @($scopeProperty.Value) }
+    if ($scopes.Count -eq 0) {
+        throw "$ResourceName exposes no delegated permissions. The signed-in account may lack Directory.Read.All."
+    }
+
+    $resolved = [System.Collections.Generic.List[object]]::new()
+    foreach ($value in $PermissionValues) {
+        $scope = $scopes | Where-Object { $_.Value -eq $value } | Select-Object -First 1
+        if (-not $scope) {
+            Write-Warning "$ResourceName does not expose '$value' as a delegated permission in this tenant. Skipping."
+            continue
+        }
+        $resolved.Add([PSCustomObject]@{ Id = $scope.Id; Value = $value })
+    }
+    return @($resolved)
+}
+
 # -----------------------------------------------------------------------------
 # Application operations
 # -----------------------------------------------------------------------------
@@ -453,12 +541,12 @@ function Get-EntraConnectorApplication {
 function Set-RequiredResourceAccess {
     param(
         [Parameter(Mandatory)]$Application,
-        [Parameter(Mandatory)][hashtable]$RolesByResource
+        [Parameter(Mandatory)][hashtable]$RolesByResource,
+        [hashtable]$ScopesByResource = @{}
     )
 
-    $managedAppIds = @(
-        foreach ($key in $RolesByResource.Keys) { $script:Resources[$key].AppId }
-    )
+    $managedKeys = @(@($RolesByResource.Keys) + @($ScopesByResource.Keys) | Select-Object -Unique)
+    $managedAppIds = @(foreach ($key in $managedKeys) { $script:Resources[$key].AppId })
 
     $required = [System.Collections.Generic.List[object]]::new()
 
@@ -471,16 +559,45 @@ function Set-RequiredResourceAccess {
         })
     }
 
-    foreach ($key in $RolesByResource.Keys) {
-        $roles = $RolesByResource[$key]
-        if (-not $roles -or $roles.Count -eq 0) { continue }
+    foreach ($key in $managedKeys) {
+        $access = [System.Collections.Generic.List[object]]::new()
+        foreach ($role in @($RolesByResource[$key])) {
+            if ($role) { $access.Add(@{ Id = $role.Id; Type = 'Role' }) }
+        }
+        foreach ($scope in @($ScopesByResource[$key])) {
+            if ($scope) { $access.Add(@{ Id = $scope.Id; Type = 'Scope' }) }
+        }
+        if ($access.Count -eq 0) { continue }
         $required.Add(@{
             ResourceAppId  = $script:Resources[$key].AppId
-            ResourceAccess = @(foreach ($role in $roles) { @{ Id = $role.Id; Type = 'Role' } })
+            ResourceAccess = $access.ToArray()
         })
     }
 
     Update-MgApplication -ApplicationId $Application.Id -RequiredResourceAccess $required.ToArray() -ErrorAction Stop
+}
+
+function Set-EntraRedirectUri {
+    param(
+        [Parameter(Mandatory)]$Application,
+        [Parameter(Mandatory)][string]$RedirectUri
+    )
+
+    $existing = @()
+    $web = $Application.PSObject.Properties['Web']
+    if ($web -and $web.Value) {
+        $uris = $web.Value.PSObject.Properties['RedirectUris']
+        if ($uris) { $existing = @($uris.Value | Where-Object { $_ }) }
+    }
+    if ($existing -contains $RedirectUri) {
+        Write-Info "Redirect URI already registered: $RedirectUri"
+        return @($existing)
+    }
+
+    $updated = @($existing) + $RedirectUri
+    Update-MgApplication -ApplicationId $Application.Id -Web @{ RedirectUris = $updated } -ErrorAction Stop
+    Write-Ok "Registered redirect URI: $RedirectUri"
+    return @($updated)
 }
 
 function Grant-AppRoleConsent {
@@ -544,6 +661,77 @@ function Grant-AppRoleConsent {
 
     if ($skipped -gt 0) { Write-Info "$skipped permission(s) already consented" }
     return [PSCustomObject]@{ Granted = $granted; Skipped = $skipped; Failed = @($failed) }
+}
+
+# Tenant-wide consent for delegated permissions is a single oauth2PermissionGrant per resource whose
+# scope is one space-delimited string, so an existing grant is merged into rather than duplicated.
+function Grant-DelegatedConsent {
+    param(
+        [Parameter(Mandatory)]$ServicePrincipal,
+        [Parameter(Mandatory)]$ResourceServicePrincipal,
+        [Parameter(Mandatory)]$Scopes
+    )
+
+    $wanted = @(@($Scopes) | ForEach-Object { [string]$_.Value })
+    if ($wanted.Count -eq 0) {
+        return [PSCustomObject]@{ Granted = @(); Skipped = @(); Failed = @() }
+    }
+
+    $existing = $null
+    try {
+        $grants = Invoke-MgGraphRequest -Method GET -OutputType PSObject -ErrorAction Stop `
+            -Uri "/v1.0/servicePrincipals/$($ServicePrincipal.Id)/oauth2PermissionGrants"
+        $existing = @($grants.value) |
+            Where-Object { $_.resourceId -eq $ResourceServicePrincipal.Id -and $_.consentType -eq 'AllPrincipals' } |
+            Select-Object -First 1
+    }
+    catch {
+        Write-Verbose "Could not list delegated permission grants: $($_.Exception.Message)"
+    }
+
+    $current = @()
+    if ($existing) {
+        $scopeProperty = $existing.PSObject.Properties['scope']
+        if ($scopeProperty -and $scopeProperty.Value) {
+            $current = @([string]$scopeProperty.Value -split '\s+' | Where-Object { $_ })
+        }
+    }
+
+    $missing = @($wanted | Where-Object { $current -notcontains $_ })
+    if ($missing.Count -eq 0) {
+        Write-Info "$($wanted.Count) delegated permission(s) already consented"
+        return [PSCustomObject]@{ Granted = @(); Skipped = @($wanted); Failed = @() }
+    }
+
+    $merged = (@(@($current) + $missing | Select-Object -Unique)) -join ' '
+
+    # A newly created service principal can take a few seconds to replicate.
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        try {
+            if ($existing) {
+                Invoke-MgGraphRequest -Method PATCH -Uri "/v1.0/oauth2PermissionGrants/$($existing.id)" `
+                    -Body @{ scope = $merged } -ErrorAction Stop | Out-Null
+            }
+            else {
+                Invoke-MgGraphRequest -Method POST -Uri '/v1.0/oauth2PermissionGrants' -ErrorAction Stop -Body @{
+                    clientId    = $ServicePrincipal.Id
+                    consentType = 'AllPrincipals'
+                    resourceId  = $ResourceServicePrincipal.Id
+                    scope       = $merged
+                } | Out-Null
+            }
+            foreach ($value in $missing) { Write-Ok "Delegated consent granted: $value" }
+            return [PSCustomObject]@{ Granted = @($missing); Skipped = @($current); Failed = @() }
+        }
+        catch {
+            if ($attempt -lt 3) {
+                Start-Sleep -Seconds (2 * $attempt)
+                continue
+            }
+            Write-Warning "Failed to grant delegated consent: $($_.Exception.Message)"
+            return [PSCustomObject]@{ Granted = @(); Skipped = @(); Failed = @($missing) }
+        }
+    }
 }
 
 # Role membership reads from the service principal side in one call. Returns $null when the
@@ -653,6 +841,226 @@ function New-EntraClientSecret {
     return $result
 }
 
+# -----------------------------------------------------------------------------
+# Agent 365 refresh token - OAuth 2.0 authorization-code flow
+#
+# The Microsoft Agent 365 catalog endpoints accept delegated tokens only, so a Client Credentials
+# source cannot aggregate them from its own token. ISC redeems this refresh token instead, which is
+# why it is pasted into Machine Identity Governance Settings rather than Connection Settings.
+# https://documentation.sailpoint.com/connectors/microsoft/entra_id/help/integrating_entra_id/generating_refresh_tokens.html
+# -----------------------------------------------------------------------------
+
+$script:EntraAuthCodeTimeoutSeconds = 300
+$script:Agent365Scopes = @('offline_access', 'https://graph.microsoft.com/.default')
+
+function Get-Agent365Scopes {
+    return @($script:Agent365Scopes)
+}
+
+function Get-EntraAuthorizationUrl {
+    param(
+        [Parameter(Mandatory)][string]$TenantId,
+        [Parameter(Mandatory)][string]$ClientId,
+        [Parameter(Mandatory)][string]$RedirectUri,
+        [Parameter(Mandatory)][string[]]$Scopes,
+        [Parameter(Mandatory)][string]$State
+    )
+
+    $query = @(
+        "client_id=$([uri]::EscapeDataString($ClientId))"
+        'response_type=code'
+        "redirect_uri=$([uri]::EscapeDataString($RedirectUri))"
+        'response_mode=query'
+        "scope=$([uri]::EscapeDataString(($Scopes -join ' ')))"
+        "state=$([uri]::EscapeDataString($State))"
+        'prompt=select_account'
+    ) -join '&'
+
+    return "https://login.microsoftonline.com/$([uri]::EscapeDataString($TenantId))/oauth2/v2.0/authorize?$query"
+}
+
+# Blocks on the loopback redirect until Entra sends the code back, so the operator never has to copy
+# anything out of the address bar.
+function Wait-EntraAuthorizationCode {
+    param(
+        [Parameter(Mandatory)][string]$RedirectUri,
+        [Parameter(Mandatory)][string]$State
+    )
+
+    $prefix = $RedirectUri.TrimEnd('/') + '/'
+    $listener = [System.Net.HttpListener]::new()
+    $listener.Prefixes.Add($prefix)
+    try {
+        $listener.Start()
+    }
+    catch {
+        throw "Could not listen on $prefix. Choose a free port with -Agent365RedirectUri. $($_.Exception.Message)"
+    }
+
+    try {
+        Write-Info "Waiting for the Entra redirect on $prefix (Ctrl+C to cancel) ..."
+        # A blocked sign-in never redirects here, so the wait is bounded rather than hanging until
+        # Ctrl+C. Polling also keeps Ctrl+C responsive.
+        $pending = $listener.GetContextAsync()
+        $deadline = (Get-Date).AddSeconds($script:EntraAuthCodeTimeoutSeconds)
+        while (-not $pending.Wait(500)) {
+            if ((Get-Date) -gt $deadline) {
+                throw ("No redirect arrived on $prefix within $([int]($script:EntraAuthCodeTimeoutSeconds / 60)) minutes. " +
+                    'Confirm the redirect URI is registered on the app registration and that the sign-in was not blocked by Conditional Access.')
+            }
+        }
+
+        $context = $pending.Result
+        $code = $context.Request.QueryString['code']
+        $failure = $context.Request.QueryString['error']
+        $description = $context.Request.QueryString['error_description']
+        $returnedState = $context.Request.QueryString['state']
+
+        $body = if ($code) {
+            '<html><body style="font-family:sans-serif"><h3>Authorization complete</h3><p>Return to the PowerShell window.</p></body></html>'
+        }
+        else {
+            "<html><body style='font-family:sans-serif'><h3>Authorization failed</h3><p>$failure</p></body></html>"
+        }
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
+        $context.Response.ContentType = 'text/html'
+        $context.Response.ContentLength64 = $bytes.Length
+        $context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
+        $context.Response.OutputStream.Close()
+
+        if (-not $code) {
+            $detail = if ($description) { "$failure - $description" } else { $failure }
+            throw "Entra returned an error instead of an authorization code: $detail"
+        }
+        if ($returnedState -ne $State) {
+            throw 'The redirect carried a different state value than the request. Discarding the authorization code.'
+        }
+        return $code
+    }
+    finally {
+        $listener.Stop()
+        $listener.Close()
+    }
+}
+
+function Invoke-EntraTokenExchange {
+    param(
+        [Parameter(Mandatory)][string]$TenantId,
+        [Parameter(Mandatory)][string]$ClientId,
+        [Parameter(Mandatory)][string]$ClientSecret,
+        [Parameter(Mandatory)][string]$RedirectUri,
+        [Parameter(Mandatory)][string]$Code,
+        [Parameter(Mandatory)][string[]]$Scopes,
+        [int]$RetryDelaySeconds = 5
+    )
+
+    $uri = "https://login.microsoftonline.com/$([uri]::EscapeDataString($TenantId))/oauth2/v2.0/token"
+    $body = @{
+        client_id     = $ClientId
+        client_secret = $ClientSecret
+        code          = $Code
+        redirect_uri  = $RedirectUri
+        grant_type    = 'authorization_code'
+        scope         = ($Scopes -join ' ')
+    }
+
+    # AADSTS7000215 here means the secret has not replicated to this token endpoint yet. Entra
+    # rejects the client before it reads the code, so the code survives and a retry is safe.
+    for ($attempt = 1; ; $attempt++) {
+        try {
+            return Invoke-RestMethod -Method Post -Uri $uri -ErrorAction Stop -Body $body
+        }
+        catch {
+            $detail = $_.ErrorDetails
+            $failure = if ($detail) { [string]$detail.Message } else { [string]$_.Exception.Message }
+            if ($attempt -ge 3 -or $failure -notmatch 'AADSTS7000215') {
+                throw "Entra rejected the token exchange: $failure"
+            }
+            Write-Info 'The client secret is not active yet; retrying the token exchange ...'
+            if ($RetryDelaySeconds -gt 0) { Start-Sleep -Seconds $RetryDelaySeconds }
+        }
+    }
+}
+
+# A client-credentials request is the cheapest way to prove a freshly created secret is usable.
+# Doing it before the browser hand-off keeps the authorization code, which Entra expires in
+# minutes, out of the replication race.
+function Wait-EntraClientSecretReady {
+    param(
+        [Parameter(Mandatory)][string]$TenantId,
+        [Parameter(Mandatory)][string]$ClientId,
+        [Parameter(Mandatory)][string]$ClientSecret,
+        [int]$TimeoutSeconds = 120,
+        [int]$DelaySeconds = 5
+    )
+
+    $uri = "https://login.microsoftonline.com/$([uri]::EscapeDataString($TenantId))/oauth2/v2.0/token"
+    $body = @{
+        client_id     = $ClientId
+        client_secret = $ClientSecret
+        grant_type    = 'client_credentials'
+        scope         = 'https://graph.microsoft.com/.default'
+    }
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $waited = $false
+    while ($true) {
+        try {
+            $null = Invoke-RestMethod -Method Post -Uri $uri -ErrorAction Stop -Body $body
+            if ($waited) { Write-Ok 'Client secret is active' }
+            return $true
+        }
+        catch {
+            $detail = $_.ErrorDetails
+            $failure = if ($detail) { [string]$detail.Message } else { [string]$_.Exception.Message }
+            # Any other failure is the authorization code exchange's problem to report in context.
+            if ($failure -notmatch 'AADSTS7000215') { return $true }
+            if ((Get-Date) -ge $deadline) { return $false }
+            if (-not $waited) {
+                Write-Info 'Waiting for Entra to activate the new client secret ...'
+                $waited = $true
+            }
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
+}
+
+function Get-EntraAgent365RefreshToken {
+    param(
+        [Parameter(Mandatory)][string]$TenantId,
+        [Parameter(Mandatory)][string]$ClientId,
+        [Parameter(Mandatory)][string]$ClientSecret,
+        [Parameter(Mandatory)][string]$RedirectUri
+    )
+
+    if (-not (Wait-EntraClientSecretReady -TenantId $TenantId -ClientId $ClientId -ClientSecret $ClientSecret)) {
+        throw 'Entra has not activated the client secret yet (AADSTS7000215). Re-run the script to retry; a new secret is usually usable within a minute.'
+    }
+
+    $scopes = Get-Agent365Scopes
+    $state = [guid]::NewGuid().ToString('N')
+    $authUrl = Get-EntraAuthorizationUrl -TenantId $TenantId -ClientId $ClientId -RedirectUri $RedirectUri `
+        -Scopes $scopes -State $state
+
+    Write-Host ''
+    Write-Host 'Authorize the application at:' -ForegroundColor White
+    Write-Host $authUrl -ForegroundColor Yellow
+    Write-Host ''
+    if (-not (Open-Url -Url $authUrl)) {
+        Write-Info 'Could not open a browser automatically; copy the URL above.'
+    }
+    Write-Info 'Sign in as a user with AI Administrator (or Global Administrator) and a Microsoft Agent 365 license.'
+
+    $code = Wait-EntraAuthorizationCode -RedirectUri $RedirectUri -State $state
+    $response = Invoke-EntraTokenExchange -TenantId $TenantId -ClientId $ClientId -ClientSecret $ClientSecret `
+        -RedirectUri $RedirectUri -Code $code -Scopes $scopes
+
+    $refreshProperty = $response.PSObject.Properties['refresh_token']
+    if (-not $refreshProperty -or [string]::IsNullOrWhiteSpace([string]$refreshProperty.Value)) {
+        throw 'Entra returned an access token without a refresh token. Confirm offline_access is consented on the application.'
+    }
+    return [string]$refreshProperty.Value
+}
+
 function Get-EntraConnectorCatalog {
     $packs = [ordered]@{}
     foreach ($key in $script:FeaturePacks.Keys) {
@@ -661,10 +1069,14 @@ function Get-EntraConnectorCatalog {
     if (Get-Command Get-EmbeddedCiemFeaturePack -ErrorAction SilentlyContinue) {
         $packs['Ciem'] = Get-EmbeddedCiemFeaturePack
     }
+    $sorted = [ordered]@{}
+    foreach ($key in @($packs.Keys | Sort-Object { [string]$packs[$_].Label })) {
+        $sorted[$key] = $packs[$key]
+    }
     return [PSCustomObject]@{
         Resources        = $script:Resources
         CorePermissions  = $script:CorePermissions
-        FeaturePacks     = $packs
+        FeaturePacks     = $sorted
         DirectoryRoleMap = $script:DirectoryRoleMap
     }
 }
@@ -684,16 +1096,26 @@ Export-ModuleMember -Function @(
     'Get-EntraServicePrincipalLookupErrors'
     'Connect-EntraGraph'
     'Get-SelectedPermissions'
+    'Get-SelectedDelegatedPermissions'
     'Get-EntraIscFeatureChecklist'
     'Get-ServicePrincipalByAppId'
     'Get-ApiServicePrincipal'
     'Resolve-AppRoles'
+    'Resolve-DelegatedScopes'
     'Find-EntraApplicationByName'
     'New-EntraConnectorApplication'
     'Get-EntraConnectorApplication'
     'Set-RequiredResourceAccess'
+    'Set-EntraRedirectUri'
     'Grant-AppRoleConsent'
+    'Grant-DelegatedConsent'
     'Get-ServicePrincipalRoleMembership'
     'Add-EntraDirectoryRoles'
     'New-EntraClientSecret'
+    'Get-Agent365Scopes'
+    'Get-EntraAuthorizationUrl'
+    'Wait-EntraAuthorizationCode'
+    'Invoke-EntraTokenExchange'
+    'Wait-EntraClientSecretReady'
+    'Get-EntraAgent365RefreshToken'
 )

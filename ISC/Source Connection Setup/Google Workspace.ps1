@@ -168,8 +168,8 @@ param(
     [string]$ImpersonateUser,
 
     [Parameter()]
-    [ValidateSet('Gcp', 'Ciem', 'GmailDelegates', 'DeltaAggregation', 'DomainManagement',
-        'ActivityInsights', 'NhiDiscovery', 'AgentDiscovery')]
+    [ValidateSet('ActivityInsights', 'AgentDiscovery', 'Ciem', 'DeltaAggregation', 'DomainManagement',
+        'Gcp', 'GmailDelegates', 'NhiDiscovery')]
     [string[]]$Feature,
 
     [Parameter()]
@@ -460,8 +460,21 @@ try {
 
             if (Enter-WizardPrompt) {
                 if (@($Feature) -contains 'AgentDiscovery' -and $askGcpRegions) {
+                    $discovered = @()
+                    if ($OrganizationId) {
+                        $discovered = @(Get-GoogleVertexAgentRegions -OrgId $OrganizationId)
+                    }
+                    if ($discovered.Count) {
+                        Write-Ok "Deployed Vertex AI agents found in: $($discovered -join ', ')"
+                    }
+                    else {
+                        Write-Info 'No deployed Vertex AI agents were found in this organization. The connector reports no error when a region has none, so set the regions your agents will run in.'
+                    }
+                    $regionDefault = if ($GcpRegions -and $GcpRegions.Count) { $GcpRegions -join ', ' }
+                        elseif ($discovered.Count) { $discovered -join ', ' }
+                        else { 'us-central1' }
                     $regionInput = Read-InputString -Prompt 'GCP regions for Vertex AI agents (comma-separated)' `
-                        -Default $(if ($GcpRegions -and $GcpRegions.Count) { $GcpRegions -join ', ' } else { 'us-central1' }) -Required
+                        -Default $regionDefault -Required
                     $GcpRegions = @($regionInput -split '[,\s]+' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
                 }
                 Complete-WizardPrompt
@@ -647,32 +660,45 @@ try {
 
     $customRoleName = $null
     if ($needsGcp) {
-        # Client Credentials calls Google as the consenting Workspace user, so GCP access is
-        # granted to that user rather than to a service account.
-        $member = if ($isServiceAccount) { "serviceAccount:$saEmail" } else { "user:$ConsentUser" }
+        # Service Account signs the JWT as the service account but sets the impersonate user as
+        # its subject, so Google evaluates GCP IAM against that user — the service account's own
+        # bindings do not apply to delegated calls. Both get the roles: the connector's Workspace
+        # calls carry the subject, other GCP calls may run as the service account itself.
+        # Client Credentials calls Google as the consenting Workspace user.
+        $members = if ($isServiceAccount) {
+            @("serviceAccount:$saEmail", "user:$ImpersonateUser")
+        }
+        else {
+            @("user:$ConsentUser")
+        }
 
         Write-Step 'Organization custom IAM role'
         $permissions = Get-CustomRolePermissions -FeatureNames $Feature -SkipGcpWrite:$AggregationOnly
         $customRoleName = Set-OrganizationCustomRole -OrgId $OrganizationId -Permissions $permissions
 
         Write-Step 'Binding custom role at organization scope'
-        Add-IamPolicyBinding -ResourceKind organizations -ResourceId $OrganizationId -Member $member -Role $customRoleName
-        Write-Ok "$member <- $customRoleName"
+        foreach ($member in $members) {
+            Add-IamPolicyBinding -ResourceKind organizations -ResourceId $OrganizationId -Member $member -Role $customRoleName
+            Write-Ok "$member <- $customRoleName"
+        }
 
         if (@($Feature) -contains 'NhiDiscovery') {
             Write-Step 'Binding NHI discovery built-in roles'
-            foreach ($role in $catalog.NhiBuiltInRoles) {
-                try {
-                    $scope = Add-ConnectorIamBinding -OrgId $OrganizationId -ProjectId $ProjectId -Member $member -Role $role.Id
-                    if ($scope -eq 'project') {
-                        Write-Ok "$($role.Label) (project; not valid at organization)"
+            foreach ($member in $members) {
+                Write-Info $member
+                foreach ($role in $catalog.NhiBuiltInRoles) {
+                    try {
+                        $scope = Add-ConnectorIamBinding -OrgId $OrganizationId -ProjectId $ProjectId -Member $member -Role $role.Id
+                        if ($scope -eq 'project') {
+                            Write-Ok "$($role.Label) (project; not valid at organization)"
+                        }
+                        else {
+                            Write-Ok $role.Label
+                        }
                     }
-                    else {
-                        Write-Ok $role.Label
+                    catch {
+                        Write-Warning "Could not bind $($role.Id) ($($role.Label)) to ${member}: $($_.Exception.Message)"
                     }
-                }
-                catch {
-                    Write-Warning "Could not bind $($role.Id) ($($role.Label)): $($_.Exception.Message)"
                 }
             }
         }
