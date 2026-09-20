@@ -4,6 +4,18 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-19
+
+### ✨ New Features
+
+- **Emergency Termination** — Hardened interactive package under `ISC/Emergency Termination`: acknowledgement and select-person forms, optional second-level manager approval, and `POST /v3/identities/{id}/set-lifecycle-state` with Parameter Storage OAuth. Target selection uses `SEARCH_V2` identity IDs (active direct reports only). Includes importable forms, workflow, combined SP-Config, and README.
+
+### 🔧 Improvements
+
+- **Emergency Termination** — Operator-facing copy and layout aligned with Active Directory Privileged Tasks and Identity Match & Onboard (slate intros, summary tables, Yes/No toggles, Status/Detail failures). Tenant credentials replaced with placeholders; workflow disabled by default.
+
+---
+
 ## 2026-09-17
 
 ### ✨ New Features

@@ -1,0 +1,419 @@
+{
+  "name": "Emergency Termination",
+  "description": "Interactive process that immediately sets an active direct report to the Emergency Termination lifecycle state, with optional second-level manager approval.",
+  "definition": {
+    "start": "Define Variable",
+    "steps": {
+      "Define Variable": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "ISC API base URL used by the set-lifecycle-state HTTP action (no trailing slash).",
+              "name": "url",
+              "transforms": [],
+              "variableA": "https://{tenant}.api.identitynow-demo.com"
+            },
+            {
+              "description": "Lifecycle state ID for Emergency Termination on the target identity profile. Resolve with GET /v3/identity-profiles/{id}/lifecycle-states.",
+              "name": "ET LCS ID",
+              "transforms": [],
+              "variableA": "YOUR_ET_LCS_ID"
+            },
+            {
+              "description": "Set to true to require the requestor's manager to approve before the lifecycle state changes. Any other value skips approval.",
+              "name": "Approval Required",
+              "transforms": [],
+              "variableA": "true"
+            }
+          ]
+        },
+        "displayName": "Configuration",
+        "nextStep": "Get Requestor",
+        "type": "Mutation"
+      },
+      "Get Requestor": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.trigger.launchedBy.id"
+        },
+        "description": "Load the operator who launched the interactive process.",
+        "displayName": "Get requestor",
+        "nextStep": "Form Acknowledgement",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Form Acknowledgement": {
+        "actionId": "sp:interactive-form",
+        "attributes": {
+          "formDefinitionId": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
+          "inputForForm_username.$": "$.getRequestor.attributes.displayName",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 1 of 2</strong></span> — Confirm that you understand this process is audited.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Acknowledge emergency termination"
+        },
+        "displayName": "Form: Acknowledgement",
+        "nextStep": "Check Acknowledgement",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Acknowledgement": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Form Select Person",
+            "variableA.$": "$.formAcknowledgement.formData.userAcknowledgement",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Message Opted Out",
+        "displayName": "Acknowledged?",
+        "type": "choice"
+      },
+      "Message Opted Out": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">You did not confirm acknowledgement. No person was selected and no lifecycle change was made.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Emergency termination cancelled"
+        },
+        "displayName": "Message: Opted out",
+        "nextStep": "End Success Opted Out",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Form Select Person": {
+        "actionId": "sp:interactive-form",
+        "attributes": {
+          "formDefinitionId": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
+          "inputForForm_username.$": "$.getRequestor.attributes.displayName",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 2 of 2</strong></span> — Select the person and provide a justification.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Select person to terminate"
+        },
+        "displayName": "Form: Select person",
+        "nextStep": "Get Selected Identity",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Get Selected Identity": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.formSelectPerson.formData.selectedIndividual"
+        },
+        "catch": [
+          {
+            "next": "Message Identity Lookup Failed"
+          }
+        ],
+        "description": "Resolve the selected identity by exact ID returned from the SEARCH_V2 form field.",
+        "displayName": "Get selected identity",
+        "nextStep": "Check Approval Required",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Message Identity Lookup Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">ISC could not load the selected identity.</p><p><strong>Status:</strong> {{ $.getSelectedIdentity.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getSelectedIdentity.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No lifecycle change was made. Select the person again or ask an administrator to check identity search.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "⚠️  Could not load selected person"
+        },
+        "displayName": "Message: Identity lookup failed",
+        "nextStep": "End Failure Lookup",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approval Required": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Check Manager Present",
+            "variableA.$": "$.defineVariable.approvalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Message No Approval Required",
+        "description": "Check the Configuration variable Approval Required. true sends a standalone approval form to the requestor's manager; any other value sets the lifecycle state immediately.",
+        "displayName": "Manager approval required?",
+        "type": "choice"
+      },
+      "Check Manager Present": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Get Approver",
+            "variableA.$": "$.getRequestor.managerRef.id"
+          }
+        ],
+        "defaultStep": "Message No Approver",
+        "description": "The requestor's manager must exist before an approval task can be created.",
+        "displayName": "Requestor has a manager?",
+        "type": "choice"
+      },
+      "Message No Approver": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Manager approval is required, but your identity has no manager assigned.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Selected person</td><td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.getSelectedIdentity.attributes.displayName}}</strong></td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Justification</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formSelectPerson.formData.justification}}</td></tr></table><p style=\"margin: 0; color: #475569;\">No lifecycle change was made. Ask an administrator to assign your manager, or temporarily set <strong>Approval Required</strong> to false in a controlled demo tenant only.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "⚠️  No approver available"
+        },
+        "displayName": "Message: No approver",
+        "nextStep": "End Failure No Approver",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Get Approver": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.getRequestor.managerRef.id"
+        },
+        "catch": [
+          {
+            "next": "Message Approver Lookup Failed"
+          }
+        ],
+        "description": "Load the requestor's manager who will receive the approval form.",
+        "displayName": "Get approver",
+        "nextStep": "Message Waiting For Approval",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Message Approver Lookup Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">ISC could not load your manager for approval.</p><p><strong>Status:</strong> {{ $.getApprover.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getApprover.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No lifecycle change was made.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "⚠️  Could not load approver"
+        },
+        "displayName": "Message: Approver lookup failed",
+        "nextStep": "End Failure Approver Lookup",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message Waiting For Approval": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "WARN",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">The request for <strong>{{$.getSelectedIdentity.attributes.displayName}}</strong> has been sent to <strong>{{$.getApprover.attributes.displayName}}</strong> for approval. Keep this window open, or return when you are notified of the decision.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Justification</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formSelectPerson.formData.justification}}</td></tr></table>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Waiting for manager approval"
+        },
+        "displayName": "Message: Waiting for approval",
+        "nextStep": "Form Manager Approval",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Form Manager Approval": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2h",
+          "formDefinitionId": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
+          "inputForForm_department.$": "$.getSelectedIdentity.attributes.department",
+          "inputForForm_displayname.$": "$.getSelectedIdentity.attributes.displayName",
+          "inputForForm_firstname.$": "$.getSelectedIdentity.attributes.firstname",
+          "inputForForm_jobTitle.$": "$.getSelectedIdentity.attributes.jobTitle",
+          "inputForForm_justification.$": "$.formSelectPerson.formData.justification",
+          "inputForForm_lastname.$": "$.getSelectedIdentity.attributes.lastname",
+          "inputForForm_requestor.$": "$.getRequestor.attributes.displayName",
+          "inputForForm_username.$": "$.getApprover.attributes.displayName",
+          "notificationBody": "Please review and approve an emergency termination request.",
+          "notificationSubject": "Review emergency termination: {{$.getSelectedIdentity.attributes.displayName}}",
+          "recipient.$": "$.getApprover.id",
+          "reminder": "1h",
+          "reminderBody": "An emergency termination approval is still waiting for your decision."
+        },
+        "displayName": "Form: Manager approval",
+        "nextStep": "Check Approval Decision",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approval Decision": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Set Lifecycle State",
+            "variableA.$": "$.formManagerApproval.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Message Declined",
+        "displayName": "Approved?",
+        "type": "choice"
+      },
+      "Message Declined": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Your manager declined this emergency termination. No lifecycle change was made.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Name</td><td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.getSelectedIdentity.attributes.displayName}}</strong></td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Approver</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.getApprover.attributes.displayName}}</td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Comments</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formManagerApproval.formData.approvalComments}}</td></tr></table>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Emergency termination declined"
+        },
+        "displayName": "Message: Declined",
+        "nextStep": "End Success Declined",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message No Approval Required": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "WARN",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Manager approval is not required in this tenant configuration. The Emergency Termination lifecycle state will be set now.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Name</td><td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.getSelectedIdentity.attributes.displayName}}</strong></td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Justification</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formSelectPerson.formData.justification}}</td></tr></table>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "🔧  Applying lifecycle state"
+        },
+        "displayName": "Message: No approval required",
+        "nextStep": "Set Lifecycle State",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Set Lifecycle State": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "lifecycleStateId": "{{$.defineVariable.eTLCSID}}"
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "url": "{{$.defineVariable.url}}/v3/identities/{{$.getSelectedIdentity.id}}/set-lifecycle-state"
+        },
+        "catch": [
+          {
+            "next": "Message Lifecycle Failed"
+          }
+        ],
+        "description": "Sets the selected identity to the configured Emergency Termination lifecycle state.",
+        "displayName": "API: Set ET lifecycle state",
+        "nextStep": "Message Success",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Message Lifecycle Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">The Emergency Termination lifecycle state could not be applied for <strong>{{$.getSelectedIdentity.attributes.displayName}}</strong>.</p><p><strong>Status:</strong> {{ $.setLifecycleState.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.setLifecycleState.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No lifecycle change was confirmed. Ask an administrator to verify the OAuth client, API base URL, and <strong>ET LCS ID</strong>.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "⚠️  Lifecycle update failed"
+        },
+        "displayName": "Message: Lifecycle failed",
+        "nextStep": "End Failure Lifecycle",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message Success": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">The Emergency Termination lifecycle state was applied. Downstream provisioning follows the identity profile configuration for that state.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Name</td><td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.getSelectedIdentity.attributes.displayName}}</strong></td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Job title</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.getSelectedIdentity.attributes.jobTitle}}</td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Department</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.getSelectedIdentity.attributes.department}}</td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Justification</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formSelectPerson.formData.justification}}</td></tr></table>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "✅  Emergency termination applied"
+        },
+        "displayName": "Message: Success",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "End Success": {
+        "actionId": "sp:operator-success",
+        "description": "The Emergency Termination lifecycle state was set.",
+        "displayName": "Success: Lifecycle updated",
+        "type": "success"
+      },
+      "End Success Opted Out": {
+        "actionId": "sp:operator-success",
+        "description": "The operator did not acknowledge the process. No change was made.",
+        "displayName": "Success: Operator opted out",
+        "type": "success"
+      },
+      "End Success Declined": {
+        "actionId": "sp:operator-success",
+        "description": "The manager declined the request. No lifecycle change was made.",
+        "displayName": "Success: Request declined",
+        "type": "success"
+      },
+      "End Failure Lookup": {
+        "actionId": "sp:operator-failure",
+        "description": "The selected identity could not be loaded.",
+        "displayName": "Failure: Identity lookup",
+        "failureName": "Selected Identity Lookup Failed",
+        "type": "failure"
+      },
+      "End Failure No Approver": {
+        "actionId": "sp:operator-failure",
+        "description": "Approval is required but the requestor has no manager.",
+        "displayName": "Failure: No approver",
+        "failureName": "No Approver Available",
+        "type": "failure"
+      },
+      "End Failure Approver Lookup": {
+        "actionId": "sp:operator-failure",
+        "description": "The requestor's manager could not be loaded.",
+        "displayName": "Failure: Approver lookup",
+        "failureName": "Approver Lookup Failed",
+        "type": "failure"
+      },
+      "End Failure Lifecycle": {
+        "actionId": "sp:operator-failure",
+        "description": "The set-lifecycle-state API call failed.",
+        "displayName": "Failure: Lifecycle update",
+        "failureName": "Lifecycle Update Failed",
+        "type": "failure"
+      }
+    }
+  },
+  "enabled": false,
+  "trigger": {
+    "type": "EVENT",
+    "attributes": {
+      "filter.$": "$[?(@.workflowId == 'YOUR_WORKFLOW_ID')]",
+      "id": "idn:interactive-process-launched",
+      "integrationId": null
+    }
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "owner": {
+    "type": "IDENTITY",
+    "id": "YOUR_OWNER_IDENTITY_ID",
+    "name": "YOUR_OWNER_IDENTITY_NAME"
+  }
+}

@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "timestamp": "2026-07-21T07:54:38.401779008Z",
-  "tenant": "company23128-poc",
-  "description": "Export Job vscode 2026-07-21T07:54:36.914Z",
+  "timestamp": "2026-09-19T10:48:18.875Z",
+  "tenant": "PLACEHOLDER",
+  "description": "Emergency Termination package: acknowledgement, select person, optional manager approval, set lifecycle state",
   "options": {
     "excludeTypes": null,
     "includeTypes": [
@@ -19,10 +19,10 @@
         "includedIds": []
       },
       "WORKFLOW": {
-        "includedNames": [],
-        "includedIds": [
-          "c781e8b0-137f-445c-955c-9254eb96e106"
-        ]
+        "includedNames": [
+          "Emergency Termination"
+        ],
+        "includedIds": []
       }
     }
   },
@@ -30,78 +30,26 @@
     {
       "version": 1,
       "self": {
-        "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
-        "name": "ET - Approval",
+        "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
+        "name": "ET - Instructions",
         "type": "FORM_DEFINITION"
       },
       "object": {
-        "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
-        "name": "ET - Approval",
-        "description": "Approval step for Emergency Termination (ET) task.",
+        "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
+        "name": "ET - Instructions",
+        "description": "Acknowledgement that the operator understands emergency termination is audited and irreversible without further HR updates.",
         "owner": {
           "type": "IDENTITY",
-          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
-          "name": "fernando.delosrios"
+          "id": "YOUR_OWNER_IDENTITY_ID",
+          "name": "YOUR_OWNER_IDENTITY_NAME"
         },
-        "usedBy": [
-          {
-            "type": "WORKFLOW",
-            "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
-            "name": ""
-          },
-          {
-            "type": "WORKFLOW",
-            "id": "de68ba5f-4ec9-4e83-b490-41520c27bad1",
-            "name": "Copy of Emergency Termination"
-          },
-          {
-            "type": "WORKFLOW",
-            "id": "c781e8b0-137f-445c-955c-9254eb96e106",
-            "name": "Emergency Termination Request"
-          }
-        ],
+        "usedBy": [],
         "formInput": [
-          {
-            "id": "firstname",
-            "type": "STRING",
-            "label": "Firstname",
-            "description": "First name of the person to be terminated."
-          },
-          {
-            "id": "lastname",
-            "type": "STRING",
-            "label": "Lastname",
-            "description": "Last name of the person to be terminated."
-          },
-          {
-            "id": "department",
-            "type": "STRING",
-            "label": "Department",
-            "description": "Department of the person to be terminated."
-          },
-          {
-            "id": "jobTitle",
-            "type": "STRING",
-            "label": "Job Title",
-            "description": "Job Title of the person to be terminated."
-          },
-          {
-            "id": "justification",
-            "type": "STRING",
-            "label": "Justification",
-            "description": "Justification for the Emergency Termination."
-          },
-          {
-            "id": "requestor",
-            "type": "STRING",
-            "label": "Requestor",
-            "description": "The name of person requesting the Emergency Termination."
-          },
           {
             "id": "username",
             "type": "STRING",
-            "label": "Username",
-            "description": "The name of the person interacting with this approval form."
+            "label": "Operator name",
+            "description": "Display name of the person initiating the emergency termination."
           }
         ],
         "formElements": [
@@ -114,370 +62,8 @@
               "formElements": [
                 {
                   "config": {
-                    "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Emergency Termination Approval</strong></span></p>\n<p style=\"text-align: center;\"><span style=\"font-size: 24pt; color: #236fa1;\"><strong>Step 1 of 1</strong></span></p>\n<p><strong>Welcome <span style=\"color: #236fa1;\">{{$.form.input.username}}</span> !!</strong></p>\n<p>One of your direct-reports, <span style=\"color: #236fa1;\">{{$.form.input.requestor}}</span>, has initiated the process to immediately terminate one of their active workers, <span style=\"color: #236fa1;\">{{$.form.input.firstname}} {{$.form.input.lastname}}<span style=\"color: #000000;\">.</span></span></p>\n<p>Corporate policy dictates that such an extreme action requires a 2nd level management approval.  If you need more information or guidance, please review the <a href=\"https://www.sailpoint.com\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Emergency Termination Policy</a>.</p>\n<p>You can also reach out for help via Slack in <strong><span style=\"color: #236fa1;\">#help-emergency-termination</span></strong>.</p>",
-                    "label": "Instructions",
-                    "showLabel": false
-                  },
-                  "elementType": "DESCRIPTION",
-                  "id": "1195095076399",
-                  "key": "",
-                  "validations": []
-                },
-                {
-                  "config": {
-                    "description": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Details of the Individual</strong></span></p>\n<p>The following summarizes the individual being recommended for emergency termination.</p>",
-                    "label": "Details of the Individual",
-                    "showLabel": false
-                  },
-                  "elementType": "DESCRIPTION",
-                  "id": "1332070481770",
-                  "key": "",
-                  "validations": []
-                },
-                {
-                  "config": {
-                    "columnCount": 2,
-                    "columns": [
-                      [
-                        {
-                          "config": {
-                            "default": "",
-                            "description": "",
-                            "helpText": "",
-                            "label": "First Name",
-                            "placeholder": "",
-                            "required": false
-                          },
-                          "elementType": "TEXT",
-                          "id": "323302125663",
-                          "key": "firstName",
-                          "validations": []
-                        },
-                        {
-                          "config": {
-                            "default": "",
-                            "description": "",
-                            "helpText": "",
-                            "label": "Job Title",
-                            "placeholder": "",
-                            "required": false
-                          },
-                          "elementType": "TEXT",
-                          "id": "163175756922",
-                          "key": "jobTitle",
-                          "validations": []
-                        }
-                      ],
-                      [
-                        {
-                          "config": {
-                            "default": "",
-                            "description": "",
-                            "helpText": "",
-                            "label": "Last Name",
-                            "placeholder": "",
-                            "required": false
-                          },
-                          "elementType": "TEXT",
-                          "id": "300782427253",
-                          "key": "lastName",
-                          "validations": []
-                        },
-                        {
-                          "config": {
-                            "default": "",
-                            "description": "",
-                            "helpText": "",
-                            "label": "Department",
-                            "placeholder": "",
-                            "required": false
-                          },
-                          "elementType": "TEXT",
-                          "id": "568006995406",
-                          "key": "department",
-                          "validations": []
-                        }
-                      ]
-                    ],
-                    "description": "",
-                    "label": "User Details",
-                    "labelStyle": "h5",
-                    "showLabel": false
-                  },
-                  "elementType": "COLUMN_SET",
-                  "id": "1607847980663",
-                  "key": "",
-                  "validations": []
-                },
-                {
-                  "config": {
-                    "default": "",
-                    "description": "",
-                    "helpText": "The following reason(s) were provided to justify the Emergency Termination.",
-                    "label": "Justification",
-                    "placeholder": "",
-                    "required": false,
-                    "resize": true,
-                    "rows": 2
-                  },
-                  "elementType": "TEXTAREA",
-                  "id": "1509063430368",
-                  "key": "justification",
-                  "validations": []
-                },
-                {
-                  "config": {
-                    "description": "<p> </p>\n<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Decision on Termination</strong></span></p>",
-                    "label": "Spacer",
-                    "showLabel": false
-                  },
-                  "elementType": "DESCRIPTION",
-                  "id": "117241956536",
-                  "key": "",
-                  "validations": []
-                },
-                {
-                  "config": {
-                    "default": false,
-                    "falseLabel": "No.  I don't approve.",
-                    "helpText": "Please use this toggle to indicate whether you approve or disapprove of the emergency termination.",
-                    "label": "Approval Decision",
-                    "trueLabel": "Yes.  I approve the termination."
-                  },
-                  "elementType": "TOGGLE",
-                  "id": "1087534078162",
-                  "key": "approvalDecision",
-                  "validations": []
-                },
-                {
-                  "config": {
-                    "default": "",
-                    "description": "",
-                    "helpText": "You can optionally provide comments to accompany your decision.",
-                    "label": "Approval Comments",
-                    "placeholder": "",
-                    "required": false,
-                    "resize": true,
-                    "rows": 2
-                  },
-                  "elementType": "TEXTAREA",
-                  "id": "760707406403",
-                  "key": "approvalComments",
-                  "validations": []
-                },
-                {
-                  "config": {
-                    "description": "<p> </p>\n<p>When you have completed the form, please press <span style=\"color: #236fa1;\"><strong>Submit</strong></span>.</p>\n<p>If you wish to abandon this process, please press <span style=\"color: #236fa1;\"><strong>Cancel</strong></span>.</p>",
-                    "label": "Final Instructions",
-                    "showLabel": false
-                  },
-                  "elementType": "DESCRIPTION",
-                  "id": "742897457840",
-                  "key": "",
-                  "validations": []
-                }
-              ],
-              "label": "Form Instructions",
-              "labelStyle": "h5",
-              "showLabel": false
-            },
-            "validations": []
-          }
-        ],
-        "formConditions": [
-          {
-            "ruleOperator": "AND",
-            "rules": [
-              {
-                "sourceType": "INPUT",
-                "source": "firstname",
-                "operator": "NOT_EM",
-                "valueType": "STRING",
-                "value": ""
-              }
-            ],
-            "effects": [
-              {
-                "effectType": "SET_DEFAULT_VALUE",
-                "config": {
-                  "defaultValueLabel": "firstname",
-                  "element": "323302125663"
-                }
-              },
-              {
-                "effectType": "DISABLE",
-                "config": {
-                  "element": "323302125663"
-                }
-              }
-            ]
-          },
-          {
-            "ruleOperator": "AND",
-            "rules": [
-              {
-                "sourceType": "INPUT",
-                "source": "lastname",
-                "operator": "NOT_EM",
-                "valueType": "STRING",
-                "value": ""
-              }
-            ],
-            "effects": [
-              {
-                "effectType": "SET_DEFAULT_VALUE",
-                "config": {
-                  "defaultValueLabel": "lastname",
-                  "element": "300782427253"
-                }
-              },
-              {
-                "effectType": "DISABLE",
-                "config": {
-                  "element": "300782427253"
-                }
-              }
-            ]
-          },
-          {
-            "ruleOperator": "AND",
-            "rules": [
-              {
-                "sourceType": "INPUT",
-                "source": "department",
-                "operator": "NOT_EM",
-                "valueType": "STRING",
-                "value": ""
-              }
-            ],
-            "effects": [
-              {
-                "effectType": "SET_DEFAULT_VALUE",
-                "config": {
-                  "defaultValueLabel": "department",
-                  "element": "568006995406"
-                }
-              },
-              {
-                "effectType": "DISABLE",
-                "config": {
-                  "element": "568006995406"
-                }
-              }
-            ]
-          },
-          {
-            "ruleOperator": "AND",
-            "rules": [
-              {
-                "sourceType": "INPUT",
-                "source": "jobTitle",
-                "operator": "NOT_EM",
-                "valueType": "STRING",
-                "value": ""
-              }
-            ],
-            "effects": [
-              {
-                "effectType": "SET_DEFAULT_VALUE",
-                "config": {
-                  "defaultValueLabel": "jobTitle",
-                  "element": "163175756922"
-                }
-              },
-              {
-                "effectType": "DISABLE",
-                "config": {
-                  "element": "163175756922"
-                }
-              }
-            ]
-          },
-          {
-            "ruleOperator": "AND",
-            "rules": [
-              {
-                "sourceType": "INPUT",
-                "source": "justification",
-                "operator": "NOT_EM",
-                "valueType": "STRING",
-                "value": ""
-              }
-            ],
-            "effects": [
-              {
-                "effectType": "SET_DEFAULT_VALUE",
-                "config": {
-                  "defaultValueLabel": "justification",
-                  "element": "1509063430368"
-                }
-              },
-              {
-                "effectType": "DISABLE",
-                "config": {
-                  "element": "1509063430368"
-                }
-              }
-            ]
-          }
-        ],
-        "created": "2026-07-14T16:25:52.989367234Z",
-        "modified": "2026-07-14T16:28:00.541982819Z"
-      }
-    },
-    {
-      "version": 1,
-      "self": {
-        "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
-        "name": "ET - Instructions",
-        "type": "FORM_DEFINITION"
-      },
-      "object": {
-        "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
-        "name": "ET - Instructions",
-        "description": "Instructions for Emergency Termination (ET) task.",
-        "owner": {
-          "type": "IDENTITY",
-          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
-          "name": "fernando.delosrios"
-        },
-        "usedBy": [
-          {
-            "type": "WORKFLOW",
-            "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
-            "name": ""
-          },
-          {
-            "type": "WORKFLOW",
-            "id": "de68ba5f-4ec9-4e83-b490-41520c27bad1",
-            "name": "Copy of Emergency Termination"
-          },
-          {
-            "type": "WORKFLOW",
-            "id": "c781e8b0-137f-445c-955c-9254eb96e106",
-            "name": "Emergency Termination Request"
-          }
-        ],
-        "formInput": [
-          {
-            "id": "username",
-            "type": "STRING",
-            "label": "Username",
-            "description": "The login (username) of the person initiating the ET task."
-          }
-        ],
-        "formElements": [
-          {
-            "id": "1144046420884",
-            "elementType": "SECTION",
-            "config": {
-              "alignment": "LEFT",
-              "description": "",
-              "formElements": [
-                {
-                  "config": {
-                    "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Emergency Termination</strong></span></p>\n<p style=\"text-align: center;\"><span style=\"font-size: 24pt; color: #236fa1;\"><strong>Step 1 of 2</strong></span></p>\n<p><strong>Welcome <span style=\"color: #236fa1;\">{{$.form.input.username}}</span> !!</strong></p>\n<p>You have selected to immediately terminate an active worker.</p>\n<p>This is a task which is audited and should not be entered into without thoughtful consideration.  If you need more information or guidance, please review the <a href=\"https://www.sailpoint.com\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Emergency Termination Policy</a>.</p>\n<p>You can also reach out for help via Slack in <strong><span style=\"color: #236fa1;\">#help-emergency-termination</span></strong>.</p>\n<p> </p>",
-                    "label": "Instructions",
+                    "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Hello <strong>{{$.form.input.username}}</strong>.</p><p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Emergency termination immediately changes an active worker's lifecycle state in Identity Security Cloud. Use it only when the HR system cannot be updated in time.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">This action is audited. Confirm that you understand before continuing.</p>",
+                    "label": "Introduction",
                     "showLabel": false
                   },
                   "elementType": "DESCRIPTION",
@@ -488,38 +74,25 @@
                 {
                   "config": {
                     "default": false,
-                    "falseLabel": "No.  I don't understand.",
-                    "helpText": "Please use this toggle to confirm you understand and acknowledge the instructions.",
-                    "label": "User Acknowledgement",
-                    "trueLabel": "Yes.  I understand the instructions."
+                    "falseLabel": "No",
+                    "helpText": "Select Yes only if you understand that this process is audited and should be used for genuine emergencies.",
+                    "label": "I understand this is audited",
+                    "trueLabel": "Yes"
                   },
                   "elementType": "TOGGLE",
                   "id": "1087534078162",
                   "key": "userAcknowledgement",
                   "validations": []
-                },
-                {
-                  "config": {
-                    "description": "<p> </p>\n<p>When you have completed the form, please press <span style=\"color: #236fa1;\"><strong>Submit</strong></span>.</p>\n<p>If you wish to abandon this process, please press <span style=\"color: #236fa1;\"><strong>Cancel</strong></span>.</p>",
-                    "label": "Final Instructions",
-                    "showLabel": false
-                  },
-                  "elementType": "DESCRIPTION",
-                  "id": "742897457840",
-                  "key": "",
-                  "validations": []
                 }
               ],
-              "label": "Form Instructions",
-              "labelStyle": "h5",
-              "showLabel": false
+              "label": "Acknowledgement",
+              "labelStyle": "h2",
+              "showLabel": true
             },
             "validations": []
           }
         ],
-        "formConditions": [],
-        "created": "2026-07-14T16:26:09.669086918Z",
-        "modified": "2026-07-14T16:28:27.602676142Z"
+        "formConditions": []
       }
     },
     {
@@ -532,35 +105,19 @@
       "object": {
         "id": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
         "name": "ET - Select User",
-        "description": "Form to select the user for Emergency Termination (ET) task.",
+        "description": "Select an active direct report and provide a required justification for emergency termination.",
         "owner": {
           "type": "IDENTITY",
-          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
-          "name": "fernando.delosrios"
+          "id": "YOUR_OWNER_IDENTITY_ID",
+          "name": "YOUR_OWNER_IDENTITY_NAME"
         },
-        "usedBy": [
-          {
-            "type": "WORKFLOW",
-            "id": "a7bcb33e-ce68-4202-b5de-6a5f3d3fd428",
-            "name": ""
-          },
-          {
-            "type": "WORKFLOW",
-            "id": "de68ba5f-4ec9-4e83-b490-41520c27bad1",
-            "name": "Copy of Emergency Termination"
-          },
-          {
-            "type": "WORKFLOW",
-            "id": "c781e8b0-137f-445c-955c-9254eb96e106",
-            "name": "Emergency Termination Request"
-          }
-        ],
+        "usedBy": [],
         "formInput": [
           {
             "id": "username",
             "type": "STRING",
-            "label": "Username",
-            "description": "The username of the person initiating the Emergency Termination (ET)."
+            "label": "Operator name",
+            "description": "Display name of the person initiating the emergency termination. Used to list their direct reports."
           }
         ],
         "formElements": [
@@ -573,8 +130,8 @@
               "formElements": [
                 {
                   "config": {
-                    "description": "<p style=\"text-align: center;\"><span style=\"font-size: 24pt;\"><strong>Emergency Termination</strong></span></p>\n<p style=\"text-align: center;\"><span style=\"font-size: 24pt; color: #236fa1;\"><strong>Step 2 of 2</strong></span></p>\n<p><strong>Welcome <span style=\"color: #236fa1;\">{{$.form.input.username}}</span> !!</strong></p>\n<p>You have selected to immediately terminate an active worker.</p>\n<p>This is a task which is audited and should not be entered into without thoughtful consideration.  If you need more information or guidance, please review the <a href=\"https://www.sailpoint.com\" target=\"_blank\" rel=\"noopener noreferrer nofollow\">Emergency Termination Policy</a>.</p>\n<p>You can also reach out for help via Slack in <strong><span style=\"color: #236fa1;\">#help-emergency-termination</span></strong>.</p>\n<p> </p>",
-                    "label": "Instructions",
+                    "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Select the active worker who reports to you and explain why their access must be terminated immediately.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Only active direct reports are listed. The justification is required and is shown to the approver.</p>",
+                    "label": "Introduction",
                     "showLabel": false
                   },
                   "elementType": "DESCRIPTION",
@@ -586,7 +143,6 @@
                   "config": {
                     "dataSource": {
                       "config": {
-                        "aggregationBucketField": "attributes.displayName",
                         "filters": {
                           "manager.displayName": {
                             "exclude": false,
@@ -596,15 +152,18 @@
                         "indices": [
                           "identities"
                         ],
-                        "query": "*"
+                        "label": "attributes.displayName",
+                        "query": "attributes.cloudLifecycleState:active",
+                        "sublabel": "attributes.email",
+                        "value": "id"
                       },
-                      "dataSourceType": "SEARCH"
+                      "dataSourceType": "SEARCH_V2"
                     },
                     "forceSelect": true,
-                    "helpText": "Please select the one (1) person you need to terminate immediately.",
-                    "label": "Selected Individual",
+                    "helpText": "Choose exactly one active direct report. The value stored is their identity ID.",
+                    "label": "Selected person",
                     "maximum": 1,
-                    "placeholder": "",
+                    "placeholder": "Start typing a name...",
                     "required": true
                   },
                   "elementType": "SELECT",
@@ -623,12 +182,12 @@
                   "config": {
                     "default": "",
                     "description": "",
-                    "helpText": "Please provide the justification for requesting Emergency Termination (ET).",
+                    "helpText": "Describe why this emergency termination is required. This text is shown to the approver and retained for audit.",
                     "label": "Justification",
-                    "placeholder": "",
+                    "placeholder": "e.g. Immediate security incident; HR update not yet available",
                     "required": true,
                     "resize": true,
-                    "rows": 2
+                    "rows": 3
                   },
                   "elementType": "TEXTAREA",
                   "id": "625087201363",
@@ -638,180 +197,461 @@
                       "validationType": "REQUIRED"
                     }
                   ]
-                },
-                {
-                  "config": {
-                    "description": "<p> </p>\n<p>When you have completed the form, please press <span style=\"color: #236fa1;\"><strong>Submit</strong></span>.</p>\n<p>If you wish to abandon this process, please press <span style=\"color: #236fa1;\"><strong>Cancel</strong></span>.</p>",
-                    "label": "Final Instructions",
-                    "showLabel": false
-                  },
-                  "elementType": "DESCRIPTION",
-                  "id": "742897457840",
-                  "key": "",
-                  "validations": []
                 }
               ],
-              "label": "Form Instructions",
-              "labelStyle": "h5",
-              "showLabel": false
+              "label": "Select person",
+              "labelStyle": "h2",
+              "showLabel": true
             },
             "validations": []
           }
         ],
-        "formConditions": [],
-        "created": "2026-07-14T16:26:26.861375203Z",
-        "modified": "2026-07-15T08:21:57.352884349Z"
+        "formConditions": []
       }
     },
     {
       "version": 1,
       "self": {
-        "id": "c781e8b0-137f-445c-955c-9254eb96e106",
-        "name": "Emergency Termination Request",
+        "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
+        "name": "ET - Approval",
+        "type": "FORM_DEFINITION"
+      },
+      "object": {
+        "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
+        "name": "ET - Approval",
+        "description": "Second-level manager approval for an emergency termination request.",
+        "owner": {
+          "type": "IDENTITY",
+          "id": "YOUR_OWNER_IDENTITY_ID",
+          "name": "YOUR_OWNER_IDENTITY_NAME"
+        },
+        "usedBy": [],
+        "formInput": [
+          {
+            "id": "firstname",
+            "type": "STRING",
+            "label": "First name",
+            "description": "First name of the person to be terminated."
+          },
+          {
+            "id": "lastname",
+            "type": "STRING",
+            "label": "Last name",
+            "description": "Last name of the person to be terminated."
+          },
+          {
+            "id": "displayname",
+            "type": "STRING",
+            "label": "Display name",
+            "description": "Display name of the person to be terminated."
+          },
+          {
+            "id": "department",
+            "type": "STRING",
+            "label": "Department",
+            "description": "Department of the person to be terminated."
+          },
+          {
+            "id": "jobTitle",
+            "type": "STRING",
+            "label": "Job title",
+            "description": "Job title of the person to be terminated."
+          },
+          {
+            "id": "justification",
+            "type": "STRING",
+            "label": "Justification",
+            "description": "Justification provided by the requestor."
+          },
+          {
+            "id": "requestor",
+            "type": "STRING",
+            "label": "Requestor",
+            "description": "Display name of the person who requested the emergency termination."
+          },
+          {
+            "id": "username",
+            "type": "STRING",
+            "label": "Approver name",
+            "description": "Display name of the manager reviewing this request."
+          }
+        ],
+        "formElements": [
+          {
+            "id": "1144046420884",
+            "elementType": "SECTION",
+            "config": {
+              "alignment": "LEFT",
+              "description": "",
+              "formElements": [
+                {
+                  "config": {
+                    "description": "<p style=\"margin: 8px 0 24px 0; line-height: 1.7; color: #475569;\">{{$.form.input.requestor}} asked you to approve an emergency termination for <strong>{{$.form.input.displayname}}</strong>. No lifecycle change is made until you approve.</p>",
+                    "label": "Introduction",
+                    "showLabel": false
+                  },
+                  "elementType": "DESCRIPTION",
+                  "id": "1195095076399",
+                  "key": "",
+                  "validations": []
+                },
+                {
+                  "config": {
+                    "description": "<table style=\"border-collapse: collapse; margin: 0 0 32px 0; width: 100%; max-width: 480px; line-height: 1.6;\"><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; width: 140px; color: #64748b;\">Name</td><td style=\"padding: 12px 0; vertical-align: top;\"><strong>{{$.form.input.displayname}}</strong></td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">First name</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.firstname}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Last name</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.lastname}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Job title</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.jobTitle}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Department</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.department}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Requestor</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.requestor}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Justification</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.justification}}</td></tr></table>",
+                    "label": "Request details",
+                    "showLabel": false
+                  },
+                  "elementType": "DESCRIPTION",
+                  "id": "1332070481770",
+                  "key": "",
+                  "validations": []
+                },
+                {
+                  "config": {
+                    "description": "<p style=\"margin: 8px 0 16px 0; line-height: 1.7;\"><strong>Your decision</strong></p>",
+                    "label": "Decision heading",
+                    "showLabel": false
+                  },
+                  "elementType": "DESCRIPTION",
+                  "id": "117241956536",
+                  "key": "",
+                  "validations": []
+                },
+                {
+                  "config": {
+                    "default": false,
+                    "falseLabel": "No",
+                    "helpText": "Select Yes to set the Emergency Termination lifecycle state. Select No to reject the request with no change.",
+                    "label": "Approve this emergency termination",
+                    "trueLabel": "Yes"
+                  },
+                  "elementType": "TOGGLE",
+                  "id": "1087534078162",
+                  "key": "approvalDecision",
+                  "validations": []
+                },
+                {
+                  "config": {
+                    "default": "",
+                    "description": "",
+                    "helpText": "Optional comments for the requestor and audit trail.",
+                    "label": "Comments",
+                    "placeholder": "",
+                    "required": false,
+                    "resize": true,
+                    "rows": 3
+                  },
+                  "elementType": "TEXTAREA",
+                  "id": "760707406403",
+                  "key": "approvalComments",
+                  "validations": []
+                }
+              ],
+              "label": "Review request",
+              "labelStyle": "h2",
+              "showLabel": true
+            },
+            "validations": []
+          }
+        ],
+        "formConditions": []
+      }
+    },
+    {
+      "version": 1,
+      "self": {
+        "id": "YOUR_WORKFLOW_ID",
+        "name": "Emergency Termination",
         "type": "WORKFLOW"
       },
       "object": {
-        "id": "c781e8b0-137f-445c-955c-9254eb96e106",
-        "name": "Emergency Termination Request",
-        "description": "Task to immediately terminate an individual, presumably before the HR system is updated and aggregated.",
-        "created": "2026-07-15T08:10:43.866649283Z",
-        "modified": "2026-07-15T08:22:26.854191842Z",
-        "modifiedBy": {
-          "type": "IDENTITY",
-          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
-          "name": "fernando.delosrios"
-        },
+        "name": "Emergency Termination",
+        "description": "Interactive process that immediately sets an active direct report to the Emergency Termination lifecycle state, with optional second-level manager approval.",
         "definition": {
           "start": "Define Variable",
           "steps": {
-            "Compare Boolean": {
-              "actionId": "sp:compare-boolean",
-              "choiceList": [
-                {
-                  "comparator": "BooleanEquals",
-                  "nextStep": "Interactive Message 2",
-                  "variableA.$": "$.interactiveForm.formData.userAcknowledgement",
-                  "variableB": true
-                }
-              ],
-              "defaultStep": "Interactive Message 5",
-              "displayName": "Obtain User Acknowledgement?",
-              "type": "choice"
-            },
-            "Compare Boolean 1": {
-              "actionId": "sp:compare-boolean",
-              "choiceList": [
-                {
-                  "comparator": "BooleanEquals",
-                  "nextStep": "End Step - Success",
-                  "variableA.$": "$.form.formData.approvalDecision",
-                  "variableB": false
-                }
-              ],
-              "defaultStep": "HTTP Request",
-              "description": null,
-              "displayName": "Manager Rejected Termination?",
-              "type": "choice"
-            },
-            "Compare Strings": {
-              "actionId": "sp:compare-strings",
-              "choiceList": [
-                {
-                  "comparator": "StringEquals",
-                  "nextStep": "Get Identity 1",
-                  "variableA.$": "$.defineVariable.approvalRequired",
-                  "variableB": "true"
-                }
-              ],
-              "defaultStep": "Interactive Message 1",
-              "description": "Check the Set ISC Tenant Variables variable \"Approval Required\" to see if the manager approval step is required.",
-              "displayName": "Is Manager Approval Required?",
-              "type": "choice"
-            },
             "Define Variable": {
               "actionId": "sp:define-variable",
               "attributes": {
                 "id": "sp:define-variable",
                 "variables": [
                   {
-                    "description": "The Base URL for API calls",
-                    "name": "Base API URL",
+                    "description": "ISC API base URL used by the set-lifecycle-state HTTP action (no trailing slash).",
+                    "name": "url",
                     "transforms": [],
-                    "variableA": "https://company23128-poc.api.identitynow-demo.com"
+                    "variableA": "https://{tenant}.api.identitynow-demo.com"
                   },
                   {
-                    "description": "The ID for the LCS \"Emergency Termination\" in the HR identity profile.",
+                    "description": "Lifecycle state ID for Emergency Termination on the target identity profile. Resolve with GET /v3/identity-profiles/{id}/lifecycle-states.",
                     "name": "ET LCS ID",
                     "transforms": [],
-                    "variableA": "2bdf0654e7874535a1c86d0454cddeea"
+                    "variableA": "YOUR_ET_LCS_ID"
                   },
                   {
-                    "description": "Flag to indicate whether the manager approval step is required. \n\nNote: Set to \"true\" if approval is required.  Setting to any other value will skip the manager approval step.",
+                    "description": "Set to true to require the requestor's manager to approve before the lifecycle state changes. Any other value skips approval.",
                     "name": "Approval Required",
                     "transforms": [],
                     "variableA": "true"
                   }
                 ]
               },
-              "displayName": "Set ISC Tenant Variables",
-              "nextStep": "Get Identity",
+              "displayName": "Configuration",
+              "nextStep": "Get Requestor",
               "type": "Mutation"
             },
-            "End Step - Success": {
-              "actionId": "sp:operator-success",
-              "displayName": "",
-              "type": "success"
-            },
-            "End Step - Success 1": {
-              "actionId": "sp:operator-success",
-              "displayName": "End - User Opted Out",
-              "type": "success"
-            },
-            "Form": {
-              "actionId": "sp:forms",
-              "attributes": {
-                "deadline": "2h",
-                "formDefinitionId": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
-                "inputForForm_department.$": "$.hTTPRequest1.body[0].attributes.department",
-                "inputForForm_firstname.$": "$.hTTPRequest1.body[0].attributes.firstname",
-                "inputForForm_jobTitle.$": "$.hTTPRequest1.body[0].attributes.jobTitle",
-                "inputForForm_justification.$": "$.interactiveForm1.formData.justification",
-                "inputForForm_lastname.$": "$.hTTPRequest1.body[0].attributes.lastname",
-                "inputForForm_requestor.$": "$.getIdentity.attributes.displayName",
-                "inputForForm_username.$": "$.getIdentity1.attributes.displayName",
-                "notificationBody": "As a 2nd level manager, you have been requested to review and approve an emergency termination.  Please select the link to review the proposed termination.",
-                "notificationSubject": "Review Emergency Termination",
-                "recipient.$": "$.getIdentity1.id",
-                "reminder": "1h",
-                "reminderBody": "Get going..."
-              },
-              "displayName": "Form: Manager Approval",
-              "nextStep": "Interactive Message 4",
-              "type": "action",
-              "versionNumber": 1
-            },
-            "Get Identity": {
+            "Get Requestor": {
               "actionId": "sp:get-identity",
               "attributes": {
                 "id.$": "$.trigger.launchedBy.id"
               },
-              "description": null,
-              "displayName": "Get Identity of Requestor",
-              "nextStep": "Interactive Message",
+              "description": "Load the operator who launched the interactive process.",
+              "displayName": "Get requestor",
+              "nextStep": "Form Acknowledgement",
               "type": "action",
               "versionNumber": 2
             },
-            "Get Identity 1": {
+            "Form Acknowledgement": {
+              "actionId": "sp:interactive-form",
+              "attributes": {
+                "formDefinitionId": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
+                "inputForForm_username.$": "$.getRequestor.attributes.displayName",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 1 of 2</strong></span> \u2014 Confirm that you understand this process is audited.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "Acknowledge emergency termination"
+              },
+              "displayName": "Form: Acknowledgement",
+              "nextStep": "Check Acknowledgement",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Check Acknowledgement": {
+              "actionId": "sp:compare-boolean",
+              "choiceList": [
+                {
+                  "comparator": "BooleanEquals",
+                  "nextStep": "Form Select Person",
+                  "variableA.$": "$.formAcknowledgement.formData.userAcknowledgement",
+                  "variableB": true
+                }
+              ],
+              "defaultStep": "Message Opted Out",
+              "displayName": "Acknowledged?",
+              "type": "choice"
+            },
+            "Message Opted Out": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">You did not confirm acknowledgement. No person was selected and no lifecycle change was made.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "Emergency termination cancelled"
+              },
+              "displayName": "Message: Opted out",
+              "nextStep": "End Success Opted Out",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Form Select Person": {
+              "actionId": "sp:interactive-form",
+              "attributes": {
+                "formDefinitionId": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
+                "inputForForm_username.$": "$.getRequestor.attributes.displayName",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 2 of 2</strong></span> \u2014 Select the person and provide a justification.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "Select person to terminate"
+              },
+              "displayName": "Form: Select person",
+              "nextStep": "Get Selected Identity",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Get Selected Identity": {
               "actionId": "sp:get-identity",
               "attributes": {
-                "id.$": "$.getIdentity.managerRef.id"
+                "id.$": "$.formSelectPerson.formData.selectedIndividual"
               },
-              "displayName": "Get Identity of 2nd Manager",
-              "nextStep": "Interactive Message 3",
+              "catch": [
+                {
+                  "next": "Message Identity Lookup Failed"
+                }
+              ],
+              "description": "Resolve the selected identity by exact ID returned from the SEARCH_V2 form field.",
+              "displayName": "Get selected identity",
+              "nextStep": "Check Approval Required",
               "type": "action",
               "versionNumber": 2
             },
-            "HTTP Request": {
+            "Message Identity Lookup Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">ISC could not load the selected identity.</p><p><strong>Status:</strong> {{ $.getSelectedIdentity.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getSelectedIdentity.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No lifecycle change was made. Select the person again or ask an administrator to check identity search.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "\u26a0\ufe0f  Could not load selected person"
+              },
+              "displayName": "Message: Identity lookup failed",
+              "nextStep": "End Failure Lookup",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Check Approval Required": {
+              "actionId": "sp:compare-strings",
+              "choiceList": [
+                {
+                  "comparator": "StringEquals",
+                  "nextStep": "Check Manager Present",
+                  "variableA.$": "$.defineVariable.approvalRequired",
+                  "variableB": "true"
+                }
+              ],
+              "defaultStep": "Message No Approval Required",
+              "description": "Check the Configuration variable Approval Required. true sends a standalone approval form to the requestor's manager; any other value sets the lifecycle state immediately.",
+              "displayName": "Manager approval required?",
+              "type": "choice"
+            },
+            "Check Manager Present": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Get Approver",
+                  "variableA.$": "$.getRequestor.managerRef.id"
+                }
+              ],
+              "defaultStep": "Message No Approver",
+              "description": "The requestor's manager must exist before an approval task can be created.",
+              "displayName": "Requestor has a manager?",
+              "type": "choice"
+            },
+            "Message No Approver": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Manager approval is required, but your identity has no manager assigned.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Selected person</td><td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.getSelectedIdentity.attributes.displayName}}</strong></td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Justification</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formSelectPerson.formData.justification}}</td></tr></table><p style=\"margin: 0; color: #475569;\">No lifecycle change was made. Ask an administrator to assign your manager, or temporarily set <strong>Approval Required</strong> to false in a controlled demo tenant only.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "\u26a0\ufe0f  No approver available"
+              },
+              "displayName": "Message: No approver",
+              "nextStep": "End Failure No Approver",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Get Approver": {
+              "actionId": "sp:get-identity",
+              "attributes": {
+                "id.$": "$.getRequestor.managerRef.id"
+              },
+              "catch": [
+                {
+                  "next": "Message Approver Lookup Failed"
+                }
+              ],
+              "description": "Load the requestor's manager who will receive the approval form.",
+              "displayName": "Get approver",
+              "nextStep": "Message Waiting For Approval",
+              "type": "action",
+              "versionNumber": 2
+            },
+            "Message Approver Lookup Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">ISC could not load your manager for approval.</p><p><strong>Status:</strong> {{ $.getApprover.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getApprover.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No lifecycle change was made.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "\u26a0\ufe0f  Could not load approver"
+              },
+              "displayName": "Message: Approver lookup failed",
+              "nextStep": "End Failure Approver Lookup",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Waiting For Approval": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "WARN",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">The request for <strong>{{$.getSelectedIdentity.attributes.displayName}}</strong> has been sent to <strong>{{$.getApprover.attributes.displayName}}</strong> for approval. Keep this window open, or return when you are notified of the decision.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Justification</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formSelectPerson.formData.justification}}</td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "Waiting for manager approval"
+              },
+              "displayName": "Message: Waiting for approval",
+              "nextStep": "Form Manager Approval",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Form Manager Approval": {
+              "actionId": "sp:forms",
+              "attributes": {
+                "deadline": "2h",
+                "formDefinitionId": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
+                "inputForForm_department.$": "$.getSelectedIdentity.attributes.department",
+                "inputForForm_displayname.$": "$.getSelectedIdentity.attributes.displayName",
+                "inputForForm_firstname.$": "$.getSelectedIdentity.attributes.firstname",
+                "inputForForm_jobTitle.$": "$.getSelectedIdentity.attributes.jobTitle",
+                "inputForForm_justification.$": "$.formSelectPerson.formData.justification",
+                "inputForForm_lastname.$": "$.getSelectedIdentity.attributes.lastname",
+                "inputForForm_requestor.$": "$.getRequestor.attributes.displayName",
+                "inputForForm_username.$": "$.getApprover.attributes.displayName",
+                "notificationBody": "Please review and approve an emergency termination request.",
+                "notificationSubject": "Review emergency termination: {{$.getSelectedIdentity.attributes.displayName}}",
+                "recipient.$": "$.getApprover.id",
+                "reminder": "1h",
+                "reminderBody": "An emergency termination approval is still waiting for your decision."
+              },
+              "displayName": "Form: Manager approval",
+              "nextStep": "Check Approval Decision",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Check Approval Decision": {
+              "actionId": "sp:compare-boolean",
+              "choiceList": [
+                {
+                  "comparator": "BooleanEquals",
+                  "nextStep": "Set Lifecycle State",
+                  "variableA.$": "$.formManagerApproval.formData.approvalDecision",
+                  "variableB": true
+                }
+              ],
+              "defaultStep": "Message Declined",
+              "displayName": "Approved?",
+              "type": "choice"
+            },
+            "Message Declined": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Your manager declined this emergency termination. No lifecycle change was made.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Name</td><td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.getSelectedIdentity.attributes.displayName}}</strong></td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Approver</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.getApprover.attributes.displayName}}</td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Comments</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formManagerApproval.formData.approvalComments}}</td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "Emergency termination declined"
+              },
+              "displayName": "Message: Declined",
+              "nextStep": "End Success Declined",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message No Approval Required": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "WARN",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Manager approval is not required in this tenant configuration. The Emergency Termination lifecycle state will be set now.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Name</td><td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.getSelectedIdentity.attributes.displayName}}</strong></td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Justification</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formSelectPerson.formData.justification}}</td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "\ud83d\udd27  Applying lifecycle state"
+              },
+              "displayName": "Message: No approval required",
+              "nextStep": "Set Lifecycle State",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Set Lifecycle State": {
               "actionId": "sp:http",
               "attributes": {
                 "authenticationType": "OAuth",
@@ -827,203 +667,120 @@
                     "auth_credential_location": "credentialLocation",
                     "auth_token_url": "tokenURL"
                   },
-                  "paramID": "b27031c0-cdbf-41f6-af60-f9a39eb495be",
-                  "paramType": "1.4",
-                  "refID": "6b0c5ab9-8f24-4bb5-9093-cf0392691194"
+                  "paramID": "YOUR_OAUTH_PARAMETER_ID",
+                  "paramType": "1.4"
                 },
                 "param_oauth_scopes": {
                   "mapping": {
                     "auth_scopes": "scopes"
                   },
-                  "paramID": "657b902d-1147-4252-8978-dd23614018bc",
-                  "paramType": "3.1",
-                  "refID": "8b6a682c-8be6-4a26-98db-8aa5db10552e"
+                  "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+                  "paramType": "3.1"
                 },
                 "requestContentType": "json",
-                "url": "{{$.defineVariable.baseAPIURL}}/identities/v1/{{$.hTTPRequest1.body[0].id}}/set-lifecycle-state"
+                "url": "{{$.defineVariable.url}}/v3/identities/{{$.getSelectedIdentity.id}}/set-lifecycle-state"
               },
-              "displayName": "API: Set ET Lifecycle State",
-              "nextStep": "End Step - Success",
+              "catch": [
+                {
+                  "next": "Message Lifecycle Failed"
+                }
+              ],
+              "description": "Sets the selected identity to the configured Emergency Termination lifecycle state.",
+              "displayName": "API: Set ET lifecycle state",
+              "nextStep": "Message Success",
               "type": "action",
               "versionNumber": 3
             },
-            "HTTP Request 1": {
-              "actionId": "sp:http",
-              "attributes": {
-                "authenticationType": "OAuth",
-                "jsonRequestBody": {
-                  "indices": [
-                    "identities"
-                  ],
-                  "query": {
-                    "fields": [
-                      "name"
-                    ],
-                    "query": "\"{{$.interactiveForm1.formData.selectedIndividual}}\""
-                  }
-                },
-                "method": "post",
-                "param_authenticationRef": "oauth",
-                "param_oauth": {
-                  "mapping": {
-                    "auth_client_id": "clientId",
-                    "auth_client_secret": "clientSecret",
-                    "auth_credential_location": "credentialLocation",
-                    "auth_token_url": "tokenURL"
-                  },
-                  "paramID": "b27031c0-cdbf-41f6-af60-f9a39eb495be",
-                  "paramType": "1.4",
-                  "refID": "6b0c5ab9-8f24-4bb5-9093-cf0392691194"
-                },
-                "param_oauth_scopes": {
-                  "mapping": {
-                    "auth_scopes": "scopes"
-                  },
-                  "paramID": "657b902d-1147-4252-8978-dd23614018bc",
-                  "paramType": "3.1",
-                  "refID": "8b6a682c-8be6-4a26-98db-8aa5db10552e"
-                },
-                "requestContentType": "json",
-                "requestHeaders": null,
-                "url": "{{$.defineVariable.baseAPIURL}}/search/v1"
-              },
-              "displayName": "API: Get Terminated Identity",
-              "nextStep": "Compare Strings",
-              "type": "action",
-              "versionNumber": 3
-            },
-            "Interactive Form": {
-              "actionId": "sp:interactive-form",
-              "attributes": {
-                "formDefinitionId": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
-                "inputForForm_username.$": "$.getIdentity.attributes.displayName",
-                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "ownerId.$": "$.trigger.launchedBy.id",
-                "title": "Instructions"
-              },
-              "displayName": "Form: User Acknowledgement",
-              "nextStep": "Compare Boolean",
-              "type": "action",
-              "versionNumber": 1
-            },
-            "Interactive Form 1": {
-              "actionId": "sp:interactive-form",
-              "attributes": {
-                "formDefinitionId": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
-                "inputForForm_username.$": "$.getIdentity.attributes.displayName",
-                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "ownerId.$": "$.trigger.launchedBy.id",
-                "title.$": "$.getIdentity.attributes.displayName"
-              },
-              "displayName": "Form: Select User to Terminate",
-              "nextStep": "HTTP Request 1",
-              "type": "action",
-              "versionNumber": 1
-            },
-            "Interactive Message": {
+            "Message Lifecycle Failed": {
               "actionId": "sp:interactive-message",
               "attributes": {
-                "category": "WARN",
+                "category": "ERROR",
                 "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p>&nbsp;</p>\n<p><strong>Welcome&nbsp;<span style=\"color: #236fa1;\">{{$.getIdentity.attributes.firstname}} {{$.getIdentity.attributes.lastname}}</span>!</strong></p>\n<p>You have selected to perform an <span style=\"text-decoration: underline; color: #e03e2d;\">Emergency Termination</span> within SailPoint Identity Security Cloud (ISC).</p>\n<p>Next, you will be presented with a form, where you will be provided instructions and will be required to provide your Acknowledgement before the process can continue.</p>",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">The Emergency Termination lifecycle state could not be applied for <strong>{{$.getSelectedIdentity.attributes.displayName}}</strong>.</p><p><strong>Status:</strong> {{ $.setLifecycleState.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.setLifecycleState.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No lifecycle change was confirmed. Ask an administrator to verify the OAuth client, API base URL, and <strong>ET LCS ID</strong>.</p>",
                 "ownerId.$": "$.trigger.launchedBy.id",
-                "title": "Emergency Termination"
+                "title": "\u26a0\ufe0f  Lifecycle update failed"
               },
-              "displayName": "Message: Welcome!",
-              "nextStep": "Interactive Form",
+              "displayName": "Message: Lifecycle failed",
+              "nextStep": "End Failure Lifecycle",
               "type": "action",
               "versionNumber": 1
             },
-            "Interactive Message 1": {
+            "Message Success": {
               "actionId": "sp:interactive-message",
               "attributes": {
-                "category": "WARN",
+                "category": "INFO",
                 "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p>&nbsp;</p>\n<p>You have selected to initiate an&nbsp;<span style=\"text-decoration: underline; color: #e03e2d;\">Emergency Termination</span> for</p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}}</span></p>\n<p><span style=\"color: #000000;\">You have provided the following (optional) comments:</span></p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.justification}}</span></p>\n<p><span style=\"color: #000000;\">Corporate policy states that <span style=\"text-decoration: underline;\">no additional approvals are required</span>.</span></p>\n<p><span style=\"color: #000000;\">The <span style=\"color: #e03e2d;\">Emergency Termination</span> of <span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}} </span>will begin immediately.</span></p>",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">The Emergency Termination lifecycle state was applied. Downstream provisioning follows the identity profile configuration for that state.</p><table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\"><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 140px; color: #64748b;\">Name</td><td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.getSelectedIdentity.attributes.displayName}}</strong></td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Job title</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.getSelectedIdentity.attributes.jobTitle}}</td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Department</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.getSelectedIdentity.attributes.department}}</td></tr><tr><td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Justification</td><td style=\"padding: 8px 0; vertical-align: top;\">{{$.formSelectPerson.formData.justification}}</td></tr></table>",
                 "ownerId.$": "$.trigger.launchedBy.id",
-                "title": "Emergency Termination"
+                "title": "\u2705  Emergency termination applied"
               },
-              "displayName": "Message: No Approval Required",
-              "nextStep": "HTTP Request",
+              "displayName": "Message: Success",
+              "nextStep": "End Success",
               "type": "action",
               "versionNumber": 1
             },
-            "Interactive Message 2": {
-              "actionId": "sp:interactive-message",
-              "attributes": {
-                "category": "WARN",
-                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p>&nbsp;</p>\n<p><strong>Welcome&nbsp;<span style=\"color: #236fa1;\">{{$.getIdentity.attributes.firstname}} {{$.getIdentity.attributes.lastname}}</span>!</strong></p>\n<p><span style=\"color: #000000;\">You have</span>&nbsp;provided your digital&nbsp; Acknowledgement that you understand the termination process.</p>\n<p>Next, you will be presented with a form, where you can select the individual to be terminated immediately.</p>",
-                "ownerId.$": "$.trigger.launchedBy.id",
-                "title": "Emergency Termination"
-              },
-              "displayName": "Message: Let's Get Started!",
-              "nextStep": "Interactive Form 1",
-              "type": "action",
-              "versionNumber": 1
+            "End Success": {
+              "actionId": "sp:operator-success",
+              "description": "The Emergency Termination lifecycle state was set.",
+              "displayName": "Success: Lifecycle updated",
+              "type": "success"
             },
-            "Interactive Message 3": {
-              "actionId": "sp:interactive-message",
-              "attributes": {
-                "category": "WARN",
-                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p>&nbsp;</p>\n<p>You have selected to initiate an&nbsp;<span style=\"text-decoration: underline; color: #e03e2d;\">emergency termination</span> for</p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}}</span></p>\n<p><span style=\"color: #000000;\">You have provided the following (optional) comments:</span></p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.justification}}</span></p>\n<p><span style=\"color: #000000;\">Corporate policy dictates that your manager, <span style=\"color: #236fa1;\">{{$.getIdentity1.attributes.displayName}}</span>, will have to approve the termination request before it becomes effective.&nbsp; You will be notified when your manager has made their decision.</span></p>\n<p><span style=\"color: #000000;\">If you like, you can <span style=\"font-size: 14pt;\"><strong>X</strong></span> out of this task and wait for the notification.</span></p>",
-                "ownerId.$": "$.trigger.launchedBy.id",
-                "title": "Emergency Termination"
-              },
-              "displayName": "Message: 2nd Approval is required",
-              "nextStep": "Form",
-              "type": "action",
-              "versionNumber": 1
+            "End Success Opted Out": {
+              "actionId": "sp:operator-success",
+              "description": "The operator did not acknowledge the process. No change was made.",
+              "displayName": "Success: Operator opted out",
+              "type": "success"
             },
-            "Interactive Message 4": {
-              "actionId": "sp:interactive-message",
-              "attributes": {
-                "category": "WARN",
-                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p>&nbsp;</p>\n<p>You have selected to initiate an&nbsp;<span style=\"text-decoration: underline; color: #e03e2d;\">Emergency Termination</span> for</p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.selectedIndividual}}</span></p>\n<p><span style=\"color: #000000;\">You have provided the following (optional) comments:</span></p>\n<p><span style=\"color: #236fa1;\">{{$.interactiveForm1.formData.justification}}</span></p>\n<p><span style=\"color: #000000;\">Your manager, <span style=\"color: #236fa1;\">{{$.getIdentity1.attributes.displayName}}</span>, made the following decision:</span></p>\n<p><span style=\"color: #236fa1;\"><span style=\"color: #000000;\">Approve Emergency Termination?&nbsp;</span> {{$.form.formData.approvalDecision}}</span></p>\n<p>and provided the following comments:</p>\n<p><span style=\"color: #236fa1;\">{{$.form.formData.approvalComments}}</span></p>",
-                "ownerId.$": "$.trigger.launchedBy.id",
-                "title": "Emergency Termination"
-              },
-              "displayName": "Message: Approval Decision",
-              "nextStep": "Compare Boolean 1",
-              "type": "action",
-              "versionNumber": 1
+            "End Success Declined": {
+              "actionId": "sp:operator-success",
+              "description": "The manager declined the request. No lifecycle change was made.",
+              "displayName": "Success: Request declined",
+              "type": "success"
             },
-            "Interactive Message 5": {
-              "actionId": "sp:interactive-message",
-              "attributes": {
-                "category": "WARN",
-                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p>&nbsp;</p>\n<p><strong>Welcome&nbsp;<span style=\"color: #236fa1;\">{{$.getIdentity.attributes.firstname}} {{$.getIdentity.attributes.lastname}}</span>!</strong></p>\n<p>You have selected to perform an <span style=\"text-decoration: underline; color: #e03e2d;\">Emergency Termination</span><span style=\"color: #000000;\">.&nbsp; You have</span><span style=\"text-decoration: underline; color: #e03e2d;\"> </span>have also provided your digital&nbsp; Acknowledgement that you understand the termination process.</p>\n<p>Next, you will be presented with a form, where you can select the individual to be terminated immediately.</p>",
-                "ownerId.$": "$.trigger.launchedBy.id",
-                "title": "Emergency Termination"
-              },
-              "displayName": "Message: User Opted Out",
-              "nextStep": "End Step - Success 1",
-              "type": "action",
-              "versionNumber": 1
+            "End Failure Lookup": {
+              "actionId": "sp:operator-failure",
+              "description": "The selected identity could not be loaded.",
+              "displayName": "Failure: Identity lookup",
+              "failureName": "Selected Identity Lookup Failed",
+              "type": "failure"
+            },
+            "End Failure No Approver": {
+              "actionId": "sp:operator-failure",
+              "description": "Approval is required but the requestor has no manager.",
+              "displayName": "Failure: No approver",
+              "failureName": "No Approver Available",
+              "type": "failure"
+            },
+            "End Failure Approver Lookup": {
+              "actionId": "sp:operator-failure",
+              "description": "The requestor's manager could not be loaded.",
+              "displayName": "Failure: Approver lookup",
+              "failureName": "Approver Lookup Failed",
+              "type": "failure"
+            },
+            "End Failure Lifecycle": {
+              "actionId": "sp:operator-failure",
+              "description": "The set-lifecycle-state API call failed.",
+              "displayName": "Failure: Lifecycle update",
+              "failureName": "Lifecycle Update Failed",
+              "type": "failure"
             }
           }
         },
-        "enabled": true,
-        "creator": {
-          "type": "IDENTITY",
-          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
-          "name": "fernando.delosrios"
-        },
-        "owner": {
-          "type": "IDENTITY",
-          "id": "69a3ac2b0d754dc08b13f2bc90c9e7d9",
-          "name": "fernando.delosrios"
-        },
+        "enabled": false,
         "trigger": {
           "type": "EVENT",
           "attributes": {
-            "filter.$": "$[?(@.workflowId == 'c781e8b0-137f-445c-955c-9254eb96e106')]",
+            "filter.$": "$[?(@.workflowId == 'YOUR_WORKFLOW_ID')]",
             "id": "idn:interactive-process-launched",
             "integrationId": null
           }
+        },
+        "id": "YOUR_WORKFLOW_ID",
+        "owner": {
+          "type": "IDENTITY",
+          "id": "YOUR_OWNER_IDENTITY_ID",
+          "name": "YOUR_OWNER_IDENTITY_NAME"
         }
       }
     }

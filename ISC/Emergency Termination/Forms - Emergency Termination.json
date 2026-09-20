@@ -1,0 +1,332 @@
+[
+  {
+    "version": 1,
+    "self": {
+      "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
+      "name": "ET - Instructions",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
+      "name": "ET - Instructions",
+      "description": "Acknowledgement that the operator understands emergency termination is audited and irreversible without further HR updates.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "YOUR_OWNER_IDENTITY_ID",
+        "name": "YOUR_OWNER_IDENTITY_NAME"
+      },
+      "usedBy": [],
+      "formInput": [
+        {
+          "id": "username",
+          "type": "STRING",
+          "label": "Operator name",
+          "description": "Display name of the person initiating the emergency termination."
+        }
+      ],
+      "formElements": [
+        {
+          "id": "1144046420884",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Hello <strong>{{$.form.input.username}}</strong>.</p><p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Emergency termination immediately changes an active worker's lifecycle state in Identity Security Cloud. Use it only when the HR system cannot be updated in time.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">This action is audited. Confirm that you understand before continuing.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "1195095076399",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": false,
+                  "falseLabel": "No",
+                  "helpText": "Select Yes only if you understand that this process is audited and should be used for genuine emergencies.",
+                  "label": "I understand this is audited",
+                  "trueLabel": "Yes"
+                },
+                "elementType": "TOGGLE",
+                "id": "1087534078162",
+                "key": "userAcknowledgement",
+                "validations": []
+              }
+            ],
+            "label": "Acknowledgement",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  },
+  {
+    "version": 1,
+    "self": {
+      "id": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
+      "name": "ET - Select User",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
+      "name": "ET - Select User",
+      "description": "Select an active direct report and provide a required justification for emergency termination.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "YOUR_OWNER_IDENTITY_ID",
+        "name": "YOUR_OWNER_IDENTITY_NAME"
+      },
+      "usedBy": [],
+      "formInput": [
+        {
+          "id": "username",
+          "type": "STRING",
+          "label": "Operator name",
+          "description": "Display name of the person initiating the emergency termination. Used to list their direct reports."
+        }
+      ],
+      "formElements": [
+        {
+          "id": "1144046420884",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Select the active worker who reports to you and explain why their access must be terminated immediately.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Only active direct reports are listed. The justification is required and is shown to the approver.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "1195095076399",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "filters": {
+                        "manager.displayName": {
+                          "exclude": false,
+                          "value": "{{$.form.input.username}}"
+                        }
+                      },
+                      "indices": [
+                        "identities"
+                      ],
+                      "label": "attributes.displayName",
+                      "query": "attributes.cloudLifecycleState:active",
+                      "sublabel": "attributes.email",
+                      "value": "id"
+                    },
+                    "dataSourceType": "SEARCH_V2"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Choose exactly one active direct report. The value stored is their identity ID.",
+                  "label": "Selected person",
+                  "maximum": 1,
+                  "placeholder": "Start typing a name...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "1641681738546",
+                "key": "selectedIndividual",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Describe why this emergency termination is required. This text is shown to the approver and retained for audit.",
+                  "label": "Justification",
+                  "placeholder": "e.g. Immediate security incident; HR update not yet available",
+                  "required": true,
+                  "resize": true,
+                  "rows": 3
+                },
+                "elementType": "TEXTAREA",
+                "id": "625087201363",
+                "key": "justification",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              }
+            ],
+            "label": "Select person",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  },
+  {
+    "version": 1,
+    "self": {
+      "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
+      "name": "ET - Approval",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
+      "name": "ET - Approval",
+      "description": "Second-level manager approval for an emergency termination request.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "YOUR_OWNER_IDENTITY_ID",
+        "name": "YOUR_OWNER_IDENTITY_NAME"
+      },
+      "usedBy": [],
+      "formInput": [
+        {
+          "id": "firstname",
+          "type": "STRING",
+          "label": "First name",
+          "description": "First name of the person to be terminated."
+        },
+        {
+          "id": "lastname",
+          "type": "STRING",
+          "label": "Last name",
+          "description": "Last name of the person to be terminated."
+        },
+        {
+          "id": "displayname",
+          "type": "STRING",
+          "label": "Display name",
+          "description": "Display name of the person to be terminated."
+        },
+        {
+          "id": "department",
+          "type": "STRING",
+          "label": "Department",
+          "description": "Department of the person to be terminated."
+        },
+        {
+          "id": "jobTitle",
+          "type": "STRING",
+          "label": "Job title",
+          "description": "Job title of the person to be terminated."
+        },
+        {
+          "id": "justification",
+          "type": "STRING",
+          "label": "Justification",
+          "description": "Justification provided by the requestor."
+        },
+        {
+          "id": "requestor",
+          "type": "STRING",
+          "label": "Requestor",
+          "description": "Display name of the person who requested the emergency termination."
+        },
+        {
+          "id": "username",
+          "type": "STRING",
+          "label": "Approver name",
+          "description": "Display name of the manager reviewing this request."
+        }
+      ],
+      "formElements": [
+        {
+          "id": "1144046420884",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 8px 0 24px 0; line-height: 1.7; color: #475569;\">{{$.form.input.requestor}} asked you to approve an emergency termination for <strong>{{$.form.input.displayname}}</strong>. No lifecycle change is made until you approve.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "1195095076399",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "description": "<table style=\"border-collapse: collapse; margin: 0 0 32px 0; width: 100%; max-width: 480px; line-height: 1.6;\"><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; width: 140px; color: #64748b;\">Name</td><td style=\"padding: 12px 0; vertical-align: top;\"><strong>{{$.form.input.displayname}}</strong></td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">First name</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.firstname}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Last name</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.lastname}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Job title</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.jobTitle}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Department</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.department}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Requestor</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.requestor}}</td></tr><tr><td style=\"padding: 12px 32px 12px 0; vertical-align: top; color: #64748b;\">Justification</td><td style=\"padding: 12px 0; vertical-align: top;\">{{$.form.input.justification}}</td></tr></table>",
+                  "label": "Request details",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "1332070481770",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "description": "<p style=\"margin: 8px 0 16px 0; line-height: 1.7;\"><strong>Your decision</strong></p>",
+                  "label": "Decision heading",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "117241956536",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": false,
+                  "falseLabel": "No",
+                  "helpText": "Select Yes to set the Emergency Termination lifecycle state. Select No to reject the request with no change.",
+                  "label": "Approve this emergency termination",
+                  "trueLabel": "Yes"
+                },
+                "elementType": "TOGGLE",
+                "id": "1087534078162",
+                "key": "approvalDecision",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Optional comments for the requestor and audit trail.",
+                  "label": "Comments",
+                  "placeholder": "",
+                  "required": false,
+                  "resize": true,
+                  "rows": 3
+                },
+                "elementType": "TEXTAREA",
+                "id": "760707406403",
+                "key": "approvalComments",
+                "validations": []
+              }
+            ],
+            "label": "Review request",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  }
+]
