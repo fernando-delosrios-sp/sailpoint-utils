@@ -180,6 +180,7 @@ function createOfflineSdkStub(): SailPointClients {
         forms: offlineFormsStub as unknown as CustomFormsApi,
         identityHistory: { listIdentityAccessItemsV1: stub } as unknown as SailPointClients['identityHistory'],
         accessProfiles: { getAccessProfileEntitlementsV1: stub } as unknown as SailPointClients['accessProfiles'],
+        entitlements: { getEntitlementV1: stub } as unknown as SailPointClients['entitlements'],
         roles: { getRoleEntitlementsV1: stub } as unknown as SailPointClients['roles'],
         tasks: { getTaskStatusV1: stub } as unknown as TaskManagementApi,
         governanceGroups: {

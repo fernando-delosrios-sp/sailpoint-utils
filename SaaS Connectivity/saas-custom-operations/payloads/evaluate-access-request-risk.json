@@ -1,0 +1,13 @@
+{
+    "type": "custom:evaluate-access-request-risk",
+    "input": {
+        "requestId": "offline-risk-001",
+        "requestedItems": [
+            {
+                "id": "offline-ent-high",
+                "type": "ENTITLEMENT",
+                "name": "Offline privileged entitlement"
+            }
+        ]
+    }
+}

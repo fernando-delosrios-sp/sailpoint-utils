@@ -3,6 +3,7 @@
 	"commands": [
 		"custom:access-model-sod-remediation",
 		"custom:access-model-sod-remediation-apply",
+		"custom:evaluate-access-request-risk",
 		"custom:example",
 		"custom:governance-group-emails",
 		"custom:preventive-sod-check",

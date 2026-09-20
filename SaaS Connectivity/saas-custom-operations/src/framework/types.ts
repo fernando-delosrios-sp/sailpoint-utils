@@ -4,6 +4,7 @@ import {
     AccessRequestsApi,
     AccountsApi,
     CustomFormsApi,
+    EntitlementsApi,
     GovernanceGroupsApi,
     IdentityHistoryApi,
     RolesApi,
@@ -37,6 +38,7 @@ export interface SailPointClients {
     forms: CustomFormsApi
     identityHistory: IdentityHistoryApi
     accessProfiles: AccessProfilesApi
+    entitlements: EntitlementsApi
     roles: RolesApi
     tasks: TaskManagementApi
     governanceGroups: GovernanceGroupsApi

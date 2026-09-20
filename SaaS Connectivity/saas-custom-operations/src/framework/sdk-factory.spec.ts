@@ -10,6 +10,7 @@ describe('sdk-factory', () => {
         expect(typeof clients.forms.searchFormDefinitionsByTenantV1).toBe('function')
         expect(typeof clients.identityHistory.listIdentityAccessItemsV1).toBe('function')
         expect(typeof clients.accessProfiles.getAccessProfileEntitlementsV1).toBe('function')
+        expect(typeof clients.entitlements.getEntitlementV1).toBe('function')
         expect(typeof clients.roles.getRoleEntitlementsV1).toBe('function')
         expect(typeof clients.tasks.getTaskStatusV1).toBe('function')
         expect(typeof clients.governanceGroups.listWorkgroupsV1).toBe('function')

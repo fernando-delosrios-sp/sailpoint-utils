@@ -1,0 +1,509 @@
+{
+  "id": "YOUR_ACCESS_ITEM_WORKFLOW_ID",
+  "name": "Risk Approval - Access Item",
+  "description": "Adaptive Approvals wrapper. Native Access Request Submitted trigger plus Approval Policy. Scores risk with custom:evaluate-access-request-risk. Low ends without a reviewer. Medium and High open one Approval Policy for the configured selector. Enable this workflow, then set the access item Approval Type to this workflow. After import, confirm each Approval Policy reviewer binding.",
+  "definition": {
+    "start": "Configuration",
+    "steps": {
+      "Configuration": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "ISC API base URL, no trailing slash.",
+              "name": "API URL",
+              "transforms": [],
+              "variableA": "https://{tenant}.api.identitynow.com"
+            },
+            {
+              "description": "Result source that stores custom operation output.",
+              "name": "SaaS Custom Operations Source Name",
+              "transforms": [],
+              "variableA": "SaaS Custom Operations"
+            },
+            {
+              "description": "Platform connector id for saas-custom-operations.",
+              "name": "SaaS Custom Operations Connector ID",
+              "transforms": [],
+              "variableA": "YOUR_CONNECTOR_ID"
+            },
+            {
+              "description": "true includes entitlement privilegeLevel.effective. false scores entitlements from Risk metadata only.",
+              "name": "Consider Privilege",
+              "transforms": [],
+              "variableA": "true"
+            },
+            {
+              "description": "High tier selector: manager, managersManager, defaultApprover, customIdentity, or customGovernanceGroup.",
+              "name": "High Selector",
+              "transforms": [],
+              "variableA": "managersManager"
+            },
+            {
+              "description": "Medium tier selector: manager, managersManager, defaultApprover, customIdentity, or customGovernanceGroup.",
+              "name": "Medium Selector",
+              "transforms": [],
+              "variableA": "manager"
+            },
+            {
+              "description": "Identity id used when the selected manager level is missing, the selector is defaultApprover, or evaluation fails.",
+              "name": "Default Approver ID",
+              "transforms": [],
+              "variableA": "YOUR_DEFAULT_APPROVER_ID"
+            },
+            {
+              "description": "Identity id when High Selector is customIdentity.",
+              "name": "Custom High Identity ID",
+              "transforms": [],
+              "variableA": "YOUR_CUSTOM_HIGH_IDENTITY_ID"
+            },
+            {
+              "description": "Governance group id when High Selector is customGovernanceGroup.",
+              "name": "Custom High Group ID",
+              "transforms": [],
+              "variableA": "YOUR_CUSTOM_HIGH_GROUP_ID"
+            },
+            {
+              "description": "Identity id when Medium Selector is customIdentity.",
+              "name": "Custom Medium Identity ID",
+              "transforms": [],
+              "variableA": "YOUR_CUSTOM_MEDIUM_IDENTITY_ID"
+            },
+            {
+              "description": "Governance group id when Medium Selector is customGovernanceGroup.",
+              "name": "Custom Medium Group ID",
+              "transforms": [],
+              "variableA": "YOUR_CUSTOM_MEDIUM_GROUP_ID"
+            }
+          ]
+        },
+        "displayName": "Configuration",
+        "nextStep": "Get Recipient",
+        "type": "Mutation"
+      },
+      "Get Recipient": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.trigger.requestedFor.id"
+        },
+        "catch": [
+          {
+            "next": "Get Access Token"
+          }
+        ],
+        "displayName": "Get Recipient",
+        "nextStep": "Check Manager",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Check Manager": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Get Manager",
+            "variableA.$": "$.getRecipient.managerRef.id"
+          }
+        ],
+        "defaultStep": "Get Access Token",
+        "displayName": "Recipient has a manager?",
+        "type": "choice"
+      },
+      "Get Manager": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.getRecipient.managerRef.id"
+        },
+        "catch": [
+          {
+            "next": "Get Access Token"
+          }
+        ],
+        "displayName": "Get Manager",
+        "nextStep": "Check Managers Manager",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Check Managers Manager": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Get Managers Manager",
+            "variableA.$": "$.getManager.managerRef.id"
+          }
+        ],
+        "defaultStep": "Get Access Token",
+        "displayName": "Manager has a manager?",
+        "type": "choice"
+      },
+      "Get Managers Manager": {
+        "actionId": "sp:get-identity",
+        "attributes": {
+          "id.$": "$.getManager.managerRef.id"
+        },
+        "catch": [
+          {
+            "next": "Get Access Token"
+          }
+        ],
+        "displayName": "Get Managers Manager",
+        "nextStep": "Get Access Token",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Get Access Token": {
+        "actionId": "sp:http",
+        "attributes": {
+          "formRequestBody": {
+            "grant_type": "client_credentials"
+          },
+          "method": "post",
+          "param_authenticationRef": "basic",
+          "requestContentType": "form",
+          "url": "{{$.configuration.aPIURL}}/oauth/token"
+        },
+        "catch": [
+          {
+            "next": "Approval Policy Default"
+          }
+        ],
+        "description": "Set basic auth on this step to the workflow OAuth client.",
+        "displayName": "Get Access Token",
+        "nextStep": "Call Evaluate Risk",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Call Evaluate Risk": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody": {
+            "config": {
+              "apiUrl": "{{$.configuration.aPIURL}}",
+              "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}",
+              "token": "{{$.getAccessToken.body.access_token}}"
+            },
+            "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+            "input": {
+              "accessRequestId": "{{$.trigger.accessRequestId}}",
+              "considerPrivilege": "{{$.configuration.considerPrivilege}}",
+              "requestId": "{{$.trigger.accessRequestId}}:item-approval",
+              "requestedItems.$": "$.trigger.requestedItems"
+            },
+            "tag": "latest",
+            "type": "custom:evaluate-access-request-risk"
+          },
+          "method": "post",
+          "param_authenticationRef": "none",
+          "requestContentType": "json",
+          "requestHeaders": {
+            "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+          },
+          "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke"
+        },
+        "catch": [
+          {
+            "next": "Approval Policy Default"
+          }
+        ],
+        "displayName": "Call Evaluate Risk",
+        "nextStep": "Read Risk Result",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Read Risk Result": {
+        "actionId": "sp:get-accounts",
+        "attributes": {
+          "filterCriteria": "nativeIdentity",
+          "getAccountsBy": "filters",
+          "operator": "eq",
+          "value": "{{$.trigger.accessRequestId}}:item-approval"
+        },
+        "catch": [
+          {
+            "next": "Approval Policy Default"
+          }
+        ],
+        "displayName": "Read Risk Result",
+        "nextStep": "Check Tier",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Tier": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Select High Approver",
+            "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']",
+            "variableB": "High"
+          },
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Select Medium Approver",
+            "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']",
+            "variableB": "Medium"
+          },
+          {
+            "comparator": "StringEquals",
+            "nextStep": "End Success Low",
+            "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']",
+            "variableB": "Low"
+          }
+        ],
+        "defaultStep": "Approval Policy Default",
+        "description": "Low completes without a reviewer. If those requests stall, point this Low branch at Approval Policy Default.",
+        "displayName": "Which tier?",
+        "type": "choice"
+      },
+      "Select High Approver": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Check High Manager",
+            "variableA.$": "$.configuration.highSelector",
+            "variableB": "manager"
+          },
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Check High Managers Manager",
+            "variableA.$": "$.configuration.highSelector",
+            "variableB": "managersManager"
+          },
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Approval Policy High Custom Identity",
+            "variableA.$": "$.configuration.highSelector",
+            "variableB": "customIdentity"
+          },
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Approval Policy High Custom Group",
+            "variableA.$": "$.configuration.highSelector",
+            "variableB": "customGovernanceGroup"
+          }
+        ],
+        "defaultStep": "Approval Policy Default",
+        "displayName": "High selector",
+        "type": "choice"
+      },
+      "Select Medium Approver": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Check Medium Manager",
+            "variableA.$": "$.configuration.mediumSelector",
+            "variableB": "manager"
+          },
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Check Medium Managers Manager",
+            "variableA.$": "$.configuration.mediumSelector",
+            "variableB": "managersManager"
+          },
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Approval Policy Medium Custom Identity",
+            "variableA.$": "$.configuration.mediumSelector",
+            "variableB": "customIdentity"
+          },
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Approval Policy Medium Custom Group",
+            "variableA.$": "$.configuration.mediumSelector",
+            "variableB": "customGovernanceGroup"
+          }
+        ],
+        "defaultStep": "Approval Policy Default",
+        "displayName": "Medium selector",
+        "type": "choice"
+      },
+      "Check High Manager": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Approval Policy Manager",
+            "variableA.$": "$.getManager.id"
+          }
+        ],
+        "defaultStep": "Approval Policy Default",
+        "displayName": "High manager present?",
+        "type": "choice"
+      },
+      "Check High Managers Manager": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Approval Policy Managers Manager",
+            "variableA.$": "$.getManagersManager.id"
+          }
+        ],
+        "defaultStep": "Approval Policy Default",
+        "displayName": "High manager's manager present?",
+        "type": "choice"
+      },
+      "Check Medium Manager": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Approval Policy Manager",
+            "variableA.$": "$.getManager.id"
+          }
+        ],
+        "defaultStep": "Approval Policy Default",
+        "displayName": "Medium manager present?",
+        "type": "choice"
+      },
+      "Check Medium Managers Manager": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Approval Policy Managers Manager",
+            "variableA.$": "$.getManagersManager.id"
+          }
+        ],
+        "defaultStep": "Approval Policy Default",
+        "displayName": "Medium manager's manager present?",
+        "type": "choice"
+      },
+      "Approval Policy Manager": {
+        "actionId": "sp:access-request-approval",
+        "attributes": {
+          "approvalType": "SINGLE",
+          "description": "Single approval by the recipient manager.",
+          "priority": "MEDIUM",
+          "reviewerCategory": "IDENTITY",
+          "reviewerId.$": "$.getManager.id",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
+        },
+        "displayName": "Approval Policy Manager",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Approval Policy Managers Manager": {
+        "actionId": "sp:access-request-approval",
+        "attributes": {
+          "approvalType": "SINGLE",
+          "description": "Single approval by the recipient manager's manager.",
+          "priority": "MEDIUM",
+          "reviewerCategory": "IDENTITY",
+          "reviewerId.$": "$.getManagersManager.id",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
+        },
+        "displayName": "Approval Policy Managers Manager",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Approval Policy Default": {
+        "actionId": "sp:access-request-approval",
+        "attributes": {
+          "approvalType": "SINGLE",
+          "description": "Single approval by the configured default approver.",
+          "priority": "MEDIUM",
+          "reviewerCategory": "IDENTITY",
+          "reviewerId": "{{$.configuration.defaultApproverID}}",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
+        },
+        "displayName": "Approval Policy Default",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Approval Policy High Custom Identity": {
+        "actionId": "sp:access-request-approval",
+        "attributes": {
+          "approvalType": "SINGLE",
+          "description": "Single approval by the configured high-tier custom identity.",
+          "priority": "HIGH",
+          "reviewerCategory": "IDENTITY",
+          "reviewerId": "{{$.configuration.customHighIdentityID}}",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
+        },
+        "displayName": "Approval Policy High Custom Identity",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Approval Policy High Custom Group": {
+        "actionId": "sp:access-request-approval",
+        "attributes": {
+          "approvalType": "SINGLE",
+          "description": "Single approval by the configured high-tier governance group.",
+          "priority": "HIGH",
+          "reviewerCategory": "GOVERNANCE_GROUP",
+          "reviewerId": "{{$.configuration.customHighGroupID}}",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
+        },
+        "displayName": "Approval Policy High Custom Group",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Approval Policy Medium Custom Identity": {
+        "actionId": "sp:access-request-approval",
+        "attributes": {
+          "approvalType": "SINGLE",
+          "description": "Single approval by the configured medium-tier custom identity.",
+          "priority": "MEDIUM",
+          "reviewerCategory": "IDENTITY",
+          "reviewerId": "{{$.configuration.customMediumIdentityID}}",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
+        },
+        "displayName": "Approval Policy Medium Custom Identity",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Approval Policy Medium Custom Group": {
+        "actionId": "sp:access-request-approval",
+        "attributes": {
+          "approvalType": "SINGLE",
+          "description": "Single approval by the configured medium-tier governance group.",
+          "priority": "MEDIUM",
+          "reviewerCategory": "GOVERNANCE_GROUP",
+          "reviewerId": "{{$.configuration.customMediumGroupID}}",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
+        },
+        "displayName": "Approval Policy Medium Custom Group",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "End Success Low": {
+        "actionId": "sp:operator-success",
+        "description": "Low risk completed without an approval task.",
+        "displayName": "Success: Low risk",
+        "type": "success"
+      },
+      "End Success": {
+        "actionId": "sp:operator-success",
+        "description": "The approval policy was submitted.",
+        "displayName": "Success",
+        "type": "success"
+      }
+    }
+  },
+  "enabled": false,
+  "trigger": {
+    "type": "EVENT",
+    "attributes": {
+      "id": "idn:access-request-trigger"
+    }
+  }
+}
