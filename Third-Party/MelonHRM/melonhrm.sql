@@ -7,11 +7,11 @@ begin;
 drop table if exists public."MelonHRM" cascade;
 drop table if exists public.melonhrm cascade;
 
-create table public.melonhrm (
+create table public."MelonHRM" (
     employee_id text primary key,
     employeenumber text not null unique,
-    firstname text not null,
-    lastname text not null,
+    "givenName" text not null,
+    "familyName" text not null,
     middlename text,
     nickname text,
     email text,
@@ -36,17 +36,17 @@ create table public.melonhrm (
     "contractEndDate" text,
     category text,
     constraint melonhrm_manager_fkey
-        foreign key (manager) references public.melonhrm (employee_id)
+        foreign key (manager) references public."MelonHRM" (employee_id)
         deferrable initially deferred
 );
 
-create index melonhrm_manager_idx on public.melonhrm (manager);
+create index melonhrm_manager_idx on public."MelonHRM" (manager);
 
-comment on table public.melonhrm is
+comment on table public."MelonHRM" is
     'Read-only HR account feed. One row per identity; all attributes are text.';
 
-insert into public.melonhrm (
-    employee_id, employeenumber, firstname, lastname, middlename, nickname,
+insert into public."MelonHRM" (
+    employee_id, employeenumber, "givenName", "familyName", middlename, nickname,
     email, other_email, title, country, city, manager, type, empstatus,
     otherid, zipcode, home_phone, mobile, telephone, username, department,
     term, ftostart, ftoend, "contractStartDate", "contractEndDate", category
@@ -85,15 +85,15 @@ insert into public.melonhrm (
 do $$
 begin
     if exists (select 1 from pg_roles where rolname = 'service_role') then
-        alter table public.melonhrm enable row level security;
-        revoke all on table public.melonhrm from public;
+        alter table public."MelonHRM" enable row level security;
+        revoke all on table public."MelonHRM" from public;
         if exists (select 1 from pg_roles where rolname = 'anon') then
-            revoke all on table public.melonhrm from anon;
+            revoke all on table public."MelonHRM" from anon;
         end if;
         if exists (select 1 from pg_roles where rolname = 'authenticated') then
-            revoke all on table public.melonhrm from authenticated;
+            revoke all on table public."MelonHRM" from authenticated;
         end if;
-        grant select on table public.melonhrm to service_role;
+        grant select on table public."MelonHRM" to service_role;
     end if;
 end $$;
 

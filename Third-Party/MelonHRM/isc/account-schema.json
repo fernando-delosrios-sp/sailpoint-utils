@@ -1,6 +1,6 @@
 {
   "name": "account",
-  "nativeObjectType": "melonhrm",
+  "nativeObjectType": "MelonHRM",
   "identityAttribute": "employee_id",
   "displayAttribute": "username",
   "hierarchyAttribute": null,
@@ -23,14 +23,14 @@
       "isGroup": false
     },
     {
-      "name": "firstname",
+      "name": "givenName",
       "type": "STRING",
       "isMulti": false,
       "isEntitlement": false,
       "isGroup": false
     },
     {
-      "name": "lastname",
+      "name": "familyName",
       "type": "STRING",
       "isMulti": false,
       "isEntitlement": false,
