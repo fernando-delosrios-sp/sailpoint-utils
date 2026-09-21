@@ -3,38 +3,116 @@
 <Rule name="Organizational Hierarchy Path" type="Transform">
   <Description>
     Transform rule that builds a consolidated organizational hierarchy path.
-    sourceId is a transform attribute; the entitlement value is the transform input.
+    sourceId, entitlementAccountAttribute, parentOrganizationAttribute,
+    entitlementDisplayAttribute, hierarchySeparator, useFinalHierarchySeparator,
+    and debug are transform attributes.
+    The entitlement value is the transform input.
+    When debug is true, the output is a summary of the data used to build the path.
   </Description>
   <Source><![CDATA[
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.Collections;
 import java.util.Map;
-import sailpoint.object.ManagedAttribute.Type;
+import sailpoint.rule.ManagedAttributeDetails;
 
 String DEFAULT_VALUE = "-";
+String NL = " | ";
+
+String asString(Object value) {
+    if (value == null) {
+        return null;
+    }
+    String text = value.toString();
+    if (text == null) {
+        return null;
+    }
+    text = text.trim();
+    if (text.isEmpty()) {
+        return null;
+    }
+    return text;
+}
+
+boolean asBoolean(Object value) {
+    if (value == null) {
+        return false;
+    }
+    if (value instanceof Boolean) {
+        return ((Boolean) value).booleanValue();
+    }
+    String text = asString(value);
+    return text != null && Boolean.parseBoolean(text);
+}
+
+/*
+ * Optional transform attributes are omitted from the Beanshell binding entirely
+ * (not passed as null). Reading an undefined name throws; catch and default.
+ */
+boolean debugMode = false;
+try {
+    debugMode = asBoolean(debug);
+} catch (Throwable t) {
+    debugMode = false;
+}
+boolean appendFinalSep = false;
+try {
+    appendFinalSep = asBoolean(useFinalHierarchySeparator);
+} catch (Throwable t) {
+    appendFinalSep = false;
+}
+StringBuffer debugBuf = new StringBuffer("OHP debug");
+
+try {
+
+if (debugMode) {
+    debugBuf.append(NL).append("sourceId=").append(sourceId);
+    debugBuf.append(NL).append("input=").append(input);
+}
 
 /* sourceId is a transform attribute; input is the entitlement attribute value. */
-if (sourceId == null || input == null) {
-    return DEFAULT_VALUE;
-}
-sourceId = sourceId.toString().trim();
-String entitlementValue = input.toString().trim();
-if (sourceId.isEmpty() || entitlementValue.isEmpty()) {
+String sourceIdValue = asString(sourceId);
+String entitlementValue = asString(input);
+if (sourceIdValue == null || entitlementValue == null) {
+    if (debugMode) {
+        debugBuf.append(NL).append("stop=sourceId or input is null/empty");
+        return debugBuf.toString();
+    }
     return DEFAULT_VALUE;
 }
 
-/* Fetch source attribute configuration values from IdentityNow.
-   These are defined per-source in the IdentityNow admin UI. */
-String entitlementAccAttr = idn.getSourceAttributeBySourceId(sourceId, "entitlementAccountAttribute");
-String parentOrgAttr = idn.getSourceAttributeBySourceId(sourceId, "parentOrganizationAttribute");
-String displayAttr = idn.getSourceAttributeBySourceId(sourceId, "entitlementDisplayAttribute");
-String hierarchySep = idn.getSourceAttributeBySourceId(sourceId, "hierarchySeparator");
+/* Hierarchy field names and separator come from transform attributes, not source connector attributes. */
+String entitlementAccAttr = asString(entitlementAccountAttribute);
+String parentOrgAttr = asString(parentOrganizationAttribute);
+String displayAttr = asString(entitlementDisplayAttribute);
+/* Preserve separator whitespace; only treat null/blank as unset. */
+String hierarchySep = null;
+try {
+    if (hierarchySeparator != null) {
+        String rawSep = hierarchySeparator.toString();
+        if (rawSep != null && !rawSep.isEmpty()) {
+            hierarchySep = rawSep;
+        }
+    }
+} catch (Throwable t) {
+    hierarchySep = null;
+}
 
-/* Validate that required source attributes are configured. */
+if (debugMode) {
+    debugBuf.append(NL).append("entitlementAccountAttribute=").append(entitlementAccAttr);
+    debugBuf.append(NL).append("parentOrganizationAttribute=").append(parentOrgAttr);
+    debugBuf.append(NL).append("entitlementDisplayAttribute=").append(displayAttr);
+    debugBuf.append(NL).append("hierarchySeparator=").append(hierarchySep);
+    debugBuf.append(NL).append("useFinalHierarchySeparator=").append(appendFinalSep);
+}
+
+/* Validate that required transform attributes are configured. */
 if (entitlementAccAttr == null || parentOrgAttr == null || displayAttr == null) {
+    if (debugMode) {
+        debugBuf.append(NL).append("stop=required transform attribute missing");
+        return debugBuf.toString();
+    }
     return DEFAULT_VALUE;
 }
 
@@ -49,31 +127,59 @@ Set visited = new HashSet();
 /* current: the entitlement name currently being processed. */
 String current = entitlementValue;
 int maxDepth = 20;
+int hop = 0;
 
-while (current != null && !current.trim().isEmpty() && !visited.contains(current) && path.size() < maxDepth) {
+while (current != null && current.length() > 0 && path.size() < maxDepth) {
+    if (visited.contains(current)) {
+        if (debugMode) {
+            debugBuf.append(NL).append("stop=cycle at ").append(current);
+        }
+        break;
+    }
     visited.add(current);
+    hop++;
 
     /* Look up the managed attribute details for the current entitlement.
-       entitlementAccAttr is the account attribute name that holds the entitlement value on source accounts. */
-    sailpoint.rule.ManagedAttributeDetails details = idn.getManagedAttributeDetails(
-        sourceId, entitlementAccAttr, current, Type.Entitlement
-    );
+       entitlementAccAttr is the account attribute name that holds the entitlement value on source accounts.
+       Pass null for type so IdnRuleUtil defaults to Entitlement — avoids Beanshell nested-enum import issues. */
+    ManagedAttributeDetails details = null;
+    try {
+        details = idn.getManagedAttributeDetails(
+            sourceIdValue, entitlementAccAttr, current, null
+        );
+    } catch (Throwable lookupError) {
+        if (debugMode) {
+            debugBuf.append(NL).append(hop).append(". value=").append(current)
+                .append(" lookupError=").append(lookupError.getClass().getSimpleName())
+                .append(": ").append(lookupError.getMessage());
+        }
+        break;
+    }
     if (details == null) {
+        if (debugMode) {
+            debugBuf.append(NL).append(hop).append(". value=").append(current).append(" found=false");
+        }
         break;
     }
 
-    Map attrs = details.getAttributes();
+    Map attrs = null;
+    try {
+        attrs = details.getAttributes();
+    } catch (Throwable attrError) {
+        if (debugMode) {
+            debugBuf.append(NL).append(hop).append(". value=").append(current)
+                .append(" attributesError=").append(attrError.getMessage());
+        }
+        break;
+    }
 
     /* Read the display name from the configured entitlement attribute (e.g., "name").
        details.getName() returns the account attribute name, not the entitlement display name. */
     String name = null;
     if (attrs != null) {
-        Object displayVal = attrs.get(displayAttr);
-        if (displayVal != null) {
-            name = displayVal.toString();
-        }
+        name = asString(attrs.get(displayAttr));
     }
-    if (name == null || name.trim().isEmpty()) {
+    if (name == null) {
         name = current;
     }
     path.add(name);
@@ -82,31 +188,79 @@ while (current != null && !current.trim().isEmpty() && !visited.contains(current
        If null or empty, this entitlement has no parent — traversal is complete. */
     String parent = null;
     if (attrs != null) {
-        Object parentVal = attrs.get(parentOrgAttr);
-        if (parentVal != null) {
-            parent = parentVal.toString();
-        }
+        parent = asString(attrs.get(parentOrgAttr));
     }
-    if (parent == null || parent.trim().isEmpty()) {
+    if (debugMode) {
+        debugBuf.append(NL).append(hop).append(". value=").append(current)
+            .append(" display=").append(name)
+            .append(" parent=").append(parent == null ? "" : parent);
+    }
+    if (parent == null || parent.length() == 0) {
         break;
     }
     current = parent;
 }
 
+if (debugMode && path.size() >= maxDepth) {
+    debugBuf.append(NL).append("stop=maxDepth ").append(maxDepth);
+}
+
 /* If no entitlements were added to the path, return the default. */
 if (path.isEmpty()) {
+    if (debugMode) {
+        debugBuf.append(NL).append("path=").append(DEFAULT_VALUE);
+        return debugBuf.toString();
+    }
     return DEFAULT_VALUE;
 }
 
-/* Reverse the path to get top-down order (root first, leaf last) and join with the hierarchy separator. */
-Collections.reverse(path);
-StringBuilder result = new StringBuilder();
-for (int i = 0; i < path.size(); i++) {
-    if (i > 0 && hierarchySep != null) {
-        result.append(hierarchySep);
-    }
-    result.append(path.get(i));
+/*
+ * Join root-first without Collections.reverse / StringBuilder / String.concat.
+ * SailPoint Beanshell has thrown NPE ("str" is null) in those paths with some separators.
+ */
+if (debugMode) {
+    debugBuf.append(NL).append("phase=join segments=").append(path.size());
 }
-return result.toString();
+String sepStr = "";
+if (hierarchySep != null) {
+    /* Force a plain java.lang.String; never pass null into String constructors. */
+    String coerced = String.valueOf(hierarchySep);
+    if (coerced != null) {
+        sepStr = coerced;
+    }
+}
+StringBuffer joined = new StringBuffer();
+for (int i = path.size() - 1; i >= 0; i--) {
+    if (joined.length() > 0 && sepStr.length() > 0) {
+        joined.append(sepStr);
+    }
+    Object rawSegment = path.get(i);
+    if (rawSegment == null) {
+        joined.append(DEFAULT_VALUE);
+    } else {
+        joined.append(String.valueOf(rawSegment));
+    }
+}
+if (appendFinalSep && sepStr.length() > 0) {
+    joined.append(sepStr);
+}
+String pathOut = joined.toString();
+if (debugMode) {
+    debugBuf.append(NL).append("path=").append(pathOut);
+    return debugBuf.toString();
+}
+return pathOut;
+
+} catch (Throwable t) {
+    if (debugMode) {
+        String errMsg = t.getMessage();
+        debugBuf.append(NL).append("error=").append(t.getClass().getName());
+        if (errMsg != null) {
+            debugBuf.append(": ").append(errMsg);
+        }
+        return debugBuf.toString();
+    }
+    return DEFAULT_VALUE;
+}
   ]]></Source>
 </Rule>

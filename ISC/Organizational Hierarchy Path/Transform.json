@@ -4,11 +4,14 @@
     "attributes": {
         "name": "Organizational Hierarchy Path",
         "sourceId": "<SOURCE_ID>",
+        "entitlementAccountAttribute": "<ENTITLEMENT_ACCOUNT_ATTRIBUTE>",
+        "parentOrganizationAttribute": "<PARENT_ORGANIZATION_ATTRIBUTE>",
+        "entitlementDisplayAttribute": "<ENTITLEMENT_DISPLAY_ATTRIBUTE>",
+        "hierarchySeparator": ">",
+        "useFinalHierarchySeparator": "false",
+        "debug": "false",
         "input": {
-            "type": "identityAttribute",
-            "attributes": {
-                "name": "<ATTRIBUTE_NAME>"
-            }
+            "type": "trim"
         }
     }
 }
