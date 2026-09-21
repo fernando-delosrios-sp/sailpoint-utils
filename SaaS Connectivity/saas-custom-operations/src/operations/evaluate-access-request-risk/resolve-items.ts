@@ -3,9 +3,12 @@ import { AccessRequestsApi } from 'sailpoint-api-client'
 import { escapeODataString } from '../../isc/accounts/find-account'
 import { normalizeRequestedItem, RequestedAccessItem } from './evaluate'
 
+export type RequestedItemLike = { id?: string; type?: string; name?: string }
+
 export interface EvaluateAccessRequestRiskInput {
     accessRequestId?: string
-    requestedItems?: Array<{ id?: string; type?: string; name?: string }>
+    /** ISC collapses a single-element `$.trigger.requestedItems` to a bare object on invoke. */
+    requestedItems?: RequestedItemLike[] | RequestedItemLike | string
 }
 
 interface StatusRow {
@@ -29,12 +32,43 @@ function itemFromStatusRow(row: StatusRow, accessRequestId: string): RequestedAc
     return normalizeRequestedItem({ id: rowId, type: row.type, name: row.name ?? undefined })
 }
 
+/** Accepts the array, the single object ISC sends for a one-item request, or a JSON string of either. */
+export function toRequestedItemArray(
+    requestedItems: EvaluateAccessRequestRiskInput['requestedItems']
+): RequestedItemLike[] {
+    if (requestedItems == null) {
+        return []
+    }
+
+    if (typeof requestedItems === 'string') {
+        const trimmed = requestedItems.trim()
+        if (!trimmed) {
+            return []
+        }
+        try {
+            return toRequestedItemArray(JSON.parse(trimmed))
+        } catch {
+            throw new ConnectorError(`Input requestedItems is a string that is not valid JSON: ${trimmed}`)
+        }
+    }
+
+    if (Array.isArray(requestedItems)) {
+        return requestedItems.filter((item): item is RequestedItemLike => typeof item === 'object' && item !== null)
+    }
+
+    if (typeof requestedItems === 'object') {
+        return [requestedItems]
+    }
+
+    throw new ConnectorError(`Input requestedItems must be an object or an array, got ${typeof requestedItems}`)
+}
+
 /** Uses caller-supplied items when present. Otherwise loads them from access-request status. */
 export async function resolveRequestedItems(
     accessRequests: Pick<AccessRequestsApi, 'listAccessRequestStatusV1'>,
     input: EvaluateAccessRequestRiskInput
 ): Promise<RequestedAccessItem[]> {
-    const supplied = (input.requestedItems ?? [])
+    const supplied = toRequestedItemArray(input.requestedItems)
         .map((item) => normalizeRequestedItem(item))
         .filter((item): item is RequestedAccessItem => Boolean(item))
 

@@ -26,7 +26,7 @@ A role or access profile is then scored again through its entitlements. Wrapped 
 
 | Field | Required | Description |
 |---|---|---|
-| `requestedItems` | No* | `{ id, type, name? }` from the trigger. `type` is `ROLE`, `ACCESS_PROFILE`, or `ENTITLEMENT` |
+| `requestedItems` | No* | `{ id, type, name? }` from the trigger. `type` is `ROLE`, `ACCESS_PROFILE`, or `ENTITLEMENT`. An array, a single object, or a JSON string of either — ISC collapses a one-element `$.trigger.requestedItems` to a bare object |
 | `accessRequestId` | No* | Used only when `requestedItems` is omitted. Status rows must include the access-item id |
 | `considerPrivilege` | No | Default `true`. When `false`, entitlement scoring ignores `privilegeLevel.effective` and uses Risk metadata only |
 

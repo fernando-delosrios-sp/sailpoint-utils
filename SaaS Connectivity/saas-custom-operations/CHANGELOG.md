@@ -2,6 +2,15 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-09-21 · v0.6.1
+
+### 🐞 Fixes
+
+- **Single requested item no longer fails risk evaluation** — ISC collapses a one-element `$.trigger.requestedItems` to a bare object when it builds the invoke body, which made `custom:evaluate-access-request-risk` fail with `(input.requestedItems ?? []).map is not a function` on every access request for exactly one item. `requestedItems` now accepts an array, a single object, or a JSON string of either. Access requests for two or more items were unaffected.
+- **Risk approval callbacks declare no-auth** — The `Callback` and `Callback None` steps in `Risk Approval - Dynamic Approver`, and `Callback Approve` and `Callback Deny` in `Risk Approval - Auto Approve or Deny`, were missing `param_authenticationRef`, so the trigger callback failed with `failed to get authentication type: missing authentication type` and the access request was never routed. Re-import both workflows to pick up the fix.
+
+---
+
 ## 2026-09-14 · v0.6.0
 
 ### ⚠️ Breaking Changes

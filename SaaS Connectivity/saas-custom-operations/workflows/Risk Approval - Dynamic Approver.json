@@ -496,6 +496,7 @@
             "secret": "{{$.trigger._metadata.secret}}"
           },
           "method": "post",
+          "param_authenticationRef": "none",
           "requestContentType": "json",
           "url.$": "$.trigger._metadata.callbackURL"
         },
@@ -517,6 +518,7 @@
             "secret": "{{$.trigger._metadata.secret}}"
           },
           "method": "post",
+          "param_authenticationRef": "none",
           "requestContentType": "json",
           "url.$": "$.trigger._metadata.callbackURL"
         },

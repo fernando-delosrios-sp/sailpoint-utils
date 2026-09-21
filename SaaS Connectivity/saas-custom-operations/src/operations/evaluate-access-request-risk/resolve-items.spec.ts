@@ -16,6 +16,32 @@ describe('resolveRequestedItems', () => {
         expect(listAccessRequestStatusV1).not.toHaveBeenCalled()
     })
 
+    it('accepts the single object ISC sends for a one-item request', async () => {
+        const listAccessRequestStatusV1 = vi.fn()
+        const items = await resolveRequestedItems({ listAccessRequestStatusV1 } as never, {
+            accessRequestId: 'req-1',
+            requestedItems: { id: 'ap-1', type: 'ACCESS_PROFILE', name: 'Engineering', operation: 'Add' } as never,
+        })
+
+        expect(items).toEqual([{ id: 'ap-1', type: 'ACCESS_PROFILE', name: 'Engineering' }])
+        expect(listAccessRequestStatusV1).not.toHaveBeenCalled()
+    })
+
+    it('parses requested items delivered as a JSON string', async () => {
+        const listAccessRequestStatusV1 = vi.fn()
+        const items = await resolveRequestedItems({ listAccessRequestStatusV1 } as never, {
+            requestedItems: JSON.stringify([{ id: 'ent-1', type: 'ENTITLEMENT' }]),
+        })
+
+        expect(items).toEqual([{ id: 'ent-1', type: 'ENTITLEMENT' }])
+    })
+
+    it('rejects a requested items string that is not JSON', async () => {
+        await expect(
+            resolveRequestedItems({ listAccessRequestStatusV1: vi.fn() } as never, { requestedItems: 'ap-1' })
+        ).rejects.toThrow(/not valid JSON/)
+    })
+
     it('loads items from access request status when the trigger items are omitted', async () => {
         const listAccessRequestStatusV1 = vi.fn().mockResolvedValue({
             data: [

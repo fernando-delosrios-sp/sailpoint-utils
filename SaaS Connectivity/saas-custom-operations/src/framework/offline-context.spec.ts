@@ -7,6 +7,7 @@ import { isOfflineContext } from './offline-context'
 const OFFLINE_BRANCHING_OPERATIONS = [
     'access-model-sod-remediation',
     'access-model-sod-remediation-apply',
+    'evaluate-access-request-risk',
     'governance-group-emails',
     'preventive-sod-check',
     'sod-remediation',

@@ -9,7 +9,11 @@ export interface EvaluateAccessRequestRiskOperation extends OperationSignature {
     command: 'custom:evaluate-access-request-risk'
     input: {
         accessRequestId?: string
-        requestedItems?: Array<{ id?: string; type?: string; name?: string }>
+        /** ISC collapses a single-element `$.trigger.requestedItems` to a bare object on invoke. */
+        requestedItems?:
+            | Array<{ id?: string; type?: string; name?: string }>
+            | { id?: string; type?: string; name?: string }
+            | string
         /** When false, entitlement scoring ignores privilegeLevel.effective. Defaults to true. */
         considerPrivilege?: boolean | string
     }
