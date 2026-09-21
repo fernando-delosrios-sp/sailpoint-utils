@@ -39,5 +39,5 @@
 
 ## 6. Changelog
 
-- [ ] 6.1 Create or update changelog entry for this change
-- [ ] 6.2 Confirm entry covers user-visible changes from proposal Capabilities, flags the persist identity rename as breaking, and states that the connector deploy and all three workflow re-imports must ship together
+- [x] 6.1 Create or update changelog entry for this change
+- [x] 6.2 Confirm entry covers user-visible changes from proposal Capabilities, flags the persist identity rename as breaking, and states that the connector deploy and all three workflow re-imports must ship together

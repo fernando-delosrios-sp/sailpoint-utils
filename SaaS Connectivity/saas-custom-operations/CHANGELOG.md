@@ -4,6 +4,15 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ## 2026-09-21 · v0.6.1
 
+### ⚠️ Breaking Changes
+
+- **Risk result accounts now use a command-prefixed identity** — `custom:evaluate-access-request-risk` writes successful and failed result accounts at `evaluate-access-request-risk:{requestId}` instead of the bare `{requestId}`. Existing bare accounts are neither backfilled nor deleted.
+  - Migration: update custom Get Accounts filters and scripts to the prefixed identity. Deploy the connector and re-import all three bundled Risk Approval workflows in one maintenance window, then restore Configuration values and the Get Access Token authentication.
+
+### 🔧 Improvements
+
+- **Custom operations can declare their result identity** — `customOperation` accepts an optional `resultIdentity(requestId)` builder, exposed as `ctx.resultIdentity`; automatic handler-time failure persistence uses the same identity as successful output. Operations that omit the builder continue using the invoke `requestId`.
+
 ### 🐞 Fixes
 
 - **Single requested item no longer fails risk evaluation** — ISC collapses a one-element `$.trigger.requestedItems` to a bare object when it builds the invoke body, which made `custom:evaluate-access-request-risk` fail with `(input.requestedItems ?? []).map is not a function` on every access request for exactly one item. `requestedItems` now accepts an array, a single object, or a JSON string of either. Access requests for two or more items were unaffected.
