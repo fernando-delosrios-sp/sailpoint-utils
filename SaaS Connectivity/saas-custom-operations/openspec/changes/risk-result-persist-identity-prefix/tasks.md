@@ -28,14 +28,14 @@
 ## 4. Verification
 
 - [x] 4.1 Confirm canonical test command: `npm test` (with `npm run typecheck` as the companion gate)
-- [ ] 4.2 All delta spec scenarios covered by named automated tests
+- [x] 4.2 All delta spec scenarios covered by named automated tests
 - [x] 4.3 `openspec validate --all --json` reports every change and spec valid
 
 ## 5. Documentation
 
-- [ ] 5.1 Update `src/operations/evaluate-access-request-risk/README.md` — Output section states the risk persist identity is `evaluate-access-request-risk:{requestId}`, the `requestId` row explains the wrapper discriminator sits inside the prefix, and the bundled-workflow section notes the matching `Read Risk Result` filter
-- [ ] 5.2 Update the root `README.md` where it describes result-account lookup by `nativeIdentity` so the risk example shows the prefixed identity
-- [ ] 5.3 Document the `resultIdentity` option in the framework section of the root `README.md` alongside the other `customOperation` options, and add JSDoc on the new type members
+- [x] 5.1 Update `src/operations/evaluate-access-request-risk/README.md` — Output section states the risk persist identity is `evaluate-access-request-risk:{requestId}`, the `requestId` row explains the wrapper discriminator sits inside the prefix, and the bundled-workflow section notes the matching `Read Risk Result` filter
+- [x] 5.2 Update the root `README.md` where it describes result-account lookup by `nativeIdentity` so the risk example shows the prefixed identity
+- [x] 5.3 Document the `resultIdentity` option in the framework section of the root `README.md` alongside the other `customOperation` options, and add JSDoc on the new type members
 
 ## 6. Changelog
 

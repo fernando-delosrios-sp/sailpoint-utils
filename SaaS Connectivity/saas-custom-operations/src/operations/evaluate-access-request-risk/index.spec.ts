@@ -159,6 +159,15 @@ describe('evaluateAccessRequestRiskOperation', () => {
         expect([...persistedAccounts.keys()]).toEqual(['evaluate-access-request-risk:req-abc:dynamic'])
     })
 
+    it('request id without a wrapper discriminator still gets the prefix', async () => {
+        await invokeRisk({
+            requestId: 'manual-001',
+            requestedItems: [{ id: 'ent-1', type: 'ENTITLEMENT' }],
+        })
+
+        expect([...persistedAccounts.keys()]).toEqual(['evaluate-access-request-risk:manual-001'])
+    })
+
     it('handler lookup failure writes a failed account on the prefixed identity', async () => {
         getEntitlement.mockRejectedValue(new Error('entitlement not found'))
 

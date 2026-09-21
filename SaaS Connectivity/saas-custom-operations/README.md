@@ -254,6 +254,9 @@ Content-Type: application/json
 After invoke, read persisted output from the result source using **Get Accounts** filtered by native identity:
 
 - Filter: `nativeIdentity eq "{requestId}"` (or a child id such as `{requestId}:detail`)
+- Risk example: `nativeIdentity eq "evaluate-access-request-risk:{requestId}"`; bundled wrappers keep their
+  discriminator inside the **risk persist identity**, for example
+  `evaluate-access-request-risk:{accessRequestId}:dynamic`
 - Map operation output attributes, `status`, `date`, `operationName`, and optional `details` from account attributes
 - On failure, the framework upserts a result account with `status: failed`, `operationName`, and `details` set to the error message (same text as invoke `{ error }`), so Get Accounts works for failed invocations too
 
@@ -332,6 +335,7 @@ Volatile context assembled per invocation by `customOperation`. Typed handlers r
 | Member | Description |
 |---|---|
 | `ctx.requestId` | Correlation id from invoke `input` |
+| `ctx.resultIdentity` | Framework-resolved **result identity** for the operation's outcome account; defaults to `ctx.requestId` |
 | `ctx.apiUrl` | ISC API base URL from invoke `config` |
 | `ctx.token` | Access token from invoke `config` (Bearer prefix stripped) |
 | `ctx.sourceName` | Configured result source name (resolved/created at runtime) |
@@ -375,6 +379,11 @@ ctx.verifyPersisted(ids)
 - **`OperationSignature`** — one interface with `input` and `output` using inline TypeScript type literals (aliases and imported types are not parsed by codegen)
 - **Output keys** — persist attribute names use `{slug}:` prefix matching the command (without `custom:`)
 - **`customOperation<T>(handler, options?)`** — types `input` and `ctx.persist` from `T`; pass the generated `{handler}Schema` sidecar for schema reconciliation
+- **`options.resultIdentity(requestId)`** — optional builder for the operation's **result identity**; it is
+  resolved once during request-context initialization and defaults to the invoke `requestId`
+- **Automatic failure persist** — writes the failed account to `ctx.resultIdentity`, so operations that
+  declare a builder use the same identity for success and failure. Failures before request-context
+  initialization completes cannot be persisted because no context or persist function is available yet
 - **`ctx.persist`** — formats values using typed inference (numbers/booleans native, objects JSON-serialized); reconciles schema before write
 - **`id`** — native account identity (often `ctx.requestId` or a derived child id like `` `${ctx.requestId}:detail` ``)
 - **`attributes`** — only keys declared in the operation output schema; typed per `OperationSignature.output`
@@ -383,6 +392,11 @@ ctx.verifyPersisted(ids)
 - **`operationName`** — framework-managed STRING set on every persist to the invoking custom command (`context.commandType`); handlers cannot override
 - **`date`** — always set automatically to the current timestamp
 - **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
+
+Use operation-specific terms for concrete identities: for example, the
+`custom:evaluate-access-request-risk` operation's `evaluate-access-request-risk:{requestId}` is its
+**risk persist identity**. **Result identity** is the generic framework term for the seam exposed by
+`ctx.resultIdentity`.
 
 By default, `persist` reads the account back from ISC and verifies attributes before resolving. Pass `{ verify: false }` to defer verification, then call `verifyPersisted([...ids])` before the handler completes. Unknown attribute keys are rejected before the write.
 

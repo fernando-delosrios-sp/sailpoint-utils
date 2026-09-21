@@ -32,9 +32,15 @@ A role or access profile is then scored again through its entitlements. Wrapped 
 
 \* One of the two is required. When both are set, `requestedItems` is used.
 
-`requestId` is the result-account identity. The bundled workflows set it to the access request id plus a suffix so the three wrappers do not overwrite each other.
+`requestId` is the input used to build the **risk persist identity**. The bundled workflows append a
+**wrapper discriminator** to the access request id: `:submitted`, `:dynamic`, or `:dynamic-approval`.
 
 ## Output (persisted)
+
+The result account uses the **risk persist identity** `evaluate-access-request-risk:{requestId}`. The
+wrapper discriminator is preserved inside that prefix, producing identities such as
+`evaluate-access-request-risk:{accessRequestId}:dynamic`. Keeping all three discriminator values inside
+the prefix prevents the bundled workflow wrappers from colliding with or overwriting one another.
 
 | Field | Description |
 |---|---|
@@ -42,7 +48,8 @@ A role or access profile is then scored again through its entitlements. Wrapped 
 | `evaluate-access-request-risk:situation-summary` | Winning tier and the objects that produced it. `Low` when nothing ranked higher |
 | `evaluate-access-request-risk:contributing-ids` | Comma-separated ids of those objects, truncated to the account string limit |
 
-Lookup failures throw. The result account is `failed`, not a silent `Low`.
+Lookup failures throw. The result account is `failed`, not a silent `Low`, and failure accounts use the
+same risk persist identity as successful results.
 
 ## Invoke examples
 
@@ -86,6 +93,17 @@ Shared Configuration on every workflow:
 | Consider Privilege | `$.configuration.considerPrivilege` | `true` (default) includes entitlement `privilegeLevel.effective`. `false` scores entitlements from Risk metadata only |
 
 On **Get Access Token**, set HTTP basic authentication to the workflow OAuth client (`client_credentials`). Do not paste the client secret into the exported JSON.
+
+Each workflow's **Read Risk Result** filter must match the risk persist identity written for its wrapper:
+
+- Auto Approve or Deny: `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted`
+- Dynamic Approver: `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic`
+- Dynamic approval workflow: `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic-approval`
+
+Deploy the connector and re-import all three bundled Risk Approval workflows in one maintenance window.
+Re-importing is required because existing workflow objects retain their old bare-identity filters; between
+the connector deploy and workflow re-import, result lookup takes each workflow's conservative error path.
+After re-import, re-apply Configuration values and the **Get Access Token** basic-auth reference.
 
 ### Auto approve or deny
 
