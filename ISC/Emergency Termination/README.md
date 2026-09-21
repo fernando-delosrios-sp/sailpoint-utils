@@ -30,7 +30,7 @@ Downstream disablement and access removal follow whatever that lifecycle state i
 ### Exported objects
 
 - **Workflow:** `Emergency Termination` (disabled by default)
-- **Form definitions:** `ET - Instructions`, `ET - Select User`, `ET - Approval`
+- **Form definitions:** `Emergency Termination - Instructions`, `Emergency Termination - Select User`, `Emergency Termination - Approval`
 
 ## Architecture
 
@@ -91,20 +91,20 @@ Use the **enabled** Emergency Termination (or equivalent) state on the HR / auth
 
 ## Forms
 
-### ET - Instructions
+### Emergency Termination - Instructions
 
 | Field | Type | Notes |
 |---|---|---|
 | I understand this is audited | TOGGLE | Yes/No. Workflow continues only on Yes |
 
-### ET - Select User
+### Emergency Termination - Select User
 
 | Field | Type | Notes |
 |---|---|---|
 | Selected person | SELECT | `SEARCH_V2` on identities; label display name, value **identity ID**; filtered to active direct reports of the requestor |
 | Justification | TEXTAREA | Required; shown to the approver |
 
-### ET - Approval
+### Emergency Termination - Approval
 
 Standalone form for the requestor's manager. Shows a read-only summary table (name, title, department, requestor, justification), then:
 

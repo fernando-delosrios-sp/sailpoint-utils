@@ -12,9 +12,9 @@
     "objectOptions": {
       "FORM_DEFINITION": {
         "includedNames": [
-          "ET - Approval",
-          "ET - Instructions",
-          "ET - Select User"
+          "Emergency Termination - Approval",
+          "Emergency Termination - Instructions",
+          "Emergency Termination - Select User"
         ],
         "includedIds": []
       },
@@ -31,12 +31,12 @@
       "version": 1,
       "self": {
         "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
-        "name": "ET - Instructions",
+        "name": "Emergency Termination - Instructions",
         "type": "FORM_DEFINITION"
       },
       "object": {
         "id": "db530ffe-d20c-4166-bd4d-e40d521a18cf",
-        "name": "ET - Instructions",
+        "name": "Emergency Termination - Instructions",
         "description": "Acknowledgement that the operator understands emergency termination is audited and irreversible without further HR updates.",
         "owner": {
           "type": "IDENTITY",
@@ -99,12 +99,12 @@
       "version": 1,
       "self": {
         "id": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
-        "name": "ET - Select User",
+        "name": "Emergency Termination - Select User",
         "type": "FORM_DEFINITION"
       },
       "object": {
         "id": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
-        "name": "ET - Select User",
+        "name": "Emergency Termination - Select User",
         "description": "Select an active direct report and provide a required justification for emergency termination.",
         "owner": {
           "type": "IDENTITY",
@@ -213,12 +213,12 @@
       "version": 1,
       "self": {
         "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
-        "name": "ET - Approval",
+        "name": "Emergency Termination - Approval",
         "type": "FORM_DEFINITION"
       },
       "object": {
         "id": "a9ab4f8f-3b58-44e7-86d0-d9d2356fb736",
-        "name": "ET - Approval",
+        "name": "Emergency Termination - Approval",
         "description": "Second-level manager approval for an emergency termination request.",
         "owner": {
           "type": "IDENTITY",
