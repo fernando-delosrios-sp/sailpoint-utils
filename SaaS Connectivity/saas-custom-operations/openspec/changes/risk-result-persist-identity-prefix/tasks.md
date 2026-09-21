@@ -9,13 +9,13 @@
 
 ## 2. Risk persist identity
 
-- [ ] 2.1 Add `src/operations/evaluate-access-request-risk/constants.ts` exporting `riskPersistIdentity(requestId: string): string` that prefixes `evaluate-access-request-risk:` and returns an already-prefixed input unchanged
-- [ ] 2.2 Add `constants.spec.ts` — plain id gets the prefix, id with a wrapper discriminator keeps it inside the prefixed identity, already-prefixed id is not prefixed twice
-- [ ] 2.3 Change the `ctx.persist` call in `src/operations/evaluate-access-request-risk/index.ts` to use `ctx.resultIdentity`
-- [ ] 2.4 Declare `resultIdentity: riskPersistIdentity` in the `customOperation` options for the risk operation so the failure path uses the same identity
-- [ ] 2.5 `index.spec.ts` — success persists on `evaluate-access-request-risk:{requestId}` and never on the bare id; persisted attribute keys unchanged; a handler throw writes the failed account on the prefixed identity; missing-input rejection writes the failed account on the prefixed identity
-- [ ] 2.6 `index.spec.ts` — each of the three wrapper discriminators yields a distinct prefixed identity for one access request
-- [ ] 2.7 Confirm no legacy bare-identity lookup is introduced anywhere in the operation
+- [x] 2.1 Add `src/operations/evaluate-access-request-risk/constants.ts` exporting `riskPersistIdentity(requestId: string): string` that prefixes `evaluate-access-request-risk:` and returns an already-prefixed input unchanged
+- [x] 2.2 Add `constants.spec.ts` — plain id gets the prefix, id with a wrapper discriminator keeps it inside the prefixed identity, already-prefixed id is not prefixed twice
+- [x] 2.3 Change the `ctx.persist` call in `src/operations/evaluate-access-request-risk/index.ts` to use `ctx.resultIdentity`
+- [x] 2.4 Declare `resultIdentity: riskPersistIdentity` in the `customOperation` options for the risk operation so the failure path uses the same identity
+- [x] 2.5 `index.spec.ts` — success persists on `evaluate-access-request-risk:{requestId}` and never on the bare id; persisted attribute keys unchanged; a handler throw writes the failed account on the prefixed identity; missing-input rejection writes the failed account on the prefixed identity
+- [x] 2.6 `index.spec.ts` — each of the three wrapper discriminators yields a distinct prefixed identity for one access request
+- [x] 2.7 Confirm no legacy bare-identity lookup is introduced anywhere in the operation
 
 ## 3. Bundled workflow read-back
 

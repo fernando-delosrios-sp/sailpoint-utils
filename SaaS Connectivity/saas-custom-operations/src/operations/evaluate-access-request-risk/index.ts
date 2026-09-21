@@ -1,5 +1,6 @@
 import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
 import { createAccessRiskCatalog } from './catalog'
+import { riskPersistIdentity } from './constants'
 import { evaluateAccessRisk } from './evaluate'
 import { evaluateAccessRequestRiskOperationSchema } from './index.schema'
 import { resolveRequestedItems } from './resolve-items'
@@ -36,12 +37,12 @@ export const evaluateAccessRequestRiskOperation = customOperation<EvaluateAccess
         const catalog = createAccessRiskCatalog(offline, ctx.sdk)
         const result = await evaluateAccessRisk(items, catalog, { considerPrivilege })
 
-        await ctx.persist(ctx.requestId, {
+        await ctx.persist(ctx.resultIdentity, {
             'evaluate-access-request-risk:tier': result.tier,
             'evaluate-access-request-risk:situation-summary': result.situationSummary,
             'evaluate-access-request-risk:contributing-ids': result.contributingIds,
         })
         ctx.respond({ tier: result.tier })
     },
-    { operationSchema: evaluateAccessRequestRiskOperationSchema }
+    { operationSchema: evaluateAccessRequestRiskOperationSchema, resultIdentity: riskPersistIdentity }
 )
