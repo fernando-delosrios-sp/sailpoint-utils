@@ -280,7 +280,7 @@
           "filterCriteria": "nativeIdentity",
           "getAccountsBy": "filters",
           "operator": "eq",
-          "value": "{{$.trigger.accessRequestId}}:dynamic"
+          "value": "evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic"
         },
         "catch": [
           {

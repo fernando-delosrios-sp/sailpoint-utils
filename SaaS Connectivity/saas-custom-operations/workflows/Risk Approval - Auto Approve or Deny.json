@@ -117,7 +117,7 @@
           "filterCriteria": "nativeIdentity",
           "getAccountsBy": "filters",
           "operator": "eq",
-          "value": "{{$.trigger.accessRequestId}}:submitted"
+          "value": "evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted"
         },
         "catch": [
           {

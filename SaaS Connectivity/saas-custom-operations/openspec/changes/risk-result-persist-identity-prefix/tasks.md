@@ -19,11 +19,11 @@
 
 ## 3. Bundled workflow read-back
 
-- [ ] 3.1 Update `Read Risk Result` value to `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted` in `workflows/Risk Approval - Auto Approve or Deny.json`
-- [ ] 3.2 Update `Read Risk Result` value to `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic` in `workflows/Risk Approval - Dynamic Approver.json`
-- [ ] 3.3 Update `Read Risk Result` value to `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic-approval` in `workflows/Risk Approval - Dynamic approval workflow.json`
-- [ ] 3.4 Add the pairing test over the shipped workflow JSON — for each of the three files, `riskPersistIdentity` applied to the `Call Evaluate Risk` `input.requestId` template equals the `Read Risk Result` filter value
-- [ ] 3.5 Verify each edited workflow file still parses as JSON and no other step attribute changed
+- [x] 3.1 Update `Read Risk Result` value to `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted` in `workflows/Risk Approval - Auto Approve or Deny.json`
+- [x] 3.2 Update `Read Risk Result` value to `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic` in `workflows/Risk Approval - Dynamic Approver.json`
+- [x] 3.3 Update `Read Risk Result` value to `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic-approval` in `workflows/Risk Approval - Dynamic approval workflow.json`
+- [x] 3.4 Add the pairing test over the shipped workflow JSON — for each of the three files, `riskPersistIdentity` applied to the `Call Evaluate Risk` `input.requestId` template equals the `Read Risk Result` filter value
+- [x] 3.5 Verify each edited workflow file still parses as JSON and no other step attribute changed
 
 ## 4. Verification
 
