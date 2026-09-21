@@ -1,7 +1,7 @@
 {
   "id": "YOUR_EXTRA_APPROVER_WORKFLOW_ID",
   "name": "Risk Approval - Extra Approver",
-  "description": "Access Request Dynamic Approval event-trigger wrapper. Scores risk with custom:evaluate-access-request-risk, then adds one identity or governance group, or none on Low. Missing manager levels use the default approver. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
+  "description": "Access Request Dynamic Approval event-trigger wrapper. Approvers are single strings in the form IDENTITY|id or GOVERNANCE_GROUP|id. Phase 1 resolves Manager and Managers Manager to that form, falling back to Default Approver. Phase 2 scores risk with custom:evaluate-access-request-risk. Phase 3 has one step per tier that sets Approver from those variables or from a hardcoded value. Phase 4 answers with the approver, or with none when Approver is empty. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -35,80 +35,56 @@
               "variableA": "true"
             },
             {
-              "description": "High tier selector: manager, managersManager, defaultApprover, customIdentity, or customGovernanceGroup.",
-              "name": "High Selector",
+              "description": "Approver used when a manager level is missing. IDENTITY|id or GOVERNANCE_GROUP|id.",
+              "name": "Default Approver",
               "transforms": [],
-              "variableA": "managersManager"
-            },
-            {
-              "description": "Medium tier selector: manager, managersManager, defaultApprover, customIdentity, or customGovernanceGroup.",
-              "name": "Medium Selector",
-              "transforms": [],
-              "variableA": "manager"
-            },
-            {
-              "description": "Identity id used when the selected manager level is missing, the selector is defaultApprover, or evaluation fails.",
-              "name": "Default Approver ID",
-              "transforms": [],
-              "variableA": "YOUR_DEFAULT_APPROVER_ID"
-            },
-            {
-              "description": "Display name sent with the default approver id.",
-              "name": "Default Approver Name",
-              "transforms": [],
-              "variableA": "YOUR_DEFAULT_APPROVER_NAME"
-            },
-            {
-              "description": "Identity id when High Selector is customIdentity.",
-              "name": "Custom High Identity ID",
-              "transforms": [],
-              "variableA": "YOUR_CUSTOM_HIGH_IDENTITY_ID"
-            },
-            {
-              "description": "Display name when High Selector is customIdentity.",
-              "name": "Custom High Identity Name",
-              "transforms": [],
-              "variableA": "YOUR_CUSTOM_HIGH_IDENTITY_NAME"
-            },
-            {
-              "description": "Governance group id when High Selector is customGovernanceGroup.",
-              "name": "Custom High Group ID",
-              "transforms": [],
-              "variableA": "YOUR_CUSTOM_HIGH_GROUP_ID"
-            },
-            {
-              "description": "Governance group name when High Selector is customGovernanceGroup.",
-              "name": "Custom High Group Name",
-              "transforms": [],
-              "variableA": "YOUR_CUSTOM_HIGH_GROUP_NAME"
-            },
-            {
-              "description": "Identity id when Medium Selector is customIdentity.",
-              "name": "Custom Medium Identity ID",
-              "transforms": [],
-              "variableA": "YOUR_CUSTOM_MEDIUM_IDENTITY_ID"
-            },
-            {
-              "description": "Display name when Medium Selector is customIdentity.",
-              "name": "Custom Medium Identity Name",
-              "transforms": [],
-              "variableA": "YOUR_CUSTOM_MEDIUM_IDENTITY_NAME"
-            },
-            {
-              "description": "Governance group id when Medium Selector is customGovernanceGroup.",
-              "name": "Custom Medium Group ID",
-              "transforms": [],
-              "variableA": "YOUR_CUSTOM_MEDIUM_GROUP_ID"
-            },
-            {
-              "description": "Governance group name when Medium Selector is customGovernanceGroup.",
-              "name": "Custom Medium Group Name",
-              "transforms": [],
-              "variableA": "YOUR_CUSTOM_MEDIUM_GROUP_NAME"
+              "variableA": "IDENTITY|YOUR_DEFAULT_APPROVER_ID"
             }
           ]
         },
         "displayName": "Configuration",
+        "nextStep": "Approver Variables",
+        "type": "Mutation"
+      },
+      "Approver Variables": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Overwritten by Set Manager when the recipient has a manager. Otherwise stays the default approver.",
+              "name": "Manager",
+              "transforms": [],
+              "variableA.$": "$.configuration.defaultApprover"
+            },
+            {
+              "description": "Overwritten by Set Managers Manager when that level exists. Otherwise stays the default approver.",
+              "name": "Managers Manager",
+              "transforms": [],
+              "variableA.$": "$.configuration.defaultApprover"
+            },
+            {
+              "description": "The winning tier's approver, IDENTITY|id or GOVERNANCE_GROUP|id. Empty means no extra approver.",
+              "name": "Approver",
+              "transforms": [],
+              "variableA": ""
+            },
+            {
+              "description": "Left side of Approver. Filled by Split Approver.",
+              "name": "Approver Type",
+              "transforms": [],
+              "variableA": ""
+            },
+            {
+              "description": "Right side of Approver. Filled by Split Approver.",
+              "name": "Approver ID",
+              "transforms": [],
+              "variableA": ""
+            }
+          ]
+        },
+        "description": "Phase 1. Both manager levels start at the default approver, so a missing level needs no branch of its own.",
+        "displayName": "Init approver variables",
         "nextStep": "Get Recipient",
         "type": "Mutation"
       },
@@ -150,17 +126,42 @@
             "next": "Get Access Token"
           }
         ],
+        "description": "Read to reach the next manager level. Set Manager only needs the id.",
         "displayName": "Get Manager",
-        "nextStep": "Check Managers Manager",
+        "nextStep": "Set Manager",
         "type": "action",
         "versionNumber": 2
+      },
+      "Set Manager": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.approverVariables.manager",
+              "transforms": [
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB.$": "$.getManager.id"
+                  }
+                }
+              ],
+              "variableA": "IDENTITY|"
+            }
+          ]
+        },
+        "displayName": "Set manager",
+        "nextStep": "Check Managers Manager",
+        "type": "Mutation"
       },
       "Check Managers Manager": {
         "actionId": "sp:compare-unary",
         "choiceList": [
           {
             "comparator": "IsPresent",
-            "nextStep": "Get Managers Manager",
+            "nextStep": "Set Managers Manager",
             "variableA.$": "$.getManager.managerRef.id"
           }
         ],
@@ -168,20 +169,29 @@
         "displayName": "Manager has a manager?",
         "type": "choice"
       },
-      "Get Managers Manager": {
-        "actionId": "sp:get-identity",
+      "Set Managers Manager": {
+        "actionId": "sp:update-variable",
         "attributes": {
-          "id.$": "$.getManager.managerRef.id"
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.approverVariables.managersManager",
+              "transforms": [
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB.$": "$.getManager.managerRef.id"
+                  }
+                }
+              ],
+              "variableA": "IDENTITY|"
+            }
+          ]
         },
-        "catch": [
-          {
-            "next": "Get Access Token"
-          }
-        ],
-        "displayName": "Get Managers Manager",
+        "displayName": "Set manager's manager",
         "nextStep": "Get Access Token",
-        "type": "action",
-        "versionNumber": 2
+        "type": "Mutation"
       },
       "Get Access Token": {
         "actionId": "sp:http",
@@ -196,10 +206,10 @@
         },
         "catch": [
           {
-            "next": "Callback Default Approver"
+            "next": "Set High Approver"
           }
         ],
-        "description": "Set basic auth on this step to the workflow OAuth client.",
+        "description": "Phase 2. Set basic auth on this step to the workflow OAuth client. A failure falls through to the High approver.",
         "displayName": "Get Access Token",
         "nextStep": "Call Evaluate Risk",
         "type": "action",
@@ -234,7 +244,7 @@
         },
         "catch": [
           {
-            "next": "Callback Default Approver"
+            "next": "Set High Approver"
           }
         ],
         "displayName": "Call Evaluate Risk",
@@ -252,7 +262,7 @@
         },
         "catch": [
           {
-            "next": "Callback Default Approver"
+            "next": "Set High Approver"
           }
         ],
         "displayName": "Read Risk Result",
@@ -265,143 +275,173 @@
         "choiceList": [
           {
             "comparator": "StringEquals",
-            "nextStep": "Select High Approver",
+            "nextStep": "Set High Approver",
             "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']",
             "variableB": "High"
-          },
+          }
+        ],
+        "defaultStep": "Check Tier Medium",
+        "description": "Phase 3. One step per tier sets Approver. Edit those three steps to change who approves.",
+        "displayName": "Tier is High?",
+        "type": "choice"
+      },
+      "Check Tier Medium": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
           {
             "comparator": "StringEquals",
-            "nextStep": "Select Medium Approver",
+            "nextStep": "Set Medium Approver",
             "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']",
             "variableB": "Medium"
-          },
+          }
+        ],
+        "defaultStep": "Check Tier Low",
+        "displayName": "Tier is Medium?",
+        "type": "choice"
+      },
+      "Check Tier Low": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
           {
             "comparator": "StringEquals",
-            "nextStep": "Callback None",
+            "nextStep": "Set Low Approver",
             "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']",
             "variableB": "Low"
           }
         ],
-        "defaultStep": "Callback Default Approver",
-        "description": "Low adds no approver. A missing tier fails closed to the default approver.",
-        "displayName": "Which tier?",
+        "defaultStep": "Set High Approver",
+        "displayName": "Tier is Low?",
         "type": "choice"
       },
-      "Select High Approver": {
+      "Set High Approver": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.approverVariables.approver",
+              "transforms": [],
+              "variableA.$": "$.approverVariables.managersManager"
+            }
+          ]
+        },
+        "description": "Point at $.approverVariables.manager, $.configuration.defaultApprover, or type a literal such as GOVERNANCE_GROUP|id.",
+        "displayName": "High approver is the manager's manager",
+        "nextStep": "Check Approver",
+        "type": "Mutation"
+      },
+      "Set Medium Approver": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.approverVariables.approver",
+              "transforms": [],
+              "variableA.$": "$.approverVariables.manager"
+            }
+          ]
+        },
+        "description": "Point at $.approverVariables.managersManager, $.configuration.defaultApprover, or type a literal such as GOVERNANCE_GROUP|id.",
+        "displayName": "Medium approver is the manager",
+        "nextStep": "Check Approver",
+        "type": "Mutation"
+      },
+      "Set Low Approver": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.approverVariables.approver",
+              "transforms": [],
+              "variableA": ""
+            }
+          ]
+        },
+        "description": "Empty means no extra approver on Low. Set a variable or a literal here to add one.",
+        "displayName": "Low adds no approver",
+        "nextStep": "Check Approver",
+        "type": "Mutation"
+      },
+      "Check Approver": {
         "actionId": "sp:compare-strings",
         "choiceList": [
           {
             "comparator": "StringEquals",
-            "nextStep": "Check High Manager",
-            "variableA.$": "$.configuration.highSelector",
-            "variableB": "manager"
-          },
-          {
-            "comparator": "StringEquals",
-            "nextStep": "Check High Managers Manager",
-            "variableA.$": "$.configuration.highSelector",
-            "variableB": "managersManager"
-          },
-          {
-            "comparator": "StringEquals",
-            "nextStep": "Callback High Custom Identity",
-            "variableA.$": "$.configuration.highSelector",
-            "variableB": "customIdentity"
-          },
-          {
-            "comparator": "StringEquals",
-            "nextStep": "Callback High Custom Group",
-            "variableA.$": "$.configuration.highSelector",
-            "variableB": "customGovernanceGroup"
+            "nextStep": "Callback None",
+            "variableA.$": "$.approverVariables.approver",
+            "variableB": ""
           }
         ],
-        "defaultStep": "Callback Default Approver",
-        "displayName": "High selector",
+        "defaultStep": "Split Approver",
+        "description": "Phase 4. Every tier converges here.",
+        "displayName": "Approver is empty?",
         "type": "choice"
       },
-      "Select Medium Approver": {
-        "actionId": "sp:compare-strings",
-        "choiceList": [
-          {
-            "comparator": "StringEquals",
-            "nextStep": "Check Medium Manager",
-            "variableA.$": "$.configuration.mediumSelector",
-            "variableB": "manager"
+      "Split Approver": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.approverVariables.approverType",
+              "transforms": [
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "\\|.*",
+                    "replacement": ""
+                  }
+                }
+              ],
+              "variableA.$": "$.approverVariables.approver"
+            },
+            {
+              "description": "",
+              "name": "$.approverVariables.approverID",
+              "transforms": [
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": ".*\\|",
+                    "replacement": ""
+                  }
+                }
+              ],
+              "variableA.$": "$.approverVariables.approver"
+            }
+          ]
+        },
+        "description": "Splits IDENTITY|id or GOVERNANCE_GROUP|id into the two callback fields.",
+        "displayName": "Split approver",
+        "nextStep": "Callback",
+        "type": "Mutation"
+      },
+      "Callback": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody": {
+            "output": {
+              "id": "{{$.approverVariables.approverID}}",
+              "name": "",
+              "type": "{{$.approverVariables.approverType}}"
+            },
+            "secret": "{{$.trigger._metadata.secret}}"
           },
-          {
-            "comparator": "StringEquals",
-            "nextStep": "Check Medium Managers Manager",
-            "variableA.$": "$.configuration.mediumSelector",
-            "variableB": "managersManager"
-          },
-          {
-            "comparator": "StringEquals",
-            "nextStep": "Callback Medium Custom Identity",
-            "variableA.$": "$.configuration.mediumSelector",
-            "variableB": "customIdentity"
-          },
-          {
-            "comparator": "StringEquals",
-            "nextStep": "Callback Medium Custom Group",
-            "variableA.$": "$.configuration.mediumSelector",
-            "variableB": "customGovernanceGroup"
-          }
-        ],
-        "defaultStep": "Callback Default Approver",
-        "displayName": "Medium selector",
-        "type": "choice"
-      },
-      "Check High Manager": {
-        "actionId": "sp:compare-unary",
-        "choiceList": [
-          {
-            "comparator": "IsPresent",
-            "nextStep": "Callback Manager",
-            "variableA.$": "$.getManager.id"
-          }
-        ],
-        "defaultStep": "Callback Default Approver",
-        "displayName": "High manager present?",
-        "type": "choice"
-      },
-      "Check High Managers Manager": {
-        "actionId": "sp:compare-unary",
-        "choiceList": [
-          {
-            "comparator": "IsPresent",
-            "nextStep": "Callback Managers Manager",
-            "variableA.$": "$.getManagersManager.id"
-          }
-        ],
-        "defaultStep": "Callback Default Approver",
-        "displayName": "High manager's manager present?",
-        "type": "choice"
-      },
-      "Check Medium Manager": {
-        "actionId": "sp:compare-unary",
-        "choiceList": [
-          {
-            "comparator": "IsPresent",
-            "nextStep": "Callback Manager",
-            "variableA.$": "$.getManager.id"
-          }
-        ],
-        "defaultStep": "Callback Default Approver",
-        "displayName": "Medium manager present?",
-        "type": "choice"
-      },
-      "Check Medium Managers Manager": {
-        "actionId": "sp:compare-unary",
-        "choiceList": [
-          {
-            "comparator": "IsPresent",
-            "nextStep": "Callback Managers Manager",
-            "variableA.$": "$.getManagersManager.id"
-          }
-        ],
-        "defaultStep": "Callback Default Approver",
-        "displayName": "Medium manager's manager present?",
-        "type": "choice"
+          "method": "post",
+          "requestContentType": "json",
+          "url.$": "$.trigger._metadata.callbackURL"
+        },
+        "description": "The trigger routes on id and type. name is informational, so no identity or group read is needed.",
+        "displayName": "Callback",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 3
       },
       "Callback None": {
         "actionId": "sp:http",
@@ -419,146 +459,6 @@
           "url.$": "$.trigger._metadata.callbackURL"
         },
         "displayName": "Callback None",
-        "nextStep": "End Success",
-        "type": "action",
-        "versionNumber": 3
-      },
-      "Callback Manager": {
-        "actionId": "sp:http",
-        "attributes": {
-          "jsonRequestBody": {
-            "output": {
-              "id": "{{$.getManager.id}}",
-              "name": "{{$.getManager.attributes.displayName}}",
-              "type": "IDENTITY"
-            },
-            "secret": "{{$.trigger._metadata.secret}}"
-          },
-          "method": "post",
-          "requestContentType": "json",
-          "url.$": "$.trigger._metadata.callbackURL"
-        },
-        "displayName": "Callback Manager",
-        "nextStep": "End Success",
-        "type": "action",
-        "versionNumber": 3
-      },
-      "Callback Managers Manager": {
-        "actionId": "sp:http",
-        "attributes": {
-          "jsonRequestBody": {
-            "output": {
-              "id": "{{$.getManagersManager.id}}",
-              "name": "{{$.getManagersManager.attributes.displayName}}",
-              "type": "IDENTITY"
-            },
-            "secret": "{{$.trigger._metadata.secret}}"
-          },
-          "method": "post",
-          "requestContentType": "json",
-          "url.$": "$.trigger._metadata.callbackURL"
-        },
-        "displayName": "Callback Managers Manager",
-        "nextStep": "End Success",
-        "type": "action",
-        "versionNumber": 3
-      },
-      "Callback Default Approver": {
-        "actionId": "sp:http",
-        "attributes": {
-          "jsonRequestBody": {
-            "output": {
-              "id": "{{$.configuration.defaultApproverID}}",
-              "name": "{{$.configuration.defaultApproverName}}",
-              "type": "IDENTITY"
-            },
-            "secret": "{{$.trigger._metadata.secret}}"
-          },
-          "method": "post",
-          "requestContentType": "json",
-          "url.$": "$.trigger._metadata.callbackURL"
-        },
-        "displayName": "Callback Default Approver",
-        "nextStep": "End Success",
-        "type": "action",
-        "versionNumber": 3
-      },
-      "Callback High Custom Identity": {
-        "actionId": "sp:http",
-        "attributes": {
-          "jsonRequestBody": {
-            "output": {
-              "id": "{{$.configuration.customHighIdentityID}}",
-              "name": "{{$.configuration.customHighIdentityName}}",
-              "type": "IDENTITY"
-            },
-            "secret": "{{$.trigger._metadata.secret}}"
-          },
-          "method": "post",
-          "requestContentType": "json",
-          "url.$": "$.trigger._metadata.callbackURL"
-        },
-        "displayName": "Callback High Custom Identity",
-        "nextStep": "End Success",
-        "type": "action",
-        "versionNumber": 3
-      },
-      "Callback High Custom Group": {
-        "actionId": "sp:http",
-        "attributes": {
-          "jsonRequestBody": {
-            "output": {
-              "id": "{{$.configuration.customHighGroupID}}",
-              "name": "{{$.configuration.customHighGroupName}}",
-              "type": "GOVERNANCE_GROUP"
-            },
-            "secret": "{{$.trigger._metadata.secret}}"
-          },
-          "method": "post",
-          "requestContentType": "json",
-          "url.$": "$.trigger._metadata.callbackURL"
-        },
-        "displayName": "Callback High Custom Group",
-        "nextStep": "End Success",
-        "type": "action",
-        "versionNumber": 3
-      },
-      "Callback Medium Custom Identity": {
-        "actionId": "sp:http",
-        "attributes": {
-          "jsonRequestBody": {
-            "output": {
-              "id": "{{$.configuration.customMediumIdentityID}}",
-              "name": "{{$.configuration.customMediumIdentityName}}",
-              "type": "IDENTITY"
-            },
-            "secret": "{{$.trigger._metadata.secret}}"
-          },
-          "method": "post",
-          "requestContentType": "json",
-          "url.$": "$.trigger._metadata.callbackURL"
-        },
-        "displayName": "Callback Medium Custom Identity",
-        "nextStep": "End Success",
-        "type": "action",
-        "versionNumber": 3
-      },
-      "Callback Medium Custom Group": {
-        "actionId": "sp:http",
-        "attributes": {
-          "jsonRequestBody": {
-            "output": {
-              "id": "{{$.configuration.customMediumGroupID}}",
-              "name": "{{$.configuration.customMediumGroupName}}",
-              "type": "GOVERNANCE_GROUP"
-            },
-            "secret": "{{$.trigger._metadata.secret}}"
-          },
-          "method": "post",
-          "requestContentType": "json",
-          "url.$": "$.trigger._metadata.callbackURL"
-        },
-        "displayName": "Callback Medium Custom Group",
         "nextStep": "End Success",
         "type": "action",
         "versionNumber": 3

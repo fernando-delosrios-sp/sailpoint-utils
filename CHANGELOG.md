@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-21
+
+### 🔧 Improvements
+
+- **Risk Approval Extra Approver** — The bundled Access Request Dynamic Approval workflow now stores each approver as `IDENTITY|<id>` or `GOVERNANCE_GROUP|<id>`. Manager levels fall back to a single Default Approver, and each risk tier is one assignment step. Re-import the JSON; previous selector and custom-id configuration variables are gone.
+
 ## 2026-09-19
 
 ### ✨ New Features
