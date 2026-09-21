@@ -27,9 +27,9 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Confirm canonical test command: `npm test` (with `npm run typecheck` as the companion gate)
+- [x] 4.1 Confirm canonical test command: `npm test` (with `npm run typecheck` as the companion gate)
 - [ ] 4.2 All delta spec scenarios covered by named automated tests
-- [ ] 4.3 `openspec validate --all --json` reports every change and spec valid
+- [x] 4.3 `openspec validate --all --json` reports every change and spec valid
 
 ## 5. Documentation
 
