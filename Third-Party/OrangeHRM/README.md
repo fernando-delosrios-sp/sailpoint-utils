@@ -90,3 +90,23 @@ The current implementation is demo-oriented. Before production use:
 - Move the hard-coded INI path into environment-specific configuration.
 - Consider moving aggregation to an asynchronous job so SailPoint response time does not delay the OrangeHRM request.
 
+## Organization structure SQL
+
+Script: [`sql/20260921_subunit_five_groups.sql`](sql/20260921_subunit_five_groups.sql)
+
+Removes the `Organization` root and reshapes `ohrm_subunit` into five top-level groups, keeping every existing leaf (and its `id`) so `hs_hr_employee.work_station` references stay valid:
+
+| Group | Leaves |
+| --- | --- |
+| Corporate Services | Executive Management, Finance, Accounting, Human Resources |
+| Technology | Engineering, Information Technology |
+| Operations | Inventory, Regional Operations, Asset Management |
+| Commercial | Sales, Call Center |
+| Healthcare | Nursing, Doctors, Students, Nursing-ER, Nursing-NICU, Radiology |
+
+Before changing data, the script creates snapshot table `ohrm_subunit_backup_20260921` once (not overwritten on re-run). It nulls any `work_station` pointing at Organization, deletes that row, then writes explicit `lft` / `rgt` / `level` values. A commented rollback block at the end of the script restores from the snapshot and removes the four inserted groups.
+
+Groups are `level` 1 and leaves `level` 2, not 0 and 1. The Sub Unit dropdown serializes `level` as the option's `_indent`, and the widget treats `_indent` 1 as flush left, so a 0-based tree renders as one flat list. Because nothing sits at `level` 0 any more, Admin → Organization → General Information can no longer rename the tree; that update targets `level = 0` and matches no row.
+
+Run against a backed-up database. Log out and back in after applying so OrangeHRM refreshes its cached org tree.
+
