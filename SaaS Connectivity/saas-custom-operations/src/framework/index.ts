@@ -60,6 +60,7 @@ export type {
     PersistFn,
     PersistOptions,
     RequestContext,
+    ResultIdentityBuilder,
     SailPointClients,
     StandardInput,
     VerifyPersistedFn,

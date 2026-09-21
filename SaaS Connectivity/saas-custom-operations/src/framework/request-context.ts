@@ -10,6 +10,7 @@ import {
     OperationSchemaContract,
     PersistDependencies,
     RequestContext,
+    ResultIdentityBuilder,
     SailPointClients,
     StandardInput,
     WriteRegistry,
@@ -23,6 +24,12 @@ export interface RequestContextDependencies {
     /** Resolved source ID when source resolution is handled externally (tests). */
     sourceId?: string
     operationSchema?: OperationSchemaContract
+    /**
+     * Builds the result-source identity this operation writes, from the invoke `requestId`.
+     * Resolved once before the handler runs and exposed as `ctx.resultIdentity`; the framework's
+     * automatic failed account persist writes there too. Defaults to the `requestId` when omitted.
+     */
+    resultIdentity?: ResultIdentityBuilder
     /** Override connector config (for tests); defaults to {@link readConfig} at runtime. */
     config?: Record<string, unknown>
     /** When true, persist and schema writes are inhibited and logged. */
@@ -57,6 +64,7 @@ export function createRequestContext<
               : createSailPointClients(input.apiUrl, input.token))
 
     const sourceId = deps.sourceId ?? ''
+    const resultIdentity = deps.resultIdentity?.(input.requestId) ?? input.requestId
     const accountsClient = sdk.accounts
     const writeRegistry: WriteRegistry = new Map()
     const log =
@@ -129,6 +137,7 @@ export function createRequestContext<
 
     return {
         requestId: input.requestId,
+        resultIdentity,
         apiUrl: input.apiUrl,
         token: input.token,
         sourceName: input.sourceName,

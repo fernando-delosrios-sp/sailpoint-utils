@@ -150,7 +150,7 @@ export function customOperation<T extends OperationSignature>(
                 responseSent = true
                 if (isFailedCommandOutput(output)) {
                     outcome = { status: 'failed', error: output.error }
-                    pendingFailurePersist = persistFailedResult(activeCtx?.requestId, output.error, activeCtx)
+                    pendingFailurePersist = persistFailedResult(activeCtx?.resultIdentity, output.error, activeCtx)
                 } else {
                     outcome = { status: 'success' }
                 }

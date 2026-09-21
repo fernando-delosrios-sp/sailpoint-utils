@@ -1,11 +1,11 @@
 ## 1. Framework result identity seam
 
-- [ ] 1.1 Add `resultIdentity?: (requestId: string) => string` to the `customOperation` options type in `src/framework/types.ts`, and add `resultIdentity: string` to `RequestContext`
-- [ ] 1.2 Resolve the builder once in `createRequestContext` (`src/framework/request-context.ts`), defaulting to `input.requestId`, and expose it on the returned context
-- [ ] 1.3 Thread the option from `customOperation` through `runCustomOperation` into `createRequestContext` in `src/framework/with-custom-operation.ts`
-- [ ] 1.4 Pass `activeCtx?.resultIdentity` instead of `activeCtx?.requestId` to `persistFailedResult` in `src/framework/with-custom-operation.ts`
-- [ ] 1.5 Rename the `persistFailedResult` first parameter in `src/framework/failure-persist.ts` to name the result identity, keeping the skip-when-absent behavior
-- [ ] 1.6 Framework tests — declared builder resolves `ctx.resultIdentity`; omitted builder defaults to `requestId`; declared builder receives the failed account on handler throw; declared builder covers initialization failure; existing no-builder failure scenarios still write on `requestId`
+- [x] 1.1 Add `resultIdentity?: (requestId: string) => string` to the `customOperation` options type in `src/framework/types.ts`, and add `resultIdentity: string` to `RequestContext`
+- [x] 1.2 Resolve the builder once in `createRequestContext` (`src/framework/request-context.ts`), defaulting to `input.requestId`, and expose it on the returned context
+- [x] 1.3 Thread the option from `customOperation` through `runCustomOperation` into `createRequestContext` in `src/framework/with-custom-operation.ts`
+- [x] 1.4 Pass `activeCtx?.resultIdentity` instead of `activeCtx?.requestId` to `persistFailedResult` in `src/framework/with-custom-operation.ts`
+- [x] 1.5 Rename the `persistFailedResult` first parameter in `src/framework/failure-persist.ts` to name the result identity, keeping the skip-when-absent behavior
+- [x] 1.6 Framework tests — declared builder resolves `ctx.resultIdentity`; omitted builder defaults to `requestId`; declared builder receives the failed account on handler throw and handler-sent failure; existing no-builder failure scenarios still write on `requestId`
 
 ## 2. Risk persist identity
 

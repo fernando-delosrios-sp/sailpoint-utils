@@ -66,6 +66,12 @@ export type PersistFn<TOutput extends object = Record<string, unknown>> = (
 /** Verifies identities previously written via persist in the same invocation. */
 export type VerifyPersistedFn = (ids: string[]) => Promise<void>
 
+/**
+ * Pure function from the invoke `requestId` to the result-source identity an operation writes.
+ * Declared in the `customOperation` options and resolved once during request context construction.
+ */
+export type ResultIdentityBuilder = (requestId: string) => string
+
 /** Expected attributes recorded per identity for batch verification. */
 export type WriteRegistry = Map<string, Record<string, unknown>>
 
@@ -81,6 +87,12 @@ export interface RequestContext<
     TSummary extends object = Record<string, unknown>,
 > {
     requestId: string
+    /**
+     * Result-source identity this operation writes its outcome account to, resolved from the
+     * operation's `resultIdentity` builder. Equals {@link RequestContext.requestId} when the
+     * operation declares no builder. The framework's automatic failed account persist uses it.
+     */
+    resultIdentity: string
     apiUrl: string
     token: string
     sourceName: string

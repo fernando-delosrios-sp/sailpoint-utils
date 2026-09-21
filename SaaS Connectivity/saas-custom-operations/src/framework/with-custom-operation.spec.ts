@@ -153,6 +153,40 @@ describe('createRequestContext', () => {
 
         expect(typeof ctx.verifyPersisted).toBe('function')
     })
+
+    it('declared builder resolves the result identity', () => {
+        const ctx = createRequestContext(
+            {
+                apiUrl: 'https://a.example.com',
+                token: 'token-a',
+                requestId: 'wf-run-101',
+                sourceName: 'Source A',
+            },
+            { send: vi.fn() } as any,
+            {
+                testMode: true,
+                sourceId: 'source-a',
+                resultIdentity: (requestId) => `my-op:${requestId}`,
+            }
+        )
+
+        expect(ctx.resultIdentity).toBe('my-op:wf-run-101')
+    })
+
+    it('omitted builder defaults to the request id', () => {
+        const ctx = createRequestContext(
+            {
+                apiUrl: 'https://a.example.com',
+                token: 'token-a',
+                requestId: 'wf-run-102',
+                sourceName: 'Source A',
+            },
+            { send: vi.fn() } as any,
+            { testMode: true, sourceId: 'source-a' }
+        )
+
+        expect(ctx.resultIdentity).toBe('wf-run-102')
+    })
 })
 
 describe('customOperation', () => {
@@ -677,6 +711,69 @@ describe('customOperation', () => {
                 }),
             }),
         ])
+    })
+
+    it('result identity is available before the handler runs', async () => {
+        process.env.SPCX_TEST_MODE = '1'
+        const res = mockResponse()
+        const seen: string[] = []
+        const wrapped = customOperation<TestOperation>(
+            async (ctx) => {
+                seen.push(ctx.resultIdentity)
+            },
+            { resultIdentity: (requestId) => `my-op:${requestId}` }
+        )
+
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'wf-run-103' }, res as any)
+
+        expect(seen).toEqual(['my-op:wf-run-103'])
+    })
+
+    it('declared result identity receives the failed account', async () => {
+        process.env.SPCX_TEST_MODE = '1'
+        const res = mockResponse()
+        const wrapped = customOperation<TestOperation>(
+            async () => {
+                throw new Error('operation failed')
+            },
+            { resultIdentity: (requestId) => `my-op:${requestId}` }
+        )
+
+        beginPayloadOutputCapture()
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'wf-run-005' }, res as any)
+        const inhibited = endPayloadOutputCapture()
+
+        expect(inhibited).toEqual([
+            expect.objectContaining({
+                identity: 'my-op:wf-run-005',
+                status: 'failed',
+                attributes: expect.objectContaining({
+                    details: expect.stringMatching(/operation failed/),
+                    operationName: 'custom:example',
+                }),
+            }),
+        ])
+        expect(inhibited.some((record) => record.identity === 'wf-run-005')).toBe(false)
+    })
+
+    it('declared result identity receives the handler-sent failed account', async () => {
+        process.env.SPCX_TEST_MODE = '1'
+        const res = mockResponse()
+        const wrapped = customOperation<TestOperation>(
+            async (ctx) => {
+                ctx.res.send({ status: 'failed', error: 'form create failed' })
+            },
+            { resultIdentity: (requestId) => `my-op:${requestId}` }
+        )
+
+        beginPayloadOutputCapture()
+        await wrapped({ commandType: 'custom:example' } as any, { requestId: 'wf-run-007' }, res as any)
+        const inhibited = endPayloadOutputCapture()
+
+        expect(inhibited).toEqual([
+            expect.objectContaining({ identity: 'my-op:wf-run-007', status: 'failed' }),
+        ])
+        expect(inhibited.some((record) => record.identity === 'wf-run-007')).toBe(false)
     })
 })
 

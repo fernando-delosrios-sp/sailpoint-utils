@@ -85,9 +85,3 @@ The framework SHALL upsert a result source account for the resolved result ident
 - **THEN** the framework SHALL upsert a failed account with identity `my-op:wf-run-005`
 - **AND** SHALL NOT upsert a failed account with identity `wf-run-005`
 
-#### Scenario: Declared result identity covers initialization failures
-
-- **GIVEN** an operation declares `resultIdentity: (requestId) => \`my-op:${requestId}\``
-- **AND** invoke input contains requestId `wf-run-006`
-- **WHEN** `customOperation` fails before the handler body executes
-- **THEN** the framework SHALL upsert the failed account with identity `my-op:wf-run-006` when persist is available

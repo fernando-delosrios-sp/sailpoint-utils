@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { persistFailedResult } from './failure-persist'
 
 describe('persistFailedResult', () => {
-    it('skips persist when requestId is missing', async () => {
+    it('skips persist when the result identity is missing', async () => {
         const persist = vi.fn()
         await persistFailedResult(undefined, 'operation failed', { persist } as never)
         expect(persist).not.toHaveBeenCalled()

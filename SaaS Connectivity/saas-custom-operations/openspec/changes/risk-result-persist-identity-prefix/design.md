@@ -46,8 +46,9 @@ That second constraint is what pulls the framework in. `persistFailedResult` is 
 ### D4: A declared `resultIdentity` builder on `customOperation`, resolved before the handler runs
 
 - **Choice**: Extend the `customOperation` options with `resultIdentity?: (requestId: string) => string`. `createRequestContext` resolves it once and exposes `ctx.resultIdentity` (defaulting to `input.requestId`); `with-custom-operation.ts` passes `activeCtx?.resultIdentity` to `persistFailedResult`. Risk declares `resultIdentity: riskPersistIdentity` and its handler persists on `ctx.resultIdentity`.
-- **Reason**: Failure persist must cover initialization failures that happen before the handler body executes, so the identity has to be known at context-construction time. A declaration-time pure function of `requestId` satisfies that; anything the handler sets imperatively does not.
-- **Considered alternatives**: A mutable `ctx.resultIdentity` the handler assigns as its first statement — rejected, leaves initialization failures on the bare id, which is the case most likely to need a readable `details` message. Special-casing the risk command inside `failure-persist.ts` — rejected, puts operation knowledge in the framework. Leaving failure persist on `requestId` — rejected, see Context.
+- **Reason**: Handler throws and handler-sent failures use the active request context, so the identity must be resolved before the handler runs. A declaration-time pure function of `requestId` satisfies that; anything the handler sets imperatively can miss an early handler failure.
+- **Considered alternatives**: A mutable `ctx.resultIdentity` the handler assigns as its first statement — rejected, because an early handler failure can occur before assignment. Special-casing the risk command inside `failure-persist.ts` — rejected, because it puts operation knowledge in the framework. Leaving failure persist on `requestId` — rejected, see Context.
+- **Initialization boundary**: Failures during source and request-context initialization happen before `activeCtx` exists, so the existing automatic failure persist cannot write any account in that phase. Restructuring initialization is out of scope; the canonical framework contract continues to qualify initialization failure persistence with “when persist is available.”
 
 ### D5: No legacy identity fallback
 
