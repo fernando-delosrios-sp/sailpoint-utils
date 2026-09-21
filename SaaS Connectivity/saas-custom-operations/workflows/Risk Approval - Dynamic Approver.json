@@ -1,7 +1,7 @@
 {
-  "id": "YOUR_EXTRA_APPROVER_WORKFLOW_ID",
-  "name": "Risk Approval - Extra Approver",
-  "description": "Access Request Dynamic Approval event-trigger wrapper. Approvers are single strings in the form IDENTITY|id or GOVERNANCE_GROUP|id. Phase 1 resolves Manager and Managers Manager to that form, falling back to Default Approver. Phase 2 scores risk with custom:evaluate-access-request-risk. Phase 3 has one step per tier that sets Approver from those variables or from a hardcoded value. Phase 4 answers with the approver, or with none when Approver is empty. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
+  "id": "YOUR_DYNAMIC_APPROVER_WORKFLOW_ID",
+  "name": "Risk Approval - Dynamic Approver",
+  "description": "Access Request Dynamic Approval event-trigger wrapper. Adds at most one extra approver, or none, depending on the risk tier. Phase 1 stores Manager and Managers Manager as identity ids, falling back to Default Approver id. Phase 2 scores risk with custom:evaluate-access-request-risk. Phase 3 concatenates Approver Type (IDENTITY| or GOVERNANCE_GROUP|) with an id on each tier step, or leaves NONE to add nobody. Phase 4 splits that string into the callback type and id, and sends the none callback when Approver is NONE. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -35,56 +35,56 @@
               "variableA": "true"
             },
             {
-              "description": "Approver used when a manager level is missing. IDENTITY|id or GOVERNANCE_GROUP|id.",
+              "description": "Identity or governance group id used when a manager level is missing, and when Read Risk Result fails. Pair it with IDENTITY| or GOVERNANCE_GROUP| on the Set approver steps.",
               "name": "Default Approver",
               "transforms": [],
-              "variableA": "IDENTITY|YOUR_DEFAULT_APPROVER_ID"
+              "variableA": "YOUR_DEFAULT_APPROVER_ID"
             }
           ]
         },
         "displayName": "Configuration",
-        "nextStep": "Approver Variables",
+        "nextStep": "Define Variable",
         "type": "Mutation"
       },
-      "Approver Variables": {
+      "Define Variable": {
         "actionId": "sp:define-variable",
         "attributes": {
           "id": "sp:define-variable",
           "variables": [
             {
-              "description": "Overwritten by Set Manager when the recipient has a manager. Otherwise stays the default approver.",
+              "description": "Identity id. Set by Set manager, or by the default-approver step when the recipient has no manager.",
               "name": "Manager",
               "transforms": [],
-              "variableA.$": "$.configuration.defaultApprover"
+              "variableA": "NONE"
             },
             {
-              "description": "Overwritten by Set Managers Manager when that level exists. Otherwise stays the default approver.",
+              "description": "Identity id. Set by Set manager's manager, or by the default-approver step when that level is missing.",
               "name": "Managers Manager",
               "transforms": [],
-              "variableA.$": "$.configuration.defaultApprover"
+              "variableA": "NONE"
             },
             {
-              "description": "The winning tier's approver, IDENTITY|id or GOVERNANCE_GROUP|id. Empty means no extra approver.",
+              "description": "The winning tier's approver, IDENTITY|id or GOVERNANCE_GROUP|id. NONE means no extra approver.",
               "name": "Approver",
               "transforms": [],
-              "variableA": ""
+              "variableA": "NONE"
             },
             {
-              "description": "Left side of Approver. Filled by Split Approver.",
+              "description": "Left side of Approver. Filled by Split approver.",
               "name": "Approver Type",
               "transforms": [],
-              "variableA": ""
+              "variableA": "NONE"
             },
             {
-              "description": "Right side of Approver. Filled by Split Approver.",
+              "description": "Right side of Approver. Filled by Split approver.",
               "name": "Approver ID",
               "transforms": [],
-              "variableA": ""
+              "variableA": "NONE"
             }
           ]
         },
-        "description": "Phase 1. Both manager levels start at the default approver, so a missing level needs no branch of its own.",
-        "displayName": "Init approver variables",
+        "description": "Phase 1. Every variable starts at NONE, because Define Variable rejects empty values. Each manager level becomes the identity id or the Default Approver id. The step key must stay Define Variable: ISC builds the defineVariable paths from it and rejects update steps that target any other key.",
+        "displayName": "Approver Variables",
         "nextStep": "Get Recipient",
         "type": "Mutation"
       },
@@ -95,7 +95,7 @@
         },
         "catch": [
           {
-            "next": "Get Access Token"
+            "next": "Set Default Manager Levels"
           }
         ],
         "displayName": "Get Recipient",
@@ -112,9 +112,27 @@
             "variableA.$": "$.getRecipient.managerRef.id"
           }
         ],
-        "defaultStep": "Get Access Token",
+        "defaultStep": "Set Default Manager Levels",
         "displayName": "Recipient has a manager?",
         "type": "choice"
+      },
+      "Set Default Manager Levels": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.manager",
+              "transforms": [],
+              "variableA.$": "$.configuration.defaultApprover"
+            }
+          ]
+        },
+        "description": "The recipient has no manager, or the manager could not be read. Sets Manager to the default approver id, then the next step sets Managers Manager the same way.",
+        "displayName": "No manager, use default approver",
+        "nextStep": "Set Default Managers Manager",
+        "type": "Mutation"
       },
       "Get Manager": {
         "actionId": "sp:get-identity",
@@ -123,10 +141,10 @@
         },
         "catch": [
           {
-            "next": "Get Access Token"
+            "next": "Set Default Manager Levels"
           }
         ],
-        "description": "Read to reach the next manager level. Set Manager only needs the id.",
+        "description": "Read to reach the next manager level. Set manager stores the identity id only.",
         "displayName": "Get Manager",
         "nextStep": "Set Manager",
         "type": "action",
@@ -139,16 +157,9 @@
           "variables": [
             {
               "description": "",
-              "name": "$.approverVariables.manager",
-              "transforms": [
-                {
-                  "id": "sp:transform:concatenate:string",
-                  "input": {
-                    "variableB.$": "$.getManager.id"
-                  }
-                }
-              ],
-              "variableA": "IDENTITY|"
+              "name": "$.defineVariable.manager",
+              "transforms": [],
+              "variableA.$": "$.getManager.id"
             }
           ]
         },
@@ -165,9 +176,27 @@
             "variableA.$": "$.getManager.managerRef.id"
           }
         ],
-        "defaultStep": "Get Access Token",
+        "defaultStep": "Set Default Managers Manager",
         "displayName": "Manager has a manager?",
         "type": "choice"
+      },
+      "Set Default Managers Manager": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.managersManager",
+              "transforms": [],
+              "variableA.$": "$.configuration.defaultApprover"
+            }
+          ]
+        },
+        "description": "The manager has no manager, so that level falls back to the default approver id. Manager keeps the resolved identity id.",
+        "displayName": "No manager's manager, use default approver",
+        "nextStep": "Get Access Token",
+        "type": "Mutation"
       },
       "Set Managers Manager": {
         "actionId": "sp:update-variable",
@@ -176,16 +205,9 @@
           "variables": [
             {
               "description": "",
-              "name": "$.approverVariables.managersManager",
-              "transforms": [
-                {
-                  "id": "sp:transform:concatenate:string",
-                  "input": {
-                    "variableB.$": "$.getManager.managerRef.id"
-                  }
-                }
-              ],
-              "variableA": "IDENTITY|"
+              "name": "$.defineVariable.managersManager",
+              "transforms": [],
+              "variableA.$": "$.getManager.managerRef.id"
             }
           ]
         },
@@ -262,9 +284,10 @@
         },
         "catch": [
           {
-            "next": "Set High Approver"
+            "next": "Set Default Approver"
           }
         ],
+        "description": "A failed read uses the default approver, not the High step.",
         "displayName": "Read Risk Result",
         "nextStep": "Check Tier",
         "type": "action",
@@ -319,15 +342,22 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "",
-              "name": "$.approverVariables.approver",
-              "transforms": [],
-              "variableA.$": "$.approverVariables.managersManager"
+              "description": "Type prefix. Concatenate an approver id below.",
+              "name": "$.defineVariable.approver",
+              "transforms": [
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB.$": "$.defineVariable.managersManager"
+                  }
+                }
+              ],
+              "variableA": "IDENTITY|"
             }
           ]
         },
-        "description": "Point at $.approverVariables.manager, $.configuration.defaultApprover, or type a literal such as GOVERNANCE_GROUP|id.",
-        "displayName": "High approver is the manager's manager",
+        "description": "Pick the High approver. Prefix is IDENTITY| or GOVERNANCE_GROUP|, concatenated with the Manager, Managers Manager, or Default Approver variable, or a literal id. Set the prefix to NONE and drop the concatenate transform for no extra approver.",
+        "displayName": "Set High approver",
         "nextStep": "Check Approver",
         "type": "Mutation"
       },
@@ -337,15 +367,22 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "",
-              "name": "$.approverVariables.approver",
-              "transforms": [],
-              "variableA.$": "$.approverVariables.manager"
+              "description": "Type prefix. Concatenate an approver id below.",
+              "name": "$.defineVariable.approver",
+              "transforms": [
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB.$": "$.defineVariable.manager"
+                  }
+                }
+              ],
+              "variableA": "IDENTITY|"
             }
           ]
         },
-        "description": "Point at $.approverVariables.managersManager, $.configuration.defaultApprover, or type a literal such as GOVERNANCE_GROUP|id.",
-        "displayName": "Medium approver is the manager",
+        "description": "Pick the Medium approver. Prefix is IDENTITY| or GOVERNANCE_GROUP|, concatenated with the Manager, Managers Manager, or Default Approver variable, or a literal id. Set the prefix to NONE and drop the concatenate transform for no extra approver.",
+        "displayName": "Set Medium approver",
         "nextStep": "Check Approver",
         "type": "Mutation"
       },
@@ -355,15 +392,40 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "",
-              "name": "$.approverVariables.approver",
+              "description": "NONE adds no approver. To add one, set a type prefix and concatenate an approver id.",
+              "name": "$.defineVariable.approver",
               "transforms": [],
-              "variableA": ""
+              "variableA": "NONE"
             }
           ]
         },
-        "description": "Empty means no extra approver on Low. Set a variable or a literal here to add one.",
-        "displayName": "Low adds no approver",
+        "description": "Pick the Low approver. NONE adds none. To add one, set the prefix to IDENTITY| or GOVERNANCE_GROUP| and concatenate the Manager, Managers Manager, or Default Approver variable, or a literal id.",
+        "displayName": "Set Low approver",
+        "nextStep": "Check Approver",
+        "type": "Mutation"
+      },
+      "Set Default Approver": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "Type prefix. Concatenate the Default Approver id below.",
+              "name": "$.defineVariable.approver",
+              "transforms": [
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB.$": "$.configuration.defaultApprover"
+                  }
+                }
+              ],
+              "variableA": "IDENTITY|"
+            }
+          ]
+        },
+        "description": "Used when Read Risk Result fails. Same type-plus-id pattern as the tier steps.",
+        "displayName": "Set Error approver",
         "nextStep": "Check Approver",
         "type": "Mutation"
       },
@@ -373,13 +435,13 @@
           {
             "comparator": "StringEquals",
             "nextStep": "Callback None",
-            "variableA.$": "$.approverVariables.approver",
-            "variableB": ""
+            "variableA.$": "$.defineVariable.approver",
+            "variableB": "NONE"
           }
         ],
         "defaultStep": "Split Approver",
         "description": "Phase 4. Every tier converges here.",
-        "displayName": "Approver is empty?",
+        "displayName": "Approver is NONE?",
         "type": "choice"
       },
       "Split Approver": {
@@ -389,7 +451,7 @@
           "variables": [
             {
               "description": "",
-              "name": "$.approverVariables.approverType",
+              "name": "$.defineVariable.approverType",
               "transforms": [
                 {
                   "id": "sp:transform:replace:string",
@@ -399,11 +461,11 @@
                   }
                 }
               ],
-              "variableA.$": "$.approverVariables.approver"
+              "variableA.$": "$.defineVariable.approver"
             },
             {
               "description": "",
-              "name": "$.approverVariables.approverID",
+              "name": "$.defineVariable.approverID",
               "transforms": [
                 {
                   "id": "sp:transform:replace:string",
@@ -413,7 +475,7 @@
                   }
                 }
               ],
-              "variableA.$": "$.approverVariables.approver"
+              "variableA.$": "$.defineVariable.approver"
             }
           ]
         },
@@ -427,9 +489,9 @@
         "attributes": {
           "jsonRequestBody": {
             "output": {
-              "id": "{{$.approverVariables.approverID}}",
+              "id": "{{$.defineVariable.approverID}}",
               "name": "",
-              "type": "{{$.approverVariables.approverType}}"
+              "type": "{{$.defineVariable.approverType}}"
             },
             "secret": "{{$.trigger._metadata.secret}}"
           },

@@ -1,7 +1,7 @@
 {
-  "id": "YOUR_SUBMITTED_GATE_WORKFLOW_ID",
-  "name": "Risk Approval - Submitted Gate",
-  "description": "Access Request Submitted event-trigger wrapper. Scores the request with custom:evaluate-access-request-risk and approves or denies. Does not choose an extra approver. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
+  "id": "YOUR_DYNAMIC_APPROVAL_WORKFLOW_ID",
+  "name": "Risk Approval - Dynamic approval workflow",
+  "description": "Adaptive Approvals wrapper. Native Access Request Submitted trigger plus one Approval Policy per risk tier. Scores with custom:evaluate-access-request-risk, then opens the High, Medium, or Low policy. Bind each policy's reviewer in the builder. Enable this workflow, then set the access item Approval Type to this workflow. A failed evaluation uses the High policy.",
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -33,18 +33,6 @@
               "name": "Consider Privilege",
               "transforms": [],
               "variableA": "true"
-            },
-            {
-              "description": "High denies only High. Medium denies High and Medium. Low denies every tier.",
-              "name": "Deny At Tier",
-              "transforms": [],
-              "variableA": "High"
-            },
-            {
-              "description": "Value sent as callback approver. Use an existing identity username when Access Request Decision is subscribed.",
-              "name": "Approver Name",
-              "transforms": [],
-              "variableA": "Workflow"
             }
           ]
         },
@@ -65,10 +53,10 @@
         },
         "catch": [
           {
-            "next": "Callback Deny"
+            "next": "Approval Policy High"
           }
         ],
-        "description": "Set basic auth on this step to the workflow OAuth client. Do not store the secret in this export.",
+        "description": "Set basic auth on this step to the workflow OAuth client.",
         "displayName": "Get Access Token",
         "nextStep": "Call Evaluate Risk",
         "type": "action",
@@ -87,7 +75,7 @@
             "input": {
               "accessRequestId": "{{$.trigger.accessRequestId}}",
               "considerPrivilege": "{{$.configuration.considerPrivilege}}",
-              "requestId": "{{$.trigger.accessRequestId}}:submitted",
+              "requestId": "{{$.trigger.accessRequestId}}:dynamic-approval",
               "requestedItems.$": "$.trigger.requestedItems"
             },
             "tag": "latest",
@@ -103,7 +91,7 @@
         },
         "catch": [
           {
-            "next": "Callback Deny"
+            "next": "Approval Policy High"
           }
         ],
         "displayName": "Call Evaluate Risk",
@@ -117,11 +105,11 @@
           "filterCriteria": "nativeIdentity",
           "getAccountsBy": "filters",
           "operator": "eq",
-          "value": "{{$.trigger.accessRequestId}}:submitted"
+          "value": "{{$.trigger.accessRequestId}}:dynamic-approval"
         },
         "catch": [
           {
-            "next": "Callback Deny"
+            "next": "Approval Policy High"
           }
         ],
         "displayName": "Read Risk Result",
@@ -134,93 +122,95 @@
         "choiceList": [
           {
             "comparator": "StringEquals",
-            "nextStep": "Check Deny Low",
+            "nextStep": "Approval Policy High",
             "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']",
-            "variableB": "Low"
-          },
+            "variableB": "High"
+          }
+        ],
+        "defaultStep": "Check Tier Medium",
+        "description": "A missing tier uses the High policy.",
+        "displayName": "Tier is High?",
+        "type": "choice"
+      },
+      "Check Tier Medium": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
           {
             "comparator": "StringEquals",
-            "nextStep": "Check Deny Medium",
+            "nextStep": "Approval Policy Medium",
             "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']",
             "variableB": "Medium"
           }
         ],
-        "defaultStep": "Callback Deny",
-        "description": "High, a missing tier, or a failed read denies the request.",
-        "displayName": "Which tier?",
+        "defaultStep": "Check Tier Low",
+        "displayName": "Tier is Medium?",
         "type": "choice"
       },
-      "Check Deny Low": {
+      "Check Tier Low": {
         "actionId": "sp:compare-strings",
         "choiceList": [
           {
             "comparator": "StringEquals",
-            "nextStep": "Callback Deny",
-            "variableA.$": "$.configuration.denyAtTier",
+            "nextStep": "Approval Policy Low",
+            "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']",
             "variableB": "Low"
           }
         ],
-        "defaultStep": "Callback Approve",
-        "displayName": "Deny Low?",
+        "defaultStep": "Approval Policy High",
+        "displayName": "Tier is Low?",
         "type": "choice"
       },
-      "Check Deny Medium": {
-        "actionId": "sp:compare-strings",
-        "choiceList": [
-          {
-            "comparator": "StringEquals",
-            "nextStep": "Callback Approve",
-            "variableA.$": "$.configuration.denyAtTier",
-            "variableB": "High"
-          }
-        ],
-        "defaultStep": "Callback Deny",
-        "displayName": "Deny Medium?",
-        "type": "choice"
-      },
-      "Callback Approve": {
-        "actionId": "sp:http",
+      "Approval Policy High": {
+        "actionId": "sp:access-request-approval",
         "attributes": {
-          "jsonRequestBody": {
-            "output": {
-              "approved": true,
-              "approver": "{{$.configuration.approverName}}",
-              "comment": "Risk tier {{$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']}} is below Deny At Tier {{$.configuration.denyAtTier}}."
-            },
-            "secret": "{{$.trigger._metadata.secret}}"
-          },
-          "method": "post",
-          "requestContentType": "json",
-          "url.$": "$.trigger._metadata.callbackURL"
+          "approvalType": "SINGLE",
+          "description": "High-risk approval. Bind the reviewer in this step after import.",
+          "priority": "HIGH",
+          "reviewerCategory": "IDENTITY",
+          "reviewerId": "YOUR_HIGH_REVIEWER_ID",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
         },
-        "displayName": "Callback Approve",
+        "displayName": "Approval Policy High",
         "nextStep": "End Success",
         "type": "action",
-        "versionNumber": 3
+        "versionNumber": 1
       },
-      "Callback Deny": {
-        "actionId": "sp:http",
+      "Approval Policy Medium": {
+        "actionId": "sp:access-request-approval",
         "attributes": {
-          "jsonRequestBody": {
-            "output": {
-              "approved": false,
-              "approver": "{{$.configuration.approverName}}",
-              "comment": "Access request denied by risk policy. Deny At Tier is {{$.configuration.denyAtTier}}."
-            },
-            "secret": "{{$.trigger._metadata.secret}}"
-          },
-          "method": "post",
-          "requestContentType": "json",
-          "url.$": "$.trigger._metadata.callbackURL"
+          "approvalType": "SINGLE",
+          "description": "Medium-risk approval. Bind the reviewer in this step after import.",
+          "priority": "MEDIUM",
+          "reviewerCategory": "IDENTITY",
+          "reviewerId": "YOUR_MEDIUM_REVIEWER_ID",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
         },
-        "displayName": "Callback Deny",
+        "displayName": "Approval Policy Medium",
         "nextStep": "End Success",
         "type": "action",
-        "versionNumber": 3
+        "versionNumber": 1
+      },
+      "Approval Policy Low": {
+        "actionId": "sp:access-request-approval",
+        "attributes": {
+          "approvalType": "SINGLE",
+          "description": "Low-risk approval. Bind the reviewer in this step after import.",
+          "priority": "LOW",
+          "reviewerCategory": "IDENTITY",
+          "reviewerId": "YOUR_LOW_REVIEWER_ID",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE"
+        },
+        "displayName": "Approval Policy Low",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
       },
       "End Success": {
         "actionId": "sp:operator-success",
-        "description": "The Access Request Submitted callback was sent.",
+        "description": "The approval policy was submitted.",
         "displayName": "Success",
         "type": "success"
       }
@@ -228,10 +218,9 @@
   },
   "enabled": false,
   "trigger": {
-    "type": "EXTERNAL",
+    "type": "EVENT",
     "attributes": {
-      "id": "idn:external-http",
-      "integrationId": null
+      "id": "idn:access-request-trigger"
     }
   }
 }

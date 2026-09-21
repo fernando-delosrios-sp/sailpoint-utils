@@ -72,9 +72,9 @@ Import the workflow, set **Configuration**, then subscribe or attach it as descr
 
 | Workflow | Contract |
 |---|---|
-| [`workflows/Risk Approval - Submitted Gate.json`](../../../workflows/Risk%20Approval%20-%20Submitted%20Gate.json) | [Access Request Submitted](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-submitted) event trigger. Approves or denies |
-| [`workflows/Risk Approval - Extra Approver.json`](../../../workflows/Risk%20Approval%20-%20Extra%20Approver.json) | [Access Request Dynamic Approval](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-dynamic-approval). Adds one approver, or none on Low |
-| [`workflows/Risk Approval - Access Item.json`](../../../workflows/Risk%20Approval%20-%20Access%20Item.json) | Native Access Request Submitted trigger plus Approval Policy. Set this workflow as the access item Approval Type |
+| [`workflows/Risk Approval - Auto Approve or Deny.json`](../../../workflows/Risk%20Approval%20-%20Auto%20Approve%20or%20Deny.json) | [Access Request Submitted](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-submitted) event trigger. Approves or denies |
+| [`workflows/Risk Approval - Dynamic Approver.json`](../../../workflows/Risk%20Approval%20-%20Dynamic%20Approver.json) | [Access Request Dynamic Approval](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-dynamic-approval). Adds the approver you pick per tier, or none where you pick nobody |
+| [`workflows/Risk Approval - Dynamic approval workflow.json`](../../../workflows/Risk%20Approval%20-%20Dynamic%20approval%20workflow.json) | Native Access Request Submitted trigger plus one Approval Policy per risk tier. Set this workflow as the access item Approval Type |
 
 Shared Configuration on every workflow:
 
@@ -87,7 +87,7 @@ Shared Configuration on every workflow:
 
 On **Get Access Token**, set HTTP basic authentication to the workflow OAuth client (`client_credentials`). Do not paste the client secret into the exported JSON.
 
-### Submitted gate
+### Auto approve or deny
 
 Subscribe the Access Request Submitted event trigger to this workflow's external trigger URL. Response type **Async**. Set a response deadline long enough for the role and entitlement reads.
 
@@ -98,27 +98,41 @@ Subscribe the Access Request Submitted event trigger to this workflow's external
 
 This subscription is tenant-wide. A deny stops later dynamic approval, because [dynamic approval runs only after this callback approves](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-dynamic-approval). A failed evaluation denies the request.
 
-### Extra approver
+### Dynamic approver
 
 Subscribe Access Request Dynamic Approval the same way (Async, external URL, deadline).
 
-The workflow loads the recipient, the manager, and the manager's manager before it scores risk. A missing manager level is not used. The configured default approver replaces it.
+This workflow adds **at most one extra approver, or none**, depending on the risk tier. It never adds two, and a tier you leave at `NONE` adds nobody.
 
-| Variable | Values |
-|---|---|
-| High Selector / Medium Selector | `manager`, `managersManager`, `defaultApprover`, `customIdentity`, `customGovernanceGroup` |
-| Default Approver ID / Name | Identity used when the selected level is missing, the selector is `defaultApprover`, or evaluation fails |
-| Custom High/Medium Identity ID / Name | Used when that tier's selector is `customIdentity` |
-| Custom High/Medium Group ID / Name | Used when that tier's selector is `customGovernanceGroup` |
+An extra approver is built on the tier steps as **type + id**. `variableA` is `IDENTITY|` or `GOVERNANCE_GROUP|`, and the concatenate transform supplies the id: `$.defineVariable.manager`, `$.defineVariable.managersManager`, `$.configuration.defaultApprover`, or a literal.
 
-Low sends an empty approver (`id`, `name`, and `type` are empty strings). Defaults: High selector `managersManager`, Medium selector `manager`.
+Three ISC validator rules shape this workflow, and breaking any of them blocks saving it:
 
-### Access item
+- **No empty values.** `NONE` means no extra approver. Every variable starts at `NONE` rather than `""`, and a tier adds nobody by setting `variableA` to `NONE` with no transform.
+- **No JSONPath in `description` fields.** ISC parses those strings and reports them as invalid update targets.
+- **Update targets must use the generated step key.** A variable path comes from the step's JSON key, not its display name, and only ISC's own key is accepted as an update target — hence the step keyed `Define Variable` (shown as **Approver Variables**) and the `$.defineVariable.*` paths. `Configuration` keeps its key because it is only ever read.
 
-Requires Adaptive Approvals. After import, enable the workflow and set the role, access profile, or entitlement **Approval Type** to **Workflow**, then pick this workflow. It runs only for items attached to it.
+The workflow runs in four phases:
 
-Selectors match the extra-approver workflow. Medium and High each open one Approval Policy (`sp:access-request-approval`) for the resolved reviewer. Low ends successfully and does not open a review. If a tenant leaves those Low requests stuck, point the **Check Tier** Low branch at **Approval Policy Default**.
+1. **Resolve the manager levels as ids.** Both start at `NONE`. Reading the recipient and the manager fills them with the identity id. **No manager, use default approver** sets Manager to **Default Approver** and continues to **No manager's manager, use default approver**, which does the same for the second level.
+2. **Score risk**, as in the other workflows.
+3. **Set the approver** for the winning tier. There is one step per tier — **Set High approver**, **Set Medium approver**, **Set Low approver** — each concatenates type and id as above. These three steps are the whole routing policy.
+4. **Answer.** An `Approver` other than `NONE` is split on the `|` into the callback's `type` and `id`; `NONE` sends the none callback.
 
-After import, open each Approval Policy step and confirm the reviewer is still bound. SailPoint does not publish that action's field names; the branch targets are the manager, the manager's manager, the default identity, or the custom identity or governance group configured above.
+The invoke call stays on `/beta/platform-connectors`. The `/v2026` and `/v2025` equivalents reject requests that omit the `X-SailPoint-Experimental: true` header, so beta is the stable path for it today.
 
-Do not also subscribe the extra-approver workflow for the same items unless you want both this policy and a later extra approver.
+The only extra Configuration variable is **Default Approver**, an identity or governance group **id** (no type prefix). Missing manager levels copy that id. Pair the type (`IDENTITY|` or `GOVERNANCE_GROUP|`) on the Set approver steps.
+
+Each tier step is yours to set: change `variableA` for the type, and the concatenate input for the id. As shipped, High is `IDENTITY|` plus the manager's manager, Medium is `IDENTITY|` plus the manager, and Low is `NONE`. A failed Read Risk Result takes **Set Error approver**, which concatenates `IDENTITY|` with **Default Approver**. A failed token or invoke, and an unknown tier, take the High step.
+
+The callback sends `name` empty. The trigger assigns the approval from `id` and `type`, so the workflow does not read the identity or the governance group just to fill it in.
+
+### Dynamic approval workflow
+
+Requires Adaptive Approvals. The declared trigger is `idn:access-request-trigger`, the Adaptive Approvals **Access Request Submitted** trigger. It is not the subscribable event trigger of the same display name (`idn:access-request-pre-approval`), and it does not appear in `/beta/triggers`. ISC rejects the workflow unless a trigger and an `sp:access-request-approval` action appear together, in either direction. After import, enable the workflow and set the role, access profile, or entitlement **Approval Type** to **Workflow**, then pick this workflow. It runs only for items attached to it.
+
+The workflow scores the request, then opens one Approval Policy (`sp:access-request-approval`) for that tier: High, Medium, or Low. It does not resolve managers or a default approver. After import, open each Approval Policy step and bind the reviewer (identity or governance group). SailPoint does not publish that action's field names.
+
+A failed evaluation, or a missing tier, uses the High policy.
+
+Do not also subscribe the dynamic-approver workflow for the same items unless you want both this policy and a later extra approver.
