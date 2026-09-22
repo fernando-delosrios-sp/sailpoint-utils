@@ -1,4 +1,10 @@
 export type RiskTier = 'High' | 'Medium' | 'Low'
+export type DecidingRule = 'effective privilege' | 'Risk metadata'
+
+export interface EntitlementTierResult {
+    tier: RiskTier
+    rule?: DecidingRule
+}
 
 const TIER_RANK: Record<RiskTier, number> = {
     Low: 0,
@@ -104,25 +110,26 @@ export function parseConsiderPrivilege(value: unknown): boolean {
 }
 
 /**
- * Entitlement tier: High when effective privilege is High or Risk metadata is Critical/High.
- * Medium when effective privilege is Medium or Risk metadata is Medium. Otherwise Low.
- * When `considerPrivilege` is false, only Risk metadata is used.
+ * Returns the entitlement tier and the rule that decided it. Effective privilege gets attribution
+ * whenever it produces the final non-Low tier; Risk metadata gets attribution when it produces a
+ * higher tier or privilege is ignored. When `considerPrivilege` is false, only Risk metadata is used.
  */
 export function tierFromEntitlement(input: {
     effectivePrivilege?: string | null
     metadata: unknown
     considerPrivilege?: boolean
-}): RiskTier {
+}): EntitlementTierResult {
     const metadataTier = tierFromRiskMetadata(input.metadata)
     if (input.considerPrivilege === false) {
-        return metadataTier
+        return metadataTier === 'Low' ? { tier: 'Low' } : { tier: metadataTier, rule: 'Risk metadata' }
     }
+
     const effective = (input.effectivePrivilege ?? '').trim().toUpperCase()
-    if (effective === 'HIGH' || metadataTier === 'High') {
-        return 'High'
+    const privilegeTier: RiskTier = effective === 'HIGH' ? 'High' : effective === 'MEDIUM' ? 'Medium' : 'Low'
+    const tier = maxTier(privilegeTier, metadataTier)
+
+    if (tier === 'Low') {
+        return { tier }
     }
-    if (effective === 'MEDIUM' || metadataTier === 'Medium') {
-        return 'Medium'
-    }
-    return 'Low'
+    return { tier, rule: privilegeTier === tier ? 'effective privilege' : 'Risk metadata' }
 }

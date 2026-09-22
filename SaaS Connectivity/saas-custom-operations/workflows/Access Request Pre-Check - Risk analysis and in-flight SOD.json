@@ -64,10 +64,10 @@
               "variableA": true
             },
             {
-              "description": "Comment sent to the callback. The finding steps rewrite it. Define Variable rejects empty values, so it starts with this placeholder.",
+              "description": "Comment sent to the callback. Every decision step rewrites it. Define Variable rejects empty values, so it starts with this placeholder.",
               "name": "Message",
               "transforms": [],
-              "variableA": "Access request pre-check completed."
+              "variableA": "Access request pre-check did not record a decision."
             },
             {
               "description": "Risk tier copied off whichever result read succeeded. NONE until one does.",
@@ -412,7 +412,7 @@
             }
           ]
         },
-        "description": "Copies the summary only. The violation flag is set by the next step, never copied, because Get Accounts hands attribute values back as strings and the decision must stay a real boolean.",
+        "description": "Copies the summary only. The violation flag is set by the next step so the account read, where the flag is a real boolean, is what BooleanEquals compares.",
         "displayName": "Set SoD values",
         "nextStep": "Check Sod Violation Flag",
         "type": "Mutation"
@@ -471,7 +471,7 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "Literal boolean. Keep it unquoted.",
+              "description": "Written as a literal. Update Variable stores it as the string \"true\", which is what In-flight SoD violation? compares.",
               "name": "$.defineVariable.sodHasViolation",
               "transforms": [],
               "variableA": true
@@ -488,7 +488,7 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "Literal boolean. Keep it unquoted.",
+              "description": "Written as a literal. Update Variable stores it as the string \"false\", which is what In-flight SoD violation? compares.",
               "name": "$.defineVariable.sodHasViolation",
               "transforms": [],
               "variableA": false
@@ -554,10 +554,10 @@
               "variableA": true
             },
             {
-              "description": "Comment for a Low-risk request. Edit the wording, keep or drop the risk summary.",
+              "description": "Comment for a Low-risk request. The risk summary is left out because it only ever says Low.",
               "name": "$.defineVariable.message",
               "transforms": [],
-              "variableA": "Risk tier Low. {{$.defineVariable.riskSummary}}"
+              "variableA": "Access request pre-check passed. Risk tier Low."
             }
           ]
         },
@@ -578,10 +578,10 @@
               "variableA": true
             },
             {
-              "description": "Comment for a Medium-risk request. Edit the wording, keep or drop the risk summary.",
+              "description": "Comment for a Medium-risk request. The summary already opens with the tier, so the wording does not repeat it.",
               "name": "$.defineVariable.message",
               "transforms": [],
-              "variableA": "Risk tier Medium. {{$.defineVariable.riskSummary}}"
+              "variableA": "Access request pre-check passed. Risk tier {{$.defineVariable.riskSummary}}"
             }
           ]
         },
@@ -602,10 +602,10 @@
               "variableA": false
             },
             {
-              "description": "Comment for a High-risk request. Edit the wording, keep or drop the risk summary.",
+              "description": "Comment for a High-risk request. The summary already opens with the tier, so the wording does not repeat it.",
               "name": "$.defineVariable.message",
               "transforms": [],
-              "variableA": "Risk tier High. {{$.defineVariable.riskSummary}}"
+              "variableA": "Access request pre-check denied. Risk tier {{$.defineVariable.riskSummary}}"
             }
           ]
         },
@@ -615,17 +615,17 @@
         "type": "Mutation"
       },
       "Check Violation": {
-        "actionId": "sp:compare-boolean",
+        "actionId": "sp:compare-strings",
         "choiceList": [
           {
-            "comparator": "BooleanEquals",
+            "comparator": "StringEquals",
             "nextStep": "Set Violation Detected",
             "variableA.$": "$.defineVariable.sodHasViolation",
-            "variableB": true
+            "variableB": "true"
           }
         ],
-        "defaultStep": "Callback",
-        "description": "Request mode reports a violation only when this request introduces one.",
+        "defaultStep": "Check Approved",
+        "description": "Request mode reports a violation only when this request introduces one. Update Variable stores a boolean as the string \"true\" or \"false\", so the flag must be compared as a string here. BooleanEquals never matches a variable that Update Variable wrote.",
         "displayName": "In-flight SoD violation?",
         "type": "choice"
       },
@@ -641,16 +641,16 @@
               "variableA": false
             },
             {
-              "description": "Appends the SoD finding to the comment the risk step wrote. Drop the first placeholder to replace that comment instead.",
+              "description": "Replaces the risk comment rather than appending to it, so a denial never trails a sentence that said the request passed. Keeps the risk detail.",
               "name": "$.defineVariable.message",
               "transforms": [],
-              "variableA": "{{$.defineVariable.message}} {{$.defineVariable.sodSummary}}"
+              "variableA": "Access request pre-check denied. Risk tier {{$.defineVariable.riskSummary}}. {{$.defineVariable.sodSummary}}"
             }
           ]
         },
         "description": "Your SoD policy. It runs after the risk step, so it has the last word on both the decision and the comment.",
         "displayName": "Set violation decision",
-        "nextStep": "Callback",
+        "nextStep": "Check Approved",
         "type": "Mutation"
       },
       "Set Evaluation Failed": {
@@ -668,21 +668,27 @@
               "description": "Comment sent when the pre-check could not run.",
               "name": "$.defineVariable.message",
               "transforms": [],
-              "variableA": "Access request pre-check could not complete. Risk and in-flight SoD were not evaluated."
+              "variableA": "Access request pre-check denied. The check could not complete, so risk and in-flight SoD were not evaluated."
             }
           ]
         },
         "description": "Every failed token, invoke, or result read lands here, as does an unknown risk tier and a missing SoD result.",
         "displayName": "Set evaluation failed decision",
-        "nextStep": "Callback",
+        "nextStep": "Check Approved",
         "type": "Mutation"
       },
-      "Callback": {
+      "End Success": {
+        "actionId": "sp:operator-success",
+        "description": "The Access Request Submitted callback was sent.",
+        "displayName": "Success",
+        "type": "success"
+      },
+      "Callback Approved": {
         "actionId": "sp:http",
         "attributes": {
           "jsonRequestBody": {
             "output": {
-              "approved.$": "$.defineVariable.approved",
+              "approved": true,
               "approver": "{{$.configuration.approverName}}",
               "comment": "{{$.defineVariable.message}}"
             },
@@ -693,17 +699,48 @@
           "requestContentType": "json",
           "url.$": "$.trigger._metadata.callbackURL"
         },
-        "description": "The single answer to the trigger. It reads the decision and the comment, and knows nothing about how they were set.",
-        "displayName": "Callback",
+        "description": "Sends the approval to the trigger. The decision is a hardcoded boolean: a path substitution renders it as the string \"true\" or \"false\", which the trigger rejects.",
+        "displayName": "Callback approved",
         "nextStep": "End Success",
         "type": "action",
         "versionNumber": 3
       },
-      "End Success": {
-        "actionId": "sp:operator-success",
-        "description": "The Access Request Submitted callback was sent.",
-        "displayName": "Success",
-        "type": "success"
+      "Callback Denied": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody": {
+            "output": {
+              "approved": false,
+              "approver": "{{$.configuration.approverName}}",
+              "comment": "{{$.defineVariable.message}}"
+            },
+            "secret": "{{$.trigger._metadata.secret}}"
+          },
+          "method": "post",
+          "param_authenticationRef": "none",
+          "requestContentType": "json",
+          "url.$": "$.trigger._metadata.callbackURL"
+        },
+        "description": "Sends the denial to the trigger. The decision is a hardcoded boolean: a path substitution renders it as the string \"true\" or \"false\", which the trigger rejects.",
+        "displayName": "Callback denied",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Approved": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Callback Approved",
+            "variableA.$": "$.defineVariable.approved",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Callback Denied",
+        "description": "Picks the callback that carries the matching literal. Splitting the send is the only way to put a real boolean in the body, since the decision cannot be templated in as one. Update Variable stores the decision as the string \"true\" or \"false\", so it is compared as a string here. BooleanEquals never matches a variable that Update Variable wrote, and every path into this step writes the decision first.",
+        "displayName": "Approved?",
+        "type": "choice"
       }
     }
   },

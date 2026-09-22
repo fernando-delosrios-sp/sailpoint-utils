@@ -41,4 +41,42 @@ describe('ubiquitous-language documentation contracts', () => {
         expect(rootReadme).toContain('**Result identity** is the generic framework term')
         expect(rootReadme).toContain('`ctx.resultIdentity`')
     })
+
+    it('Risk situation summary term', () => {
+        expect(operationReadme).toContain('The **risk situation summary** is plain text for an approver')
+        expect(operationReadme).not.toContain('risk explanation')
+        expect(operationReadme).not.toContain('situation summary panel')
+    })
+
+    it('Summary is distinguished from contributing ids', () => {
+        expect(operationReadme).toContain('Names and ids do not appear in the risk situation summary')
+        expect(operationReadme).toContain(
+            'Use\n`evaluate-access-request-risk:contributing-ids` when a machine-readable identifier list is needed'
+        )
+    })
+
+    it('Risk driver term', () => {
+        expect(operationReadme).toContain('A **risk driver**')
+        expect(operationReadme).not.toContain('contributor')
+        expect(operationReadme).not.toContain('risk item')
+        expect(operationReadme).not.toContain('offender')
+    })
+
+    it('Container is not a driver for its contents', () => {
+        expect(operationReadme).toContain(
+            'if a clean role\ncontains a High entitlement, the entitlement is the High risk driver'
+        )
+        expect(operationReadme).toContain('the role appears only in the\nevaluated tally')
+    })
+
+    it('Deciding rule term', () => {
+        expect(operationReadme).toContain('**deciding rule** says why')
+        expect(operationReadme).toContain('**effective privilege**')
+        expect(operationReadme).toContain('**Risk metadata**')
+        expect(operationReadme).toContain('roles and access profiles are\nalways decided by Risk metadata')
+    })
+
+    it('Attribution is single-valued', () => {
+        expect(operationReadme).toContain('A driver matching both rules is attributed to effective privilege only')
+    })
 })

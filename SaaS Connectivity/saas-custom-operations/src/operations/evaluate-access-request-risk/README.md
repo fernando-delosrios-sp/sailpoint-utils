@@ -14,21 +14,21 @@ Dimensions are not read. Role risk uses the role, its access profiles, and entit
 
 The highest tier wins.
 
-| Object | High | Medium | Low |
-|---|---|---|---|
-| Role or access profile | Risk metadata `iscRisk` is `critical` or `high` | Risk metadata is `medium` | Anything else, including no Risk metadata |
-| Entitlement (`considerPrivilege` true, default) | Effective privilege is `HIGH`, or Risk metadata is `critical` or `high` | Effective privilege is `MEDIUM`, or Risk metadata is `medium` | Anything else |
-| Entitlement (`considerPrivilege` false) | Risk metadata is `critical` or `high` | Risk metadata is `medium` | Anything else |
+| Object                                          | High                                                                    | Medium                                                        | Low                                       |
+| ----------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------- |
+| Role or access profile                          | Risk metadata `iscRisk` is `critical` or `high`                         | Risk metadata is `medium`                                     | Anything else, including no Risk metadata |
+| Entitlement (`considerPrivilege` true, default) | Effective privilege is `HIGH`, or Risk metadata is `critical` or `high` | Effective privilege is `MEDIUM`, or Risk metadata is `medium` | Anything else                             |
+| Entitlement (`considerPrivilege` false)         | Risk metadata is `critical` or `high`                                   | Risk metadata is `medium`                                     | Anything else                             |
 
 A role or access profile is then scored again through its entitlements. Wrapped access profiles are scored with the same role/access-profile rule before their entitlements.
 
 ## Input
 
-| Field | Required | Description |
-|---|---|---|
-| `requestedItems` | No* | `{ id, type, name? }` from the trigger. `type` is `ROLE`, `ACCESS_PROFILE`, or `ENTITLEMENT`. An array, a single object, or a JSON string of either — ISC collapses a one-element `$.trigger.requestedItems` to a bare object |
-| `accessRequestId` | No* | Used only when `requestedItems` is omitted. Status rows must include the access-item id |
-| `considerPrivilege` | No | Default `true`. When `false`, entitlement scoring ignores `privilegeLevel.effective` and uses Risk metadata only |
+| Field               | Required | Description                                                                                                                                                                                                                   |
+| ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `requestedItems`    | No\*     | `{ id, type, name? }` from the trigger. `type` is `ROLE`, `ACCESS_PROFILE`, or `ENTITLEMENT`. An array, a single object, or a JSON string of either — ISC collapses a one-element `$.trigger.requestedItems` to a bare object |
+| `accessRequestId`   | No\*     | Used only when `requestedItems` is omitted. Status rows must include the access-item id                                                                                                                                       |
+| `considerPrivilege` | No       | Default `true`. When `false`, entitlement scoring ignores `privilegeLevel.effective` and uses Risk metadata only                                                                                                              |
 
 \* One of the two is required. When both are set, `requestedItems` is used.
 
@@ -42,19 +42,37 @@ The result account uses the **risk persist identity**, which is the invoke `requ
 workflows send `evaluate-access-request-risk:{accessRequestId}:dynamic` (and the other discriminators)
 so the three wrappers do not collide. The handler does not add a prefix of its own.
 
-| Field | Description |
-|---|---|
-| `evaluate-access-request-risk:tier` | `High`, `Medium`, or `Low` |
-| `evaluate-access-request-risk:situation-summary` | Winning tier and the objects that produced it. `Low` when nothing ranked higher |
-| `evaluate-access-request-risk:contributing-ids` | Comma-separated ids of those objects, truncated to the account string limit |
+| Field                                            | Description                                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `evaluate-access-request-risk:tier`              | `High`, `Medium`, or `Low`                                                                              |
+| `evaluate-access-request-risk:situation-summary` | Human-readable verdict and evaluated-object counts, with no object names or ids                         |
+| `evaluate-access-request-risk:contributing-ids`  | Machine-readable comma-separated ids of the winning risk drivers, truncated to the account string limit |
+
+The **risk situation summary** is plain text for an approver; workflows do not parse it. A **risk driver**
+is any evaluated role, access profile, or entitlement paired with the tier its own attributes earn. A
+**winning risk driver** is one whose tier matches the request's final tier. The **deciding rule** says why
+that driver reached the tier: **effective privilege** from `privilegeLevel.effective`, or **Risk metadata**
+from `iscRisk`. Only entitlements can be decided by effective privilege; roles and access profiles are
+always decided by Risk metadata. A driver matching both rules is attributed to effective privilege only.
+
+Examples:
+
+-   `High: 2 of 6 entitlements scored High (1 by effective privilege, 1 by Risk metadata). Evaluated 1 role, 2 access profiles, 6 entitlements.`
+-   `Low: nothing scored Medium or High. Evaluated 1 role, 2 access profiles, 6 entitlements.`
+
+Names and ids do not appear in the risk situation summary. Use
+`evaluate-access-request-risk:contributing-ids` when a machine-readable identifier list is needed. A
+container is counted as evaluated but is not a risk driver for a nested object's tier: if a clean role
+contains a High entitlement, the entitlement is the High risk driver and the role appears only in the
+evaluated tally.
 
 Lookup failures throw. The result account is `failed`, not a silent `Low`, and failure accounts use the
 same risk persist identity as successful results.
 
 ## Invoke examples
 
-| Payload | Use |
-|---|---|
+| Payload                                                                                             | Use                  |
+| --------------------------------------------------------------------------------------------------- | -------------------- |
 | [`payloads/evaluate-access-request-risk.json`](../../../payloads/evaluate-access-request-risk.json) | Offline local invoke |
 
 ```bash
@@ -67,30 +85,30 @@ Offline ids: `offline-ent-high`, `offline-ent-medium`, `offline-ent-low`, `offli
 
 The workflow access token must allow:
 
-- Get role, list role entitlements
-- Get access profile, list access profile entitlements
-- Get entitlement
-- List access request status, only when `requestedItems` is omitted
-- Result source account persist
+-   Get role, list role entitlements
+-   Get access profile, list access profile entitlements
+-   Get entitlement
+-   List access request status, only when `requestedItems` is omitted
+-   Result source account persist
 
 ## Bundled workflows
 
 Import the workflow, set **Configuration**, then subscribe or attach it as described. All three are imported disabled.
 
-| Workflow | Contract |
-|---|---|
-| [`workflows/Access Request Pre-Check - Risk analysis and in-flight SOD.json`](../../../workflows/Access%20Request%20Pre-Check%20-%20Risk%20analysis%20and%20in-flight%20SOD.json) | [Access Request Submitted](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-submitted) event trigger. Approves or denies on risk tier and in-flight SoD |
-| [`workflows/Dynamic Approver - Risk analysis.json`](../../../workflows/Dynamic%20Approver%20-%20Risk%20analysis.json) | [Access Request Dynamic Approval](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-dynamic-approval). Adds the approver you pick per tier, or none where you pick nobody |
-| [`workflows/Dynamic Approval Workflow - Risk analysis.json`](../../../workflows/Dynamic%20Approval%20Workflow%20-%20Risk%20analysis.json) | Native Access Request Submitted trigger plus one Approval Policy per risk tier. Set this workflow as the access item Approval Type |
+| Workflow                                                                                                                                                                          | Contract                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`workflows/Access Request Pre-Check - Risk analysis and in-flight SOD.json`](../../../workflows/Access%20Request%20Pre-Check%20-%20Risk%20analysis%20and%20in-flight%20SOD.json) | [Access Request Submitted](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-submitted) event trigger. Approves or denies on risk tier and in-flight SoD                  |
+| [`workflows/Dynamic Approver - Risk analysis.json`](../../../workflows/Dynamic%20Approver%20-%20Risk%20analysis.json)                                                             | [Access Request Dynamic Approval](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-dynamic-approval). Adds the approver you pick per tier, or none where you pick nobody |
+| [`workflows/Dynamic Approval Workflow - Risk analysis.json`](../../../workflows/Dynamic%20Approval%20Workflow%20-%20Risk%20analysis.json)                                         | Native Access Request Submitted trigger plus one Approval Policy per risk tier. Set this workflow as the access item Approval Type                                                                                |
 
 Shared Configuration on every workflow:
 
-| Variable | JSON path | Purpose |
-|---|---|---|
-| API URL | `$.configuration.aPIURL` | Tenant API base URL, no trailing slash |
-| SaaS Custom Operations Source Name | `$.configuration.saaSCustomOperationsSourceName` | Result source name |
-| SaaS Custom Operations Connector ID | `$.configuration.saaSCustomOperationsConnectorID` | Platform connector id |
-| Consider Privilege | `$.configuration.considerPrivilege` | `true` (default) includes entitlement `privilegeLevel.effective`. `false` scores entitlements from Risk metadata only |
+| Variable                            | JSON path                                         | Purpose                                                                                                               |
+| ----------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| API URL                             | `$.configuration.aPIURL`                          | Tenant API base URL, no trailing slash                                                                                |
+| SaaS Custom Operations Source Name  | `$.configuration.saaSCustomOperationsSourceName`  | Result source name                                                                                                    |
+| SaaS Custom Operations Connector ID | `$.configuration.saaSCustomOperationsConnectorID` | Platform connector id                                                                                                 |
+| Consider Privilege                  | `$.configuration.considerPrivilege`               | `true` (default) includes entitlement `privilegeLevel.effective`. `false` scores entitlements from Risk metadata only |
 
 The Access Request Pre-Check workflow also has **Inflight Only** (`$.configuration.inflightOnly`, default `true`): when `true`, `custom:preventive-sod-check` reports only inflight SoD violations. Set it to `false` to include existing active violations as well.
 
@@ -98,9 +116,9 @@ On **Get Access Token**, set HTTP basic authentication to the workflow OAuth cli
 
 Each workflow's **Read Risk Result** filter must match the `requestId` sent on **Call Evaluate Risk**:
 
-- Access Request Pre-Check - Risk analysis and in-flight SOD: `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted`
-- Dynamic Approver - Risk analysis: `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic`
-- Dynamic Approval Workflow - Risk analysis: `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic-approval`
+-   Access Request Pre-Check - Risk analysis and in-flight SOD: `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted`
+-   Dynamic Approver - Risk analysis: `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic`
+-   Dynamic Approval Workflow - Risk analysis: `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic-approval`
 
 Deploy the connector and re-import all three bundled Risk Approval workflows in one maintenance window.
 After re-import, re-apply Configuration values and the **Get Access Token** basic-auth reference.
@@ -109,24 +127,28 @@ After re-import, re-apply Configuration values and the **Get Access Token** basi
 
 Subscribe the Access Request Submitted event trigger to this workflow's external trigger URL. Response type **Async**. Set a response deadline long enough for the role and entitlement reads, plus the SoD predict call.
 
-This workflow runs two checks and answers once. It scores risk with `custom:evaluate-access-request-risk`, then checks in-flight separation of duties with [`custom:preventive-sod-check`](../preventive-sod-check/README.md) in request mode. **Inflight Only** defaults to `true`, so only violations *this request* would introduce count. Set it to `false` to also flag existing active violations.
+This workflow runs two checks and answers once. It scores risk with `custom:evaluate-access-request-risk`, then checks in-flight separation of duties with [`custom:preventive-sod-check`](../preventive-sod-check/README.md) in request mode. **Inflight Only** defaults to `true`, so only violations _this request_ would introduce count. Set it to `false` to also flag existing active violations.
 
 **Decision Variables** holds the answer while the workflow builds it: `Approved` starts `true`, `Message` starts as a placeholder. Four Mutation steps are the entire policy, and each one can change both:
 
-| Step | Ships as | Comment it writes |
-|---|---|---|
-| Set Low risk decision | approve | Tier plus the risk situation summary |
-| Set Medium risk decision | approve | Tier plus the risk situation summary |
-| Set High risk decision | deny | Tier plus the risk situation summary |
-| Set violation decision | deny | Appends the SoD situation summary to whichever comment the risk step wrote |
+| Step                     | Ships as | Comment it writes                                                           |
+| ------------------------ | -------- | --------------------------------------------------------------------------- |
+| Set Low risk decision    | approve  | Tier plus the risk situation summary                                        |
+| Set Medium risk decision | approve  | Tier plus the risk situation summary                                        |
+| Set High risk decision   | deny     | Tier plus the risk situation summary                                        |
+| Set violation decision   | deny     | Replaces the risk comment with the risk tier plus the SoD situation summary |
 
-The SoD step runs after the risk step, so it has the last word. **Set evaluation failed decision** catches every failed token, invoke, or result read, an unknown risk tier, and a missing SoD result — it denies, and setting `Approved` to `true` there is the one switch that makes the pre-check fail open. A check that produced no answer never counts as a passing one: **SoD result present?** tests the situation summary rather than the violation flag, because that flag is legitimately `false` on a clean request. A single **Callback** step sends `Approved` and `Message`; it has no policy of its own.
+The SoD step runs after the risk step, so it has the last word. **Set evaluation failed decision** catches every failed token, invoke, or result read, an unknown risk tier, and a missing SoD result — it denies, and setting `Approved` to `true` there is the one switch that makes the pre-check fail open. A check that produced no answer never counts as a passing one: **SoD result present?** tests the situation summary rather than the violation flag, because that flag is legitimately `false` on a clean request. **Callback approved** and **Callback denied** send `Approved` and `Message`; neither has a policy of its own.
+
+The comment is written to read as a sentence. `evaluate-access-request-risk:situation-summary` already opens with the tier, so the tier steps do not restate it, and the SoD step replaces the risk comment rather than appending to it — otherwise a denial trails a sentence that said the request passed.
 
 The only other Configuration variables are **Approver Name**, default `Workflow`, sent as the callback `approver`, and **Inflight Only**, default `true`. Use an existing identity username for Approver Name if Access Request Decision is also subscribed.
 
-`Approved` is a real JSON boolean, not the string `true`, because the trigger response validates the type. Keep it unquoted in both Decision Variables and the four override steps.
+**A boolean does not survive a workflow variable.** Define Variable stores `Approved` and `Sod Has Violation` as real booleans, but the moment an Update Variable step writes one, workflow state holds the string `"true"` or `"false"` — quoting the literal in the export makes no difference. So the two steps that read a decision variable back, **Approved?** and **In-flight SoD violation?**, compare it with `StringEquals` against `"true"`. `BooleanEquals` there matches nothing and silently takes the default branch: it denies every approval and lets every violation through. Any boolean you add to this workflow is read back as a string.
 
-The same rule decides how findings move. **Get Accounts returns attribute values as strings**, so a boolean must never be copied out of a read with `variableA.$` — `Sod Has Violation` would become `"true"` and the `BooleanEquals` check would sail past it and approve a violating request. Strings (`Risk Tier`, `Risk Summary`, `Sod Summary`) are copied directly; the violation flag is instead compared on the account, where it is still a real boolean, and **Set SoD violation true** / **false** assign an unquoted literal. Any boolean you add to this workflow needs the same treatment.
+Findings move by the same rule. Strings (`Risk Tier`, `Risk Summary`, `Sod Summary`) are copied straight out of the reads. The violation flag is not: **SoD flag set?** compares `preventive-sod-check:has-violation` on the account, where Get Accounts hands it back as a genuine boolean, and **Set SoD violation true** / **false** then write the variable. That keeps the `BooleanEquals` on the account read, which is the one place it is correct.
+
+The trap repeats one layer out, in the request body, where the trigger _does_ validate the type. `"approved.$": "$.defineVariable.approved"` renders as the string `"true"` and the trigger rejects it. That is why the send is split: **Approved?** picks between **Callback approved** and **Callback denied**, each carrying a hardcoded `true` or `false`. Branch and hardcode any boolean an HTTP step has to send.
 
 This subscription is tenant-wide. A deny stops later dynamic approval, because [dynamic approval runs only after this callback approves](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-dynamic-approval).
 
@@ -140,9 +162,9 @@ An extra approver is built on the tier steps as **type + id**. `variableA` is `I
 
 Three ISC validator rules shape this workflow, and breaking any of them blocks saving it:
 
-- **No empty values.** `NONE` means no extra approver. Every variable starts at `NONE` rather than `""`, and a tier adds nobody by setting `variableA` to `NONE` with no transform.
-- **No JSONPath in `description` fields.** ISC parses those strings and reports them as invalid update targets.
-- **Update targets must use the generated step key.** A variable path comes from the step's JSON key, not its display name, and only ISC's own key is accepted as an update target — hence the step keyed `Define Variable` (shown as **Approver Variables**) and the `$.defineVariable.*` paths. `Configuration` keeps its key because it is only ever read.
+-   **No empty values.** `NONE` means no extra approver. Every variable starts at `NONE` rather than `""`, and a tier adds nobody by setting `variableA` to `NONE` with no transform.
+-   **No JSONPath in `description` fields.** ISC parses those strings and reports them as invalid update targets.
+-   **Update targets must use the generated step key.** A variable path comes from the step's JSON key, not its display name, and only ISC's own key is accepted as an update target — hence the step keyed `Define Variable` (shown as **Approver Variables**) and the `$.defineVariable.*` paths. `Configuration` keeps its key because it is only ever read.
 
 The workflow runs in four phases:
 

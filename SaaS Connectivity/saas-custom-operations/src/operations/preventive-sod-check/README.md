@@ -92,7 +92,7 @@ The access token must also allow SoD policy read (`listSodPoliciesV1` / `getSodP
 
 1. Invoke `custom:preventive-sod-check` with `identityId` for holistic checks, or with `accessRequestId` alone (or plus ignored `identityId`) to gate a specific approval.
 2. Read persisted output via **Get Accounts** filtered by `requestId`. The operation persists under the `requestId` you send, verbatim, so pick one that will not collide with another operation's result account.
-3. Branch on `preventive-sod-check:has-violation` or policy names. It persists as a real boolean, so compare it with `sp:compare-boolean` rather than a string comparison.
+3. Branch on `preventive-sod-check:has-violation` or policy names. It persists as a real boolean, so compare the account read itself with `sp:compare-boolean`. If you copy it into a workflow variable first, note that `sp:update-variable` stores it as the string `"true"` / `"false"` — read that variable back with `sp:compare-strings`, never `sp:compare-boolean`.
 
 Example branch (request-scoped approval gate):
 

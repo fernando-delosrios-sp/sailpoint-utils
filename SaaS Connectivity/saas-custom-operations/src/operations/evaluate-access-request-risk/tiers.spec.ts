@@ -24,21 +24,33 @@ describe('tierFromRiskMetadata', () => {
 })
 
 describe('tierFromEntitlement', () => {
-    it('is High when effective privilege is High even if metadata is lower', () => {
-        expect(tierFromEntitlement({ effectivePrivilege: 'HIGH', metadata: risk('medium') })).toBe('High')
+    it('attributes privilege-only risk to effective privilege', () => {
+        expect(tierFromEntitlement({ effectivePrivilege: 'HIGH', metadata: undefined })).toEqual({
+            tier: 'High',
+            rule: 'effective privilege',
+        })
     })
 
-    it('is High when metadata is critical and privilege is not', () => {
-        expect(tierFromEntitlement({ effectivePrivilege: 'LOW', metadata: risk('critical') })).toBe('High')
+    it('attributes metadata-only risk to Risk metadata', () => {
+        expect(tierFromEntitlement({ effectivePrivilege: 'LOW', metadata: risk('critical') })).toEqual({
+            tier: 'High',
+            rule: 'Risk metadata',
+        })
     })
 
-    it('is Medium when privilege or metadata is medium and neither is high', () => {
-        expect(tierFromEntitlement({ effectivePrivilege: 'MEDIUM', metadata: undefined })).toBe('Medium')
-        expect(tierFromEntitlement({ effectivePrivilege: 'LOW', metadata: risk('medium') })).toBe('Medium')
+    it('Entitlement matching both rules is attributed to effective privilege', () => {
+        expect(tierFromEntitlement({ effectivePrivilege: 'HIGH', metadata: risk('critical') })).toEqual({
+            tier: 'High',
+            rule: 'effective privilege',
+        })
+        expect(tierFromEntitlement({ effectivePrivilege: 'MEDIUM', metadata: risk('medium') })).toEqual({
+            tier: 'Medium',
+            rule: 'effective privilege',
+        })
     })
 
-    it('is Low otherwise', () => {
-        expect(tierFromEntitlement({ effectivePrivilege: null, metadata: undefined })).toBe('Low')
+    it('omits the deciding rule when neither rule raises the tier', () => {
+        expect(tierFromEntitlement({ effectivePrivilege: null, metadata: undefined })).toEqual({ tier: 'Low' })
     })
 
     it('ignores effective privilege when considerPrivilege is false', () => {
@@ -48,14 +60,14 @@ describe('tierFromEntitlement', () => {
                 metadata: undefined,
                 considerPrivilege: false,
             })
-        ).toBe('Low')
+        ).toEqual({ tier: 'Low' })
         expect(
             tierFromEntitlement({
                 effectivePrivilege: 'HIGH',
                 metadata: risk('medium'),
                 considerPrivilege: false,
             })
-        ).toBe('Medium')
+        ).toEqual({ tier: 'Medium', rule: 'Risk metadata' })
     })
 })
 

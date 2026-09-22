@@ -1,5 +1,5 @@
 import { truncateForIscStorage, ISC_STRING_ATTRIBUTE_MAX_LENGTH } from '../../framework/attribute-limits'
-import { maxTier, RiskTier, tierFromEntitlement, tierFromRiskMetadata } from './tiers'
+import { DecidingRule, maxTier, RiskTier, tierFromEntitlement, tierFromRiskMetadata } from './tiers'
 
 export type RequestedItemType = 'ROLE' | 'ACCESS_PROFILE' | 'ENTITLEMENT'
 
@@ -36,6 +36,7 @@ export interface RiskDriver {
     id: string
     type: RequestedItemType
     tier: RiskTier
+    rule?: DecidingRule
 }
 
 export interface AccessRiskResult {
@@ -70,15 +71,78 @@ function fit(value: string): string {
     return truncateForIscStorage(value, ISC_STRING_ATTRIBUTE_MAX_LENGTH, 'evaluate-access-request-risk')
 }
 
-function summarize(tier: RiskTier, drivers: RiskDriver[]): Pick<AccessRiskResult, 'situationSummary' | 'contributingIds'> {
-    const winning = drivers.filter((driver) => driver.tier === tier && tier !== 'Low')
-    if (winning.length === 0) {
-        return { situationSummary: 'Low', contributingIds: '' }
+const TYPE_ORDER: RequestedItemType[] = ['ROLE', 'ACCESS_PROFILE', 'ENTITLEMENT']
+const TYPE_LABELS: Record<RequestedItemType, [singular: string, plural: string]> = {
+    ROLE: ['role', 'roles'],
+    ACCESS_PROFILE: ['access profile', 'access profiles'],
+    ENTITLEMENT: ['entitlement', 'entitlements'],
+}
+const RULE_ORDER: DecidingRule[] = ['effective privilege', 'Risk metadata']
+
+function distinctDrivers(drivers: RiskDriver[]): RiskDriver[] {
+    return [...new Map(drivers.map((driver) => [`${driver.type}:${driver.id}`, driver])).values()]
+}
+
+function countByType(drivers: RiskDriver[], type: RequestedItemType): number {
+    return drivers.filter((driver) => driver.type === type).length
+}
+
+function typeLabel(type: RequestedItemType, count: number): string {
+    const [singular, plural] = TYPE_LABELS[type]
+    return count === 1 ? singular : plural
+}
+
+function formatTally(drivers: RiskDriver[]): string {
+    const parts = TYPE_ORDER.flatMap((type) => {
+        const count = countByType(drivers, type)
+        return count === 0 ? [] : [`${count} ${typeLabel(type, count)}`]
+    })
+    return parts.length === 0 ? 'no access objects' : parts.join(', ')
+}
+
+/** Builds the human-readable verdict, deciding-rule split, and distinct-object tally. */
+function summarize(
+    tier: RiskTier,
+    drivers: RiskDriver[]
+): Pick<AccessRiskResult, 'situationSummary' | 'contributingIds'> {
+    const distinct = distinctDrivers(drivers)
+    const tally = formatTally(distinct)
+    const winning = tier === 'Low' ? [] : distinct.filter((driver) => driver.tier === tier)
+    const contributingIds =
+        tier === 'Low'
+            ? ''
+            : fit(
+                  drivers
+                      .filter((driver) => driver.tier === tier)
+                      .map((driver) => driver.id)
+                      .join(',')
+              )
+
+    if (tier === 'Low') {
+        return {
+            situationSummary: fit(`Low: nothing scored Medium or High. Evaluated ${tally}.`),
+            contributingIds,
+        }
     }
-    const labels = winning.map((driver) => `${driver.type}:${driver.id}`)
+
+    const winningCounts = TYPE_ORDER.flatMap((type) => {
+        const winningCount = countByType(winning, type)
+        if (winningCount === 0) {
+            return []
+        }
+        const totalCount = countByType(distinct, type)
+        return [`${winningCount} of ${totalCount} ${typeLabel(type, totalCount)}`]
+    })
+    const ruleCounts = RULE_ORDER.flatMap((rule) => {
+        const count = winning.filter((driver) => driver.rule === rule).length
+        return count === 0 ? [] : [`${count} by ${rule}`]
+    })
+
     return {
-        situationSummary: fit(`${tier}: ${labels.join(', ')}`),
-        contributingIds: fit(winning.map((driver) => driver.id).join(',')),
+        situationSummary: fit(
+            `${tier}: ${winningCounts.join(', ')} scored ${tier} (${ruleCounts.join(', ')}). Evaluated ${tally}.`
+        ),
+        contributingIds,
     }
 }
 
@@ -104,14 +168,14 @@ export async function evaluateAccessRisk(
             return cached
         }
         const entitlement = await catalog.getEntitlement(id)
-        const tier = tierFromEntitlement({
+        const result = tierFromEntitlement({
             effectivePrivilege: entitlement.effectivePrivilege,
             metadata: entitlement.metadata,
             considerPrivilege,
         })
-        entitlementTiers.set(id, tier)
-        drivers.push({ id, type: 'ENTITLEMENT', tier })
-        return tier
+        entitlementTiers.set(id, result.tier)
+        drivers.push({ id, type: 'ENTITLEMENT', tier: result.tier, rule: result.rule })
+        return result.tier
     }
 
     const scoreAccessProfile = async (id: string): Promise<RiskTier> => {
@@ -121,7 +185,12 @@ export async function evaluateAccessRisk(
         }
         const profile = await catalog.getAccessProfile(id)
         let tier = tierFromRiskMetadata(profile.metadata)
-        drivers.push({ id, type: 'ACCESS_PROFILE', tier })
+        drivers.push({
+            id,
+            type: 'ACCESS_PROFILE',
+            tier,
+            rule: tier === 'Low' ? undefined : 'Risk metadata',
+        })
         for (const entitlementId of profile.entitlementIds) {
             tier = maxTier(tier, await scoreEntitlement(entitlementId))
         }
@@ -142,7 +211,12 @@ export async function evaluateAccessRisk(
 
         const role = await catalog.getRole(item.id)
         let roleTier = tierFromRiskMetadata(role.metadata)
-        drivers.push({ id: item.id, type: 'ROLE', tier: roleTier })
+        drivers.push({
+            id: item.id,
+            type: 'ROLE',
+            tier: roleTier,
+            rule: roleTier === 'Low' ? undefined : 'Risk metadata',
+        })
         for (const accessProfileId of role.accessProfileIds) {
             roleTier = maxTier(roleTier, await scoreAccessProfile(accessProfileId))
         }
