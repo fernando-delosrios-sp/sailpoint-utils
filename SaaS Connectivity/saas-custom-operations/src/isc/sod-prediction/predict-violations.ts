@@ -32,9 +32,13 @@ export async function predictSodViolationsForIdentity(
     }
 }
 
-/** Extracts violated policy names from a predict response, preserving API order. */
-export function parseViolatedPolicyNames(prediction: SodViolationPrediction): string[] {
-    const names: string[] = []
+/** Extracts violated policies from a predict response, preserving API order. */
+export function parseViolatedPolicies(prediction: SodViolationPrediction): Array<{
+    id?: string
+    name: string
+    level?: string
+}> {
+    const policies: Array<{ id?: string; name: string; level?: string }> = []
     const seen = new Set<string>()
 
     for (const context of prediction.violationContexts ?? []) {
@@ -43,10 +47,22 @@ export function parseViolatedPolicyNames(prediction: SodViolationPrediction): st
             continue
         }
         seen.add(name)
-        names.push(name)
+        const policy: { id?: string; name: string; level?: string } = { name }
+        if (context.policy?.id) {
+            policy.id = context.policy.id
+        }
+        if (context.policy?.level) {
+            policy.level = context.policy.level
+        }
+        policies.push(policy)
     }
 
-    return names
+    return policies
+}
+
+/** Extracts violated policy names from a predict response, preserving API order. */
+export function parseViolatedPolicyNames(prediction: SodViolationPrediction): string[] {
+    return parseViolatedPolicies(prediction).map((policy) => policy.name)
 }
 
 export interface EntitlementExpansionClients {

@@ -9,7 +9,10 @@ export {
     type ViolationV1Response,
 } from './violations'
 export {
+    listActiveViolationPoliciesForIdentity,
+    listActiveViolationPoliciesForIdentityOffline,
     listActiveViolationPolicyNamesForIdentity,
     listActiveViolationPolicyNamesForIdentityOffline,
 } from './list-active-policy-names'
-export { deltaPolicyNames, unionPolicyNames } from './policy-name-sets'
+export { deltaPolicies, deltaPolicyNames, unionPolicies, unionPolicyNames } from './policy-name-sets'
+export type { PolicyNameRef } from './policy-name-sets'

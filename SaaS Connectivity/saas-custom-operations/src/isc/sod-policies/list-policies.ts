@@ -9,6 +9,7 @@ const POLICY_PAGE_SIZE = 250
 function mapPolicy(raw: {
     id?: string
     name?: string
+    level?: string
     state?: SodPolicySummary['state']
     policyQuery?: string
     ownerRef?: SodPolicySummary['ownerRef']
@@ -21,6 +22,7 @@ function mapPolicy(raw: {
     return {
         id: raw.id,
         name: raw.name,
+        ...(raw.level ? { level: raw.level } : {}),
         state: raw.state,
         policyQuery: raw.policyQuery,
         ownerRef: raw.ownerRef,

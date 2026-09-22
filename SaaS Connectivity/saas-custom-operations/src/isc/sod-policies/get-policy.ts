@@ -14,6 +14,9 @@ export async function getSodPolicy(sodPolicies: SODPoliciesApi, policyId: string
         return {
             id: raw.id,
             name: raw.name,
+            ...('level' in raw && typeof (raw as { level?: unknown }).level === 'string'
+                ? { level: (raw as { level: string }).level }
+                : {}),
             policyQuery: raw.policyQuery,
             ownerRef: raw.ownerRef,
             conflictingAccessCriteria: raw.conflictingAccessCriteria,

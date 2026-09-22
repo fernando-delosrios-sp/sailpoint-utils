@@ -9,6 +9,8 @@ export interface PreventiveSodCheckOperation extends OperationSignature {
     input: {
         identityId?: string
         accessRequestId?: string
+        /** When true, skip existing/active violations and report only inflight/predictive ones. Defaults to false. */
+        inflightOnly?: boolean | string
     }
     output: {
         'preventive-sod-check:has-violation': boolean
@@ -30,10 +32,11 @@ export const preventiveSodCheckOperation = customOperation<PreventiveSodCheckOpe
             resolved.identityId,
             resolved.accessRequestId,
             offline,
-            clientConfig
+            clientConfig,
+            { inflightOnly: resolved.inflightOnly }
         )
         const situationSummary = buildPreventiveSituationSummary({
-            violatedPolicyNames: evaluation.violatedPolicyNames,
+            violatedPolicies: evaluation.violatedPolicies,
             accessRequestId: resolved.accessRequestId,
         })
 

@@ -3,26 +3,39 @@ import { buildPreventiveSituationSummary } from './situation-summary'
 
 describe('preventive-sod-check/situation-summary', () => {
     it('returns No violations found when policy list is empty', () => {
-        expect(buildPreventiveSituationSummary({ violatedPolicyNames: [] })).toBe('No violations found')
+        expect(buildPreventiveSituationSummary({ violatedPolicies: [] })).toBe('No violations found')
         expect(
-            buildPreventiveSituationSummary({ violatedPolicyNames: [], accessRequestId: 'req-123' })
+            buildPreventiveSituationSummary({ violatedPolicies: [], accessRequestId: 'req-123' })
         ).toBe('No violations found')
     })
 
-    it('lists all policy names when accessRequestId is omitted', () => {
+    it('lists policy names with levels when accessRequestId is omitted', () => {
         expect(
             buildPreventiveSituationSummary({
-                violatedPolicyNames: ['Finance Control', 'Procurement Control'],
+                violatedPolicies: [
+                    { name: 'Finance Control', level: 'HIGH' },
+                    { name: 'Procurement Control', level: 'MEDIUM' },
+                ],
             })
-        ).toBe('SoD policy violations found: Finance Control, Procurement Control')
+        ).toBe('SoD policy violations found: Finance Control (High), Procurement Control (Medium)')
+    })
+
+    it('omits the level suffix when a policy has no level', () => {
+        expect(
+            buildPreventiveSituationSummary({
+                violatedPolicies: [{ name: 'Finance Control' }],
+            })
+        ).toBe('SoD policy violations found: Finance Control')
     })
 
     it('attributes violations to accessRequestId when provided', () => {
         expect(
             buildPreventiveSituationSummary({
-                violatedPolicyNames: ['Finance Control'],
+                violatedPolicies: [{ name: 'Finance Control', level: 'CRITICAL' }],
                 accessRequestId: 'req-456',
             })
-        ).toBe('Access request req-456 would violate SoD policies if completed: Finance Control')
+        ).toBe(
+            'Access request req-456 would violate SoD policies if completed: Finance Control (Critical)'
+        )
     })
 })

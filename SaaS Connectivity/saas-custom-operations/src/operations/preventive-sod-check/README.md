@@ -14,6 +14,7 @@ Evaluates SoD violations for an identity. Output semantics depend on whether `ac
 |---|---|---|
 | `identityId` | No* | Target identity for holistic evaluation (identity mode) |
 | `accessRequestId` | No* | When set, switches to **request mode** (predict delta for this request). Resolves target identity from the access request when `identityId` is omitted |
+| `inflightOnly` | No | When `true`, skip existing/active violations and report only inflight (predict) violations. Defaults to `false`. Workflows may send the string `"true"` / `"false"` |
 
 \* At least one of `identityId` or `accessRequestId` is required. When both are provided, `accessRequestId` takes precedence and `identityId` is **ignored** (a warning is logged).
 
@@ -21,19 +22,21 @@ Evaluates SoD violations for an identity. Output semantics depend on whether `ac
 
 | Field | Type | Identity mode (no `accessRequestId`) | Request mode (`accessRequestId` set) |
 |---|---|---|---|
-| `preventive-sod-check:has-violation` | boolean | `true` if existing **or** inflight violations | `true` only if **this request** introduces a violation |
-| `preventive-sod-check:violated-policy-names` | string[] | All violated policies (existing ∪ inflight) | Policies attributed to **this request** only |
+| `preventive-sod-check:has-violation` | boolean | `true` if existing **or** inflight violations (`inflightOnly: true` → inflight only) | `true` if **this request** introduces a violation (`inflightOnly: false` also includes existing active violations) |
+| `preventive-sod-check:violated-policy-names` | string[] | Mode-appropriate policy names (see `has-violation`) | Mode-appropriate policy names (see `has-violation`) |
 | `preventive-sod-check:situation-summary` | string | See summary rules below | See summary rules below |
 
-When the identity already violates SoD but the target request adds nothing new, request mode returns `has-violation: false`, empty policy names, and `"No violations found"`.
+When the identity already violates SoD but the target request adds nothing new, request mode with default `inflightOnly` (`false`) still reports those existing policies. The bundled pre-check workflow sets `inflightOnly` to `true`, so that case returns `has-violation: false`, empty policy names, and `"No violations found"`.
 
 ## Summary rules
 
 | Condition | `preventive-sod-check:situation-summary` |
 |---|---|
 | No violations | `No violations found` |
-| Violations, no `accessRequestId` | Lists all violating policy names |
-| Violations, with `accessRequestId` | Attributes violations to the access request |
+| Violations, no `accessRequestId` | Lists violating policy names with each policy's level, e.g. `Finance Control (High)` |
+| Violations, with `accessRequestId` | Attributes those labeled policies to the access request |
+
+A policy with no resolvable level is listed by name only. Levels are the SoD policy risk classification (`Critical`, `High`, `Medium`, `Low`).
 
 `preventive-sod-check:violated-policy-names` contains the mode-appropriate policy list (see output table above).
 
@@ -64,7 +67,8 @@ Workflow-ready example:
     "type": "custom:preventive-sod-check",
     "input": {
         "requestId": "req-preventive-001",
-        "accessRequestId": "{{$.trigger.accessRequestId}}"
+        "accessRequestId": "{{$.trigger.accessRequestId}}",
+        "inflightOnly": "{{$.defineVariable.inflightOnly}}"
     },
     "config": {
         "apiUrl": "{{$.defineVariable.aPIURL}}",
@@ -76,13 +80,19 @@ Workflow-ready example:
 
 ## Bundled workflows
 
-No workflow exports are bundled for this operation. Wire it into approval or access-request workflows using the invoke contract below — typically as a gate before manager or SoD review.
+| Workflow | Contract |
+|---|---|
+| [`workflows/Access Request Pre-Check - Risk analysis and in-flight SOD.json`](../../../workflows/Access%20Request%20Pre-Check%20-%20Risk%20analysis%20and%20in-flight%20SOD.json) | [Access Request Submitted](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-submitted) event trigger. Runs this operation in request mode alongside `custom:evaluate-access-request-risk`, and denies on a detected violation |
+
+That workflow invokes with `requestId` `preventive-sod-check:{{$.trigger.accessRequestId}}:submitted` and filters **Read SoD Result** on the same value. The prefix keeps the result account clear of other operations writing on the same access request id. **Inflight Only** defaults to `true` in Configuration and is passed as `inflightOnly`. See the [risk operation README](../evaluate-access-request-risk/README.md#access-request-pre-check---risk-analysis-and-in-flight-sod) for its Configuration and decision steps.
+
+The access token must also allow SoD policy read (`listSodPoliciesV1` / `getSodPolicyV1`) so the situation summary can include each policy's level.
 
 ## Workflow integration
 
 1. Invoke `custom:preventive-sod-check` with `identityId` for holistic checks, or with `accessRequestId` alone (or plus ignored `identityId`) to gate a specific approval.
-2. Read persisted output via **Get Accounts** filtered by `requestId`.
-3. Branch on `preventive-sod-check:has-violation` or policy names.
+2. Read persisted output via **Get Accounts** filtered by `requestId`. The operation persists under the `requestId` you send, verbatim, so pick one that will not collide with another operation's result account.
+3. Branch on `preventive-sod-check:has-violation` or policy names. It persists as a real boolean, so compare it with `sp:compare-boolean` rather than a string comparison.
 
 Example branch (request-scoped approval gate):
 
@@ -97,6 +107,7 @@ The access token must allow:
 - Active violations read (`GET /violations/v1` with experimental header)
 - Search/events read (`searchPostV1` on `events` index)
 - SoD predict (`startPredictSodViolationsV1`)
+- SoD policy read (`listSodPoliciesV1` / `getSodPolicyV1`)
 - Result source account persist (standard custom operation scopes)
 
 ## Local development

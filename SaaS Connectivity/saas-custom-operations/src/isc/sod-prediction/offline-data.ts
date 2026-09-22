@@ -6,12 +6,14 @@ export const OFFLINE_VIOLATION_PREDICTION: SodViolationPrediction = {
             policy: {
                 id: 'offline-policy-001',
                 name: 'Finance Control',
+                level: 'HIGH',
             },
         },
         {
             policy: {
                 id: 'offline-policy-002',
                 name: 'Procurement Control',
+                level: 'MEDIUM',
             },
         },
     ],

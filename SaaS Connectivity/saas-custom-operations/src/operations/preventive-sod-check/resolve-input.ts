@@ -9,17 +9,31 @@ import { SailPointClients } from '../../framework/types'
 export interface ResolvedPreventiveSodCheckInput {
     identityId: string
     accessRequestId?: string
+    inflightOnly: boolean
+}
+
+/** Workflow and invoke payloads send booleans as strings. Omitted inflightOnly is false. */
+export function parseInflightOnly(value: unknown): boolean {
+    if (value === true || value === 1) {
+        return true
+    }
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase()
+        return normalized === 'true' || normalized === '1' || normalized === 'yes'
+    }
+    return false
 }
 
 /** Resolves effective identity and request mode from preventive-sod-check invoke input. */
 export async function resolvePreventiveSodCheckInput(
     requestId: string,
     sdk: SailPointClients,
-    input: { identityId?: string; accessRequestId?: string },
+    input: { identityId?: string; accessRequestId?: string; inflightOnly?: boolean | string },
     offline: boolean
 ): Promise<ResolvedPreventiveSodCheckInput> {
     const accessRequestId = input.accessRequestId?.trim() || undefined
     const providedIdentityId = input.identityId?.trim() || undefined
+    const inflightOnly = parseInflightOnly(input.inflightOnly)
 
     if (!accessRequestId && !providedIdentityId) {
         throw new ConnectorError('Missing required input: identityId or accessRequestId')
@@ -40,8 +54,8 @@ export async function resolvePreventiveSodCheckInput(
             throw new ConnectorError(`Could not resolve identity for access request: ${accessRequestId}`)
         }
 
-        return { identityId, accessRequestId }
+        return { identityId, accessRequestId, inflightOnly }
     }
 
-    return { identityId: providedIdentityId!, accessRequestId: undefined }
+    return { identityId: providedIdentityId!, accessRequestId: undefined, inflightOnly }
 }

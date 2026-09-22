@@ -5,7 +5,7 @@ TBD - created by archiving change preventive-sod-check. Update Purpose after arc
 ## Requirements
 ### Requirement: Preventive SOD check operation
 
-The connector SHALL register a custom command `custom:preventive-sod-check` that evaluates SoD violation state for an identity. Output semantics SHALL depend on whether optional input `accessRequestId` is provided. Implementation SHALL reside under `src/operations/preventive-sod-check/` with entry module `index.ts`.
+The connector SHALL register a custom command `custom:preventive-sod-check` that evaluates SoD violation state for an identity. Output semantics SHALL depend on whether optional input `accessRequestId` is provided and whether optional input `inflightOnly` is true. `preventive-sod-check:situation-summary` SHALL include each violated policy's level when known. Implementation SHALL reside under `src/operations/preventive-sod-check/` with entry module `index.ts`.
 
 #### Scenario: Operation invoked with required identityId
 
@@ -45,6 +45,7 @@ The connector SHALL register a custom command `custom:preventive-sod-check` that
 #### Scenario: Request mode scopes outputs to request delta
 
 - **GIVEN** input includes `accessRequestId` matching an EXECUTING GRANT_ACCESS request
+- **AND** `inflightOnly` is `true` or the invoke is the bundled pre-check workflow
 - **WHEN** `custom:preventive-sod-check` completes successfully
 - **THEN** the handler SHALL run differential predict (full pending grants minus grants for the target `accessRequestId`)
 - **AND** `preventive-sod-check:violated-policy-names` SHALL contain only policies introduced by the target request (predict delta)
@@ -54,10 +55,28 @@ The connector SHALL register a custom command `custom:preventive-sod-check` that
 
 - **GIVEN** input includes `accessRequestId` that does not match any EXECUTING grant tracking number
 - **OR** the target request introduces no new predictive violation beyond baseline pending grants
+- **AND** `inflightOnly` is `true`
 - **WHEN** the handler persists operation output
 - **THEN** `preventive-sod-check:has-violation` SHALL be `false`
 - **AND** `preventive-sod-check:violated-policy-names` SHALL be an empty array
 - **AND** `preventive-sod-check:situation-summary` SHALL be `No violations found`
+
+#### Scenario: inflightOnly true skips existing violations in identity mode
+
+- **GIVEN** identity mode input with `inflightOnly` `true`
+- **AND** the identity has an active violation policy `Existing Control`
+- **AND** predict returns inflight policies
+- **WHEN** the handler persists operation output
+- **THEN** `preventive-sod-check:violated-policy-names` SHALL contain only the inflight policies
+- **AND** SHALL NOT include `Existing Control`
+
+#### Scenario: inflightOnly false includes existing violations in request mode
+
+- **GIVEN** input includes `accessRequestId`
+- **AND** `inflightOnly` is `false` or omitted
+- **AND** the identity has an active violation policy `Existing Control`
+- **WHEN** the handler persists operation output
+- **THEN** `preventive-sod-check:violated-policy-names` SHALL include `Existing Control` in addition to any request-delta policies
 
 #### Scenario: No violations summary
 
@@ -72,15 +91,16 @@ The connector SHALL register a custom command `custom:preventive-sod-check` that
 - **GIVEN** violated policy names `["Policy A", "Policy B"]` in identity mode
 - **AND** input does not include `accessRequestId`
 - **WHEN** the handler persists operation output
-- **THEN** `preventive-sod-check:situation-summary` SHALL list all violating policy names in plain text
+- **THEN** `preventive-sod-check:situation-summary` SHALL list all violating policy names in plain text with each policy's level when known
 
 #### Scenario: Violations with accessRequestId summary text
 
-- **GIVEN** request-mode delta policy names `["Finance Control"]`
+- **GIVEN** request-mode delta policy names `["Finance Control"]` at level `HIGH`
 - **AND** input includes `accessRequestId` set to `req-456`
 - **WHEN** the handler persists operation output
 - **THEN** `preventive-sod-check:situation-summary` SHALL attribute the violation context to access request `req-456`
 - **AND** SHALL mention violated policy name `Finance Control`
+- **AND** SHALL mention policy level `High`
 
 #### Scenario: Output contract excludes approved field
 
@@ -125,26 +145,27 @@ The preventive-sod-check operation SHALL discover pending grant impact by listin
 
 ### Requirement: Preventive situation summary builder
 
-The preventive-sod-check operation SHALL build `preventive-sod-check:situation-summary` using a dedicated builder function fed the mode-appropriate violated policy name list and optional `accessRequestId`.
+The preventive-sod-check operation SHALL build `preventive-sod-check:situation-summary` using a dedicated builder function fed the mode-appropriate violated policies (name plus optional level) and optional `accessRequestId`.
 
 #### Scenario: Builder no violations
 
-- **GIVEN** violated policy names `[]`
+- **GIVEN** violated policies `[]`
 - **WHEN** the situation summary builder runs with any `accessRequestId`
 - **THEN** the builder SHALL return `No violations found`
 
 #### Scenario: Builder lists all policies without request context
 
-- **GIVEN** violated policy names `["Finance Control", "Procurement Control"]`
+- **GIVEN** violated policies `Finance Control` at `HIGH` and `Procurement Control` at `MEDIUM`
 - **AND** no `accessRequestId` is provided
 - **WHEN** the situation summary builder runs
-- **THEN** the builder SHALL return plain text that lists both policy names
+- **THEN** the builder SHALL return plain text that lists both policy names with their levels
 
 #### Scenario: Builder attributes request when provided
 
-- **GIVEN** violated policy names `["Finance Control"]`
+- **GIVEN** violated policy `Finance Control` at `CRITICAL`
 - **AND** `accessRequestId` is `req-456`
 - **WHEN** the situation summary builder runs
 - **THEN** the builder SHALL return plain text that references access request `req-456`
 - **AND** SHALL mention the violated policy name `Finance Control`
+- **AND** SHALL mention policy level `Critical`
 

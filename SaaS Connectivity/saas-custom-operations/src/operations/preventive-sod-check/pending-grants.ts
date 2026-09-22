@@ -13,16 +13,17 @@ import {
 } from '../../isc/events-search'
 import {
     expandAccessItemsToEntitlementIds,
-    parseViolatedPolicyNames,
+    parseViolatedPolicies,
     predictSodViolationsForIdentity,
     predictSodViolationsForIdentityOffline,
     OFFLINE_ROLE_ENTITLEMENT_IDS,
 } from '../../isc/sod-prediction'
+import { attachSodPolicyLevels } from '../../isc/sod-policies'
 import {
-    listActiveViolationPolicyNamesForIdentity,
-    listActiveViolationPolicyNamesForIdentityOffline,
+    listActiveViolationPoliciesForIdentity,
+    listActiveViolationPoliciesForIdentityOffline,
 } from '../../isc/violations/list-active-policy-names'
-import { deltaPolicyNames, unionPolicyNames } from '../../isc/violations/policy-name-sets'
+import { deltaPolicies, unionPolicies, type PolicyNameRef } from '../../isc/violations/policy-name-sets'
 import { type IscClientConfig } from '../../isc/http'
 import { SailPointClients } from '../../framework/types'
 
@@ -34,6 +35,7 @@ export interface ResolvePendingGrantEntitlementsOptions {
 export interface PreventiveSodEvaluation {
     hasViolation: boolean
     violatedPolicyNames: string[]
+    violatedPolicies: PolicyNameRef[]
 }
 
 async function listExecutingGrantRequests(
@@ -95,12 +97,12 @@ async function resolveAccessItemsForGrantRequests(
     return accessItems
 }
 
-async function predictViolatedPolicyNamesForAccessItems(
+async function predictViolatedPoliciesForAccessItems(
     sdk: SailPointClients,
     identityId: string,
     accessItems: AccessItemRef[],
     offline: boolean
-): Promise<string[]> {
+): Promise<PolicyNameRef[]> {
     const entitlementIds = offline
         ? accessItems.length > 0
             ? OFFLINE_ROLE_ENTITLEMENT_IDS
@@ -113,18 +115,26 @@ async function predictViolatedPolicyNamesForAccessItems(
             : { violationContexts: [] }
         : await predictSodViolationsForIdentity(sdk.sodViolations, identityId, entitlementIds)
 
-    return parseViolatedPolicyNames(prediction)
+    return parseViolatedPolicies(prediction)
 }
 
-async function predictViolatedPolicyNamesForGrantRequests(
+async function predictViolatedPoliciesForGrantRequests(
     sdk: SailPointClients,
     identityId: string,
     requests: AccessRequestStatusItem[],
     offline: boolean,
     options: ResolvePendingGrantEntitlementsOptions
-): Promise<string[]> {
+): Promise<PolicyNameRef[]> {
     const accessItems = await resolveAccessItemsForGrantRequests(sdk, requests, offline, options)
-    return predictViolatedPolicyNamesForAccessItems(sdk, identityId, accessItems, offline)
+    return predictViolatedPoliciesForAccessItems(sdk, identityId, accessItems, offline)
+}
+
+function toEvaluation(violatedPolicies: PolicyNameRef[]): PreventiveSodEvaluation {
+    return {
+        hasViolation: violatedPolicies.length > 0,
+        violatedPolicyNames: violatedPolicies.map((policy) => policy.name),
+        violatedPolicies,
+    }
 }
 
 /** Evaluates preventive SoD — identity-wide or access-request-scoped depending on accessRequestId. */
@@ -134,50 +144,50 @@ export async function evaluatePreventiveSod(
     accessRequestId: string | undefined,
     offline: boolean,
     clientConfig: IscClientConfig | null,
-    options: ResolvePendingGrantEntitlementsOptions = {}
+    options: ResolvePendingGrantEntitlementsOptions & { inflightOnly?: boolean } = {}
 ): Promise<PreventiveSodEvaluation> {
+    const inflightOnly = options.inflightOnly === true
     const executingGrants = await listExecutingGrantRequests(sdk, identityId, offline)
+
+    const existingPolicies =
+        inflightOnly
+            ? []
+            : offline
+              ? listActiveViolationPoliciesForIdentityOffline(identityId)
+              : clientConfig
+                ? await listActiveViolationPoliciesForIdentity(clientConfig, identityId)
+                : []
+
+    let violatedPolicies: PolicyNameRef[]
 
     if (accessRequestId) {
         const otherGrants = executingGrants.filter((request) => !matchesAccessRequestId(request, accessRequestId))
-        const baselinePolicyNames = await predictViolatedPolicyNamesForGrantRequests(
+        const baselinePolicies = await predictViolatedPoliciesForGrantRequests(
             sdk,
             identityId,
             otherGrants,
             offline,
             options
         )
-        const fullPolicyNames = await predictViolatedPolicyNamesForGrantRequests(
+        const fullPolicies = await predictViolatedPoliciesForGrantRequests(
             sdk,
             identityId,
             executingGrants,
             offline,
             options
         )
-        const violatedPolicyNames = deltaPolicyNames(fullPolicyNames, baselinePolicyNames)
-        return {
-            hasViolation: violatedPolicyNames.length > 0,
-            violatedPolicyNames,
-        }
+        const requestDelta = deltaPolicies(fullPolicies, baselinePolicies)
+        violatedPolicies = inflightOnly ? requestDelta : unionPolicies(existingPolicies, requestDelta)
+    } else {
+        const predictivePolicies = await predictViolatedPoliciesForGrantRequests(
+            sdk,
+            identityId,
+            executingGrants,
+            offline,
+            options
+        )
+        violatedPolicies = unionPolicies(existingPolicies, predictivePolicies)
     }
 
-    const existingPolicyNames = offline
-        ? listActiveViolationPolicyNamesForIdentityOffline(identityId)
-        : clientConfig
-          ? await listActiveViolationPolicyNamesForIdentity(clientConfig, identityId)
-          : []
-
-    const predictivePolicyNames = await predictViolatedPolicyNamesForGrantRequests(
-        sdk,
-        identityId,
-        executingGrants,
-        offline,
-        options
-    )
-    const violatedPolicyNames = unionPolicyNames(existingPolicyNames, predictivePolicyNames)
-
-    return {
-        hasViolation: violatedPolicyNames.length > 0,
-        violatedPolicyNames,
-    }
+    return toEvaluation(await attachSodPolicyLevels(sdk, violatedPolicies, offline))
 }

@@ -2,6 +2,8 @@
 export interface SodPolicySummary {
     id: string
     name: string
+    /** Risk classification from the SoD policy: CRITICAL, HIGH, MEDIUM, or LOW. */
+    level?: string
     state?: 'ENFORCED' | 'NOT_ENFORCED'
     policyQuery?: string
     ownerRef?: {

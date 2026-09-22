@@ -30,6 +30,7 @@ describe('preventive-sod-check/resolve-input', () => {
         expect(resolved).toEqual({
             identityId: 'offline-preventive-identity',
             accessRequestId: 'offline-tracking-001',
+            inflightOnly: false,
         })
     })
 
@@ -60,6 +61,28 @@ describe('preventive-sod-check/resolve-input', () => {
             true
         )
 
-        expect(resolved).toEqual({ identityId: 'identity-1', accessRequestId: undefined })
+        expect(resolved).toEqual({ identityId: 'identity-1', accessRequestId: undefined, inflightOnly: false })
+    })
+
+    it('parses inflightOnly from boolean or string, defaulting to false', async () => {
+        await expect(
+            resolvePreventiveSodCheckInput('req-1', {} as never, { identityId: 'id-1', inflightOnly: true }, true)
+        ).resolves.toMatchObject({ inflightOnly: true })
+        await expect(
+            resolvePreventiveSodCheckInput(
+                'req-1',
+                {} as never,
+                { identityId: 'id-1', inflightOnly: 'true' },
+                true
+            )
+        ).resolves.toMatchObject({ inflightOnly: true })
+        await expect(
+            resolvePreventiveSodCheckInput(
+                'req-1',
+                {} as never,
+                { identityId: 'id-1', inflightOnly: 'false' },
+                true
+            )
+        ).resolves.toMatchObject({ inflightOnly: false })
     })
 })

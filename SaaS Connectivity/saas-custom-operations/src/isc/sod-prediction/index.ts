@@ -1,5 +1,6 @@
 export {
     expandAccessItemsToEntitlementIds,
+    parseViolatedPolicies,
     parseViolatedPolicyNames,
     predictSodViolationsForIdentity,
 } from './predict-violations'

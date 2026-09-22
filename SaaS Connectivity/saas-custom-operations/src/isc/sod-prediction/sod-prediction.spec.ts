@@ -2,6 +2,7 @@ import { ConnectorError } from '@sailpoint/connector-sdk'
 import { describe, expect, it, vi } from 'vitest'
 import {
     expandAccessItemsToEntitlementIds,
+    parseViolatedPolicies,
     parseViolatedPolicyNames,
     predictSodViolationsForIdentity,
 } from './predict-violations'
@@ -29,16 +30,19 @@ describe('isc/sod-prediction', () => {
         })
     })
 
-    it('parseViolatedPolicyNames extracts policy names from ViolationPrediction', () => {
-        const names = parseViolatedPolicyNames({
+    it('parseViolatedPolicies extracts policy names and levels', () => {
+        const policies = parseViolatedPolicies({
             violationContexts: [
-                { policy: { name: 'Policy A' } },
-                { policy: { name: 'Policy B' } },
-                { policy: { name: 'Policy A' } },
+                { policy: { name: 'Policy A', level: 'HIGH' } },
+                { policy: { name: 'Policy B', level: 'LOW' } },
+                { policy: { name: 'Policy A', level: 'HIGH' } },
             ],
         })
 
-        expect(names).toEqual(['Policy A', 'Policy B'])
+        expect(policies).toEqual([
+            { name: 'Policy A', level: 'HIGH' },
+            { name: 'Policy B', level: 'LOW' },
+        ])
     })
 
     it('expandAccessItemsToEntitlementIds expands ROLE and ACCESS_PROFILE via isc modules', async () => {

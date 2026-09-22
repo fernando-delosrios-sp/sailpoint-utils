@@ -1,17 +1,36 @@
+export interface PreventiveViolatedPolicy {
+    name: string
+    level?: string
+}
+
 export interface PreventiveSituationSummaryInput {
-    violatedPolicyNames: string[]
+    violatedPolicies: PreventiveViolatedPolicy[]
     accessRequestId?: string
+}
+
+function displayPolicyLevel(level?: string): string | undefined {
+    const trimmed = level?.trim()
+    if (!trimmed) {
+        return undefined
+    }
+
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+}
+
+function formatPolicyLabel(policy: PreventiveViolatedPolicy): string {
+    const level = displayPolicyLevel(policy.level)
+    return level ? `${policy.name} (${level})` : policy.name
 }
 
 /** Builds plain-text preventive SoD situation summary for workflow branching. */
 export function buildPreventiveSituationSummary(input: PreventiveSituationSummaryInput): string {
-    const { violatedPolicyNames, accessRequestId } = input
+    const { violatedPolicies, accessRequestId } = input
 
-    if (violatedPolicyNames.length === 0) {
+    if (violatedPolicies.length === 0) {
         return 'No violations found'
     }
 
-    const policyList = violatedPolicyNames.join(', ')
+    const policyList = violatedPolicies.map(formatPolicyLabel).join(', ')
 
     if (accessRequestId) {
         return `Access request ${accessRequestId} would violate SoD policies if completed: ${policyList}`

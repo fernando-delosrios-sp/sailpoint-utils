@@ -34,6 +34,8 @@ const searchPostV1 = vi.fn()
 const startPredictSodViolationsV1 = vi.fn()
 const getRoleEntitlementsV1 = vi.fn()
 const getAccessProfileEntitlementsV1 = vi.fn()
+const getSodPolicyV1 = vi.fn()
+const listSodPoliciesV1 = vi.fn()
 
 vi.mock('../../framework/result-source', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../framework/result-source')>()
@@ -78,6 +80,10 @@ vi.mock('../../framework/sdk-factory', () => ({
             listWorkgroupsV1: vi.fn(),
             listWorkgroupMembersV1: vi.fn(),
         },
+        sodPolicies: {
+            getSodPolicyV1: (...args: unknown[]) => getSodPolicyV1(...args),
+            listSodPoliciesV1: (...args: unknown[]) => listSodPoliciesV1(...args),
+        },
     })),
 }))
 
@@ -91,6 +97,8 @@ describe('preventiveSodCheckOperation', () => {
         startPredictSodViolationsV1.mockReset()
         getRoleEntitlementsV1.mockReset()
         getAccessProfileEntitlementsV1.mockReset()
+        getSodPolicyV1.mockReset()
+        listSodPoliciesV1.mockReset()
 
         createAccountV1.mockImplementation(async ({ accountAttributesCreate }) => {
             const attributes = accountAttributesCreate.attributes as Record<string, unknown>
@@ -162,6 +170,12 @@ describe('preventiveSodCheckOperation', () => {
                 violationContexts: [{ policy: { name: 'Finance Control' } }, { policy: { name: 'Procurement Control' } }],
             },
         })
+        listSodPoliciesV1.mockResolvedValue({
+            data: [
+                { id: 'p-fin', name: 'Finance Control', level: 'HIGH' },
+                { id: 'p-proc', name: 'Procurement Control', level: 'MEDIUM' },
+            ],
+        })
 
         vi.stubGlobal(
             'fetch',
@@ -192,7 +206,7 @@ describe('preventiveSodCheckOperation', () => {
             expect(inhibited).toHaveLength(1)
             expect(inhibited[0]?.attributes['preventive-sod-check:has-violation']).toBe(true)
             expect(inhibited[0]?.attributes['preventive-sod-check:situation-summary']).toBe(
-                'SoD policy violations found: Finance Control, Procurement Control'
+                'SoD policy violations found: Finance Control (High), Procurement Control (Medium)'
             )
             expect(inhibited[0]?.attributes['preventive-sod-check:violated-policy-names']).toEqual([
                 'Finance Control',
@@ -257,8 +271,47 @@ describe('preventiveSodCheckOperation', () => {
 
             const inhibited = endPayloadOutputCapture()
             expect(inhibited[0]?.attributes['preventive-sod-check:has-violation']).toBe(true)
+            expect(inhibited[0]?.attributes['preventive-sod-check:situation-summary']).toBe(
+                'SoD policy violations found: Existing Control (Low), Finance Control (High), Procurement Control (Medium)'
+            )
             expect(inhibited[0]?.attributes['preventive-sod-check:violated-policy-names']).toEqual([
                 'Existing Control',
+                'Finance Control',
+                'Procurement Control',
+            ])
+        } finally {
+            endPayloadOutputCapture()
+            if (previousTestMode === undefined) {
+                delete process.env.SPCX_TEST_MODE
+            } else {
+                process.env.SPCX_TEST_MODE = previousTestMode
+            }
+        }
+    })
+
+    it('omits existing violations when inflightOnly is true (offline, identity mode)', async () => {
+        const previousTestMode = process.env.SPCX_TEST_MODE
+        process.env.SPCX_TEST_MODE = '1'
+        beginPayloadOutputCapture()
+        const res = { send: vi.fn() }
+
+        try {
+            await preventiveSodCheckOperation(
+                { commandType: 'custom:preventive-sod-check' } as never,
+                {
+                    requestId: 'offline-preventive-inflight-only-001',
+                    identityId: OFFLINE_EXISTING_IDENTITY_ID,
+                    inflightOnly: true,
+                },
+                res as never
+            )
+
+            const inhibited = endPayloadOutputCapture()
+            expect(inhibited[0]?.attributes['preventive-sod-check:has-violation']).toBe(true)
+            expect(inhibited[0]?.attributes['preventive-sod-check:situation-summary']).toBe(
+                'SoD policy violations found: Finance Control (High), Procurement Control (Medium)'
+            )
+            expect(inhibited[0]?.attributes['preventive-sod-check:violated-policy-names']).toEqual([
                 'Finance Control',
                 'Procurement Control',
             ])
@@ -291,7 +344,7 @@ describe('preventiveSodCheckOperation', () => {
             const inhibited = endPayloadOutputCapture()
             expect(inhibited[0]?.attributes['preventive-sod-check:has-violation']).toBe(true)
             expect(inhibited[0]?.attributes['preventive-sod-check:situation-summary']).toBe(
-                'Access request offline-tracking-001 would violate SoD policies if completed: Finance Control, Procurement Control'
+                'Access request offline-tracking-001 would violate SoD policies if completed: Finance Control (High), Procurement Control (Medium)'
             )
             expect(inhibited[0]?.attributes['preventive-sod-check:violated-policy-names']).toEqual([
                 'Finance Control',
@@ -413,6 +466,9 @@ describe('preventiveSodCheckOperation', () => {
         expect(startPredictSodViolationsV1).toHaveBeenCalled()
         const persisted = persistedAccounts.get('req-connected-001')
         expect(persisted?.['preventive-sod-check:has-violation']).toBe(true)
+        expect(persisted?.['preventive-sod-check:situation-summary']).toBe(
+            'SoD policy violations found: Finance Control (High), Procurement Control (Medium)'
+        )
         expect(persisted?.['preventive-sod-check:violated-policy-names']).toEqual([
             'Finance Control',
             'Procurement Control',

@@ -1,24 +1,28 @@
 import { type IscClientConfig, iscGet } from '../http'
-import { listActiveViolationPolicyNamesForIdentityOffline } from './offline-data'
+import { type PolicyNameRef } from './policy-name-sets'
 
 interface ViolationListEntry {
-    policy?: { name?: string }
+    policy?: { id?: string; name?: string; level?: string }
 }
 
-function appendUniquePolicyNames(names: string[], seen: Set<string>, entry: ViolationListEntry): void {
+function appendUniquePolicies(policies: PolicyNameRef[], seen: Set<string>, entry: ViolationListEntry): void {
     const name = entry.policy?.name
     if (!name || seen.has(name)) {
         return
     }
     seen.add(name)
-    names.push(name)
+    policies.push({
+        ...(entry.policy?.id ? { id: entry.policy.id } : {}),
+        name,
+        ...(entry.policy?.level ? { level: entry.policy.level } : {}),
+    })
 }
 
-/** Lists policy names from active SoD violations for an identity via GET /violations/v1. */
-export async function listActiveViolationPolicyNamesForIdentity(
+/** Lists policies from active SoD violations for an identity via GET /violations/v1. */
+export async function listActiveViolationPoliciesForIdentity(
     config: IscClientConfig,
     identityId: string
-): Promise<string[]> {
+): Promise<PolicyNameRef[]> {
     const filter = encodeURIComponent(`identityId eq "${identityId}"`)
     const raw = await iscGet<ViolationListEntry[] | { items?: ViolationListEntry[] }>(
         config,
@@ -27,12 +31,21 @@ export async function listActiveViolationPolicyNamesForIdentity(
     )
 
     const entries = Array.isArray(raw) ? raw : (raw.items ?? [])
-    const names: string[] = []
+    const policies: PolicyNameRef[] = []
     const seen = new Set<string>()
     for (const entry of entries) {
-        appendUniquePolicyNames(names, seen, entry)
+        appendUniquePolicies(policies, seen, entry)
     }
-    return names
+    return policies
 }
 
-export { listActiveViolationPolicyNamesForIdentityOffline }
+/** Lists policy names from active SoD violations for an identity via GET /violations/v1. */
+export async function listActiveViolationPolicyNamesForIdentity(
+    config: IscClientConfig,
+    identityId: string
+): Promise<string[]> {
+    const policies = await listActiveViolationPoliciesForIdentity(config, identityId)
+    return policies.map((policy) => policy.name)
+}
+
+export { listActiveViolationPoliciesForIdentityOffline, listActiveViolationPolicyNamesForIdentityOffline } from './offline-data'

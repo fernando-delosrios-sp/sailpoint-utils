@@ -1,5 +1,11 @@
 import { SodPolicySummary } from './types'
 
+export const OFFLINE_SOD_POLICY_LEVELS: Record<string, string> = {
+    'Finance Control': 'HIGH',
+    'Procurement Control': 'MEDIUM',
+    'Existing Control': 'LOW',
+}
+
 export const OFFLINE_SOD_POLICIES: SodPolicySummary[] = [
     {
         id: 'policy-offline-1',

@@ -4,6 +4,7 @@ export interface SodViolationPrediction {
         policy?: {
             id?: string
             name?: string
+            level?: string
         }
     }>
 }
