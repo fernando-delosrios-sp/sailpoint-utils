@@ -7,9 +7,10 @@ const rootReadme = readFileSync(join(__dirname, '../../../README.md'), 'utf8')
 
 describe('ubiquitous-language documentation contracts', () => {
     it('Risk persist identity term', () => {
-        expect(operationReadme).toContain('**risk persist identity** `evaluate-access-request-risk:{requestId}`')
-        expect(operationReadme).not.toContain('`requestId` is the result-account identity')
-        expect(rootReadme).toContain('nativeIdentity eq "evaluate-access-request-risk:{requestId}"')
+        expect(operationReadme).toContain('**risk persist identity**')
+        expect(operationReadme).toContain('which is the invoke `requestId`')
+        expect(rootReadme).toContain('nativeIdentity eq')
+        expect(rootReadme).toContain('evaluate-access-request-risk:{accessRequestId}:dynamic')
     })
 
     it('Failure account uses the same term', () => {
@@ -21,8 +22,8 @@ describe('ubiquitous-language documentation contracts', () => {
         expect(operationReadme).toContain('`:submitted`, `:dynamic`, or `:dynamic-approval`')
     })
 
-    it('Discriminator is retained inside the prefixed identity', () => {
-        expect(operationReadme).toContain('wrapper discriminator is preserved inside that prefix')
+    it('Discriminator is retained inside the request id', () => {
+        expect(operationReadme).toContain('wrapper discriminator')
         expect(operationReadme).toContain('evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted')
         expect(operationReadme).toContain('evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic')
         expect(operationReadme).toContain('evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic-approval')

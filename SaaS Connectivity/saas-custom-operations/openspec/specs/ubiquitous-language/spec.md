@@ -324,14 +324,15 @@ The glossary SHALL define **form definition id** as the ISC Custom Forms identif
 
 ### Requirement: Apply persist identity term
 
-The glossary SHALL define **apply persist identity** as the result-source account identity holding `custom:access-model-sod-remediation-apply` outputs, `access-model-sod-remediation-apply:{formInstanceId}`. Normative text SHALL use the same term for the identity the prior-apply idempotency check reads. The glossary SHALL define **legacy apply persist identity** as a bare `{formInstanceId}` account written before the prefix was introduced, read-only input to that check.
+The glossary SHALL define **apply persist identity** as the result-source account identity holding `custom:access-model-sod-remediation-apply` outputs, `{requestId}:{formInstanceId}`. Bundled workflows SHALL set `requestId` to `access-model-sod-remediation-apply`, producing `access-model-sod-remediation-apply:{formInstanceId}`. Normative text SHALL use the same term for the identity the prior-apply idempotency check reads. The glossary SHALL define **legacy apply persist identity** as a bare `{formInstanceId}` account written before the command name appeared in the identity, read-only input to that check.
 
 #### Scenario: Apply persist identity term
 
 - **GIVEN** specs or README describe where access model SoD remediation apply writes its outputs
 - **WHEN** normative text names the account identity
-- **THEN** it SHALL use **apply persist identity** spelled `access-model-sod-remediation-apply:{formInstanceId}`
+- **THEN** it SHALL use **apply persist identity** spelled `{requestId}:{formInstanceId}`
 - **AND** SHALL NOT describe the persist identity as bare `{formInstanceId}`
+- **AND** SHALL NOT describe the persist identity as derived without `requestId`
 
 #### Scenario: Legacy apply persist identity term
 
@@ -342,14 +343,15 @@ The glossary SHALL define **apply persist identity** as the result-source accoun
 
 ### Requirement: Risk persist identity term
 
-The glossary SHALL define **risk persist identity** as the result-source account identity holding `custom:evaluate-access-request-risk` outputs, `evaluate-access-request-risk:{requestId}`. Normative text SHALL use the same term for the identity the bundled Risk Approval workflows read back and for the identity the framework failure path writes.
+The glossary SHALL define **risk persist identity** as the result-source account identity holding `custom:evaluate-access-request-risk` outputs, equal to the invoke `requestId`. Bundled Risk Approval workflows SHALL spell that `requestId` `evaluate-access-request-risk:{accessRequestId}:{discriminator}`. Normative text SHALL use the same term for the identity the bundled workflows read back and for the identity the framework failure path writes.
 
 #### Scenario: Risk persist identity term
 
 - **GIVEN** specs or README describe where evaluate access request risk writes its outputs
 - **WHEN** normative text names the account identity
-- **THEN** it SHALL use **risk persist identity** spelled `evaluate-access-request-risk:{requestId}`
-- **AND** SHALL NOT describe the persist identity as bare `{requestId}`
+- **THEN** it SHALL use **risk persist identity**
+- **AND** SHALL describe it as the invoke `requestId`
+- **AND** SHALL NOT describe a handler-applied prefix on top of `requestId`
 
 #### Scenario: Failure account uses the same term
 
@@ -369,12 +371,12 @@ The glossary SHALL define **wrapper discriminator** as the trailing segment each
 - **THEN** it SHALL use **wrapper discriminator**
 - **AND** SHALL list the three values `:submitted`, `:dynamic`, and `:dynamic-approval`
 
-#### Scenario: Discriminator is retained inside the prefixed identity
+#### Scenario: Discriminator is retained inside the request id
 
 - **GIVEN** specs describe how the **risk persist identity** is built
-- **WHEN** normative text relates the prefix to the **wrapper discriminator**
-- **THEN** it SHALL state the discriminator is preserved inside the prefixed identity
-- **AND** SHALL NOT describe the prefix as replacing the discriminator
+- **WHEN** normative text relates the command name to the **wrapper discriminator**
+- **THEN** it SHALL state callers put both the command name and the discriminator in `requestId`
+- **AND** SHALL NOT describe the handler as prefixing `requestId`
 
 ### Requirement: Result identity term
 
@@ -429,7 +431,7 @@ The glossary SHALL define **access model SoD remediation apply** as the custom o
 - **GIVEN** specs describe invoke input for access model SoD remediation apply
 - **WHEN** normative text names required fields
 - **THEN** it SHALL require `formInstanceId` and **form name** (`formName`)
-- **AND** SHALL note the **apply persist identity** is `access-model-sod-remediation-apply:{formInstanceId}`
+- **AND** SHALL note the **apply persist identity** is `{requestId}:{formInstanceId}`
 - **AND** SHALL NOT require `formDefinitionId` as invoke input
 
 ### Requirement: Log detail map term
@@ -516,27 +518,27 @@ The project glossary SHALL define **disableLinks** as the optional boolean custo
 
 ### Term: Apply persist identity
 **Context**: connector-operations / access-model-sod-remediation-apply
-**Definition**: The result-source account identity holding `custom:access-model-sod-remediation-apply` outputs: `access-model-sod-remediation-apply:{formInstanceId}`.
+**Definition**: The result-source account identity holding `custom:access-model-sod-remediation-apply` outputs: `{requestId}:{formInstanceId}`.
 **Aliases**: bare `{formInstanceId}` identity (superseded)
-**Notes**: Derived from `formInstanceId` in code, not from invoke `requestId`, so retries with different request ids stay deduped. Same identity the prior-apply check reads and the replay path writes.
+**Notes**: Callers put the command name in `requestId`. The bundled Remediation workflow uses `requestId` `access-model-sod-remediation-apply`, so the identity is `access-model-sod-remediation-apply:{formInstanceId}`. Same identity the prior-apply check reads first and the replay path writes.
 
 ### Term: Legacy apply persist identity
 **Context**: connector-operations / access-model-sod-remediation-apply
-**Definition**: A bare `{formInstanceId}` result-source account written by apply before the **apply persist identity** prefix was introduced.
+**Definition**: A bare `{formInstanceId}` result-source account written by apply before the **apply persist identity** included a `requestId` segment.
 **Aliases**: none
-**Notes**: Read-only fallback for the prior-apply idempotency check. Never written, updated, or deleted; superseded when the replay path persists under the prefixed identity.
+**Notes**: Read-only fallback for the prior-apply idempotency check, after `{requestId}:{formInstanceId}` and `access-model-sod-remediation-apply:{formInstanceId}`. Never written, updated, or deleted.
 
 ### Term: Risk persist identity
 **Context**: connector-operations / evaluate-access-request-risk
-**Definition**: The result-source account identity holding `custom:evaluate-access-request-risk` outputs: `evaluate-access-request-risk:{requestId}`.
-**Aliases**: bare `{requestId}` identity (superseded)
-**Notes**: Derived in the handler from invoke `requestId`. The same identity the bundled Risk Approval workflows read back and the identity the framework failure path writes.
+**Definition**: The result-source account identity holding `custom:evaluate-access-request-risk` outputs: the invoke `requestId`.
+**Aliases**: none
+**Notes**: The handler persists `requestId` verbatim. Bundled Risk Approval workflows set `requestId` to `evaluate-access-request-risk:{accessRequestId}:{discriminator}`. Same identity the workflows read back and the framework failure path writes.
 
 ### Term: Wrapper discriminator
 **Context**: connector-operations / evaluate-access-request-risk
-**Definition**: The trailing segment each bundled Risk Approval workflow appends to the access request id when building `requestId` — `:submitted`, `:dynamic`, or `:dynamic-approval`.
+**Definition**: The trailing segment each bundled Risk Approval workflow appends when building `requestId` — `:submitted`, `:dynamic`, or `:dynamic-approval`.
 **Aliases**: workflow suffix, request suffix (rejected)
-**Notes**: Preserved inside the **risk persist identity** so the three wrappers scoring one access request do not overwrite each other.
+**Notes**: Lives in the invoke `requestId` together with the command name so the three wrappers scoring one access request do not overwrite each other.
 
 ### Term: Result identity
 **Context**: custom-operation-framework
@@ -554,7 +556,7 @@ The project glossary SHALL define **disableLinks** as the optional boolean custo
 **Context**: connector-operations / access-model-sod-remediation-apply
 **Definition**: The custom operation that reads a completed access-model SoD remediation form instance and mutates the referenced role or access profile in the ISC catalog per `remediationSide`.
 **Aliases**: none
-**Notes**: Required inputs are `formInstanceId` and `formName`; the **apply persist identity** is `access-model-sod-remediation-apply:{formInstanceId}`, with a read-only fallback to the **legacy apply persist identity**.
+**Notes**: Required inputs are `formInstanceId` and `formName`; the **apply persist identity** is `{requestId}:{formInstanceId}`, with read-only fallbacks to `access-model-sod-remediation-apply:{formInstanceId}` and the **legacy apply persist identity**.
 
 ### Term: disableLinks
 **Context**: connector-operations / access-model-sod-remediation / sod-remediation

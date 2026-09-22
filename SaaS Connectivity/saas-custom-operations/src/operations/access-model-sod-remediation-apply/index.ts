@@ -77,9 +77,9 @@ export const accessModelSodRemediationApplyOperation = customOperation<AccessMod
         const offline = isOfflineContext(ctx)
 
         if (!offline) {
-            const priorOutputs = await readPriorTerminalApplyOutputs(ctx, formInstanceId)
+            const priorOutputs = await readPriorTerminalApplyOutputs(ctx, ctx.requestId, formInstanceId)
             if (priorOutputs) {
-                await ctx.persist(applyPersistIdentity(formInstanceId), priorOutputs)
+                await ctx.persist(applyPersistIdentity(ctx.requestId, formInstanceId), priorOutputs)
                 ctx.res.send({ status: 'success', ...priorOutputs })
                 return
             }
@@ -129,7 +129,7 @@ export const accessModelSodRemediationApplyOperation = customOperation<AccessMod
         const status = alreadyClean ? 'skipped-already-clean' : 'applied'
         const outputs = buildOutputs(status, parsed, plan, auditLine)
 
-        await ctx.persist(applyPersistIdentity(formInstanceId), outputs)
+        await ctx.persist(applyPersistIdentity(ctx.requestId, formInstanceId), outputs)
         ctx.res.send({ status: 'success', ...outputs })
     },
     { operationSchema: accessModelSodRemediationApplyOperationSchema }

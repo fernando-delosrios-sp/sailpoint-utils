@@ -182,37 +182,46 @@ The access-model-sod-remediation-apply operation SHALL treat an already-correcte
 
 ### Requirement: Access model SOD remediation apply persist and invoke response
 
-The access-model-sod-remediation-apply operation SHALL persist outputs on result-source identity `access-model-sod-remediation-apply:{formInstanceId}` and return the same fields on successful `ctx.res.send`. The handler SHALL derive that identity from `formInstanceId` in code and SHALL NOT use the invoke `requestId` as the persist identity. The replay path for a prior terminal apply SHALL persist on the same identity.
+The access-model-sod-remediation-apply operation SHALL persist outputs on result-source identity `{requestId}:{formInstanceId}` and return the same fields on successful `ctx.res.send`. The bundled Access Model SOD - Remediation workflow SHALL set `requestId` to `access-model-sod-remediation-apply`. The replay path for a prior terminal apply SHALL persist on the same `{requestId}:{formInstanceId}` identity.
 
-#### Scenario: Persist on form instance id
+#### Scenario: Persist on request id colon form instance id
 
 - **GIVEN** successful apply for form instance `fi-1` correcting role `role-r`
+- **AND** invoke `requestId` `access-model-sod-remediation-apply`
 - **WHEN** the handler completes
 - **THEN** it SHALL persist on identity `access-model-sod-remediation-apply:fi-1` with `access-model-sod-remediation-apply:status` `applied`
 - **AND** SHALL include `access-model-sod-remediation-apply:access-item-id` `role-r`
 - **AND** optional `access-model-sod-remediation-apply:removed-entitlement-ids` and `access-model-sod-remediation-apply:detached-access-profile-ids` as multi-value string arrays when non-empty
 - **AND** SHALL NOT persist on the bare identity `fi-1`
 
-#### Scenario: Persist identity ignores invoke requestId
+#### Scenario: Persist identity uses the invoke request id
 
 - **GIVEN** an invoke with `formInstanceId` `fi-1` and `requestId` `access-model-sod-remediation-apply-fi-1`
 - **WHEN** the handler persists outputs
-- **THEN** the persist identity SHALL be `access-model-sod-remediation-apply:fi-1`
+- **THEN** the persist identity SHALL be `access-model-sod-remediation-apply-fi-1:fi-1`
 
-#### Scenario: Replay persists on prefixed identity
+#### Scenario: Replay persists on request id colon form instance id
 
 - **GIVEN** a prior terminal apply is found for form instance `fi-1`
+- **AND** invoke `requestId` `access-model-sod-remediation-apply`
 - **WHEN** the handler replays the prior outputs
 - **THEN** it SHALL persist `access-model-sod-remediation-apply:status` `skipped-already-applied` on identity `access-model-sod-remediation-apply:fi-1`
 
+#### Scenario: Bundled workflow request id names the operation
+
+- **GIVEN** the shipped `Access Model SOD - Remediation.json`
+- **WHEN** its invoke `requestId` is read
+- **THEN** it SHALL be `access-model-sod-remediation-apply`
+- **AND** SHALL NOT embed `formInstanceId` in `requestId`
+
 ### Requirement: Access model SOD remediation apply prior apply identity fallback
 
-The access-model-sod-remediation-apply operation SHALL read a prior terminal apply from the result-source account at `access-model-sod-remediation-apply:{formInstanceId}` and, only when no such account exists, SHALL fall back to the legacy account at bare `{formInstanceId}`. Both lookups SHALL apply identical terminal-status and required-field validation. The handler SHALL NOT update, delete, or otherwise mutate the legacy account.
+The access-model-sod-remediation-apply operation SHALL read a prior terminal apply from the result-source account at `{requestId}:{formInstanceId}` and, only when no such account exists, SHALL fall back to `access-model-sod-remediation-apply:{formInstanceId}` when that identity differs, then to the legacy account at bare `{formInstanceId}`. All lookups SHALL apply identical terminal-status and required-field validation. The handler SHALL NOT update, delete, or otherwise mutate the legacy account.
 
 #### Scenario: Prefixed account short-circuits the apply path
 
 - **GIVEN** an account at `access-model-sod-remediation-apply:fi-1` with `access-model-sod-remediation-apply:status` `applied`
-- **WHEN** `custom:access-model-sod-remediation-apply` is invoked with `formInstanceId` `fi-1` and a `formName`
+- **WHEN** `custom:access-model-sod-remediation-apply` is invoked with `formInstanceId` `fi-1`, `requestId` `access-model-sod-remediation-apply`, and a `formName`
 - **THEN** output `access-model-sod-remediation-apply:status` SHALL be `skipped-already-applied`
 - **AND** the handler SHALL NOT look up the legacy identity `fi-1`
 - **AND** SHALL NOT invoke Roles or Access Profiles PATCH APIs
@@ -261,4 +270,4 @@ The access-model-sod-remediation-apply operation SHALL support offline/testMode 
 - **AND** SHALL NOT call `searchFormDefinitionsByTenantV1`
 - **AND** SHALL NOT call `searchFormInstancesByTenantV1`
 - **AND** SHALL return `access-model-sod-remediation-apply:status` `applied` or `skipped-already-clean`
-- **AND** SHALL persist outputs on `access-model-sod-remediation-apply:{formInstanceId}` when persist is enabled
+- **AND** SHALL persist outputs on `{requestId}:{formInstanceId}` when persist is enabled

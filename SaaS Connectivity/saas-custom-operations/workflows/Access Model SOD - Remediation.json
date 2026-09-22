@@ -20,7 +20,7 @@
             "input": {
               "formName": "Access Model SOD Remediation",
               "formInstanceId": "{{$.trigger.formInstanceId}}",
-              "requestId": "access-model-sod-remediation-apply-{{$.trigger.formInstanceId}}"
+              "requestId": "access-model-sod-remediation-apply"
             },
             "tag": "latest",
             "type": "custom:access-model-sod-remediation-apply"

@@ -254,9 +254,8 @@ Content-Type: application/json
 After invoke, read persisted output from the result source using **Get Accounts** filtered by native identity:
 
 - Filter: `nativeIdentity eq "{requestId}"` (or a child id such as `{requestId}:detail`)
-- Risk example: `nativeIdentity eq "evaluate-access-request-risk:{requestId}"`; bundled wrappers keep their
-  discriminator inside the **risk persist identity**, for example
-  `evaluate-access-request-risk:{accessRequestId}:dynamic`
+- Risk example: send `requestId` `evaluate-access-request-risk:{accessRequestId}:dynamic` and filter
+  `nativeIdentity eq` that same value. That string is the **risk persist identity**.
 - Map operation output attributes, `status`, `date`, `operationName`, and optional `details` from account attributes
 - On failure, the framework upserts a result account with `status: failed`, `operationName`, and `details` set to the error message (same text as invoke `{ error }`), so Get Accounts works for failed invocations too
 
@@ -394,8 +393,9 @@ ctx.verifyPersisted(ids)
 - **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
 
 Use operation-specific terms for concrete identities: for example, the
-`custom:evaluate-access-request-risk` operation's `evaluate-access-request-risk:{requestId}` is its
-**risk persist identity**. **Result identity** is the generic framework term for the seam exposed by
+`custom:evaluate-access-request-risk` operation's invoke `requestId` is its
+**risk persist identity** (bundled workflows send `evaluate-access-request-risk:{accessRequestId}:{discriminator}`).
+**Result identity** is the generic framework term for the seam exposed by
 `ctx.resultIdentity`.
 
 By default, `persist` reads the account back from ISC and verifies attributes before resolving. Pass `{ verify: false }` to defer verification, then call `verifyPersisted([...ids])` before the handler completes. Unknown attribute keys are rejected before the write.

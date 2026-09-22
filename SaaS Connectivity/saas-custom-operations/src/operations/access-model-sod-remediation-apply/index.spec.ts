@@ -253,7 +253,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
                     'access-model-sod-remediation-apply:removed-entitlement-ids': ['ent-a'],
                 })
             )
-            expect(inhibitedPersists[0]?.identity).toBe('access-model-sod-remediation-apply:fi-role-group-a-direct')
+            expect(inhibitedPersists[0]?.identity).toBe('req-apply-offline-1:fi-role-group-a-direct')
             expect(searchFormDefinitionsByTenantV1).not.toHaveBeenCalled()
             expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
         } finally {
@@ -369,7 +369,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
             await accessModelSodRemediationApplyOperation(
                 { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
                 {
-                    requestId: 'req-apply-first',
+                    requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
                     formName: DEFAULT_FORM_NAME,
                 },
@@ -384,7 +384,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
             await accessModelSodRemediationApplyOperation(
                 { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
                 {
-                    requestId: 'req-apply-second',
+                    requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
                     formName: DEFAULT_FORM_NAME,
                 },
@@ -597,7 +597,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
             await accessModelSodRemediationApplyOperation(
                 { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
                 {
-                    requestId: 'req-apply-skip-list-first',
+                    requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
                     formName: DEFAULT_FORM_NAME,
                 },
@@ -612,7 +612,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
             await accessModelSodRemediationApplyOperation(
                 { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
                 {
-                    requestId: 'req-apply-skip-list-second',
+                    requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
                     formName: DEFAULT_FORM_NAME,
                 },
@@ -629,14 +629,14 @@ describe('accessModelSodRemediationApplyOperation', () => {
         )
     })
 
-    it('Persist on form instance id uses the apply persist identity', async () => {
+    it('Persist identity is requestId colon formInstanceId', async () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
             await accessModelSodRemediationApplyOperation(
                 { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
                 {
-                    requestId: 'req-apply-live',
+                    requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
                     formName: DEFAULT_FORM_NAME,
                 },
@@ -658,7 +658,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
         )
     })
 
-    it('Persist identity ignores invoke requestId', async () => {
+    it('Persist uses a non-slug requestId when the caller sends one', async () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
@@ -673,8 +673,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
             )
         })
 
-        expect(persistedIdentities()).toEqual(['access-model-sod-remediation-apply:fi-role-group-a-direct'])
-        expect(persistedIdentities()).not.toContain('access-model-sod-remediation-apply-fi-1')
+        expect(persistedIdentities()).toEqual(['access-model-sod-remediation-apply-fi-1:fi-role-group-a-direct'])
+        expect(persistedIdentities()).not.toContain('access-model-sod-remediation-apply:fi-role-group-a-direct')
     })
 
     it('Prefixed account short-circuits the apply path', async () => {
@@ -688,7 +688,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
             await accessModelSodRemediationApplyOperation(
                 { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
                 {
-                    requestId: 'req-prefixed-short-circuit',
+                    requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-1',
                     formName: DEFAULT_FORM_NAME,
                 },
@@ -725,7 +725,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
             await accessModelSodRemediationApplyOperation(
                 { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
                 {
-                    requestId: 'req-legacy-fallback',
+                    requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-1',
                     formName: DEFAULT_FORM_NAME,
                 },
@@ -764,7 +764,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
             await accessModelSodRemediationApplyOperation(
                 { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
                 {
-                    requestId: 'req-prefixed-wins',
+                    requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-1',
                     formName: DEFAULT_FORM_NAME,
                 },

@@ -117,16 +117,15 @@ describe('evaluateAccessRequestRiskOperation', () => {
         })
     })
 
-    it('successful evaluation persists on the prefixed identity and not on the bare request id', async () => {
+    it('successful evaluation persists on the invoke request id', async () => {
         const res = await invokeRisk({
-            requestId: 'req-abc:dynamic',
+            requestId: 'evaluate-access-request-risk:req-abc:dynamic',
             requestedItems: [{ id: 'ent-1', type: 'ENTITLEMENT' }],
         })
 
         const stored = persistedAccounts.get('evaluate-access-request-risk:req-abc:dynamic')
         expect(stored?.['evaluate-access-request-risk:tier']).toBe('High')
         expect(stored?.status).toBe('success')
-        expect(persistedAccounts.has('req-abc:dynamic')).toBe(false)
         expect(JSON.stringify(stored)).not.toContain('approver')
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -136,11 +135,11 @@ describe('evaluateAccessRequestRiskOperation', () => {
         )
     })
 
-    it('persisted attribute keys are unchanged by the prefix', async () => {
+    it('persisted attribute keys are independent of the account identity', async () => {
         getEntitlement.mockResolvedValue({ effectivePrivilege: 'MEDIUM', metadata: undefined })
 
         await invokeRisk({
-            requestId: 'req-abc:dynamic',
+            requestId: 'evaluate-access-request-risk:req-abc:dynamic',
             requestedItems: [{ id: 'ent-1', type: 'ENTITLEMENT' }],
         })
 
@@ -150,7 +149,7 @@ describe('evaluateAccessRequestRiskOperation', () => {
         expect(stored).toHaveProperty('evaluate-access-request-risk:contributing-ids')
     })
 
-    it('already-prefixed request id is not prefixed twice', async () => {
+    it('does not prefix the invoke request id', async () => {
         await invokeRisk({
             requestId: 'evaluate-access-request-risk:req-abc:dynamic',
             requestedItems: [{ id: 'ent-1', type: 'ENTITLEMENT' }],
@@ -159,20 +158,20 @@ describe('evaluateAccessRequestRiskOperation', () => {
         expect([...persistedAccounts.keys()]).toEqual(['evaluate-access-request-risk:req-abc:dynamic'])
     })
 
-    it('request id without a wrapper discriminator still gets the prefix', async () => {
+    it('persists a direct invoke on the request id it was given', async () => {
         await invokeRisk({
             requestId: 'manual-001',
             requestedItems: [{ id: 'ent-1', type: 'ENTITLEMENT' }],
         })
 
-        expect([...persistedAccounts.keys()]).toEqual(['evaluate-access-request-risk:manual-001'])
+        expect([...persistedAccounts.keys()]).toEqual(['manual-001'])
     })
 
-    it('handler lookup failure writes a failed account on the prefixed identity', async () => {
+    it('handler lookup failure writes a failed account on the invoke request id', async () => {
         getEntitlement.mockRejectedValue(new Error('entitlement not found'))
 
         const res = await invokeRisk({
-            requestId: 'req-abc:dynamic',
+            requestId: 'evaluate-access-request-risk:req-abc:dynamic',
             requestedItems: [{ id: 'ent-1', type: 'ENTITLEMENT' }],
         })
 
@@ -180,20 +179,18 @@ describe('evaluateAccessRequestRiskOperation', () => {
         expect(failed?.status).toBe('failed')
         expect(String(failed?.details)).toContain('entitlement not found')
         expect(failed?.['evaluate-access-request-risk:tier']).toBeUndefined()
-        expect(persistedAccounts.has('req-abc:dynamic')).toBe(false)
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({ status: 'failed', error: expect.stringContaining('entitlement not found') })
         )
     })
 
-    it('missing input rejection writes a failed account on the prefixed identity', async () => {
-        const res = await invokeRisk({ requestId: 'req-abc:dynamic' })
+    it('missing input rejection writes a failed account on the invoke request id', async () => {
+        const res = await invokeRisk({ requestId: 'evaluate-access-request-risk:req-abc:dynamic' })
 
         const failed = persistedAccounts.get('evaluate-access-request-risk:req-abc:dynamic')
         expect(failed?.status).toBe('failed')
         expect(String(failed?.details)).toContain('requestedItems or accessRequestId')
         expect(failed?.['evaluate-access-request-risk:tier']).toBeUndefined()
-        expect(persistedAccounts.has('req-abc:dynamic')).toBe(false)
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 status: 'failed',
@@ -202,10 +199,10 @@ describe('evaluateAccessRequestRiskOperation', () => {
         )
     })
 
-    it('each wrapper discriminator yields a distinct prefixed identity for one access request', async () => {
+    it('each wrapper discriminator yields a distinct identity for one access request', async () => {
         for (const discriminator of ['submitted', 'dynamic', 'dynamic-approval']) {
             await invokeRisk({
-                requestId: `req-abc:${discriminator}`,
+                requestId: `evaluate-access-request-risk:req-abc:${discriminator}`,
                 requestedItems: [{ id: 'ent-1', type: 'ENTITLEMENT' }],
             })
         }
@@ -226,7 +223,7 @@ describe('evaluateAccessRequestRiskOperation', () => {
         persistedAccounts.set('req-abc:dynamic', legacyAccount)
 
         await invokeRisk({
-            requestId: 'req-abc:dynamic',
+            requestId: 'evaluate-access-request-risk:req-abc:dynamic',
             requestedItems: [{ id: 'ent-1', type: 'ENTITLEMENT' }],
         })
 
