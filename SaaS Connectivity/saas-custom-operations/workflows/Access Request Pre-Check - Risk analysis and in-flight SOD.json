@@ -1,0 +1,718 @@
+{
+  "id": "YOUR_ACCESS_REQUEST_PRE_CHECK_WORKFLOW_ID",
+  "name": "Access Request Pre-Check - Risk analysis and in-flight SOD",
+  "description": "Access Request Submitted event-trigger wrapper. Scores the request with custom:evaluate-access-request-risk, checks in-flight separation of duties with custom:preventive-sod-check, and answers the trigger once. Decision Variables start approved with a placeholder comment. One step per risk tier, plus one step for a detected violation, override that decision and rewrite the comment from the findings. Those four steps are the whole policy. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
+  "definition": {
+    "start": "Configuration",
+    "steps": {
+      "Configuration": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "ISC API base URL, no trailing slash.",
+              "name": "API URL",
+              "transforms": [],
+              "variableA": "https://{tenant}.api.identitynow.com"
+            },
+            {
+              "description": "Result source that stores custom operation output.",
+              "name": "SaaS Custom Operations Source Name",
+              "transforms": [],
+              "variableA": "SaaS Custom Operations"
+            },
+            {
+              "description": "Platform connector id for saas-custom-operations.",
+              "name": "SaaS Custom Operations Connector ID",
+              "transforms": [],
+              "variableA": "YOUR_CONNECTOR_ID"
+            },
+            {
+              "description": "true includes entitlement privilegeLevel.effective. false scores entitlements from Risk metadata only.",
+              "name": "Consider Privilege",
+              "transforms": [],
+              "variableA": "true"
+            },
+            {
+              "description": "Value sent as callback approver. Use an existing identity username when Access Request Decision is subscribed.",
+              "name": "Approver Name",
+              "transforms": [],
+              "variableA": "Workflow"
+            },
+            {
+              "description": "true reports only inflight SoD violations. false also includes existing active violations.",
+              "name": "Inflight Only",
+              "transforms": [],
+              "variableA": "true"
+            }
+          ]
+        },
+        "displayName": "Configuration",
+        "nextStep": "Define Variable",
+        "type": "Mutation"
+      },
+      "Define Variable": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Decision sent to the callback. Starts approved. Each finding step can override it.",
+              "name": "Approved",
+              "transforms": [],
+              "variableA": true
+            },
+            {
+              "description": "Comment sent to the callback. The finding steps rewrite it. Define Variable rejects empty values, so it starts with this placeholder.",
+              "name": "Message",
+              "transforms": [],
+              "variableA": "Access request pre-check completed."
+            },
+            {
+              "description": "Risk tier copied off whichever result read succeeded. NONE until one does.",
+              "name": "Risk Tier",
+              "transforms": [],
+              "variableA": "NONE"
+            },
+            {
+              "description": "Risk situation summary copied off whichever result read succeeded.",
+              "name": "Risk Summary",
+              "transforms": [],
+              "variableA": "NONE"
+            },
+            {
+              "description": "SoD violation flag copied off whichever result read succeeded.",
+              "name": "Sod Has Violation",
+              "transforms": [],
+              "variableA": false
+            },
+            {
+              "description": "SoD situation summary copied off whichever result read succeeded.",
+              "name": "Sod Summary",
+              "transforms": [],
+              "variableA": "NONE"
+            }
+          ]
+        },
+        "description": "The decision and its comment, plus the findings each read copies out. Later steps read these variables, not the Get Accounts steps, so a retry read can refill them without rewiring anything downstream. The step key must stay Define Variable: ISC builds the defineVariable paths from it and rejects update steps that target any other key.",
+        "displayName": "Decision Variables",
+        "nextStep": "Get Access Token",
+        "type": "Mutation"
+      },
+      "Get Access Token": {
+        "actionId": "sp:http",
+        "attributes": {
+          "formRequestBody": {
+            "grant_type": "client_credentials"
+          },
+          "method": "post",
+          "param_authenticationRef": "basic",
+          "requestContentType": "form",
+          "url": "{{$.configuration.aPIURL}}/oauth/token"
+        },
+        "catch": [
+          {
+            "next": "Set Evaluation Failed"
+          }
+        ],
+        "description": "Set basic auth on this step to the workflow OAuth client. Do not store the secret in this export.",
+        "displayName": "Get Access Token",
+        "nextStep": "Call Evaluate Risk",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Call Evaluate Risk": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody": {
+            "config": {
+              "apiUrl": "{{$.configuration.aPIURL}}",
+              "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}",
+              "token": "{{$.getAccessToken.body.access_token}}"
+            },
+            "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+            "input": {
+              "accessRequestId": "{{$.trigger.accessRequestId}}",
+              "considerPrivilege": "{{$.configuration.considerPrivilege}}",
+              "requestId": "evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted",
+              "requestedItems.$": "$.trigger.requestedItems"
+            },
+            "tag": "latest",
+            "type": "custom:evaluate-access-request-risk"
+          },
+          "method": "post",
+          "param_authenticationRef": "none",
+          "requestContentType": "json",
+          "requestHeaders": {
+            "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+          },
+          "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke"
+        },
+        "catch": [
+          {
+            "next": "Set Evaluation Failed"
+          }
+        ],
+        "displayName": "Call Evaluate Risk",
+        "nextStep": "Read Risk Result",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Read Risk Result": {
+        "actionId": "sp:get-accounts",
+        "attributes": {
+          "filterCriteria": "nativeIdentity",
+          "getAccountsBy": "filters",
+          "operator": "eq",
+          "value": "evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted"
+        },
+        "catch": [
+          {
+            "next": "Set Evaluation Failed"
+          }
+        ],
+        "displayName": "Read Risk Result",
+        "nextStep": "Check Risk Result",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Risk Result": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Set Risk Values",
+            "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']"
+          }
+        ],
+        "defaultStep": "Wait For Risk Result",
+        "description": "The result account can exist before its attributes are indexed, so an absent tier here is a read that was too early, not a failure yet.",
+        "displayName": "Risk result present?",
+        "type": "choice"
+      },
+      "Wait For Risk Result": {
+        "actionId": "sp:sleep",
+        "attributes": {
+          "duration": "1m",
+          "type": "waitFor"
+        },
+        "description": "One pause before the single retry read. Wait steps are minute-granular, and this only costs time on requests whose result was not readable yet.",
+        "displayName": "Wait for risk result",
+        "nextStep": "Read Risk Result Retry",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Read Risk Result Retry": {
+        "actionId": "sp:get-accounts",
+        "attributes": {
+          "filterCriteria": "nativeIdentity",
+          "getAccountsBy": "filters",
+          "operator": "eq",
+          "value": "evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted"
+        },
+        "catch": [
+          {
+            "next": "Set Evaluation Failed"
+          }
+        ],
+        "description": "Same filter as Read Risk Result. Keep the two in step.",
+        "displayName": "Read Risk Result (retry)",
+        "nextStep": "Check Risk Result Retry",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Risk Result Retry": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Set Risk Values Retry",
+            "variableA.$": "$.readRiskResultRetry.accounts[0].attributes['evaluate-access-request-risk:tier']"
+          }
+        ],
+        "defaultStep": "Set Evaluation Failed",
+        "description": "The retry is the last word. Still no tier means the risk evaluation did not produce one.",
+        "displayName": "Risk result present on retry?",
+        "type": "choice"
+      },
+      "Set Risk Values": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.riskTier",
+              "transforms": [],
+              "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:tier']"
+            },
+            {
+              "description": "",
+              "name": "$.defineVariable.riskSummary",
+              "transforms": [],
+              "variableA.$": "$.readRiskResult.accounts[0].attributes['evaluate-access-request-risk:situation-summary']"
+            }
+          ]
+        },
+        "description": "Copies the first read into the variables the tier steps compare.",
+        "displayName": "Set risk values",
+        "nextStep": "Call Preventive Sod Check",
+        "type": "Mutation"
+      },
+      "Set Risk Values Retry": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.riskTier",
+              "transforms": [],
+              "variableA.$": "$.readRiskResultRetry.accounts[0].attributes['evaluate-access-request-risk:tier']"
+            },
+            {
+              "description": "",
+              "name": "$.defineVariable.riskSummary",
+              "transforms": [],
+              "variableA.$": "$.readRiskResultRetry.accounts[0].attributes['evaluate-access-request-risk:situation-summary']"
+            }
+          ]
+        },
+        "description": "Same copy from the retry read, into the same variables.",
+        "displayName": "Set risk values (retry)",
+        "nextStep": "Call Preventive Sod Check",
+        "type": "Mutation"
+      },
+      "Call Preventive Sod Check": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody": {
+            "config": {
+              "apiUrl": "{{$.configuration.aPIURL}}",
+              "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}",
+              "token": "{{$.getAccessToken.body.access_token}}"
+            },
+            "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+            "input": {
+              "accessRequestId": "{{$.trigger.accessRequestId}}",
+              "inflightOnly": "{{$.configuration.inflightOnly}}",
+              "requestId": "preventive-sod-check:{{$.trigger.accessRequestId}}:submitted"
+            },
+            "tag": "latest",
+            "type": "custom:preventive-sod-check"
+          },
+          "method": "post",
+          "param_authenticationRef": "none",
+          "requestContentType": "json",
+          "requestHeaders": {
+            "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+          },
+          "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke"
+        },
+        "catch": [
+          {
+            "next": "Set Evaluation Failed"
+          }
+        ],
+        "description": "Request mode. Passing the access request id reports only the violations this request would introduce. Inflight Only (default true) skips existing active violations.",
+        "displayName": "Call Preventive SoD Check",
+        "nextStep": "Read Sod Result",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Read Sod Result": {
+        "actionId": "sp:get-accounts",
+        "attributes": {
+          "filterCriteria": "nativeIdentity",
+          "getAccountsBy": "filters",
+          "operator": "eq",
+          "value": "preventive-sod-check:{{$.trigger.accessRequestId}}:submitted"
+        },
+        "catch": [
+          {
+            "next": "Set Evaluation Failed"
+          }
+        ],
+        "description": "The filter must match the requestId sent to the operation, which is the identity it persists under.",
+        "displayName": "Read SoD Result",
+        "nextStep": "Check Sod Result",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Sod Result": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Set Sod Values",
+            "variableA.$": "$.readSodResult.accounts[0].attributes['preventive-sod-check:situation-summary']"
+          }
+        ],
+        "defaultStep": "Wait For Sod Result",
+        "description": "A SoD check that produced no answer never counts as a passing one. The summary is the presence sentinel because it is always written, while the violation flag is legitimately false on a clean result.",
+        "displayName": "SoD result present?",
+        "type": "choice"
+      },
+      "Wait For Sod Result": {
+        "actionId": "sp:sleep",
+        "attributes": {
+          "duration": "1m",
+          "type": "waitFor"
+        },
+        "description": "One pause before the single retry read, as on the risk side.",
+        "displayName": "Wait for SoD result",
+        "nextStep": "Read Sod Result Retry",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Read Sod Result Retry": {
+        "actionId": "sp:get-accounts",
+        "attributes": {
+          "filterCriteria": "nativeIdentity",
+          "getAccountsBy": "filters",
+          "operator": "eq",
+          "value": "preventive-sod-check:{{$.trigger.accessRequestId}}:submitted"
+        },
+        "catch": [
+          {
+            "next": "Set Evaluation Failed"
+          }
+        ],
+        "description": "Same filter as Read SoD Result. Keep the two in step.",
+        "displayName": "Read SoD Result (retry)",
+        "nextStep": "Check Sod Result Retry",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Sod Result Retry": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Set Sod Values Retry",
+            "variableA.$": "$.readSodResultRetry.accounts[0].attributes['preventive-sod-check:situation-summary']"
+          }
+        ],
+        "defaultStep": "Set Evaluation Failed",
+        "description": "The retry is the last word. Still no summary means the SoD check did not produce an answer.",
+        "displayName": "SoD result present on retry?",
+        "type": "choice"
+      },
+      "Set Sod Values": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.sodSummary",
+              "transforms": [],
+              "variableA.$": "$.readSodResult.accounts[0].attributes['preventive-sod-check:situation-summary']"
+            }
+          ]
+        },
+        "description": "Copies the summary only. The violation flag is set by the next step, never copied, because Get Accounts hands attribute values back as strings and the decision must stay a real boolean.",
+        "displayName": "Set SoD values",
+        "nextStep": "Check Sod Violation Flag",
+        "type": "Mutation"
+      },
+      "Set Sod Values Retry": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.sodSummary",
+              "transforms": [],
+              "variableA.$": "$.readSodResultRetry.accounts[0].attributes['preventive-sod-check:situation-summary']"
+            }
+          ]
+        },
+        "description": "Same copy from the retry read, into the same variable.",
+        "displayName": "Set SoD values (retry)",
+        "nextStep": "Check Sod Violation Flag Retry",
+        "type": "Mutation"
+      },
+      "Check Sod Violation Flag": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Set Sod Violation True",
+            "variableA.$": "$.readSodResult.accounts[0].attributes['preventive-sod-check:has-violation']",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Set Sod Violation False",
+        "description": "Reads the flag straight off the account, where it is a real boolean, and turns it into a literal on the variable.",
+        "displayName": "SoD flag set?",
+        "type": "choice"
+      },
+      "Check Sod Violation Flag Retry": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Set Sod Violation True",
+            "variableA.$": "$.readSodResultRetry.accounts[0].attributes['preventive-sod-check:has-violation']",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Set Sod Violation False",
+        "description": "Same read on the retry account. Both branches land on the same two setter steps.",
+        "displayName": "SoD flag set on retry?",
+        "type": "choice"
+      },
+      "Set Sod Violation True": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "Literal boolean. Keep it unquoted.",
+              "name": "$.defineVariable.sodHasViolation",
+              "transforms": [],
+              "variableA": true
+            }
+          ]
+        },
+        "displayName": "Set SoD violation true",
+        "nextStep": "Check Tier",
+        "type": "Mutation"
+      },
+      "Set Sod Violation False": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "Literal boolean. Keep it unquoted.",
+              "name": "$.defineVariable.sodHasViolation",
+              "transforms": [],
+              "variableA": false
+            }
+          ]
+        },
+        "displayName": "Set SoD violation false",
+        "nextStep": "Check Tier",
+        "type": "Mutation"
+      },
+      "Check Tier": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Set High Risk",
+            "variableA.$": "$.defineVariable.riskTier",
+            "variableB": "High"
+          }
+        ],
+        "defaultStep": "Check Tier Medium",
+        "displayName": "Tier is High?",
+        "type": "choice"
+      },
+      "Check Tier Medium": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Set Medium Risk",
+            "variableA.$": "$.defineVariable.riskTier",
+            "variableB": "Medium"
+          }
+        ],
+        "defaultStep": "Check Tier Low",
+        "displayName": "Tier is Medium?",
+        "type": "choice"
+      },
+      "Check Tier Low": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Set Low Risk",
+            "variableA.$": "$.defineVariable.riskTier",
+            "variableB": "Low"
+          }
+        ],
+        "defaultStep": "Set Evaluation Failed",
+        "description": "A missing or unknown tier is treated as a failed evaluation, not as Low.",
+        "displayName": "Tier is Low?",
+        "type": "choice"
+      },
+      "Set Low Risk": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "Set false to deny Low-risk requests.",
+              "name": "$.defineVariable.approved",
+              "transforms": [],
+              "variableA": true
+            },
+            {
+              "description": "Comment for a Low-risk request. Edit the wording, keep or drop the risk summary.",
+              "name": "$.defineVariable.message",
+              "transforms": [],
+              "variableA": "Risk tier Low. {{$.defineVariable.riskSummary}}"
+            }
+          ]
+        },
+        "description": "Your Low-risk policy. Both the decision and the comment are yours to change here.",
+        "displayName": "Set Low risk decision",
+        "nextStep": "Check Violation",
+        "type": "Mutation"
+      },
+      "Set Medium Risk": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "Set false to deny Medium-risk requests.",
+              "name": "$.defineVariable.approved",
+              "transforms": [],
+              "variableA": true
+            },
+            {
+              "description": "Comment for a Medium-risk request. Edit the wording, keep or drop the risk summary.",
+              "name": "$.defineVariable.message",
+              "transforms": [],
+              "variableA": "Risk tier Medium. {{$.defineVariable.riskSummary}}"
+            }
+          ]
+        },
+        "description": "Your Medium-risk policy. Both the decision and the comment are yours to change here.",
+        "displayName": "Set Medium risk decision",
+        "nextStep": "Check Violation",
+        "type": "Mutation"
+      },
+      "Set High Risk": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "Set true to approve High-risk requests.",
+              "name": "$.defineVariable.approved",
+              "transforms": [],
+              "variableA": false
+            },
+            {
+              "description": "Comment for a High-risk request. Edit the wording, keep or drop the risk summary.",
+              "name": "$.defineVariable.message",
+              "transforms": [],
+              "variableA": "Risk tier High. {{$.defineVariable.riskSummary}}"
+            }
+          ]
+        },
+        "description": "Your High-risk policy. Both the decision and the comment are yours to change here.",
+        "displayName": "Set High risk decision",
+        "nextStep": "Check Violation",
+        "type": "Mutation"
+      },
+      "Check Violation": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Set Violation Detected",
+            "variableA.$": "$.defineVariable.sodHasViolation",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Callback",
+        "description": "Request mode reports a violation only when this request introduces one.",
+        "displayName": "In-flight SoD violation?",
+        "type": "choice"
+      },
+      "Set Violation Detected": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "Set true to let a request through despite the violation.",
+              "name": "$.defineVariable.approved",
+              "transforms": [],
+              "variableA": false
+            },
+            {
+              "description": "Appends the SoD finding to the comment the risk step wrote. Drop the first placeholder to replace that comment instead.",
+              "name": "$.defineVariable.message",
+              "transforms": [],
+              "variableA": "{{$.defineVariable.message}} {{$.defineVariable.sodSummary}}"
+            }
+          ]
+        },
+        "description": "Your SoD policy. It runs after the risk step, so it has the last word on both the decision and the comment.",
+        "displayName": "Set violation decision",
+        "nextStep": "Callback",
+        "type": "Mutation"
+      },
+      "Set Evaluation Failed": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "Denies when the pre-check could not run. Set true to fail open instead.",
+              "name": "$.defineVariable.approved",
+              "transforms": [],
+              "variableA": false
+            },
+            {
+              "description": "Comment sent when the pre-check could not run.",
+              "name": "$.defineVariable.message",
+              "transforms": [],
+              "variableA": "Access request pre-check could not complete. Risk and in-flight SoD were not evaluated."
+            }
+          ]
+        },
+        "description": "Every failed token, invoke, or result read lands here, as does an unknown risk tier and a missing SoD result.",
+        "displayName": "Set evaluation failed decision",
+        "nextStep": "Callback",
+        "type": "Mutation"
+      },
+      "Callback": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody": {
+            "output": {
+              "approved.$": "$.defineVariable.approved",
+              "approver": "{{$.configuration.approverName}}",
+              "comment": "{{$.defineVariable.message}}"
+            },
+            "secret": "{{$.trigger._metadata.secret}}"
+          },
+          "method": "post",
+          "param_authenticationRef": "none",
+          "requestContentType": "json",
+          "url.$": "$.trigger._metadata.callbackURL"
+        },
+        "description": "The single answer to the trigger. It reads the decision and the comment, and knows nothing about how they were set.",
+        "displayName": "Callback",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "End Success": {
+        "actionId": "sp:operator-success",
+        "description": "The Access Request Submitted callback was sent.",
+        "displayName": "Success",
+        "type": "success"
+      }
+    }
+  },
+  "enabled": false,
+  "trigger": {
+    "type": "EXTERNAL",
+    "attributes": {
+      "id": "idn:external-http",
+      "integrationId": null
+    }
+  }
+}

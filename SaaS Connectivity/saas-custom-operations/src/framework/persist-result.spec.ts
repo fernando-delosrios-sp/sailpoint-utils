@@ -5,6 +5,7 @@ import {
     ISC_STRING_ATTRIBUTE_MAX_LENGTH,
 } from './attribute-limits'
 import {
+    AccountProvisioningTaskTimeoutError,
     buildAccountAttributes,
     createPersist,
     createVerifyPersisted,
@@ -242,6 +243,25 @@ describe('verifyPersistedAccount', () => {
 
         expect(verifyPersistedAccount(expected, actual)).toEqual([])
     })
+
+    it.each([
+        ['empty string', ''],
+        ['absent', undefined],
+        ['null', null],
+        ['empty array', []],
+    ])('accepts an empty array read back as %s', (_label, actualValue) => {
+        const expected = { status: 'success', 'preventive-sod-check:violated-policy-names': [] }
+        const actual = { status: 'success', 'preventive-sod-check:violated-policy-names': actualValue }
+
+        expect(verifyPersistedAccount(expected, actual)).toEqual([])
+    })
+
+    it('still reports a non-empty array that read back empty', () => {
+        const expected = { status: 'success', names: ['Finance Control'] }
+        const actual = { status: 'success', names: '' }
+
+        expect(verifyPersistedAccount(expected, actual)).toEqual(['names: expected "["Finance Control"]", got ""'])
+    })
 })
 
 describe('readWithRetry', () => {
@@ -338,6 +358,14 @@ describe('waitForAccountProvisioningTask', () => {
             /Invalid attribute name/
         )
     })
+
+    it('throws a timeout error the caller can distinguish from a task failure', async () => {
+        const getTaskStatusV1 = vi.fn().mockResolvedValue({ data: { completed: null } })
+
+        await expect(
+            waitForAccountProvisioningTask({ getTaskStatusV1 } as never, 'task-slow', 2, 1)
+        ).rejects.toBeInstanceOf(AccountProvisioningTaskTimeoutError)
+    })
 })
 
 describe('extractIscAccountIdFromProvisioningTask', () => {
@@ -394,6 +422,40 @@ describe('upsertSourceAccount', () => {
         expect(putAccountV1).not.toHaveBeenCalled()
         expect(waitForAccountTask).toHaveBeenCalledWith('task-create-1')
         expect(iscAccountId).toBe('isc-account-new')
+    })
+
+    it('falls back to account lookup when the provisioning task poll times out', async () => {
+        const createAccountV1 = vi.fn().mockResolvedValue({ data: { id: 'task-slow-1' } })
+        const putAccountV1 = vi.fn().mockResolvedValue({})
+        const getAccountV1 = vi.fn().mockResolvedValue({})
+        const listAccountsV1 = vi
+            .fn()
+            .mockResolvedValueOnce({ data: [] })
+            .mockResolvedValue({ data: [{ id: 'isc-account-late', sourceId: 'source-1', attributes: { id: 'req-001' } }] })
+        const waitForAccountTask = vi.fn().mockRejectedValue(new AccountProvisioningTaskTimeoutError('task-slow-1'))
+        const accounts = { createAccountV1, putAccountV1, listAccountsV1, getAccountV1 }
+
+        const iscAccountId = await upsertSourceAccount(
+            accounts as never,
+            'source-1',
+            { sourceId: 'source-1', id: 'req-001' },
+            { waitForAccountTask }
+        )
+
+        expect(iscAccountId).toBe('isc-account-late')
+    })
+
+    it('still fails when the provisioning task reports an error', async () => {
+        const createAccountV1 = vi.fn().mockResolvedValue({ data: { id: 'task-bad-1' } })
+        const putAccountV1 = vi.fn().mockResolvedValue({})
+        const getAccountV1 = vi.fn().mockResolvedValue({})
+        const listAccountsV1 = vi.fn().mockResolvedValue({ data: [] })
+        const waitForAccountTask = vi.fn().mockRejectedValue(new Error('Account provisioning task task-bad-1 failed with ERROR'))
+        const accounts = { createAccountV1, putAccountV1, listAccountsV1, getAccountV1 }
+
+        await expect(
+            upsertSourceAccount(accounts as never, 'source-1', { sourceId: 'source-1', id: 'req-001' }, { waitForAccountTask })
+        ).rejects.toThrow(/failed with ERROR/)
     })
 
     it('puts when account already exists for native identity', async () => {

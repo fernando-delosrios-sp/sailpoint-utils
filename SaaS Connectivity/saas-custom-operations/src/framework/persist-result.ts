@@ -16,6 +16,8 @@ const DEFAULT_STATUS = 'success'
 const DEFAULT_MAX_ATTEMPTS = 60
 const DEFAULT_RETRY_DELAY_MS = 500
 const POST_CREATE_LOOKUP_ATTEMPTS = DEFAULT_MAX_ATTEMPTS
+/** DelimitedFile provisioning can outlast the default budget on a busy tenant. */
+const PROVISIONING_TASK_MAX_ATTEMPTS = 180
 /** Brief pause after provisioning task SUCCESS before first account lookup (DelimitedFile aggregation). */
 const POST_CREATE_INITIAL_DELAY_MS = 1000
 
@@ -52,6 +54,17 @@ interface AccountProvisioningTaskStatus {
     }>
     target?: { id?: string; type?: string | null; name?: string }
     attributes?: Record<string, unknown>
+}
+
+/**
+ * The provisioning task did not finish inside the poll budget. The write may still land, so callers
+ * fall back to the account lookup rather than failing the operation.
+ */
+export class AccountProvisioningTaskTimeoutError extends Error {
+    constructor(public readonly taskId: string) {
+        super(`Account provisioning task ${taskId} did not complete after retries`)
+        this.name = 'AccountProvisioningTaskTimeoutError'
+    }
 }
 
 export class PersistVerificationError extends Error {
@@ -196,7 +209,16 @@ function normalizeForComparison(value: unknown): string {
     return String(value)
 }
 
+/** ISC stores an empty multi-valued attribute as nothing, so it reads back absent, "", or []. */
+function isEmptyMultiValueReadBack(value: unknown): boolean {
+    return value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0)
+}
+
 function coerceReadBackValue(expected: unknown, actual: unknown): unknown {
+    if (Array.isArray(expected) && expected.length === 0 && isEmptyMultiValueReadBack(actual)) {
+        return []
+    }
+
     if (actual === null || actual === undefined) {
         return actual
     }
@@ -383,7 +405,7 @@ export function extractIscAccountIdFromProvisioningTask(
 export async function waitForAccountProvisioningTask(
     tasks: TaskManagementApi,
     taskId: string,
-    maxAttempts = DEFAULT_MAX_ATTEMPTS,
+    maxAttempts = PROVISIONING_TASK_MAX_ATTEMPTS,
     delayMs = DEFAULT_RETRY_DELAY_MS,
     sleep: (ms: number) => Promise<void> = defaultSleep
 ): Promise<AccountProvisioningTaskStatus> {
@@ -412,7 +434,27 @@ export async function waitForAccountProvisioningTask(
         }
     }
 
-    throw new Error(`Account provisioning task ${taskId} did not complete after retries`)
+    throw new AccountProvisioningTaskTimeoutError(taskId)
+}
+
+/** Task polling is an optimization; only an explicit task failure should stop the persist. */
+async function awaitAccountTask(
+    taskId: string,
+    waitForAccountTask: UpsertSourceAccountOptions['waitForAccountTask']
+): Promise<AccountProvisioningTaskStatus | undefined> {
+    if (!waitForAccountTask) {
+        return undefined
+    }
+
+    try {
+        return await waitForAccountTask(taskId)
+    } catch (error) {
+        if (error instanceof AccountProvisioningTaskTimeoutError) {
+            getActiveFrameworkLogger().info(`[persist] ${error.message}; falling back to account lookup`)
+            return undefined
+        }
+        throw error
+    }
 }
 
 async function resolveAccountAfterProvisioning(
@@ -491,9 +533,7 @@ export async function upsertSourceAccount(
         let completedTask: AccountProvisioningTaskStatus | undefined
         if (putTaskId) {
             getActiveFrameworkLogger().info(`[persist] putAccount taskId=${putTaskId}`)
-            if (options.waitForAccountTask) {
-                completedTask = await options.waitForAccountTask(putTaskId)
-            }
+            completedTask = await awaitAccountTask(putTaskId, options.waitForAccountTask)
         }
         return (
             (await resolveAccountAfterProvisioning(accounts, sourceId, nativeId, completedTask, putTaskId)) ??
@@ -506,9 +546,7 @@ export async function upsertSourceAccount(
     let completedTask: AccountProvisioningTaskStatus | undefined
     if (taskId) {
         getActiveFrameworkLogger().info(`[persist] createAccount taskId=${taskId}`)
-        if (options.waitForAccountTask) {
-            completedTask = await options.waitForAccountTask(taskId)
-        }
+        completedTask = await awaitAccountTask(taskId, options.waitForAccountTask)
     }
 
     return resolveAccountAfterProvisioning(accounts, sourceId, nativeId, completedTask, taskId)

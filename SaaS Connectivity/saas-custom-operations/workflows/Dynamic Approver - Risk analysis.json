@@ -1,7 +1,7 @@
 {
   "id": "YOUR_DYNAMIC_APPROVER_WORKFLOW_ID",
-  "name": "Risk Approval - Dynamic Approver",
-  "description": "Access Request Dynamic Approval event-trigger wrapper. Adds at most one extra approver, or none, depending on the risk tier. Phase 1 stores Manager and Managers Manager as identity ids, falling back to Default Approver id. Phase 2 scores risk with custom:evaluate-access-request-risk. Phase 3 concatenates Approver Type (IDENTITY| or GOVERNANCE_GROUP|) with an id on each tier step, or leaves NONE to add nobody. Phase 4 splits that string into the callback type and id, and sends the none callback when Approver is NONE. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
+  "name": "Dynamic Approver - Risk analysis",
+  "description": "Access Request Dynamic Approval event-trigger wrapper. Adds at most one extra approver, or none, depending on the risk tier. Phase 1 stores Manager and Managers Manager as identity ids, falling back to Default Approver id. Phase 2 scores risk with custom:evaluate-access-request-risk. Phase 3 concatenates Approver Type (IDENTITY| or GOVERNANCE_GROUP|) with an id on each tier step, or leaves NONE to add nobody. Any failure, and a missing or unknown tier, takes Set Error approver instead of a tier step. Phase 4 splits that string into the callback type and id, and sends the none callback when Approver is NONE. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -35,7 +35,7 @@
               "variableA": "true"
             },
             {
-              "description": "Identity or governance group id used when a manager level is missing, and when Read Risk Result fails. Pair it with IDENTITY| or GOVERNANCE_GROUP| on the Set approver steps.",
+              "description": "Identity or governance group id used when a manager level is missing, and when the risk evaluation fails or returns no tier. Pair it with IDENTITY| or GOVERNANCE_GROUP| on the Set approver steps.",
               "name": "Default Approver",
               "transforms": [],
               "variableA": "YOUR_DEFAULT_APPROVER_ID"
@@ -228,10 +228,10 @@
         },
         "catch": [
           {
-            "next": "Set High Approver"
+            "next": "Set Default Approver"
           }
         ],
-        "description": "Phase 2. Set basic auth on this step to the workflow OAuth client. A failure falls through to the High approver.",
+        "description": "Phase 2. Set basic auth on this step to the workflow OAuth client. A failure falls through to the error approver.",
         "displayName": "Get Access Token",
         "nextStep": "Call Evaluate Risk",
         "type": "action",
@@ -250,7 +250,7 @@
             "input": {
               "accessRequestId": "{{$.trigger.accessRequestId}}",
               "considerPrivilege": "{{$.configuration.considerPrivilege}}",
-              "requestId": "{{$.trigger.accessRequestId}}:dynamic",
+              "requestId": "evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic",
               "requestedItems.$": "$.trigger.requestedItems"
             },
             "tag": "latest",
@@ -266,7 +266,7 @@
         },
         "catch": [
           {
-            "next": "Set High Approver"
+            "next": "Set Default Approver"
           }
         ],
         "displayName": "Call Evaluate Risk",
@@ -287,7 +287,7 @@
             "next": "Set Default Approver"
           }
         ],
-        "description": "A failed read uses the default approver, not the High step.",
+        "description": "A failed read uses the error approver, not the High step.",
         "displayName": "Read Risk Result",
         "nextStep": "Check Tier",
         "type": "action",
@@ -332,7 +332,8 @@
             "variableB": "Low"
           }
         ],
-        "defaultStep": "Set High Approver",
+        "defaultStep": "Set Default Approver",
+        "description": "A missing or unknown tier is treated as a failed evaluation, not as High.",
         "displayName": "Tier is Low?",
         "type": "choice"
       },
@@ -424,7 +425,7 @@
             }
           ]
         },
-        "description": "Used when Read Risk Result fails. Same type-plus-id pattern as the tier steps.",
+        "description": "Used whenever the risk evaluation cannot produce a tier: a failed token, invoke, or result read, and a missing or unknown tier. Same type-plus-id pattern as the tier steps.",
         "displayName": "Set Error approver",
         "nextStep": "Check Approver",
         "type": "Mutation"

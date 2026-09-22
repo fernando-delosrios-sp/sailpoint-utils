@@ -1,7 +1,7 @@
 {
   "id": "YOUR_DYNAMIC_APPROVAL_WORKFLOW_ID",
-  "name": "Risk Approval - Dynamic approval workflow",
-  "description": "Adaptive Approvals wrapper. Native Access Request Submitted trigger plus one Approval Policy per risk tier. Scores with custom:evaluate-access-request-risk, then opens the High, Medium, or Low policy. Bind each policy's reviewer in the builder. Enable this workflow, then set the access item Approval Type to this workflow. A failed evaluation uses the High policy.",
+  "name": "Dynamic Approval Workflow - Risk analysis",
+  "description": "Adaptive Approvals wrapper. Native Access Request Submitted trigger plus one Approval Policy per risk tier. Scores with custom:evaluate-access-request-risk, then opens the High, Medium, or Low policy. Bind each policy's reviewer in the builder. Enable this workflow, then set the access item Approval Type to this workflow. A failed evaluation, or a missing tier, opens the Evaluation Failed policy rather than the High one.",
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -53,7 +53,7 @@
         },
         "catch": [
           {
-            "next": "Approval Policy High"
+            "next": "Approval Policy Evaluation Failed"
           }
         ],
         "description": "Set basic auth on this step to the workflow OAuth client.",
@@ -75,7 +75,7 @@
             "input": {
               "accessRequestId": "{{$.trigger.accessRequestId}}",
               "considerPrivilege": "{{$.configuration.considerPrivilege}}",
-              "requestId": "{{$.trigger.accessRequestId}}:dynamic-approval",
+              "requestId": "evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic-approval",
               "requestedItems.$": "$.trigger.requestedItems"
             },
             "tag": "latest",
@@ -91,7 +91,7 @@
         },
         "catch": [
           {
-            "next": "Approval Policy High"
+            "next": "Approval Policy Evaluation Failed"
           }
         ],
         "displayName": "Call Evaluate Risk",
@@ -109,7 +109,7 @@
         },
         "catch": [
           {
-            "next": "Approval Policy High"
+            "next": "Approval Policy Evaluation Failed"
           }
         ],
         "displayName": "Read Risk Result",
@@ -128,7 +128,6 @@
           }
         ],
         "defaultStep": "Check Tier Medium",
-        "description": "A missing tier uses the High policy.",
         "displayName": "Tier is High?",
         "type": "choice"
       },
@@ -156,20 +155,41 @@
             "variableB": "Low"
           }
         ],
-        "defaultStep": "Approval Policy High",
+        "defaultStep": "Approval Policy Evaluation Failed",
+        "description": "A missing or unknown tier is treated as a failed evaluation, not as High.",
         "displayName": "Tier is Low?",
         "type": "choice"
       },
       "Approval Policy High": {
         "actionId": "sp:access-request-approval",
         "attributes": {
+          "accessRequestId.$": "$.trigger.accessRequestId",
+          "accountActivityId.$": "$.trigger.accountActivityId",
+          "approvalActionAtTimeout": "EXPIRED",
+          "approvalReminder": "false",
+          "approvalTimeout": 7,
           "approvalType": "SINGLE",
+          "autoApprovalEnabled.$": "$.trigger.autoApprove",
           "description": "High-risk approval. Bind the reviewer in this step after import.",
+          "fallbackApprover.$": "$.trigger.fallbackApprover",
+          "multiApproverReviewersConfig_approvalScheme": "SERIAL",
+          "parentWorkflowExecutionId.$": "$.trigger.parentWorkflowExecutionId",
           "priority": "HIGH",
+          "quorumApproverReviewersConfig_approvalScheme": "SERIAL",
+          "reminderFrequency_timeZone": "Europe/Madrid",
+          "requestId.$": "$.trigger.requestId",
+          "requestedAt.$": "$.trigger.createdAt",
+          "requestedBy.$": "$.trigger.requestedBy",
+          "requestedFor.$": "$.trigger.requestedFor",
+          "requestedItem.$": "$.trigger.requestedItem",
           "reviewerCategory": "IDENTITY",
           "reviewerId": "YOUR_HIGH_REVIEWER_ID",
+          "singleApproverCategory": "MANAGER_OF",
+          "sodViolationContext.$": "$.trigger.sodViolationContext",
+          "staticAttributes.$": "$.trigger.staticAttributes",
           "timeout": "7",
-          "timeoutAction": "EXPIRE"
+          "timeoutAction": "EXPIRE",
+          "workflowExecutionId.$": "$.trigger.workflowExecutionId"
         },
         "displayName": "Approval Policy High",
         "nextStep": "End Success",
@@ -179,13 +199,33 @@
       "Approval Policy Medium": {
         "actionId": "sp:access-request-approval",
         "attributes": {
+          "accessRequestId.$": "$.trigger.accessRequestId",
+          "accountActivityId.$": "$.trigger.accountActivityId",
+          "approvalActionAtTimeout": "EXPIRED",
+          "approvalReminder": "false",
+          "approvalTimeout": 7,
           "approvalType": "SINGLE",
+          "autoApprovalEnabled.$": "$.trigger.autoApprove",
           "description": "Medium-risk approval. Bind the reviewer in this step after import.",
+          "fallbackApprover.$": "$.trigger.fallbackApprover",
+          "multiApproverReviewersConfig_approvalScheme": "SERIAL",
+          "parentWorkflowExecutionId.$": "$.trigger.parentWorkflowExecutionId",
           "priority": "MEDIUM",
+          "quorumApproverReviewersConfig_approvalScheme": "SERIAL",
+          "reminderFrequency_timeZone": "Europe/Madrid",
+          "requestId.$": "$.trigger.requestId",
+          "requestedAt.$": "$.trigger.createdAt",
+          "requestedBy.$": "$.trigger.requestedBy",
+          "requestedFor.$": "$.trigger.requestedFor",
+          "requestedItem.$": "$.trigger.requestedItem",
           "reviewerCategory": "IDENTITY",
           "reviewerId": "YOUR_MEDIUM_REVIEWER_ID",
+          "singleApproverCategory": "MANAGER_OF",
+          "sodViolationContext.$": "$.trigger.sodViolationContext",
+          "staticAttributes.$": "$.trigger.staticAttributes",
           "timeout": "7",
-          "timeoutAction": "EXPIRE"
+          "timeoutAction": "EXPIRE",
+          "workflowExecutionId.$": "$.trigger.workflowExecutionId"
         },
         "displayName": "Approval Policy Medium",
         "nextStep": "End Success",
@@ -195,15 +235,72 @@
       "Approval Policy Low": {
         "actionId": "sp:access-request-approval",
         "attributes": {
+          "accessRequestId.$": "$.trigger.accessRequestId",
+          "accountActivityId.$": "$.trigger.accountActivityId",
+          "approvalActionAtTimeout": "EXPIRED",
+          "approvalReminder": "false",
+          "approvalTimeout": 7,
           "approvalType": "SINGLE",
+          "autoApprovalEnabled.$": "$.trigger.autoApprove",
           "description": "Low-risk approval. Bind the reviewer in this step after import.",
+          "fallbackApprover.$": "$.trigger.fallbackApprover",
+          "multiApproverReviewersConfig_approvalScheme": "SERIAL",
+          "parentWorkflowExecutionId.$": "$.trigger.parentWorkflowExecutionId",
           "priority": "LOW",
+          "quorumApproverReviewersConfig_approvalScheme": "SERIAL",
+          "reminderFrequency_timeZone": "Europe/Madrid",
+          "requestId.$": "$.trigger.requestId",
+          "requestedAt.$": "$.trigger.createdAt",
+          "requestedBy.$": "$.trigger.requestedBy",
+          "requestedFor.$": "$.trigger.requestedFor",
+          "requestedItem.$": "$.trigger.requestedItem",
           "reviewerCategory": "IDENTITY",
           "reviewerId": "YOUR_LOW_REVIEWER_ID",
+          "singleApproverCategory": "MANAGER_OF",
+          "sodViolationContext.$": "$.trigger.sodViolationContext",
+          "staticAttributes.$": "$.trigger.staticAttributes",
           "timeout": "7",
-          "timeoutAction": "EXPIRE"
+          "timeoutAction": "EXPIRE",
+          "workflowExecutionId.$": "$.trigger.workflowExecutionId"
         },
         "displayName": "Approval Policy Low",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Approval Policy Evaluation Failed": {
+        "actionId": "sp:access-request-approval",
+        "attributes": {
+          "accessRequestId.$": "$.trigger.accessRequestId",
+          "accountActivityId.$": "$.trigger.accountActivityId",
+          "approvalActionAtTimeout": "EXPIRED",
+          "approvalReminder": "false",
+          "approvalTimeout": 7,
+          "approvalType": "SINGLE",
+          "autoApprovalEnabled.$": "$.trigger.autoApprove",
+          "description": "The risk evaluation could not produce a tier. Bind the reviewer in this step after import.",
+          "fallbackApprover.$": "$.trigger.fallbackApprover",
+          "multiApproverReviewersConfig_approvalScheme": "SERIAL",
+          "parentWorkflowExecutionId.$": "$.trigger.parentWorkflowExecutionId",
+          "priority": "HIGH",
+          "quorumApproverReviewersConfig_approvalScheme": "SERIAL",
+          "reminderFrequency_timeZone": "Europe/Madrid",
+          "requestId.$": "$.trigger.requestId",
+          "requestedAt.$": "$.trigger.createdAt",
+          "requestedBy.$": "$.trigger.requestedBy",
+          "requestedFor.$": "$.trigger.requestedFor",
+          "requestedItem.$": "$.trigger.requestedItem",
+          "reviewerCategory": "IDENTITY",
+          "reviewerId": "YOUR_EVALUATION_FAILED_REVIEWER_ID",
+          "singleApproverCategory": "MANAGER_OF",
+          "sodViolationContext.$": "$.trigger.sodViolationContext",
+          "staticAttributes.$": "$.trigger.staticAttributes",
+          "timeout": "7",
+          "timeoutAction": "EXPIRE",
+          "workflowExecutionId.$": "$.trigger.workflowExecutionId"
+        },
+        "description": "Every failed token, invoke, or result read lands here, as does a missing or unknown tier. A request that was never scored is not the same as a High-risk one, so it gets its own reviewer.",
+        "displayName": "Approval Policy Evaluation Failed",
         "nextStep": "End Success",
         "type": "action",
         "versionNumber": 1

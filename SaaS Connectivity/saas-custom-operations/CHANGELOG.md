@@ -2,6 +2,42 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-09-22 · v0.6.3
+
+### 🐞 Fixes
+
+- **An operation with an empty list output no longer fails verification** — ISC stores an empty multi-valued attribute as nothing, so `[]` reads back as `""`. Persist verification compared the two literally and failed every clean `custom:preventive-sod-check` run with `preventive-sod-check:violated-policy-names: expected "[]", got ""`. An empty array now matches an absent, empty-string, or empty-array read-back. A non-empty array that reads back empty is still a mismatch.
+
+- **A slow provisioning task no longer fails a persist that succeeded** — `custom:evaluate-access-request-risk` reported `Account provisioning task … did not complete after retries` while the result account landed correctly moments later. Task polling is an optimization, so its budget grew from 30 to 90 seconds and a timeout now falls through to the account lookup and verification, which are the real signal. A task that reports an explicit error still fails the operation.
+
+### 🔧 Improvements
+
+- **The access request pre-check retries a result read once before denying** — a result account can be returned by Get Accounts before its attributes are indexed, which looked like a missing tier and denied a request that had scored fine. `Access Request Pre-Check - Risk analysis and in-flight SOD` now checks each result for presence, waits a minute, and reads once more before taking the failure path. Both reads copy their findings into `Risk Tier`, `Risk Summary`, `Sod Has Violation`, and `Sod Summary`, and the tier, comment, and violation steps branch on those variables, so the retry needs no duplicate policy steps. The wait only costs time on requests whose result was not readable yet.
+  - Migration: re-import the workflow. `Dynamic Approver - Risk analysis` and `Dynamic Approval Workflow - Risk analysis` still read once.
+  - The violation flag is the one finding the reads do **not** copy. Get Accounts returns attribute values as strings, and a `"true"` on `Sod Has Violation` would slip past the `BooleanEquals` check and approve a violating request. Each read branches on the flag where it is still a real boolean and sets the variable to an unquoted literal, so every boolean reaching the callback stays a literal.
+
+---
+
+## 2026-09-22 · v0.6.2
+
+### ⚠️ Breaking Changes
+
+- **Result accounts persist the invoke `requestId`** — `custom:evaluate-access-request-risk` no longer prefixes the persist identity in the handler. Callers put the command name in `requestId`. Bundled Risk Approval workflows now send and read `evaluate-access-request-risk:{{accessRequestId}}:{discriminator}`. Direct invokes that still send a bare id write that bare id.
+  - Migration: re-import the three bundled Risk Approval workflows (or set `requestId` to the same string you already filter Get Accounts on). Existing `evaluate-access-request-risk:…` accounts stay valid when the workflow `requestId` matches.
+
+- **Apply persist identity is `{requestId}:{formInstanceId}`** — `custom:access-model-sod-remediation-apply` no longer hardcodes the command slug as the persist prefix. The bundled Remediation workflow sends `requestId` `access-model-sod-remediation-apply`, so live account names stay `access-model-sod-remediation-apply:{formInstanceId}`. Prior-apply lookup still falls back to that spelling and to bare `{formInstanceId}`.
+  - Migration: re-import `Access Model SOD - Remediation` so `requestId` is `access-model-sod-remediation-apply` (not hyphenated with the form instance id).
+
+### 🐞 Fixes
+
+- **An unscored access request is no longer treated as High risk** — When the risk evaluation could not produce a tier (a failed token, invoke, or result read, or a result account that came back without `evaluate-access-request-risk:tier`), `Dynamic Approver - Risk analysis` and `Dynamic Approval Workflow - Risk analysis` fell through to their High step. A request that was never scored now takes a failure path instead: the dynamic approver uses **Set Error approver** (the **Default Approver** id) for every failure, and the Adaptive Approvals workflow opens a new **Approval Policy Evaluation Failed**. `Access Request Pre-Check - Risk analysis and in-flight SOD` already denied on a missing tier and is unchanged on the risk side.
+  - Migration: re-import both workflows, then bind the reviewer on **Approval Policy Evaluation Failed** (placeholder `YOUR_EVALUATION_FAILED_REVIEWER_ID`) alongside the three tier policies.
+
+- **A missing SoD result no longer approves the request** — In `Access Request Pre-Check - Risk analysis and in-flight SOD`, a **Read SoD Result** that returned no account left `preventive-sod-check:has-violation` absent, which the violation check read as "no violation" and approved. A new **SoD result present?** step routes that case to **Set evaluation failed decision**. It tests the situation summary, not the violation flag, because the flag is legitimately `false` on a clean request.
+  - Migration: re-import the workflow.
+
+---
+
 ## 2026-09-21 · v0.6.1
 
 ### ⚠️ Breaking Changes

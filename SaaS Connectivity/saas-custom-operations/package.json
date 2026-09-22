@@ -1,6 +1,6 @@
 {
   "name": "saas-custom-operations",
-  "version": "0.6.1",
+  "version": "0.6.3",
   "main": "dist/index.js",
   "scripts": {
     "clean": "shx rm -rf ./dist ./.dev-dist",
