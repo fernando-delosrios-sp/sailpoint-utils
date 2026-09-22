@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-22
+
+### ✨ New Features
+
+- **nerm skill** — Model-invoked agent skill for live NERM tenant APIs (`skills/nerm/`, identical copy at `.agents/skills/nerm/`). Reuses Sail environment names and PAT credentials; stores secretless NERM URLs in `~/.sailpoint/nerm.yaml`; ships PowerShell Core helper `scripts/nerm_api.ps1` (+ `NermApi.psm1`) for association and authenticated REST. Install: `npx skills add fernando-delosrios-sp/sailpoint-utils --skill nerm`.
+
 ## 2026-09-21
 
 ### 🔧 Improvements

@@ -66,6 +66,7 @@ Use `--skill` when installing so repo-root [`.agents/skills/`](.agents/skills/) 
 | Skill | Install path | Authoring |
 | --- | --- | --- |
 | [sail](skills/sail/) | `skills/sail/` | Definition-only; identical working copy at [`.agents/skills/sail/`](.agents/skills/sail/). Install: `npx skills add fernando-delosrios-sp/sailpoint-utils --skill sail` |
+| [nerm](skills/nerm/) | `skills/nerm/` | Definition-only; identical working copy at [`.agents/skills/nerm/`](.agents/skills/nerm/). Sail-associated NERM API helper (`scripts/nerm_api.ps1`, PowerShell Core) with sidecar `~/.sailpoint/nerm.yaml`. Install: `npx skills add fernando-delosrios-sp/sailpoint-utils --skill nerm` |
 | [entro-connect](skills/entro-connect/) | `skills/entro-connect/` | Dedicated project under [`Entro/entro-connect/`](Entro/entro-connect/); local working copy at `.agents/skills/entro-connect/`; [`Entro/entro-connect/skills`](Entro/entro-connect/skills) symlinks to repo-root `skills/` |
 
 **Adding a skill**
