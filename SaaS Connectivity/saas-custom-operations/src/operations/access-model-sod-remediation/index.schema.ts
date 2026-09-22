@@ -2,8 +2,18 @@
 import { defineOperationSchema } from '../../framework'
 
 export const accessModelSodRemediationOperationSchema = defineOperationSchema({
+    'access-model-sod-remediation:access-item-id': { type: 'string', optional: true },
+    'access-model-sod-remediation:access-item-name': { type: 'string', optional: true },
+    'access-model-sod-remediation:access-item-type': { type: 'string', optional: true },
+    'access-model-sod-remediation:access-item-url': { type: 'string', optional: true },
+    'access-model-sod-remediation:conflicting-entitlements-group-a': { type: 'string', optional: true },
+    'access-model-sod-remediation:conflicting-entitlements-group-b': { type: 'string', optional: true },
     'access-model-sod-remediation:form-email-body': { type: 'string', optional: true },
     'access-model-sod-remediation:form-email-header': { type: 'string', optional: true },
     'access-model-sod-remediation:form-email-recipients': { type: 'string[]', optional: true },
     'access-model-sod-remediation:form-url': { type: 'string', optional: true },
+    'access-model-sod-remediation:policy-id': { type: 'string', optional: true },
+    'access-model-sod-remediation:policy-name': { type: 'string', optional: true },
+    'access-model-sod-remediation:policy-url': { type: 'string', optional: true },
+    'access-model-sod-remediation:recipient-id': { type: 'string', optional: true },
 })

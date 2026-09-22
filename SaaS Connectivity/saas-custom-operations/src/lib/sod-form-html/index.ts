@@ -1,13 +1,15 @@
-export {
-    renderSideBySideColumns,
-    buildGroupColumnLayouts,
-    type GroupColumnLayoutHtml,
-} from './column-layout'
+export { renderSideBySideColumns, buildGroupColumnLayouts, type GroupColumnLayoutHtml } from './column-layout'
 export { escapeHtml } from './escape'
 export { REVOCABILITY_EMOJI, OUTCOME_PANEL, TYPE_TAG } from './tokens'
 export { iconSuffix } from './icon-suffix'
 export { renderTypeTag, type AccessKind } from './type-tag'
-export { wrapOutcomePanel, buildSideVariants, buildBlockSideVariants, type OutcomeKind, type SideVariants } from './outcome-panel'
+export {
+    wrapOutcomePanel,
+    buildSideVariants,
+    buildBlockSideVariants,
+    type OutcomeKind,
+    type SideVariants,
+} from './outcome-panel'
 export { renderEmojiLegend } from './emoji-legend'
 export {
     renderFlatAccessPathList,
@@ -25,6 +27,7 @@ export {
 } from './entitlement-tree'
 export {
     resolveUiOrigin,
+    buildIscUiUrl,
     renderIscUiLink,
     accessKindToLinkKind,
     type IscUiLinkKind,

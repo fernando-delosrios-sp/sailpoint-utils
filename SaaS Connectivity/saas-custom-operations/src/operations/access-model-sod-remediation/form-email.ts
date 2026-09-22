@@ -1,11 +1,7 @@
 import { ISC_STRING_ATTRIBUTE_MAX_LENGTH } from '../../framework/attribute-limits'
 import { SodPolicySummary } from '../../isc/sod-policies'
 import { CatalogAccessItem } from '../../isc/roles/list-enabled-roles'
-import {
-    escapeHtml,
-    fitPersistableHtml,
-    renderUnquotedHrefCta,
-} from '../../lib/persistable-email'
+import { escapeHtml, fitPersistableHtml, renderUnquotedHrefCta } from '../../lib/persistable-email'
 
 const WARNING_EMOJI = '⚠️'
 

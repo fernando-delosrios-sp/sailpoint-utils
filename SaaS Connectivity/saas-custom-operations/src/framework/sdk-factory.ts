@@ -14,6 +14,8 @@ import {
     SourcesApi,
     TaskManagementApi,
 } from 'sailpoint-api-client'
+import { getActiveFrameworkLogger } from './logger'
+import { installThrottleRetry, RetryingAxiosInstance } from './throttle-retry'
 import { SailPointClients } from './types'
 
 /** Builds pre-configured SailPoint API clients for ISC loopback operations. */
@@ -23,6 +25,12 @@ export function createSailPointClients(apiUrl: string, token: string): SailPoint
         accessToken: token,
     })
     configuration.experimental = true
+
+    installThrottleRetry(configuration.axiosInstance as unknown as RetryingAxiosInstance, {
+        onRetry: ({ attempt, delayMs, url }) => {
+            getActiveFrameworkLogger()?.warn('ISC request throttled, retrying', { attempt, delayMs, url })
+        },
+    })
 
     return {
         accounts: new AccountsApi(configuration),

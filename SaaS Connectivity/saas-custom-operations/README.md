@@ -48,19 +48,19 @@ Manual source setup is not required. `npm run templates` generates `account-sche
 
 The `workflows/` directory contains ISC workflow snapshots you can import as templates. Each operation's co-located README documents how its exports integrate (triggers, JSONPaths, and end-to-end flow).
 
-| File | Operation(s) | Trigger | Purpose |
-|---|---|---|---|
-| [`workflows/SaaS Custom Operations.json`](workflows/SaaS%20Custom%20Operations.json) | `custom:example` | Manual / external | Reference invoke → **Get Accounts** read-back |
-| [`workflows/SOD Violation - Notification.json`](workflows/SOD%20Violation%20-%20Notification.json) | `custom:sod-remediation` | `idn:sod-violation-created` | Launch remediation form and email owner |
-| [`workflows/SOD Violation - Remediation.json`](workflows/SOD%20Violation%20-%20Remediation.json) | — (post-submit) | `sp:form-submitted` | Revoke access or apply compensating control |
-| [`workflows/Access Model SOD - Analysis.json`](workflows/Access%20Model%20SOD%20-%20Analysis.json) | `custom:access-model-sod-remediation` | Scheduled | Catalog scan |
-| [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json) | — (event read-back) | `idn:account-created` | Email access item owner from child persist account |
-| [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json) | `custom:access-model-sod-remediation-apply` | `sp:form-submitted` | Apply catalog correction after form submit |
+| File                                                                                                       | Operation(s)                                | Trigger                            | Purpose                                            |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------- | -------------------------------------------------- |
+| [`workflows/SaaS Custom Operations.json`](workflows/SaaS%20Custom%20Operations.json)                       | `custom:example`                            | Manual / external                  | Reference invoke → **Get Accounts** read-back      |
+| [`workflows/SOD Violation - Notification.json`](workflows/SOD%20Violation%20-%20Notification.json)         | `custom:sod-remediation`                    | `idn:sod-violation-created`        | Launch remediation form and email owner            |
+| [`workflows/SOD Violation - Remediation.json`](workflows/SOD%20Violation%20-%20Remediation.json)           | — (post-submit)                             | `sp:form-submitted`                | Revoke access or apply compensating control        |
+| [`workflows/Access Model SOD - Analysis.json`](workflows/Access%20Model%20SOD%20-%20Analysis.json)         | `custom:access-model-sod-remediation`       | `idn:interactive-process-launched` | Catalog scan with intro and summary panels         |
+| [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json) | — (event read-back)                         | `idn:account-created`              | Email access item owner from child persist account |
+| [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json)   | `custom:access-model-sod-remediation-apply` | `sp:form-submitted`                | Apply catalog correction after form submit         |
 
 Shared invoke pattern (all connector-call workflows):
 
-- **Configuration** variables → **Get Access Token** (OAuth) → HTTP POST `/beta/platform-connectors/{connectorId}/invoke` with `config.sourceName` (auto-provisions the DelimitedFile result source on first use)
-- Persisted outputs are read via **Get Accounts** or, for access-model notifications, from the **account-created** event payload
+-   **Configuration** variables → **Get Access Token** (OAuth) → HTTP POST `/beta/platform-connectors/{connectorId}/invoke` with `config.sourceName` (auto-provisions the DelimitedFile result source on first use)
+-   Persisted outputs are read via **Get Accounts** or, for access-model notifications, from the **account-created** event payload
 
 `custom:preventive-sod-check` and `custom:governance-group-emails` have no bundled exports — see their READMEs for invoke and branching contracts.
 
@@ -70,9 +70,9 @@ Shared invoke pattern (all connector-call workflows):
 2. Upload one or more JSON files from `workflows/`.
 3. Review and confirm import of workflow objects.
 4. For each imported workflow, update **Configuration** step variables for your tenant:
-   - **API URL** — e.g. `https://your-tenant.api.identitynow.com`
-   - **SaaS Custom Operations Source Name** — name for the auto-provisioned result source (e.g. `SaaS Custom Operations`; passed as invoke `config.sourceName`)
-   - **SaaS Custom Operations Connector ID** — your deployed custom connector ID
+    - **API URL** — e.g. `https://your-tenant.api.identitynow.com`
+    - **SaaS Custom Operations Source Name** — name for the auto-provisioned result source (e.g. `SaaS Custom Operations`; passed as invoke `config.sourceName`)
+    - **SaaS Custom Operations Connector ID** — your deployed custom connector ID
 5. Configure **Get Access Token** with a valid OAuth client (Basic auth reference).
 6. For form-submitted triggers, re-point `formDefinitionId` filters to your tenant's remediation form definitions (created on first operation invoke).
 7. Enable workflows and verify triggers (SoD violation created, account created, schedule, or form submitted).
@@ -121,13 +121,13 @@ Custom operations use the standard SaaS connector invoke shape. See `invoke-payl
 }
 ```
 
-| Section | Fields | Description |
-|---|---|---|
-| `type` | command name | Must match a command in `connector-spec.json` (e.g. `custom:example`) |
-| `connectorRef` | connector UUID | Workflow variable (e.g. `{{$.configuration.saaSCustomOperationsConnectorID}}`); ignored by `call:op` and spcx local debug |
-| `tag` | `"latest"` | Connector package tag; required for ISC platform invoke |
-| `config` | `apiUrl`, `token`, `sourceName` | ISC loopback credentials and result source name (auto-provisioned at runtime) |
-| `input` | `requestId` + operation params | Per-invocation data; `requestId` correlates persisted accounts |
+| Section        | Fields                          | Description                                                                                                               |
+| -------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `type`         | command name                    | Must match a command in `connector-spec.json` (e.g. `custom:example`)                                                     |
+| `connectorRef` | connector UUID                  | Workflow variable (e.g. `{{$.configuration.saaSCustomOperationsConnectorID}}`); ignored by `call:op` and spcx local debug |
+| `tag`          | `"latest"`                      | Connector package tag; required for ISC platform invoke                                                                   |
+| `config`       | `apiUrl`, `token`, `sourceName` | ISC loopback credentials and result source name (auto-provisioned at runtime)                                             |
+| `input`        | `requestId` + operation params  | Per-invocation data; `requestId` correlates persisted accounts                                                            |
 
 Workflow-ready examples under `payloads/*-workflow.json` use ISC template variables for `connectorRef` and `config` connection fields. Local `call:op` payloads use concrete `type`, `config`, and `input` only (`connectorRef` and `tag` are optional and ignored).
 
@@ -137,14 +137,14 @@ The framework strips `requestId` from operation input and exposes it on `ctx.req
 
 Each registered command documents its invoke contract, payloads, and workflow integration in a co-located README under `src/operations/<slug>/`:
 
-| Command | Documentation |
-|---|---|
-| `custom:example` | [src/operations/example/README.md](src/operations/example/README.md) |
-| `custom:governance-group-emails` | [src/operations/governance-group-emails/README.md](src/operations/governance-group-emails/README.md) |
-| `custom:access-model-sod-remediation` | [src/operations/access-model-sod-remediation/README.md](src/operations/access-model-sod-remediation/README.md) |
+| Command                                     | Documentation                                                                                                              |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `custom:example`                            | [src/operations/example/README.md](src/operations/example/README.md)                                                       |
+| `custom:governance-group-emails`            | [src/operations/governance-group-emails/README.md](src/operations/governance-group-emails/README.md)                       |
+| `custom:access-model-sod-remediation`       | [src/operations/access-model-sod-remediation/README.md](src/operations/access-model-sod-remediation/README.md)             |
 | `custom:access-model-sod-remediation-apply` | [src/operations/access-model-sod-remediation-apply/README.md](src/operations/access-model-sod-remediation-apply/README.md) |
-| `custom:preventive-sod-check` | [src/operations/preventive-sod-check/README.md](src/operations/preventive-sod-check/README.md) |
-| `custom:sod-remediation` | [src/operations/sod-remediation/README.md](src/operations/sod-remediation/README.md) |
+| `custom:preventive-sod-check`               | [src/operations/preventive-sod-check/README.md](src/operations/preventive-sod-check/README.md)                             |
+| `custom:sod-remediation`                    | [src/operations/sod-remediation/README.md](src/operations/sod-remediation/README.md)                                       |
 
 When you add a new operation, copy `src/operations/_template/` (including `README.md`), implement the handler, and add a row to this table.
 
@@ -190,11 +190,11 @@ Every invoke during `npm run debug` logs an **Incoming request** section to stdo
 
 Set `config.testMode: true` (or export `SPCX_TEST_MODE=1` for config-less runs) to run handler logic without writing accounts or mutating source schema on ISC. `ctx.res.send` behaves normally; each inhibited `ctx.persist` / `ctx.verifyPersisted` call is logged to the console with a `[test-mode]` prefix.
 
-| Config provided | ISC behavior | Writes |
-|---|---|---|
-| Yes (full `apiUrl`, `token`, `sourceName`) | Read-only status check + list-only source lookup; fails on missing/invalid token | Inhibited (logged) |
-| Partial (`apiUrl` without `token`, or the reverse) | Rejected with incomplete connection config — no offline fallback | N/A (invoke fails) |
-| No | All ISC calls skipped | Inhibited (logged) |
+| Config provided                                    | ISC behavior                                                                     | Writes             |
+| -------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------ |
+| Yes (full `apiUrl`, `token`, `sourceName`)         | Read-only status check + list-only source lookup; fails on missing/invalid token | Inhibited (logged) |
+| Partial (`apiUrl` without `token`, or the reverse) | Rejected with incomplete connection config — no offline fallback                 | N/A (invoke fails) |
+| No                                                 | All ISC calls skipped                                                            | Inhibited (logged) |
 
 Run from an invoke payload:
 
@@ -207,8 +207,8 @@ Offline payloads (no `config` block) automatically enable persist inhibition (`t
 
 ```json
 {
-  "type": "custom:example",
-  "input": { "requestId": "offline-001", "message": "hello" }
+    "type": "custom:example",
+    "input": { "requestId": "offline-001", "message": "hello" }
 }
 ```
 
@@ -216,14 +216,14 @@ Config-present dry-run payload:
 
 ```json
 {
-  "type": "custom:example",
-  "config": {
-    "apiUrl": "https://your-tenant.api.identitynow.com",
-    "token": "<access-token>",
-    "sourceName": "SaaS Custom Operations",
-    "testMode": true
-  },
-  "input": { "requestId": "payload-001", "message": "dry run" }
+    "type": "custom:example",
+    "config": {
+        "apiUrl": "https://your-tenant.api.identitynow.com",
+        "token": "<access-token>",
+        "sourceName": "SaaS Custom Operations",
+        "testMode": true
+    },
+    "input": { "requestId": "payload-001", "message": "dry run" }
 }
 ```
 
@@ -253,11 +253,11 @@ Content-Type: application/json
 
 After invoke, read persisted output from the result source using **Get Accounts** filtered by native identity:
 
-- Filter: `nativeIdentity eq "{requestId}"` (or a child id such as `{requestId}:detail`)
-- Risk example: send `requestId` `evaluate-access-request-risk:{accessRequestId}:dynamic` and filter
-  `nativeIdentity eq` that same value. That string is the **risk persist identity**.
-- Map operation output attributes, `status`, `date`, `operationName`, and optional `details` from account attributes
-- On failure, the framework upserts a result account with `status: failed`, `operationName`, and `details` set to the error message (same text as invoke `{ error }`), so Get Accounts works for failed invocations too
+-   Filter: `nativeIdentity eq "{requestId}"` (or a child id such as `{requestId}:detail`)
+-   Risk example: send `requestId` `evaluate-access-request-risk:{accessRequestId}:dynamic` and filter
+    `nativeIdentity eq` that same value. That string is the **risk persist identity**.
+-   Map operation output attributes, `status`, `date`, `operationName`, and optional `details` from account attributes
+-   On failure, the framework upserts a result account with `status: failed`, `operationName`, and `details` set to the error message (same text as invoke `{ error }`), so Get Accounts works for failed invocations too
 
 The reference workflow export demonstrates this pattern in the **Read SaaS Custom Operation Result** step.
 
@@ -287,16 +287,14 @@ export interface MyOperation extends OperationSignature {
     }
 }
 
-export const myOperation = customOperation<MyOperation>(
-    async (ctx, input) => {
-        console.log(`[${ctx.requestId}] starting`, input)
+export const myOperation = customOperation<MyOperation>(async (ctx, input) => {
+    console.log(`[${ctx.requestId}] starting`, input)
 
-        await ctx.persist(ctx.requestId, { 'my-operation:result': 'result-value' })
-        await ctx.persist(`${ctx.requestId}:detail`, { 'my-operation:detail': 'step-output' }, 'success')
+    await ctx.persist(ctx.requestId, { 'my-operation:result': 'result-value' })
+    await ctx.persist(`${ctx.requestId}:detail`, { 'my-operation:detail': 'step-output' }, 'success')
 
-        ctx.res.send({ status: 'success' })
-    }
-)
+    ctx.res.send({ status: 'success' })
+})
 ```
 
 Run `npm run codegen:schemas` (also runs on `npm run build`) to generate `<slug>/index.schema.ts`, update `auto-registry.ts`, and sync `connector-spec.json`.
@@ -307,7 +305,9 @@ Run `npm run codegen:schemas` (also runs on `npm run build`) to generate `<slug>
 import { myOperationSchema } from './my-slug/index.schema'
 
 export const myOperation = customOperation<MyOperation>(
-    async (ctx, input) => { /* ... */ },
+    async (ctx, input) => {
+        /* ... */
+    },
     { operationSchema: myOperationSchema }
 )
 ```
@@ -331,34 +331,34 @@ Volatile context assembled per invocation by `customOperation`. Typed handlers r
 
 **Context fields**
 
-| Member | Description |
-|---|---|
-| `ctx.requestId` | Correlation id from invoke `input` |
-| `ctx.resultIdentity` | Framework-resolved **result identity** for the operation's outcome account; defaults to `ctx.requestId` |
-| `ctx.apiUrl` | ISC API base URL from invoke `config` |
-| `ctx.token` | Access token from invoke `config` (Bearer prefix stripped) |
-| `ctx.sourceName` | Configured result source name (resolved/created at runtime) |
-| `ctx.sourceId` | Resolved ISC source ID after `sourceName` lookup |
-| `ctx.operationSchema` | Current command output field contract used for schema reconciliation |
-| `ctx.persist(...)` | Write results to the result source (auto-provisioned DelimitedFile) |
-| `ctx.verifyPersisted(...)` | Batch verify deferred writes |
-| `ctx.res` | Connector SDK response object — call `ctx.res.send(...)` |
+| Member                     | Description                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `ctx.requestId`            | Correlation id from invoke `input`                                                                      |
+| `ctx.resultIdentity`       | Framework-resolved **result identity** for the operation's outcome account; defaults to `ctx.requestId` |
+| `ctx.apiUrl`               | ISC API base URL from invoke `config`                                                                   |
+| `ctx.token`                | Access token from invoke `config` (Bearer prefix stripped)                                              |
+| `ctx.sourceName`           | Configured result source name (resolved/created at runtime)                                             |
+| `ctx.sourceId`             | Resolved ISC source ID after `sourceName` lookup                                                        |
+| `ctx.operationSchema`      | Current command output field contract used for schema reconciliation                                    |
+| `ctx.persist(...)`         | Write results to the result source (auto-provisioned DelimitedFile)                                     |
+| `ctx.verifyPersisted(...)` | Batch verify deferred writes                                                                            |
+| `ctx.res`                  | Connector SDK response object — call `ctx.res.send(...)`                                                |
 
 **`ctx.sdk` clients** (pre-configured `sailpoint-api-client` instances)
 
-| Member | Description |
-|---|---|
-| `ctx.sdk.accounts` | Account create, update, and read used by `ctx.persist` |
-| `ctx.sdk.sources` | Result source lookup, creation, and schema management |
-| `ctx.sdk.forms` | Custom Forms definition search/create and form instance create |
-| `ctx.sdk.identityHistory` | Identity assigned access / entitlement history |
-| `ctx.sdk.accessProfiles` | Access profile entitlement expansion |
-| `ctx.sdk.roles` | Role entitlement expansion |
-| `ctx.sdk.tasks` | Async task status polling (used by persist provisioning wait) |
-| `ctx.sdk.governanceGroups` | Workgroup lookup and member listing |
-| `ctx.sdk.accessRequests` | Access request status listing |
-| `ctx.sdk.search` | ISC Search API (events index) |
-| `ctx.sdk.sodViolations` | SoD violation prediction |
+| Member                     | Description                                                    |
+| -------------------------- | -------------------------------------------------------------- |
+| `ctx.sdk.accounts`         | Account create, update, and read used by `ctx.persist`         |
+| `ctx.sdk.sources`          | Result source lookup, creation, and schema management          |
+| `ctx.sdk.forms`            | Custom Forms definition search/create and form instance create |
+| `ctx.sdk.identityHistory`  | Identity assigned access / entitlement history                 |
+| `ctx.sdk.accessProfiles`   | Access profile entitlement expansion                           |
+| `ctx.sdk.roles`            | Role entitlement expansion                                     |
+| `ctx.sdk.tasks`            | Async task status polling (used by persist provisioning wait)  |
+| `ctx.sdk.governanceGroups` | Workgroup lookup and member listing                            |
+| `ctx.sdk.accessRequests`   | Access request status listing                                  |
+| `ctx.sdk.search`           | ISC Search API (events index)                                  |
+| `ctx.sdk.sodViolations`    | SoD violation prediction                                       |
 
 Prefer thin wrappers under `src/isc/<api-grouping>/` over calling SDK methods directly from handlers when the helper is reusable.
 
@@ -375,22 +375,22 @@ ctx.persist(id, attributes?, status?, options?)
 ctx.verifyPersisted(ids)
 ```
 
-- **`OperationSignature`** — one interface with `input` and `output` using inline TypeScript type literals (aliases and imported types are not parsed by codegen)
-- **Output keys** — persist attribute names use `{slug}:` prefix matching the command (without `custom:`)
-- **`customOperation<T>(handler, options?)`** — types `input` and `ctx.persist` from `T`; pass the generated `{handler}Schema` sidecar for schema reconciliation
-- **`options.resultIdentity(requestId)`** — optional builder for the operation's **result identity**; it is
-  resolved once during request-context initialization and defaults to the invoke `requestId`
-- **Automatic failure persist** — writes the failed account to `ctx.resultIdentity`, so operations that
-  declare a builder use the same identity for success and failure. Failures before request-context
-  initialization completes cannot be persisted because no context or persist function is available yet
-- **`ctx.persist`** — formats values using typed inference (numbers/booleans native, objects JSON-serialized); reconciles schema before write
-- **`id`** — native account identity (often `ctx.requestId` or a derived child id like `` `${ctx.requestId}:detail` ``)
-- **`attributes`** — only keys declared in the operation output schema; typed per `OperationSignature.output`
-- **`status`** — optional, defaults to `"success"`
-- **`details`** — optional STRING on success persists for informative text; on terminal failure the framework sets `details` to the normalized error message automatically
-- **`operationName`** — framework-managed STRING set on every persist to the invoking custom command (`context.commandType`); handlers cannot override
-- **`date`** — always set automatically to the current timestamp
-- **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
+-   **`OperationSignature`** — one interface with `input` and `output` using inline TypeScript type literals (aliases and imported types are not parsed by codegen)
+-   **Output keys** — persist attribute names use `{slug}:` prefix matching the command (without `custom:`)
+-   **`customOperation<T>(handler, options?)`** — types `input` and `ctx.persist` from `T`; pass the generated `{handler}Schema` sidecar for schema reconciliation
+-   **`options.resultIdentity(requestId)`** — optional builder for the operation's **result identity**; it is
+    resolved once during request-context initialization and defaults to the invoke `requestId`
+-   **Automatic failure persist** — writes the failed account to `ctx.resultIdentity`, so operations that
+    declare a builder use the same identity for success and failure. Failures before request-context
+    initialization completes cannot be persisted because no context or persist function is available yet
+-   **`ctx.persist`** — formats values using typed inference (numbers/booleans native, objects JSON-serialized); reconciles schema before write
+-   **`id`** — native account identity (often `ctx.requestId` or a derived child id like `` `${ctx.requestId}:detail` ``)
+-   **`attributes`** — only keys declared in the operation output schema; typed per `OperationSignature.output`
+-   **`status`** — optional, defaults to `"success"`
+-   **`details`** — optional STRING on success persists for informative text; on terminal failure the framework sets `details` to the normalized error message automatically
+-   **`operationName`** — framework-managed STRING set on every persist to the invoking custom command (`context.commandType`); handlers cannot override
+-   **`date`** — always set automatically to the current timestamp
+-   **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
 
 Use operation-specific terms for concrete identities: for example, the
 `custom:evaluate-access-request-risk` operation's invoke `requestId` is its
@@ -434,21 +434,21 @@ Payloads such as `payloads/governance-group-emails.json` use the `__SET_VIA_ISC_
 
 Custom operation invokes accept optional fields on the `config` object alongside `apiUrl`, `token`, and `sourceName`:
 
-| Field | Required | Description |
-|---|---|---|
-| `logUrl` | No | When set, the framework POSTs one JSON log event per `ctx.log` call (and at incoming request logging) to this URL. Console output is always emitted. Failures to POST do not fail the operation. |
-| `testMode` | No | When true, persist and schema writes are inhibited (see test mode behavior elsewhere in this doc). |
+| Field      | Required | Description                                                                                                                                                                                      |
+| ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `logUrl`   | No       | When set, the framework POSTs one JSON log event per `ctx.log` call (and at incoming request logging) to this URL. Console output is always emitted. Failures to POST do not fail the operation. |
+| `testMode` | No       | When true, persist and schema writes are inhibited (see test mode behavior elsewhere in this doc).                                                                                               |
 
 External log events use this JSON shape:
 
 ```json
 {
-  "timestamp": "2026-08-18T10:00:00.000Z",
-  "level": "info",
-  "requestId": "wf-run-8842",
-  "command": "custom:example",
-  "message": "step complete",
-  "detail": { "optional": "structured payload" }
+    "timestamp": "2026-08-18T10:00:00.000Z",
+    "level": "info",
+    "requestId": "wf-run-8842",
+    "command": "custom:example",
+    "message": "step complete",
+    "detail": { "optional": "structured payload" }
 }
 ```
 
@@ -477,11 +477,11 @@ See `payloads/custom-example.json` for a connected dry-run payload that includes
 
 Run `npm run templates` after adding or modifying operations under `src/operations/`. The generator introspects auto-discovered and manually registered handlers and writes local-only artifacts to `./templates/` (gitignored). Markdown guides follow the step structure of the **SaaS Custom Operations Call** workflow embedded in `workflows/SaaS Custom Operations.json`:
 
-| File | Purpose |
-|---|---|
-| `account-schema.json` | Reference account schema — core attrs plus union of all operation output fields (runtime auto-create is operation-scoped) |
-| `access-token.md` | Shared OAuth client-credentials guide with tenant placeholders |
-| `workflow-invocation.md` | Per-operation invoke body, read-result, and child-identity steps |
+| File                     | Purpose                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| `account-schema.json`    | Reference account schema — core attrs plus union of all operation output fields (runtime auto-create is operation-scoped) |
+| `access-token.md`        | Shared OAuth client-credentials guide with tenant placeholders                                                            |
+| `workflow-invocation.md` | Per-operation invoke body, read-result, and child-identity steps                                                          |
 
 Re-run whenever you add an operation or change an operation's `OperationSignature` or `ctx.persist` patterns. Discovery includes auto-registered ops (`command` literal on the interface) and manual index.ts registrations.
 
@@ -525,8 +525,3 @@ workflows/
   Access Model SOD - Remediation.json      # custom:access-model-sod-remediation-apply
 templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```
-
-
-
-
-

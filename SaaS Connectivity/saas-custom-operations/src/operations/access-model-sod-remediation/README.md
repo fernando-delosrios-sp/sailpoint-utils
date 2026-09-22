@@ -12,13 +12,13 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 
 ## Input
 
-| Field | Required | Default | Description |
-|---|---|---|---|
-| `formName` | Yes | — | Shared tenant form definition name (ensure-from-seed on first use) |
-| `scope` | No | `"*"` | ISC search filter; `"*"` lists all enabled items in each selected index |
-| `searchIndices` | No | `["accessprofiles","roles"]` | Catalogs to scan; only `accessprofiles` and `roles` allowed |
-| `policyScope` | No | `state eq "ENFORCED"` | Filter for SoD policies to evaluate |
-| `disableLinks` | No | `false` (links enabled when `apiUrl` resolves) | When `true`, omits ISC admin UI deep links in form HTML (`situationSummaryHtml` and group columns). Does **not** remove `form-url` or the email remediation CTA |
+| Field           | Required | Default                                        | Description                                                                                                                                                     |
+| --------------- | -------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `formName`      | Yes      | —                                              | Shared tenant form definition name (ensure-from-seed on first use)                                                                                              |
+| `scope`         | No       | `"*"`                                          | ISC search filter; `"*"` lists all enabled items in each selected index                                                                                         |
+| `searchIndices` | No       | `["accessprofiles","roles"]`                   | Catalogs to scan; only `accessprofiles` and `roles` allowed                                                                                                     |
+| `policyScope`   | No       | `state eq "ENFORCED"`                          | Filter for SoD policies to evaluate                                                                                                                             |
+| `disableLinks`  | No       | `false` (links enabled when `apiUrl` resolves) | When `true`, omits ISC admin UI deep links in form HTML (`situationSummaryHtml` and group columns). Does **not** remove `form-url` or the email remediation CTA |
 
 ## Output
 
@@ -26,38 +26,50 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 
 On success, `ctx.respond(summary)` returns an **operation response** envelope:
 
-| Envelope field | Meaning |
-|---|---|
-| `name` | `custom:access-model-sod-remediation` |
-| `status` | `success` |
-| `responses` | Native identities persisted this invoke |
-| `summary` | Scan rollup counters (below) |
+| Envelope field | Meaning                                 |
+| -------------- | --------------------------------------- |
+| `name`         | `custom:access-model-sod-remediation`   |
+| `status`       | `success`                               |
+| `responses`    | Native identities persisted this invoke |
+| `summary`      | Scan rollup counters (below)            |
 
-| Summary field | Description |
-|---|---|
-| `access-model-sod-remediation:access-items-scanned` | Count of roles/APs evaluated |
-| `access-model-sod-remediation:violations-found` | Count of (access item × policy) hits |
-| `access-model-sod-remediation:forms-skipped` | Optional; violations skipped because the child persist account at `{requestId}:{accessItemId}:{policyId}` already exists |
+| Summary field                                          | Description                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `access-model-sod-remediation:access-items-scanned`    | Count of roles/APs evaluated                                                                                                                                                                                                                                |
+| `access-model-sod-remediation:violations-found`        | Count of (access item × policy) hits                                                                                                                                                                                                                        |
+| `access-model-sod-remediation:forms-skipped`           | Optional; violations skipped because the child persist account at `{requestId}:{accessItemId}:{policyId}` already exists                                                                                                                                    |
 | `access-model-sod-remediation:forms-skipped-instances` | Optional; global invoke-only list of skipped violations (child identity plus access item and policy context). Form URLs and email fields are **not** on the envelope — read them from the existing child account at `{requestId}:{accessItemId}:{policyId}` |
-| `access-model-sod-remediation:forms-launch-failed` | Optional; form instance creation failures during the scan |
-| `access-model-sod-remediation:forms-persist-failed` | Optional; child persist failures after a form was created |
+| `access-model-sod-remediation:forms-launch-failed`     | Optional; form instance creation failures during the scan                                                                                                                                                                                                   |
+| `access-model-sod-remediation:forms-persist-failed`    | Optional; child persist failures after a form was created                                                                                                                                                                                                   |
 
 These summary fields are declared under `OperationSignature.response`, **not** persisted on result-source identity `{requestId}`, and **not** account schema attributes.
 
 ### Scan idempotency and performance
 
-Before launching a form for each violation, the scan checks whether a child result-source account already exists at `{requestId}:{accessItemId}:{policyId}`. When found, the handler skips form creation and child persist (no overwrite), increments `forms-skipped`, and appends an entry to `forms-skipped-instances` on **`ctx.res.send` only** (never persisted). Per-form outputs (`form-url`, email fields) for created or prior forms remain on child accounts via `ctx.persist` only — the invoke response carries rollup counters plus this skipped list, not individual form payloads. Form instance state is not queried for idempotency. Access-item owner resolution (and email) and access-item entitlement expansion are **memoized within the scan** to avoid repeated ISC calls on large catalogs.
+Before launching a form for each violation, the scan checks whether a child result-source account already exists at `{requestId}:{accessItemId}:{policyId}`. When found, the handler skips form creation, increments `forms-skipped`, and appends an entry to `forms-skipped-instances` on **`ctx.res.send` only** (never persisted). The existing account is still refreshed: the descriptive fields are rewritten from the current scan and the stored notification fields are carried over unchanged, so a record keeps pointing at its live form while a renamed access item or policy stops being reported under its old name. A refresh is an account **update**, and the Notification workflow triggers on account **creation**, so no owner is emailed twice. A failed refresh is logged and the scan continues. Per-form outputs (`form-url`, email fields) for created or prior forms remain on child accounts via `ctx.persist` only — the invoke response carries rollup counters plus this skipped list, not individual form payloads. Form instance state is not queried for idempotency. Access-item owner resolution (and email) and access-item entitlement expansion are **memoized within the scan** to avoid repeated ISC calls on large catalogs.
 
 ### Child account (persisted) — `{requestId}:{accessItemId}:{policyId}` (one per form)
 
-| Field | Description |
-|---|---|
-| `access-model-sod-remediation:form-url` | Standalone form URL |
-| `access-model-sod-remediation:form-email-header` | Plain-text email subject for workflow Send Email |
-| `access-model-sod-remediation:form-email-body` | HTML email body with remediation link |
-| `access-model-sod-remediation:form-email-recipients` | Access item owner email addresses (`string[]`) |
+| Field                                                           | Description                                               |
+| --------------------------------------------------------------- | --------------------------------------------------------- |
+| `access-model-sod-remediation:form-url`                         | Standalone form URL                                       |
+| `access-model-sod-remediation:form-email-header`                | Plain-text email subject for workflow Send Email          |
+| `access-model-sod-remediation:form-email-body`                  | HTML email body with remediation link                     |
+| `access-model-sod-remediation:form-email-recipients`            | Access item owner email addresses (`string[]`)            |
+| `access-model-sod-remediation:access-item-id`                   | Violating access item id                                  |
+| `access-model-sod-remediation:access-item-type`                 | `ROLE` or `ACCESS_PROFILE`                                |
+| `access-model-sod-remediation:access-item-name`                 | Access item display name, id when unnamed                 |
+| `access-model-sod-remediation:policy-id`                        | SoD policy id                                             |
+| `access-model-sod-remediation:policy-name`                      | SoD policy display name, id when unnamed                  |
+| `access-model-sod-remediation:access-item-url`                  | ISC definition URL for the role or access profile         |
+| `access-model-sod-remediation:policy-url`                       | ISC definition URL for the SoD policy                     |
+| `access-model-sod-remediation:recipient-id`                     | Identity the form was assigned to (the access item owner) |
+| `access-model-sod-remediation:conflicting-entitlements-group-a` | Plain-text list of the colliding entitlements on group A  |
+| `access-model-sod-remediation:conflicting-entitlements-group-b` | Plain-text list of the colliding entitlements on group B  |
 
-Child form notification fields are built via the shared form notification envelope (`src/lib/form-notification/`).
+Child form notification fields are built via the shared form notification envelope (`src/lib/form-notification/`). The descriptive fields come from the violation the scan is already holding and cost no extra ISC read.
+
+The two side attributes read `Invoice Entry` and `Payment Release`, matching the `Group A` / `Group B` labels on the remediation form. Each side is a separate attribute so a consumer can column them without parsing, and each gets the full ISC 256-character ceiling. They are plain text with no links, because panels and people read them. A side too long for the ceiling drops whole names and states how many it dropped (`+4 more`) rather than cutting one in half, and an empty side reads `none`.
 
 ## Invoke example
 
@@ -86,21 +98,22 @@ Offline: [`payloads/access-model-sod-remediation-offline.json`](../../../payload
 
 Three ISC workflow exports under [`workflows/`](../../../workflows/) implement proactive access-model SoD remediation. Import all three and re-point **Configuration** variables to your tenant. Pair with [`custom:access-model-sod-remediation-apply`](../access-model-sod-remediation-apply/README.md) for the post-submit catalog correction step.
 
-| Export | Trigger | Role |
-|---|---|---|
-| [`workflows/Access Model SOD - Analysis.json`](../../../workflows/Access%20Model%20SOD%20-%20Analysis.json) | Scheduled (daily) | Invoke this scan operation |
-| [`workflows/Access Model SOD - Notification.json`](../../../workflows/Access%20Model%20SOD%20-%20Notification.json) | `idn:account-created` (filtered by `operationName`) | Email access item owner when a child persist account is created |
-| [`workflows/Access Model SOD - Remediation.json`](../../../workflows/Access%20Model%20SOD%20-%20Remediation.json) | `sp:form-submitted` (filtered by remediation form definition ID) | Invoke `custom:access-model-sod-remediation-apply` |
+| Export                                                                                                              | Trigger                                                          | Role                                                             |
+| ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
+| [`workflows/Access Model SOD - Analysis.json`](../../../workflows/Access%20Model%20SOD%20-%20Analysis.json)         | `idn:interactive-process-launched`                               | Explain the scan, invoke this operation, then report the outcome |
+| [`workflows/Access Model SOD - Notification.json`](../../../workflows/Access%20Model%20SOD%20-%20Notification.json) | `idn:account-created` (filtered by `operationName`)              | Email access item owner when a child persist account is created  |
+| [`workflows/Access Model SOD - Remediation.json`](../../../workflows/Access%20Model%20SOD%20-%20Remediation.json)   | `sp:form-submitted` (filtered by remediation form definition ID) | Invoke `custom:access-model-sod-remediation-apply`               |
 
 End-to-end flow:
 
 ```
-Scheduled / manual trigger
+Interactive process launch
         │
         ▼
 Access Model SOD - Analysis
+  Info panel (what this scan does)
   OAuth → invoke custom:access-model-sod-remediation
-  (rollup counters on invoke response only)
+  Outcome panel (conflicts found / none / failed)
         │
         ▼
 Per violation: child account persisted at
@@ -120,9 +133,16 @@ Access Model SOD - Remediation
 
 **Analysis workflow integration**
 
-1. **Configuration** sets API URL, connector ID, and result source name.
-2. **Call SaaS Custom Operation** invokes `custom:access-model-sod-remediation` with a stable scan `requestId` (export uses `access-model-sod-remediation`), `formName` `Access Model SOD Remediation`, and scan scope (`searchIndices`, `scope`).
-3. Read rollup fields from the **invoke HTTP response body** — not from Get Accounts on `requestId` (no parent account is persisted).
+1. Bind an **interactive process** to this workflow. After import, set the trigger filter and workflow `id` to the assigned workflow id.
+2. **Message: About this process** explains the scan before Configuration / OAuth / invoke.
+3. **Call SaaS Custom Operation** invokes `custom:access-model-sod-remediation` with a stable scan `requestId` (export uses `access-model-sod-remediation`), `formName` `Access Model SOD Remediation`, and scan scope (`searchIndices`, `scope`).
+4. **Invoke failed?** then **Any conflicts?** split the outcome. A clean scan and each failure mode close on a single panel; conflicts continue to the list below.
+5. **Get Result Source** resolves the source id from the configured source name, because **Read Conflict Records** filters accounts on `sourceId` and Get Accounts supports only `eq` and `in`. Either step failing lands on **Message: Conflicts unavailable** — the scan and its owner emails already succeeded, so this is not a workflow failure.
+6. **Loop: Conflicts** renders one panel per child account: the access item name and policy, the two policy sides as side-by-side coloured columns, the type, and the notified owner. No form link — the launcher is rarely the recipient and the link only works for the recipient. Records without group A detail are skipped, which excludes the account the framework writes on the bare `requestId` after a failed run.
+
+> **Reading the invoke response in a workflow:** the connector answers `content-type: text/plain` with an NDJSON stream (`keepAlive`, then `{"data":{…},"type":"output"}`, then `end`). The body is a **string** in workflow state, so `$.callSaaSCustomOperation.body.summary['…']` never resolves and renders as literal `{{…}}` text in a message. Branch with `StringContains`; the compact JSON has no spaces after colons, so `"access-model-sod-remediation:violations-found":0` is an exact match for a clean scan. Findings come from the persisted child accounts instead, where each field is a real object attribute.
+
+> **Loop steps:** outer workflow state is not in scope inside `sp:loop:iterator`. The current record is `$.loop.loopInput`, and anything else a step needs — here the interactive process and its launcher — has to be passed through the loop's `context` and read as `$.loop.context.…`.
 
 **Notification workflow integration**
 
@@ -130,9 +150,9 @@ Event-driven — no connector invoke in this workflow.
 
 1. Trigger: **Account Created** on the result source, advanced filter `operationName == custom:access-model-sod-remediation`.
 2. **Send Email** reads email fields directly from the created child account on the event payload:
-   - `access-model-sod-remediation:form-email-header` → subject
-   - `access-model-sod-remediation:form-email-body` → body
-   - `access-model-sod-remediation:form-email-recipients` → `recipientEmailList`
+    - `access-model-sod-remediation:form-email-header` → subject
+    - `access-model-sod-remediation:form-email-body` → body
+    - `access-model-sod-remediation:form-email-recipients` → `recipientEmailList`
 
 Each child account creation fires one notification. Skipped violations (existing child persist) do not emit a new account and therefore do not re-trigger email.
 
@@ -140,7 +160,7 @@ Each child account creation fires one notification. Skipped violations (existing
 
 Handled by [`custom:access-model-sod-remediation-apply`](../access-model-sod-remediation-apply/README.md) — see that README for apply semantics. The export invokes apply with `formInstanceId` from `$.trigger.formInstanceId` and the same `formName` (`Access Model SOD Remediation`) used by Analysis.
 
-> **Import note:** Re-point form-submitted trigger `formDefinitionId` to your tenant's **Access Model SOD Remediation** form definition (created or patched on first scan invoke). Connector IDs and OAuth refs are tenant-specific.
+> **Import note:** Re-point the Analysis trigger filter and workflow `id` to the id ISC assigns after import, then bind an interactive process. Re-point form-submitted trigger `formDefinitionId` on Remediation to your tenant's **Access Model SOD Remediation** form definition (created or patched on first scan invoke). Connector IDs and OAuth refs are tenant-specific.
 
 ## Workflow integration
 
@@ -154,10 +174,10 @@ Manual or custom orchestration follows the same contract as the bundled exports:
 
 ## Form submit contract
 
-| Layer | Fields |
-|---|---|
+| Layer                | Fields                                                                                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `formInput` (launch) | `parentRequestId` (scan invoke `requestId`), `accessItemId`, `accessItemType`, `accessItemName`, `policyId`, `policyName`, `situationSummaryHtml`, `groupAIds`, `groupBIds` (JSON arrays), three HTML column fields (see below) |
-| `formData` (submit) | `remediationSide`, optional `comments` |
+| `formData` (submit)  | `remediationSide`, optional `comments`                                                                                                                                                                                          |
 
 No action selector or Mitigate path.
 
@@ -167,9 +187,9 @@ The upper **context panel** is a single `situationSummaryHtml` DESCRIPTION with 
 
 Launch-time `formInput` carries **three** composite side-by-side column HTML fields (each embeds plain or outcome variants for both groups):
 
-| Field | When shown |
-|---|---|
-| `groupColumnsHtmlPlain` | Plain lists with type tags — before `remediationSide` is selected |
+| Field                               | When shown                                                                        |
+| ----------------------------------- | --------------------------------------------------------------------------------- |
+| `groupColumnsHtmlPlain`             | Plain lists with type tags — before `remediationSide` is selected                 |
 | `groupColumnsHtmlWhenGroupARemoved` | Group A red / Group B green outcome panels — when Group A is selected for removal |
 | `groupColumnsHtmlWhenGroupBRemoved` | Group B red / Group A green outcome panels — when Group B is selected for removal |
 
@@ -179,10 +199,10 @@ Bundled seed `formConditions` SHOW/HIDE the matching DESCRIPTION element when th
 
 ## Token scope requirements
 
-- SoD policies list/read
-- Roles and access profiles list/read (including entitlements and role AP membership)
-- Custom Forms create/search
-- Result source account persist (standard custom operation scopes)
+-   SoD policies list/read
+-   Roles and access profiles list/read (including entitlements and role AP membership)
+-   Custom Forms create/search
+-   Result source account persist (standard custom operation scopes)
 
 ## Local development
 

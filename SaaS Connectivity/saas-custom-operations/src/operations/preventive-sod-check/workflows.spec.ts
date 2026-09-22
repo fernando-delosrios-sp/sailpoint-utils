@@ -101,6 +101,22 @@ describe(WORKFLOW_FILE, () => {
         expect(steps['Read Sod Result Retry']?.nextStep).toBe('Check Sod Result Retry')
     })
 
+    it('routes an HTTP-200 failed SoD invoke body to the failure step before reading the result', () => {
+        const steps = readWorkflowSteps()
+        const checkInvoke = steps['Check Sod Invoke Result']
+
+        expect(steps['Call Preventive Sod Check']?.nextStep).toBe('Check Sod Invoke Result')
+        expect(checkInvoke?.choiceList).toEqual([
+            {
+                comparator: 'StringContains',
+                nextStep: 'Set Evaluation Failed',
+                'variableA.$': '$.callPreventiveSodCheck.body',
+                variableB: '"status":"failed"',
+            },
+        ])
+        expect(checkInvoke?.defaultStep).toBe('Read Sod Result')
+    })
+
     it('treats a SoD result still missing after the retry as a failed evaluation', () => {
         const retryCheck = readWorkflowSteps()['Check Sod Result Retry']
 
@@ -220,6 +236,17 @@ describe(WORKFLOW_FILE, () => {
         }
     })
 
+    it('ships High-risk as approved, same as Low and Medium', () => {
+        const steps = readWorkflowSteps()
+
+        for (const step of ['Set Low Risk', 'Set Medium Risk', 'Set High Risk']) {
+            const approved = steps[step]?.attributes?.variables?.find((variable) =>
+                variable.name?.endsWith('approved')
+            )?.variableA
+            expect(approved, `${step} ships as approved`).toBe(true)
+        }
+    })
+
     it('picks the callback that matches the decision variable', () => {
         const steps = readWorkflowSteps()
         const choice = steps['Check Approved']?.choiceList?.[0]
@@ -248,6 +275,21 @@ describe(WORKFLOW_FILE, () => {
             expect(message, `${step} repeats the tier`).not.toMatch(
                 /Risk tier (Low|Medium|High)\.? \{\{\$\.defineVariable\.riskSummary\}\}/
             )
+        }
+    })
+
+    /**
+     * A Low summary is not the bare word "Low" — it carries the evaluated tally, which is the only
+     * evidence in the comment that the check inspected anything. Every tier reports it.
+     */
+    it('carries the risk summary on every tier comment', () => {
+        const steps = readWorkflowSteps()
+
+        for (const step of ['Set Low Risk', 'Set Medium Risk', 'Set High Risk']) {
+            const message = steps[step]?.attributes?.variables?.find((variable) =>
+                variable.name?.endsWith('message')
+            )?.variableA as string
+            expect(message, `${step} omits the risk summary`).toContain('{{$.defineVariable.riskSummary}}')
         }
     })
 

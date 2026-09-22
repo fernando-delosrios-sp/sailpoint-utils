@@ -51,11 +51,7 @@ describe('buildGroupContentsHtml', () => {
         const uiOrigin = 'https://tenant.example.com'
         const html = buildGroupContentsHtml(['ent-a'], ['ent-c'], expanded, uiOrigin)
 
-        expect(html.groupColumnsHtmlPlain).toContain(
-            '/ui/a/admin/access/entitlements/landing-page/details/ent-a'
-        )
-        expect(html.groupColumnsHtmlPlain).toContain(
-            '/ui/a/admin/access/access-profiles/landing-page/details/ap-1'
-        )
+        expect(html.groupColumnsHtmlPlain).toContain('/ui/a/admin/access/entitlements/landing-page/details/ent-a')
+        expect(html.groupColumnsHtmlPlain).toContain('/ui/a/admin/access/access-profiles/landing-page/details/ap-1')
     })
 })

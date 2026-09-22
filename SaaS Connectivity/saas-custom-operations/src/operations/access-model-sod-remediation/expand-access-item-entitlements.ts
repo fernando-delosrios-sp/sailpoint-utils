@@ -25,12 +25,7 @@ export interface EntitlementExpansionClients {
     accessProfiles: AccessProfilesApi
 }
 
-function addEntitlement(
-    entitlementIds: Set<string>,
-    entitlements: EntitlementRef[],
-    id: string,
-    name?: string
-): void {
+function addEntitlement(entitlementIds: Set<string>, entitlements: EntitlementRef[], id: string, name?: string): void {
     if (!entitlementIds.has(id)) {
         entitlementIds.add(id)
         entitlements.push({ id, name })

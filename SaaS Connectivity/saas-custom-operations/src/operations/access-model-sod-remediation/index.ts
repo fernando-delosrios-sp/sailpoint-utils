@@ -22,7 +22,9 @@ import {
     SearchIndex,
     VALID_SEARCH_INDICES,
 } from './constants'
-import { detectAccessItemViolations } from './detect-violations'
+import { AccessItemViolation, detectAccessItemViolations } from './detect-violations'
+import { buildConflictDetail } from './conflict-detail'
+import { buildRefreshedChildAttributes, storedRecipientId } from './refresh-child-detail'
 import { ExpandedAccessItemEntitlements, expandAccessItemEntitlements } from './expand-access-item-entitlements'
 import {
     ensureAccessModelSodFormDefinition,
@@ -36,10 +38,7 @@ import { expandAccessItemEntitlementsOffline } from './offline-data'
 import { accessModelSodRemediationOperationSchema } from './index.schema'
 import { FormNotification, toPersistAttributes } from '../../lib/form-notification'
 import { renderTypeTag, resolveUiOrigin } from '../../lib/sod-form-html'
-import {
-    AccessModelSodSkippedFormInstance,
-    buildSkippedFormInstance,
-} from './skipped-form-instance'
+import { AccessModelSodSkippedFormInstance, buildSkippedFormInstance } from './skipped-form-instance'
 
 export interface AccessModelSodRemediationOperation extends OperationSignature {
     command: 'custom:access-model-sod-remediation'
@@ -55,6 +54,16 @@ export interface AccessModelSodRemediationOperation extends OperationSignature {
         'access-model-sod-remediation:form-email-header'?: string
         'access-model-sod-remediation:form-email-body'?: string
         'access-model-sod-remediation:form-email-recipients'?: string[]
+        'access-model-sod-remediation:access-item-id'?: string
+        'access-model-sod-remediation:access-item-type'?: string
+        'access-model-sod-remediation:access-item-name'?: string
+        'access-model-sod-remediation:policy-id'?: string
+        'access-model-sod-remediation:policy-name'?: string
+        'access-model-sod-remediation:access-item-url'?: string
+        'access-model-sod-remediation:policy-url'?: string
+        'access-model-sod-remediation:recipient-id'?: string
+        'access-model-sod-remediation:conflicting-entitlements-group-a'?: string
+        'access-model-sod-remediation:conflicting-entitlements-group-b'?: string
     }
     response: {
         'access-model-sod-remediation:access-items-scanned': number
@@ -66,6 +75,22 @@ export interface AccessModelSodRemediationOperation extends OperationSignature {
     }
 }
 
+// Persist keys are assembled in toPersistAttributes / buildConflictDetail / the skip refresh, not inline.
+// persist-dynamic: access-model-sod-remediation:form-url
+// persist-dynamic: access-model-sod-remediation:form-email-header
+// persist-dynamic: access-model-sod-remediation:form-email-body
+// persist-dynamic: access-model-sod-remediation:form-email-recipients
+// persist-dynamic: access-model-sod-remediation:access-item-id
+// persist-dynamic: access-model-sod-remediation:access-item-type
+// persist-dynamic: access-model-sod-remediation:access-item-name
+// persist-dynamic: access-model-sod-remediation:policy-id
+// persist-dynamic: access-model-sod-remediation:policy-name
+// persist-dynamic: access-model-sod-remediation:access-item-url
+// persist-dynamic: access-model-sod-remediation:policy-url
+// persist-dynamic: access-model-sod-remediation:recipient-id
+// persist-dynamic: access-model-sod-remediation:conflicting-entitlements-group-a
+// persist-dynamic: access-model-sod-remediation:conflicting-entitlements-group-b
+
 type AccessModelSodRemediationContext = RequestContext<
     AccessModelSodRemediationOperation['output'],
     AccessModelSodRemediationOperation['response']
@@ -75,9 +100,7 @@ function validateSearchIndices(indices: string[] | undefined): SearchIndex[] {
     const resolved = indices ?? [...DEFAULT_SEARCH_INDICES]
     for (const index of resolved) {
         if (!VALID_SEARCH_INDICES.has(index)) {
-            throw new ConnectorError(
-                `Invalid searchIndices value "${index}". Allowed values: accessprofiles, roles`
-            )
+            throw new ConnectorError(`Invalid searchIndices value "${index}". Allowed values: accessprofiles, roles`)
         }
     }
     return resolved as SearchIndex[]
@@ -145,6 +168,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
         const scope = input.scope ?? DEFAULT_SCOPE
         const searchIndices = validateSearchIndices(input.searchIndices)
         const policyScope = input.policyScope ?? DEFAULT_POLICY_SCOPE
+        const uiOrigin = offline ? undefined : resolveUiOrigin(ctx.apiUrl)
 
         ctx.log.info('access-model-sod-remediation start', {
             offline,
@@ -169,6 +193,48 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
         const expandedByAccessItemId = new Map<string, ExpandedAccessItemEntitlements>()
         const ownerIdByAccessItemId = new Map<string, string>()
         const ownerEmailById = new Map<string, string>()
+
+        const resolveOwnerId = async (accessItem: CatalogAccessItem): Promise<string> => {
+            const cached = ownerIdByAccessItemId.get(accessItem.id)
+            if (cached !== undefined) {
+                return cached
+            }
+
+            const resolved = offline
+                ? resolveCatalogAccessItemOwnerIdOffline(accessItem)
+                : await resolveCatalogAccessItemOwnerId(
+                      { roles: ctx.sdk.roles, accessProfiles: ctx.sdk.accessProfiles },
+                      accessItem
+                  )
+            ownerIdByAccessItemId.set(accessItem.id, resolved)
+            return resolved
+        }
+
+        /**
+         * A skipped conflict keeps its form and its owner email, but its description is rewritten from
+         * this scan so a record written before the detail existed, or before a rename, stops being wrong.
+         */
+        const refreshExistingChild = async (
+            childId: string,
+            existing: { attributes: Record<string, unknown> },
+            violation: AccessItemViolation,
+            expanded: ExpandedAccessItemEntitlements
+        ): Promise<void> => {
+            let recipientId = storedRecipientId(existing.attributes) ?? ''
+            try {
+                recipientId = await resolveOwnerId(violation.accessItem)
+            } catch (error) {
+                ctx.log.warn('access-model-sod-remediation owner lookup failed on refresh', {
+                    accessItemId: violation.accessItem.id,
+                    detail: error instanceof Error ? error.message : String(error),
+                })
+            }
+
+            const detail = buildConflictDetail({ violation, expanded, recipientId, uiOrigin })
+            await ctx.persist(childId, buildRefreshedChildAttributes(existing.attributes, detail), undefined, {
+                verify: false,
+            })
+        }
 
         for (const accessItem of accessItems) {
             let expanded = expandedByAccessItemId.get(accessItem.id)
@@ -200,21 +266,32 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     : await findAccountOnSource(ctx.sdk.accounts, ctx.sourceId, childId)
 
                 if (existingChildAccount) {
-                    ctx.log.info('access-model-sod-remediation skipping violation: child persist account already exists', {
-                        accessItemId: violation.accessItem.id,
-                        policyId: violation.policy.id,
-                        identityId: childId,
-                    })
+                    ctx.log.info(
+                        'access-model-sod-remediation skipping violation: child persist account already exists',
+                        {
+                            accessItemId: violation.accessItem.id,
+                            policyId: violation.policy.id,
+                            identityId: childId,
+                        }
+                    )
                     formsSkipped += 1
                     skippedFormInstances.push(buildSkippedFormInstance(childId, violation))
+
+                    try {
+                        await refreshExistingChild(childId, existingChildAccount, violation, expanded)
+                    } catch (error) {
+                        ctx.log.warn('access-model-sod-remediation child refresh failed', {
+                            identityId: childId,
+                            detail: error instanceof Error ? error.message : String(error),
+                        })
+                    }
                     continue
                 }
 
-                const uiOrigin =
-                    offline || input.disableLinks === true ? undefined : resolveUiOrigin(ctx.apiUrl)
-                const html = buildGroupContentsHtml(violation.groupAIds, violation.groupBIds, expanded, uiOrigin)
+                const formUiOrigin = input.disableLinks === true ? undefined : uiOrigin
+                const html = buildGroupContentsHtml(violation.groupAIds, violation.groupBIds, expanded, formUiOrigin)
                 const situationSummaryHtml = buildSituationSummaryHtml({
-                    uiOrigin,
+                    uiOrigin: formUiOrigin,
                     accessItemId: violation.accessItem.id,
                     accessItemType: violation.accessItem.type,
                     accessItemName: violation.accessItem.name,
@@ -228,19 +305,11 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     groupBIds: violation.groupBIds,
                 }
 
-                let ownerId = ownerIdByAccessItemId.get(violation.accessItem.id)
+                let ownerId: string | undefined
                 let ownerEmail: string | undefined
                 let formNotification: FormNotification
                 try {
-                    if (ownerId === undefined) {
-                        ownerId = offline
-                            ? resolveCatalogAccessItemOwnerIdOffline(violation.accessItem)
-                            : await resolveCatalogAccessItemOwnerId(
-                                  { roles: ctx.sdk.roles, accessProfiles: ctx.sdk.accessProfiles },
-                                  violation.accessItem
-                              )
-                        ownerIdByAccessItemId.set(violation.accessItem.id, ownerId)
-                    }
+                    ownerId = await resolveOwnerId(violation.accessItem)
 
                     ownerEmail = ownerEmailById.get(ownerId)
                     if (ownerEmail === undefined) {
@@ -286,14 +355,17 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
                     continue
                 }
 
-                if (ownerEmail === undefined) {
+                if (ownerEmail === undefined || ownerId === undefined) {
                     continue
                 }
 
                 try {
                     await ctx.persist(
                         childId,
-                        toPersistAttributes('access-model-sod-remediation', formNotification),
+                        {
+                            ...toPersistAttributes('access-model-sod-remediation', formNotification),
+                            ...buildConflictDetail({ violation, expanded, recipientId: ownerId, uiOrigin }),
+                        },
                         undefined,
                         { verify: false }
                     )
@@ -321,9 +393,7 @@ export const accessModelSodRemediationOperation = customOperation<AccessModelSod
             ...(skippedFormInstances.length > 0
                 ? { 'access-model-sod-remediation:forms-skipped-instances': skippedFormInstances }
                 : {}),
-            ...(formsLaunchFailed > 0
-                ? { 'access-model-sod-remediation:forms-launch-failed': formsLaunchFailed }
-                : {}),
+            ...(formsLaunchFailed > 0 ? { 'access-model-sod-remediation:forms-launch-failed': formsLaunchFailed } : {}),
             ...(formsPersistFailed > 0
                 ? { 'access-model-sod-remediation:forms-persist-failed': formsPersistFailed }
                 : {}),

@@ -10,9 +10,7 @@ describe('access-model-sod-remediation/form-email', () => {
     }
 
     it('builds a plain-text email header from access model name', () => {
-        expect(buildFormEmailHeader(input)).toBe(
-            '⚠️ Access Model SOD Remediation Required — Finance Role'
-        )
+        expect(buildFormEmailHeader(input)).toBe('⚠️ Access Model SOD Remediation Required — Finance Role')
     })
 
     it('builds HTML email body with escaped text and remediation link', () => {

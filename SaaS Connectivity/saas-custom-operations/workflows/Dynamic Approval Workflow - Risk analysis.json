@@ -95,9 +95,24 @@
           }
         ],
         "displayName": "Call Evaluate Risk",
-        "nextStep": "Read Risk Result",
+        "nextStep": "Check Invoke Result",
         "type": "action",
         "versionNumber": 3
+      },
+      "Check Invoke Result": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringContains",
+            "nextStep": "Approval Policy Evaluation Failed",
+            "variableA.$": "$.callEvaluateRisk.body",
+            "variableB": "\"status\":\"failed\""
+          }
+        ],
+        "defaultStep": "Read Risk Result",
+        "description": "The connector returns HTTP 200 even when the operation failed. Catch that here so a leftover result account cannot look like a scored request.",
+        "displayName": "Invoke failed?",
+        "type": "choice"
       },
       "Read Risk Result": {
         "actionId": "sp:get-accounts",

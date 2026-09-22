@@ -2,7 +2,96 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-09-22 · v0.6.9
+
+### 🔧 Improvements
+
+-   **Conflict panels link to the catalog definitions** — the access item name now opens its role or access-profile definition, and the policy name opens its SoD policy definition. These links are appropriate for the person launching the analysis and are distinct from the owner-only remediation form, which remains absent. The connector persists `access-item-url` and `policy-url` so the workflow does not need to derive tenant UI routes or branch on access item type.
+
+---
+
+## 2026-09-22 · v0.6.8
+
+### 🔧 Improvements
+
+-   **Each policy side is its own attribute, so a panel can column them** — `access-model-sod-remediation:conflicting-entitlements` is replaced by `…:conflicting-entitlements-group-a` and `…:conflicting-entitlements-group-b`. One combined string read fine as a sentence but could not be split by a consumer: ISC workflow templates have no string operations, so a panel could only print it whole. Separate attributes also give each side the full 256-character ceiling instead of half, so more names survive on a wide conflict. An empty side reads `none`.
+
+    -   Migration: redeploy the connector and re-import the workflow. The old combined attribute stops being written on the next scan; existing records pick up the two new values when that scan refreshes them.
+
+-   **Analysis panels show the two sides side by side** — the per-conflict card puts Group A and Group B in adjacent columns with their own accent colours under a **What collides** heading, so a reader sees two opposing sets rather than one run-on list. Type, policy, and the notified owner moved below it.
+
+---
+
+## 2026-09-22 · v0.6.7
+
+### 🐞 Fixes
+
+-   **A conflict record now says what the conflict is** — a child account described the notification and nothing else: a form url, an email subject, an email body, and a recipient address. The access item name reached a reader only because it sits in the email subject, and the policy name only in the truncated form a 256-character email body allows, as in `on Acco… (ROLE) for policy AP sett…`. The spec has required `access-item-id`, `access-item-type`, `access-item-name`, `policy-id`, `policy-name`, and `recipient-id` on child output since the operation shipped; the handler persisted whatever the shared notification mapper returned, which is those four fields. All six are now written, from the violation the scan loop already holds, at no extra ISC read.
+
+### 🔧 Improvements
+
+-   **The colliding entitlements are named on the record** — new `access-model-sod-remediation:conflicting-entitlements` reads `Group A: Invoice Entry. Group B: Payment Release.`, using the same side labels as the remediation form. It is plain text with no links, because panels and people read it. A side too long for the ISC 256-character ceiling drops whole names and says how many (`+4 more`) rather than cutting one in half.
+
+-   **A skipped conflict refreshes its record instead of going stale** — the scan skips a conflict that already has a form, which used to mean the account was never touched again. A record written before this release would never gain the detail, and an access item renamed after its form was raised stayed wrong forever. The skip path now rewrites the descriptive fields from the current scan and carries the stored form url and email fields over unchanged. No form is launched and no owner is emailed twice: the Notification workflow triggers on account creation and a refresh is an update. A failed refresh is logged and the scan continues.
+
+-   **Analysis panels describe each conflict rather than dumping the response** — the Access Model SOD - Analysis workflow loops the persisted records and gives each conflict its own card naming the access item, its type, the policy, the colliding entitlements, and the owner who was notified. The remediation form link is deliberately absent: whoever launches the scan is rarely the form recipient, and the link only works for the recipient.
+
+    -   Migration: re-import the workflow and redeploy the connector. Existing conflict records gain the detail on the next scan, so the first run after the upgrade is what fills the panels.
+
+---
+
+## 2026-09-22 · v0.6.6
+
+### 🐞 Fixes
+
+-   **A throttled tenant no longer aborts a whole scan** — `custom:access-model-sod-remediation` failed with `Request failed with status code 429 (HTTP 429)` about eleven seconds into a 107-role catalog. The SDK does install `axios-retry`, which is why this looked covered, but it runs on that library's defaults: network errors and 5xx on idempotent requests, never 429. A single throttled call therefore failed the operation with no retry. ISC requests now retry a 429 up to four times on the shared axios instance, honouring `Retry-After` when the response carries it and doubling the wait from one second when it does not. Every operation gets this, not just the scan.
+
+    -   A retry is logged as `ISC request throttled, retrying` with the attempt, wait, and URL, so a slow run is distinguishable from a stuck one.
+    -   Setting `retriesConfig` on the SDK `Configuration` after construction does nothing — `axios-retry` captures its options when the interceptor is installed in the constructor. The working hook is `configuration.axiosInstance`.
+
+### 🔧 Improvements
+
+-   **Access Model SOD - Analysis is an interactive process** — the bundled scan workflow now opens with an explanation of what the catalog SoD check does and closes on a panel that names the outcome: conflicts found, no conflicts, or a failure panel carrying the operation's own error text. A failed OAuth or an unreachable connector each get their own panel rather than a blank status line.
+
+    -   Migration: re-import the workflow, point Configuration and the Get Access Token basic-auth reference at your tenant, replace `YOUR_ACCESS_MODEL_SOD_ANALYSIS_WORKFLOW_ID` in the workflow id and trigger filter, then bind an interactive process to it.
+    -   The invoke answers `text/plain` NDJSON, so the body is a string in workflow state. `$.callSaaSCustomOperation.body.summary['…']` renders as literal `{{…}}` text in a panel — branch with `StringContains` instead.
+
+-   **Conflicts are listed one panel at a time, not as a JSON dump** — the closing panel used to print the raw NDJSON stream, which was the only way to show counts given the body is a string. The workflow now reads the persisted child accounts back from the result source and loops over them, so each conflict gets its own card titled with the access item name and carrying a button to its remediation form. The raw stream survives only on the failure panel, where it is the error text.
+
+    -   Get Accounts filters on `sourceId` with `eq` only, so **Get Result Source** resolves the id from the configured source name first and the loop input narrows the whole source to this operation's records.
+    -   Conflicts raised by earlier scans are listed too — a child account is the record that a form exists, and the scan skips a conflict that already has one.
+    -   A failure reading those records lands on its own panel and still ends in success: the scan ran and owners were emailed regardless.
+
+---
+
+## 2026-09-22 · v0.6.5
+
+### 🐞 Fixes
+
+-   **A dynamic approver no longer kills the access request** — every request that `Dynamic Approver - Risk analysis` added an approver to failed at the approval phase with `An unexpected error occurred: Approval workflow error: … workflowType='generic-approvals:approval-workflow'`. The callback sent `name` as an empty string on the assumption that the trigger routes on `id` and `type` alone. It does route on those, but an empty name leaves the approval with no owner — `approvalDetails` reports `originalOwner.id` as `null` and no work item is ever created. Nothing rejects the callback, so the only symptom was the failed request, and the one invocation that had ever succeeded was the one that added nobody. The workflow now resolves the approver's display name from `/v2026/identities/{id}` or `/v2026/workgroups/{id}` and sends it.
+
+    -   Migration: re-import the workflow, then re-apply Configuration and the **Get Access Token** basic-auth reference.
+
+-   **A low-risk approval comment reports what was evaluated** — `Set Low risk decision` hardcoded `Access request pre-check passed. Risk tier Low.` on the reasoning that the summary "only ever says Low". It does not: a Low summary reads `Low: nothing scored Medium or High. Evaluated 1 role, 2 access profiles, 6 entitlements.`, and the tally is the only evidence in the comment that the check inspected anything. Low-risk approvers saw the same sentence whether the request covered one entitlement or fifty, while Medium and High approvers got the detail. All three tiers now interpolate the summary, which is what the operation README already documented.
+
+    -   Migration: re-import the workflow.
+
+### 🔧 Improvements
+
+-   **Default Approver accepts a governance group** — approver ids no longer carry an `IDENTITY|` or `GOVERNANCE_GROUP|` prefix. A tier step copies a bare id, and the new **Approver is a governance group?** step derives the callback `type` from the id format, so one Configuration value works for either kind. Previously **Default Approver** had to be a bare id while the tier steps concatenated their own prefix, and a prefixed value produced `IDENTITY|IDENTITY|<id>` whenever a manager level was missing or the risk evaluation failed. `Split approver` is gone with the prefixes.
+
+    -   Migration: re-import the workflow and set **Default Approver** to a plain id with no prefix.
+    -   The kind is read from the id: governance groups are hyphenated UUIDs, identities are unhyphenated 32-character hex. That is an observed ISC convention, not a documented guarantee. A failed name read falls through to **Name lookup failed, use the id**, which keeps routing correct and only degrades the displayed approver name.
+
+---
+
 ## 2026-09-22 · v0.6.4
+
+### 🐞 Fixes
+
+-   **A failed risk invoke no longer continues as if it scored** — `custom:evaluate-access-request-risk` returns HTTP 200 with `{ status: "failed" }` in the streamed body, so workflow `catch` never fired. All three bundled risk workflows now branch on that body in **Invoke failed?** before they read the result account. The pre-check does the same for `custom:preventive-sod-check` in **SoD invoke failed?**.
+
+    -   Migration: re-import the three Risk Approval workflows.
 
 ### 🔧 Improvements
 

@@ -1,133 +1,370 @@
 {
-  "id": "8bd2eae3-dd89-43ea-84bb-8654b81e6dc2",
-  "name": "Access Model SOD - Analysis",
-  "description": "Access Model SOD - Analysis",
-  "created": "2026-08-17T10:57:47.039610656Z",
-  "modified": "2026-08-18T15:11:04.122392716Z",
-  "definition": {
-    "start": "Configuration",
-    "steps": {
-      "Call SaaS Custom Operation": {
-        "actionId": "sp:http",
-        "attributes": {
-          "jsonRequestBody": {
-            "config": {
-              "apiUrl": "{{$.configuration.aPIURL}}",
-              "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}",
-              "token": "{{$.getAccessToken.body.access_token}}"
+    "id": "YOUR_ACCESS_MODEL_SOD_ANALYSIS_WORKFLOW_ID",
+    "name": "Access Model SOD - Analysis",
+    "description": "Interactive scan of the access model for intrinsic SoD conflicts. Explains the process, runs custom:access-model-sod-remediation, then reports the outcome. The invoke body is a plain-text NDJSON stream, so every read of it is a string comparison, never a JSONPath into an object.",
+    "created": "2026-08-17T10:57:47.039610656Z",
+    "modified": "2026-09-22T16:40:00.000000000Z",
+    "definition": {
+        "start": "Message About This Process",
+        "steps": {
+            "Message About This Process": {
+                "actionId": "sp:interactive-message",
+                "attributes": {
+                    "category": "INFO",
+                    "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                    "message": "<p style=\"margin:0 0 22px 0;font-size:15px;line-height:1.7;color:#0f172a;\">This process inspects the <strong>access model itself</strong>, not people. It looks for roles and access profiles whose own entitlements already sit on both sides of an enforced separation-of-duties policy.</p><table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0 14px;width:100%;max-width:660px;\"><tr><td style=\"background-color:#eff6ff;border-left:5px solid #2563eb;border-radius:6px;padding:20px 24px;font-size:14px;line-height:1.7;color:#1e293b;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#1d4ed8;margin:0 0 10px 0;\">1 &middot; What runs</div>Every enabled role in scope is checked against every enforced SoD policy. Nothing in the catalog is changed and no access is revoked.</td></tr><tr><td style=\"background-color:#f0fdf4;border-left:5px solid #16a34a;border-radius:6px;padding:20px 24px;font-size:14px;line-height:1.7;color:#1e293b;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#15803d;margin:0 0 10px 0;\">2 &middot; What happens to a finding</div>Each new conflict creates a remediation form for the <strong>access item owner</strong>, and <strong>Access Model SOD - Notification</strong> emails them the link. A conflict that already has a form is skipped, so owners are never emailed twice for the same thing.</td></tr><tr><td style=\"background-color:#fffbeb;border-left:5px solid #d97706;border-radius:6px;padding:20px 24px;font-size:14px;line-height:1.7;color:#1e293b;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b45309;margin:0 0 10px 0;\">3 &middot; While it runs</div>The scan is already running &mdash; this panel is information only and nothing is waiting on you. A large catalog takes several minutes, and the tenant rate limits the API calls behind it. The outcome appears below this panel when it finishes.</td></tr></table>",
+                    "ownerId.$": "$.trigger.launchedBy.id",
+                    "title": "Access model SoD analysis"
+                },
+                "description": "Explains the scan before any tenant API is called.",
+                "displayName": "Message: About this process",
+                "nextStep": "Configuration",
+                "type": "action",
+                "versionNumber": 1
             },
-            "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
-            "input": {
-              "formName": "Access Model SOD Remediation",
-              "requestId": "access-model-sod-remediation",
-              "scope": "*",
-              "searchIndices": [
-                "roles"
-              ]
+            "Configuration": {
+                "actionId": "sp:define-variable",
+                "attributes": {
+                    "id": "sp:define-variable",
+                    "variables": [
+                        {
+                            "description": "ISC API base URL, no trailing slash.",
+                            "name": "API URL",
+                            "transforms": [],
+                            "variableA": "https://tenant.api.identitynow-demo.com"
+                        },
+                        {
+                            "description": "Result source that stores custom operation output.",
+                            "name": "SaaS Custom Operations Source Name",
+                            "transforms": [],
+                            "variableA": "SaaS Custom Operations"
+                        },
+                        {
+                            "description": "Platform connector id for saas-custom-operations.",
+                            "name": "SaaS Custom Operations Connector ID",
+                            "transforms": [],
+                            "variableA": "<CONNECTOR ID>"
+                        }
+                    ]
+                },
+                "displayName": "Configuration",
+                "nextStep": "Get Access Token",
+                "type": "Mutation"
             },
-            "tag": "latest",
-            "type": "custom:access-model-sod-remediation"
-          },
-          "method": "post",
-          "param_authenticationRef": "none",
-          "param_basic": {
-            "mapping": {
-              "auth_password": "password",
-              "auth_username": "username"
+            "Get Access Token": {
+                "actionId": "sp:http",
+                "attributes": {
+                    "formRequestBody": {
+                        "grant_type": "client_credentials"
+                    },
+                    "method": "post",
+                    "param_authenticationRef": "basic",
+                    "param_basic": {
+                        "mapping": {
+                            "auth_password": "password",
+                            "auth_username": "username"
+                        },
+                        "paramID": "3e96bf32-75c9-49c0-aa8f-39a688ec733f",
+                        "paramType": "1.1",
+                        "refID": "026f19db-7950-420f-918d-6b9996325499"
+                    },
+                    "requestContentType": "form",
+                    "url": "{{$.configuration.aPIURL}}/oauth/token"
+                },
+                "catch": [
+                    {
+                        "next": "Message Token Failed"
+                    }
+                ],
+                "displayName": "Get Access Token",
+                "nextStep": "Call SaaS Custom Operation",
+                "type": "action",
+                "versionNumber": 3
             },
-            "paramType": "1.1"
-          },
-          "requestContentType": "json",
-          "requestHeaders": {
-            "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
-          },
-          "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke",
-          "urlParams": {}
-        },
-        "description": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke",
-        "displayName": "Call SaaS Custom Operation",
-        "nextStep": "End Step - Success",
-        "type": "action",
-        "versionNumber": 3
-      },
-      "Configuration": {
-        "actionId": "sp:define-variable",
-        "attributes": {
-          "id": "sp:define-variable",
-          "variables": [
-            {
-              "description": "",
-              "name": "API URL",
-              "transforms": [],
-              "variableA": "https://tenant.api.identitynow-demo.com"
+            "Call SaaS Custom Operation": {
+                "actionId": "sp:http",
+                "attributes": {
+                    "jsonRequestBody": {
+                        "config": {
+                            "apiUrl": "{{$.configuration.aPIURL}}",
+                            "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}",
+                            "token": "{{$.getAccessToken.body.access_token}}"
+                        },
+                        "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+                        "input": {
+                            "formName": "Access Model SOD Remediation",
+                            "requestId": "access-model-sod-remediation",
+                            "scope": "*",
+                            "searchIndices": ["roles"]
+                        },
+                        "tag": "latest",
+                        "type": "custom:access-model-sod-remediation"
+                    },
+                    "method": "post",
+                    "param_authenticationRef": "none",
+                    "param_basic": {
+                        "mapping": {
+                            "auth_password": "password",
+                            "auth_username": "username"
+                        },
+                        "paramType": "1.1"
+                    },
+                    "requestContentType": "json",
+                    "requestHeaders": {
+                        "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+                    },
+                    "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke",
+                    "urlParams": {}
+                },
+                "catch": [
+                    {
+                        "next": "Message Invoke Error"
+                    }
+                ],
+                "description": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke",
+                "displayName": "Call SaaS Custom Operation",
+                "nextStep": "Check Invoke Result",
+                "type": "action",
+                "versionNumber": 3
             },
-            {
-              "description": "",
-              "name": "SaaS Custom Operations Source Name",
-              "transforms": [],
-              "variableA": "SaaS Custom Operations"
+            "Check Invoke Result": {
+                "actionId": "sp:compare-strings",
+                "choiceList": [
+                    {
+                        "comparator": "StringContains",
+                        "nextStep": "Message Scan Failed",
+                        "variableA.$": "$.callSaaSCustomOperation.body",
+                        "variableB": "\"status\":\"failed\""
+                    }
+                ],
+                "defaultStep": "Check Violations Found",
+                "description": "The connector answers HTTP 200 even when the operation failed, so catch never fires for an operation-level failure. The body is a text/plain NDJSON stream, which is why this is a string check and not a JSONPath read.",
+                "displayName": "Invoke failed?",
+                "type": "choice"
             },
-            {
-              "description": "",
-              "name": "SaaS Custom Operations Connector ID",
-              "transforms": [],
-              "variableA": "<CONNECTOR ID>"
+            "Check Violations Found": {
+                "actionId": "sp:compare-strings",
+                "choiceList": [
+                    {
+                        "comparator": "StringContains",
+                        "nextStep": "Message No Conflicts",
+                        "variableA.$": "$.callSaaSCustomOperation.body",
+                        "variableB": "\"access-model-sod-remediation:violations-found\":0"
+                    }
+                ],
+                "defaultStep": "Get Result Source",
+                "description": "violations-found is always present in the response summary, and the streamed JSON has no spaces after colons, so a zero result matches this literal exactly.",
+                "displayName": "Any conflicts?",
+                "type": "choice"
+            },
+            "Get Result Source": {
+                "actionId": "sp:http",
+                "attributes": {
+                    "method": "get",
+                    "param_authenticationRef": "none",
+                    "requestHeaders": {
+                        "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+                    },
+                    "url": "{{$.configuration.aPIURL}}/v2026/sources",
+                    "urlParams": {
+                        "filters": "name eq \"{{$.configuration.saaSCustomOperationsSourceName}}\""
+                    }
+                },
+                "catch": [
+                    {
+                        "next": "Message Conflicts Unavailable"
+                    }
+                ],
+                "description": "Get Accounts filters on source id, and only the source name is configured, so the id is resolved here.",
+                "displayName": "Get Result Source",
+                "nextStep": "Read Conflict Records",
+                "type": "action",
+                "versionNumber": 3
+            },
+            "Read Conflict Records": {
+                "actionId": "sp:get-accounts",
+                "attributes": {
+                    "filterCriteria": "sourceId",
+                    "getAccountsBy": "filters",
+                    "operator": "eq",
+                    "value": "{{$.getResultSource.body[0].id}}"
+                },
+                "catch": [
+                    {
+                        "next": "Message Conflicts Unavailable"
+                    }
+                ],
+                "description": "One account per conflict that has a remediation form, written by the scan at {requestId}:{accessItemId}:{policyId}. Get Accounts supports only eq and in, so the whole source is read and the loop filters it.",
+                "displayName": "Read Conflict Records",
+                "nextStep": "Message Conflicts Intro",
+                "type": "action",
+                "versionNumber": 1
+            },
+            "Message Conflicts Intro": {
+                "actionId": "sp:interactive-message",
+                "attributes": {
+                    "category": "INFO",
+                    "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fffbeb;border-left:5px solid #d97706;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b45309;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#78350f;margin:0 0 10px 0;\">Conflicts found in the access model</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">At least one role or access profile carries entitlements from both sides of an enforced SoD policy. One card follows for each conflict that has a remediation form.</div></td></tr></table><table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0 12px;width:100%;max-width:660px;\"><tr><td style=\"background-color:#eff6ff;border-left:5px solid #2563eb;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\"><strong style=\"color:#1d4ed8;\">Owners already have these</strong> &mdash; <strong>Access Model SOD - Notification</strong> emails the form link when a conflict is first raised. The cards below are for your visibility; you do not need to forward them.</td></tr><tr><td style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\"><strong style=\"color:#475569;\">Carried over</strong> &mdash; conflicts raised by earlier scans appear here too. This scan skips them rather than emailing their owners again.</td></tr></table>",
+                    "ownerId.$": "$.trigger.launchedBy.id",
+                    "title": "Scan complete"
+                },
+                "displayName": "Message: Conflicts intro",
+                "nextStep": "Loop Conflicts",
+                "type": "action",
+                "versionNumber": 1
+            },
+            "Loop Conflicts": {
+                "actionId": "sp:loop:iterator",
+                "attributes": {
+                    "context.$": "$.trigger",
+                    "input.$": "$.readConflictRecords.accounts[?(@.attributes.operationName == 'custom:access-model-sod-remediation')]",
+                    "start": "Check Conflict Record",
+                    "steps": {
+                        "Check Conflict Record": {
+                            "choiceList": [
+                                {
+                                    "comparator": "IsPresent",
+                                    "nextStep": "Message Conflict",
+                                    "variableA.$": "$.loop.loopInput.attributes['access-model-sod-remediation:conflicting-entitlements-group-a']"
+                                }
+                            ],
+                            "defaultStep": "End Step - Success",
+                            "description": "The scan also writes an account on the bare requestId when an invoke fails. That record carries no conflict detail and is skipped here.",
+                            "displayName": "Has a form?",
+                            "type": "choice"
+                        },
+                        "Message Conflict": {
+                            "actionId": "sp:interactive-message",
+                            "attributes": {
+                                "category": "INFO",
+                                "interactiveProcessId.$": "$.loop.context.interactiveProcessId",
+                                "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fffbeb;border-left:5px solid #d97706;border-radius:6px;padding:22px 24px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b45309;margin:0 0 10px 0;\">Conflict</div><div style=\"font-size:19px;font-weight:700;line-height:1.4;color:#78350f;margin:0 0 10px 0;\"><a href=\"{{$.loop.loopInput.attributes['access-model-sod-remediation:access-item-url']}}\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:#78350f;text-decoration:underline;text-decoration-color:#d97706;text-underline-offset:3px;\">{{$.loop.loopInput.attributes['access-model-sod-remediation:access-item-name']}}</a></div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">Its own entitlements sit on both sides of <strong><a href=\"{{$.loop.loopInput.attributes['access-model-sod-remediation:policy-url']}}\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:#1d4ed8;text-decoration:underline;text-underline-offset:3px;\">{{$.loop.loopInput.attributes['access-model-sod-remediation:policy-name']}}</a></strong>, so anyone granted it breaches the policy on day one.</div></td></tr></table><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;margin:0 0 12px 0;\">What collides</div><table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" style=\"border-collapse:separate;border-spacing:14px 0;width:100%;max-width:688px;margin:0 0 22px -14px;table-layout:fixed;\"><tr><td width=\"50%\" valign=\"top\" style=\"width:50%;vertical-align:top;padding:0;\"><div style=\"background-color:#fff1f2;border-left:5px solid #e11d48;border-radius:6px;padding:16px 18px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#be123c;margin:0 0 8px 0;\">Group A</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;word-break:break-word;\">{{$.loop.loopInput.attributes['access-model-sod-remediation:conflicting-entitlements-group-a']}}</div></div></td><td width=\"50%\" valign=\"top\" style=\"width:50%;vertical-align:top;padding:0;\"><div style=\"background-color:#eef2ff;border-left:5px solid #4f46e5;border-radius:6px;padding:16px 18px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#4338ca;margin:0 0 8px 0;\">Group B</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;word-break:break-word;\">{{$.loop.loopInput.attributes['access-model-sod-remediation:conflicting-entitlements-group-b']}}</div></div></td></tr></table><table role=\"presentation\" style=\"border-collapse:collapse;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"padding:12px 20px 12px 0;vertical-align:top;width:190px;font-size:13px;line-height:1.6;color:#64748b;\">Type</td><td style=\"padding:12px 0;vertical-align:top;font-size:14px;line-height:1.7;color:#0f172a;\">{{$.loop.loopInput.attributes['access-model-sod-remediation:access-item-type']}}</td></tr><tr><td style=\"padding:12px 20px 12px 0;vertical-align:top;width:190px;font-size:13px;line-height:1.6;color:#64748b;\">Policy</td><td style=\"padding:12px 0;vertical-align:top;font-size:14px;line-height:1.7;color:#0f172a;\"><a href=\"{{$.loop.loopInput.attributes['access-model-sod-remediation:policy-url']}}\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:#1d4ed8;text-decoration:underline;text-underline-offset:3px;\">{{$.loop.loopInput.attributes['access-model-sod-remediation:policy-name']}}</a></td></tr><tr><td style=\"padding:12px 20px 12px 0;vertical-align:top;width:190px;font-size:13px;line-height:1.6;color:#64748b;\">Owner notified</td><td style=\"padding:12px 0;vertical-align:top;font-size:14px;line-height:1.7;color:#0f172a;\">{{$.loop.loopInput.attributes['access-model-sod-remediation:form-email-recipients'][0]}}</td></tr></table><table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 18px 0;\"><tr><td style=\"background-color:#eff6ff;border-left:5px solid #2563eb;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\">The owner holds a remediation form for this conflict and chooses which side to correct. The link is in their email and is deliberately not repeated here, since it only works for them.</td></tr></table><div style=\"font-size:12px;line-height:1.7;color:#94a3b8;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;\">{{$.loop.loopInput.nativeIdentity}}</div>",
+                                "ownerId.$": "$.loop.context.launchedBy.id",
+                                "title": "{{$.loop.loopInput.attributes['access-model-sod-remediation:access-item-name']}}"
+                            },
+                            "displayName": "Message: Conflict",
+                            "nextStep": "End Step - Success",
+                            "type": "action",
+                            "versionNumber": 1,
+                            "description": "Reads the persisted conflict detail and links the catalog definitions. No form link: the launcher is rarely the form recipient."
+                        },
+                        "End Step - Success": {
+                            "displayName": "",
+                            "type": "success"
+                        }
+                    }
+                },
+                "catch": [
+                    {
+                        "next": "Message Conflicts Unavailable"
+                    }
+                ],
+                "description": "One panel per conflict. Outer state reaches loop steps only through context, so the interactive process and launcher are passed that way.",
+                "displayName": "Loop: Conflicts",
+                "nextStep": "End Step - Success",
+                "type": "action",
+                "versionNumber": 1
+            },
+            "Message Conflicts Unavailable": {
+                "actionId": "sp:interactive-message",
+                "attributes": {
+                    "category": "INFO",
+                    "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fffbeb;border-left:5px solid #d97706;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b45309;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#78350f;margin:0 0 10px 0;\">Conflicts found, but the list could not be loaded</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">The scan itself completed and any new remediation form was created and emailed to its owner. Only this read-back of the stored records failed.</div></td></tr></table><div style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\">Check that the result source named in Configuration exists and that the token may read its accounts. The owner emails are unaffected.</div>",
+                    "ownerId.$": "$.trigger.launchedBy.id",
+                    "title": "Scan complete"
+                },
+                "displayName": "Message: Conflicts unavailable",
+                "nextStep": "End Step - Success",
+                "type": "action",
+                "versionNumber": 1
+            },
+            "Message No Conflicts": {
+                "actionId": "sp:interactive-message",
+                "attributes": {
+                    "category": "INFO",
+                    "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#f0fdf4;border-left:5px solid #16a34a;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#15803d;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#14532d;margin:0 0 10px 0;\">No conflicts in the scanned access model</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">Nothing in scope puts an enforced SoD policy on both sides of the same role or access profile. No remediation form was created and no owner was emailed.</div></td></tr></table><table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0 12px;width:100%;max-width:660px;\"><tr><td style=\"background-color:#eff6ff;border-left:5px solid #2563eb;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\"><strong style=\"color:#1d4ed8;\">What this covers</strong> &mdash; the access model itself. Conflicts an identity picks up by combining separate access items are handled by <strong>SOD Violation - Notification</strong>.</td></tr><tr><td style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\"><strong style=\"color:#475569;\">Scope</strong> &mdash; only the roles and policies selected on the invoke step were read. Widening <code>scope</code> or <code>searchIndices</code> there widens the scan.</td></tr></table>",
+                    "ownerId.$": "$.trigger.launchedBy.id",
+                    "title": "Scan complete"
+                },
+                "description": "Zero-violation outcome. No record is written for a clean scan, so there is nothing to read back.",
+                "displayName": "Message: No conflicts",
+                "nextStep": "End Step - Success",
+                "type": "action",
+                "versionNumber": 1
+            },
+            "Message Scan Failed": {
+                "actionId": "sp:interactive-message",
+                "attributes": {
+                    "category": "ERROR",
+                    "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fef2f2;border-left:5px solid #dc2626;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b91c1c;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#7f1d1d;margin:0 0 10px 0;\">The scan stopped before it finished</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">The connector answered, but the operation reported a failure. Findings from this run are incomplete, and the catalog was not changed.</div></td></tr></table><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;margin:0 0 10px 0;\">Operation response</div><div style=\"background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:18px 20px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.7;color:#334155;white-space:pre-wrap;word-break:break-word;\">{{$.callSaaSCustomOperation.body}}</div><table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0 12px;width:100%;max-width:660px;margin:18px 0 0 0;\"><tr><td style=\"background-color:#fffbeb;border-left:5px solid #d97706;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\"><strong style=\"color:#b45309;\">HTTP 429</strong> &mdash; the tenant rate limited the scan. Narrow <code>scope</code> or <code>searchIndices</code> on the invoke step, or run it again when the tenant is quieter.</td></tr><tr><td style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\"><strong style=\"color:#475569;\">Anything else</strong> &mdash; check the Configuration values and the token scopes. Forms already created by earlier runs are untouched, and a re-run skips conflicts that already have one.</td></tr></table>",
+                    "ownerId.$": "$.trigger.launchedBy.id",
+                    "title": "Scan did not complete"
+                },
+                "description": "Operation-level failure. The body carries the error text, which is the only place the cause appears.",
+                "displayName": "Message: Scan failed",
+                "nextStep": "End Step - Failure",
+                "type": "action",
+                "versionNumber": 1
+            },
+            "Message Invoke Error": {
+                "actionId": "sp:interactive-message",
+                "attributes": {
+                    "category": "ERROR",
+                    "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fef2f2;border-left:5px solid #dc2626;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b91c1c;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#7f1d1d;margin:0 0 10px 0;\">The connector could not be reached</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">The scan never started, so nothing was scanned and no form was created.</div></td></tr></table><table role=\"presentation\" style=\"border-collapse:collapse;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;width:150px;font-size:13px;color:#64748b;\">Status</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\"><strong>{{$.callSaaSCustomOperation.error.workflowStatusCode}}</strong></td></tr><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;font-size:13px;color:#64748b;\">Detail</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\">{{$.callSaaSCustomOperation.error.workflowErrorMessage}}</td></tr></table><div style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\">Check the connector id and API URL in Configuration, and confirm the connector version is deployed to this tenant.</div>",
+                    "ownerId.$": "$.trigger.launchedBy.id",
+                    "title": "Scan could not start"
+                },
+                "description": "Transport-level failure on the invoke, where the error object exists and the body does not.",
+                "displayName": "Message: Invoke error",
+                "nextStep": "End Step - Failure",
+                "type": "action",
+                "versionNumber": 1
+            },
+            "Message Token Failed": {
+                "actionId": "sp:interactive-message",
+                "attributes": {
+                    "category": "ERROR",
+                    "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fef2f2;border-left:5px solid #dc2626;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b91c1c;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#7f1d1d;margin:0 0 10px 0;\">Could not authenticate to the tenant</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">The OAuth token request failed, so the scan never ran.</div></td></tr></table><table role=\"presentation\" style=\"border-collapse:collapse;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;width:150px;font-size:13px;color:#64748b;\">Status</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\"><strong>{{$.getAccessToken.error.workflowStatusCode}}</strong></td></tr><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;font-size:13px;color:#64748b;\">Detail</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\">{{$.getAccessToken.error.workflowErrorMessage}}</td></tr></table><div style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\">Re-apply the basic-auth reference on <strong>Get Access Token</strong> after import, and confirm the client id and secret are valid for this tenant.</div>",
+                    "ownerId.$": "$.trigger.launchedBy.id",
+                    "title": "Scan could not start"
+                },
+                "description": "OAuth failure. The basic-auth reference is tenant-specific and does not survive an import.",
+                "displayName": "Message: Token failed",
+                "nextStep": "End Step - Failure",
+                "type": "action",
+                "versionNumber": 1
+            },
+            "End Step - Success": {
+                "actionId": "sp:operator-success",
+                "displayName": "Success: Scan complete",
+                "type": "success"
+            },
+            "End Step - Failure": {
+                "actionId": "sp:operator-failure",
+                "displayName": "Failure: Scan did not complete",
+                "failureName": "Access Model SOD Analysis Failed",
+                "type": "failure"
             }
-          ]
-        },
-        "displayName": "Configuration",
-        "nextStep": "Get Access Token",
-        "type": "Mutation"
-      },
-      "End Step - Success": {
-        "actionId": "sp:operator-success",
-        "displayName": "",
-        "type": "success"
-      },
-      "Get Access Token": {
-        "actionId": "sp:http",
+        }
+    },
+    "enabled": false,
+    "creator": {
+        "type": "IDENTITY",
+        "id": "49d1b304294449769e5551c8ece08896",
+        "name": "fernando.delosrios"
+    },
+    "trigger": {
+        "type": "EVENT",
         "attributes": {
-          "formRequestBody": {
-            "grant_type": "client_credentials"
-          },
-          "method": "post",
-          "param_authenticationRef": "basic",
-          "param_basic": {
-            "mapping": {
-              "auth_password": "password",
-              "auth_username": "username"
-            },
-            "paramID": "3e96bf32-75c9-49c0-aa8f-39a688ec733f",
-            "paramType": "1.1",
-            "refID": "026f19db-7950-420f-918d-6b9996325499"
-          },
-          "requestContentType": "form",
-          "url": "{{$.configuration.aPIURL}}/oauth/token"
-        },
-        "displayName": "Get Access Token",
-        "nextStep": "Call SaaS Custom Operation",
-        "type": "action",
-        "versionNumber": 3
-      }
+            "filter.$": "$[?(@.workflowId == 'YOUR_ACCESS_MODEL_SOD_ANALYSIS_WORKFLOW_ID')]",
+            "id": "idn:interactive-process-launched",
+            "integrationId": null
+        }
     }
-  },
-  "enabled": false,
-  "creator": {
-    "type": "IDENTITY",
-    "id": "49d1b304294449769e5551c8ece08896",
-    "name": "fernando.delosrios"
-  },
-  "trigger": {
-    "type": "SCHEDULED",
-    "attributes": {
-      "cronString": "0 0 * * *",
-      "dailyTimes": [
-        "1969-12-31T23:00:00.000Z"
-      ],
-      "frequency": "daily",
-      "id": "idn:cron-schedule",
-      "integrationId": null,
-      "timeZone": "Europe/Madrid"
-    }
-  }
 }

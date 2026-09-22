@@ -33,6 +33,8 @@ export {
 export type { CreateFrameworkLoggerOptions, FrameworkLogger, FrameworkLogEvent, LogLevel } from './logger'
 export { createRequestContext } from './request-context'
 export { createSailPointClients } from './sdk-factory'
+export { installThrottleRetry, resolveThrottleDelayMs } from './throttle-retry'
+export type { RetryingAxiosInstance, ThrottleRetryOptions } from './throttle-retry'
 export { inferFromTsType, inferSchemaAttribute } from './schema-inference'
 export {
     applyBaseAccountSchema,

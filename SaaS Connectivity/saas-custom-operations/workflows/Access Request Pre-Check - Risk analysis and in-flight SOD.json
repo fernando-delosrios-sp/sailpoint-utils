@@ -155,9 +155,24 @@
           }
         ],
         "displayName": "Call Evaluate Risk",
-        "nextStep": "Read Risk Result",
+        "nextStep": "Check Invoke Result",
         "type": "action",
         "versionNumber": 3
+      },
+      "Check Invoke Result": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringContains",
+            "nextStep": "Set Evaluation Failed",
+            "variableA.$": "$.callEvaluateRisk.body",
+            "variableB": "\"status\":\"failed\""
+          }
+        ],
+        "defaultStep": "Read Risk Result",
+        "description": "The connector returns HTTP 200 even when the operation failed. Catch that here so a leftover result account cannot look like a scored request.",
+        "displayName": "Invoke failed?",
+        "type": "choice"
       },
       "Read Risk Result": {
         "actionId": "sp:get-accounts",
@@ -317,9 +332,24 @@
         ],
         "description": "Request mode. Passing the access request id reports only the violations this request would introduce. Inflight Only (default true) skips existing active violations.",
         "displayName": "Call Preventive SoD Check",
-        "nextStep": "Read Sod Result",
+        "nextStep": "Check Sod Invoke Result",
         "type": "action",
         "versionNumber": 3
+      },
+      "Check Sod Invoke Result": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringContains",
+            "nextStep": "Set Evaluation Failed",
+            "variableA.$": "$.callPreventiveSodCheck.body",
+            "variableB": "\"status\":\"failed\""
+          }
+        ],
+        "defaultStep": "Read Sod Result",
+        "description": "The connector returns HTTP 200 even when the operation failed. Catch that here so a leftover result account cannot look like a scored request.",
+        "displayName": "SoD invoke failed?",
+        "type": "choice"
       },
       "Read Sod Result": {
         "actionId": "sp:get-accounts",
@@ -554,10 +584,10 @@
               "variableA": true
             },
             {
-              "description": "Comment for a Low-risk request. The risk summary is left out because it only ever says Low.",
+              "description": "Comment for a Low-risk request. The summary already opens with the tier, so the wording does not repeat it.",
               "name": "$.defineVariable.message",
               "transforms": [],
-              "variableA": "Access request pre-check passed. Risk tier Low."
+              "variableA": "Access request pre-check passed. Risk tier {{$.defineVariable.riskSummary}}"
             }
           ]
         },
@@ -596,16 +626,16 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "Set true to approve High-risk requests.",
+              "description": "Set false to deny High-risk requests.",
               "name": "$.defineVariable.approved",
               "transforms": [],
-              "variableA": false
+              "variableA": true
             },
             {
               "description": "Comment for a High-risk request. The summary already opens with the tier, so the wording does not repeat it.",
               "name": "$.defineVariable.message",
               "transforms": [],
-              "variableA": "Access request pre-check denied. Risk tier {{$.defineVariable.riskSummary}}"
+              "variableA": "Access request pre-check passed. Risk tier {{$.defineVariable.riskSummary}}"
             }
           ]
         },

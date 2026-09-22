@@ -135,10 +135,10 @@ This workflow runs two checks and answers once. It scores risk with `custom:eval
 | ------------------------ | -------- | --------------------------------------------------------------------------- |
 | Set Low risk decision    | approve  | Tier plus the risk situation summary                                        |
 | Set Medium risk decision | approve  | Tier plus the risk situation summary                                        |
-| Set High risk decision   | deny     | Tier plus the risk situation summary                                        |
+| Set High risk decision   | approve  | Tier plus the risk situation summary                                        |
 | Set violation decision   | deny     | Replaces the risk comment with the risk tier plus the SoD situation summary |
 
-The SoD step runs after the risk step, so it has the last word. **Set evaluation failed decision** catches every failed token, invoke, or result read, an unknown risk tier, and a missing SoD result — it denies, and setting `Approved` to `true` there is the one switch that makes the pre-check fail open. A check that produced no answer never counts as a passing one: **SoD result present?** tests the situation summary rather than the violation flag, because that flag is legitimately `false` on a clean request. **Callback approved** and **Callback denied** send `Approved` and `Message`; neither has a policy of its own.
+The SoD step runs after the risk step, so it has the last word. **Set evaluation failed decision** catches every failed token, an invoke that returns `"status":"failed"` in an HTTP 200 body (**Invoke failed?** for risk, **SoD invoke failed?** for SoD), a failed result read, an unknown risk tier, and a missing SoD result — it denies, and setting `Approved` to `true` there is the one switch that makes the pre-check fail open. A check that produced no answer never counts as a passing one: **SoD result present?** tests the situation summary rather than the violation flag, because that flag is legitimately `false` on a clean request. **Callback approved** and **Callback denied** send `Approved` and `Message`; neither has a policy of its own.
 
 The comment is written to read as a sentence. `evaluate-access-request-risk:situation-summary` already opens with the tier, so the tier steps do not restate it, and the SoD step replaces the risk comment rather than appending to it — otherwise a denial trails a sentence that said the request passed.
 
@@ -158,7 +158,7 @@ Subscribe Access Request Dynamic Approval the same way (Async, external URL, dea
 
 This workflow adds **at most one extra approver, or none**, depending on the risk tier. It never adds two, and a tier you leave at `NONE` adds nobody.
 
-An extra approver is built on the tier steps as **type + id**. `variableA` is `IDENTITY|` or `GOVERNANCE_GROUP|`, and the concatenate transform supplies the id: `$.defineVariable.manager`, `$.defineVariable.managersManager`, `$.configuration.defaultApprover`, or a literal.
+An extra approver is a **bare id** set on the tier step: `$.defineVariable.manager`, `$.defineVariable.managersManager`, `$.configuration.defaultApprover`, or a literal. No type prefix anywhere. The workflow works out whether that id is an identity or a governance group on its own, so no step and no Configuration value has to agree with another about the kind.
 
 Three ISC validator rules shape this workflow, and breaking any of them blocks saving it:
 
@@ -170,16 +170,18 @@ The workflow runs in four phases:
 
 1. **Resolve the manager levels as ids.** Both start at `NONE`. Reading the recipient and the manager fills them with the identity id. **No manager, use default approver** sets Manager to **Default Approver** and continues to **No manager's manager, use default approver**, which does the same for the second level.
 2. **Score risk**, as in the other workflows.
-3. **Set the approver** for the winning tier. There is one step per tier — **Set High approver**, **Set Medium approver**, **Set Low approver** — each concatenates type and id as above. These three steps are the whole routing policy.
-4. **Answer.** An `Approver` other than `NONE` is split on the `|` into the callback's `type` and `id`; `NONE` sends the none callback.
+3. **Set the approver** for the winning tier. There is one step per tier — **Set High approver**, **Set Medium approver**, **Set Low approver** — each copying an id as above. These three steps are the whole routing policy.
+4. **Answer.** `NONE` sends the none callback. Any other `Approver` goes through **Approver is a governance group?**, which sets the callback `type` and picks the matching read — **Get Approver Identity** or **Get Approver Group** — to fill in the display name before **Callback** sends id, type, and name.
 
 The invoke call stays on `/beta/platform-connectors`. The `/v2026` and `/v2025` equivalents reject requests that omit the `X-SailPoint-Experimental: true` header, so beta is the stable path for it today.
 
-The only extra Configuration variable is **Default Approver**, an identity or governance group **id** (no type prefix). Missing manager levels copy that id. Pair the type (`IDENTITY|` or `GOVERNANCE_GROUP|`) on the Set approver steps.
+The only extra Configuration variable is **Default Approver**, an identity or governance group **id** on its own. Missing manager levels copy that id, and so does the error path, so a governance group works in every one of those places without any other edit.
 
-Each tier step is yours to set: change `variableA` for the type, and the concatenate input for the id. As shipped, High is `IDENTITY|` plus the manager's manager, Medium is `IDENTITY|` plus the manager, and Low is `NONE`. Anything that stops the workflow from reaching a tier — a failed token, invoke, or result read, and a missing or unknown tier — takes **Set Error approver**, which concatenates `IDENTITY|` with **Default Approver**. A request that was never scored is not treated as a High-risk one.
+Each tier step is yours to set: point `variableA` at whichever id should approve. As shipped, High is the manager's manager, Medium is the manager, and Low is `NONE`. Anything that stops the workflow from reaching a tier — a failed token, an invoke that returns `"status":"failed"` in an HTTP 200 body, a failed result read, and a missing or unknown tier — takes **Set Error approver**, which copies **Default Approver**. A request that was never scored is not treated as a High-risk one. **Invoke failed?** runs before **Read Risk Result**, so a leftover success account from an earlier run cannot look like a scored request.
 
-The callback sends `name` empty. The trigger assigns the approval from `id` and `type`, so the workflow does not read the identity or the governance group just to fill it in.
+**The callback `name` cannot be empty.** Sending an id and type with `name: ""` leaves the approval with no owner: the request dies at the approval phase with `Approval workflow error: … workflowType='generic-approvals:approval-workflow'`, `approvalDetails` shows `originalOwner.id` as `null`, and no work item is ever created. Nothing rejects the callback, so the only symptom is the failed request. The trigger still routes on `id`, but the name has to be there.
+
+That is why **Approver is a governance group?** exists. Governance group ids are hyphenated UUIDs and identity ids are unhyphenated 32-character hex, so the hyphen decides the kind, which fixes both the callback `type` and which endpoint supplies the name — `/v2026/identities/{id}` or `/v2026/workgroups/{id}`. Note that this id format is an observed ISC convention rather than a documented guarantee; if it ever stopped holding, a misread id would send the wrong `type`, and ISC answers a wrong id by assigning a random org admin instead of failing. Either read falling over goes to **Name lookup failed, use the id**, which puts the id in `name` — still correct routing, just an uglier approver list — because any non-empty name beats the empty one that breaks the approval.
 
 ### Dynamic Approval Workflow - Risk analysis
 
@@ -187,6 +189,6 @@ Requires Adaptive Approvals. The declared trigger is `idn:access-request-trigger
 
 The workflow scores the request, then opens one Approval Policy (`sp:access-request-approval`) for that tier: High, Medium, or Low. Each policy is **Manager of** the requested-for identity (`singleApproverCategory` `MANAGER_OF`), with a 7-day timeout that expires, reminders off, and timezone `Europe/Madrid`. It does not resolve a default approver. After import, change a policy's reviewer category if you need a fixed identity or governance group instead.
 
-A fourth policy, **Approval Policy Evaluation Failed**, covers a failed token, invoke, or result read, and a missing or unknown tier. It ships with the same settings as the High policy and its own `YOUR_EVALUATION_FAILED_REVIEWER_ID` placeholder, so an unscored request routes to a reviewer you choose for that case rather than silently looking like a High-risk one. Bind its reviewer along with the other three.
+A fourth policy, **Approval Policy Evaluation Failed**, covers a failed token, an invoke that returns `"status":"failed"` in an HTTP 200 body (**Invoke failed?**), a failed result read, and a missing or unknown tier. It ships with the same settings as the High policy and its own `YOUR_EVALUATION_FAILED_REVIEWER_ID` placeholder, so an unscored request routes to a reviewer you choose for that case rather than silently looking like a High-risk one. Bind its reviewer along with the other three.
 
 Do not also subscribe the dynamic-approver workflow for the same items unless you want both this policy and a later extra approver.

@@ -1,12 +1,6 @@
 import { escapeHtml } from './escape'
 
-export type IscUiLinkKind =
-    | 'identity'
-    | 'sodPolicy'
-    | 'role'
-    | 'accessProfile'
-    | 'entitlement'
-    | 'violationList'
+export type IscUiLinkKind = 'identity' | 'sodPolicy' | 'role' | 'accessProfile' | 'entitlement' | 'violationList'
 
 const PATH_BUILDERS: Record<IscUiLinkKind, (id?: string) => string> = {
     identity: (id) => `/ui/a/admin/identities/${encodeURIComponent(id!)}/details/attributes`,
@@ -33,17 +27,13 @@ export function resolveUiOrigin(apiUrl: string): string | undefined {
     }
 }
 
-function buildHref(uiOrigin: string, kind: IscUiLinkKind, id?: string): string {
+/** Builds an ISC admin UI URL for persistence or non-HTML consumers. */
+export function buildIscUiUrl(uiOrigin: string, kind: IscUiLinkKind, id?: string): string {
     return `${uiOrigin}${PATH_BUILDERS[kind](id)}`
 }
 
 /** Renders an ISC admin UI anchor, or plain escaped text when offline or id is missing (except violationList). */
-export function renderIscUiLink(
-    uiOrigin: string | undefined,
-    kind: IscUiLinkKind,
-    label: string,
-    id?: string
-): string {
+export function renderIscUiLink(uiOrigin: string | undefined, kind: IscUiLinkKind, label: string, id?: string): string {
     const escapedLabel = escapeHtml(label)
 
     if (!uiOrigin) {
@@ -54,7 +44,7 @@ export function renderIscUiLink(
         return escapedLabel
     }
 
-    const href = escapeHtml(buildHref(uiOrigin, kind, id))
+    const href = escapeHtml(buildIscUiUrl(uiOrigin, kind, id))
     return `<a href="${href}" target="_blank" rel="noopener noreferrer">${escapedLabel}</a>`
 }
 

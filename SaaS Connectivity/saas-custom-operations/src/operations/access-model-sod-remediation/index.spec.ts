@@ -23,10 +23,7 @@ const persistAttributes = [
     { name: 'access-model-sod-remediation:form-email-recipients', type: 'STRING', isMulti: true },
 ]
 
-function expectScanSummary(
-    res: { send: ReturnType<typeof vi.fn> },
-    summary: Record<string, unknown>
-): void {
+function expectScanSummary(res: { send: ReturnType<typeof vi.fn> }, summary: Record<string, unknown>): void {
     expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
             name: 'custom:access-model-sod-remediation',
@@ -41,6 +38,7 @@ function sentSummary(res: { send: ReturnType<typeof vi.fn> }): Record<string, un
 }
 
 const createAccountV1 = vi.fn().mockResolvedValue({})
+const putAccountV1 = vi.fn()
 const resolveSourceByName = vi.fn()
 const getSourceSchemasV1 = vi.fn()
 const searchFormInstancesByTenantV1 = vi.fn().mockResolvedValue({ data: [] })
@@ -139,7 +137,7 @@ vi.mock('../../framework/sdk-factory', () => ({
                     data: [{ id: `isc-${id}`, sourceId: 'source-123', attributes: persistedAccounts.get(id) }],
                 }
             }),
-            putAccountV1: vi.fn(),
+            putAccountV1: (...args: unknown[]) => putAccountV1(...args),
             getAccountV1: vi.fn().mockImplementation(async ({ id }) => {
                 const nativeId = String(id).replace(/^isc-/, '')
                 const attributes = persistedAccounts.get(nativeId)
@@ -221,6 +219,12 @@ describe('accessModelSodRemediationOperation', () => {
             persistedIdentities.push(id)
             return { data: { id: 'task-create-1' } }
         })
+        putAccountV1.mockReset()
+        putAccountV1.mockImplementation(async ({ accountAttributes }) => {
+            const attributes = accountAttributes.attributes as Record<string, unknown>
+            persistedAccounts.set(String(attributes.id), attributes)
+            return { data: { id: 'task-put-1' } }
+        })
         searchFormInstancesByTenantV1.mockResolvedValue({ data: [] })
     })
 
@@ -271,26 +275,21 @@ describe('accessModelSodRemediationOperation', () => {
         const res = { send: vi.fn() }
 
         try {
-            await _withConfig(
-                { ...workflowConfig, logUrl: 'https://logs.example.com/ingest' },
-                async () => {
-                    await accessModelSodRemediationOperation(
-                        { commandType: 'custom:access-model-sod-remediation' } as never,
-                        {
-                            requestId: 'req-access-model-logurl',
-                            formName: 'Access Model SOD Remediation',
-                            searchIndices: ['roles'],
-                        },
-                        res as never
-                    )
-                }
-            )
+            await _withConfig({ ...workflowConfig, logUrl: 'https://logs.example.com/ingest' }, async () => {
+                await accessModelSodRemediationOperation(
+                    { commandType: 'custom:access-model-sod-remediation' } as never,
+                    {
+                        requestId: 'req-access-model-logurl',
+                        formName: 'Access Model SOD Remediation',
+                        searchIndices: ['roles'],
+                    },
+                    res as never
+                )
+            })
 
             await Promise.resolve()
 
-            const postedMessages = fetchImpl.mock.calls.map((call) =>
-                JSON.parse(String(call[1]?.body)).message
-            )
+            const postedMessages = fetchImpl.mock.calls.map((call) => JSON.parse(String(call[1]?.body)).message)
             expect(postedMessages).toContain('discoverAccessItems')
             expect(postedMessages).toContain('access-model-sod-remediation start')
             expect(postedMessages).toContain('loadPolicies')
@@ -336,6 +335,7 @@ describe('accessModelSodRemediationOperation', () => {
     it('includes forms-skipped on res.send when child persist account already exists', async () => {
         persistedAccounts.set('req-access-model-sod-skipped:role-offline-1:policy-offline-1', {
             id: 'req-access-model-sod-skipped:role-offline-1:policy-offline-1',
+            'access-model-sod-remediation:form-url': 'https://tenant.example/form/instance-7',
         })
         const res = { send: vi.fn() }
 
@@ -368,6 +368,65 @@ describe('accessModelSodRemediationOperation', () => {
         })
         expect(vi.mocked(launchAccessModelSodRemediationForm)).not.toHaveBeenCalled()
         expect(persistedIdentities).not.toContain('req-access-model-sod-skipped:role-offline-1:policy-offline-1')
+    })
+
+    it('Existing child account refreshes the record it skipped', async () => {
+        const childId = 'req-access-model-sod-refresh:role-offline-1:policy-offline-1'
+        persistedAccounts.set(childId, {
+            id: childId,
+            'access-model-sod-remediation:access-item-name': 'Old Name',
+            'access-model-sod-remediation:form-url': 'https://tenant.example/form/instance-7',
+            'access-model-sod-remediation:form-email-header': 'Review required',
+            'access-model-sod-remediation:form-email-body': 'Open the form',
+            'access-model-sod-remediation:form-email-recipients': ['item-owner-1@example.com'],
+        })
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
+                {
+                    requestId: 'req-access-model-sod-refresh',
+                    formName: 'Access Model SOD Remediation',
+                    searchIndices: ['roles'],
+                },
+                { send: vi.fn() } as never
+            )
+        })
+
+        const refreshed = persistedAccounts.get(childId) as Record<string, unknown>
+
+        expect(refreshed['access-model-sod-remediation:access-item-name']).toBe('Finance Role')
+        expect(refreshed['access-model-sod-remediation:policy-name']).toBe('AP/AR Separation')
+        expect(refreshed['access-model-sod-remediation:recipient-id']).toBe('item-owner-1')
+        expect(refreshed['access-model-sod-remediation:conflicting-entitlements-group-a']).toBeTruthy()
+        expect(refreshed['access-model-sod-remediation:conflicting-entitlements-group-b']).toBeTruthy()
+        expect(refreshed['access-model-sod-remediation:form-url']).toBe('https://tenant.example/form/instance-7')
+        expect(refreshed['access-model-sod-remediation:form-email-recipients']).toEqual(['item-owner-1@example.com'])
+        expect(vi.mocked(launchAccessModelSodRemediationForm)).not.toHaveBeenCalled()
+    })
+
+    it('Failed refresh leaves the scan reporting the skip', async () => {
+        const childId = 'req-access-model-sod-refresh-fail:role-offline-1:policy-offline-1'
+        persistedAccounts.set(childId, { id: childId })
+        putAccountV1.mockRejectedValue(new Error('put rejected'))
+        const res = { send: vi.fn() }
+
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
+                {
+                    requestId: 'req-access-model-sod-refresh-fail',
+                    formName: 'Access Model SOD Remediation',
+                    searchIndices: ['roles'],
+                },
+                res as never
+            )
+        })
+
+        expectScanSummary(res, {
+            'access-model-sod-remediation:violations-found': 1,
+            'access-model-sod-remediation:forms-skipped': 1,
+        })
     })
 
     it('Different parent request does not skip child account from prior scan', async () => {
@@ -405,9 +464,7 @@ describe('accessModelSodRemediationOperation', () => {
         expect(launchFormInput?.situationSummaryHtml).toContain(
             '/ui/a/admin/access/roles/landing-page/details/role-offline-1'
         )
-        expect(launchFormInput?.situationSummaryHtml).toContain(
-            '/ui/sod/policy-management/policy-offline-1/details'
-        )
+        expect(launchFormInput?.situationSummaryHtml).toContain('/ui/sod/policy-management/policy-offline-1/details')
     })
 
     it('does not search form instances for idempotency', async () => {
@@ -529,6 +586,39 @@ describe('accessModelSodRemediationOperation', () => {
         )
     })
 
+    it('Identity fields persisted verbatim alongside the notification fields', async () => {
+        await _withConfig(workflowConfig, async () => {
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
+                {
+                    requestId: 'req-access-model-sod-detail',
+                    formName: 'Access Model SOD Remediation',
+                    searchIndices: ['roles'],
+                },
+                { send: vi.fn() } as never
+            )
+        })
+
+        expect(persistedAccounts.get('req-access-model-sod-detail:role-offline-1:policy-offline-1')).toEqual(
+            expect.objectContaining({
+                'access-model-sod-remediation:access-item-id': 'role-offline-1',
+                'access-model-sod-remediation:access-item-type': 'ROLE',
+                'access-model-sod-remediation:access-item-name': 'Finance Role',
+                'access-model-sod-remediation:policy-id': 'policy-offline-1',
+                'access-model-sod-remediation:policy-name': 'AP/AR Separation',
+                'access-model-sod-remediation:access-item-url':
+                    'https://company22986-poc.identitynow.com/ui/a/admin/access/roles/landing-page/details/role-offline-1',
+                'access-model-sod-remediation:policy-url':
+                    'https://company22986-poc.identitynow.com/ui/sod/policy-management/policy-offline-1/details',
+                'access-model-sod-remediation:recipient-id': 'item-owner-1',
+                'access-model-sod-remediation:form-url': 'https://tenant.example/form/1',
+            })
+        )
+        const detailAccount = persistedAccounts.get('req-access-model-sod-detail:role-offline-1:policy-offline-1')
+        expect(detailAccount?.['access-model-sod-remediation:conflicting-entitlements-group-a']).toBeTruthy()
+        expect(detailAccount?.['access-model-sod-remediation:conflicting-entitlements-group-b']).toBeTruthy()
+    })
+
     it('Missing access item owner fails form launch', async () => {
         vi.mocked(resolveCatalogAccessItemOwnerId).mockRejectedValueOnce(
             new Error('Role role-offline-1 has no owner.id')
@@ -552,9 +642,7 @@ describe('accessModelSodRemediationOperation', () => {
             'access-model-sod-remediation:forms-launch-failed': 1,
         })
         expect(vi.mocked(launchAccessModelSodRemediationForm)).not.toHaveBeenCalled()
-        expect(persistedIdentities).not.toContain(
-            'req-access-model-sod-missing-owner:role-offline-1:policy-offline-1'
-        )
+        expect(persistedIdentities).not.toContain('req-access-model-sod-missing-owner:role-offline-1:policy-offline-1')
     })
 
     it('Launch failure increments launch counter only', async () => {

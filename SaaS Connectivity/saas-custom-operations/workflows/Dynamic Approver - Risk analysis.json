@@ -1,7 +1,7 @@
 {
   "id": "YOUR_DYNAMIC_APPROVER_WORKFLOW_ID",
   "name": "Dynamic Approver - Risk analysis",
-  "description": "Access Request Dynamic Approval event-trigger wrapper. Adds at most one extra approver, or none, depending on the risk tier. Phase 1 stores Manager and Managers Manager as identity ids, falling back to Default Approver id. Phase 2 scores risk with custom:evaluate-access-request-risk. Phase 3 concatenates Approver Type (IDENTITY| or GOVERNANCE_GROUP|) with an id on each tier step, or leaves NONE to add nobody. Any failure, and a missing or unknown tier, takes Set Error approver instead of a tier step. Phase 4 splits that string into the callback type and id, and sends the none callback when Approver is NONE. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
+  "description": "Access Request Dynamic Approval event-trigger wrapper. Adds at most one extra approver, or none, depending on the risk tier. Phase 1 stores Manager and Managers Manager as identity ids, falling back to Default Approver. Phase 2 scores risk with custom:evaluate-access-request-risk. Phase 3 sets Approver to a bare id on each tier step, or leaves NONE to add nobody. Any failure, and a missing or unknown tier, takes Set Error approver instead of a tier step. Phase 4 detects whether that id is an identity or a governance group, reads its display name, and sends the callback; the none callback goes out when Approver is NONE. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -35,7 +35,7 @@
               "variableA": "true"
             },
             {
-              "description": "Identity or governance group id used when a manager level is missing, and when the risk evaluation fails or returns no tier. Pair it with IDENTITY| or GOVERNANCE_GROUP| on the Set approver steps.",
+              "description": "Identity or governance group id used when a manager level is missing, and when the risk evaluation fails or returns no tier. Enter the id on its own, with no type prefix. The workflow detects the kind from the id format.",
               "name": "Default Approver",
               "transforms": [],
               "variableA": "YOUR_DEFAULT_APPROVER_ID"
@@ -64,20 +64,20 @@
               "variableA": "NONE"
             },
             {
-              "description": "The winning tier's approver, IDENTITY|id or GOVERNANCE_GROUP|id. NONE means no extra approver.",
+              "description": "The winning tier's approver id, with no type prefix. NONE means no extra approver.",
               "name": "Approver",
               "transforms": [],
               "variableA": "NONE"
             },
             {
-              "description": "Left side of Approver. Filled by Split approver.",
+              "description": "IDENTITY or GOVERNANCE_GROUP. Set by the step that detects the kind from the Approver id format.",
               "name": "Approver Type",
               "transforms": [],
               "variableA": "NONE"
             },
             {
-              "description": "Right side of Approver. Filled by Split approver.",
-              "name": "Approver ID",
+              "description": "Display name sent on the callback. The approval engine assigns no owner when this is empty, so it always carries the resolved name or the id.",
+              "name": "Approver Name",
               "transforms": [],
               "variableA": "NONE"
             }
@@ -270,9 +270,24 @@
           }
         ],
         "displayName": "Call Evaluate Risk",
-        "nextStep": "Read Risk Result",
+        "nextStep": "Check Invoke Result",
         "type": "action",
         "versionNumber": 3
+      },
+      "Check Invoke Result": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringContains",
+            "nextStep": "Set Default Approver",
+            "variableA.$": "$.callEvaluateRisk.body",
+            "variableB": "\"status\":\"failed\""
+          }
+        ],
+        "defaultStep": "Read Risk Result",
+        "description": "The connector returns HTTP 200 even when the operation failed. Catch that here so a leftover result account cannot look like a scored request.",
+        "displayName": "Invoke failed?",
+        "type": "choice"
       },
       "Read Risk Result": {
         "actionId": "sp:get-accounts",
@@ -343,24 +358,17 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "Type prefix. Concatenate an approver id below.",
+              "description": "",
               "name": "$.defineVariable.approver",
-              "transforms": [
-                {
-                  "id": "sp:transform:concatenate:string",
-                  "input": {
-                    "variableB.$": "$.defineVariable.managersManager"
-                  }
-                }
-              ],
-              "variableA": "IDENTITY|"
+              "transforms": [],
+              "variableA.$": "$.defineVariable.managersManager"
             }
           ]
         },
-        "description": "Pick the High approver. Prefix is IDENTITY| or GOVERNANCE_GROUP|, concatenated with the Manager, Managers Manager, or Default Approver variable, or a literal id. Set the prefix to NONE and drop the concatenate transform for no extra approver.",
         "displayName": "Set High approver",
         "nextStep": "Check Approver",
-        "type": "Mutation"
+        "type": "Mutation",
+        "description": "Pick the High approver. Set this to the Manager, Managers Manager, or Default Approver variable, or to a literal id. Ids carry no type prefix; the kind is detected later. Set NONE to add no approver."
       },
       "Set Medium Approver": {
         "actionId": "sp:update-variable",
@@ -368,24 +376,17 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "Type prefix. Concatenate an approver id below.",
+              "description": "",
               "name": "$.defineVariable.approver",
-              "transforms": [
-                {
-                  "id": "sp:transform:concatenate:string",
-                  "input": {
-                    "variableB.$": "$.defineVariable.manager"
-                  }
-                }
-              ],
-              "variableA": "IDENTITY|"
+              "transforms": [],
+              "variableA.$": "$.defineVariable.manager"
             }
           ]
         },
-        "description": "Pick the Medium approver. Prefix is IDENTITY| or GOVERNANCE_GROUP|, concatenated with the Manager, Managers Manager, or Default Approver variable, or a literal id. Set the prefix to NONE and drop the concatenate transform for no extra approver.",
         "displayName": "Set Medium approver",
         "nextStep": "Check Approver",
-        "type": "Mutation"
+        "type": "Mutation",
+        "description": "Pick the Medium approver. Set this to the Manager, Managers Manager, or Default Approver variable, or to a literal id. Ids carry no type prefix; the kind is detected later. Set NONE to add no approver."
       },
       "Set Low Approver": {
         "actionId": "sp:update-variable",
@@ -393,17 +394,17 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "NONE adds no approver. To add one, set a type prefix and concatenate an approver id.",
+              "description": "NONE adds no approver. Replace it with an approver id to add one.",
               "name": "$.defineVariable.approver",
               "transforms": [],
               "variableA": "NONE"
             }
           ]
         },
-        "description": "Pick the Low approver. NONE adds none. To add one, set the prefix to IDENTITY| or GOVERNANCE_GROUP| and concatenate the Manager, Managers Manager, or Default Approver variable, or a literal id.",
         "displayName": "Set Low approver",
         "nextStep": "Check Approver",
-        "type": "Mutation"
+        "type": "Mutation",
+        "description": "Pick the Low approver. Set this to the Manager, Managers Manager, or Default Approver variable, or to a literal id. Ids carry no type prefix; the kind is detected later. Set NONE to add no approver."
       },
       "Set Default Approver": {
         "actionId": "sp:update-variable",
@@ -411,24 +412,17 @@
           "id": "sp:update-variable",
           "variables": [
             {
-              "description": "Type prefix. Concatenate the Default Approver id below.",
+              "description": "",
               "name": "$.defineVariable.approver",
-              "transforms": [
-                {
-                  "id": "sp:transform:concatenate:string",
-                  "input": {
-                    "variableB.$": "$.configuration.defaultApprover"
-                  }
-                }
-              ],
-              "variableA": "IDENTITY|"
+              "transforms": [],
+              "variableA.$": "$.configuration.defaultApprover"
             }
           ]
         },
-        "description": "Used whenever the risk evaluation cannot produce a tier: a failed token, invoke, or result read, and a missing or unknown tier. Same type-plus-id pattern as the tier steps.",
         "displayName": "Set Error approver",
         "nextStep": "Check Approver",
-        "type": "Mutation"
+        "type": "Mutation",
+        "description": "Used whenever the risk evaluation cannot produce a tier: a failed token, invoke, or result read, and a missing or unknown tier."
       },
       "Check Approver": {
         "actionId": "sp:compare-strings",
@@ -440,58 +434,18 @@
             "variableB": "NONE"
           }
         ],
-        "defaultStep": "Split Approver",
+        "defaultStep": "Check Approver Kind",
         "description": "Phase 4. Every tier converges here.",
         "displayName": "Approver is NONE?",
         "type": "choice"
-      },
-      "Split Approver": {
-        "actionId": "sp:update-variable",
-        "attributes": {
-          "id": "sp:update-variable",
-          "variables": [
-            {
-              "description": "",
-              "name": "$.defineVariable.approverType",
-              "transforms": [
-                {
-                  "id": "sp:transform:replace:string",
-                  "input": {
-                    "pattern": "\\|.*",
-                    "replacement": ""
-                  }
-                }
-              ],
-              "variableA.$": "$.defineVariable.approver"
-            },
-            {
-              "description": "",
-              "name": "$.defineVariable.approverID",
-              "transforms": [
-                {
-                  "id": "sp:transform:replace:string",
-                  "input": {
-                    "pattern": ".*\\|",
-                    "replacement": ""
-                  }
-                }
-              ],
-              "variableA.$": "$.defineVariable.approver"
-            }
-          ]
-        },
-        "description": "Splits IDENTITY|id or GOVERNANCE_GROUP|id into the two callback fields.",
-        "displayName": "Split approver",
-        "nextStep": "Callback",
-        "type": "Mutation"
       },
       "Callback": {
         "actionId": "sp:http",
         "attributes": {
           "jsonRequestBody": {
             "output": {
-              "id": "{{$.defineVariable.approverID}}",
-              "name": "",
+              "id": "{{$.defineVariable.approver}}",
+              "name": "{{$.defineVariable.approverName}}",
               "type": "{{$.defineVariable.approverType}}"
             },
             "secret": "{{$.trigger._metadata.secret}}"
@@ -501,7 +455,7 @@
           "requestContentType": "json",
           "url.$": "$.trigger._metadata.callbackURL"
         },
-        "description": "The trigger routes on id and type. name is informational, so no identity or group read is needed.",
+        "description": "The trigger routes on id and type. An empty name leaves the approval with no owner and the approval workflow fails, so the name is always resolved before this step.",
         "displayName": "Callback",
         "nextStep": "End Success",
         "type": "action",
@@ -533,6 +487,149 @@
         "description": "The dynamic approval callback was sent.",
         "displayName": "Success",
         "type": "success"
+      },
+      "Check Approver Kind": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringContains",
+            "nextStep": "Set Group Type",
+            "variableA.$": "$.defineVariable.approver",
+            "variableB": "-"
+          }
+        ],
+        "defaultStep": "Set Identity Type",
+        "description": "Governance group ids are hyphenated UUIDs and identity ids are unhyphenated 32-character hex, so the hyphen decides the kind and the operator never types a type prefix.",
+        "displayName": "Approver is a governance group?",
+        "type": "choice"
+      },
+      "Set Identity Type": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.approverType",
+              "transforms": [],
+              "variableA": "IDENTITY"
+            }
+          ]
+        },
+        "displayName": "Set identity type",
+        "nextStep": "Get Approver Identity",
+        "type": "Mutation"
+      },
+      "Set Group Type": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.approverType",
+              "transforms": [],
+              "variableA": "GOVERNANCE_GROUP"
+            }
+          ]
+        },
+        "displayName": "Set governance group type",
+        "nextStep": "Get Approver Group",
+        "type": "Mutation"
+      },
+      "Get Approver Identity": {
+        "actionId": "sp:http",
+        "attributes": {
+          "method": "get",
+          "param_authenticationRef": "none",
+          "requestHeaders": {
+            "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+          },
+          "url": "{{$.configuration.aPIURL}}/v2026/identities/{{$.defineVariable.approver}}"
+        },
+        "catch": [
+          {
+            "next": "Set Fallback Name"
+          }
+        ],
+        "description": "Reads the display name for the callback. A failure falls through to the id as the name, which keeps the callback valid.",
+        "displayName": "Get Approver Identity",
+        "nextStep": "Set Identity Name",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Get Approver Group": {
+        "actionId": "sp:http",
+        "attributes": {
+          "method": "get",
+          "param_authenticationRef": "none",
+          "requestHeaders": {
+            "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+          },
+          "url": "{{$.configuration.aPIURL}}/v2026/workgroups/{{$.defineVariable.approver}}"
+        },
+        "catch": [
+          {
+            "next": "Set Fallback Name"
+          }
+        ],
+        "description": "Reads the governance group display name for the callback. A failure falls through to the id as the name.",
+        "displayName": "Get Approver Group",
+        "nextStep": "Set Group Name",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Set Identity Name": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.approverName",
+              "transforms": [],
+              "variableA.$": "$.getApproverIdentity.body.name"
+            }
+          ]
+        },
+        "displayName": "Set identity name",
+        "nextStep": "Callback",
+        "type": "Mutation"
+      },
+      "Set Group Name": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.approverName",
+              "transforms": [],
+              "variableA.$": "$.getApproverGroup.body.name"
+            }
+          ]
+        },
+        "displayName": "Set governance group name",
+        "nextStep": "Callback",
+        "type": "Mutation"
+      },
+      "Set Fallback Name": {
+        "actionId": "sp:update-variable",
+        "attributes": {
+          "id": "sp:update-variable",
+          "variables": [
+            {
+              "description": "",
+              "name": "$.defineVariable.approverName",
+              "transforms": [],
+              "variableA.$": "$.defineVariable.approver"
+            }
+          ]
+        },
+        "displayName": "Name lookup failed, use the id",
+        "nextStep": "Callback",
+        "type": "Mutation",
+        "description": "The callback needs a non-empty name. Sending the id keeps routing correct and only degrades what the approver list displays."
       }
     }
   },

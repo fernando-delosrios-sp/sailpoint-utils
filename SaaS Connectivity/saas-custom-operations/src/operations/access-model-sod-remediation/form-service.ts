@@ -61,7 +61,9 @@ export async function ensureAccessModelSodFormDefinition(
 }
 
 /** Serializes entitlement id lists to JSON strings for ISC STRING formInput fields. */
-export function serializeAccessModelSodFormInputForCreate(formInput: AccessModelSodFormInputValues): Record<string, unknown> {
+export function serializeAccessModelSodFormInputForCreate(
+    formInput: AccessModelSodFormInputValues
+): Record<string, unknown> {
     return {
         ...formInput,
         groupAIds: JSON.stringify(formInput.groupAIds),

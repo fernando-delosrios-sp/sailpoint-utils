@@ -39,7 +39,12 @@ interface WorkflowStep {
         }
     }
     catch?: Array<{ next?: string }>
-    choiceList?: Array<{ nextStep?: string }>
+    choiceList?: Array<{
+        comparator?: string
+        nextStep?: string
+        'variableA.$'?: string
+        variableB?: string
+    }>
     defaultStep?: string
     nextStep?: string
 }
@@ -91,6 +96,22 @@ describe.each(BUNDLED_RISK_WORKFLOWS)('$file', ({ file, requestIdTemplate, failu
         for (const stepName of ['Get Access Token', 'Call Evaluate Risk', 'Read Risk Result']) {
             expect(steps[stepName]?.catch?.map((handler) => handler.next)).toEqual([failureStep])
         }
+    })
+
+    it('routes an HTTP-200 failed invoke body to the failure step before reading the result', () => {
+        const steps = readWorkflow(file).definition.steps
+        const checkInvoke = steps['Check Invoke Result']
+
+        expect(steps['Call Evaluate Risk']?.nextStep).toBe('Check Invoke Result')
+        expect(checkInvoke?.choiceList).toEqual([
+            {
+                comparator: 'StringContains',
+                nextStep: failureStep,
+                'variableA.$': '$.callEvaluateRisk.body',
+                variableB: '"status":"failed"',
+            },
+        ])
+        expect(checkInvoke?.defaultStep).toBe('Read Risk Result')
     })
 
     it('leaves no step pointing at a name the workflow does not define', () => {
