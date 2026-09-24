@@ -1,20 +1,16 @@
-melon_employee_id,melon_username,melon_manager_employee_id,orange_employee_id,orange_username,orange_manager_employee_id,expected_match,match_type,difference
-MEL0001,jerry.bennett,,1b,jerry.bennett,,true,exact,Same person and reporting line; MelonHRM adds its own employee id and work email
-MEL0002,aaron.nichols,MEL0001,1c,aaron.nichols,1b,true,exact,Same person and reporting line; MelonHRM adds its own employee id and work email
-MEL0003,jane.grant,MEL0002,1c2a,jane.grant,1c,true,exact,Same person and reporting line; MelonHRM adds its own employee id and work email
-MEL0004,randall.knight,MEL0002,1c2b,randy.knight,1c,true,fuzzy,MelonHRM holds the formal first name Randall with Randy as nickname
-MEL0005,lori.ferguson,MEL0002,1c2c,lori.ferguson,1c,true,exact,Same person and reporting line; MelonHRM adds its own employee id and work email
-MEL0006,deb.wood,MEL0001,1b2a,debra.wood,1b,true,fuzzy,MelonHRM holds the short first name Deb with Debra as nickname
-MEL0007,walter.henderson,MEL0006,1b2a3a,walter.henderson,1b2a,true,exact,Same person and reporting line; MelonHRM adds a job category
-MEL0008,steph.coleman,MEL0006,1b2a3b,stephanie.coleman,1b2a,true,fuzzy,MelonHRM holds the short first name Steph with Stephanie as nickname
-MEL0009,patrick.jenkins,MEL0006,1b2a3c,patrick.jenkins,1b2a,true,exact,Same person and reporting line; MelonHRM adds its own employee id and work email
-MEL0010,carolyn.perry,MEL0006,1b2a3d,carolyn.perry,1b2a,true,exact,Same person and reporting line; MelonHRM adds its own employee id and work email
-MEL0011,patti.jones,MEL0001,1a2c,patricia.jones,1b,true,fuzzy,MelonHRM holds the short first name Patti with Patricia as nickname
-MEL0012,rick.jackson,MEL0011,1a2c3a,richard.jackson,1a2c,true,fuzzy,MelonHRM holds the short first name Rick with Richard as nickname
-MEL0013,maria.white,MEL0011,1a2c3b,maria.white,1a2c,true,fuzzy,MelonHRM spells the first name Maria with an accent; personal email still matches
-MEL0014,charlie.harris,MEL0011,1a2c3c,charles.harris,1a2c,true,fuzzy,MelonHRM holds the short first name Charlie with Charles as nickname
-MEL0015,susan.martin,MEL0011,1a2c3d,susan.martin,1a2c,true,exact,Same person and reporting line; MelonHRM adds its own employee id and work email
-MEL0016,susan.martin,MEL0021,1a2c3d,susan.martin,1a2c,false,lookalike,Different Susan Martin: sales in Munich under MEL0021 instead of finance under the counterpart of 1a2c
-MEL0017,john.williams,MEL0002,1a2b,john.williams,1b,false,lookalike,Different John Williams: IT support in Munich under MEL0002 instead of HR in Sao Paulo under 1b
-MEL0018,michael.miller,MEL0007,1a2a3c,michael.miller,1a2a,false,lookalike,Different Michael Miller: software engineer in London under MEL0007 while 1a2a3c reports to 1a2a which is outside the overlay
-MEL0019,neville.kaufman,MEL0011,900,neville.kaufman,1b,false,lookalike,Different Neville Kaufman: treasury analyst in London under MEL0011 instead of sales under 1b
+melon_employee_id,melon_username,melon_manager_employee_id,scenario,candidate_source,candidate_employee_id,candidate_username,expected_disposition,expected_manual_decision,melon_title,candidate_title,difference
+MEL0001,elena.varga,,non_match,,,,,non-matched,,People Operations Director,,MelonHRM-only root manager; no OrangeHRM or Fusion baseline candidate
+MEL0002,hugo.moretti,MEL0001,non_match,,,,,non-matched,,Compensation Analyst,,MelonHRM-only; reports to Elena
+MEL0003,keiko.sato,MEL0001,non_match,,,,,non-matched,,Learning Specialist,,MelonHRM-only; reports to Elena
+MEL0004,amara.diallo,MEL0001,non_match,,,,,non-matched,,Employee Relations Partner,,MelonHRM-only; reports to Elena
+MEL0005,noah.lindberg,MEL0001,non_match,,,,,non-matched,,HRIS Analyst,,MelonHRM-only contractor; reports to Elena
+MEL0006,jerry.bennett,MEL0001,natural_correlation,OrangeHRM,1b,jerry.bennett,correlated,,Chief Executive,Senior Executive,Same account name as OrangeHRM; Melon title is semantically similar but not identical
+MEL0007,aaron.nichols,MEL0006,natural_correlation,OrangeHRM,1c,aaron.nichols,correlated,,Head of Operations,Operations Manager,Same account name as OrangeHRM; Melon title is semantically similar but not identical
+MEL0008,jane.grant,MEL0006,natural_correlation,OrangeHRM,1c2a,jane.grant,correlated,,Access Certification Reviewer,SOX Access Reviewer,Same account name as OrangeHRM; Melon title is semantically similar but not identical
+MEL0009,carolyn.perry,MEL0006,natural_correlation,OrangeHRM,1b2a3d,carolyn.perry,correlated,,Release Staging Lead,Staging Manager,Same account name as OrangeHRM; Melon title is semantically similar but not identical
+MEL0010,nadia.petrova,MEL0001,deferred_reciprocal,MelonHRM,MEL0011,nadya.petrova,deferred,,Workforce Analytics Lead,Workforce Analytics Lead,No baseline candidate; reciprocal deferred match to nadya.petrova on shared bio/job attributes
+MEL0011,nadya.petrova,MEL0001,deferred_reciprocal,MelonHRM,MEL0010,nadia.petrova,deferred,,Workforce Analytics Lead,Workforce Analytics Lead,No baseline candidate; reciprocal deferred match to nadia.petrova on shared bio/job attributes
+MEL0012,deb.wood,MEL0006,automatic_match,OrangeHRM,1b2a,debra.wood,auto,,Inventory Analyst,Inventory Analyst I,Fuzzy first name Deb/Debra with nickname; auto-merge expected; Melon title is semantically similar but not identical
+MEL0013,randall.knight,MEL0006,automatic_match,OrangeHRM,1c2b,randy.knight,auto,,Director of Operations,Operations Director,Fuzzy first name Randall/Randy with nickname; auto-merge expected; Melon title is semantically similar but not identical
+MEL0014,patti.jones,MEL0006,manual_true_positive,OrangeHRM,1a2c,patricia.jones,review,accept,Finance Manager,Senior Finance Manager,Fuzzy first name Patti/Patricia; true positive for manual accept; Melon title is semantically similar but not identical
+MEL0015,kate.simmons,MEL0001,manual_false_positive,OrangeHRM,1b2c3d,catherine.simmons,review,reject,Network Technician,Treasury Researcher,New Melon-only Kate Simmons vs OrangeHRM Catherine Simmons (Treasury Researcher in London); Kate/Catherine nickname-like for manual-band score; different title department city manager and personal email; reject / new identity
