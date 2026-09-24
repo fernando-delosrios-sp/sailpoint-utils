@@ -356,7 +356,7 @@
 			return;
 		}
 		String newPassword = "";
-		String charset = "ABNCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()_+-={}[]:;<>?,./";
+		String charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()_+-={}[]:;<>?,./";
 		int count;
 		int index;
 		int len;
