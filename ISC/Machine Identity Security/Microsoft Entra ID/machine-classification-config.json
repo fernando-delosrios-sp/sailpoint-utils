@@ -1,0 +1,57 @@
+{
+  "classificationMethod": "CRITERIA",
+  "created": "2026-09-18T10:35:55.189858Z",
+  "criteria": {
+    "attribute": null,
+    "caseSensitive": false,
+    "children": [
+      {
+        "attribute": null,
+        "caseSensitive": false,
+        "children": [
+          {
+            "attribute": "spn_servicePrincipalType",
+            "caseSensitive": false,
+            "children": null,
+            "dataType": null,
+            "operation": "EQUALS",
+            "value": "Application"
+          },
+          {
+            "attribute": "spn_servicePrincipalType",
+            "caseSensitive": false,
+            "children": null,
+            "dataType": null,
+            "operation": "EQUALS",
+            "value": "Legacy"
+          },
+          {
+            "attribute": "spn_servicePrincipalType",
+            "caseSensitive": false,
+            "children": null,
+            "dataType": null,
+            "operation": "EQUALS",
+            "value": "ManagedIdentity"
+          },
+          {
+            "attribute": "spn_servicePrincipalType",
+            "caseSensitive": false,
+            "children": null,
+            "dataType": null,
+            "operation": "EQUALS",
+            "value": "ServiceIdentity"
+          }
+        ],
+        "dataType": null,
+        "operation": "OR",
+        "value": null
+      }
+    ],
+    "dataType": null,
+    "operation": "OR",
+    "value": null
+  },
+  "enabled": true,
+  "modified": "2026-09-23T08:53:10.347891Z",
+  "sourceId": "1f3680fd99094e4bb70c4880542caf2a"
+}

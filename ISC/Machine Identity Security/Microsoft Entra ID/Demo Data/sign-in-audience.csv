@@ -1,0 +1,5 @@
+id,name,description
+AzureADMyOrg,Accounts in this organizational directory only (single tenant),Work or school accounts in the tenant where the app is registered. Default. Use for internal apps.
+AzureADMultipleOrgs,Accounts in any organizational directory (multitenant),Work or school accounts in any Microsoft Entra tenant.
+AzureADandPersonalMicrosoftAccount,Accounts in any organizational directory and personal Microsoft accounts,"Work, school, or personal Microsoft accounts (Skype, Xbox). Widest Microsoft identity set. Requires requestedAccessTokenVersion = 2."
+PersonalMicrosoftAccount,Personal Microsoft accounts only,"Personal accounts only (Skype, Xbox). Requires requestedAccessTokenVersion = 2."

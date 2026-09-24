@@ -1,0 +1,23 @@
+{
+  "machineAccountCreate": {
+    "accountCreateEnabled": true,
+    "approvalConfig": {
+      "approvers": null,
+      "comments": "OFF"
+    },
+    "approvalRequired": false,
+    "entitlementId": "e4999380049b3236b68bc2a6e37e3135",
+    "formId": "19ebbb17-0344-4719-bb7b-8fea39e64c38",
+    "passwordAttribute": null,
+    "passwordSetting": "DO_NOT_SET_PASSWORD",
+    "policy": null
+  },
+  "machineAccountDelete": {
+    "approvalConfig": {
+      "approvers": "sourceOwner",
+      "comments": "OFF"
+    },
+    "approvalRequired": true
+  },
+  "subtypeId": "b177d802-6a24-445a-9b2a-df8fe99609fc"
+}

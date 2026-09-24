@@ -1,0 +1,152 @@
+{
+  "name": "Service Principal (Enterprise Application)",
+  "description": "Creates a Microsoft Entra application service principal from the machine-account request form. Only create-time attributes are mapped; post-create PATCH attributes are omitted so the connector stays within its 60s command timeout.",
+  "usageType": "CREATE_MACHINE_ACCOUNT",
+  "subtypeId": "c7b84369-6870-4473-9ec0-aff247cbea31",
+  "fields": [
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": true,
+      "name": "spn_appDisplayName",
+      "transform": {
+        "attributes": {
+          "value": "${userInput.spnAppDisplayName}"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_appTemplateName",
+      "transform": {
+        "attributes": {
+          "input": {
+            "attributes": {
+              "input": {
+                "attributes": {
+                  "value": "${userInput.spn_appTemplateName}"
+                },
+                "type": "static"
+              },
+              "regex": "^.*?\\bid\"?\\s*[=:]\\s*\"?([^\",}]+)\"?.*$",
+              "replacement": "$1"
+            },
+            "type": "replace"
+          },
+          "regex": "^\\$\\{.*\\}$",
+          "replacement": ""
+        },
+        "type": "replace"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_appId",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_appTemplateId",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_homepage",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_loginUrl",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_logoutUrl",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "description",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_tags",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_appRoles",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_owners",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "appRoleAssignments",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_app_keyCredentials",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_passwordCredentials",
+      "transform": null,
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "spn_app_passwordCredentials",
+      "transform": null,
+      "type": "string"
+    }
+  ]
+}

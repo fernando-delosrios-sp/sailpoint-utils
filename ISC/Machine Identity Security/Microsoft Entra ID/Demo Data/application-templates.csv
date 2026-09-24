@@ -1,0 +1,248 @@
+id,name
+C01-P001-T001,AgileWorksクラウド版
+C01-P002-T001,Coupa Risk Assess
+C01-P003-T001,Coupa
+C01-P004-T001,Datadog
+C01-P005-T001,SkyDesk Email
+C01-P006-T001,Kantega SSO for Bamboo
+C01-P006-T002,Kantega SSO for Bitbucket
+C01-P006-T003,Kantega SSO for Confluence
+C01-P006-T004,Kantega SSO for FishEye/Crucible
+C01-P006-T005,Kantega SSO for JIRA
+C01-P007-T001,LinkedIn Talent Solutions
+C01-P008-T001,SAML 1.1 Token enabled LOB App
+C01-P009-T001,Sapient
+C01-P010-T001,Microsoft Entra ID for Scuba Analytics
+C01-P011-T001,SAML SSO for Twilio SendGrid
+C01-P012-T001,UserZoom
+C01-P013-T001,WalkMe SAML2.0
+C02-P001-T001,AWS Single-Account Access
+C02-P002-T001,Amazon Business
+C02-P003-T001,AWS ClientVPN
+C02-P004-T001,AWS IAM Identity Center (successor to AWS Single Sign-On)
+C02-P005-T001,Citrix Cloud SAML SSO
+C02-P006-T001,HPE SaaS
+C02-P007-T001,Google Cloud / G Suite Connector by Microsoft
+C02-P007-T002,On-premises SCIM app
+C02-P008-T001,JIRA SAML SSO by Microsoft
+C02-P009-T001,Oracle Cloud Infrastructure Console
+C02-P010-T001,Snowflake for Microsoft Entra ID
+C02-P011-T001,VMware Horizon - Unified Access Gateway
+C02-P011-T002,VMware Identity Service
+C03-P001-T001,Communifire
+C03-P002-T001,Box
+C03-P003-T001,Dropbox Business
+C03-P004-T001,Egnyte
+C03-P005-T001,Workplace from Meta
+C03-P006-T001,LinkedIn Lookup
+C03-P007-T001,Mimecast
+C03-P008-T001,Progress ShareFile
+C03-P009-T001,Slack
+C04-P001-T001,Airtable
+C04-P002-T001,Cornerstone Single Sign-On
+C04-P002-T002,Saba Cloud
+C04-P003-T001,Druva Integration with Microsoft Entra ID
+C04-P004-T001,IBM Digital Business Automation on Cloud
+C04-P005-T001,Adobe Experience Manager
+C04-P005-T002,SharePoint on-premises
+C04-P006-T001,Notion
+C04-P007-T001,Directory Services
+C05-P001-T001,GoalQuest
+C05-P002-T001,JD Edwards - Protected by F5 BIG-IP APM
+C05-P003-T001,HubSpot
+C05-P004-T001,LinkedIn Sales Navigator
+C05-P005-T001,Pathlock Compliant Access Management
+C05-P005-T002,Pathlock Enterprise Business Controls Platform
+C05-P005-T003,Pathlock Integration Platform
+C05-P006-T001,Salesforce
+C05-P006-T002,Salesforce Sandbox
+C05-P007-T001,Segment
+C05-P008-T001,Zendesk
+C06-P001-T001,Anaplan
+C06-P002-T001,Informatica Intelligent Data Management Cloud
+C06-P002-T002,Informatica Platform
+C06-P003-T001,New Relic by Account
+C06-P003-T002,New Relic by Organization
+C06-P004-T001,XM Discover
+C06-P005-T001,SAP HANA
+C06-P005-T002,SAP Qualtrics
+C06-P006-T001,SumoLogic
+C07-P001-T001,My Award Points Top Sub/Top Team
+C07-P002-T001,Beekeeper Microsoft Entra SSO
+C07-P003-T001,Broadcom DX SaaS
+C07-P004-T001,Looker Analytics Platform
+C07-P005-T001,SAP Cloud for Customer
+C07-P006-T001,SAP Litmos
+C07-P007-T001,Microsoft Entra SSO for Splunk Enterprise and Splunk Cloud
+C07-P008-T001,Tableau Cloud
+C07-P008-T002,Tableau Server
+C08-P001-T001,GitHub Enterprise Cloud - Enterprise Account
+C08-P001-T002,GitHub Enterprise Cloud - Organization
+C08-P001-T003,GitHub Enterprise Managed User
+C08-P001-T004,GitHub Enterprise Server
+C08-P001-T005,GitHub Enterprise Server (Legacy)
+C08-P002-T001,HashiCorp Cloud Platform (HCP)
+C08-P003-T001,JFrog Artifactory
+C08-P004-T001,Logz.io - Microsoft Entra Integration
+C08-P005-T001,Mapbox
+C08-P006-T001,Microsoft Entra SAML Toolkit
+C08-P007-T001,MongoDB Atlas - SSO
+C08-P008-T001,OutSystems Microsoft Entra ID
+C08-P009-T001,PagerDuty
+C08-P010-T001,Pluralsight
+C09-P001-T001,Reach 360
+C09-P002-T001,Cirrus Identity Bridge for Microsoft Entra ID
+C09-P003-T001,Clever
+C09-P004-T001,Clever Nelly
+C09-P005-T001,LinkedIn Learning
+C09-P006-T001,Adobe Captivate Prime
+C09-P007-T001,Udemy Business SAML
+C10-P001-T001,Oracle E-Business Suite - Protected by F5 BIG-IP APM
+C10-P001-T002,Oracle PeopleSoft - Protected by F5 Networks BIG-IP APM
+C10-P002-T001,Oracle Fusion ERP
+C10-P003-T001,Oracle Access Manager for Oracle Retail Merchandising
+C10-P003-T002,Oracle IDCS for JD Edwards
+C10-P003-T003,Oracle IDCS for PeopleSoft
+C10-P004-T001,Palantir Foundry for Microsoft Entra ID
+C10-P005-T001,SAP Business ByDesign
+C10-P005-T002,SAP Cloud Identity Services
+C10-P005-T003,SAP Cloud Platform
+C10-P005-T004,SAP Concur
+C10-P005-T005,SAP Fiori
+C10-P005-T006,SAP NetWeaver
+C10-P006-T001,SAP Ariba
+C10-P007-T001,Workday
+C11-P001-T001,Expensify
+C11-P002-T001,Sage Intacct
+C11-P003-T001,Cloud Management Portal for Microsoft Azure
+C11-P004-T001,Prisma Cloud SSO
+C11-P005-T001,Proactis Rego Invoice Capture
+C11-P005-T002,Proactis Rego Source-to-Contract
+C11-P005-T003,Proactis Rego Source-to-Pay
+C11-P006-T001,SAP Concur Travel and Expense
+C11-P007-T001,"SSOGEN - Microsoft Entra SSO Gateway for Oracle E-Business Suite - EBS, PeopleSoft, and JDE"
+C11-P008-T001,Wdesk
+C12-P001-T001,WebXT Recognition
+C12-P002-T001,BambooHR
+C12-P003-T001,Darwinbox
+C12-P004-T001,Greenhouse
+C12-P005-T001,SAP SuccessFactors
+C12-P006-T001,UKG Pro
+C13-P001-T001,Autodesk SSO
+C13-P002-T001,DX NetOps Portal
+C13-P002-T002,Symantec ZTNA
+C13-P003-T001,Check Point CloudGuard CNAPP (Microsoft Entra ID)
+C13-P004-T001,SAP ERP Central Component (ECC) - Protected by F5 Networks BIG-IP APM
+C13-P005-T001,Lexmark Cloud Services (SAML)
+C13-P006-T001,Netskope Administrator Console
+C13-P006-T002,Netskope User Authentication
+C13-P007-T001,MOVEit Transfer - Microsoft Entra integration
+C13-P008-T001,Pulse Secure Virtual Traffic Manager
+C13-P009-T001,SailPoint IdentityNow
+C13-P010-T001,EasySSO for Bamboo
+C13-P010-T002,EasySSO for BitBucket
+C13-P010-T003,EasySSO for Confluence
+C13-P010-T004,EasySSO for Jira
+C13-P011-T001,Zoom for Government
+C13-P012-T001,Zscaler Private Access (ZPA)
+C14-P001-T001,Cisco Unified Communications Manager
+C14-P001-T002,Cisco Unity Connection
+C14-P002-T001,Cisco Secure Firewall - Secure Client (formerly AnyConnect) authentication
+C14-P002-T002,Meraki Dashboard
+C14-P003-T001,CyberSolutions CYBERMAILΣ
+C14-P003-T002,CyberSolutions MAILBASEΣ/CMSS
+C14-P003-T003,CyberSolutions MAILGATESΣ/CMSS
+C14-P004-T001,Terraform Cloud
+C14-P005-T001,HPE Aruba Networking EdgeConnect Global Enterprise Orchestrator
+C14-P005-T002,HPE Aruba Networking EdgeConnect Orchestrator
+C14-P005-T003,HPE Aruba Networking EdgeConnect Service Provider Orchestrator
+C14-P006-T001,IBM OpenPages
+C14-P006-T002,IBMid
+C14-P007-T001,QRadar SOAR
+C14-P008-T001,Guardium Data Protection
+C14-P009-T001,Jamf Pro
+C14-P010-T001,Kemp LoadMaster Microsoft Entra integration
+C14-P011-T001,ServiceNow
+C14-P012-T001,SolarWinds Service Desk
+C14-P013-T001,SAML SSO for Bamboo by resolution GmbH
+C14-P013-T002,SAML SSO for Bitbucket by resolution GmbH
+C15-P001-T001,Adobe Identity Management (SAML)
+C15-P002-T001,Docusign
+C15-P003-T001,Abstract
+C15-P004-T001,FortiSASE
+C15-P005-T001,Mist Cloud Admin SSO
+C15-P006-T001,Lucid (All Products)
+C15-P007-T001,Lucidchart
+C15-P008-T001,F5 BIG-IP APM Microsoft Entra integration
+C15-P009-T001,Adobe Creative Cloud - DEPRECATED
+C15-P009-T002,Adobe Sign
+C15-P009-T003,Confluence SAML SSO by Microsoft
+C15-P010-T001,SAP Analytics Cloud
+C15-P011-T001,Scilife Microsoft Entra SSO
+C15-P012-T001,Presswise
+C16-P001-T001,ARC Facilities
+C16-P002-T001,Asana
+C16-P003-T001,Atlassian Cloud
+C16-P004-T001,IBM TRIRIGA on Cloud
+C16-P005-T001,Kendis - Microsoft Entra Integration
+C16-P006-T001,Miro
+C16-P007-T001,Mural Identity
+C16-P008-T001,Trello
+C16-P009-T001,SAML SSO for Confluence by resolution GmbH
+C16-P009-T002,SAML SSO for Jira by resolution GmbH
+C17-P001-T001,Aqua-Microsoft Entra Single Sign On
+C17-P002-T001,Check Point Identity Awareness
+C17-P002-T002,Check Point Remote Secure Access VPN
+C17-P003-T001,Cisco Umbrella Admin SSO
+C17-P004-T001,Citrix ADC SAML Connector for Microsoft Entra ID
+C17-P005-T001,The Cloud Security Fabric
+C17-P006-T001,CloudPassage
+C17-P007-T001,CrowdStrike Falcon Platform
+C17-P008-T001,FortiWeb Web Application Firewall
+C17-P009-T001,hCaptcha Enterprise
+C17-P010-T001,Netskope Cloud Exchange Administration Console
+C17-P011-T001,Palo Alto Networks - Admin UI
+C17-P011-T002,Palo Alto Networks - Aperture
+C17-P011-T003,Palo Alto Networks - Captive Portal
+C17-P011-T004,Palo Alto Networks - GlobalProtect
+C17-P011-T005,Palo Alto Networks Cloud Identity Engine - Cloud Authentication Service
+C17-P012-T001,Proofpoint Security Awareness Training
+C17-P013-T001,Proofpoint on Demand
+C17-P014-T001,QualysGuard
+C17-P015-T001,Boxcryptor
+C17-P016-T001,Maverics Identity Orchestrator SAML Connector
+C17-P017-T001,Trend Micro Web Security(TMWS)
+C17-P018-T001,Zscaler B2B User Portal
+C17-P018-T002,Zscaler Private Access Administrator
+C17-P019-T001,Zscaler Internet Access Administrator
+C17-P019-T002,Zscaler Internet Access ZSThree
+C17-P020-T001,Zscaler Internet Access ZSBeta
+C17-P020-T002,Zscaler Internet Access ZSCloud
+C17-P020-T003,Zscaler Internet Access ZSNet
+C17-P020-T004,Zscaler Internet Access ZSOne
+C17-P020-T005,Zscaler Internet Access ZSTwo
+C18-P001-T001,Axway CSOS
+C18-P002-T001,Cisco Cloud
+C18-P003-T001,AssetSonar: ITAM and SAM built for Microsoft Entra ID
+C18-P004-T001,KanbanBOX
+C18-P005-T001,Oracle Access Manager for Oracle E-Business Suite
+C18-P005-T002,Oracle IDCS for E-Business Suite
+C18-P006-T001,SAP Fieldglass
+C18-P007-T001,Connect1
+C19-P001-T001,Alohi
+C19-P002-T001,Cisco Webex
+C19-P002-T002,Cisco Webex Meetings
+C19-P003-T001,Cisco Expressway
+C19-P004-T001,FortiGate SSL VPN
+C19-P005-T001,XM Fax and XM SendSecure
+C19-P006-T001,Zoom
+C20-P001-T001,Amazon Managed Grafana
+C20-P002-T001,Arena
+C20-P002-T002,Arena EU
+C20-P003-T001,Articulate 360
+C20-P003-T002,Rise.com
+C20-P004-T001,Cisco Intersight
+C20-P005-T001,Meta Work Accounts
+C20-P006-T001,Figma
+C20-P007-T001,Terraform Enterprise
+C20-P008-T001,Tanium SSO

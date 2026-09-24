@@ -27,6 +27,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | [Generic Manager Correlation](ISC/Generic%20Manager%20Correlation/) | Reusable pattern for correlating managers across heterogeneous sources |
 | [JDBC SaaS Driver Downloader](ISC/JDBC%20SaaS%20Driver%20Downloader/) | Download and package JDBC drivers from Maven Central for SaaS upload |
 | [LCS Operations](ISC/LCS%20Operations/) | BeforeProvisioning rule that maps lifecycle-state dummy attributes to native connector operations |
+| [Machine Identity Security](ISC/Machine%20Identity%20Security/) | AD and Entra ID NHI package: subtypes, classification, mapping transforms, create forms, and machine-account provisioning policies |
 | [Optimistic Provisioning Generic SDIM](ISC/Optimistic%20Provisioning%20Generic%20SDIM/) | Configuration guide for optimistic provisioning with Generic SDIM |
 | [Organizational Hierarchy Path](ISC/Organizational%20Hierarchy%20Path/) | Transform rule that builds a consolidated org hierarchy path from entitlements |
 | [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) | Copy-ready IQService connector-rule bootstrap with logging, redaction, exit handling, and optional replay |

@@ -1,0 +1,183 @@
+{
+  "name": "Bot Account",
+  "description": "Creates an Active Directory bot/RPA account from the machine-account request form.",
+  "usageType": "CREATE_MACHINE_ACCOUNT",
+  "subtypeId": "b177d802-6a24-445a-9b2a-df8fe99609fc",
+  "fields": [
+    {
+      "attributes": {
+        "cloudRequired": "true"
+      },
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "ObjectType",
+      "transform": {
+        "attributes": {
+          "value": "User"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {
+        "cloudMaxSize": "20",
+        "cloudMaxUniqueChecks": "50",
+        "cloudRequired": "true"
+      },
+      "isMultiValued": false,
+      "isRequired": true,
+      "name": "sAMAccountName",
+      "transform": {
+        "attributes": {
+          "value": "${userInput.sAMAccountName}"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {
+        "cloudMaxUniqueChecks": "50",
+        "cloudRequired": "true"
+      },
+      "isMultiValued": false,
+      "isRequired": true,
+      "name": "distinguishedName",
+      "transform": {
+        "attributes": {
+          "value": "CN=${userInput.sAMAccountName},OU=NHI,OU=emea-tes-team,OU=Demo,DC=seri,DC=sailpointdemo,DC=com"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "cn",
+      "transform": {
+        "attributes": {
+          "value": "${userInput.sAMAccountName}"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "displayName",
+      "transform": {
+        "attributes": {
+          "value": "${userInput.displayName}"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "description",
+      "transform": {
+        "attributes": {
+          "value": "${userInput.description}"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "employeeType",
+      "transform": {
+        "attributes": {
+          "value": "bot-account"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "userPrincipalName",
+      "transform": {
+        "attributes": {
+          "value": "${userInput.upnUsername}@seri.sailpointdemo.com"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": true,
+      "isRequired": false,
+      "name": "servicePrincipalName",
+      "transform": {
+        "attributes": {
+          "value": "${userInput.servicePrincipalName}"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "department",
+      "transform": {
+        "attributes": {
+          "value": "${userInput.environment}"
+        },
+        "type": "static"
+      },
+      "type": "string"
+    },
+    {
+      "attributes": {
+        "cloudRequired": "true"
+      },
+      "isMultiValued": false,
+      "isRequired": true,
+      "name": "password",
+      "transform": null,
+      "type": "secret"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "pwdLastSet",
+      "transform": {
+        "attributes": {
+          "value": "false"
+        },
+        "type": "static"
+      },
+      "type": "boolean"
+    },
+    {
+      "attributes": {},
+      "isMultiValued": false,
+      "isRequired": false,
+      "name": "IIQDisabled",
+      "transform": {
+        "attributes": {
+          "value": "false"
+        },
+        "type": "static"
+      },
+      "type": "boolean"
+    }
+  ]
+}
