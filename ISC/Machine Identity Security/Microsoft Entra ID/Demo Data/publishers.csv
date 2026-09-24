@@ -1,0 +1,188 @@
+id,name
+C01-P001,ATLED CORP.
+C01-P002,Coupa Software
+C01-P003,Coupa.
+C01-P004,"Datadog, Inc."
+C01-P005,Fuji Xerox Co. Ltd.
+C01-P006,Kantega SSO
+C01-P007,Linkedin
+C01-P008,Microsoft Corporation
+C01-P009,Sapient Industries
+C01-P010,Scuba Analytics
+C01-P011,Twilio
+C01-P012,Userzoom
+C01-P013,WalkMe
+C02-P001,Amazon
+C02-P002,Amazon Business
+C02-P003,Amazon Web Services (AWS)
+C02-P004,"Amazon Web Services, Inc."
+C02-P005,"Citrix Systems, Inc."
+C02-P006,Hewlett Packard Enterprise Development LP
+C02-P007,Microsoft
+C02-P008,Microsoft Corporation
+C02-P009,Oracle Corporation
+C02-P010,Snowflake Inc.
+C02-P011,VMware
+C03-P001,Axero Solutions
+C03-P002,Box
+C03-P003,Dropbox
+C03-P004,"Egnyte, Inc."
+C03-P005,Facebook
+C03-P006,LinkedIn
+C03-P007,Mimecast
+C03-P008,Progress
+C03-P009,"Slack Technologies, Inc"
+C04-P001,Airtable
+C04-P002,Cornerstone OnDemand
+C04-P003,Druva Inc.
+C04-P004,IBM
+C04-P005,Microsoft Corporation
+C04-P006,Notion
+C04-P007,OpenText
+C05-P001,BI Worldwide
+C05-P002,F5 Networks
+C05-P003,HubSpot
+C05-P004,LinkedIn
+C05-P005,"Pathlock, Inc."
+C05-P006,"Salesforce, Inc."
+C05-P007,Segment
+C05-P008,"Zendesk, Inc."
+C06-P001,Anaplan Inc.
+C06-P002,Informatica
+C06-P003,"New Relic, Inc."
+C06-P004,Qualtrics
+C06-P005,SAP
+C06-P006,Sumo Logic.
+C07-P001,BI Worldwide
+C07-P002,Beekeeper
+C07-P003,Broadcom
+C07-P004,Looker (Google Cloud)
+C07-P005,SAP
+C07-P006,SAP Litmos
+C07-P007,Splunk
+C07-P008,Tableau
+C08-P001,"GitHub, Inc"
+C08-P002,HashiCorp
+C08-P003,Jfrog
+C08-P004,Logz.io
+C08-P005,Mapbox
+C08-P006,Microsoft Corporation
+C08-P007,MongoDB
+C08-P008,OutSystems
+C08-P009,"PagerDuty, Inc."
+C08-P010,Pluralsight LLC.
+C09-P001,Articulate
+C09-P002,"Cirrus Identity, Inc."
+C09-P003,Clever Inc.
+C09-P004,Elephants don't forget Ltd
+C09-P005,LinkedIn
+C09-P006,Microsoft Corporation
+C09-P007,Udemy Business
+C10-P001,F5 Networks
+C10-P002,Oracle
+C10-P003,Oracle Corporation
+C10-P004,Palantir Technologies Inc.
+C10-P005,SAP
+C10-P006,SAP Ariba
+C10-P007,Workday
+C11-P001,"Expensify, Inc."
+C11-P002,Intacct Corporation
+C11-P003,New Signature
+C11-P004,Palo Alto Networks
+C11-P005,Proactis
+C11-P006,SAP Concur
+C11-P007,SSOGEN Corporation
+C11-P008,Workiva
+C12-P001,BI Worldwide
+C12-P002,BambooHR
+C12-P003,Darwinbox Digital Solutions Private Limited
+C12-P004,Greenhouse Software
+C12-P005,SAP
+C12-P006,UKG
+C13-P001,"Autodesk, Inc."
+C13-P002,Broadcom
+C13-P003,Check Point
+C13-P004,F5 Networks
+C13-P005,"Lexmark International Inc., a subsidiary of Xerox Corporation."
+C13-P006,Netskope
+C13-P007,Progress Software Corporation
+C13-P008,Pulse Secure
+C13-P009,SailPoint Technologies Holdings Inc.
+C13-P010,TechTime Initiative Group Limited
+C13-P011,Zoom Video Communications
+C13-P012,Zscaler Inc.
+C14-P001,Cisco Systems
+C14-P002,"Cisco Systems, Inc."
+C14-P003,CyberSolutions Inc.
+C14-P004,HashiCorp
+C14-P005,Hewlett Packard Enterprise
+C14-P006,IBM
+C14-P007,IBM Security
+C14-P008,IBM Security Guardium
+C14-P009,Jamf
+C14-P010,Kemp Technologies
+C14-P011,ServiceNow
+C14-P012,SolarWinds
+C14-P013,resolution Reichert Network Solutions GmbH
+C15-P001,Adobe Inc.
+C15-P002,DocuSign Inc.
+C15-P003,"Elastic Projects, Inc"
+C15-P004,Fortinet Inc
+C15-P005,Juniper Networks
+C15-P006,Lucid Software
+C15-P007,Lucid Software Inc.
+C15-P008,Microsoft
+C15-P009,Microsoft Corporation
+C15-P010,SAP
+C15-P011,Scilife Pvt. Ltd.
+C15-P012,Xerox Corporation
+C16-P001,"ARC Document Solutions, LLC"
+C16-P002,Asana
+C16-P003,Atlassian
+C16-P004,IBM
+C16-P005,Kendis oy
+C16-P006,Miro
+C16-P007,Mural
+C16-P008,Trello
+C16-P009,resolution Reichert Network Solutions GmbH
+C17-P001,Aqua Security
+C17-P002,Check Point
+C17-P003,"Cisco Systems, Inc."
+C17-P004,Citrix
+C17-P005,"CloudLock, now part of Cisco"
+C17-P006,"CloudPassage, Inc."
+C17-P007,CrowdStrike
+C17-P008,Fortinet
+C17-P009,"Intuition Machines, Inc."
+C17-P010,Netskope
+C17-P011,Palo Alto Networks
+C17-P012,Proofpoint
+C17-P013,"Proofpoint, Inc."
+C17-P014,Qualys
+C17-P015,Secomba GmbH
+C17-P016,"Strata Identity, Inc."
+C17-P017,Trend Micro
+C17-P018,Zscaler Inc
+C17-P019,Zscaler Inc.
+C17-P020,"Zscaler, Inc."
+C18-P001,Axway
+C18-P002,Cisco
+C18-P003,EZ Web Enterprises
+C18-P004,KanbanBOX Srl
+C18-P005,Oracle Corporation
+C18-P006,SAP
+C18-P007,Sensata Technologies / ElasticM2M
+C19-P001,Alohi
+C19-P002,Cisco
+C19-P003,Cisco Sytems
+C19-P004,Fortinet
+C19-P005,OpenText
+C19-P006,"Zoom Video Communications, Inc"
+C20-P001,Amazon
+C20-P002,"Arena, a PTC Business"
+C20-P003,Articulate
+C20-P004,Cisco Systems
+C20-P005,Facebook
+C20-P006,Figma
+C20-P007,HashiCorp
+C20-P008,Tanium

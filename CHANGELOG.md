@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-09-24
+
+### ✨ New Features
+
+- **Machine Identity Security** — Package under `ISC/Machine Identity Security` for Active Directory and Microsoft Entra ID NHI sources: account subtypes, classification, mapping transforms, create forms, provisioning policies, and setup README. Moves Entra gallery demo CSVs from Demo Data into this project. Complements AD mappings with subtype (`employeeType`) and environment (`department`) transforms.
+
 ## 2026-09-22
 
 ### ✨ New Features

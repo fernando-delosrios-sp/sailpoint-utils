@@ -1,0 +1,72 @@
+{
+  "name": "Machine Account Subtype - Entra ID",
+  "type": "firstValid",
+  "attributes": {
+    "ignoreErrors": true,
+    "values": [
+      {
+        "attributes": {
+          "displayName": {
+            "attributes": {
+              "attributeName": "displayName",
+              "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+            },
+            "type": "accountAttribute"
+          },
+          "mgidType": {
+            "attributes": {
+              "ignoreErrors": true,
+              "values": [
+                {
+                  "attributes": {
+                    "attributeName": "managedIdentity_type",
+                    "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+                  },
+                  "type": "accountAttribute"
+                },
+                "NONE"
+              ]
+            },
+            "type": "firstValid"
+          },
+          "spnOrgId": {
+            "attributes": {
+              "ignoreErrors": true,
+              "values": [
+                {
+                  "attributes": {
+                    "attributeName": "spn_appOwnerOrganizationId",
+                    "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+                  },
+                  "type": "accountAttribute"
+                },
+                "NONE"
+              ]
+            },
+            "type": "firstValid"
+          },
+          "spnType": {
+            "attributes": {
+              "ignoreErrors": true,
+              "values": [
+                {
+                  "attributes": {
+                    "attributeName": "spn_servicePrincipalType",
+                    "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+                  },
+                  "type": "accountAttribute"
+                },
+                "NONE"
+              ]
+            },
+            "type": "firstValid"
+          },
+          "value": "#if($mgidType != 'NONE')ManagedIdentity#elseif($spnOrgId == 'f8cdef31-a31e-4b4a-93e4-5f571e91255a' || $spnOrgId == '72f988bf-86f1-41af-91ab-2d7cd011db47' || $spnOrgId == 'ea8a4392-515e-481f-879e-6571ff2a8a36' || $spnOrgId == 'cdc5aeea-15c5-4db6-b079-fcadd2505dc2')microsoftApp#elseif($spnType != 'NONE')#if($spnType == 'Application' && $displayName.endsWith('-AgentIdentityBlueprint'))AgentIdentityBlueprint#{else}$spnType#{end}#{else}other#{end}"
+        },
+        "type": "static"
+      },
+      "other"
+    ]
+  },
+  "internal": false
+}

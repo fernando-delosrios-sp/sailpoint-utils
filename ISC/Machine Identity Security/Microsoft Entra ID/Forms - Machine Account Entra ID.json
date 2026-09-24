@@ -1,0 +1,348 @@
+[
+  {
+    "version": 1,
+    "self": {
+      "id": "10469eae-009f-41d0-bf3b-5f33e4c736db",
+      "name": "Machine Account - Microsoft Entra ID @emea-tes-team.cloud (NHI)",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "10469eae-009f-41d0-bf3b-5f33e4c736db",
+      "name": "Machine Account - Microsoft Entra ID @emea-tes-team.cloud (NHI)",
+      "description": "Request a new Microsoft Entra ID service principal. Provide application details, optional gallery template, sign-in settings, and owners.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "YOUR_OWNER_IDENTITY_ID",
+        "name": "YOUR_OWNER_IDENTITY_NAME"
+      },
+      "usedBy": [],
+      "formInput": [],
+      "formElements": [
+        {
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">These values appear on the Entra ID application registration. Use a name that requestors and owners will recognize in access reviews.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "2109847362511",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Shown as the application name in Microsoft Entra ID and in SailPoint.",
+                  "label": "Application display name",
+                  "placeholder": "e.g. Finance Invoice Integration",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "74526297942",
+                "key": "spnAppDisplayName",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Recorded on the SailPoint request for context. Not written to Microsoft Entra ID.",
+                  "label": "Purpose",
+                  "placeholder": "e.g. Used by Finance to post invoices to the ERP.",
+                  "required": false
+                },
+                "elementType": "TEXTAREA",
+                "id": "311852959640",
+                "key": "spn_app_Description",
+                "validations": []
+              }
+            ],
+            "label": "Application details",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "elementType": "SECTION",
+          "id": "1320579512092",
+          "validations": []
+        },
+        {
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Optional. Narrow down a Microsoft application gallery template by category, then publisher. Skip all three fields for a custom application.</p>",
+                  "label": "Gallery help",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "2109847362512",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "indices": [
+                        "entitlements"
+                      ],
+                      "label": "displayName",
+                      "query": "attribute:\"spn-category\"",
+                      "sublabel": "displayName",
+                      "value": "value"
+                    },
+                    "dataSourceType": "SEARCH_V2"
+                  },
+                  "forceSelect": false,
+                  "helpText": "Category of the gallery application, for example Security or CRM.",
+                  "label": "Gallery category",
+                  "maximum": 1,
+                  "placeholder": "Search for a category...",
+                  "required": false
+                },
+                "elementType": "SELECT",
+                "id": "1276825431515",
+                "key": "templateCategory",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "filters": {
+                        "value.exact": {
+                          "exclude": false,
+                          "value": "{{$.form.data.templateCategory}}"
+                        }
+                      },
+                      "indices": [
+                        "entitlements"
+                      ],
+                      "label": "displayName",
+                      "query": "attribute:\"spn-publisher\"",
+                      "sublabel": "displayName",
+                      "value": "value"
+                    },
+                    "dataSourceType": "SEARCH_V2"
+                  },
+                  "forceSelect": false,
+                  "helpText": "Select a category first. Publishers are scoped to the category you chose.",
+                  "label": "Gallery publisher",
+                  "maximum": 1,
+                  "placeholder": "Search for a publisher...",
+                  "required": false
+                },
+                "elementType": "SELECT",
+                "id": "1276825431514",
+                "key": "templatePublisher",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "filters": {
+                        "value.exact": {
+                          "exclude": false,
+                          "value": "{{$.form.data.templatePublisher}}"
+                        }
+                      },
+                      "indices": [
+                        "entitlements"
+                      ],
+                      "label": "displayName",
+                      "query": "attribute:\"spn-applicationTemplates\"",
+                      "sublabel": "displayName",
+                      "value": "displayName"
+                    },
+                    "dataSourceType": "SEARCH_V2"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Select a publisher first. Templates are scoped to the publisher you chose.",
+                  "label": "Application template",
+                  "maximum": 1,
+                  "placeholder": "Search for a template...",
+                  "required": false
+                },
+                "elementType": "SELECT",
+                "id": "140362497302",
+                "key": "spn_appTemplateName",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  }
+                ]
+              }
+            ],
+            "label": "Microsoft application gallery",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "elementType": "SECTION",
+          "id": "1320579512093",
+          "validations": []
+        },
+        {
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Owners are accountable for this service principal in SailPoint. Entra ID ownership is assigned separately.</p>",
+                  "label": "Ownership help",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "2109847362514",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "indices": [
+                        "identities"
+                      ],
+                      "label": "attributes.displayName",
+                      "query": "@accounts(source.name:\"Microsoft Entra ID @emea-tes-team.cloud (Users)\")",
+                      "sublabel": "attributes.email",
+                      "value": "id"
+                    },
+                    "dataSourceType": "SEARCH_V2"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Primary owner of this service principal in Identity Security Cloud.",
+                  "label": "Service principal owner",
+                  "maximum": 1,
+                  "placeholder": "Search by name or email...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "1170352509757",
+                "key": "spnOwner",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              }
+            ],
+            "label": "Ownership",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "elementType": "SECTION",
+          "id": "1320579512095",
+          "validations": []
+        }
+      ],
+      "formConditions": [
+        {
+          "effects": [
+            {
+              "config": {
+                "element": "1276825431514"
+              },
+              "effectType": "DISABLE"
+            }
+          ],
+          "ruleOperator": "AND",
+          "rules": [
+            {
+              "operator": "EM",
+              "source": "templateCategory",
+              "sourceType": "ELEMENT",
+              "value": "",
+              "valueType": "STRING"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "config": {
+                "element": "1276825431514"
+              },
+              "effectType": "ENABLE"
+            }
+          ],
+          "ruleOperator": "AND",
+          "rules": [
+            {
+              "operator": "NOT_EM",
+              "source": "templateCategory",
+              "sourceType": "ELEMENT",
+              "value": "",
+              "valueType": "STRING"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "config": {
+                "element": "140362497302"
+              },
+              "effectType": "DISABLE"
+            }
+          ],
+          "ruleOperator": "AND",
+          "rules": [
+            {
+              "operator": "EM",
+              "source": "templatePublisher",
+              "sourceType": "ELEMENT",
+              "value": "",
+              "valueType": "STRING"
+            }
+          ]
+        },
+        {
+          "effects": [
+            {
+              "config": {
+                "element": "140362497302"
+              },
+              "effectType": "ENABLE"
+            }
+          ],
+          "ruleOperator": "AND",
+          "rules": [
+            {
+              "operator": "NOT_EM",
+              "source": "templatePublisher",
+              "sourceType": "ELEMENT",
+              "value": "",
+              "valueType": "STRING"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

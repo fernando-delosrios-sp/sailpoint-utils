@@ -1,0 +1,208 @@
+[
+  {
+    "version": 1,
+    "self": {
+      "id": "19ebbb17-0344-4719-bb7b-8fea39e64c38",
+      "name": "Machine Account - Microsoft Active Directory @emea-tes-team (NHI)",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "19ebbb17-0344-4719-bb7b-8fea39e64c38",
+      "name": "Machine Account - Microsoft Active Directory @emea-tes-team (NHI)",
+      "description": "Request a new Active Directory non-human identity account. Provide the account name, purpose, and optional directory attributes.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "YOUR_OWNER_IDENTITY_ID",
+        "name": "YOUR_OWNER_IDENTITY_NAME"
+      },
+      "usedBy": [],
+      "formInput": [],
+      "formElements": [
+        {
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">These values create the Active Directory user under the NHI organizational unit. Use a name that owners and reviewers will recognize in access reviews.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "ad-nhi-intro",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Used for sAMAccountName and the account CN. Maximum 20 characters. Letters, numbers, periods, hyphens, and underscores only.",
+                  "label": "Account name (sAMAccountName)",
+                  "placeholder": "e.g. svc-finance-app",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "ad-nhi-sam",
+                "key": "sAMAccountName",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  },
+                  {
+                    "config": {
+                      "message": "Use 1-20 letters, numbers, periods, hyphens, or underscores. Start with a letter or number.",
+                      "regex": "^[A-Za-z0-9][A-Za-z0-9._-]{0,19}$"
+                    },
+                    "validationType": "REGEX"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Shown as the display name in Active Directory and SailPoint.",
+                  "label": "Display name",
+                  "placeholder": "e.g. Finance Invoice Service",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "ad-nhi-displayname",
+                "key": "displayName",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Recorded on the Active Directory description attribute and in SailPoint for context.",
+                  "label": "Purpose",
+                  "placeholder": "e.g. Used by Finance to post invoices to the ERP.",
+                  "required": false
+                },
+                "elementType": "TEXTAREA",
+                "id": "ad-nhi-purpose",
+                "key": "description",
+                "validations": []
+              }
+            ],
+            "label": "Account details",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "elementType": "SECTION",
+          "id": "ad-nhi-section-details",
+          "validations": []
+        },
+        {
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Optional Active Directory attributes. Leave blank when not required for this account.</p>",
+                  "label": "Directory help",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "ad-nhi-dir-help",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Enter only the username. The domain @seri.sailpointdemo.com is added automatically when the account is created.",
+                  "label": "User principal name (username)",
+                  "placeholder": "e.g. svc-finance-app",
+                  "required": false
+                },
+                "elementType": "TEXT",
+                "id": "ad-nhi-upn",
+                "key": "upnUsername",
+                "validations": [
+                  {
+                    "config": {
+                      "message": "Enter only the username (no @domain). Use 1-64 letters, numbers, periods, hyphens, or underscores.",
+                      "regex": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"
+                    },
+                    "validationType": "REGEX"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Optional service principal name. Enter one value, for example HTTP/app.example.com.",
+                  "label": "Service principal name",
+                  "placeholder": "e.g. HTTP/app.example.com",
+                  "required": false
+                },
+                "elementType": "TEXT",
+                "id": "ad-nhi-spn",
+                "key": "servicePrincipalName",
+                "validations": []
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "options": [
+                        {
+                          "label": "Production",
+                          "subLabel": "",
+                          "value": "Production"
+                        },
+                        {
+                          "label": "Non-Production",
+                          "subLabel": "",
+                          "value": "Non-Production"
+                        },
+                        {
+                          "label": "Development",
+                          "subLabel": "",
+                          "value": "Development"
+                        }
+                      ]
+                    },
+                    "dataSourceType": "STATIC"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Stored on the Active Directory department attribute for environment tagging.",
+                  "label": "Environment",
+                  "maximum": 1,
+                  "placeholder": "Select an environment...",
+                  "required": false
+                },
+                "elementType": "SELECT",
+                "id": "ad-nhi-env",
+                "key": "environment",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  }
+                ]
+              }
+            ],
+            "label": "Directory attributes",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "elementType": "SECTION",
+          "id": "ad-nhi-section-directory",
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  }
+]

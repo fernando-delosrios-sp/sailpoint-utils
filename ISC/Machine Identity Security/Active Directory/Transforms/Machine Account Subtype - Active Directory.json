@@ -1,0 +1,18 @@
+{
+  "name": "Machine Account Subtype - Active Directory",
+  "type": "firstValid",
+  "attributes": {
+    "ignoreErrors": true,
+    "values": [
+      {
+        "type": "accountAttribute",
+        "attributes": {
+          "attributeName": "employeeType",
+          "sourceName": "Microsoft Active Directory @emea-tes-team (NHI)"
+        }
+      },
+      ""
+    ]
+  },
+  "internal": false
+}

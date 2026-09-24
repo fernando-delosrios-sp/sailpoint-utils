@@ -1,0 +1,95 @@
+[
+  {
+    "target": {
+      "attributeName": "nativeIdentity",
+      "sourceId": null,
+      "type": "IDENTITY"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "id": "Machine Identity - Entra ID @emea-tes-team.cloud",
+        "input": {
+          "attributes": {
+            "attributeName": "displayName",
+            "sourceId": "1f3680fd99094e4bb70c4880542caf2a",
+            "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+          },
+          "type": "accountAttribute"
+        }
+      },
+      "type": "reference"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "environment",
+      "sourceId": null,
+      "type": "ACCOUNT"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "attributeName": "description",
+        "sourceId": "1f3680fd99094e4bb70c4880542caf2a",
+        "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+      },
+      "type": "accountAttribute"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "description",
+      "sourceId": null,
+      "type": "ACCOUNT"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "attributeName": "displayName",
+        "sourceId": "1f3680fd99094e4bb70c4880542caf2a",
+        "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+      },
+      "type": "accountAttribute"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "subtype",
+      "sourceId": null,
+      "type": "ACCOUNT"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "id": "Machine Account Subtype - Entra ID",
+        "input": {
+          "attributes": {
+            "attributeName": "displayName",
+            "sourceId": "1f3680fd99094e4bb70c4880542caf2a",
+            "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+          },
+          "type": "accountAttribute"
+        }
+      },
+      "type": "reference"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "businessApplication",
+      "sourceId": null,
+      "type": "IDENTITY"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "id": "Machine Identity - Entra ID @emea-tes-team.cloud",
+        "input": {
+          "attributes": {
+            "attributeName": "displayName",
+            "sourceId": "1f3680fd99094e4bb70c4880542caf2a",
+            "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+          },
+          "type": "accountAttribute"
+        }
+      },
+      "type": "reference"
+    }
+  }
+]

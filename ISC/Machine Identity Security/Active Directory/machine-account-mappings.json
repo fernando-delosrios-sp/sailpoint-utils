@@ -1,0 +1,56 @@
+[
+  {
+    "target": {
+      "attributeName": "subtype",
+      "sourceId": null,
+      "type": "ACCOUNT"
+    },
+    "transformDefinition": {
+      "type": "reference",
+      "attributes": {
+        "id": "Machine Account Subtype - Active Directory",
+        "input": {
+          "type": "accountAttribute",
+          "attributes": {
+            "attributeName": "employeeType",
+            "sourceName": "Microsoft Active Directory @emea-tes-team (NHI)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "target": {
+      "attributeName": "environment",
+      "sourceId": null,
+      "type": "ACCOUNT"
+    },
+    "transformDefinition": {
+      "type": "reference",
+      "attributes": {
+        "id": "Machine Account Environment - Active Directory",
+        "input": {
+          "type": "accountAttribute",
+          "attributes": {
+            "attributeName": "department",
+            "sourceName": "Microsoft Active Directory @emea-tes-team (NHI)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "target": {
+      "attributeName": "description",
+      "sourceId": null,
+      "type": "ACCOUNT"
+    },
+    "transformDefinition": {
+      "type": "accountAttribute",
+      "attributes": {
+        "attributeName": "description",
+        "sourceName": "Microsoft Active Directory @emea-tes-team (NHI)"
+      }
+    }
+  }
+]

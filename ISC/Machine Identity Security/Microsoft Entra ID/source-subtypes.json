@@ -1,0 +1,65 @@
+[
+  {
+    "technicalName": "ServiceIdentity",
+    "displayName": "Agent Identity",
+    "description": "Entra ID Agent Identity",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "45ad38b7-d6df-457a-854c-afc984c789b2",
+    "sourceId": "1f3680fd99094e4bb70c4880542caf2a"
+  },
+  {
+    "technicalName": "microsoftApp",
+    "displayName": "Microsoft Application",
+    "description": "Standard Microsoft App",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "dc488d34-f73f-4637-901d-92d15c284f27",
+    "sourceId": "1f3680fd99094e4bb70c4880542caf2a"
+  },
+  {
+    "technicalName": "other",
+    "displayName": "Other",
+    "description": "Other types of machine accounts",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "11b908ae-477f-4d88-a997-9ec4522bee9f",
+    "sourceId": "1f3680fd99094e4bb70c4880542caf2a"
+  },
+  {
+    "technicalName": "Application",
+    "displayName": "Service Principal (Enterprise Application)",
+    "description": "Entra ID Service Principal (Enterprise Application)",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "c7b84369-6870-4473-9ec0-aff247cbea31",
+    "sourceId": "1f3680fd99094e4bb70c4880542caf2a"
+  },
+  {
+    "technicalName": "AgentIdentityBlueprint",
+    "displayName": "Agent Identity Blueprint",
+    "description": "Entra ID Agent Identity Blueprint",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "53b60e13-96ca-479f-88c1-e3aad9e29b15",
+    "sourceId": "1f3680fd99094e4bb70c4880542caf2a"
+  },
+  {
+    "technicalName": "Legacy",
+    "displayName": "Legacy Application",
+    "description": "Legacy Azure AD Application",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "9ad8a116-38b8-435b-9b7e-3dda2d356267",
+    "sourceId": "1f3680fd99094e4bb70c4880542caf2a"
+  },
+  {
+    "technicalName": "ManagedIdentity",
+    "displayName": "Managed Identity",
+    "description": "Microsoft Entra managed identity. The connector does not currently expose whether it is system-assigned or user-assigned.",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "73da497b-6c4f-417f-b75f-024a64a7c472",
+    "sourceId": "1f3680fd99094e4bb70c4880542caf2a"
+  }
+]

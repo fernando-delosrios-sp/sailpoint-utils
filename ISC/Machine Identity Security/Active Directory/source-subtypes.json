@@ -1,0 +1,20 @@
+[
+  {
+    "technicalName": "service-account",
+    "displayName": "Service Account",
+    "description": "Standard Active Directory service account used by applications or services.",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "fac66722-b86f-46b4-9776-17a1d595be73",
+    "sourceId": "4327b3e911174ab5b5bb75f9c82764b8"
+  },
+  {
+    "technicalName": "bot-account",
+    "displayName": "Bot Account",
+    "description": "Active Directory account used by bots, RPA, or automated agents.",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "b177d802-6a24-445a-9b2a-df8fe99609fc",
+    "sourceId": "4327b3e911174ab5b5bb75f9c82764b8"
+  }
+]
