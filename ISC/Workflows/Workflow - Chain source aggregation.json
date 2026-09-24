@@ -1,0 +1,122 @@
+{
+  "definition": {
+    "start": "Define Variable",
+    "steps": {
+      "Define Variable": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Source whose successful account aggregation starts the follow-up load. Use the source id from Admin > Connections > Sources.",
+              "name": "triggerSource",
+              "transforms": [],
+              "variableA": "YOUR_TRIGGER_SOURCE_ID"
+            },
+            {
+              "description": "Source to account-aggregate after the trigger source succeeds. Use the source id from Admin > Connections > Sources.",
+              "name": "followUpSource",
+              "transforms": [],
+              "variableA": "YOUR_FOLLOW_UP_SOURCE_ID"
+            },
+            {
+              "description": "ISC API base URL used by the follow-up aggregation request (no trailing slash).",
+              "name": "url",
+              "transforms": [],
+              "variableA": "https://{tenant}.api.identitynow-demo.com"
+            }
+          ]
+        },
+        "description": "Set triggerSource, followUpSource, and url before enabling. Variable names must stay camelCase: the step output is keyed by variable name and later steps reference $.defineVariable.<name>. The event trigger cannot read these values, so matching happens in the next step.",
+        "displayName": "Configuration",
+        "nextStep": "Check Trigger Source",
+        "type": "Mutation"
+      },
+      "Check Trigger Source": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "HTTP Request 1",
+            "variableA.$": "$.trigger.source.id",
+            "variableB.$": "$.defineVariable.triggerSource"
+          }
+        ],
+        "defaultStep": "End Step - Skipped",
+        "description": "Continue only when the completed aggregation is for the configured Trigger Source.",
+        "displayName": "Trigger source matches?",
+        "type": "choice"
+      },
+      "End Step - Skipped": {
+        "description": "The completed aggregation was for a different source. No follow-up aggregation was started.",
+        "displayName": "Skipped: Other Source",
+        "type": "success"
+      },
+      "End Step - Success": {
+        "description": "The follow-up source account aggregation was accepted.",
+        "displayName": "Success: Follow-up Aggregation Started",
+        "type": "success"
+      },
+      "End Step - Failure": {
+        "description": "The follow-up source account aggregation request failed.",
+        "displayName": "Failure: Follow-up Aggregation",
+        "failureName": "Follow-up Aggregation Failed",
+        "type": "failure"
+      },
+      "HTTP Request 1": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody.$": "",
+          "method": "post",
+          "requestContentType": "json",
+          "url": "{{$.defineVariable.url}}/v2026/sources/{{$.defineVariable.followUpSource}}/load-accounts",
+          "authenticationType": "OAuth",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          }
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Starts an optimized account aggregation on the configured followUpSource.",
+        "displayName": "Aggregate follow-up source",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 3
+      }
+    }
+  },
+  "owner": {
+    "type": "IDENTITY",
+    "id": "YOUR_OWNER_IDENTITY_ID",
+    "name": "YOUR_OWNER_NAME"
+  },
+  "trigger": {
+    "type": "EVENT",
+    "attributes": {
+      "filter.$": "$[?(@.status == \"Success\")]",
+      "id": "idn:account-aggregation-completed",
+      "integrationId": null
+    }
+  },
+  "name": "Chain source aggregation",
+  "description": "When account aggregation completes successfully, start account aggregation on a second source. Set triggerSource, followUpSource, and url in Configuration, then attach OAuth on the HTTP Request before enabling.",
+  "enabled": false
+}
