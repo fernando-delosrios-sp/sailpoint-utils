@@ -110,3 +110,21 @@ Groups are `level` 1 and leaves `level` 2, not 0 and 1. The Sub Unit dropdown se
 
 Run against a backed-up database. Log out and back in after applying so OrangeHRM refreshes its cached org tree.
 
+## Duplicate job titles SQL
+
+Script: [`sql/20260924_job_title_dedupe.sql`](sql/20260924_job_title_dedupe.sql)
+
+Fixes a Job Title dropdown that repeats the same label (for example three `Doctor` and three `Doctor Chief` options). `AddEmployeeForm::_getJobTitles()` keys the dropdown by `ohrm_job_title.id` and keeps every row with `is_deleted = 0`, and nothing in the schema makes `job_title` unique, so an import that ran more than once leaves several active rows per title and each one becomes its own option.
+
+Section 1 is read only: it lists every title bracketed and hex-encoded (so a trailing space or a case difference is visible), the duplicate groups, how many employees sit on each copy, and everything that references `ohrm_job_title` in this build. It also prints a duplicate check for every other `ohrm_*` lookup table, because the same double import usually hits sub units, locations, and employment statuses too.
+
+The rest of the script keeps one row per title — the lowest id in each duplicate group from the 2026-09-24 preflight (healthcare titles were inserted three times, ids stepping +12; `Enterprise Sales Executive` twice as 188/189) — then in one transaction:
+
+- repoints `hs_hr_employee.job_title_code` and `ohrm_job_vacancy.job_title_code`
+- on `hs_hr_jobtit_empstat` (unique with `estat_code`) and `ohrm_job_specification_attachment` (one file per title), deletes the losing row when the survivor already has that mapping or file, otherwise moves it
+- retires the extra titles with `is_deleted = 1`
+
+Those four FKs are this build (`hs_hr_employee_ibfk_3`, `hs_hr_jobtit_empstat_ibfk_1`, `ohrm_job_specification_attachment_ibfk_1`, `ohrm_job_vacancy_ibfk_1`). Snapshot tables for each child plus the merge map `ohrm_job_title_merge_20260924` are created once and are not overwritten on re-run; the rollback block restores from them. Section 6 holds an optional hard delete.
+
+Retired titles keep their name, so aggregated ISC account and identity attributes do not change — unless section 1a shows the duplicates differing by whitespace or case, in which case moved employees get the surviving spelling and any birthright criteria matching on the title string should be re-checked.
+
