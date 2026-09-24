@@ -10,6 +10,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 - **Machine Identity Security** — Package under `ISC/Machine Identity Security` for Active Directory and Microsoft Entra ID NHI sources: account subtypes, classification, mapping transforms, create forms, provisioning policies, and setup README. Moves Entra gallery demo CSVs from Demo Data into this project. Complements AD mappings with subtype (`employeeType`) and environment (`department`) transforms.
 
+- **Source Management** — Interactive ISC package under `ISC/Source Management`: pick a live source, then run account aggregation (optimised or full), entitlement aggregation, or source reset (accounts and/or entitlements). Form toggles enable per action; HTTP uses Parameter Storage OAuth. Includes importable form, workflow, combined SP-Config, and README.
+
 ## 2026-09-22
 
 ### ✨ New Features

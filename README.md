@@ -32,6 +32,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | [Organizational Hierarchy Path](ISC/Organizational%20Hierarchy%20Path/) | Transform rule that builds a consolidated org hierarchy path from entitlements |
 | [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) | Copy-ready IQService connector-rule bootstrap with logging, redaction, exit handling, and optional replay |
 | [Source Connection Setup](ISC/Source%20Connection%20Setup/) | Entra ID app registration, Microsoft 365 access-profile wizard (service plans), AWS SaaS IAM role setup, Google Workspace SaaS service account setup, and IQService host control |
+| [Source Management](ISC/Source%20Management/) | Interactive workflow to pick a source and run account aggregation (optimised/full), entitlement aggregation, or source reset (accounts and/or entitlements) |
 | [Transforms](ISC/Transforms/) | Reusable transform definitions (dates, lifecycle state, attribute history, manager flag) |
 
 ## SaaS Connectivity

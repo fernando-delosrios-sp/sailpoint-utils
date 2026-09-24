@@ -1,0 +1,982 @@
+{
+  "version": 1,
+  "timestamp": "2026-09-24T09:20:25.797Z",
+  "tenant": "PLACEHOLDER",
+  "description": "Source Management package: interactive source picker with account aggregation, entitlement aggregation, and source reset",
+  "options": {
+    "excludeTypes": null,
+    "includeTypes": [
+      "FORM_DEFINITION",
+      "WORKFLOW"
+    ],
+    "objectOptions": {
+      "FORM_DEFINITION": {
+        "includedNames": [
+          "Source Management"
+        ],
+        "includedIds": []
+      },
+      "WORKFLOW": {
+        "includedNames": [
+          "Source Management"
+        ],
+        "includedIds": []
+      }
+    }
+  },
+  "objects": [
+    {
+      "version": 1,
+      "self": {
+        "id": "c8f3a1e2-4b5d-4e6f-9a0b-1c2d3e4f5a6b",
+        "name": "Source Management",
+        "type": "FORM_DEFINITION"
+      },
+      "object": {
+        "id": "c8f3a1e2-4b5d-4e6f-9a0b-1c2d3e4f5a6b",
+        "name": "Source Management",
+        "description": "Select a source and choose account aggregation, entitlement aggregation, or a source reset.",
+        "owner": {
+          "type": "IDENTITY",
+          "id": "YOUR_OWNER_IDENTITY_ID",
+          "name": "YOUR_OWNER_IDENTITY_NAME"
+        },
+        "usedBy": [],
+        "formInput": [
+          {
+            "id": "sources",
+            "type": "ARRAY",
+            "label": "sources",
+            "description": "Sources returned by GET /v2026/sources (up to 250), supplied by the Source Management workflow."
+          }
+        ],
+        "formElements": [
+          {
+            "id": "main-section",
+            "elementType": "SECTION",
+            "config": {
+              "alignment": "LEFT",
+              "description": "",
+              "formElements": [
+                {
+                  "config": {
+                    "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Choose a source, then pick an action. Matching options appear only for the action you select.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Account Aggregation and Entitlement Aggregation reload data from the connector. Source Reset removes accounts and/or entitlements already stored in Identity Security Cloud for that source.</p>",
+                    "label": "Introduction",
+                    "showLabel": false
+                  },
+                  "elementType": "DESCRIPTION",
+                  "id": "1100000000002",
+                  "key": "",
+                  "validations": []
+                },
+                {
+                  "config": {
+                    "dataSource": {
+                      "config": {
+                        "formInputId": "sources",
+                        "sortBy": "ASC"
+                      },
+                      "dataSourceType": "FORM_INPUT"
+                    },
+                    "forceSelect": true,
+                    "helpText": "Sources loaded from this tenant (first 250 by name). The value stored is the source ID.",
+                    "label": "Source",
+                    "maximum": 1,
+                    "placeholder": "Select a source...",
+                    "required": true
+                  },
+                  "elementType": "SELECT",
+                  "id": "1100000000003",
+                  "key": "source",
+                  "validations": [
+                    {
+                      "validationType": "DATA_SOURCE"
+                    },
+                    {
+                      "validationType": "REQUIRED"
+                    }
+                  ]
+                },
+                {
+                  "config": {
+                    "dataSource": {
+                      "config": {
+                        "options": [
+                          {
+                            "label": "Account Aggregation",
+                            "subLabel": "Reload accounts from the connector",
+                            "value": "accountAggregation"
+                          },
+                          {
+                            "label": "Entitlement Aggregation",
+                            "subLabel": "Reload entitlements from the connector",
+                            "value": "entitlementAggregation"
+                          },
+                          {
+                            "label": "Source Reset",
+                            "subLabel": "Remove accounts and/or entitlements from ISC",
+                            "value": "sourceReset"
+                          }
+                        ]
+                      },
+                      "dataSourceType": "STATIC"
+                    },
+                    "forceSelect": true,
+                    "helpText": "Select one action. Matching option toggles appear below.",
+                    "label": "Action",
+                    "maximum": 1,
+                    "placeholder": "Select an action...",
+                    "required": true
+                  },
+                  "elementType": "SELECT",
+                  "id": "1100000000004",
+                  "key": "action",
+                  "validations": [
+                    {
+                      "validationType": "DATA_SOURCE"
+                    },
+                    {
+                      "validationType": "REQUIRED"
+                    }
+                  ]
+                }
+              ],
+              "label": "Source management",
+              "labelStyle": "h2",
+              "showLabel": true
+            },
+            "validations": []
+          },
+          {
+            "id": "account-aggregation-section",
+            "elementType": "SECTION",
+            "config": {
+              "alignment": "LEFT",
+              "description": "",
+              "formElements": [
+                {
+                  "config": {
+                    "default": true,
+                    "falseLabel": "No",
+                    "helpText": "Yes runs an optimised account aggregation. No requests a full account aggregation (disableOptimization).",
+                    "label": "Optimised",
+                    "trueLabel": "Yes"
+                  },
+                  "elementType": "TOGGLE",
+                  "id": "1100000000005",
+                  "key": "optimised",
+                  "validations": []
+                }
+              ],
+              "label": "Account aggregation",
+              "labelStyle": "h2",
+              "showLabel": true
+            },
+            "validations": []
+          },
+          {
+            "id": "source-reset-section",
+            "elementType": "SECTION",
+            "config": {
+              "alignment": "LEFT",
+              "description": "",
+              "formElements": [
+                {
+                  "config": {
+                    "description": "<p style=\"margin: 0; line-height: 1.5; color: #b45309;\"><strong>Warning:</strong> Source Reset permanently removes selected data from Identity Security Cloud for this source. Access profiles tied to reset entitlements are removed. This does not delete objects in the connected system. Enable Accounts and/or Entitlements below.</p>",
+                    "label": "Reset warning",
+                    "showLabel": false
+                  },
+                  "elementType": "DESCRIPTION",
+                  "id": "1100000000006",
+                  "key": "",
+                  "validations": []
+                },
+                {
+                  "config": {
+                    "default": false,
+                    "falseLabel": "No",
+                    "helpText": "Remove all accounts for this source from Identity Security Cloud (async).",
+                    "label": "Accounts",
+                    "trueLabel": "Yes"
+                  },
+                  "elementType": "TOGGLE",
+                  "id": "1100000000007",
+                  "key": "resetAccounts",
+                  "validations": []
+                },
+                {
+                  "config": {
+                    "default": false,
+                    "falseLabel": "No",
+                    "helpText": "Reset all entitlements for this source in Identity Security Cloud. Access profiles on the source are removed with them.",
+                    "label": "Entitlements",
+                    "trueLabel": "Yes"
+                  },
+                  "elementType": "TOGGLE",
+                  "id": "1100000000008",
+                  "key": "resetEntitlements",
+                  "validations": []
+                }
+              ],
+              "label": "Source reset",
+              "labelStyle": "h2",
+              "showLabel": true
+            },
+            "validations": []
+          }
+        ],
+        "formConditions": [
+          {
+            "ruleOperator": "AND",
+            "rules": [
+              {
+                "sourceType": "ELEMENT",
+                "source": "action",
+                "operator": "EQ",
+                "valueType": "STRING",
+                "value": "Account Aggregation"
+              }
+            ],
+            "effects": [
+              {
+                "config": {
+                  "element": "account-aggregation-section"
+                },
+                "effectType": "SHOW"
+              }
+            ]
+          },
+          {
+            "ruleOperator": "AND",
+            "rules": [
+              {
+                "sourceType": "ELEMENT",
+                "source": "action",
+                "operator": "EQ",
+                "valueType": "STRING",
+                "value": "Source Reset"
+              }
+            ],
+            "effects": [
+              {
+                "config": {
+                  "element": "source-reset-section"
+                },
+                "effectType": "SHOW"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "version": 1,
+      "self": {
+        "id": "YOUR_WORKFLOW_ID",
+        "name": "Source Management",
+        "type": "WORKFLOW"
+      },
+      "object": {
+        "name": "Source Management",
+        "description": "Interactive process that lists sources, then runs account aggregation, entitlement aggregation, or a source reset (accounts and/or entitlements) for the selected source.",
+        "definition": {
+          "start": "Define Variable",
+          "steps": {
+            "Define Variable": {
+              "actionId": "sp:define-variable",
+              "attributes": {
+                "id": "sp:define-variable",
+                "variables": [
+                  {
+                    "description": "ISC API base URL used by source list and aggregation/reset HTTP actions (no trailing slash).",
+                    "name": "url",
+                    "transforms": [],
+                    "variableA": "https://{tenant}.api.identitynow-demo.com"
+                  }
+                ]
+              },
+              "displayName": "Configuration",
+              "nextStep": "Message Listing Sources",
+              "type": "Mutation"
+            },
+            "Message Listing Sources": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">Loading sources from this tenant so you can choose one. The list is limited to the first 250 sources returned by the API.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "🔄  Loading sources"
+              },
+              "displayName": "Message: Listing sources",
+              "nextStep": "Get Sources",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Get Sources": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "method": "get",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "YOUR_OAUTH_PARAMETER_ID",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+                  "paramType": "3.1"
+                },
+                "url": "{{$.defineVariable.url}}/v2026/sources",
+                "urlParams": {
+                  "limit": "250",
+                  "sorters": "name"
+                }
+              },
+              "catch": [
+                {
+                  "next": "Message List Sources Failed"
+                }
+              ],
+              "description": "Lists up to 250 sources for the interactive form dropdown.",
+              "displayName": "API: List sources",
+              "nextStep": "Form Source Action",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Message List Sources Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Sources could not be listed.</p><p><strong>Status:</strong> {{ $.getSources.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getSources.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No aggregation or reset was started. Ask an administrator to verify the OAuth client, scopes, and API base URL.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Could not list sources"
+              },
+              "displayName": "Message: List sources failed",
+              "nextStep": "End Failure List Sources",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Form Source Action": {
+              "actionId": "sp:interactive-form",
+              "attributes": {
+                "formDefinitionId": "c8f3a1e2-4b5d-4e6f-9a0b-1c2d3e4f5a6b",
+                "inputForForm_array_sources.$": "$.getSources.body",
+                "inputForForm_array_sources_label": "$.name",
+                "inputForForm_array_sources_value": "$.id",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "Source management"
+              },
+              "description": "Collects the source, action, and option toggles from the operator.",
+              "displayName": "Form: Source and action",
+              "nextStep": "Check Action Account",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Check Action Account": {
+              "actionId": "sp:compare-strings",
+              "choiceList": [
+                {
+                  "comparator": "StringEquals",
+                  "nextStep": "Check Optimised",
+                  "variableA.$": "$.formSourceAction.formData.action",
+                  "variableB": "accountAggregation"
+                }
+              ],
+              "defaultStep": "Check Action Entitlement",
+              "description": "True when the form action is Account Aggregation Optimised.",
+              "displayName": "Account aggregation?",
+              "type": "choice"
+            },
+            "Check Action Entitlement": {
+              "actionId": "sp:compare-strings",
+              "choiceList": [
+                {
+                  "comparator": "StringEquals",
+                  "nextStep": "Message Entitlement Aggregation",
+                  "variableA.$": "$.formSourceAction.formData.action",
+                  "variableB": "entitlementAggregation"
+                }
+              ],
+              "defaultStep": "Check Action Reset",
+              "description": "True when the form action is Entitlement Aggregation.",
+              "displayName": "Entitlement aggregation?",
+              "type": "choice"
+            },
+            "Check Action Reset": {
+              "actionId": "sp:compare-strings",
+              "choiceList": [
+                {
+                  "comparator": "StringEquals",
+                  "nextStep": "Check Reset Accounts",
+                  "variableA.$": "$.formSourceAction.formData.action",
+                  "variableB": "sourceReset"
+                }
+              ],
+              "defaultStep": "Message Unknown Action",
+              "description": "True when the form action is Source Reset; otherwise fail as unknown.",
+              "displayName": "Source reset?",
+              "type": "choice"
+            },
+            "Message Unknown Action": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">The selected action is not recognised. No aggregation or reset was started.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Unknown action"
+              },
+              "displayName": "Message: Unknown action",
+              "nextStep": "End Failure Unknown Action",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Check Optimised": {
+              "actionId": "sp:compare-boolean",
+              "choiceList": [
+                {
+                  "comparator": "BooleanEquals",
+                  "nextStep": "Message Account Aggregation Optimised",
+                  "variableA.$": "$.formSourceAction.formData.optimised",
+                  "variableB": true
+                }
+              ],
+              "defaultStep": "Message Account Aggregation Full",
+              "displayName": "Optimised aggregation?",
+              "type": "choice"
+            },
+            "Message Account Aggregation Optimised": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Starting an <strong>optimised</strong> account aggregation.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Optimised</td><td style=\"padding: 6px 0;\">Yes</td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "🔄  Account aggregation"
+              },
+              "displayName": "Message: Account aggregation optimised",
+              "nextStep": "Load Accounts Optimised",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Account Aggregation Full": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Starting a <strong>full</strong> account aggregation (optimisation disabled).</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Optimised</td><td style=\"padding: 6px 0;\">No</td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "🔄  Account aggregation"
+              },
+              "displayName": "Message: Account aggregation full",
+              "nextStep": "Load Accounts Full",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Load Accounts Optimised": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "jsonRequestBody.$": "",
+                "method": "post",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "YOUR_OAUTH_PARAMETER_ID",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+                  "paramType": "3.1"
+                },
+                "requestContentType": "json",
+                "url": "{{$.defineVariable.url}}/v2026/sources/{{$.formSourceAction.formData.source}}/load-accounts"
+              },
+              "catch": [
+                {
+                  "next": "Message Load Accounts Failed"
+                }
+              ],
+              "description": "Starts an optimised account aggregation on the selected source.",
+              "displayName": "API: Load accounts (optimised)",
+              "nextStep": "Message Account Aggregation Success",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Load Accounts Full": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "jsonRequestBody": {
+                  "disableOptimization": true
+                },
+                "method": "post",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "YOUR_OAUTH_PARAMETER_ID",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+                  "paramType": "3.1"
+                },
+                "requestContentType": "json",
+                "url": "{{$.defineVariable.url}}/v2026/sources/{{$.formSourceAction.formData.source}}/load-accounts"
+              },
+              "catch": [
+                {
+                  "next": "Message Load Accounts Full Failed"
+                }
+              ],
+              "description": "Starts a full account aggregation (disableOptimization) on the selected source.",
+              "displayName": "API: Load accounts (full)",
+              "nextStep": "Message Account Aggregation Success",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Message Load Accounts Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Account aggregation could not be started for source <strong>{{ $.formSourceAction.formData.source }}</strong>.</p><p><strong>Status:</strong> {{ $.loadAccountsOptimised.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.loadAccountsOptimised.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No aggregation was confirmed. Ask an administrator to check the OAuth client and source status.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Account aggregation failed"
+              },
+              "displayName": "Message: Load accounts failed",
+              "nextStep": "End Failure Aggregate Accounts",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Load Accounts Full Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Full account aggregation could not be started for source <strong>{{ $.formSourceAction.formData.source }}</strong>.</p><p><strong>Status:</strong> {{ $.loadAccountsFull.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.loadAccountsFull.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No aggregation was confirmed. Ask an administrator to check the OAuth client and source status.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Account aggregation failed"
+              },
+              "displayName": "Message: Load accounts full failed",
+              "nextStep": "End Failure Aggregate Accounts",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Account Aggregation Success": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Account aggregation was accepted. Progress continues asynchronously in Identity Security Cloud.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Action</td><td style=\"padding: 6px 0;\">Account Aggregation</td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "✅  Account aggregation started"
+              },
+              "displayName": "Message: Account aggregation success",
+              "nextStep": "End Success",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Entitlement Aggregation": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Starting entitlement aggregation.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "🔄  Entitlement aggregation"
+              },
+              "displayName": "Message: Entitlement aggregation",
+              "nextStep": "Load Entitlements",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Load Entitlements": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "jsonRequestBody.$": "",
+                "method": "post",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "YOUR_OAUTH_PARAMETER_ID",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+                  "paramType": "3.1"
+                },
+                "requestContentType": "json",
+                "url": "{{$.defineVariable.url}}/v2026/sources/{{$.formSourceAction.formData.source}}/load-entitlements"
+              },
+              "catch": [
+                {
+                  "next": "Message Load Entitlements Failed"
+                }
+              ],
+              "description": "Starts entitlement aggregation on the selected source.",
+              "displayName": "API: Load entitlements",
+              "nextStep": "Message Entitlement Aggregation Success",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Message Load Entitlements Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Entitlement aggregation could not be started for source <strong>{{ $.formSourceAction.formData.source }}</strong>.</p><p><strong>Status:</strong> {{ $.loadEntitlements.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.loadEntitlements.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No aggregation was confirmed. Ask an administrator to check the OAuth client and source status.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Entitlement aggregation failed"
+              },
+              "displayName": "Message: Load entitlements failed",
+              "nextStep": "End Failure Aggregate Entitlements",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Entitlement Aggregation Success": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Entitlement aggregation was accepted. Progress continues asynchronously in Identity Security Cloud.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Action</td><td style=\"padding: 6px 0;\">Entitlement Aggregation</td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "✅  Entitlement aggregation started"
+              },
+              "displayName": "Message: Entitlement aggregation success",
+              "nextStep": "End Success",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Check Reset Accounts": {
+              "actionId": "sp:compare-boolean",
+              "choiceList": [
+                {
+                  "comparator": "BooleanEquals",
+                  "nextStep": "Message Reset Accounts",
+                  "variableA.$": "$.formSourceAction.formData.resetAccounts",
+                  "variableB": true
+                }
+              ],
+              "defaultStep": "Check Reset Entitlements Only",
+              "description": "If Accounts is Yes, remove accounts first. Otherwise check Entitlements only.",
+              "displayName": "Reset accounts?",
+              "type": "choice"
+            },
+            "Check Reset Entitlements Only": {
+              "actionId": "sp:compare-boolean",
+              "choiceList": [
+                {
+                  "comparator": "BooleanEquals",
+                  "nextStep": "Message Reset Entitlements",
+                  "variableA.$": "$.formSourceAction.formData.resetEntitlements",
+                  "variableB": true
+                }
+              ],
+              "defaultStep": "Message Reset Nothing Selected",
+              "description": "Accounts was No. Continue only if Entitlements is Yes.",
+              "displayName": "Reset entitlements only?",
+              "type": "choice"
+            },
+            "Message Reset Nothing Selected": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Source Reset requires at least one of <strong>Accounts</strong> or <strong>Entitlements</strong> set to Yes.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Accounts</td><td style=\"padding: 6px 0;\">No</td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Entitlements</td><td style=\"padding: 6px 0;\">No</td></tr></table><p style=\"margin: 16px 0 0 0; color: #475569;\">No reset API was called. Run Source Management again and enable at least one toggle.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Nothing selected to reset"
+              },
+              "displayName": "Message: Reset nothing selected",
+              "nextStep": "End Success No Op",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Reset Accounts": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "WARN",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Removing all accounts for this source from Identity Security Cloud.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Resetting accounts"
+              },
+              "displayName": "Message: Resetting accounts",
+              "nextStep": "Remove Accounts",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Remove Accounts": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "jsonRequestBody.$": "",
+                "method": "post",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "YOUR_OAUTH_PARAMETER_ID",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+                  "paramType": "3.1"
+                },
+                "requestContentType": "json",
+                "url": "{{$.defineVariable.url}}/v2026/sources/{{$.formSourceAction.formData.source}}/remove-accounts"
+              },
+              "catch": [
+                {
+                  "next": "Message Remove Accounts Failed"
+                }
+              ],
+              "description": "Asynchronously removes all accounts for the selected source from ISC.",
+              "displayName": "API: Remove accounts",
+              "nextStep": "Check Reset Entitlements After Accounts",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Message Remove Accounts Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Account reset could not be started for source <strong>{{ $.formSourceAction.formData.source }}</strong>.</p><p><strong>Status:</strong> {{ $.removeAccounts.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.removeAccounts.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No account reset was confirmed. Common causes include a source owner account still present on the source. Entitlement reset was not attempted.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Account reset failed"
+              },
+              "displayName": "Message: Remove accounts failed",
+              "nextStep": "End Failure Reset Accounts",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Check Reset Entitlements After Accounts": {
+              "actionId": "sp:compare-boolean",
+              "choiceList": [
+                {
+                  "comparator": "BooleanEquals",
+                  "nextStep": "Message Reset Entitlements",
+                  "variableA.$": "$.formSourceAction.formData.resetEntitlements",
+                  "variableB": true
+                }
+              ],
+              "defaultStep": "Message Reset Accounts Only Success",
+              "description": "After a successful account reset, optionally reset entitlements.",
+              "displayName": "Also reset entitlements?",
+              "type": "choice"
+            },
+            "Message Reset Accounts Only Success": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Account reset was accepted. Removal continues asynchronously.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Accounts</td><td style=\"padding: 6px 0;\">Yes</td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Entitlements</td><td style=\"padding: 6px 0;\">No</td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "✅  Account reset started"
+              },
+              "displayName": "Message: Account reset only success",
+              "nextStep": "End Success",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Reset Entitlements": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "WARN",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Resetting entitlements for this source in Identity Security Cloud. Access profiles on the source are removed with them.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Resetting entitlements"
+              },
+              "displayName": "Message: Resetting entitlements",
+              "nextStep": "Reset Entitlements",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Reset Entitlements": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "jsonRequestBody.$": "",
+                "method": "post",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "YOUR_OAUTH_PARAMETER_ID",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+                  "paramType": "3.1"
+                },
+                "requestContentType": "json",
+                "url": "{{$.defineVariable.url}}/v2026/entitlements/reset/sources/{{$.formSourceAction.formData.source}}"
+              },
+              "catch": [
+                {
+                  "next": "Message Reset Entitlements Failed"
+                }
+              ],
+              "description": "Resets all entitlements for the selected source in ISC.",
+              "displayName": "API: Reset entitlements",
+              "nextStep": "Message Reset Success",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Message Reset Entitlements Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Entitlement reset could not be started for source <strong>{{ $.formSourceAction.formData.source }}</strong>.</p><p><strong>Status:</strong> {{ $.resetEntitlements.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.resetEntitlements.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">If account reset ran earlier in this session, that request may still be in progress. Ask an administrator to verify the OAuth client and source status.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Entitlement reset failed"
+              },
+              "displayName": "Message: Reset entitlements failed",
+              "nextStep": "End Failure Reset Entitlements",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Reset Success": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Source reset request(s) were accepted. Removals continue asynchronously in Identity Security Cloud.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Action</td><td style=\"padding: 6px 0;\">Source Reset</td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "✅  Source reset started"
+              },
+              "displayName": "Message: Reset success",
+              "nextStep": "End Success",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "End Success": {
+              "actionId": "sp:operator-success",
+              "description": "The selected source operation was accepted.",
+              "displayName": "Success: Operation accepted",
+              "type": "success"
+            },
+            "End Success No Op": {
+              "actionId": "sp:operator-success",
+              "description": "Source Reset was chosen with no toggles enabled. No API was called.",
+              "displayName": "Success: Nothing to reset",
+              "type": "success"
+            },
+            "End Failure List Sources": {
+              "actionId": "sp:operator-failure",
+              "description": "Listing sources failed.",
+              "displayName": "Failure: List sources",
+              "failureName": "List Sources Failed",
+              "type": "failure"
+            },
+            "End Failure Unknown Action": {
+              "actionId": "sp:operator-failure",
+              "description": "The form returned an unrecognised action value.",
+              "displayName": "Failure: Unknown action",
+              "failureName": "Unknown Action",
+              "type": "failure"
+            },
+            "End Failure Aggregate Accounts": {
+              "actionId": "sp:operator-failure",
+              "description": "Account aggregation request failed.",
+              "displayName": "Failure: Account aggregation",
+              "failureName": "Account Aggregation Failed",
+              "type": "failure"
+            },
+            "End Failure Aggregate Entitlements": {
+              "actionId": "sp:operator-failure",
+              "description": "Entitlement aggregation request failed.",
+              "displayName": "Failure: Entitlement aggregation",
+              "failureName": "Entitlement Aggregation Failed",
+              "type": "failure"
+            },
+            "End Failure Reset Accounts": {
+              "actionId": "sp:operator-failure",
+              "description": "Account reset (remove-accounts) request failed.",
+              "displayName": "Failure: Account reset",
+              "failureName": "Account Reset Failed",
+              "type": "failure"
+            },
+            "End Failure Reset Entitlements": {
+              "actionId": "sp:operator-failure",
+              "description": "Entitlement reset request failed.",
+              "displayName": "Failure: Entitlement reset",
+              "failureName": "Entitlement Reset Failed",
+              "type": "failure"
+            }
+          }
+        },
+        "enabled": false,
+        "trigger": {
+          "type": "EVENT",
+          "attributes": {
+            "filter.$": "$[?(@.workflowId == 'YOUR_WORKFLOW_ID')]",
+            "id": "idn:interactive-process-launched",
+            "integrationId": null
+          }
+        },
+        "id": "YOUR_WORKFLOW_ID",
+        "owner": {
+          "type": "IDENTITY",
+          "id": "YOUR_OWNER_IDENTITY_ID",
+          "name": "YOUR_OWNER_IDENTITY_NAME"
+        }
+      }
+    }
+  ]
+}

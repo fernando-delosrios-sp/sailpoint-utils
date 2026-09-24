@@ -1,0 +1,247 @@
+[
+  {
+    "version": 1,
+    "self": {
+      "id": "c8f3a1e2-4b5d-4e6f-9a0b-1c2d3e4f5a6b",
+      "name": "Source Management",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "c8f3a1e2-4b5d-4e6f-9a0b-1c2d3e4f5a6b",
+      "name": "Source Management",
+      "description": "Select a source and choose account aggregation, entitlement aggregation, or a source reset.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "YOUR_OWNER_IDENTITY_ID",
+        "name": "YOUR_OWNER_IDENTITY_NAME"
+      },
+      "usedBy": [],
+      "formInput": [
+        {
+          "id": "sources",
+          "type": "ARRAY",
+          "label": "sources",
+          "description": "Sources returned by GET /v2026/sources (up to 250), supplied by the Source Management workflow."
+        }
+      ],
+      "formElements": [
+        {
+          "id": "main-section",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Choose a source, then pick an action. Matching options appear only for the action you select.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Account Aggregation and Entitlement Aggregation reload data from the connector. Source Reset removes accounts and/or entitlements already stored in Identity Security Cloud for that source.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "1100000000002",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "formInputId": "sources",
+                      "sortBy": "ASC"
+                    },
+                    "dataSourceType": "FORM_INPUT"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Sources loaded from this tenant (first 250 by name). The value stored is the source ID.",
+                  "label": "Source",
+                  "maximum": 1,
+                  "placeholder": "Select a source...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "1100000000003",
+                "key": "source",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "options": [
+                        {
+                          "label": "Account Aggregation",
+                          "subLabel": "Reload accounts from the connector",
+                          "value": "accountAggregation"
+                        },
+                        {
+                          "label": "Entitlement Aggregation",
+                          "subLabel": "Reload entitlements from the connector",
+                          "value": "entitlementAggregation"
+                        },
+                        {
+                          "label": "Source Reset",
+                          "subLabel": "Remove accounts and/or entitlements from ISC",
+                          "value": "sourceReset"
+                        }
+                      ]
+                    },
+                    "dataSourceType": "STATIC"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Select one action. Matching option toggles appear below.",
+                  "label": "Action",
+                  "maximum": 1,
+                  "placeholder": "Select an action...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "1100000000004",
+                "key": "action",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              }
+            ],
+            "label": "Source management",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        },
+        {
+          "id": "account-aggregation-section",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "default": true,
+                  "falseLabel": "No",
+                  "helpText": "Yes runs an optimised account aggregation. No requests a full account aggregation (disableOptimization).",
+                  "label": "Optimised",
+                  "trueLabel": "Yes"
+                },
+                "elementType": "TOGGLE",
+                "id": "1100000000005",
+                "key": "optimised",
+                "validations": []
+              }
+            ],
+            "label": "Account aggregation",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        },
+        {
+          "id": "source-reset-section",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0; line-height: 1.5; color: #b45309;\"><strong>Warning:</strong> Source Reset permanently removes selected data from Identity Security Cloud for this source. Access profiles tied to reset entitlements are removed. This does not delete objects in the connected system. Enable Accounts and/or Entitlements below.</p>",
+                  "label": "Reset warning",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "1100000000006",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": false,
+                  "falseLabel": "No",
+                  "helpText": "Remove all accounts for this source from Identity Security Cloud (async).",
+                  "label": "Accounts",
+                  "trueLabel": "Yes"
+                },
+                "elementType": "TOGGLE",
+                "id": "1100000000007",
+                "key": "resetAccounts",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": false,
+                  "falseLabel": "No",
+                  "helpText": "Reset all entitlements for this source in Identity Security Cloud. Access profiles on the source are removed with them.",
+                  "label": "Entitlements",
+                  "trueLabel": "Yes"
+                },
+                "elementType": "TOGGLE",
+                "id": "1100000000008",
+                "key": "resetEntitlements",
+                "validations": []
+              }
+            ],
+            "label": "Source reset",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": [
+        {
+          "ruleOperator": "AND",
+          "rules": [
+            {
+              "sourceType": "ELEMENT",
+              "source": "action",
+              "operator": "EQ",
+              "valueType": "STRING",
+              "value": "Account Aggregation"
+            }
+          ],
+          "effects": [
+            {
+              "config": {
+                "element": "account-aggregation-section"
+              },
+              "effectType": "SHOW"
+            }
+          ]
+        },
+        {
+          "ruleOperator": "AND",
+          "rules": [
+            {
+              "sourceType": "ELEMENT",
+              "source": "action",
+              "operator": "EQ",
+              "valueType": "STRING",
+              "value": "Source Reset"
+            }
+          ],
+          "effects": [
+            {
+              "config": {
+                "element": "source-reset-section"
+              },
+              "effectType": "SHOW"
+            }
+          ]
+        }
+      ]
+    }
+  }
+]
