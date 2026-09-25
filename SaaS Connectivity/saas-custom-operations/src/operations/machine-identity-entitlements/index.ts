@@ -1,12 +1,15 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
-import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
+import { customOperation, isOfflineContext, OperationSignature, RequestContext } from '../../framework'
 import { EntitlementRef, listEntitlementsByValue, listEntitlementsByValues } from '../../isc/entitlements'
 import { listMachineAccounts, MachineAccountRecord } from '../../isc/machine-accounts'
 import {
+    getMachineIdentity,
     listMachineIdentities,
     listMachineIdentitiesOffline,
     MachineIdentityRecord,
+    patchUserEntitlements,
     resolveMachineIdentityByIdentityId,
+    unionUserEntitlements,
 } from '../../isc/machine-identities'
 import { getSource, SourcePayload } from '../../isc/sources'
 import { entitlementsToAdd, extractInboundValues, userEntitlementsAttributeName } from './evaluate'
@@ -24,19 +27,41 @@ export interface MachineIdentityEntitlementsOperation extends OperationSignature
         identityId?: string
     }
     output: {
-        'machine-identity-entitlements:machine-identity-id': string
-        'machine-identity-entitlements:entitlement-ids': string[]
-        'machine-identity-entitlements:entitlement-source-ids': string[]
+        'machine-identity-entitlements:identities-scanned': number
+        'machine-identity-entitlements:identities-updated': number
+        'machine-identity-entitlements:identities-skipped': number
+        'machine-identity-entitlements:identities-failed': number
+        'machine-identity-entitlements:entitlements-added': number
+        'machine-identity-entitlements:failed-identity-ids': string[]
+        'machine-identity-entitlements:failure-details': string[]
     }
     response: {
         identitiesScanned?: number
-        triggerAccountsWritten?: number
+        identitiesUpdated?: number
+        identitiesSkipped?: number
+        identitiesFailed?: number
+        entitlementsAdded?: number
     }
 }
 
-const PERSIST_CONCURRENCY = 5
+const PATCH_CONCURRENCY = 5
 
-/** Evaluates machine identities and persists entitlements to add on one trigger account per identity with work. */
+interface OperationSummary {
+    identitiesScanned: number
+    identitiesUpdated: number
+    identitiesSkipped: number
+    identitiesFailed: number
+    entitlementsAdded: number
+}
+
+interface IdentityApplyResult {
+    status: 'updated' | 'skipped' | 'failed'
+    addedCount: number
+    identityId: string
+    failureDetail?: string
+}
+
+/** Evaluates machine identities, applies user-entitlement unions, and persists one scan summary. */
 export const machineIdentityEntitlementsOperation = customOperation<MachineIdentityEntitlementsOperation>(
     async (ctx, input) => {
         const offline = isOfflineContext(ctx)
@@ -75,7 +100,9 @@ export const machineIdentityEntitlementsOperation = customOperation<MachineIdent
         })
         const accountsByIdentity = groupByMachineIdentity(eligibleAccounts)
         if (accountsByIdentity.size === 0) {
-            ctx.respond({ identitiesScanned: 0, triggerAccountsWritten: 0 })
+            const summary = emptySummary()
+            await persistSummary(ctx, summary, [], 'success')
+            ctx.respond(summary)
             return
         }
         const identities = targetIdentity
@@ -88,12 +115,20 @@ export const machineIdentityEntitlementsOperation = customOperation<MachineIdent
         const batchedCatalog =
             targetIdentity || offline ? undefined : await listEntitlementsByValues(ctx.sdk.entitlements, allValues)
         const entitlementCache = new Map<string, EntitlementRef[]>()
-        const pendingWrites: Array<{ persistId: string; identityId: string; toAdd: EntitlementRef[] }> = []
+        const pendingUpdates: Array<{ identityId: string; matched: EntitlementRef[] }> = []
+        let identitiesSkipped = 0
+        const initialFailures: IdentityApplyResult[] = []
 
         for (const [machineIdentityId, identityAccounts] of accountsByIdentity) {
             const identity = identitiesById.get(machineIdentityId)
             if (!identity) {
                 ctx.log.warn('Machine account references an unavailable machine identity', { machineIdentityId })
+                initialFailures.push({
+                    status: 'failed',
+                    addedCount: 0,
+                    identityId: machineIdentityId,
+                    failureDetail: 'Machine account references an unavailable machine identity',
+                })
                 continue
             }
 
@@ -124,44 +159,128 @@ export const machineIdentityEntitlementsOperation = customOperation<MachineIdent
 
             const toAdd = entitlementsToAdd(matched, identity.userEntitlements)
             if (toAdd.length === 0) {
+                identitiesSkipped += 1
                 continue
             }
 
-            pendingWrites.push({ persistId: `${ctx.requestId}:${identity.id}`, identityId: identity.id, toAdd })
+            pendingUpdates.push({ identityId: identity.id, matched })
         }
 
-        // Each trigger account waits on its own ISC provisioning task, so a tenant-wide scan only
-        // fits inside the workflow invoke timeout when those waits overlap.
-        await forEachWithConcurrency(pendingWrites, PERSIST_CONCURRENCY, async (write) => {
-            await ctx.persist(write.persistId, {
-                'machine-identity-entitlements:machine-identity-id': write.identityId,
-                'machine-identity-entitlements:entitlement-ids': write.toAdd.map((entitlement) => entitlement.id),
-                'machine-identity-entitlements:entitlement-source-ids': write.toAdd.map(
-                    (entitlement) => entitlement.sourceId
-                ),
-            })
+        const applyResults = await mapWithConcurrency(pendingUpdates, PATCH_CONCURRENCY, async (update) => {
+            try {
+                const current = offline
+                    ? identitiesById.get(update.identityId)
+                    : await getMachineIdentity(ctx.sdk.machineIdentities, update.identityId)
+                if (!current) {
+                    throw new ConnectorError(`Machine identity not found: ${update.identityId}`)
+                }
+
+                const additions = entitlementsToAdd(update.matched, current.userEntitlements)
+                if (additions.length === 0) {
+                    return {
+                        status: 'skipped',
+                        addedCount: 0,
+                        identityId: update.identityId,
+                    } satisfies IdentityApplyResult
+                }
+
+                const union = unionUserEntitlements(
+                    current.userEntitlements,
+                    additions.map((entitlement) => ({
+                        sourceId: entitlement.sourceId,
+                        entitlementId: entitlement.id,
+                    }))
+                )
+                if (!offline) {
+                    await patchUserEntitlements(ctx.sdk.machineIdentities, update.identityId, union)
+                }
+                return {
+                    status: 'updated',
+                    addedCount: additions.length,
+                    identityId: update.identityId,
+                } satisfies IdentityApplyResult
+            } catch (error) {
+                const failureDetail = error instanceof Error ? error.message : String(error)
+                ctx.log.warn('Failed to apply machine identity entitlements', {
+                    machineIdentityId: update.identityId,
+                    error: failureDetail,
+                })
+                return {
+                    status: 'failed',
+                    addedCount: 0,
+                    identityId: update.identityId,
+                    failureDetail,
+                } satisfies IdentityApplyResult
+            }
         })
 
-        ctx.respond({
+        const results = [...initialFailures, ...applyResults]
+        const failures = results.filter((result) => result.status === 'failed')
+        const summary: OperationSummary = {
             identitiesScanned: accountsByIdentity.size,
-            triggerAccountsWritten: pendingWrites.length,
-        })
+            identitiesUpdated: results.filter((result) => result.status === 'updated').length,
+            identitiesSkipped: identitiesSkipped + results.filter((result) => result.status === 'skipped').length,
+            identitiesFailed: failures.length,
+            entitlementsAdded: results.reduce((total, result) => total + result.addedCount, 0),
+        }
+        const summaryStatus = summary.identitiesFailed === 0 ? 'success' : summary.identitiesUpdated > 0 ? 'partial' : 'failed'
+        await persistSummary(ctx, summary, failures, summaryStatus)
+        ctx.respond(summary, summaryStatus === 'failed' ? 'failed' : 'success')
     },
     { operationSchema: machineIdentityEntitlementsOperationSchema }
 )
 
-async function forEachWithConcurrency<T>(
+function emptySummary(): OperationSummary {
+    return {
+        identitiesScanned: 0,
+        identitiesUpdated: 0,
+        identitiesSkipped: 0,
+        identitiesFailed: 0,
+        entitlementsAdded: 0,
+    }
+}
+
+async function persistSummary(
+    ctx: RequestContext<
+        MachineIdentityEntitlementsOperation['output'],
+        MachineIdentityEntitlementsOperation['response']
+    >,
+    summary: OperationSummary,
+    failures: readonly IdentityApplyResult[],
+    status: 'success' | 'partial' | 'failed'
+): Promise<void> {
+    await ctx.persist(
+        ctx.requestId,
+        {
+            'machine-identity-entitlements:identities-scanned': summary.identitiesScanned,
+            'machine-identity-entitlements:identities-updated': summary.identitiesUpdated,
+            'machine-identity-entitlements:identities-skipped': summary.identitiesSkipped,
+            'machine-identity-entitlements:identities-failed': summary.identitiesFailed,
+            'machine-identity-entitlements:entitlements-added': summary.entitlementsAdded,
+            'machine-identity-entitlements:failed-identity-ids': failures.map((failure) => failure.identityId),
+            'machine-identity-entitlements:failure-details': failures.map(
+                (failure) => failure.failureDetail ?? 'Unknown identity apply failure'
+            ),
+        },
+        status
+    )
+}
+
+async function mapWithConcurrency<T, R>(
     items: readonly T[],
     limit: number,
-    run: (item: T) => Promise<void>
-): Promise<void> {
+    run: (item: T) => Promise<R>
+): Promise<R[]> {
     let next = 0
+    const results = new Array<R>(items.length)
     const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
         while (next < items.length) {
-            await run(items[next++])
+            const index = next++
+            results[index] = await run(items[index])
         }
     })
     await Promise.all(workers)
+    return results
 }
 
 function groupByMachineIdentity(accounts: MachineAccountRecord[]): Map<string, MachineAccountRecord[]> {

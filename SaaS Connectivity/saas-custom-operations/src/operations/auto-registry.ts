@@ -7,7 +7,6 @@ import { evaluateAccessRequestRiskOperation } from './evaluate-access-request-ri
 import { exampleOperation } from './example/index'
 import { governanceGroupEmailsOperation } from './governance-group-emails/index'
 import { machineIdentityEntitlementsOperation } from './machine-identity-entitlements/index'
-import { machineIdentityEntitlementsApplyOperation } from './machine-identity-entitlements-apply/index'
 import { preventiveSodCheckOperation } from './preventive-sod-check/index'
 import { sodRemediationOperation } from './sod-remediation/index'
 import { accessModelSodRemediationOperationSchema } from './access-model-sod-remediation/index.schema'
@@ -16,7 +15,6 @@ import { evaluateAccessRequestRiskOperationSchema } from './evaluate-access-requ
 import { exampleOperationSchema } from './example/index.schema'
 import { governanceGroupEmailsOperationSchema } from './governance-group-emails/index.schema'
 import { machineIdentityEntitlementsOperationSchema } from './machine-identity-entitlements/index.schema'
-import { machineIdentityEntitlementsApplyOperationSchema } from './machine-identity-entitlements-apply/index.schema'
 import { preventiveSodCheckOperationSchema } from './preventive-sod-check/index.schema'
 import { sodRemediationOperationSchema } from './sod-remediation/index.schema'
 
@@ -26,7 +24,6 @@ registerOperationSchema('custom:evaluate-access-request-risk', evaluateAccessReq
 registerOperationSchema('custom:example', exampleOperationSchema)
 registerOperationSchema('custom:governance-group-emails', governanceGroupEmailsOperationSchema)
 registerOperationSchema('custom:machine-identity-entitlements', machineIdentityEntitlementsOperationSchema)
-registerOperationSchema('custom:machine-identity-entitlements-apply', machineIdentityEntitlementsApplyOperationSchema)
 registerOperationSchema('custom:preventive-sod-check', preventiveSodCheckOperationSchema)
 registerOperationSchema('custom:sod-remediation', sodRemediationOperationSchema)
 
@@ -37,11 +34,10 @@ export const OPERATION_HANDLERS: Record<string, CommandHandler> = {
     'custom:example': exampleOperation,
     'custom:governance-group-emails': governanceGroupEmailsOperation,
     'custom:machine-identity-entitlements': machineIdentityEntitlementsOperation,
-    'custom:machine-identity-entitlements-apply': machineIdentityEntitlementsApplyOperation,
     'custom:preventive-sod-check': preventiveSodCheckOperation,
     'custom:sod-remediation': sodRemediationOperation,
 }
 
 export function registerAutoOperations(connector: Connector): Connector {
-    return connector.command('custom:access-model-sod-remediation', accessModelSodRemediationOperation).command('custom:access-model-sod-remediation-apply', accessModelSodRemediationApplyOperation).command('custom:evaluate-access-request-risk', evaluateAccessRequestRiskOperation).command('custom:example', exampleOperation).command('custom:governance-group-emails', governanceGroupEmailsOperation).command('custom:machine-identity-entitlements', machineIdentityEntitlementsOperation).command('custom:machine-identity-entitlements-apply', machineIdentityEntitlementsApplyOperation).command('custom:preventive-sod-check', preventiveSodCheckOperation).command('custom:sod-remediation', sodRemediationOperation)
+    return connector.command('custom:access-model-sod-remediation', accessModelSodRemediationOperation).command('custom:access-model-sod-remediation-apply', accessModelSodRemediationApplyOperation).command('custom:evaluate-access-request-risk', evaluateAccessRequestRiskOperation).command('custom:example', exampleOperation).command('custom:governance-group-emails', governanceGroupEmailsOperation).command('custom:machine-identity-entitlements', machineIdentityEntitlementsOperation).command('custom:preventive-sod-check', preventiveSodCheckOperation).command('custom:sod-remediation', sodRemediationOperation)
 }

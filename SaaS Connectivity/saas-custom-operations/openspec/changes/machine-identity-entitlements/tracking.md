@@ -13,5 +13,5 @@
 ## Presets
 
 -   venue: local
--   parallelism: subagent-per-group
+-   parallelism: single
 -   base-branch: main

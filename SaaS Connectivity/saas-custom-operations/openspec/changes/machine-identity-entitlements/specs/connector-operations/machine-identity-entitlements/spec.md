@@ -4,7 +4,7 @@
 
 ### Requirement: Machine identity entitlements operation
 
-The connector SHALL register a custom command `custom:machine-identity-entitlements` that lists machine accounts, follows each account's `machineIdentity` node, reads configured connector entitlement values, matches ISC entitlements on the same source, and persists **entitlements to add** on one **trigger account** per machine identity that has a non-empty add list.
+The connector SHALL register one custom command `custom:machine-identity-entitlements` that lists machine accounts, follows each account's `machineIdentity` node, reads configured connector entitlement values, matches ISC entitlements, PATCHes each machine identity's `userEntitlements` union, and persists one **scan summary account** per invoke.
 
 #### Scenario: Auto-discovery registration
 
@@ -12,20 +12,20 @@ The connector SHALL register a custom command `custom:machine-identity-entitleme
 -   **WHEN** codegen runs
 -   **THEN** `custom:machine-identity-entitlements` SHALL be registered in auto-registry.ts and listed in connector-spec.json commands
 
-#### Scenario: Full scan persists one trigger account per identity with work
+#### Scenario: Full scan patches every identity with work
 
 -   **GIVEN** two machine identities each have at least one entitlement to add
 -   **AND** invoke input omits `identityId`
 -   **WHEN** `custom:machine-identity-entitlements` executes
--   **THEN** the handler SHALL persist two result-source accounts
--   **AND** each native identity SHALL be the **machine identity persist identity** `{requestId}:{machineIdentityId}`
--   **AND** the operation response **response id list** SHALL contain those two identities
+-   **THEN** the handler SHALL PATCH each identity with the union of its existing and matched entitlement refs
+-   **AND** SHALL persist exactly one scan summary account keyed by `requestId`
 
-#### Scenario: Empty delta skips persist
+#### Scenario: Empty delta skips patch
 
 -   **GIVEN** a machine identity whose matched entitlements are already on `userEntitlements`
 -   **WHEN** the handler evaluates that identity
--   **THEN** the handler SHALL NOT persist a trigger account for that identity
+-   **THEN** the handler SHALL NOT call the machine identity update API for that identity
+-   **AND** SHALL increment the summary skipped count
 
 #### Scenario: Tenant scan with no work succeeds
 
@@ -33,7 +33,7 @@ The connector SHALL register a custom command `custom:machine-identity-entitleme
 -   **AND** no machine identity has entitlements to add
 -   **WHEN** the command completes
 -   **THEN** the handler SHALL succeed
--   **AND** SHALL persist no trigger accounts for this command
+-   **AND** SHALL persist one zero-update scan summary account with status `success`
 
 #### Scenario: Targeted unknown identity rejected
 
@@ -51,14 +51,14 @@ The connector SHALL register a custom command `custom:machine-identity-entitleme
 
 -   **GIVEN** the auto-discovered operation at `src/operations/machine-identity-entitlements/index.ts`
 -   **WHEN** a developer reads `src/operations/machine-identity-entitlements/README.md`
--   **THEN** the README SHALL document the command name, optional `identityId`, persist identity, namespaced output keys, inbound entitlements attribute, workflow integration, and token scopes
+-   **THEN** the README SHALL document the command name, optional `identityId`, direct PATCH behavior, summary account, partial-failure behavior, wrapper workflow, and token scopes
 
 #### Scenario: Offline invoke supported
 
 -   **GIVEN** invocation input has no `apiUrl` and no `token` (offline test mode)
 -   **WHEN** `custom:machine-identity-entitlements` executes
 -   **THEN** the handler SHALL use canned machine identities, machine accounts, sources, and entitlements without calling ISC APIs
--   **AND** SHALL persist the same namespaced output shape as connected mode
+-   **AND** SHALL exercise one inhibited scan-summary persist
 
 ### Requirement: Source-configured machine-account entitlement attribute
 
@@ -108,7 +108,7 @@ The operation SHALL match inbound values to ISC entitlements by `value` equality
 -   **GIVEN** inbound value `no-such-entitlement` matches no ISC entitlement
 -   **AND** another inbound value matches an entitlement to add
 -   **WHEN** the handler completes for that machine identity
--   **THEN** the handler SHALL persist the matched entitlement
+-   **THEN** the handler SHALL PATCH the matched entitlement as part of the union
 -   **AND** SHALL NOT fail the invoke for the unmatched value
 
 #### Scenario: Entitlement value matches across every source that carries it
@@ -123,79 +123,94 @@ The operation SHALL match inbound values to ISC entitlements by `value` equality
 -   **GIVEN** inbound value matches entitlement `ent-1` on source `src-1`
 -   **AND** the machine identity `userEntitlements` already contains `{ sourceId: src-1, entitlementId: ent-1 }`
 -   **WHEN** the handler computes entitlements to add
--   **THEN** `ent-1` SHALL NOT appear in the persisted entitlement-ids
+-   **THEN** `ent-1` SHALL NOT count as an added entitlement
+-   **AND** SHALL remain present in the PATCH union when another ref is added
 
 #### Scenario: Duplicate values collapse
 
 -   **GIVEN** two inbound values equal `CN=Admins` that match the same entitlement id
 -   **WHEN** the handler computes entitlements to add
--   **THEN** that entitlement id SHALL appear once in the persisted list
+-   **THEN** that entitlement id SHALL appear once in the PATCH union
 
-### Requirement: Namespaced persist output for machine identity entitlements
+### Requirement: Direct union patch
 
-Successful persist for this command SHALL write namespaced attributes `machine-identity-entitlements:machine-identity-id` (STRING), `machine-identity-entitlements:entitlement-ids` (STRING multi), and `machine-identity-entitlements:entitlement-source-ids` (STRING multi) of equal length, plus framework core attributes including `operationName` `custom:machine-identity-entitlements`.
-
-#### Scenario: Output contract is identity and parallel entitlement arrays
-
--   **GIVEN** a machine identity `mi-1` with two entitlements to add
--   **WHEN** the handler persists the trigger account
--   **THEN** attributes SHALL include `machine-identity-entitlements:machine-identity-id` equal to `mi-1`
--   **AND** `machine-identity-entitlements:entitlement-ids` SHALL be a string array of length 2
--   **AND** `machine-identity-entitlements:entitlement-source-ids` SHALL be a string array of the same length
--   **AND** corresponding indexes SHALL pair entitlement id with that entitlement’s source id
-
-### Requirement: Bundled apply workflow
-
-The repository SHALL ship an ISC workflow export triggered by Account Created on the result source with advanced JSONPath filter `$.account.attributes[?(@.operationName == "custom:machine-identity-entitlements")]`. The workflow SHALL invoke `custom:machine-identity-entitlements-apply` with the trigger account's machine identity id and the persisted entitlement id and source id arrays, and SHALL delete the **trigger account** only when workflow variable Delete Trigger Account is true, after a successful apply.
-
-A workflow `sp:http` JSON body cannot zip two parallel string arrays into the array of `{sourceId, entitlementId}` objects the machine identity API requires, and a result-source account can only carry strings and string arrays. The union is therefore computed in the connector rather than in the workflow.
-
-#### Scenario: Trigger filters on operationName
-
--   **GIVEN** the bundled apply workflow JSON in `workflows/`
--   **WHEN** the Account Created trigger is read
--   **THEN** the advanced filter SHALL equal `$.account.attributes[?(@.operationName == "custom:machine-identity-entitlements")]`
-
-#### Scenario: Patch unions user entitlements
-
--   **GIVEN** a trigger account with persisted entitlement ids and source ids
--   **WHEN** the workflow apply path runs
--   **THEN** the workflow SHALL invoke `custom:machine-identity-entitlements-apply`
--   **AND** the operation SHALL PATCH `userEntitlements` to the union of existing refs and the persisted add list
--   **AND** SHALL NOT replace `userEntitlements` with only the add list
-
-### Requirement: Apply operation unions user entitlements
-
-The `custom:machine-identity-entitlements-apply` command SHALL read the machine identity's current `userEntitlements`, zip the supplied entitlement id and source id arrays by index, and PATCH the union. It SHALL reject mismatched array lengths and an unknown machine identity. When every supplied ref is already present it SHALL skip the PATCH.
+For each machine identity with entitlements to add, the operation SHALL re-read current `userEntitlements`, union existing and matched refs by `{sourceId, entitlementId}`, and PATCH the complete union. It SHALL preserve existing refs and skip the update API when the delta is empty.
 
 #### Scenario: Existing refs are preserved
 
--   **GIVEN** a machine identity holding `{ sourceId: src-1, entitlementId: ent-a }`
--   **WHEN** the operation applies an add list containing only `{ sourceId: src-3, entitlementId: ent-c }`
+-   **GIVEN** a machine identity currently holds `{ sourceId: src-1, entitlementId: ent-a }`
+-   **AND** matching finds `{ sourceId: src-3, entitlementId: ent-c }`
+-   **WHEN** the operation applies the identity
 -   **THEN** the patched `userEntitlements` SHALL contain both refs
 
-#### Scenario: Already present refs skip the patch
+#### Scenario: Current refs are re-read before patch
 
--   **GIVEN** every supplied ref is already on the machine identity
--   **WHEN** the operation runs
--   **THEN** it SHALL NOT call the machine identity update API
--   **AND** SHALL persist status `skipped-already-present`
+-   **GIVEN** the scan snapshot did not contain a ref added concurrently
+-   **WHEN** the operation prepares the PATCH
+-   **THEN** it SHALL GET the current machine identity
+-   **AND** SHALL include the concurrently added ref in the union
 
-#### Scenario: Mismatched array lengths fail the invoke
+#### Scenario: Patches use bounded concurrency
 
--   **GIVEN** `entitlementIds` has two entries and `entitlementSourceIds` has one
--   **WHEN** the operation runs
--   **THEN** the invoke SHALL fail, because the arrays are paired by index
+-   **GIVEN** more identities need updates than the configured patch-concurrency limit
+-   **WHEN** the operation applies them
+-   **THEN** simultaneous PATCH attempts SHALL NOT exceed that limit
+-   **AND** more than one PATCH MAY run concurrently
 
-#### Scenario: Delete trigger account off by default
+### Requirement: Continue and summarize patch failures
 
--   **GIVEN** Delete Trigger Account is false or unset
--   **WHEN** the workflow finishes a successful patch
--   **THEN** the workflow SHALL NOT delete the trigger account
+An identity PATCH failure SHALL NOT prevent remaining identities from being attempted. The operation SHALL collect the failed identity id and error detail. Mixed success/failure SHALL return operation success with summary status `partial`. If every attempted PATCH fails, the operation SHALL persist the failed summary before returning operation failure.
 
-#### Scenario: Delete trigger account after successful patch
+#### Scenario: Mixed patch outcomes are partial success
 
--   **GIVEN** Delete Trigger Account is true
--   **WHEN** the user-entitlements patch succeeds
--   **THEN** the workflow SHALL delete the trigger account
--   **AND** SHALL NOT delete it before the patch succeeds
+-   **GIVEN** three identities need updates
+-   **AND** two PATCHes succeed and one PATCH fails
+-   **WHEN** the operation completes
+-   **THEN** all three identities SHALL have been attempted
+-   **AND** the summary account status SHALL be `partial`
+-   **AND** the invoke SHALL report success
+-   **AND** the failed identity id and error detail SHALL be recorded
+
+#### Scenario: Every attempted patch fails
+
+-   **GIVEN** two identities need updates
+-   **AND** both PATCHes fail
+-   **WHEN** the operation completes
+-   **THEN** the summary account status SHALL be `failed`
+-   **AND** the failed summary SHALL be persisted before the invoke reports failure
+
+### Requirement: One scan summary account
+
+Every completed evaluation SHALL persist exactly one result-source account whose native identity is `requestId`. It SHALL contain namespaced INT counts for identities scanned, updated, skipped, and failed and entitlements added, plus aligned STRING multi fields for failed identity ids and failure details. Framework core `status` SHALL be `success`, `partial`, or `failed`, and `operationName` SHALL be `custom:machine-identity-entitlements`.
+
+#### Scenario: Successful scan summary
+
+-   **GIVEN** a scan updates two identities and skips one
+-   **WHEN** all identity attempts finish
+-   **THEN** one account keyed by `requestId` SHALL be persisted
+-   **AND** its namespaced counts SHALL record two updated, one skipped, zero failed, and the number of refs added
+-   **AND** its status SHALL be `success`
+
+#### Scenario: Summary response mirrors persisted counts
+
+-   **GIVEN** the summary account has been persisted
+-   **WHEN** the operation responds
+-   **THEN** `OperationSignature.response` SHALL include the same scanned, updated, skipped, failed, and entitlements-added counts
+-   **AND** the response id list SHALL contain only `requestId`
+
+### Requirement: Interactive Scan workflow is presentation-only
+
+The repository SHALL ship the interactive Scan workflow that invokes only `custom:machine-identity-entitlements` and presents no-work, successful-update, partial, and failed outcomes from its response summary. The repository SHALL NOT register `custom:machine-identity-entitlements-apply` or ship an Account Created Apply workflow for this capability.
+
+#### Scenario: Scan wrapper reports a partial run
+
+-   **GIVEN** the operation response reports one or more failed identities and at least one updated identity
+-   **WHEN** the Scan workflow evaluates the invoke body
+-   **THEN** it SHALL show a partial-completion warning with updated and failed counts
+
+#### Scenario: Standalone apply path is absent
+
+-   **GIVEN** schema codegen and workflow contract tests run
+-   **WHEN** generated commands and workflow exports are inspected
+-   **THEN** `custom:machine-identity-entitlements-apply` SHALL NOT be registered
+-   **AND** `Machine Identity Entitlements - Apply.json` SHALL NOT exist

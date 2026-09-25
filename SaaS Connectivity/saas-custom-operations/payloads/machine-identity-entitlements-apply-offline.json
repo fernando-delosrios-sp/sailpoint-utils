@@ -1,9 +1,0 @@
-{
-    "type": "custom:machine-identity-entitlements-apply",
-    "input": {
-        "requestId": "offline-mie-apply-001",
-        "machineIdentityId": "mi-apply-empty",
-        "entitlementIds": ["ent-offline-1", "ent-offline-2"],
-        "entitlementSourceIds": ["src-offline-1", "src-offline-1"]
-    }
-}

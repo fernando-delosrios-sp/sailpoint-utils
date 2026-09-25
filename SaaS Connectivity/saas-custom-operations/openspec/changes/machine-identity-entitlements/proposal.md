@@ -1,22 +1,29 @@
 ## Why
 
-Machine identities already have linked Machine Accounts carrying entitlement *values*, but those values do not become machine-identity `userEntitlements` unless someone maps them by hand. Operators need a scan that follows the Machine Accounts API relation, reads the source's native user-entitlements connector configuration, matches catalog entitlements, and hands each identity to an Account Created workflow for apply.
+Machine identities already have linked Machine Accounts carrying entitlement *values*, but those values do not become machine-identity `userEntitlements` unless someone maps them by hand. The first implementation split evaluation and apply across per-identity trigger accounts and a second custom command. That indirection is unnecessary: the scan already has the identities, matched entitlements, SDK client, and authorization needed to PATCH the union itself.
 
 ## What Changes
 
-- Add **`custom:machine-identity-entitlements`**: list machine accounts, follow each `machineIdentity` node, read configured connector entitlement values, source-scope catalog matches, and persist one trigger account per identity that has entitlements to add.
+- **`custom:machine-identity-entitlements`** lists machine accounts, follows each `machineIdentity` node, reads configured connector entitlement values, matches catalog entitlements by value across sources, and directly PATCHes each machine identity's `userEntitlements` union.
 - Entitlement input uses the source's native `connectorAttributes.userEntitlements` setting and the named field on machine-account `connectorAttributes`.
-- Add thin ISC wrappers for machine identities and entitlement lookup by value; reuse existing accounts and sources clients.
-- Ship a bundled Account Created workflow that PATCHes `userEntitlements` and optionally deletes the trigger account.
+- Patches use bounded concurrency and continue after an individual identity fails.
+- Persist exactly one **scan summary account** per invoke, keyed by `requestId`, containing scanned, updated, skipped, failed, and entitlements-added counts plus failed identity details.
+- Mixed outcomes succeed with summary status `partial`; an all-failed apply persists status `failed` and then reports operation failure.
+- Remove `custom:machine-identity-entitlements-apply`, its payload/tests/schema, and the Account Created Apply workflow.
+- Keep the interactive Scan workflow as the wrapper and update its result messages to use the summary counts.
 
 **Operation contract**
 
 - Input: optional `identityId` (one machine identity); omit to scan all.
-- Persist identity: **machine identity persist identity** `{requestId}:{machineIdentityId}`.
+- Persist identity: **scan summary identity** `{requestId}`.
 - Output (namespaced):
-  - `machine-identity-entitlements:machine-identity-id`
-  - `machine-identity-entitlements:entitlement-ids` (`string[]`)
-  - `machine-identity-entitlements:entitlement-source-ids` (`string[]`, same order)
+  - `machine-identity-entitlements:identities-scanned`
+  - `machine-identity-entitlements:identities-updated`
+  - `machine-identity-entitlements:identities-skipped`
+  - `machine-identity-entitlements:identities-failed`
+  - `machine-identity-entitlements:entitlements-added`
+  - `machine-identity-entitlements:failed-identity-ids`
+  - `machine-identity-entitlements:failure-details`
 
 **Explicit non-goals**
 
@@ -25,31 +32,26 @@ Machine identities already have linked Machine Accounts carrying entitlement *va
 - Changing SoD or risk operations
 - Failing the scan because a source is not opted in or a value has no catalog match
 
-**Open questions carried from discovery**
-
-- Accounts API `identityId` mapping (`cisIdentityId` vs machine-identity `id`) confirmed at implementation; default prefer `cisIdentityId`.
-- Multi-source entitlement value collisions: include all unique matched ids.
-
 ## Capabilities
 
 ### New Capabilities
 
-- `connector-operations/machine-identity-entitlements`: register and specify `custom:machine-identity-entitlements` and the bundled apply workflow
-- `target-client/machine-identities`: list/get machine identities and read `userEntitlements`
+- `connector-operations/machine-identity-entitlements`: specify direct evaluate-and-apply behavior, continue-and-summarize errors, and the single summary account
+- `target-client/machine-identities`: list/get/patch machine identities and read `userEntitlements`
 - `target-client/entitlements`: list entitlements filtered by `value`
 
 ### Modified Capabilities
 
-- `connector-operations`: namespaced persist keys for this slug
+- `connector-operations`: replace per-identity trigger output with scan-summary output and remove the apply command
 - `target-client`: add machine-identities and entitlements folders to the ISC module layout; expose `MachineIdentitiesApi` on `ctx.sdk`
-- `ubiquitous-language`: promote inbound entitlements attribute, machine identity persist identity, entitlements to add, trigger account, underlying account
+- `ubiquitous-language`: retain machine-account and entitlements-to-add terms; replace trigger-account vocabulary with scan summary account
 
 ## Impact
 
-Code: `src/operations/machine-identity-entitlements/`, `src/isc/machine-identities/`, `src/isc/entitlements/`, `sdk-factory` / `SailPointClients`, `connector-spec.json` via codegen, `workflows/` export, payloads, root README.
+Code: `src/operations/machine-identity-entitlements/`, removal of `src/operations/machine-identity-entitlements-apply/`, `src/isc/machine-identities/`, generated registry/spec files, Scan workflow, payloads, README, and changelog.
 
-Tests: schema opt-in, single/multi values, match/delta/persist cardinality, unknown `identityId`, offline fixtures, workflow JSON contract.
+Tests: schema opt-in, single/multi values, matching and union, bounded patch concurrency, success/no-op/mixed/all-failed summaries, unknown `identityId`, offline fixtures, and Scan workflow contract.
 
-External: PAT scopes for machine identities (experimental), accounts, sources/schemas, entitlements; workflow import and Account Created trigger on the result source.
+External: PAT scopes for machine identity list/get/patch (experimental), machine accounts, sources/schemas, entitlements, and one result-source summary account.
 
-Rollback: remove the workflow and stop invoking the command; prior connector versions ignore the new command.
+Rollback: deploy the prior connector version and restore the Apply workflow if the split architecture is needed again.

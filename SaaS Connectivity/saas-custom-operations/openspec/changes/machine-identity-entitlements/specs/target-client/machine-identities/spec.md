@@ -28,8 +28,20 @@ The isc machine-identities module SHALL wrap `MachineIdentitiesApi` to paginate 
 #### Scenario: Experimental header sent when required
 
 - **GIVEN** the SDK method requires `X-SailPoint-Experimental`
-- **WHEN** list or get is invoked
+- **WHEN** list, get, or patch is invoked
 - **THEN** the wrapper SHALL send the experimental header as required by the client
+
+### Requirement: Patch machine identity user entitlements
+
+The isc machine-identities module SHALL expose a helper that PATCHes `/userEntitlements` with a complete array of `{sourceId, entitlementId}` refs. Union policy SHALL remain in the calling operation.
+
+#### Scenario: Patch sends complete refs
+
+- **GIVEN** a complete user-entitlements union
+- **WHEN** the patch helper is invoked
+- **THEN** it SHALL call the machine identity update API with JSON Patch operation `replace`
+- **AND** path `/userEntitlements`
+- **AND** the supplied refs as its value
 
 ### Requirement: Filter machine identity by invoke identityId
 

@@ -13,16 +13,16 @@ The glossary SHALL define **machine-account user-entitlements attribute** as the
 - **THEN** it SHALL use **inbound entitlements attribute**
 - **AND** SHALL spell the configuration key `connectorAttributes.userEntitlements`
 
-### Requirement: Machine identity persist identity term
+### Requirement: Scan summary identity term
 
-The glossary SHALL define **machine identity persist identity** as the result-source native identity holding `custom:machine-identity-entitlements` outputs for one machine identity, `{requestId}:{machineIdentityId}`. Normative text SHALL NOT call it **child persist identity** or **risk persist identity**.
+The glossary SHALL define **scan summary identity** as the result-source native identity holding aggregate `custom:machine-identity-entitlements` results for one invoke, `{requestId}`. Normative text SHALL NOT call it **machine identity persist identity**, **child persist identity**, or **risk persist identity**.
 
-#### Scenario: Machine identity persist identity term
+#### Scenario: Scan summary identity term
 
-- **GIVEN** specs or README name the result-source identity for one machine identity’s evaluation
+- **GIVEN** specs or README name the result-source identity for one scan
 - **WHEN** normative text names that identity
-- **THEN** it SHALL use **machine identity persist identity** spelled `{requestId}:{machineIdentityId}`
-- **AND** SHALL NOT reuse **child persist identity** or **risk persist identity**
+- **THEN** it SHALL use **scan summary identity** spelled `{requestId}`
+- **AND** SHALL NOT reuse a per-identity persist identity term
 
 ### Requirement: Entitlements to add term
 
@@ -30,21 +30,21 @@ The glossary SHALL define **entitlements to add** as the deduped ISC entitlement
 
 #### Scenario: Entitlements to add term
 
-- **GIVEN** specs describe the persist payload for the apply workflow
+- **GIVEN** specs describe matched refs not yet present on a machine identity
 - **WHEN** normative text names that list
 - **THEN** it SHALL use **entitlements to add**
 - **AND** SHALL NOT call inbound account strings entitlements to add
 
-### Requirement: Trigger account term
+### Requirement: Scan summary account term
 
-The glossary SHALL define **trigger account** as the result-source account created by persist for `custom:machine-identity-entitlements`, which fires the bundled Account Created workflow. Normative text SHALL NOT call an **underlying account** a trigger account.
+The glossary SHALL define **scan summary account** as the single result-source account persisted after all machine-identity patch attempts, containing aggregate counts and failure diagnostics. Normative text SHALL NOT call it a **trigger account**, **machine account**, or **underlying account**.
 
-#### Scenario: Trigger account term
+#### Scenario: Scan summary account term
 
-- **GIVEN** specs describe the result-source row that starts the apply workflow
+- **GIVEN** specs describe the result-source row recording a completed scan
 - **WHEN** normative text names that row
-- **THEN** it SHALL use **trigger account**
-- **AND** SHALL NOT use underlying account or machine account as a synonym for that row
+- **THEN** it SHALL use **scan summary account**
+- **AND** SHALL NOT imply that the row triggers per-identity apply work
 
 ### Requirement: Underlying account term
 
@@ -55,4 +55,4 @@ The glossary SHALL define **underlying account** as an ISC account correlated to
 - **GIVEN** specs describe source accounts belonging to a machine identity
 - **WHEN** normative text names those accounts
 - **THEN** it SHALL use **underlying account**
-- **AND** SHALL NOT call them trigger accounts
+- **AND** SHALL NOT call them scan summary accounts

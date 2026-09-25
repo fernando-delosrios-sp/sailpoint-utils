@@ -2,7 +2,11 @@
 import { defineOperationSchema } from '../../framework'
 
 export const machineIdentityEntitlementsOperationSchema = defineOperationSchema({
-    'machine-identity-entitlements:entitlement-ids': 'string[]',
-    'machine-identity-entitlements:entitlement-source-ids': 'string[]',
-    'machine-identity-entitlements:machine-identity-id': 'string',
+    'machine-identity-entitlements:entitlements-added': 'number',
+    'machine-identity-entitlements:failed-identity-ids': 'string[]',
+    'machine-identity-entitlements:failure-details': 'string[]',
+    'machine-identity-entitlements:identities-failed': 'number',
+    'machine-identity-entitlements:identities-scanned': 'number',
+    'machine-identity-entitlements:identities-skipped': 'number',
+    'machine-identity-entitlements:identities-updated': 'number',
 })

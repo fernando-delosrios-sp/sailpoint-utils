@@ -1,7 +1,7 @@
 {
     "id": "YOUR_MACHINE_IDENTITY_ENTITLEMENTS_SCAN_WORKFLOW_ID",
     "name": "Machine Identity Entitlements - Scan",
-    "description": "Interactive scan of machine identities for entitlements to add from source accounts. Explains the process, runs custom:machine-identity-entitlements, then reports whether trigger accounts were written. The invoke body is a plain-text NDJSON stream, so every read of it is a string comparison, never a JSONPath into an object.",
+    "description": "Interactive scan that matches account values to ISC entitlements, applies userEntitlements directly, persists one run summary, and presents success, no-work, partial, or failed outcomes.",
     "definition": {
         "start": "Message About This Process",
         "steps": {
@@ -10,7 +10,7 @@
                 "attributes": {
                     "category": "INFO",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<p style=\"margin:0 0 22px 0;font-size:15px;line-height:1.7;color:#0f172a;\">This process inspects <strong>machine identities</strong> and the entitlement values on their source accounts. It does not grant access itself. When an identity is missing catalog matches, a trigger account is written and <strong>Machine Identity Entitlements - Apply</strong> PATCHes <code>userEntitlements</code> as a union.</p><table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0 14px;width:100%;max-width:660px;\"><tr><td style=\"background-color:#eff6ff;border-left:5px solid #2563eb;border-radius:6px;padding:20px 24px;font-size:14px;line-height:1.7;color:#1e293b;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#1d4ed8;margin:0 0 10px 0;\">1 &middot; What runs</div>Every machine identity in scope is evaluated. Machine accounts are read through their <code>machineIdentity</code> link. Each source selects the account field through <code>connectorAttributes.userEntitlements</code>. The default invoke scans every machine identity. Add <code>identityId</code> on the invoke step to limit to one.</td></tr><tr><td style=\"background-color:#f0fdf4;border-left:5px solid #16a34a;border-radius:6px;padding:20px 24px;font-size:14px;line-height:1.7;color:#1e293b;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#15803d;margin:0 0 10px 0;\">2 &middot; What happens to a finding</div>A non-empty add list becomes one trigger account. Apply GETs the identity, then PATCHes existing <code>userEntitlements</code> plus the persisted ids. Empty add lists are not written, so Account Created does not fire.</td></tr><tr><td style=\"background-color:#fffbeb;border-left:5px solid #d97706;border-radius:6px;padding:20px 24px;font-size:14px;line-height:1.7;color:#1e293b;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b45309;margin:0 0 10px 0;\">3 &middot; While it runs</div>The scan is already running &mdash; this panel is information only and nothing is waiting on you. A large tenant takes several minutes. The outcome appears below this panel when it finishes.</td></tr></table>",
+                    "message": "<h3>Machine identity entitlement scan</h3><p>This process reads entitlement values from linked machine accounts, resolves every matching ISC entitlement, and directly PATCHes each machine identity with the union of existing and matched <code>userEntitlements</code>.</p><p>Identity updates run independently. A failure does not stop the remaining identities, and one summary account records updated, skipped, and failed counts. Reruns are safe because existing refs are preserved and deduplicated.</p>",
                     "ownerId.$": "$.trigger.launchedBy.id",
                     "title": "Machine identity entitlements"
                 },
@@ -132,24 +132,24 @@
                         "variableB": "\"status\":\"failed\""
                     }
                 ],
-                "defaultStep": "Check Trigger Accounts Written",
+                "defaultStep": "Check Identities Updated",
                 "description": "The connector answers HTTP 200 even when the operation failed, so catch never fires for an operation-level failure. The body is a text/plain NDJSON stream, which is why this is a string check and not a JSONPath read.",
                 "displayName": "Invoke failed?",
                 "type": "choice"
             },
-            "Check Trigger Accounts Written": {
+            "Check Identities Updated": {
                 "actionId": "sp:compare-strings",
                 "choiceList": [
                     {
                         "comparator": "StringContains",
                         "nextStep": "Message No Work",
                         "variableA.$": "$.callSaaSCustomOperation.body",
-                        "variableB": "\"triggerAccountsWritten\":0"
+                        "variableB": "\"identitiesUpdated\":0"
                     }
                 ],
-                "defaultStep": "Message Work Written",
-                "description": "triggerAccountsWritten is always present in the response summary, and the streamed JSON has no spaces after colons, so a zero result matches this literal exactly.",
-                "displayName": "Any trigger accounts?",
+                "defaultStep": "Check Partial Result",
+                "description": "identitiesUpdated is always present in the response summary, and the streamed JSON has no spaces after colons.",
+                "displayName": "Any identities updated?",
                 "type": "choice"
             },
             "Message No Work": {
@@ -157,27 +157,57 @@
                 "attributes": {
                     "category": "INFO",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#f0fdf4;border-left:5px solid #16a34a;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#15803d;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#14532d;margin:0 0 10px 0;\">No entitlements to add</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">Every machine identity in scope already has its same-source catalog matches from configured machine-account connector attributes, or those accounts had nothing to match. No trigger account was written, so Apply will not run.</div></td></tr></table><table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0 12px;width:100%;max-width:660px;\"><tr><td style=\"background-color:#eff6ff;border-left:5px solid #2563eb;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\"><strong style=\"color:#1d4ed8;\">What this covers</strong> &mdash; machine identity <code>userEntitlements</code> from source-account values, not human identities or SoD.</td></tr><tr><td style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\"><strong style=\"color:#475569;\">Scope</strong> &mdash; the default invoke scans every machine identity. Sources without <code>connectorAttributes.userEntitlements</code> are skipped.</td></tr></table>",
+                    "message": "<h3>No entitlements to add</h3><p>Every machine identity in scope already has its matching catalog refs, or its configured machine accounts had nothing to match. The successful scan summary records zero updates.</p>",
                     "ownerId.$": "$.trigger.launchedBy.id",
                     "title": "Scan complete"
                 },
-                "description": "Zero trigger accounts. Empty add lists are not persisted, so Apply does not run.",
+                "description": "Zero identities updated; one successful summary account was persisted.",
                 "displayName": "Message: No work",
                 "nextStep": "End Step - Success",
                 "type": "action",
                 "versionNumber": 1
             },
-            "Message Work Written": {
+            "Check Partial Result": {
+                "actionId": "sp:compare-strings",
+                "choiceList": [
+                    {
+                        "comparator": "StringContains",
+                        "nextStep": "Message Work Applied",
+                        "variableA.$": "$.callSaaSCustomOperation.body",
+                        "variableB": "\"identitiesFailed\":0"
+                    }
+                ],
+                "defaultStep": "Message Partial",
+                "description": "A non-zero failure count means some identities were updated while others need a later retry.",
+                "displayName": "Any identity failures?",
+                "type": "choice"
+            },
+            "Message Work Applied": {
                 "actionId": "sp:interactive-message",
                 "attributes": {
                     "category": "INFO",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#eff6ff;border-left:5px solid #2563eb;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#1d4ed8;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#1e3a8a;margin:0 0 10px 0;\">Trigger accounts were written</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">The scan finished and persisted at least one add list. <strong>Machine Identity Entitlements - Apply</strong> runs on Account Created for each trigger account and unions those entitlement ids onto <code>userEntitlements</code>.</div></td></tr></table><table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0 12px;width:100%;max-width:660px;\"><tr><td style=\"background-color:#fffbeb;border-left:5px solid #d97706;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\"><strong style=\"color:#b45309;\">Apply must be enabled</strong> &mdash; if that workflow is disabled, the trigger accounts stay on the result source until it runs.</td></tr></table>",
+                    "message": "<h3>Entitlements applied</h3><p>The scan directly updated every machine identity that needed matched entitlement refs. Existing <code>userEntitlements</code> were preserved, and one summary account records the run counts.</p>",
                     "ownerId.$": "$.trigger.launchedBy.id",
                     "title": "Scan complete"
                 },
-                "description": "At least one trigger account was written. Apply is expected to PATCH userEntitlements.",
-                "displayName": "Message: Work written",
+                "description": "At least one identity was updated and none failed.",
+                "displayName": "Message: Work applied",
+                "nextStep": "End Step - Success",
+                "type": "action",
+                "versionNumber": 1
+            },
+            "Message Partial": {
+                "actionId": "sp:interactive-message",
+                "attributes": {
+                    "category": "WARNING",
+                    "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                    "message": "<h3>Scan partially complete</h3><p>Some machine identities received their matched entitlements, while others failed. The response below includes the updated and failed counts; the persisted summary also records failed identity ids.</p><pre>{{$.callSaaSCustomOperation.body}}</pre>",
+                    "ownerId.$": "$.trigger.launchedBy.id",
+                    "title": "Machine identity entitlements partially applied"
+                },
+                "description": "At least one identity was updated and at least one identity failed.",
+                "displayName": "Message: Partial completion",
                 "nextStep": "End Step - Success",
                 "type": "action",
                 "versionNumber": 1
@@ -187,7 +217,7 @@
                 "attributes": {
                     "category": "ERROR",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fef2f2;border-left:5px solid #dc2626;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b91c1c;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#7f1d1d;margin:0 0 10px 0;\">The scan stopped before it finished</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">The connector answered, but the operation reported a failure. Trigger accounts from this run are incomplete, and no new entitlements were applied from this invoke.</div></td></tr></table><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#64748b;margin:0 0 10px 0;\">Operation response</div><div style=\"background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:18px 20px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.7;color:#334155;white-space:pre-wrap;word-break:break-word;\">{{$.callSaaSCustomOperation.body}}</div>",
+                    "message": "<h3>The scan failed</h3><p>The operation could not update any identity, or discovery failed before apply. Its failed summary and response are shown below.</p><pre>{{$.callSaaSCustomOperation.body}}</pre>",
                     "ownerId.$": "$.trigger.launchedBy.id",
                     "title": "Scan did not complete"
                 },
@@ -202,7 +232,7 @@
                 "attributes": {
                     "category": "ERROR",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fef2f2;border-left:5px solid #dc2626;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b91c1c;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#7f1d1d;margin:0 0 10px 0;\">The connector could not be reached</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">The scan never started, so no trigger accounts were written and Apply will not run.</div></td></tr></table><table role=\"presentation\" style=\"border-collapse:collapse;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;width:150px;font-size:13px;color:#64748b;\">Status</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\"><strong>{{$.callSaaSCustomOperation.error.workflowStatusCode}}</strong></td></tr><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;width:150px;font-size:13px;color:#64748b;\">Detail</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\">{{$.callSaaSCustomOperation.error.workflowErrorMessage}}</td></tr></table><div style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\">Check the connector id and API URL in Configuration, and confirm the connector version is deployed to this tenant.</div>",
+                    "message": "<h3>The connector could not be reached</h3><p>The scan never started. Check the connector id, API URL, deployed version, and token configuration.</p><p><strong>{{$.callSaaSCustomOperation.error.workflowStatusCode}}</strong>: {{$.callSaaSCustomOperation.error.workflowErrorMessage}}</p>",
                     "ownerId.$": "$.trigger.launchedBy.id",
                     "title": "Scan could not start"
                 },

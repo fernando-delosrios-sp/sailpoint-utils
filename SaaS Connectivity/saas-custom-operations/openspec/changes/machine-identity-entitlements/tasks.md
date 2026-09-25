@@ -1,3 +1,5 @@
+Sections 1–9 record the initial split evaluate/apply implementation. Sections 10–14 supersede its per-identity trigger accounts and Apply workflow with the final direct-apply architecture.
+
 ## 1. SDK client
 
 - [x] 1.1 Add `machineIdentities: MachineIdentitiesApi` to `SailPointClients` in `src/framework/types.ts` and construct it in `src/framework/sdk-factory.ts` (scenario: Machine identities client configured for machine identity entitlements)
@@ -70,3 +72,40 @@
 
 - [x] 9.1 Create or update CHANGELOG entry via changelog-generator skill during apply
 - [x] 9.2 Confirm entry covers `custom:machine-identity-entitlements`, schema opt-in, persist cardinality, and the bundled Account Created apply workflow
+
+## 10. Simplify to direct evaluate-and-apply
+
+- [x] 10.1 Add tests proving the main operation re-reads current `userEntitlements`, preserves existing refs, and PATCHes the complete union (scenarios: Existing refs are preserved; Current refs are re-read before patch)
+- [x] 10.2 Move direct union-and-PATCH orchestration into `custom:machine-identity-entitlements`; retain the reusable machine-identity patch helper
+- [x] 10.3 Replace per-identity trigger persists with one scan summary persist keyed by `requestId`
+- [x] 10.4 Add namespaced summary fields for identities scanned/updated/skipped/failed, entitlements added, failed identity ids, and failure details
+- [x] 10.5 Keep PATCH fan-out bounded and test peak concurrency (scenario: Patches use bounded concurrency)
+- [x] 10.6 Make offline mode compute the same summary and inhibit exactly one persist
+
+## 11. Continue-and-summarize errors
+
+- [x] 11.1 Add a mixed-outcome test: all identities attempted, summary status `partial`, invoke success, aligned failed id/detail fields (scenario: Mixed patch outcomes are partial success)
+- [x] 11.2 Add an all-failed test: persist status `failed` before returning operation failure (scenario: Every attempted patch fails)
+- [x] 11.3 Add success and no-work summary tests, including response counts mirroring persisted counts (scenarios: Successful scan summary; Summary response mirrors persisted counts; Tenant scan with no work succeeds)
+
+## 12. Remove standalone apply path
+
+- [x] 12.1 Delete `src/operations/machine-identity-entitlements-apply/` and its offline payload
+- [x] 12.2 Delete `workflows/Machine Identity Entitlements - Apply.json`
+- [x] 12.3 Run `npm run codegen:schemas`; confirm auto-registry and `connector-spec.json` no longer register `custom:machine-identity-entitlements-apply` (scenario: Standalone apply path is absent)
+- [x] 12.4 Remove apply-specific offline branching and workflow tests
+
+## 13. Scan workflow and documentation
+
+- [x] 13.1 Update the interactive Scan workflow copy and branching for no-work, successful-update, partial, and failed summaries (scenario: Scan wrapper reports a partial run)
+- [x] 13.2 Update `src/operations/machine-identity-entitlements/README.md`, root README, payload guidance, and token scopes for direct PATCH and one summary account
+- [x] 13.3 Update the C4 diagram to remove the Account Created Apply workflow and show direct Machine Identities API PATCH
+- [x] 13.4 Update CHANGELOG via changelog-generator, replacing the split-apply description with the direct operation contract
+
+## 14. Verification and migration
+
+- [x] 14.1 Run `npm run typecheck`
+- [x] 14.2 Run `npm test`
+- [x] 14.3 Run `npm run build` and `npm run pack-zip`
+- [x] 14.4 Run `openspec validate machine-identity-entitlements --strict`
+- [x] 14.5 Delete the old tenant Apply workflow; deploy the connector; update and enable revised Scan; verify live targeted success, no-op, and tenant-wide summary behavior; verify mixed failure through the automated isolated-failure scenario

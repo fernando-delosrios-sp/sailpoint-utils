@@ -1,8 +1,8 @@
 ## Context
 
-The connector is an ISC custom-operations host: handlers loop back with `ctx.sdk`, persist typed output onto a DelimitedFile result source, and leave apply/notify work to bundled workflows. Sources expose native connector configuration through `connectorAttributes`, and Machine Accounts expose the authoritative `machineIdentity` link plus raw `connectorAttributes`. `sailpoint-api-client` ships both APIs and entitlement filters on `value`.
+The connector is an ISC custom-operations host: handlers loop back with `ctx.sdk` and may persist typed output onto a DelimitedFile result source. Sources expose native connector configuration through `connectorAttributes`, and Machine Accounts expose the authoritative `machineIdentity` link plus raw `connectorAttributes`. `sailpoint-api-client` supports machine-identity list/get/patch and entitlement filters on `value`.
 
-Discovery locked evaluate-in-connector / apply-in-workflow, one persist account per machine identity with work to do, schema opt-in, and optional trigger-account delete.
+The initial implementation split evaluation and apply across per-identity trigger accounts, an Account Created workflow, and a second custom apply command. Live validation showed that the scan can perform the same idempotent union directly and return one durable run summary, eliminating the orchestration layer.
 
 ## Architecture
 
@@ -15,8 +15,10 @@ Discovery locked evaluate-in-connector / apply-in-workflow, one persist account 
 - Register `custom:machine-identity-entitlements` with optional `identityId`
 - Process a machine account only when its source has a non-blank `connectorAttributes.userEntitlements` setting
 - Normalize single- and multi-valued attribute values, match catalog entitlements by `value`, compute entitlements to add vs current `userEntitlements`
-- Persist one trigger account per machine identity that has a non-empty add list, keyed by machine identity persist identity
-- Bundle an Account Created workflow that PATCHes `userEntitlements` and optionally deletes the trigger account
+- PATCH each non-empty union directly with bounded concurrency and continue after individual failures
+- Persist one scan summary account per invoke, keyed by `requestId`
+- Report mixed outcomes as `partial` and all-failed outcomes as failed
+- Keep the interactive Scan workflow as a thin wrapper around the single command
 - Offline fixtures for local `call:op`
 
 **Non-Goals:**
@@ -25,21 +27,22 @@ Discovery locked evaluate-in-connector / apply-in-workflow, one persist account 
 - Human identity entitlement sync
 - Access-request grant as the apply path (PATCH machine identity is the apply path)
 - Failing the whole scan for unconfigured sources or unmatched values
+- Per-identity trigger accounts, an Account Created Apply workflow, or a standalone apply command
 - Changing SoD/risk operations
 
 ## Decisions
 
-### D1: Split evaluate vs apply
+### D1: Evaluate and apply in one operation
 
-- **Choice**: The operation only evaluates and persists. A bundled Account Created workflow applies `userEntitlements`.
-- **Reason**: Matches access-model notification (`operationName` filter). Keeps this connector free of std create. Each trigger account is one identity’s work.
-- **Considered alternatives**: Apply inside the handler — rejected; user asked for an account-create workflow and optional delete of the trigger account. A second custom apply command — extra hop with no extra contract value for a PATCH.
+- **Choice**: The scan computes each identity's union and PATCHes `userEntitlements` directly.
+- **Reason**: The scan already has the identity, matched refs, SDK client, and authorization. Per-identity result accounts and a second invoke add latency and failure surfaces without adding information or control.
+- **Considered alternatives**: Account Created workflow plus apply command — implemented and rejected as unnecessary orchestration. Workflow-only PATCH — cannot reliably zip parallel arrays into `{sourceId, entitlementId}` objects.
 
-### D2: Persist identity and cardinality
+### D2: One scan summary account
 
-- **Choice**: Native identity `{requestId}:{machineIdentityId}`. Persist only when entitlements to add is non-empty. Scan-wide success with empty `responses` when nobody has a delta.
-- **Reason**: One Account Created per identity with work; avoids empty-list storms. Still “as many accounts as machine identities” that need entitlements.
-- **Considered alternatives**: One account for the whole scan — rejected; workflow could not process identities independently. Persist empty lists — rejected as no-op event load.
+- **Choice**: Persist exactly one account keyed by `{requestId}` after all identity attempts, including no-work runs.
+- **Reason**: The result source becomes a durable run ledger rather than an event transport. One account records scanned, updated, skipped, failed, and entitlements-added counts plus aligned failed identity ids/details.
+- **Considered alternatives**: Response only — fastest, but no durable audit history. Per-identity accounts — rejected because no wrapper consumes them.
 
 ### D3: Source connector configuration
 
@@ -55,15 +58,15 @@ Discovery locked evaluate-in-connector / apply-in-workflow, one persist account 
 
 ### D5: Catalog match
 
-- **Choice**: `listEntitlementsV1` with `value eq "{escaped}"`, then keep only records whose `source.id` equals the machine account source. Deduplicate by entitlement id. Unmatched values: warn, continue.
-- **Reason**: The live Entra Users and NHI sources contain distinct entitlement records with identical values; retaining both would assign the machine identity an entitlement from the wrong source.
-- **Considered alternatives**: Tenant-wide value match — rejected after live validation exposed cross-source duplicates.
+- **Choice**: `listEntitlementsV1` with value equality, match across every source, deduplicate by entitlement id, and warn/continue for unmatched values.
+- **Reason**: The configured machine-account values identify the ISC entitlements to set. Live validation confirmed that one Entra group value can legitimately map to separate Users, NHI, active-PIM, and eligible-PIM entitlement records.
+- **Considered alternatives**: Restrict to the machine account source — rejected because it omits the matching Users-source entitlement.
 
 ### D6: Delta vs assigned
 
-- **Choice**: Compare matched `{sourceId, entitlementId}` to machine identity `userEntitlements`. Persist only the remainder as parallel multi-value STRING attributes (`entitlement-ids`, `entitlement-source-ids`).
-- **Reason**: “To add” is a delta. Parallel arrays stay under the 256-char-per-value STRING cap; JSON blobs would not.
-- **Considered alternatives**: Persist raw inbound values for the workflow to resolve — duplicates catalog work and races. Persist JSON array — exceeds STRING limits and is awkward on DelimitedFile.
+- **Choice**: Compare matched `{sourceId, entitlementId}` to current `userEntitlements`; skip an empty delta, otherwise PATCH the complete union.
+- **Reason**: The operation is idempotent and preserves existing refs. The summary persists counts and failure diagnostics, not entitlement payloads.
+- **Considered alternatives**: Replace with only matched refs — rejected because it removes unrelated assignments. Persist an add list for another consumer — rejected because no second consumer remains.
 
 ### D7: SDK layout
 
@@ -79,41 +82,48 @@ Discovery locked evaluate-in-connector / apply-in-workflow, one persist account 
 
 ### D9: Authentication and errors
 
-- **Choice**: Standard invoke envelope. Connected path requires PAT scopes for machine identities, machine accounts, sources, entitlements, and result-source accounts. Required API failures fail the invoke. Per-account skip is non-fatal. Offline: fixtures, no live calls.
-- **Reason**: Same loopback as other operations. Schema opt-out must not fail a tenant-wide scan.
+- **Choice**: Standard invoke envelope. Connected path requires PAT scopes for machine identity list/get/patch, machine accounts, sources, entitlements, and one result-source summary persist. Discovery failures fail the invoke. Identity PATCH failures are isolated; the operation continues and records each failed identity.
+- **Reason**: One bad identity must not block unrelated identities. Union-and-PATCH is idempotent, so a later rerun safely retries failures.
 
-### D10: Bundled workflow
+### D10: Partial and terminal outcomes
 
-- **Choice**: Trigger Account Created on the result source, advanced JSONPath filter `$.account.attributes[?(@.operationName == "custom:machine-identity-entitlements")]`. Steps: read persisted ids; GET machine identity; PATCH `userEntitlements` as union; if workflow variable **Delete Trigger Account** is true, delete the trigger account by native identity / account id from the event.
-- **Reason**: User required optional delete of the trigger account after apply.
-- **Considered alternatives**: Always delete — not optional. Delete before PATCH — loses the payload if PATCH fails.
+- **Choice**: No failures yields summary status `success`. A mix of successful and failed patches yields `partial` and a successful invoke. If every attempted patch fails, persist summary status `failed`, then return an operation-level failure.
+- **Reason**: Mixed completion is useful work and the summary identifies retry targets. An all-failed run did not accomplish its apply purpose and must be visible as failed to the wrapper.
+- **Considered alternatives**: Fail fast — rejected because it prevents independent identities from being processed. Always succeed — rejected because an all-failed run would look healthy.
 
-### D11: Operation response
+### D11: Bounded patch concurrency
 
-- **Choice**: Persist remains the workflow contract. Optional response summary counts (identities scanned, trigger accounts written) are `OperationSignature.response` only — not account schema fields.
-- **Reason**: Aligns with scan summary vs operation output.
+- **Choice**: PATCH identities with a fixed bounded concurrency. Each worker catches and records identity-specific errors rather than rejecting the worker pool.
+- **Reason**: Serial PATCHes waste the invoke budget; unbounded fan-out risks throttling. Framework-wide 429 retry remains the backstop.
+
+### D12: Operation response and workflow
+
+- **Choice**: The invoke response mirrors summary counts. The interactive Scan workflow reads those counts and displays success, no-op, partial, or failed messaging. There is no Apply workflow.
+- **Reason**: The wrapper needs presentation only; it no longer coordinates work.
 
 ## Risks / Trade-offs
 
 - [Risk] `cisIdentityId` vs `id` mismatch → Mitigation: prefer `cisIdentityId`; document observed mapping; fixture both shapes
 - [Risk] Duplicate entitlement `value` across sources and membership types → Accept: each record is a distinct ISC entitlement, so all unique ids are persisted; the UI shows repeated display names for one Entra group
-- [Risk] Parallel arrays desync in workflows → Mitigation: tests assert equal length; README says zip by index
 - [Risk] Experimental Machine Identities API drift → Mitigation: isolate in `src/isc/machine-identities/`
 - [Risk] Large tenants / N+1 source and entitlement reads → Mitigation: cache source configuration by sourceId and entitlement matches by value; paginate machine accounts
-- [Trade-off] Skip empty deltas vs persist every MI → Accept: fewer Account Created events; operators still get one account per MI that needs entitlements
-- [Trade-off] Workflow PATCH vs access request → Accept: `userEntitlements` is the MIS field; access request would grant account entitlements, not this collection
+- [Risk] Concurrent changes between identity list and PATCH → Mitigation: re-read current `userEntitlements` immediately before PATCH and union again
+- [Risk] Failure text exceeds result-source limits → Mitigation: store one truncated STRING per failed identity; logs retain full diagnostics
+- [Trade-off] Direct PATCH can leave a partially applied tenant → Accept: continue-and-summarize exposes failures and reruns are idempotent
+- [Trade-off] One summary persist adds latency after patching → Accept: durable audit history was explicitly chosen over response-only output
 
 ## Migration Plan
 
-New command and workflow. No breaking change to existing operations.
+This replaces the already-deployed split apply architecture.
 
-1. Implement, codegen (`connector-spec.json`, auto-registry), tests
-2. Publish connector; import workflow; point Account Created at the result source; set Delete Trigger Account
-3. Confirm each source's native `connectorAttributes.userEntitlements` names the intended machine-account connector attribute
-4. Invoke without `identityId` for a full scan, or with `identityId` for one identity
+1. Change the main operation to direct union-and-PATCH with one summary persist.
+2. Remove the apply operation and regenerate `auto-registry.ts` and `connector-spec.json`.
+3. Replace the Scan workflow messaging and delete the Apply workflow export.
+4. Publish the connector before importing the revised Scan workflow.
+5. Disable/delete the tenant's old Apply workflow before running the new version, so stale trigger accounts cannot invoke a removed command.
 
-Rollback: disable/delete the workflow; previous connector builds simply lack the command.
+Rollback: deploy connector v18 and restore the prior Apply workflow export. Existing historical result accounts remain readable but are not consumed by the new operation.
 
 ## Open Questions
 
-- Confirm PATCH replace-vs-add semantics for `userEntitlements` (workflow MUST GET then union, never replace with only the add list).
+- None.
