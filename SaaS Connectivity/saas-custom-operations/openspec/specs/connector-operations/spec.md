@@ -108,3 +108,10 @@ Each custom operation SHALL persist workflow-readable output on the result sourc
 - **WHEN** operation output is read from the result source
 - **THEN** persisted keys SHALL include `preventive-sod-check:has-violation`, `preventive-sod-check:situation-summary`, and `preventive-sod-check:violated-policy-names`
 
+#### Scenario: Machine identity entitlements follows namespacing convention
+
+- **GIVEN** `custom:machine-identity-entitlements` completes a scan
+- **WHEN** operation output is read from the result source
+- **THEN** persisted keys SHALL include `machine-identity-entitlements:identities-scanned`, `machine-identity-entitlements:identities-updated`, `machine-identity-entitlements:identities-skipped`, `machine-identity-entitlements:identities-failed`, and `machine-identity-entitlements:entitlements-added`
+- **AND** failure diagnostics SHALL use `machine-identity-entitlements:failed-identity-ids` and `machine-identity-entitlements:failure-details`
+

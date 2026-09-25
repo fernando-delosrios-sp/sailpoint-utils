@@ -12,7 +12,7 @@ The connector SHALL organize generic ISC integration code under `src/isc/<api-gr
 
 - **GIVEN** the connector source tree under `src/isc/`
 - **WHEN** a developer inspects ISC integration modules
-- **THEN** forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, public-identities, recommendations, governance-groups, access-requests, events-search, sod-prediction, and sod-policies SHALL each reside in their own subdirectory
+- **THEN** forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, public-identities, recommendations, governance-groups, access-requests, events-search, sod-prediction, sod-policies, machine-identities, and entitlements SHALL each reside in their own subdirectory
 - **AND** flat handler files directly under `src/isc/` (other than shared barrels if present) SHALL NOT be used for ISC client implementations
 
 #### Scenario: Identity access APIs separated
@@ -38,6 +38,20 @@ The connector SHALL organize generic ISC integration code under `src/isc/<api-gr
 - **THEN** GovernanceGroupsApi wrappers SHALL live under `src/isc/governance-groups/`
 - **AND** SHALL NOT be mixed with public-identities or identity-access modules
 
+#### Scenario: Machine identities API separated
+
+- **GIVEN** machine identity list and get use MachineIdentitiesApi
+- **WHEN** a developer inspects isc integration modules
+- **THEN** MachineIdentitiesApi wrappers SHALL live under `src/isc/machine-identities/`
+- **AND** SHALL NOT be mixed with accounts or entitlements modules
+
+#### Scenario: Entitlements API separated
+
+- **GIVEN** entitlement catalog lookup uses EntitlementsApi
+- **WHEN** a developer inspects isc integration modules
+- **THEN** EntitlementsApi wrappers SHALL live under `src/isc/entitlements/`
+- **AND** SHALL NOT be mixed with machine-identities or accounts modules
+
 ### Requirement: ISC API folder barrel entry
 
 Each ISC client API folder under `src/isc/<api-grouping>/` SHALL provide an `index.ts` that re-exports or implements the public API surface for that grouping. Consumers SHOULD import from the folder entry (`../../isc/<api-grouping>`) rather than deep module paths.
@@ -45,7 +59,7 @@ Each ISC client API folder under `src/isc/<api-grouping>/` SHALL provide an `ind
 #### Scenario: index.ts present in every API folder
 
 - **GIVEN** the connector source tree under `src/isc/`
-- **WHEN** a developer inspects an ISC client API folder (forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, public-identities, recommendations, or governance-groups)
+- **WHEN** a developer inspects an ISC client API folder (forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, public-identities, recommendations, governance-groups, machine-identities, or entitlements)
 - **THEN** the folder SHALL contain `index.ts`
 - **AND** `index.ts` SHALL export the public functions and types required by operations and framework code for that API grouping
 
@@ -91,6 +105,13 @@ The connector SHALL pre-configure `sailpoint-api-client` instances from operatio
 - **WHEN** the access-model-sod-remediation handler accesses ISC APIs
 - **THEN** `ctx.sdk` SHALL expose configured SodPolicies (or equivalent), RolesApi, AccessProfilesApi, and CustomFormsApi instances
 - **AND** SHALL reuse existing entitlement expansion helpers under roles and access-profiles modules
+
+#### Scenario: Machine identities client configured for machine identity entitlements
+
+- **GIVEN** a custom operation receives valid apiUrl and token in its input envelope
+- **WHEN** the machine-identity-entitlements handler or isc machine-identities module accesses ctx.sdk.machineIdentities
+- **THEN** the client SHALL be a configured MachineIdentitiesApi instance
+- **AND** `ctx.sdk.entitlements` SHALL remain a configured EntitlementsApi instance for value lookup
 
 ### Requirement: No external target application client
 

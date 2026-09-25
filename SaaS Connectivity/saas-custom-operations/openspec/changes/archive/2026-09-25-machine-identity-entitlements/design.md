@@ -103,7 +103,7 @@ The initial implementation split evaluation and apply across per-identity trigge
 
 ## Risks / Trade-offs
 
-- [Risk] `cisIdentityId` vs `id` mismatch → Mitigation: prefer `cisIdentityId`; document observed mapping; fixture both shapes
+- [Risk] `cisIdentityId` vs `id` mismatch → Mitigation: resolve `id` first, then `cisIdentityId`; document the observed mapping; fixture both shapes
 - [Risk] Duplicate entitlement `value` across sources and membership types → Accept: each record is a distinct ISC entitlement, so all unique ids are persisted; the UI shows repeated display names for one Entra group
 - [Risk] Experimental Machine Identities API drift → Mitigation: isolate in `src/isc/machine-identities/`
 - [Risk] Large tenants / N+1 source and entitlement reads → Mitigation: cache source configuration by sourceId and entitlement matches by value; paginate machine accounts
