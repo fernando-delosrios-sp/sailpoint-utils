@@ -1,0 +1,13 @@
+{
+    "type": "custom:machine-identity-entitlements",
+    "input": {
+        "requestId": "mie-one-001",
+        "identityId": "MACHINE_IDENTITY_OR_CIS_ID"
+    },
+    "config": {
+        "apiUrl": "https://YOUR-TENANT.api.identitynow.com",
+        "token": "__SET_VIA_ISC_TOKEN_ENV__",
+        "sourceName": "SaaS Custom Operations",
+        "testMode": true
+    }
+}

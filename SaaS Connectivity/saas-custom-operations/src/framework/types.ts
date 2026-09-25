@@ -7,6 +7,7 @@ import {
     EntitlementsApi,
     GovernanceGroupsApi,
     IdentityHistoryApi,
+    MachineIdentitiesApi,
     RolesApi,
     SearchApi,
     SODPoliciesApi,
@@ -46,6 +47,7 @@ export interface SailPointClients {
     search: SearchApi
     sodPolicies: SODPoliciesApi
     sodViolations: SODViolationsApi
+    machineIdentities: MachineIdentitiesApi
 }
 
 /** Options for {@link PersistFn}. Verification runs by default; set verify to false to defer. */
@@ -84,7 +86,7 @@ export type WriteRegistry = Map<string, Record<string, unknown>>
  */
 export interface RequestContext<
     TOutput extends object = Record<string, unknown>,
-    TSummary extends object = Record<string, unknown>,
+    TSummary extends object = Record<string, unknown>
 > {
     requestId: string
     /**
@@ -126,4 +128,3 @@ export interface PersistDependencies {
     /** Override for tests to avoid real delays during retry loops. */
     sleep?: (ms: number) => Promise<void>
 }
-

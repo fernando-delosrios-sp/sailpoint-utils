@@ -953,6 +953,7 @@ describe('customOperation test mode', () => {
         expect(() =>
             ctx.sdk.accounts.createAccountV1({ accountAttributesCreate: { attributes: {} } } as any)
         ).toThrow(ConnectorError)
+        expect(() => ctx.sdk.machineIdentities.listMachineIdentitiesV1({} as any)).toThrow(ConnectorError)
     })
 
     it('checks ISC status and resolves source read-only when token is provided', async () => {

@@ -1,0 +1,136 @@
+{
+  "id": "machine-identity-entitlements-apply",
+  "name": "Machine Identity Entitlements - Apply",
+  "description": "Account Created on the result source: GET the machine identity, PATCH userEntitlements as the union of existing refs and persisted entitlements to add, optionally delete the trigger account.",
+  "definition": {
+    "start": "Configuration",
+    "steps": {
+      "Configuration": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "ISC API base URL, no trailing slash.",
+              "name": "API URL",
+              "transforms": [],
+              "variableA": "https://tenant.api.identitynow-demo.com"
+            },
+            {
+              "description": "When true, delete the result-source trigger account after a successful userEntitlements patch.",
+              "name": "Delete Trigger Account",
+              "transforms": [],
+              "variableA": "false"
+            }
+          ]
+        },
+        "displayName": "Configuration",
+        "nextStep": "Get Access Token",
+        "type": "Mutation"
+      },
+      "Get Access Token": {
+        "actionId": "sp:http",
+        "attributes": {
+          "formRequestBody": {
+            "grant_type": "client_credentials"
+          },
+          "method": "post",
+          "param_authenticationRef": "basic",
+          "requestContentType": "form",
+          "url": "{{$.configuration.aPIURL}}/oauth/token"
+        },
+        "displayName": "Get Access Token",
+        "nextStep": "Get Machine Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Get Machine Identity": {
+        "actionId": "sp:http",
+        "attributes": {
+          "method": "get",
+          "requestHeaders": {
+            "Authorization": "Bearer {{$.getAccessToken.body.access_token}}",
+            "X-SailPoint-Experimental": "true"
+          },
+          "url": "{{$.configuration.aPIURL}}/beta/machine-identities/{{$.trigger.account.attributes['machine-identity-entitlements:machine-identity-id']}}"
+        },
+        "description": "GET existing userEntitlements before apply so the patch unions rather than replacing with only the add list.",
+        "displayName": "Get Machine Identity",
+        "nextStep": "Patch User Entitlements",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Patch User Entitlements": {
+        "actionId": "sp:http",
+        "attributes": {
+          "jsonRequestBody": [
+            {
+              "op": "replace",
+              "path": "/userEntitlements",
+              "value": {
+                "existing.$": "$.getMachineIdentity.body.userEntitlements",
+                "addEntitlementIds.$": "$.trigger.account.attributes['machine-identity-entitlements:entitlement-ids']",
+                "addEntitlementSourceIds.$": "$.trigger.account.attributes['machine-identity-entitlements:entitlement-source-ids']"
+              }
+            }
+          ],
+          "method": "patch",
+          "requestContentType": "json",
+          "requestHeaders": {
+            "Authorization": "Bearer {{$.getAccessToken.body.access_token}}",
+            "Content-Type": "application/json-patch+json",
+            "X-SailPoint-Experimental": "true"
+          },
+          "url": "{{$.configuration.aPIURL}}/beta/machine-identities/{{$.trigger.account.attributes['machine-identity-entitlements:machine-identity-id']}}"
+        },
+        "description": "PATCH userEntitlements as the union of GET existing refs and the persisted add list. Must not replace with only the add list.",
+        "displayName": "Patch User Entitlements",
+        "nextStep": "Check Delete Trigger Account",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Delete Trigger Account": {
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Delete Trigger Account",
+            "variableA.$": "$.configuration.deleteTriggerAccount",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "End Step - Success",
+        "displayName": "Check Delete Trigger Account",
+        "type": "choice"
+      },
+      "Delete Trigger Account": {
+        "actionId": "sp:http",
+        "attributes": {
+          "method": "delete",
+          "requestHeaders": {
+            "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+          },
+          "url": "{{$.configuration.aPIURL}}/v3/accounts/{{$.trigger.accountId}}"
+        },
+        "displayName": "Delete Trigger Account",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "End Step - Success": {
+        "actionId": "sp:operator-success",
+        "displayName": "",
+        "type": "success"
+      }
+    }
+  },
+  "enabled": false,
+  "trigger": {
+    "type": "EVENT",
+    "mode": "advanced",
+    "attributes": {
+      "filter.$": "operationName == custom:machine-identity-entitlements",
+      "id": "idn:account-created",
+      "integrationId": null
+    }
+  }
+}

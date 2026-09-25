@@ -1,6 +1,11 @@
 import { ConnectorError, Response } from '@sailpoint/connector-sdk'
 import { AccountsApi, CustomFormsApi, SourcesApi, TaskManagementApi } from 'sailpoint-api-client'
-import { createPersist, createVerifyPersisted, upsertSourceAccount, waitForAccountProvisioningTask } from './persist-result'
+import {
+    createPersist,
+    createVerifyPersisted,
+    upsertSourceAccount,
+    waitForAccountProvisioningTask,
+} from './persist-result'
 import { findAccountOnSource, getAccount } from '../isc/accounts'
 import { createSailPointClients } from './sdk-factory'
 import { ensureSourceSchema } from './result-source'
@@ -45,23 +50,19 @@ export interface RequestContextDependencies {
 /** Assembles the volatile request context for a custom operation invocation. */
 export function createRequestContext<
     TOutput extends object = Record<string, unknown>,
-    TSummary extends object = Record<string, unknown>,
->(
-    input: StandardInput,
-    res: Response<any>,
-    deps: RequestContextDependencies = {}
-): RequestContext<TOutput, TSummary> {
+    TSummary extends object = Record<string, unknown>
+>(input: StandardInput, res: Response<any>, deps: RequestContextDependencies = {}): RequestContext<TOutput, TSummary> {
     const sdk: SailPointClients =
         deps.sdk ??
         (deps.testMode && !input.token
             ? createOfflineSdkStub()
             : deps.accountsApi || deps.sourcesApi
-              ? {
-                    ...createSailPointClients(input.apiUrl, input.token),
-                    ...(deps.accountsApi ? { accounts: deps.accountsApi } : {}),
-                    ...(deps.sourcesApi ? { sources: deps.sourcesApi } : {}),
-                }
-              : createSailPointClients(input.apiUrl, input.token))
+            ? {
+                  ...createSailPointClients(input.apiUrl, input.token),
+                  ...(deps.accountsApi ? { accounts: deps.accountsApi } : {}),
+                  ...(deps.sourcesApi ? { sources: deps.sourcesApi } : {}),
+              }
+            : createSailPointClients(input.apiUrl, input.token))
 
     const sourceId = deps.sourceId ?? ''
     const resultIdentity = deps.resultIdentity?.(input.requestId) ?? input.requestId
@@ -82,12 +83,7 @@ export function createRequestContext<
         operationSchema: deps.operationSchema,
         ensureSourceSchema: deps.operationSchema
             ? async (attributeKeys) => {
-                  await ensureSourceSchema(
-                      sdk.sources,
-                      sourceId,
-                      deps.operationSchema!.outputFields,
-                      attributeKeys
-                  )
+                  await ensureSourceSchema(sdk.sources, sourceId, deps.operationSchema!.outputFields, attributeKeys)
               }
             : undefined,
         upsertAccount: async (attributes) => {
@@ -203,6 +199,9 @@ function createOfflineSdkStub(): SailPointClients {
             getSodPolicyV1: async () => ({ data: {} }),
         } as unknown as SailPointClients['sodPolicies'],
         sodViolations: { startPredictSodViolationsV1: stub } as unknown as SailPointClients['sodViolations'],
+        machineIdentities: {
+            listMachineIdentitiesV1: stub,
+            getMachineIdentityV1: stub,
+        } as unknown as SailPointClients['machineIdentities'],
     }
 }
-

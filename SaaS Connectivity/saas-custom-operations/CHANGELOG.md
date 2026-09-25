@@ -2,7 +2,15 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
-## 2026-09-22 · v0.6.9
+## 2026-09-25 · v0.7.0
+
+### ✨ New Features
+
+-   **Machine identities can pick up entitlements from their source accounts** — `custom:machine-identity-entitlements` scans machine identities, reads opted-in account attributes, matches catalog entitlements by value, and writes one trigger account per identity that still needs `userEntitlements`. Opt in on the source account schema with `configuration.inboundEntitlements`. Omit `identityId` for the whole tenant, or pass one machine identity id / `cisIdentityId`. Empty add lists are not persisted.
+
+-   **Account Created applies the add list as a union** — import `workflows/Machine Identity Entitlements - Apply.json`. It GETs the machine identity, PATCHes `userEntitlements` with existing refs plus the persisted ids, and deletes the trigger account only when **Delete Trigger Account** is true (default false).
+
+---
 
 ### 🔧 Improvements
 

@@ -6,6 +6,7 @@
 		"custom:evaluate-access-request-risk",
 		"custom:example",
 		"custom:governance-group-emails",
+		"custom:machine-identity-entitlements",
 		"custom:preventive-sod-check",
 		"custom:sod-remediation"
 	],

@@ -141,6 +141,7 @@ Each registered command documents its invoke contract, payloads, and workflow in
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `custom:example`                            | [src/operations/example/README.md](src/operations/example/README.md)                                                       |
 | `custom:governance-group-emails`            | [src/operations/governance-group-emails/README.md](src/operations/governance-group-emails/README.md)                       |
+| `custom:machine-identity-entitlements`      | [src/operations/machine-identity-entitlements/README.md](src/operations/machine-identity-entitlements/README.md)           |
 | `custom:access-model-sod-remediation`       | [src/operations/access-model-sod-remediation/README.md](src/operations/access-model-sod-remediation/README.md)             |
 | `custom:access-model-sod-remediation-apply` | [src/operations/access-model-sod-remediation-apply/README.md](src/operations/access-model-sod-remediation-apply/README.md) |
 | `custom:preventive-sod-check`               | [src/operations/preventive-sod-check/README.md](src/operations/preventive-sod-check/README.md)                             |

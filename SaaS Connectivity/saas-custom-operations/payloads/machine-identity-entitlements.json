@@ -1,0 +1,12 @@
+{
+    "type": "custom:machine-identity-entitlements",
+    "input": {
+        "requestId": "mie-scan-001"
+    },
+    "config": {
+        "apiUrl": "https://YOUR-TENANT.api.identitynow.com",
+        "token": "__SET_VIA_ISC_TOKEN_ENV__",
+        "sourceName": "SaaS Custom Operations",
+        "testMode": true
+    }
+}

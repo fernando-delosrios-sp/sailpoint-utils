@@ -9,6 +9,7 @@ const OFFLINE_BRANCHING_OPERATIONS = [
     'access-model-sod-remediation-apply',
     'evaluate-access-request-risk',
     'governance-group-emails',
+    'machine-identity-entitlements',
     'preventive-sod-check',
     'sod-remediation',
 ]
@@ -32,19 +33,17 @@ describe('isOfflineContext', () => {
     })
 
     it('rejects partial config when apiUrl is set and token is absent', () => {
-        expect(() =>
-            isOfflineContext({ apiUrl: 'https://tenant.api.identitynow.com', token: '' })
-        ).toThrow(ConnectorError)
-        expect(() =>
-            isOfflineContext({ apiUrl: 'https://tenant.api.identitynow.com', token: '' })
-        ).toThrow(/Incomplete connection config/)
+        expect(() => isOfflineContext({ apiUrl: 'https://tenant.api.identitynow.com', token: '' })).toThrow(
+            ConnectorError
+        )
+        expect(() => isOfflineContext({ apiUrl: 'https://tenant.api.identitynow.com', token: '' })).toThrow(
+            /Incomplete connection config/
+        )
     })
 
     it('rejects partial config when token is set and apiUrl is absent', () => {
         expect(() => isOfflineContext({ apiUrl: '', token: 'pat-token' })).toThrow(ConnectorError)
-        expect(() => isOfflineContext({ apiUrl: '', token: 'pat-token' })).toThrow(
-            /Incomplete connection config/
-        )
+        expect(() => isOfflineContext({ apiUrl: '', token: 'pat-token' })).toThrow(/Incomplete connection config/)
     })
 })
 

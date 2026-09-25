@@ -7,6 +7,7 @@ import {
     EntitlementsApi,
     GovernanceGroupsApi,
     IdentityHistoryApi,
+    MachineIdentitiesApi,
     RolesApi,
     SearchApi,
     SODPoliciesApi,
@@ -46,7 +47,6 @@ export function createSailPointClients(apiUrl: string, token: string): SailPoint
         search: new SearchApi(configuration),
         sodPolicies: new SODPoliciesApi(configuration),
         sodViolations: new SODViolationsApi(configuration),
+        machineIdentities: new MachineIdentitiesApi(configuration),
     }
 }
-
-

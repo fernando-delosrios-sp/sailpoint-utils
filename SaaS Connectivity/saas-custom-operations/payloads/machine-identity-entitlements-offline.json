@@ -1,0 +1,6 @@
+{
+    "type": "custom:machine-identity-entitlements",
+    "input": {
+        "requestId": "offline-mie-001"
+    }
+}
