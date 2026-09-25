@@ -16,7 +16,7 @@ Lists machine accounts, follows each account's authoritative `machineIdentity` n
 
 ## Output (persisted)
 
-Every run persists one summary account whose native identity is `requestId`, including no-work runs.
+Every run persists one scan summary account. Its scan summary identity is `{requestId}`, including no-work runs.
 
 | Field                                                    | Type         | Description                                      |
 | -------------------------------------------------------- | ------------ | ------------------------------------------------ |
@@ -24,7 +24,7 @@ Every run persists one summary account whose native identity is `requestId`, inc
 | `machine-identity-entitlements:identities-updated`       | INT          | Identities successfully PATCHed                   |
 | `machine-identity-entitlements:identities-skipped`       | INT          | Identities whose delta was empty                  |
 | `machine-identity-entitlements:identities-failed`        | INT          | Identities that could not be read or PATCHed      |
-| `machine-identity-entitlements:entitlements-added`       | INT          | Entitlement refs newly added across all identities |
+| `machine-identity-entitlements:entitlements-added`       | INT          | Count of entitlements to add that were PATCHed    |
 | `machine-identity-entitlements:failed-identity-ids`      | STRING multi | Failed machine identity ids                      |
 | `machine-identity-entitlements:failure-details`          | STRING multi | Error detail aligned with failed identity ids     |
 
@@ -38,17 +38,17 @@ Core account `status` is `success`, `partial`, or `failed`. A mixed run returns 
 | `identitiesUpdated` | Identities successfully PATCHed      |
 | `identitiesSkipped` | Identities with no delta              |
 | `identitiesFailed`  | Identities whose apply attempt failed |
-| `entitlementsAdded` | Entitlement refs newly added          |
+| `entitlementsAdded` | Count of entitlements to add that were PATCHed |
 
 ## Inbound entitlements attribute
 
-The operation reads the inbound entitlements attribute name from source `connectorAttributes.userEntitlements`, then reads that key from each linked machine account's `connectorAttributes`. The value may be a single string or array. Missing/blank source configuration or an absent machine-account value skips that account without failing the scan.
+The operation reads the inbound entitlements attribute name from source `connectorAttributes.userEntitlements`, then reads that key from each linked underlying account's `connectorAttributes`. The value may be a single string or array. Missing/blank source configuration or an absent underlying-account value skips that account without failing the scan.
 
 For example, `Microsoft Entra ID @emea-tes-team.cloud (NHI)` currently configures `userEntitlements` as `spn_app_groups`.
 
 ## Machine-account correlation
 
-The scan pages `/v2026/machine-accounts`, discards accounts whose source is not configured, and groups the remainder using each response object's `machineIdentity.id`. A full scan lists machine identities once and batches distinct entitlement values with `value in (...)`; it does not issue one catalog request per identity or value. Before each PATCH it re-reads current `userEntitlements`, preserving refs added concurrently. PATCHes run with bounded concurrency. Entitlement matching is by value alone: one Entra group value can map to separate Users, NHI, active-PIM, and eligible-PIM records, and every match is added.
+The scan pages `/v2026/machine-accounts`. Each machine account is the underlying account for its machine identity. The scan discards accounts whose source is not configured and groups the remainder using each response object's `machineIdentity.id`. A full scan lists machine identities once and batches distinct entitlement values with `value in (...)`; it does not issue one catalog request per identity or value. Entitlements to add are the matched refs not already on `userEntitlements`. Before each PATCH it re-reads current `userEntitlements`, preserving refs added concurrently, and skips the update when entitlements to add is empty. PATCHes run with bounded concurrency. Entitlement matching is by value alone: one Entra group value can map to separate Users, NHI, active-PIM, and eligible-PIM records, and every match is added.
 
 ## Token scopes
 
@@ -73,7 +73,7 @@ Connected invokes need PAT/OAuth scopes for:
 
 1. Import Scan, then set its interactive trigger filter to that workflow's own id (`$[?(@.workflowId == '<scan-workflow-id>')]`).
 2. Re-bind **Get Access Token** basic auth and set the connector id and API URL variables.
-3. Scan uses `requestId` `mie:{{$.trigger.interactiveProcessId}}`, which becomes the single summary account identity. Omit `identityId` for a full scan, or add it to the invoke input to limit the run.
+3. Scan uses `requestId` `mie:{{$.trigger.interactiveProcessId}}`, which becomes the scan summary identity on the scan summary account. Omit `identityId` for a full scan, or add it to the invoke input to limit the run.
 
 ## Local development
 

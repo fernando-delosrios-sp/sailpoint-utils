@@ -2,6 +2,7 @@ import { ConnectorError } from '@sailpoint/connector-sdk'
 import { describe, expect, it, vi } from 'vitest'
 import { getMachineIdentity } from './get-machine-identity'
 import { listMachineIdentities, MACHINE_IDENTITY_PAGE_SIZE } from './list-machine-identities'
+import { patchUserEntitlements } from './patch-user-entitlements'
 import { resolveMachineIdentityByIdentityId } from './resolve-by-identity-id'
 
 describe('isc/machine-identities', () => {
@@ -60,12 +61,37 @@ describe('isc/machine-identities', () => {
     it('Experimental header sent when required', async () => {
         const listMachineIdentitiesV1 = vi.fn().mockResolvedValue({ data: [] })
         const getMachineIdentityV1 = vi.fn().mockResolvedValue({ data: { id: 'mi-1', userEntitlements: [] } })
+        const updateMachineIdentityV1 = vi.fn().mockResolvedValue({})
 
         await listMachineIdentities({ listMachineIdentitiesV1 } as never)
         await getMachineIdentity({ getMachineIdentityV1 } as never, 'mi-1')
+        await patchUserEntitlements({ updateMachineIdentityV1 } as never, 'mi-1', [])
 
         expect(listMachineIdentitiesV1.mock.calls[0]?.[0].xSailPointExperimental).toBe('true')
         expect(getMachineIdentityV1.mock.calls[0]?.[0].xSailPointExperimental).toBe('true')
+        expect(updateMachineIdentityV1.mock.calls[0]?.[0].xSailPointExperimental).toBe('true')
+    })
+
+    it('Patch sends complete refs', async () => {
+        const updateMachineIdentityV1 = vi.fn().mockResolvedValue({})
+        const refs = [
+            { sourceId: 'src-1', entitlementId: 'ent-a' },
+            { sourceId: 'src-3', entitlementId: 'ent-c' },
+        ]
+
+        await patchUserEntitlements({ updateMachineIdentityV1 } as never, 'mi-1', refs)
+
+        expect(updateMachineIdentityV1).toHaveBeenCalledWith({
+            id: 'mi-1',
+            requestBody: [
+                {
+                    op: 'replace',
+                    path: '/userEntitlements',
+                    value: refs,
+                },
+            ],
+            xSailPointExperimental: 'true',
+        })
     })
 
     it('Match by machine identity id', async () => {
