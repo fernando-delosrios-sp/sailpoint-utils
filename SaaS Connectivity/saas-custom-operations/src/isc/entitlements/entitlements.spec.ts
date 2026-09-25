@@ -1,6 +1,6 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
 import { describe, expect, it, vi } from 'vitest'
-import { listEntitlementsByValue } from './list-by-value'
+import { listEntitlementsByValue, listEntitlementsByValues } from './list-by-value'
 
 describe('isc/entitlements', () => {
     it('Value equality match', async () => {
@@ -34,6 +34,25 @@ describe('isc/entitlements', () => {
         expect(listEntitlementsV1).toHaveBeenCalledWith(
             expect.objectContaining({ filters: 'value eq "CN=""Quoted"""' })
         )
+    })
+
+    it('Batches multiple values into one membership filter', async () => {
+        const listEntitlementsV1 = vi.fn().mockResolvedValue({
+            data: [
+                { id: 'ent-1', value: 'CN=A', source: { id: 'src-1' } },
+                { id: 'ent-2', value: 'CN=B', source: { id: 'src-1' } },
+            ],
+        })
+
+        const matches = await listEntitlementsByValues({ listEntitlementsV1 } as never, ['CN=A', 'CN=B', 'CN=A'])
+
+        expect(listEntitlementsV1).toHaveBeenCalledTimes(1)
+        expect(listEntitlementsV1).toHaveBeenCalledWith({
+            filters: 'value in ("CN=A","CN=B")',
+            offset: 0,
+            limit: 250,
+        })
+        expect(matches).toHaveLength(2)
     })
 
     it('API failure surfaces error', async () => {

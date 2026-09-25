@@ -82,9 +82,27 @@ export function createRequestContext<
         log,
         operationSchema: deps.operationSchema,
         ensureSourceSchema: deps.operationSchema
-            ? async (attributeKeys) => {
-                  await ensureSourceSchema(sdk.sources, sourceId, deps.operationSchema!.outputFields, attributeKeys)
-              }
+            ? (() => {
+                  // One schema read per distinct attribute set; concurrent persists share the in-flight call.
+                  const ensuredByAttributeKeys = new Map<string, Promise<void>>()
+                  return async (attributeKeys: string[]) => {
+                      const signature = [...attributeKeys].sort().join('\u0000')
+                      let ensured = ensuredByAttributeKeys.get(signature)
+                      if (!ensured) {
+                          ensured = ensureSourceSchema(
+                              sdk.sources,
+                              sourceId,
+                              deps.operationSchema!.outputFields,
+                              attributeKeys
+                          ).catch((error) => {
+                              ensuredByAttributeKeys.delete(signature)
+                              throw error
+                          })
+                          ensuredByAttributeKeys.set(signature, ensured)
+                      }
+                      await ensured
+                  }
+              })()
             : undefined,
         upsertAccount: async (attributes) => {
             return upsertSourceAccount(accountsClient, sourceId, attributes, {
@@ -199,6 +217,9 @@ function createOfflineSdkStub(): SailPointClients {
             getSodPolicyV1: async () => ({ data: {} }),
         } as unknown as SailPointClients['sodPolicies'],
         sodViolations: { startPredictSodViolationsV1: stub } as unknown as SailPointClients['sodViolations'],
+        machineAccounts: {
+            listMachineAccountsV1: stub,
+        } as unknown as SailPointClients['machineAccounts'],
         machineIdentities: {
             listMachineIdentitiesV1: stub,
             getMachineIdentityV1: stub,

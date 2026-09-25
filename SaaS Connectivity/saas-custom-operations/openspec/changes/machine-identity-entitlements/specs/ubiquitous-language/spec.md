@@ -4,14 +4,14 @@
 
 ### Requirement: Inbound entitlements attribute term
 
-The glossary SHALL define **inbound entitlements attribute** as the account-schema `configuration.inboundEntitlements` string naming the account attribute that holds entitlement values (STRING, single or multi) for machine-identity evaluation. Normative text SHALL NOT treat that configuration key as the entitlement ids themselves.
+The glossary SHALL define **machine-account user-entitlements attribute** as the source `connectorAttributes.userEntitlements` string naming the machine-account `connectorAttributes` field that holds entitlement values (STRING, single or multi) for machine-identity evaluation. Normative text SHALL NOT treat that configuration key as the entitlement ids themselves.
 
 #### Scenario: Inbound entitlements attribute term
 
 - **GIVEN** specs describe how a source opts an account into machine-identity entitlement evaluation
 - **WHEN** normative text names the schema configuration field
 - **THEN** it SHALL use **inbound entitlements attribute**
-- **AND** SHALL spell the configuration key `configuration.inboundEntitlements`
+- **AND** SHALL spell the configuration key `connectorAttributes.userEntitlements`
 
 ### Requirement: Machine identity persist identity term
 

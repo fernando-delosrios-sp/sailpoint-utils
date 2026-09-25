@@ -22,6 +22,7 @@ describe('sdk-factory', () => {
         expect(typeof clients.sodViolations.startPredictSodViolationsV1).toBe('function')
         expect(typeof clients.machineIdentities.listMachineIdentitiesV1).toBe('function')
         expect(typeof clients.machineIdentities.getMachineIdentityV1).toBe('function')
+        expect(typeof clients.machineAccounts.listMachineAccountsV1).toBe('function')
         expect(typeof clients.entitlements.listEntitlementsV1).toBe('function')
     })
 
@@ -29,6 +30,7 @@ describe('sdk-factory', () => {
         const clients = createSailPointClients('https://tenant.api.identitynow.com', 'token')
 
         expect(clients.machineIdentities.constructor.name).toBe('MachineIdentitiesApi')
+        expect(clients.machineAccounts.constructor.name).toBe('MachineAccountsApi')
         expect(clients.entitlements.constructor.name).toBe('EntitlementsApi')
     })
 })

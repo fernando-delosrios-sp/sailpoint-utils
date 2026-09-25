@@ -1,76 +1,55 @@
-import { SchemaPayload } from '../../isc/sources'
+import { MachineAccountRecord } from '../../isc/machine-accounts'
 import { OFFLINE_MACHINE_IDENTITIES } from '../../isc/machine-identities'
+import { SourcePayload } from '../../isc/sources'
 
-export { listMachineIdentitiesOffline, resolveMachineIdentityByIdentityIdOffline } from '../../isc/machine-identities'
+export { resolveMachineIdentityByIdentityIdOffline } from '../../isc/machine-identities'
 export { listEntitlementsByValueOffline } from '../../isc/entitlements'
 
-export interface OfflineUnderlyingAccount {
-    identityKey: string
-    sourceId: string
-    attributes: Record<string, unknown>
-}
-
-/** Canned underlying accounts for offline evaluation (correlated by cisIdentityId then id). */
-export const OFFLINE_UNDERLYING_ACCOUNTS: OfflineUnderlyingAccount[] = [
+/** Canned machine accounts with the same machineIdentity link and connectorAttributes as the live API. */
+export const OFFLINE_MACHINE_ACCOUNTS: MachineAccountRecord[] = [
     {
-        identityKey: 'cis-offline-1',
-        sourceId: 'src-offline-1',
-        attributes: { appRole: 'CN=Admins' },
+        id: 'ma-offline-1',
+        machineIdentity: { id: 'mi-offline-1' },
+        source: { id: 'src-offline-1' },
+        connectorAttributes: { appRole: ['CN=Admins', 'CN=A'] },
     },
     {
-        identityKey: 'cis-offline-1',
-        sourceId: 'src-offline-2',
-        attributes: { groups: ['CN=A', ' ', 'CN=B'] },
+        id: 'ma-offline-2',
+        machineIdentity: { id: 'mi-offline-1' },
+        source: { id: 'src-offline-2' },
+        connectorAttributes: { groups: [' ', 'CN=B'] },
     },
     {
-        identityKey: 'cis-offline-2',
-        sourceId: 'src-offline-1',
-        attributes: { appRole: 'CN=Admins' },
+        id: 'ma-offline-3',
+        machineIdentity: { id: 'mi-offline-2' },
+        source: { id: 'src-offline-1' },
+        connectorAttributes: { appRole: ['CN=Admins', 'CN=Already'] },
     },
     {
-        identityKey: 'cis-offline-2',
-        sourceId: 'src-offline-skip',
-        attributes: { leftover: 'CN=Ignored' },
-    },
-    {
-        identityKey: 'cis-offline-2',
-        sourceId: 'src-offline-unknown-attr',
-        attributes: { other: 'CN=Ignored' },
+        id: 'ma-offline-skip',
+        machineIdentity: { id: 'mi-offline-2' },
+        source: { id: 'src-offline-skip' },
+        connectorAttributes: { leftover: 'CN=Ignored' },
     },
 ]
 
-export const OFFLINE_ACCOUNT_SCHEMAS: Record<string, SchemaPayload> = {
+export const OFFLINE_SOURCES: Record<string, Pick<SourcePayload, 'connectorAttributes'>> = {
     'src-offline-1': {
-        name: 'account',
-        configuration: { inboundEntitlements: 'appRole' },
-        attributes: [{ name: 'appRole', type: 'STRING', isMulti: false }],
+        connectorAttributes: { userEntitlements: 'appRole' },
     },
     'src-offline-2': {
-        name: 'account',
-        configuration: { inboundEntitlements: 'groups' },
-        attributes: [{ name: 'groups', type: 'STRING', isMulti: true }],
+        connectorAttributes: { userEntitlements: 'groups' },
     },
-    'src-offline-skip': {
-        name: 'account',
-        attributes: [{ name: 'leftover', type: 'STRING' }],
-    },
-    'src-offline-unknown-attr': {
-        name: 'account',
-        configuration: { inboundEntitlements: 'groups' },
-        attributes: [{ name: 'other', type: 'STRING' }],
-    },
+    'src-offline-skip': { connectorAttributes: {} },
 }
 
-export function listOfflineUnderlyingAccounts(identityKey: string): OfflineUnderlyingAccount[] {
-    return OFFLINE_UNDERLYING_ACCOUNTS.filter((account) => account.identityKey === identityKey)
+export function listMachineAccountsOffline(): MachineAccountRecord[] {
+    return OFFLINE_MACHINE_ACCOUNTS
 }
 
-export function getOfflineAccountSchema(sourceId: string): SchemaPayload | undefined {
-    return OFFLINE_ACCOUNT_SCHEMAS[sourceId]
-}
-
-export function identityCorrelationKey(identity: { id: string; cisIdentityId?: string }): string {
-    return identity.cisIdentityId ?? identity.id
+export function getOfflineSource(sourceId: string): SourcePayload | undefined {
+    const source = OFFLINE_SOURCES[sourceId]
+    return source ? (source as SourcePayload) : undefined
 }
 
 export { OFFLINE_MACHINE_IDENTITIES }

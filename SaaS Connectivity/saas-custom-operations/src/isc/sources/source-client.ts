@@ -17,6 +17,7 @@ export interface SourcePayload {
     provisionAsCsv?: boolean
     owner: SourceOwner
     features?: string[]
+    connectorAttributes?: Record<string, unknown>
 }
 
 export interface SchemaAttribute {
@@ -63,6 +64,19 @@ export function isHttpNotFound(error: unknown): boolean {
 export async function findSourceByName(sourcesApi: SourcesApi, sourceName: string): Promise<SourcePayload | undefined> {
     const response = await sourcesApi.listSourcesV1({ filters: `name eq "${sourceName}"` })
     return response.data?.[0] as SourcePayload | undefined
+}
+
+/** Gets one source, including connectorAttributes used to configure account entitlement ingestion. */
+export async function getSource(sourcesApi: SourcesApi, sourceId: string): Promise<SourcePayload | undefined> {
+    try {
+        const response = await sourcesApi.getSourceV1({ id: sourceId })
+        return response.data as SourcePayload | undefined
+    } catch (error) {
+        if (isHttpNotFound(error)) {
+            return undefined
+        }
+        throw error
+    }
 }
 
 /** Creates a source from a caller-supplied payload. */

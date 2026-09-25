@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Evaluates machine identities, reads entitlement values from processable **underlying accounts**, matches ISC entitlements by `value`, and persists **entitlements to add** on one **trigger account** per machine identity that has a non-empty add list. A bundled Account Created workflow PATCHes `userEntitlements`.
+Lists machine accounts, follows each account's authoritative `machineIdentity` node, reads configured entitlement values from `connectorAttributes`, matches ISC entitlements by value and source, and persists **entitlements to add** on one **trigger account** per machine identity that has a non-empty add list. A bundled Account Created workflow PATCHes `userEntitlements`.
 
 ## Command
 
@@ -31,21 +31,23 @@ Native identity is the **machine identity persist identity** `{requestId}:{machi
 | `identitiesScanned`      | Machine identities evaluated           |
 | `triggerAccountsWritten` | Trigger accounts persisted this invoke |
 
-## Inbound entitlements attribute
+## User-entitlements connector attribute
 
-Opt in per source on the **account** schema: `configuration.inboundEntitlements` is the attribute name (STRING, single or multi). Missing, blank, or an unknown attribute name skips that **underlying account** and does not fail the scan.
+The operation reads the attribute name from source `connectorAttributes.userEntitlements`, then reads that key from each linked machine account's `connectorAttributes`. The value may be a single string or array. Missing/blank source configuration or an absent machine-account value skips that account without failing the scan.
 
-## Accounts `identityId` mapping
+For example, `Microsoft Entra ID @emea-tes-team.cloud (NHI)` currently configures `userEntitlements` as `spn_app_groups`.
 
-Underlying accounts are listed with `identityId eq "{cisIdentityId ?? machineIdentity.id}"`. Confirm this mapping on a live tenant if correlation looks empty.
+## Machine-account correlation
+
+The scan pages `/v2026/machine-accounts`, discards accounts whose source is not configured, and groups the remainder using each response object's `machineIdentity.id`. A full scan lists machine identities once and batches distinct entitlement values with `value in (...)`; it does not issue one API request per identity or value. It does not infer correlation through Accounts `identityId` or account names. Entitlement matching is by value alone: one Entra group value is aggregated as a separate entitlement record on each source that sees it (Users and NHI) and under each membership type (`groups`, `azureADActiveGroups`, `azureADEligibleGroups`), and every match is added.
 
 ## Token scopes
 
 Connected invokes need PAT/OAuth scopes for:
 
 -   Machine identities list/get/patch (experimental `X-SailPoint-Experimental`)
--   Accounts list (underlying accounts) and result-source persist
--   Source account schema read
+-   Machine accounts list and result-source account persist
+-   Source read (including `connectorAttributes`)
 -   Entitlements list by `value`
 
 ## Invoke examples
@@ -58,10 +60,17 @@ Connected invokes need PAT/OAuth scopes for:
 
 ## Workflow integration
 
-1. Import [`workflows/Machine Identity Entitlements - Apply.json`](../../../workflows/Machine%20Identity%20Entitlements%20-%20Apply.json).
-2. Point the Account Created trigger at the result source. Advanced filter: `operationName == custom:machine-identity-entitlements`.
-3. Set **Delete Trigger Account** (default `false`). When `true`, the workflow deletes the trigger account only after a successful `userEntitlements` patch.
-4. The apply path GETs the machine identity, then PATCHes `userEntitlements` as the union of existing refs and the persisted add list — it must not replace with only the add list.
+| File                                                                                                                            | Trigger                            | Purpose                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`workflows/Machine Identity Entitlements - Scan.json`](../../../workflows/Machine%20Identity%20Entitlements%20-%20Scan.json)   | `idn:interactive-process-launched` | Explain the scan, invoke this operation, then report 0 vs N trigger accounts                                                                   |
+| [`workflows/Machine Identity Entitlements - Apply.json`](../../../workflows/Machine%20Identity%20Entitlements%20-%20Apply.json) | `idn:account-created`              | Invoke [`custom:machine-identity-entitlements-apply`](../machine-identity-entitlements-apply/README.md), optionally delete the trigger account |
+
+1. Import Scan, then set its interactive trigger filter to that workflow's own id (`$[?(@.workflowId == '<scan-workflow-id>')]`).
+2. Import Apply. Advanced filter: `$.account.attributes[?(@.operationName == "custom:machine-identity-entitlements")]`.
+3. Re-bind the **Get Access Token** basic auth on both workflows after import, and set Apply's connector id variable. Both invoke the connector, and the invoke body carries `config.token`, so a saved OAuth credential on the step alone is not enough.
+4. Scan uses `requestId` `mie:{{$.trigger.interactiveProcessId}}` so each launch writes new trigger accounts and Account Created can fire again. Omit `identityId` on the invoke for a full scan, or add it there to limit to one machine identity.
+5. Set **Delete Trigger Account** on Apply (default `false`). When `true`, the workflow deletes the trigger account only after a successful `userEntitlements` patch.
+6. Apply invokes `custom:machine-identity-entitlements-apply`, which reads the identity's current refs and PATCHes the union with the persisted add list. The union is computed in the connector because a workflow `sp:http` body cannot zip the two parallel string arrays into the `{sourceId, entitlementId}` objects the API requires.
 
 ## Local development
 
@@ -69,4 +78,4 @@ Connected invokes need PAT/OAuth scopes for:
 npm run call:op -- payloads/machine-identity-entitlements-offline.json
 ```
 
-Offline fixtures cover two machine identities (id and `cisIdentityId` shapes), opted-in and skipped schemas, and catalog matches. Persist is inhibited in test mode; the response still lists trigger identities that would be written.
+Offline fixtures cover linked machine accounts, source connector configuration, two machine identities, and catalog matches. Persist is inhibited in test mode; the response still lists trigger identities that would be written.

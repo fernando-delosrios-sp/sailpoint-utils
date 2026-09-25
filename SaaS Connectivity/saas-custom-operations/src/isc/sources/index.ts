@@ -2,6 +2,7 @@ export {
     createAccountSchema,
     createSource,
     findSourceByName,
+    getSource,
     getAccountSchema,
     getAccountSchemas,
     isHttpNotFound,

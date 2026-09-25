@@ -1,19 +1,18 @@
-import { SchemaPayload } from '../../isc/sources'
 import { EntitlementRef } from '../../isc/entitlements'
 import { UserEntitlementRef } from '../../isc/machine-identities'
 
-/** Returns the inbound entitlements attribute name when the schema opts in and the attribute exists. */
-export function inboundAttributeName(schema: SchemaPayload | undefined): string | undefined {
-    if (!schema) {
+/** Returns the connector attribute selected by the source's native user-entitlements configuration. */
+export function userEntitlementsAttributeName(
+    source: { connectorAttributes?: Record<string, unknown> } | undefined
+): string | undefined {
+    if (!source) {
         return undefined
     }
-    const raw = schema.configuration?.inboundEntitlements
+    const raw = source.connectorAttributes?.userEntitlements
     if (typeof raw !== 'string' || !raw.trim()) {
         return undefined
     }
-    const name = raw.trim()
-    const present = schema.attributes?.some((attribute) => attribute.name === name)
-    return present ? name : undefined
+    return raw.trim()
 }
 
 /** Normalizes a single- or multi-valued account attribute into trimmed non-blank strings. */

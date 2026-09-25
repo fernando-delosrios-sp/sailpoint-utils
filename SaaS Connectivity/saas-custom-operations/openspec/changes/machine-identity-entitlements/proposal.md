@@ -1,11 +1,11 @@
 ## Why
 
-Machine identities already carry entitlement *values* on correlated source accounts, but those values do not become machine-identity `userEntitlements` unless someone maps them by hand. Operators need a scan that opts in per source account schema, matches catalog entitlements, and hands each identity to an Account Created workflow for apply. This connector already persists per-entity result accounts for that pattern; there is no machine-identity command yet.
+Machine identities already have linked Machine Accounts carrying entitlement *values*, but those values do not become machine-identity `userEntitlements` unless someone maps them by hand. Operators need a scan that follows the Machine Accounts API relation, reads the source's native user-entitlements connector configuration, matches catalog entitlements, and hands each identity to an Account Created workflow for apply.
 
 ## What Changes
 
-- Add **`custom:machine-identity-entitlements`**: evaluate machine identities, read inbound entitlement values from processable underlying accounts, match ISC entitlements, persist one trigger account per identity that has entitlements to add.
-- Opt-in is **inbound entitlements attribute** on the source account schema (`configuration.inboundEntitlements`), single- or multi-valued.
+- Add **`custom:machine-identity-entitlements`**: list machine accounts, follow each `machineIdentity` node, read configured connector entitlement values, source-scope catalog matches, and persist one trigger account per identity that has entitlements to add.
+- Entitlement input uses the source's native `connectorAttributes.userEntitlements` setting and the named field on machine-account `connectorAttributes`.
 - Add thin ISC wrappers for machine identities and entitlement lookup by value; reuse existing accounts and sources clients.
 - Ship a bundled Account Created workflow that PATCHes `userEntitlements` and optionally deletes the trigger account.
 

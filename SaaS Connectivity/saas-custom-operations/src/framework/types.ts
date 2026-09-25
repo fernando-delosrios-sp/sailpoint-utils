@@ -7,6 +7,7 @@ import {
     EntitlementsApi,
     GovernanceGroupsApi,
     IdentityHistoryApi,
+    MachineAccountsApi,
     MachineIdentitiesApi,
     RolesApi,
     SearchApi,
@@ -47,6 +48,7 @@ export interface SailPointClients {
     search: SearchApi
     sodPolicies: SODPoliciesApi
     sodViolations: SODViolationsApi
+    machineAccounts: MachineAccountsApi
     machineIdentities: MachineIdentitiesApi
 }
 

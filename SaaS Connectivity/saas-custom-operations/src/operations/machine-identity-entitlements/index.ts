@@ -1,25 +1,22 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
 import { customOperation, isOfflineContext, OperationSignature } from '../../framework'
-import { escapeODataString, listAccounts } from '../../isc/accounts'
-import { listEntitlementsByValue } from '../../isc/entitlements'
+import { EntitlementRef, listEntitlementsByValue, listEntitlementsByValues } from '../../isc/entitlements'
+import { listMachineAccounts, MachineAccountRecord } from '../../isc/machine-accounts'
 import {
     listMachineIdentities,
+    listMachineIdentitiesOffline,
     MachineIdentityRecord,
     resolveMachineIdentityByIdentityId,
 } from '../../isc/machine-identities'
-import { getAccountSchema, SchemaPayload } from '../../isc/sources'
-import { entitlementsToAdd, extractInboundValues, inboundAttributeName } from './evaluate'
+import { getSource, SourcePayload } from '../../isc/sources'
+import { entitlementsToAdd, extractInboundValues, userEntitlementsAttributeName } from './evaluate'
 import { machineIdentityEntitlementsOperationSchema } from './index.schema'
 import {
-    getOfflineAccountSchema,
-    identityCorrelationKey,
+    getOfflineSource,
     listEntitlementsByValueOffline,
-    listMachineIdentitiesOffline,
-    listOfflineUnderlyingAccounts,
+    listMachineAccountsOffline,
     resolveMachineIdentityByIdentityIdOffline,
 } from './offline-data'
-
-const ACCOUNT_PAGE_SIZE = 250
 
 export interface MachineIdentityEntitlementsOperation extends OperationSignature {
     command: 'custom:machine-identity-entitlements'
@@ -37,57 +34,92 @@ export interface MachineIdentityEntitlementsOperation extends OperationSignature
     }
 }
 
-interface UnderlyingAccount {
-    sourceId?: string
-    attributes?: unknown
-}
+const PERSIST_CONCURRENCY = 5
 
 /** Evaluates machine identities and persists entitlements to add on one trigger account per identity with work. */
 export const machineIdentityEntitlementsOperation = customOperation<MachineIdentityEntitlementsOperation>(
     async (ctx, input) => {
         const offline = isOfflineContext(ctx)
         const identityId = typeof input.identityId === 'string' ? input.identityId.trim() : ''
-        const identities = await loadMachineIdentities(ctx, offline, identityId || undefined)
+        const targetIdentity = identityId
+            ? offline
+                ? resolveMachineIdentityByIdentityIdOffline(identityId)
+                : await resolveMachineIdentityByIdentityId(ctx.sdk.machineIdentities, identityId)
+            : undefined
+        if (identityId && !targetIdentity) {
+            throw new ConnectorError(`Machine identity not found: ${identityId}`)
+        }
 
-        const schemaCache = new Map<string, SchemaPayload | undefined>()
-        let triggerAccountsWritten = 0
+        const allAccounts = offline ? listMachineAccountsOffline() : await listMachineAccounts(ctx.sdk.machineAccounts)
+        const accounts = targetIdentity
+            ? allAccounts.filter((account) => account.machineIdentity.id === targetIdentity.id)
+            : allAccounts
+        const sourceCache = new Map<string, SourcePayload | undefined>()
+        await Promise.all(
+            [...new Set(accounts.map((account) => account.source.id))].map((sourceId) =>
+                loadSource(ctx, offline, sourceId, sourceCache)
+            )
+        )
+        const valuesByAccount = new Map<string, string[]>()
+        const eligibleAccounts = accounts.filter((account) => {
+            const attributeName = userEntitlementsAttributeName(sourceCache.get(account.source.id))
+            if (!attributeName) {
+                return false
+            }
+            const values = extractInboundValues(account.connectorAttributes[attributeName])
+            if (values.length === 0) {
+                return false
+            }
+            valuesByAccount.set(account.id, values)
+            return true
+        })
+        const accountsByIdentity = groupByMachineIdentity(eligibleAccounts)
+        if (accountsByIdentity.size === 0) {
+            ctx.respond({ identitiesScanned: 0, triggerAccountsWritten: 0 })
+            return
+        }
+        const identities = targetIdentity
+            ? [targetIdentity]
+            : offline
+            ? listMachineIdentitiesOffline()
+            : await listMachineIdentities(ctx.sdk.machineIdentities)
+        const identitiesById = new Map(identities.map((identity) => [identity.id, identity]))
+        const allValues = [...new Set([...valuesByAccount.values()].flat())]
+        const batchedCatalog =
+            targetIdentity || offline ? undefined : await listEntitlementsByValues(ctx.sdk.entitlements, allValues)
+        const entitlementCache = new Map<string, EntitlementRef[]>()
+        const pendingWrites: Array<{ persistId: string; identityId: string; toAdd: EntitlementRef[] }> = []
 
-        for (const identity of identities) {
-            const correlationKey = identityCorrelationKey(identity)
-            const accounts = offline
-                ? listOfflineUnderlyingAccounts(correlationKey)
-                : await listUnderlyingAccounts(ctx.sdk.accounts, correlationKey)
-
-            const inboundValues = new Set<string>()
-            for (const account of accounts) {
-                const sourceId = account.sourceId
-                if (!sourceId) {
-                    continue
-                }
-                const schema = await loadSchema(ctx, offline, sourceId, schemaCache)
-                const attributeName = inboundAttributeName(schema)
-                if (!attributeName) {
-                    continue
-                }
-                const attributes = (account.attributes ?? {}) as Record<string, unknown>
-                for (const value of extractInboundValues(attributes[attributeName])) {
-                    inboundValues.add(value)
-                }
+        for (const [machineIdentityId, identityAccounts] of accountsByIdentity) {
+            const identity = identitiesById.get(machineIdentityId)
+            if (!identity) {
+                ctx.log.warn('Machine account references an unavailable machine identity', { machineIdentityId })
+                continue
             }
 
-            const matched = []
-            for (const value of inboundValues) {
-                const catalog = offline
-                    ? listEntitlementsByValueOffline(value)
-                    : await listEntitlementsByValue(ctx.sdk.entitlements, value)
-                if (catalog.length === 0) {
-                    ctx.log.warn('Unmatched inbound entitlement value skipped', {
-                        machineIdentityId: identity.id,
-                        value,
-                    })
-                    continue
+            const matched: EntitlementRef[] = []
+            for (const account of identityAccounts) {
+                const sourceId = account.source.id
+                for (const value of valuesByAccount.get(account.id) ?? []) {
+                    let catalog = entitlementCache.get(value)
+                    if (!catalog) {
+                        catalog = batchedCatalog
+                            ? batchedCatalog.filter((entitlement) => entitlement.value === value)
+                            : offline
+                            ? listEntitlementsByValueOffline(value)
+                            : await listEntitlementsByValue(ctx.sdk.entitlements, value)
+                        entitlementCache.set(value, catalog)
+                    }
+                    if (catalog.length === 0) {
+                        ctx.log.warn('Unmatched machine-account entitlement value skipped', {
+                            machineIdentityId: identity.id,
+                            sourceId,
+                            value,
+                        })
+                        continue
+                    }
+                    matched.push(...catalog)
                 }
-                matched.push(...catalog)
             }
 
             const toAdd = entitlementsToAdd(matched, identity.userEntitlements)
@@ -95,78 +127,62 @@ export const machineIdentityEntitlementsOperation = customOperation<MachineIdent
                 continue
             }
 
-            const persistId = `${ctx.requestId}:${identity.id}`
-            await ctx.persist(persistId, {
-                'machine-identity-entitlements:machine-identity-id': identity.id,
-                'machine-identity-entitlements:entitlement-ids': toAdd.map((entitlement) => entitlement.id),
-                'machine-identity-entitlements:entitlement-source-ids': toAdd.map(
+            pendingWrites.push({ persistId: `${ctx.requestId}:${identity.id}`, identityId: identity.id, toAdd })
+        }
+
+        // Each trigger account waits on its own ISC provisioning task, so a tenant-wide scan only
+        // fits inside the workflow invoke timeout when those waits overlap.
+        await forEachWithConcurrency(pendingWrites, PERSIST_CONCURRENCY, async (write) => {
+            await ctx.persist(write.persistId, {
+                'machine-identity-entitlements:machine-identity-id': write.identityId,
+                'machine-identity-entitlements:entitlement-ids': write.toAdd.map((entitlement) => entitlement.id),
+                'machine-identity-entitlements:entitlement-source-ids': write.toAdd.map(
                     (entitlement) => entitlement.sourceId
                 ),
             })
-            triggerAccountsWritten += 1
-        }
+        })
 
         ctx.respond({
-            identitiesScanned: identities.length,
-            triggerAccountsWritten,
+            identitiesScanned: accountsByIdentity.size,
+            triggerAccountsWritten: pendingWrites.length,
         })
     },
     { operationSchema: machineIdentityEntitlementsOperationSchema }
 )
 
-async function loadMachineIdentities(
-    ctx: { sdk: { machineIdentities: Parameters<typeof listMachineIdentities>[0] } },
-    offline: boolean,
-    identityId?: string
-): Promise<MachineIdentityRecord[]> {
-    if (identityId) {
-        const match = offline
-            ? resolveMachineIdentityByIdentityIdOffline(identityId)
-            : await resolveMachineIdentityByIdentityId(ctx.sdk.machineIdentities, identityId)
-        if (!match) {
-            throw new ConnectorError(`Machine identity not found: ${identityId}`)
+async function forEachWithConcurrency<T>(
+    items: readonly T[],
+    limit: number,
+    run: (item: T) => Promise<void>
+): Promise<void> {
+    let next = 0
+    const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+        while (next < items.length) {
+            await run(items[next++])
         }
-        return [match]
-    }
-
-    return offline ? listMachineIdentitiesOffline() : listMachineIdentities(ctx.sdk.machineIdentities)
+    })
+    await Promise.all(workers)
 }
 
-async function loadSchema(
-    ctx: { sdk: { sources: Parameters<typeof getAccountSchema>[0] } },
+function groupByMachineIdentity(accounts: MachineAccountRecord[]): Map<string, MachineAccountRecord[]> {
+    const grouped = new Map<string, MachineAccountRecord[]>()
+    for (const account of accounts) {
+        const identityId = account.machineIdentity.id
+        grouped.set(identityId, [...(grouped.get(identityId) ?? []), account])
+    }
+    return grouped
+}
+
+async function loadSource(
+    ctx: { sdk: { sources: Parameters<typeof getSource>[0] } },
     offline: boolean,
     sourceId: string,
-    cache: Map<string, SchemaPayload | undefined>
-): Promise<SchemaPayload | undefined> {
+    cache: Map<string, SourcePayload | undefined>
+): Promise<SourcePayload | undefined> {
     if (cache.has(sourceId)) {
         return cache.get(sourceId)
     }
-    const schema = offline ? getOfflineAccountSchema(sourceId) : await getAccountSchema(ctx.sdk.sources, sourceId)
-    cache.set(sourceId, schema)
-    return schema
-}
-
-async function listUnderlyingAccounts(
-    accounts: Parameters<typeof listAccounts>[0],
-    identityKey: string
-): Promise<UnderlyingAccount[]> {
-    const filters = `identityId eq "${escapeODataString(identityKey)}"`
-    const collected: UnderlyingAccount[] = []
-    let offset = 0
-
-    while (true) {
-        const page = await listAccounts(accounts, {
-            filters,
-            limit: ACCOUNT_PAGE_SIZE,
-            offset,
-            detailLevel: 'FULL',
-        })
-        collected.push(...page)
-        if (page.length < ACCOUNT_PAGE_SIZE) {
-            break
-        }
-        offset += ACCOUNT_PAGE_SIZE
-    }
-
-    return collected
+    const source = offline ? getOfflineSource(sourceId) : await getSource(ctx.sdk.sources, sourceId)
+    cache.set(sourceId, source)
+    return source
 }

@@ -1,24 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { entitlementsToAdd, extractInboundValues, inboundAttributeName } from './evaluate'
+import { entitlementsToAdd, extractInboundValues, userEntitlementsAttributeName } from './evaluate'
 
 describe('machine-identity-entitlements evaluation helpers', () => {
-    it('Schema without inboundEntitlements is skipped', () => {
-        expect(
-            inboundAttributeName({
-                name: 'account',
-                attributes: [{ name: 'groups' }],
-            })
-        ).toBeUndefined()
+    it('Source without connectorAttributes.userEntitlements is skipped', () => {
+        expect(userEntitlementsAttributeName({ connectorAttributes: {} })).toBeUndefined()
     })
 
-    it('Unknown attribute name is skipped', () => {
+    it('Configured connector entitlement attribute is trimmed', () => {
         expect(
-            inboundAttributeName({
-                name: 'account',
-                configuration: { inboundEntitlements: 'groups' },
-                attributes: [{ name: 'appRole' }],
+            userEntitlementsAttributeName({
+                connectorAttributes: { userEntitlements: ' spn_app_groups ' },
             })
-        ).toBeUndefined()
+        ).toBe('spn_app_groups')
     })
 
     it('Single-valued inbound attribute is read', () => {

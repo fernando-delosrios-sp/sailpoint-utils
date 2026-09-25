@@ -10,6 +10,7 @@ const OFFLINE_BRANCHING_OPERATIONS = [
     'evaluate-access-request-risk',
     'governance-group-emails',
     'machine-identity-entitlements',
+    'machine-identity-entitlements-apply',
     'preventive-sod-check',
     'sod-remediation',
 ]

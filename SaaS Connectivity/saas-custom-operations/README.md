@@ -53,9 +53,11 @@ The `workflows/` directory contains ISC workflow snapshots you can import as tem
 | [`workflows/SaaS Custom Operations.json`](workflows/SaaS%20Custom%20Operations.json)                       | `custom:example`                            | Manual / external                  | Reference invoke → **Get Accounts** read-back      |
 | [`workflows/SOD Violation - Notification.json`](workflows/SOD%20Violation%20-%20Notification.json)         | `custom:sod-remediation`                    | `idn:sod-violation-created`        | Launch remediation form and email owner            |
 | [`workflows/SOD Violation - Remediation.json`](workflows/SOD%20Violation%20-%20Remediation.json)           | — (post-submit)                             | `sp:form-submitted`                | Revoke access or apply compensating control        |
-| [`workflows/Access Model SOD - Analysis.json`](workflows/Access%20Model%20SOD%20-%20Analysis.json)         | `custom:access-model-sod-remediation`       | `idn:interactive-process-launched` | Catalog scan with intro and summary panels         |
-| [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json) | — (event read-back)                         | `idn:account-created`              | Email access item owner from child persist account |
-| [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json)   | `custom:access-model-sod-remediation-apply` | `sp:form-submitted`                | Apply catalog correction after form submit         |
+| [`workflows/Access Model SOD - Analysis.json`](workflows/Access%20Model%20SOD%20-%20Analysis.json)                     | `custom:access-model-sod-remediation`        | `idn:interactive-process-launched` | Catalog scan with intro and summary panels         |
+| [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json)             | — (event read-back)                          | `idn:account-created`              | Email access item owner from child persist account |
+| [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json)               | `custom:access-model-sod-remediation-apply`  | `sp:form-submitted`                | Apply catalog correction after form submit         |
+| [`workflows/Machine Identity Entitlements - Scan.json`](workflows/Machine%20Identity%20Entitlements%20-%20Scan.json)   | `custom:machine-identity-entitlements`       | `idn:interactive-process-launched` | Scan machine identities with intro and outcome     |
+| [`workflows/Machine Identity Entitlements - Apply.json`](workflows/Machine%20Identity%20Entitlements%20-%20Apply.json) | — (apply from persist)                       | `idn:account-created`              | Union persisted ids onto `userEntitlements`        |
 
 Shared invoke pattern (all connector-call workflows):
 
@@ -524,5 +526,7 @@ workflows/
   Access Model SOD - Analysis.json         # custom:access-model-sod-remediation scan
   Access Model SOD - Notification.json     # Child-account email on persist
   Access Model SOD - Remediation.json      # custom:access-model-sod-remediation-apply
+  Machine Identity Entitlements - Scan.json  # custom:machine-identity-entitlements interactive
+  Machine Identity Entitlements - Apply.json # Account Created → PATCH userEntitlements
 templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```

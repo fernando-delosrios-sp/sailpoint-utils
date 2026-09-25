@@ -2,9 +2,14 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { _withConfig } from '@sailpoint/connector-sdk'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { listEntitlementsByValue } from '../../isc/entitlements'
-import { listMachineIdentities, resolveMachineIdentityByIdentityId } from '../../isc/machine-identities'
-import { getAccountSchema } from '../../isc/sources'
+import { listEntitlementsByValue, listEntitlementsByValues } from '../../isc/entitlements'
+import { listMachineAccounts, MachineAccountRecord } from '../../isc/machine-accounts'
+import {
+    getMachineIdentity,
+    listMachineIdentities,
+    resolveMachineIdentityByIdentityId,
+} from '../../isc/machine-identities'
+import { getSource } from '../../isc/sources'
 import { machineIdentityEntitlementsOperation } from './index'
 
 const workflowConfig = {
@@ -19,10 +24,16 @@ const listAccountsV1 = vi.fn()
 const getSourceSchemasV1 = vi.fn()
 const resolveSourceByName = vi.fn()
 
+vi.mock('../../isc/machine-accounts', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../isc/machine-accounts')>()
+    return { ...actual, listMachineAccounts: vi.fn() }
+})
+
 vi.mock('../../isc/machine-identities', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../isc/machine-identities')>()
     return {
         ...actual,
+        getMachineIdentity: vi.fn(),
         listMachineIdentities: vi.fn(),
         resolveMachineIdentityByIdentityId: vi.fn(),
     }
@@ -33,6 +44,7 @@ vi.mock('../../isc/entitlements', async (importOriginal) => {
     return {
         ...actual,
         listEntitlementsByValue: vi.fn(),
+        listEntitlementsByValues: vi.fn(),
     }
 })
 
@@ -40,7 +52,7 @@ vi.mock('../../isc/sources', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../isc/sources')>()
     return {
         ...actual,
-        getAccountSchema: vi.fn(),
+        getSource: vi.fn(),
     }
 })
 
@@ -68,6 +80,7 @@ vi.mock('../../framework/sdk-factory', () => ({
         },
         entitlements: { listEntitlementsV1: vi.fn() },
         machineIdentities: { listMachineIdentitiesV1: vi.fn(), getMachineIdentityV1: vi.fn() },
+        machineAccounts: { listMachineAccountsV1: vi.fn() },
         tasks: {
             getTaskStatusV1: vi.fn().mockResolvedValue({
                 data: { completed: '2026-08-11T10:00:00Z', completionStatus: 'SUCCESS', messages: [] },
@@ -76,11 +89,13 @@ vi.mock('../../framework/sdk-factory', () => ({
     })),
 }))
 
+const listMachineAccountsMock = vi.mocked(listMachineAccounts)
+const getMachineIdentityMock = vi.mocked(getMachineIdentity)
 const listMachineIdentitiesMock = vi.mocked(listMachineIdentities)
 const resolveMachineIdentityMock = vi.mocked(resolveMachineIdentityByIdentityId)
 const listEntitlementsByValueMock = vi.mocked(listEntitlementsByValue)
-const getAccountSchemaMock = vi.mocked(getAccountSchema)
-const underlyingAccountsByIdentity = new Map<string, Array<{ sourceId: string; attributes: Record<string, unknown> }>>()
+const listEntitlementsByValuesMock = vi.mocked(listEntitlementsByValues)
+const getSourceMock = vi.mocked(getSource)
 const RESULT_SOURCE_SCHEMA = {
     id: 'schema-1',
     name: 'account',
@@ -105,13 +120,13 @@ async function invokeConnected(input: Record<string, unknown>, res = { send: vi.
     return res
 }
 
-function stubInboundSchema(schema: { configuration?: Record<string, unknown>; attributes?: Array<{ name: string }> }) {
-    getAccountSchemaMock.mockImplementation(async (_sources, sourceId: string) => {
-        if (sourceId === 'source-123') {
-            return RESULT_SOURCE_SCHEMA
-        }
-        return schema
-    })
+function machineAccount(
+    id: string,
+    machineIdentityId: string,
+    sourceId: string,
+    connectorAttributes: Record<string, unknown>
+): MachineAccountRecord {
+    return { id, machineIdentity: { id: machineIdentityId }, source: { id: sourceId }, connectorAttributes }
 }
 
 describe('custom:machine-identity-entitlements', () => {
@@ -119,20 +134,19 @@ describe('custom:machine-identity-entitlements', () => {
         persistedAccounts.clear()
         createAccountV1.mockReset()
         listAccountsV1.mockReset()
+        listMachineAccountsMock.mockReset()
+        getMachineIdentityMock.mockReset()
         listMachineIdentitiesMock.mockReset()
         resolveMachineIdentityMock.mockReset()
         listEntitlementsByValueMock.mockReset()
-        getAccountSchemaMock.mockReset()
-        getAccountSchemaMock.mockImplementation(async (_sources, sourceId: string) => {
-            if (sourceId === 'source-123') {
-                return RESULT_SOURCE_SCHEMA
-            }
-            return {
-                configuration: { inboundEntitlements: 'appRole' },
-                attributes: [{ name: 'appRole' }],
-            }
+        listEntitlementsByValuesMock.mockReset()
+        getSourceMock.mockReset()
+        getSourceMock.mockResolvedValue({
+            name: 'Source',
+            type: 'SOURCE',
+            owner: { type: 'IDENTITY', id: 'owner-1' },
+            connectorAttributes: { userEntitlements: 'appRole' },
         })
-        underlyingAccountsByIdentity.clear()
         resolveSourceByName.mockResolvedValue('source-123')
         getSourceSchemasV1.mockResolvedValue({
             data: [
@@ -171,26 +185,22 @@ describe('custom:machine-identity-entitlements', () => {
     })
 
     it('Full scan persists one trigger account per identity with work', async () => {
-        listMachineIdentitiesMock.mockResolvedValue([
-            { id: 'mi-1', cisIdentityId: 'cis-1', userEntitlements: [] },
-            { id: 'mi-2', cisIdentityId: 'cis-2', userEntitlements: [] },
+        listMachineAccountsMock.mockResolvedValue([
+            machineAccount('ma-1', 'mi-1', 'src-1', { appRole: 'CN=Admins' }),
+            machineAccount('ma-2', 'mi-2', 'src-1', { appRole: 'CN=A' }),
         ])
-        underlyingAccountsByIdentity.set('cis-1', [{ sourceId: 'src-1', attributes: { appRole: 'CN=Admins' } }])
-        underlyingAccountsByIdentity.set('cis-2', [{ sourceId: 'src-1', attributes: { appRole: 'CN=A' } }])
-        stubInboundSchema({
-            configuration: { inboundEntitlements: 'appRole' },
-            attributes: [{ name: 'appRole' }],
-        })
-        listEntitlementsByValueMock.mockImplementation(async (_client, value) => {
-            if (value === 'CN=Admins') {
-                return [{ id: 'ent-1', sourceId: 'src-1', value }]
-            }
-            return [{ id: 'ent-2', sourceId: 'src-1', value }]
-        })
+        listMachineIdentitiesMock.mockResolvedValue([
+            { id: 'mi-1', userEntitlements: [] },
+            { id: 'mi-2', userEntitlements: [] },
+        ])
+        listEntitlementsByValuesMock.mockResolvedValue([
+            { id: 'ent-1', sourceId: 'src-1', value: 'CN=Admins' },
+            { id: 'ent-2', sourceId: 'src-1', value: 'CN=A' },
+        ])
 
         const res = await invokeConnected({ requestId: 'req-scan' })
 
-        expect(listMachineIdentitiesMock).toHaveBeenCalled()
+        expect(listMachineAccountsMock).toHaveBeenCalled()
         expect(resolveMachineIdentityMock).not.toHaveBeenCalled()
         expect([...persistedAccounts.keys()].sort()).toEqual(['req-scan:mi-1', 'req-scan:mi-2'])
         expect(res.send).toHaveBeenCalledWith(
@@ -201,19 +211,103 @@ describe('custom:machine-identity-entitlements', () => {
         )
     })
 
+    it('Full scan resolves identities and entitlement values in batches', async () => {
+        listMachineAccountsMock.mockResolvedValue([
+            machineAccount('ma-1', 'mi-1', 'src-enabled', { appRole: 'CN=A' }),
+            machineAccount('ma-2', 'mi-2', 'src-enabled', { appRole: 'CN=B' }),
+            machineAccount('ma-3', 'mi-skipped', 'src-disabled', { appRole: 'CN=Ignored' }),
+        ])
+        getSourceMock.mockImplementation(async (_client, sourceId) => ({
+            name: 'Source',
+            type: 'SOURCE',
+            owner: { type: 'IDENTITY', id: 'owner-1' },
+            connectorAttributes: sourceId === 'src-enabled' ? { userEntitlements: 'appRole' } : {},
+        }))
+        listMachineIdentitiesMock.mockResolvedValue([
+            { id: 'mi-1', userEntitlements: [] },
+            { id: 'mi-2', userEntitlements: [] },
+        ])
+        listEntitlementsByValuesMock.mockResolvedValue([
+            { id: 'ent-a', sourceId: 'src-enabled', value: 'CN=A' },
+            { id: 'ent-b', sourceId: 'src-enabled', value: 'CN=B' },
+        ])
+
+        await invokeConnected({ requestId: 'req-batched' })
+
+        expect(getMachineIdentityMock).not.toHaveBeenCalled()
+        expect(listMachineIdentitiesMock).toHaveBeenCalledTimes(1)
+        expect(listEntitlementsByValuesMock).toHaveBeenCalledWith(expect.anything(), ['CN=A', 'CN=B'])
+        expect([...persistedAccounts.keys()].sort()).toEqual(['req-batched:mi-1', 'req-batched:mi-2'])
+    })
+
+    it('Trigger accounts are persisted concurrently', async () => {
+        const identityCount = 12
+        listMachineAccountsMock.mockResolvedValue(
+            Array.from({ length: identityCount }, (_unused, index) =>
+                machineAccount(`ma-${index}`, `mi-${index}`, 'src-1', { appRole: `CN=${index}` })
+            )
+        )
+        listMachineIdentitiesMock.mockResolvedValue(
+            Array.from({ length: identityCount }, (_unused, index) => ({ id: `mi-${index}`, userEntitlements: [] }))
+        )
+        listEntitlementsByValuesMock.mockResolvedValue(
+            Array.from({ length: identityCount }, (_unused, index) => ({
+                id: `ent-${index}`,
+                sourceId: 'src-1',
+                value: `CN=${index}`,
+            }))
+        )
+        let inFlight = 0
+        let peakInFlight = 0
+        createAccountV1.mockImplementation(async ({ accountAttributesCreate }) => {
+            inFlight += 1
+            peakInFlight = Math.max(peakInFlight, inFlight)
+            await new Promise((resolve) => setTimeout(resolve, 5))
+            const attributes = accountAttributesCreate.attributes as Record<string, unknown>
+            persistedAccounts.set(String(attributes.id), attributes)
+            inFlight -= 1
+            return { data: { id: 'task-create-1' } }
+        })
+
+        await invokeConnected({ requestId: 'req-parallel' })
+
+        expect(persistedAccounts.size).toBe(identityCount)
+        expect(peakInFlight).toBeGreaterThan(1)
+        expect(peakInFlight).toBeLessThanOrEqual(5)
+    })
+
+    it('Source schema is ensured once per invoke', async () => {
+        listMachineAccountsMock.mockResolvedValue([
+            machineAccount('ma-1', 'mi-1', 'src-1', { appRole: 'CN=A' }),
+            machineAccount('ma-2', 'mi-2', 'src-1', { appRole: 'CN=B' }),
+            machineAccount('ma-3', 'mi-3', 'src-1', { appRole: 'CN=C' }),
+        ])
+        listMachineIdentitiesMock.mockResolvedValue([
+            { id: 'mi-1', userEntitlements: [] },
+            { id: 'mi-2', userEntitlements: [] },
+            { id: 'mi-3', userEntitlements: [] },
+        ])
+        listEntitlementsByValuesMock.mockResolvedValue([
+            { id: 'ent-a', sourceId: 'src-1', value: 'CN=A' },
+            { id: 'ent-b', sourceId: 'src-1', value: 'CN=B' },
+            { id: 'ent-c', sourceId: 'src-1', value: 'CN=C' },
+        ])
+
+        await invokeConnected({ requestId: 'req-schema-once' })
+
+        expect(persistedAccounts.size).toBe(3)
+        expect(getSourceSchemasV1).toHaveBeenCalledTimes(1)
+    })
+
     it('Empty delta skips persist', async () => {
+        listMachineAccountsMock.mockResolvedValue([machineAccount('ma-1', 'mi-1', 'src-1', { appRole: 'CN=Admins' })])
         listMachineIdentitiesMock.mockResolvedValue([
             {
                 id: 'mi-1',
                 userEntitlements: [{ sourceId: 'src-1', entitlementId: 'ent-1' }],
             },
         ])
-        underlyingAccountsByIdentity.set('mi-1', [{ sourceId: 'src-1', attributes: { appRole: 'CN=Admins' } }])
-        stubInboundSchema({
-            configuration: { inboundEntitlements: 'appRole' },
-            attributes: [{ name: 'appRole' }],
-        })
-        listEntitlementsByValueMock.mockResolvedValue([{ id: 'ent-1', sourceId: 'src-1', value: 'CN=Admins' }])
+        listEntitlementsByValuesMock.mockResolvedValue([{ id: 'ent-1', sourceId: 'src-1', value: 'CN=Admins' }])
 
         const res = await invokeConnected({ requestId: 'req-empty-delta' })
 
@@ -222,7 +316,7 @@ describe('custom:machine-identity-entitlements', () => {
     })
 
     it('Tenant scan with no work succeeds', async () => {
-        listMachineIdentitiesMock.mockResolvedValue([{ id: 'mi-1', userEntitlements: [] }])
+        listMachineAccountsMock.mockResolvedValue([])
 
         const res = await invokeConnected({ requestId: 'req-no-work' })
 
@@ -234,7 +328,7 @@ describe('custom:machine-identity-entitlements', () => {
         resolveMachineIdentityMock.mockResolvedValue(undefined)
         const res = await invokeConnected({ requestId: 'req-unknown', identityId: 'missing' })
 
-        expect(listMachineIdentitiesMock).not.toHaveBeenCalled()
+        expect(listMachineAccountsMock).not.toHaveBeenCalled()
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 status: 'failed',
@@ -246,37 +340,31 @@ describe('custom:machine-identity-entitlements', () => {
     it('Optional identityId limits the scan', async () => {
         resolveMachineIdentityMock.mockResolvedValue({
             id: 'mi-1',
-            cisIdentityId: 'cis-1',
             userEntitlements: [],
         })
-        underlyingAccountsByIdentity.set('cis-1', [{ sourceId: 'src-1', attributes: { appRole: 'CN=Admins' } }])
-        stubInboundSchema({
-            configuration: { inboundEntitlements: 'appRole' },
-            attributes: [{ name: 'appRole' }],
-        })
+        listMachineAccountsMock.mockResolvedValue([
+            machineAccount('ma-1', 'mi-1', 'src-1', { appRole: 'CN=Admins' }),
+            machineAccount('ma-2', 'mi-2', 'src-1', { appRole: 'CN=Other' }),
+        ])
         listEntitlementsByValueMock.mockResolvedValue([{ id: 'ent-1', sourceId: 'src-1' }])
 
-        await invokeConnected({ requestId: 'req-one', identityId: 'cis-1' })
+        await invokeConnected({ requestId: 'req-one', identityId: 'mi-1' })
 
-        expect(resolveMachineIdentityMock).toHaveBeenCalledWith(expect.anything(), 'cis-1')
-        expect(listMachineIdentitiesMock).not.toHaveBeenCalled()
-        expect(listAccountsV1).toHaveBeenCalledWith(expect.objectContaining({ filters: 'identityId eq "cis-1"' }))
+        expect(resolveMachineIdentityMock).toHaveBeenCalledWith(expect.anything(), 'mi-1')
+        expect(listEntitlementsByValueMock).toHaveBeenCalledTimes(1)
         expect([...persistedAccounts.keys()]).toEqual(['req-one:mi-1'])
     })
 
-    it('Values union across processable accounts', async () => {
-        resolveMachineIdentityMock.mockResolvedValue({ id: 'mi-1', cisIdentityId: 'cis-1', userEntitlements: [] })
-        underlyingAccountsByIdentity.set('cis-1', [
-            { sourceId: 'src-1', attributes: { appRole: 'CN=A' } },
-            { sourceId: 'src-2', attributes: { appRole: 'CN=B' } },
+    it('Values union across linked machine accounts', async () => {
+        resolveMachineIdentityMock.mockResolvedValue({ id: 'mi-1', userEntitlements: [] })
+        listMachineAccountsMock.mockResolvedValue([
+            machineAccount('ma-1', 'mi-1', 'src-1', { appRole: 'CN=A' }),
+            machineAccount('ma-2', 'mi-1', 'src-2', { appRole: 'CN=B' }),
         ])
-        stubInboundSchema({
-            configuration: { inboundEntitlements: 'appRole' },
-            attributes: [{ name: 'appRole' }],
+        listEntitlementsByValueMock.mockImplementation(async (_client, value) => {
+            const sourceId = value === 'CN=A' ? 'src-1' : 'src-2'
+            return [{ id: value === 'CN=A' ? 'ent-a' : 'ent-b', sourceId, value }]
         })
-        listEntitlementsByValueMock.mockImplementation(async (_client, value) => [
-            { id: value === 'CN=A' ? 'ent-a' : 'ent-b', sourceId: 'src-1', value },
-        ])
 
         await invokeConnected({ requestId: 'req-union', identityId: 'mi-1' })
 
@@ -287,13 +375,9 @@ describe('custom:machine-identity-entitlements', () => {
 
     it('Unmatched value is skipped', async () => {
         resolveMachineIdentityMock.mockResolvedValue({ id: 'mi-1', userEntitlements: [] })
-        underlyingAccountsByIdentity.set('mi-1', [
-            { sourceId: 'src-1', attributes: { groups: ['CN=Admins', 'no-such-entitlement'] } },
+        listMachineAccountsMock.mockResolvedValue([
+            machineAccount('ma-1', 'mi-1', 'src-1', { appRole: ['CN=Admins', 'no-such-entitlement'] }),
         ])
-        stubInboundSchema({
-            configuration: { inboundEntitlements: 'groups' },
-            attributes: [{ name: 'groups' }],
-        })
         listEntitlementsByValueMock.mockImplementation(async (_client, value) =>
             value === 'CN=Admins' ? [{ id: 'ent-1', sourceId: 'src-1' }] : []
         )
@@ -308,15 +392,13 @@ describe('custom:machine-identity-entitlements', () => {
 
     it('Output contract is identity and parallel entitlement arrays', async () => {
         resolveMachineIdentityMock.mockResolvedValue({ id: 'mi-1', userEntitlements: [] })
-        underlyingAccountsByIdentity.set('mi-1', [{ sourceId: 'src-1', attributes: { groups: ['CN=A', 'CN=B'] } }])
-        stubInboundSchema({
-            configuration: { inboundEntitlements: 'groups' },
-            attributes: [{ name: 'groups' }],
-        })
+        listMachineAccountsMock.mockResolvedValue([
+            machineAccount('ma-1', 'mi-1', 'src-1', { appRole: ['CN=A', 'CN=B'] }),
+        ])
         listEntitlementsByValueMock.mockImplementation(async (_client, value) => [
             {
                 id: value === 'CN=A' ? 'ent-a' : 'ent-b',
-                sourceId: value === 'CN=A' ? 'src-1' : 'src-2',
+                sourceId: 'src-1',
                 value,
             },
         ])
@@ -329,34 +411,61 @@ describe('custom:machine-identity-entitlements', () => {
         expect(account?.['machine-identity-entitlements:machine-identity-id']).toBe('mi-1')
         expect(ids).toHaveLength(2)
         expect(sources).toHaveLength(2)
-        expect(ids[0] === 'ent-a' ? sources[0] : sources[1]).toBe('src-1')
+        expect(sources).toEqual(['src-1', 'src-1'])
         expect(account?.operationName).toBe('custom:machine-identity-entitlements')
     })
 
-    it('Schema without inboundEntitlements is skipped during invoke', async () => {
+    it('Source without connectorAttributes.userEntitlements is skipped during invoke', async () => {
         resolveMachineIdentityMock.mockResolvedValue({ id: 'mi-1', userEntitlements: [] })
-        underlyingAccountsByIdentity.set('mi-1', [{ sourceId: 'src-1', attributes: { appRole: 'CN=Admins' } }])
-        stubInboundSchema({ attributes: [{ name: 'appRole' }] })
+        listMachineAccountsMock.mockResolvedValue([machineAccount('ma-1', 'mi-1', 'src-1', { appRole: 'CN=Admins' })])
+        getSourceMock.mockResolvedValue({
+            name: 'Source',
+            type: 'SOURCE',
+            owner: { type: 'IDENTITY', id: 'owner-1' },
+            connectorAttributes: {},
+        })
 
-        const res = await invokeConnected({ requestId: 'req-skip-schema', identityId: 'mi-1' })
+        const res = await invokeConnected({ requestId: 'req-skip-source', identityId: 'mi-1' })
 
         expect(listEntitlementsByValueMock).not.toHaveBeenCalled()
         expect(persistedAccounts.size).toBe(0)
         expect(res.send).toHaveBeenCalledWith(expect.objectContaining({ status: 'success' }))
     })
 
-    it('Unknown attribute name is skipped during invoke', async () => {
+    it('Configured connector attribute is read from the machine account', async () => {
         resolveMachineIdentityMock.mockResolvedValue({ id: 'mi-1', userEntitlements: [] })
-        underlyingAccountsByIdentity.set('mi-1', [{ sourceId: 'src-1', attributes: { appRole: 'CN=Admins' } }])
-        stubInboundSchema({
-            configuration: { inboundEntitlements: 'groups' },
-            attributes: [{ name: 'appRole' }],
+        listMachineAccountsMock.mockResolvedValue([
+            machineAccount('ma-1', 'mi-1', 'src-1', { appRole: 'ignored', spn_app_groups: 'group-1' }),
+        ])
+        getSourceMock.mockResolvedValue({
+            name: 'Source',
+            type: 'SOURCE',
+            owner: { type: 'IDENTITY', id: 'owner-1' },
+            connectorAttributes: { userEntitlements: 'spn_app_groups' },
         })
+        listEntitlementsByValueMock.mockResolvedValue([{ id: 'ent-1', sourceId: 'src-1' }])
 
-        await invokeConnected({ requestId: 'req-skip-attr', identityId: 'mi-1' })
+        await invokeConnected({ requestId: 'req-configured', identityId: 'mi-1' })
 
-        expect(listEntitlementsByValueMock).not.toHaveBeenCalled()
-        expect(persistedAccounts.size).toBe(0)
+        expect(listEntitlementsByValueMock).toHaveBeenCalledWith(expect.anything(), 'group-1')
+        expect(persistedAccounts.size).toBe(1)
+    })
+
+    it('Entitlement value matches across every source that carries it', async () => {
+        resolveMachineIdentityMock.mockResolvedValue({ id: 'mi-1', userEntitlements: [] })
+        listMachineAccountsMock.mockResolvedValue([
+            machineAccount('ma-1', 'mi-1', 'src-nhi', { appRole: 'shared-value' }),
+        ])
+        listEntitlementsByValueMock.mockResolvedValue([
+            { id: 'ent-users', sourceId: 'src-users' },
+            { id: 'ent-nhi', sourceId: 'src-nhi' },
+        ])
+
+        await invokeConnected({ requestId: 'req-source', identityId: 'mi-1' })
+
+        const account = persistedAccounts.get('req-source:mi-1')
+        expect(account?.['machine-identity-entitlements:entitlement-ids']).toEqual(['ent-users', 'ent-nhi'])
+        expect(account?.['machine-identity-entitlements:entitlement-source-ids']).toEqual(['src-users', 'src-nhi'])
     })
 
     it('Offline invoke supported', async () => {
@@ -370,7 +479,7 @@ describe('custom:machine-identity-entitlements', () => {
                 res as never
             )
 
-            expect(listMachineIdentitiesMock).not.toHaveBeenCalled()
+            expect(listMachineAccountsMock).not.toHaveBeenCalled()
             expect(listEntitlementsByValueMock).not.toHaveBeenCalled()
             expect(res.send).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -415,10 +524,10 @@ describe('custom:machine-identity-entitlements', () => {
         expect(readme).toContain('machine-identity-entitlements:machine-identity-id')
         expect(readme).toContain('machine-identity-entitlements:entitlement-ids')
         expect(readme).toContain('machine-identity-entitlements:entitlement-source-ids')
-        expect(readme).toContain('inboundEntitlements')
+        expect(readme).toContain('connectorAttributes.userEntitlements')
         expect(readme).toMatch(/workflow/i)
         expect(readme).toMatch(/scope/i)
-        expect(readme).toContain('identityId eq')
+        expect(readme).toContain('machineIdentity')
     })
 
     it('C4 diagram remains linked from the change design', () => {

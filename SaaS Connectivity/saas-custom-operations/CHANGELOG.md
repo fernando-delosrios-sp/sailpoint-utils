@@ -6,9 +6,11 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ### ✨ New Features
 
--   **Machine identities can pick up entitlements from their source accounts** — `custom:machine-identity-entitlements` scans machine identities, reads opted-in account attributes, matches catalog entitlements by value, and writes one trigger account per identity that still needs `userEntitlements`. Opt in on the source account schema with `configuration.inboundEntitlements`. Omit `identityId` for the whole tenant, or pass one machine identity id / `cisIdentityId`. Empty add lists are not persisted.
+-   **Machine identities can pick up entitlements from linked machine accounts** — `custom:machine-identity-entitlements` pages Machine Accounts, follows each `machineIdentity` node, reads the source's native `connectorAttributes.userEntitlements` field from account `connectorAttributes`, and matches catalog entitlements by value across every source. One Entra group is aggregated as a distinct entitlement per source and per membership type, so a single group value can add several refs. It writes one trigger account per identity that still needs `userEntitlements`. Omit `identityId` for the whole tenant, or pass one machine identity id / `cisIdentityId`. Empty add lists are not persisted.
 
--   **Account Created applies the add list as a union** — import `workflows/Machine Identity Entitlements - Apply.json`. It GETs the machine identity, PATCHes `userEntitlements` with existing refs plus the persisted ids, and deletes the trigger account only when **Delete Trigger Account** is true (default false).
+-   **Account Created applies the add list as a union** — import `workflows/Machine Identity Entitlements - Apply.json`. It invokes the new `custom:machine-identity-entitlements-apply` command, which reads the identity's current `userEntitlements` and PATCHes the union with the persisted ids, then deletes the trigger account only when **Delete Trigger Account** is true (default false). The union is computed in the connector: a workflow `sp:http` body cannot zip the persisted entitlement id and source id arrays into the `{sourceId, entitlementId}` objects the machine identity API requires, and a result-source account can only carry strings and string arrays. Re-applying an add list that is already present is a no-op rather than a replacement.
+
+-   **Interactive scan wrapper** — import `workflows/Machine Identity Entitlements - Scan.json`. It launches as an interactive process, invokes `custom:machine-identity-entitlements`, and reports whether trigger accounts were written. Each run uses `requestId` `mie:{interactiveProcessId}` so Apply can fire on Account Created again.
 
 ---
 

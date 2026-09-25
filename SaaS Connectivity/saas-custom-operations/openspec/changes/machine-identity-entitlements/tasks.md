@@ -11,6 +11,7 @@
 - [x] 2.3 Add `offline-data.ts` fixtures
 - [x] 2.4 Unit tests — list paginates (scenario: List paginates machine identities)
 - [x] 2.5 Unit tests — get returns user entitlements (scenario: Get returns user entitlements)
+- [x] 2.6 Add paginated `src/isc/machine-accounts/` wrapper that maps the authoritative `machineIdentity` node and `connectorAttributes`
 - [x] 2.6 Unit tests — list API failure throws ConnectorError (scenario: List API failure surfaces error)
 - [x] 2.7 Unit tests — resolve by id and cisIdentityId (scenarios: Match by machine identity id; Match by cisIdentityId)
 - [x] 2.8 Unit tests — unknown identityId not found (scenario: Unknown identityId is not found)
@@ -29,10 +30,10 @@
 ## 4. Machine identity entitlements operation
 
 - [x] 4.1 Copy `src/operations/_template/` to `src/operations/machine-identity-entitlements/` with `command: 'custom:machine-identity-entitlements'`, optional input `identityId`, namespaced `output`, optional `response` counts
-- [x] 4.2 Implement schema opt-in: cache account schema by sourceId; skip missing/blank `configuration.inboundEntitlements` or missing attribute (scenarios: Schema without inboundEntitlements is skipped; Unknown attribute name is skipped)
-- [x] 4.3 Implement value extraction for single- and multi-valued attributes, trim/drop blanks, union across processable underlying accounts (scenarios: Single-valued inbound attribute is read; Multi-valued inbound attribute drops blanks; Values union across processable accounts)
-- [x] 4.4 List underlying accounts with `identityId eq` using `cisIdentityId ?? id`; document mapping in README if live tenant differs (design D8)
-- [x] 4.5 Match catalog entitlements, dedupe, compute entitlements to add vs `userEntitlements` (scenarios: Value matches catalog entitlement; Unmatched value is skipped; Already assigned entitlement omitted; Duplicate values collapse)
+- [x] 4.2 Cache each source and read its native `connectorAttributes.userEntitlements`; skip missing/blank configuration (scenario: Source without connectorAttributes.userEntitlements is skipped)
+- [x] 4.3 Read that key from machine-account `connectorAttributes`; normalize single/multi values and trim/drop blanks (scenarios: Single-valued inbound attribute is read; Multi-valued inbound attribute drops blanks)
+- [x] 4.4 Drive the scan from Machine Accounts and group by the response `machineIdentity.id`; targeted invokes retain only accounts linked to the resolved identity (scenario: Values union across linked machine accounts)
+- [x] 4.5 Match catalog entitlements by value across every source, dedupe, and compute entitlements to add vs `userEntitlements` (scenarios: Value matches catalog entitlement; Entitlement value matches across every source that carries it; Unmatched value is skipped; Already assigned entitlement omitted; Duplicate values collapse)
 - [x] 4.6 Persist only non-empty add lists at `{requestId}:{machineIdentityId}` with parallel entitlement-ids and entitlement-source-ids (scenarios: Full scan persists one trigger account per identity with work; Empty delta skips persist; Output contract is identity and parallel entitlement arrays)
 - [x] 4.7 Optional `identityId`: resolve one MI or ConnectorError; omit `identityId` for full scan; empty work succeeds with no persist (scenarios: Optional identityId limits the scan; Targeted unknown identity rejected; Tenant scan with no work succeeds)
 - [x] 4.8 Offline path uses canned data without ISC calls (scenario: Offline invoke supported)
@@ -40,10 +41,11 @@
 
 ## 5. Bundled apply workflow
 
-- [x] 5.1 Add `workflows/` export: Account Created on result source, filter `operationName == custom:machine-identity-entitlements` (scenario: Trigger filters on operationName)
+- [x] 5.1 Add `workflows/` export: Account Created on result source, JSONPath filter `$.account.attributes[?(@.operationName == "custom:machine-identity-entitlements")]` (scenario: Trigger filters on operationName)
 - [x] 5.2 GET machine identity then PATCH `userEntitlements` as union of existing + persisted add list (scenario: Patch unions user entitlements)
 - [x] 5.3 Workflow variable Delete Trigger Account default false; delete trigger account only after successful patch when true (scenarios: Delete trigger account off by default; Delete trigger account after successful patch)
 - [x] 5.4 `workflows.spec.ts` asserting trigger filter, PATCH union (not replace-only), and delete gating
+- [x] 5.5 Use the live `/v2026/machine-identities/{id}` path for GET and PATCH
 
 ## 6. Payloads and local invoke
 

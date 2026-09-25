@@ -7,6 +7,7 @@
 		"custom:example",
 		"custom:governance-group-emails",
 		"custom:machine-identity-entitlements",
+		"custom:machine-identity-entitlements-apply",
 		"custom:preventive-sod-check",
 		"custom:sod-remediation"
 	],
