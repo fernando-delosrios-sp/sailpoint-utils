@@ -6,6 +6,7 @@ Interactive ISC process that lets an operator pick an existing source and run on
 
 - **Account Aggregation** (optimised or full)
 - **Entitlement Aggregation**
+- **Refresh Identities** (identity profile attached to the source)
 - **Source Reset** (accounts and/or entitlements in ISC)
 
 This package is a reusable export. Tenant IDs, OAuth Parameter Storage bindings, and owners are placeholders. Re-bind them after import.
@@ -13,20 +14,24 @@ This package is a reusable export. Tenant IDs, OAuth Parameter Storage bindings,
 ## Overview
 
 1. The workflow lists up to **250** sources (`GET /v2026/sources?limit=250&sorters=name`).
-2. The operator selects a source and an action. Matching option toggles enable on the form:
+2. The operator selects a source and an action. Matching options enable on the form:
    - Account Aggregation → **Optimised** (default Yes)
+   - Refresh Identities → a short note; no extra toggles
    - Source Reset → **Accounts** / **Entitlements** (default No), plus a warning
-3. The workflow calls the matching source API and reports Status/Detail on failure.
+3. The workflow calls the matching API and reports Status/Detail on failure.
 
 | Action | Toggle | API |
 |---|---|---|
 | Account Aggregation | Optimised = Yes | `POST /v2026/sources/{id}/load-accounts` (optimised / empty body) |
 | Account Aggregation | Optimised = No | `POST /v2026/sources/{id}/load-accounts` with `{"disableOptimization": true}` |
 | Entitlement Aggregation | — | `POST /v2026/sources/{id}/load-entitlements` |
+| Refresh Identities | — | `GET /v2026/sources/{id}/connections`, then `POST /v2026/identity-profiles/{profileId}/process-identities` for each attached profile |
 | Source Reset | Accounts = Yes | `POST /v2026/sources/{id}/remove-accounts` |
 | Source Reset | Entitlements = Yes | `POST /v2026/entitlements/reset/sources/{id}` |
 
 Both reset toggles may be Yes; accounts run first, then entitlements. Source Reset with both toggles No ends with an error message and calls no API.
+
+Refresh Identities uses the source connections list (`identityProfiles`) as the profiles attached to that source. Each one is refreshed. An empty list notifies the operator that no identity profile was found and calls no refresh API. `process-identities` returns 202 and runs asynchronously: it updates attributes from the profile mappings, correlates the manager, applies the lifecycle state, and evaluates roles.
 
 ISC Search has no sources index, so the source picker is filled from the list API (`FORM_INPUT`), not `SEARCH_V2`.
 
@@ -60,6 +65,11 @@ flowchart TD
   opt -->|yes| loadOpt["POST load-accounts"]
   opt -->|no| loadFull["POST load-accounts disableOptimization"]
   action -->|entitlementAggregation| loadEnt["POST load-entitlements"]
+  action -->|refreshIdentities| connections["GET sources/id/connections"]
+  connections -->|fail| connFail[Failure: find identity profile]
+  connections --> profile{Profile attached?}
+  profile -->|no| noProfile[No identity profile found]
+  profile -->|yes| refresh["POST process-identities"]
   action -->|sourceReset| resetPick{Any reset toggle?}
   resetPick -->|no| resetNone[Nothing selected]
   resetPick -->|yes| resetAcct{Accounts?}
@@ -71,6 +81,7 @@ flowchart TD
   loadOpt --> done
   loadFull --> done
   loadEnt --> done
+  refresh --> done
   rmEnt --> done
 ```
 
@@ -94,7 +105,7 @@ Also replace:
 | `YOUR_OWNER_IDENTITY_ID` / `YOUR_OWNER_IDENTITY_NAME` | Workflow and form owners |
 | Form definition ID | After form import, ISC assigns a new ID — update **Form: Source and action** |
 
-Preferred scopes include source and entitlement manage rights. On some tenants `sp:scopes:all` is required for `remove-accounts` / entitlement reset (documented scope gaps).
+Preferred scopes include source and entitlement manage rights, plus `idn:identity-profile:manage` for Refresh Identities. On some tenants `sp:scopes:all` is required for `remove-accounts` / entitlement reset (documented scope gaps).
 
 ### emea-tes-team example
 
@@ -115,8 +126,9 @@ Secrets stay in Parameter Storage. The export never stores the client secret.
 | Field | Type | Notes |
 |---|---|---|
 | Source | SELECT | Required `FORM_INPUT` `sources` from `GET /v2026/sources` (`label` = name, `value` = id) |
-| Action | SELECT | Required static options; `value` is camelCase (`accountAggregation`, …) for the workflow |
+| Action | SELECT | Required static options; `value` is camelCase (`accountAggregation`, `refreshIdentities`, …) for the workflow |
 | Optimised | TOGGLE | Default Yes; in `account-aggregation-section`, shown only for Account Aggregation |
+| Refresh note | DESCRIPTION | In `refresh-identities-section`, shown only for Refresh Identities |
 | Accounts | TOGGLE | Default No; in `source-reset-section`, shown only for Source Reset |
 | Entitlements | TOGGLE | Default No; in `source-reset-section`, shown only for Source Reset |
 | Reset warning | DESCRIPTION | In `source-reset-section`, shown only for Source Reset |
@@ -132,14 +144,15 @@ Import order matters. Workflows reference form definition IDs from this export; 
 3. Set form and workflow owner identities if import rejected empty/placeholder owners.
 4. Bind Parameter Storage OAuth (`1.4`) and scopes (`3.1`), and set API `url`.
 5. Update the form definition ID on the workflow form step and the interactive-process trigger filter / workflow `id`.
-6. Create an **interactive process** that launches this workflow and grant it to operators who may aggregate or reset sources.
+6. Create an **interactive process** that launches this workflow and grant it to operators who may aggregate, refresh, or reset sources.
 7. Leave the workflow **disabled** until configuration is verified, then enable it.
 
 ## Operation notes
 
 - The source dropdown stores the source **ID**. Success and error messages show that ID (the SELECT label is not always available in `formData`).
 - Tenants with more than 250 sources will not list every source. Narrow with filters in a fork of this package if needed.
-- Account and entitlement aggregations are accepted asynchronously; this workflow does not wait for completion.
+- Account aggregation, entitlement aggregation, and identity refresh are accepted asynchronously; this workflow does not wait for completion.
+- Refresh Identities refreshes every identity profile returned on the source connections object. The success message names the first one. A source with no attached identity profile ends with a warning and does not call `process-identities`.
 - Account reset can fail when a source owner account still exists on the source. The failure message surfaces Status and Detail.
 - Entitlement reset removes entitlements and access profiles tied to that source in ISC. It does not delete objects in the connected system.
 
@@ -149,15 +162,18 @@ Import order matters. Workflows reference form definition IDs from this export; 
 - [ ] Account Aggregation + Optimised Yes → `load-accounts` without `disableOptimization`
 - [ ] Account Aggregation + Optimised No → `load-accounts` with `disableOptimization: true`
 - [ ] Entitlement Aggregation → `load-entitlements`
+- [ ] Refresh Identities, source with an attached identity profile → `GET .../connections`, then `process-identities` for each profile id
+- [ ] Refresh Identities, source with no identity profile → warning that none was found; no `process-identities` call
+- [ ] Source connections or `process-identities` HTTP 4xx/5xx → Status/Detail; no silent success
 - [ ] Source Reset, both toggles No → error message; no API
 - [ ] Source Reset Accounts only → `remove-accounts` only
 - [ ] Source Reset Entitlements only → entitlements reset only
 - [ ] Source Reset both → accounts then entitlements
 - [ ] HTTP 4xx/5xx (including “cannot reset while source owner account exists”) → error message; no silent success
-- [ ] Optimised toggle enabled only for Account Aggregation; Accounts/Entitlements only for Source Reset
+- [ ] Optimised toggle enabled only for Account Aggregation; refresh note only for Refresh Identities; Accounts/Entitlements only for Source Reset
 
 ## Security
 
 - Do not commit real OAuth client secrets. Keep them in Parameter Storage.
-- Restrict the interactive process to operators authorised to aggregate and reset sources.
+- Restrict the interactive process to operators authorised to aggregate, refresh, and reset sources.
 - Treat Source Reset as destructive for ISC data; prefer demos and non-production tenants for validation.

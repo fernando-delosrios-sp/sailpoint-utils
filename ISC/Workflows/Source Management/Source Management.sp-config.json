@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "timestamp": "2026-09-24T09:20:25.797Z",
+  "timestamp": "2026-09-29T16:47:00.000Z",
   "tenant": "PLACEHOLDER",
-  "description": "Source Management package: interactive source picker with account aggregation, entitlement aggregation, and source reset",
+  "description": "Source Management package: interactive source picker with account aggregation, entitlement aggregation, identity refresh, and source reset",
   "options": {
     "excludeTypes": null,
     "includeTypes": [
@@ -35,7 +35,7 @@
       "object": {
         "id": "c8f3a1e2-4b5d-4e6f-9a0b-1c2d3e4f5a6b",
         "name": "Source Management",
-        "description": "Select a source and choose account aggregation, entitlement aggregation, or a source reset.",
+        "description": "Select a source and choose account aggregation, entitlement aggregation, an identity refresh, or a source reset.",
         "owner": {
           "type": "IDENTITY",
           "id": "YOUR_OWNER_IDENTITY_ID",
@@ -60,7 +60,7 @@
               "formElements": [
                 {
                   "config": {
-                    "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Choose a source, then pick an action. Matching options appear only for the action you select.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Account Aggregation and Entitlement Aggregation reload data from the connector. Source Reset removes accounts and/or entitlements already stored in Identity Security Cloud for that source.</p>",
+                    "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Choose a source, then pick an action. Matching options appear only for the action you select.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Account Aggregation and Entitlement Aggregation reload data from the connector. Refresh Identities reprocesses the identity profile attached to the source. Source Reset removes accounts and/or entitlements already stored in Identity Security Cloud for that source.</p>",
                     "label": "Introduction",
                     "showLabel": false
                   },
@@ -113,6 +113,11 @@
                             "value": "entitlementAggregation"
                           },
                           {
+                            "label": "Refresh Identities",
+                            "subLabel": "Refresh the identity profile attached to this source",
+                            "value": "refreshIdentities"
+                          },
+                          {
                             "label": "Source Reset",
                             "subLabel": "Remove accounts and/or entitlements from ISC",
                             "value": "sourceReset"
@@ -122,7 +127,7 @@
                       "dataSourceType": "STATIC"
                     },
                     "forceSelect": true,
-                    "helpText": "Select one action. Matching option toggles appear below.",
+                    "helpText": "Select one action. Matching options appear below.",
                     "label": "Action",
                     "maximum": 1,
                     "placeholder": "Select an action...",
@@ -169,6 +174,31 @@
                 }
               ],
               "label": "Account aggregation",
+              "labelStyle": "h2",
+              "showLabel": true
+            },
+            "validations": []
+          },
+          {
+            "id": "refresh-identities-section",
+            "elementType": "SECTION",
+            "config": {
+              "alignment": "LEFT",
+              "description": "",
+              "formElements": [
+                {
+                  "config": {
+                    "description": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">Refresh Identities looks up the identity profile attached to the selected source and starts an identity refresh for it. If no identity profile is attached, you will be notified and nothing will be refreshed.</p>",
+                    "label": "Refresh identities note",
+                    "showLabel": false
+                  },
+                  "elementType": "DESCRIPTION",
+                  "id": "1100000000009",
+                  "key": "",
+                  "validations": []
+                }
+              ],
+              "label": "Refresh identities",
               "labelStyle": "h2",
               "showLabel": true
             },
@@ -266,6 +296,26 @@
                 "effectType": "SHOW"
               }
             ]
+          },
+          {
+            "ruleOperator": "AND",
+            "rules": [
+              {
+                "sourceType": "ELEMENT",
+                "source": "action",
+                "operator": "EQ",
+                "valueType": "STRING",
+                "value": "Refresh Identities"
+              }
+            ],
+            "effects": [
+              {
+                "config": {
+                  "element": "refresh-identities-section"
+                },
+                "effectType": "SHOW"
+              }
+            ]
           }
         ]
       }
@@ -279,7 +329,7 @@
       },
       "object": {
         "name": "Source Management",
-        "description": "Interactive process that lists sources, then runs account aggregation, entitlement aggregation, or a source reset (accounts and/or entitlements) for the selected source.",
+        "description": "Interactive process that lists sources, then runs account aggregation, entitlement aggregation, an identity refresh, or a source reset (accounts and/or entitlements) for the selected source.",
         "definition": {
           "start": "Define Variable",
           "steps": {
@@ -289,7 +339,7 @@
                 "id": "sp:define-variable",
                 "variables": [
                   {
-                    "description": "ISC API base URL used by source list and aggregation/reset HTTP actions (no trailing slash).",
+                    "description": "ISC API base URL used by source list, aggregation, reset, and identity refresh HTTP actions (no trailing slash).",
                     "name": "url",
                     "transforms": [],
                     "variableA": "https://{tenant}.api.identitynow-demo.com"
@@ -359,7 +409,7 @@
               "attributes": {
                 "category": "ERROR",
                 "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Sources could not be listed.</p><p><strong>Status:</strong> {{ $.getSources.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getSources.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No aggregation or reset was started. Ask an administrator to verify the OAuth client, scopes, and API base URL.</p>",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Sources could not be listed.</p><p><strong>Status:</strong> {{ $.getSources.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getSources.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No source action was started. Ask an administrator to verify the OAuth client, scopes, and API base URL.</p>",
                 "ownerId.$": "$.trigger.launchedBy.id",
                 "title": "⚠️  Could not list sources"
               },
@@ -425,9 +475,24 @@
                   "variableB": "sourceReset"
                 }
               ],
-              "defaultStep": "Message Unknown Action",
-              "description": "True when the form action is Source Reset; otherwise fail as unknown.",
+              "defaultStep": "Check Action Refresh",
+              "description": "True when the form action is Source Reset. Otherwise check Refresh Identities.",
               "displayName": "Source reset?",
+              "type": "choice"
+            },
+            "Check Action Refresh": {
+              "actionId": "sp:compare-strings",
+              "choiceList": [
+                {
+                  "comparator": "StringEquals",
+                  "nextStep": "Message Refresh Identities",
+                  "variableA.$": "$.formSourceAction.formData.action",
+                  "variableB": "refreshIdentities"
+                }
+              ],
+              "defaultStep": "Message Unknown Action",
+              "description": "True when the form action is Refresh Identities; otherwise fail as unknown.",
+              "displayName": "Refresh identities?",
               "type": "choice"
             },
             "Message Unknown Action": {
@@ -435,7 +500,7 @@
               "attributes": {
                 "category": "ERROR",
                 "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                "message": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">The selected action is not recognised. No aggregation or reset was started.</p>",
+                "message": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">The selected action is not recognised. No source action was started.</p>",
                 "ownerId.$": "$.trigger.launchedBy.id",
                 "title": "⚠️  Unknown action"
               },
@@ -905,6 +970,183 @@
               "type": "action",
               "versionNumber": 1
             },
+            "Message Refresh Identities": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Looking up the identity profile attached to this source, then refreshing its identities.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "🔄  Refresh identities"
+              },
+              "displayName": "Message: Refresh identities",
+              "nextStep": "Get Source Connections",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Get Source Connections": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "YOUR_OAUTH_PARAMETER_ID",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+                  "paramType": "3.1"
+                },
+                "method": "get",
+                "url": "{{$.defineVariable.url}}/v2026/sources/{{$.formSourceAction.formData.source}}/connections"
+              },
+              "catch": [
+                {
+                  "next": "Message Get Connections Failed"
+                }
+              ],
+              "description": "Loads identity profiles attached to the selected source.",
+              "displayName": "API: Get source connections",
+              "nextStep": "Check Identity Profile",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Message Get Connections Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">The identity profile for source <strong>{{ $.formSourceAction.formData.source }}</strong> could not be looked up.</p><p><strong>Status:</strong> {{ $.getSourceConnections.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getSourceConnections.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No identity refresh was started. Ask an administrator to check the OAuth client and source status.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Could not find identity profile"
+              },
+              "displayName": "Message: Get connections failed",
+              "nextStep": "End Failure Get Connections",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Check Identity Profile": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Refresh Attached Profiles",
+                  "variableA.$": "$.getSourceConnections.body.identityProfiles[0].id"
+                }
+              ],
+              "defaultStep": "Message No Identity Profile",
+              "description": "True when at least one identity profile is attached to the selected source.",
+              "displayName": "Identity profile found?",
+              "type": "choice"
+            },
+            "Message No Identity Profile": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "WARN",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">No identity profile was found for this source.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr></table><p style=\"margin: 16px 0 0 0; color: #475569;\">No identity refresh was started.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  No identity profile found"
+              },
+              "displayName": "Message: No identity profile",
+              "nextStep": "End Success No Identity Profile",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Refresh Attached Profiles": {
+              "actionId": "sp:loop:iterator",
+              "attributes": {
+                "context.$": "$.defineVariable",
+                "input.$": "$.getSourceConnections.body.identityProfiles",
+                "start": "Process Identities",
+                "steps": {
+                  "Process Identities": {
+                    "actionId": "sp:http",
+                    "attributes": {
+                      "authenticationType": "OAuth",
+                      "param_authenticationRef": "oauth",
+                      "param_oauth": {
+                        "mapping": {
+                          "auth_client_id": "clientId",
+                          "auth_client_secret": "clientSecret",
+                          "auth_credential_location": "credentialLocation",
+                          "auth_token_url": "tokenURL"
+                        },
+                        "paramID": "YOUR_OAUTH_PARAMETER_ID",
+                        "paramType": "1.4"
+                      },
+                      "param_oauth_scopes": {
+                        "mapping": {
+                          "auth_scopes": "scopes"
+                        },
+                        "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+                        "paramType": "3.1"
+                      },
+                      "jsonRequestBody.$": "",
+                      "method": "post",
+                      "requestContentType": "json",
+                      "url": "{{$.loop.context.url}}/v2026/identity-profiles/{{$.loop.loopInput.id}}/process-identities"
+                    },
+                    "description": "Starts an identity refresh for one identity profile attached to the source.",
+                    "displayName": "API: Process identities",
+                    "nextStep": "Profile Refresh Accepted",
+                    "type": "action",
+                    "versionNumber": 3
+                  },
+                  "Profile Refresh Accepted": {
+                    "displayName": "Identity refresh accepted",
+                    "type": "success"
+                  }
+                }
+              },
+              "catch": [
+                {
+                  "next": "Message Refresh Identities Failed"
+                }
+              ],
+              "description": "Refreshes every identity profile attached to the selected source.",
+              "displayName": "Refresh attached identity profiles",
+              "nextStep": "Message Refresh Identities Success",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Refresh Identities Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Identity refresh could not be started for source <strong>{{ $.formSourceAction.formData.source }}</strong>.</p><p><strong>Status:</strong> {{ $.refreshAttachedProfiles.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.refreshAttachedProfiles.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No identity refresh was confirmed. Ask an administrator to check the OAuth client, including identity profile manage scope, and the identity profile status.</p>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "⚠️  Identity refresh failed"
+              },
+              "displayName": "Message: Refresh identities failed",
+              "nextStep": "End Failure Refresh Identities",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "Message Refresh Identities Success": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "INFO",
+                "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5; color: #475569;\">Identity refresh was accepted. Processing continues asynchronously in Identity Security Cloud. Each identity profile attached to this source was included.</p><table style=\"border-collapse: collapse; width: 100%; max-width: 560px;\"><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Source ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.formSourceAction.formData.source }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Identity profile</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.getSourceConnections.body.identityProfiles[0].name }}</strong></td></tr><tr><td style=\"padding: 6px 16px 6px 0; color: #64748b; vertical-align: top;\">Identity profile ID</td><td style=\"padding: 6px 0; word-break: break-word;\"><strong>{{ $.getSourceConnections.body.identityProfiles[0].id }}</strong></td></tr></table>",
+                "ownerId.$": "$.trigger.launchedBy.id",
+                "title": "✅  Identity refresh started"
+              },
+              "displayName": "Message: Refresh identities success",
+              "nextStep": "End Success",
+              "type": "action",
+              "versionNumber": 1
+            },
             "End Success": {
               "actionId": "sp:operator-success",
               "description": "The selected source operation was accepted.",
@@ -957,6 +1199,26 @@
               "description": "Entitlement reset request failed.",
               "displayName": "Failure: Entitlement reset",
               "failureName": "Entitlement Reset Failed",
+              "type": "failure"
+            },
+            "End Success No Identity Profile": {
+              "actionId": "sp:operator-success",
+              "description": "The selected source has no attached identity profile. No refresh was started.",
+              "displayName": "Success: No identity profile",
+              "type": "success"
+            },
+            "End Failure Get Connections": {
+              "actionId": "sp:operator-failure",
+              "description": "Looking up identity profiles attached to the source failed.",
+              "displayName": "Failure: Find identity profile",
+              "failureName": "Find Identity Profile Failed",
+              "type": "failure"
+            },
+            "End Failure Refresh Identities": {
+              "actionId": "sp:operator-failure",
+              "description": "Identity refresh (process-identities) request failed.",
+              "displayName": "Failure: Identity refresh",
+              "failureName": "Identity Refresh Failed",
               "type": "failure"
             }
           }

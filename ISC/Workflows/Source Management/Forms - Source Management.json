@@ -9,7 +9,7 @@
     "object": {
       "id": "c8f3a1e2-4b5d-4e6f-9a0b-1c2d3e4f5a6b",
       "name": "Source Management",
-      "description": "Select a source and choose account aggregation, entitlement aggregation, or a source reset.",
+      "description": "Select a source and choose account aggregation, entitlement aggregation, an identity refresh, or a source reset.",
       "owner": {
         "type": "IDENTITY",
         "id": "YOUR_OWNER_IDENTITY_ID",
@@ -34,7 +34,7 @@
             "formElements": [
               {
                 "config": {
-                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Choose a source, then pick an action. Matching options appear only for the action you select.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Account Aggregation and Entitlement Aggregation reload data from the connector. Source Reset removes accounts and/or entitlements already stored in Identity Security Cloud for that source.</p>",
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Choose a source, then pick an action. Matching options appear only for the action you select.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\">Account Aggregation and Entitlement Aggregation reload data from the connector. Refresh Identities reprocesses the identity profile attached to the source. Source Reset removes accounts and/or entitlements already stored in Identity Security Cloud for that source.</p>",
                   "label": "Introduction",
                   "showLabel": false
                 },
@@ -87,6 +87,11 @@
                           "value": "entitlementAggregation"
                         },
                         {
+                          "label": "Refresh Identities",
+                          "subLabel": "Refresh the identity profile attached to this source",
+                          "value": "refreshIdentities"
+                        },
+                        {
                           "label": "Source Reset",
                           "subLabel": "Remove accounts and/or entitlements from ISC",
                           "value": "sourceReset"
@@ -96,7 +101,7 @@
                     "dataSourceType": "STATIC"
                   },
                   "forceSelect": true,
-                  "helpText": "Select one action. Matching option toggles appear below.",
+                  "helpText": "Select one action. Matching options appear below.",
                   "label": "Action",
                   "maximum": 1,
                   "placeholder": "Select an action...",
@@ -143,6 +148,31 @@
               }
             ],
             "label": "Account aggregation",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        },
+        {
+          "id": "refresh-identities-section",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">Refresh Identities looks up the identity profile attached to the selected source and starts an identity refresh for it. If no identity profile is attached, you will be notified and nothing will be refreshed.</p>",
+                  "label": "Refresh identities note",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "1100000000009",
+                "key": "",
+                "validations": []
+              }
+            ],
+            "label": "Refresh identities",
             "labelStyle": "h2",
             "showLabel": true
           },
@@ -236,6 +266,26 @@
             {
               "config": {
                 "element": "source-reset-section"
+              },
+              "effectType": "SHOW"
+            }
+          ]
+        },
+        {
+          "ruleOperator": "AND",
+          "rules": [
+            {
+              "sourceType": "ELEMENT",
+              "source": "action",
+              "operator": "EQ",
+              "valueType": "STRING",
+              "value": "Refresh Identities"
+            }
+          ],
+          "effects": [
+            {
+              "config": {
+                "element": "refresh-identities-section"
               },
               "effectType": "SHOW"
             }
