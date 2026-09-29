@@ -3,7 +3,7 @@ param(
     [string] $HomeFolderPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory Home Folders/ConnectorAfterCreate - Create Active Directory Home Folder.ps1"),
     [string] $OuCreatePath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory OU Management/ConnectorBeforeCreate - Create Active Directory OU.ps1"),
     [string] $OuModifyPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory OU Management/ConnectorBeforeModify - Create Active Directory OU.ps1"),
-    [string] $SharedFolderPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory Privileged Tasks/ConnectorBeforeModify - Create Shared Folder in Active Directory.ps1")
+    [string] $SharedFolderPath = (Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "Active Directory Privileged Tasks/ConnectorAfterModify - Create Shared Folder in Active Directory.ps1")
 )
 
 $ErrorActionPreference = "Stop"
@@ -246,6 +246,8 @@ $normalApplication = "<Map><entry key=`"PwshReplay`" value=`"false`" /></Map>"
 
 $success = Invoke-TemplateCase -Name "success" -RequestXml $createRequest -ApplicationXml $normalApplication
 Assert-Equal 0 $success.ExitCode "a successful rule must exit 0"
+Assert-True ($success.LogText -match "Rule completed successfully\. Exiting with code 0") "a successful rule must log the success exit"
+Assert-True ($success.LogText -notmatch "No-op\. Exiting with code 0") "a successful rule must not use the no-op exit"
 Assert-True $success.DumpExists "a successful rule must preserve its runtime script"
 Assert-True ($success.LogText -match "AccountRequestOperation\s+: Create") "a full run must log the hydrated request operation"
 
@@ -350,6 +352,8 @@ function Invoke-HomeFolderSkipCase {
 
 $homeFolderSkip = Invoke-HomeFolderSkipCase
 Assert-Equal 0 $homeFolderSkip.ExitCode "Home Folders must skip non-Create requests successfully"
+Assert-True ($homeFolderSkip.LogText -match "No-op\. Exiting with code 0 because this rule only handles Create operations \(current operation: Modify\)") "Home Folders must use the no-op exit message"
+Assert-True ($homeFolderSkip.LogText -notmatch "Rule completed successfully") "Home Folders no-op must not also claim success"
 Assert-True ($homeFolderSkip.LogText -match "Current operation: Modify") "Home Folders must use the hydrated operation"
 Assert-True ($homeFolderSkip.LogText -notmatch "Loaded SailPoint Utils|Utils.dll could not be loaded") "Home Folders must not load Utils.dll"
 
@@ -435,12 +439,16 @@ function Invoke-OuRuleCase {
 
 $ouCreateDisabled = Invoke-OuRuleCase -ScriptPath $resolvedOuCreatePath -RequestXml $createRequest -ApplicationXml "<Map><entry key=`"OUDebugEnabled`" value=`"true`" /></Map>"
 Assert-Equal 0 $ouCreateDisabled.ExitCode "OU Create must skip when OUCreationEnabled is omitted"
+Assert-True ($ouCreateDisabled.LogText -match "No-op\. Exiting with code 0 because OUCreationEnabled is not true") "OU Create must use the no-op exit message"
+Assert-True ($ouCreateDisabled.LogText -notmatch "Rule completed successfully") "OU Create no-op must not also claim success"
 Assert-True ($ouCreateDisabled.LogText -match "OUCreationEnabled is not true") "OU Create must log the disabled skip"
 Assert-True ($ouCreateDisabled.LogText -match "ConnectorBeforeCreate") "OU Create must log its connector rule type"
 Assert-True ($ouCreateDisabled.LogText -notmatch "Loaded SailPoint Utils|Utils.dll could not be loaded") "OU Create must not load Utils.dll"
 
 $ouModifyEmptyParent = Invoke-OuRuleCase -ScriptPath $resolvedOuModifyPath -RequestXml ([System.IO.File]::ReadAllText((Join-Path $fixturesDirectory "request-modify.xml"))) -ApplicationXml "<Map><entry key=`"OUCreationEnabled`" value=`"true`" /><entry key=`"OUDebugEnabled`" value=`"true`" /></Map>"
 Assert-Equal 0 $ouModifyEmptyParent.ExitCode "OU Modify must skip when AC_NewParent is absent"
+Assert-True ($ouModifyEmptyParent.LogText -match "No-op\. Exiting with code 0 because the target distinguished name is empty") "OU Modify must use the no-op exit message"
+Assert-True ($ouModifyEmptyParent.LogText -notmatch "Rule completed successfully") "OU Modify no-op must not also claim success"
 Assert-True ($ouModifyEmptyParent.LogText -match "Target distinguished name is empty") "OU Modify must use Get-RequestAttribute AC_NewParent"
 Assert-True ($ouModifyEmptyParent.LogText -match "ConnectorBeforeModify") "OU Modify must log its connector rule type"
 Assert-True ($ouModifyEmptyParent.LogText -notmatch "Import-Module") "OU Modify must not import ActiveDirectory when the target DN is empty"
@@ -503,19 +511,23 @@ foreach ($invalidMetadata in @(
 
 $sharedFolderSkip = Invoke-OuRuleCase -ScriptPath $resolvedSharedFolderPath -RequestXml $createRequest -ApplicationXml "<Map><entry key=`"SharedFolderDebugEnabled`" value=`"true`" /></Map>"
 Assert-Equal 0 $sharedFolderSkip.ExitCode "shared-folder rule must skip non-Modify requests successfully"
+Assert-True ($sharedFolderSkip.LogText -match "No-op\. Exiting with code 0 because this rule only handles Modify operations \(current operation: Create\)") "shared-folder rule must use the no-op exit message"
+Assert-True ($sharedFolderSkip.LogText -notmatch "Rule completed successfully") "shared-folder no-op must not also claim success"
 Assert-True ($sharedFolderSkip.LogText -match "Current operation: Create") "shared-folder rule must use the hydrated operation"
-Assert-True ($sharedFolderSkip.LogText -match "ConnectorBeforeModify") "shared-folder rule must log its connector rule type"
+Assert-True ($sharedFolderSkip.LogText -match "ConnectorAfterModify") "shared-folder rule must log its connector rule type"
 Assert-True ($sharedFolderSkip.LogText -notmatch "Loaded SailPoint Utils|Utils.dll could not be loaded") "shared-folder rule must not load Utils.dll"
 Assert-True ($sharedFolderSkip.LogText -notmatch "Import-Module") "shared-folder rule must not import ActiveDirectory when skipping"
 
 $sharedFolderNoComments = Invoke-OuRuleCase -ScriptPath $resolvedSharedFolderPath -RequestXml ([System.IO.File]::ReadAllText((Join-Path $fixturesDirectory "request-modify.xml"))) -ApplicationXml "<Map />"
 Assert-Equal 0 $sharedFolderNoComments.ExitCode "shared-folder rule must skip Modify requests without metadata comments"
-Assert-True ($sharedFolderNoComments.LogText -match "No memberOf comments") "shared-folder rule must log the missing-comments skip"
+Assert-True ($sharedFolderNoComments.LogText -match "No-op\. Exiting with code 0 because there are no memberOf comments with shared-folder metadata") "shared-folder rule must log the missing-comments skip"
+Assert-True ($sharedFolderNoComments.LogText -notmatch "Rule completed successfully") "shared-folder missing-comments no-op must not also claim success"
 Assert-True ($sharedFolderNoComments.LogText -notmatch "Import-Module") "shared-folder rule must not import ActiveDirectory when comments are absent"
 
 $sharedFolderOrdinaryComment = Invoke-OuRuleCase -ScriptPath $resolvedSharedFolderPath -RequestXml ([System.IO.File]::ReadAllText((Join-Path $fixturesDirectory "request-modify-memberof-comment.xml"))) -ApplicationXml "<Map />"
 Assert-Equal 0 $sharedFolderOrdinaryComment.ExitCode "shared-folder rule must skip Modify requests whose memberOf comments are not shared-folder JSON"
-Assert-True ($sharedFolderOrdinaryComment.LogText -match "not shared-folder metadata") "shared-folder rule must log the ordinary-comment skip"
+Assert-True ($sharedFolderOrdinaryComment.LogText -match "No-op\. Exiting with code 0 because memberOf comments are not shared-folder metadata") "shared-folder rule must log the ordinary-comment skip"
+Assert-True ($sharedFolderOrdinaryComment.LogText -notmatch "Rule completed successfully") "shared-folder ordinary-comment no-op must not also claim success"
 Assert-True ($sharedFolderOrdinaryComment.LogText -notmatch "Process error") "shared-folder rule must not treat ordinary memberOf comments as a process failure"
 Assert-True ($sharedFolderOrdinaryComment.LogText -notmatch "Import-Module") "shared-folder rule must not import ActiveDirectory for ordinary memberOf comments"
 

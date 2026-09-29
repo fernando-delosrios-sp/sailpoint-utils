@@ -1,10 +1,10 @@
 ###############################################################################################################################
-# ConnectorBeforeModify rule for Active Directory shared-folder provisioning.
+# ConnectorAfterModify rule for Active Directory shared-folder provisioning.
 #
 # Built from ISC/PowerShell Rule Template. Keep the template bootstrap and helper functions unchanged.
 # Shared-folder logic lives in SHARED FOLDER HELPERS and CUSTOM PROCESS CODE.
 #
-# Upload this script as a Connector Rule (type: ConnectorBeforeModify, name: ConnectorBeforeModify - Create Shared Folder in Active Directory) using the
+# Upload this script as a Connector Rule (type: ConnectorAfterModify, name: ConnectorAfterModify - Create Shared Folder in Active Directory) using the
 # SailPoint Identity Security Cloud VS Code extension:
 # https://marketplace.visualstudio.com/items?itemName=yannick-beot-sp.vscode-sailpoint-identitynow
 # Attach the rule to your AD source through connectorAttributes.nativeRules.
@@ -34,10 +34,10 @@
 # Allowed values:
 #   ConnectorBeforeCreate, ConnectorBeforeModify, ConnectorBeforeDelete
 #   ConnectorAfterCreate, ConnectorAfterModify, ConnectorAfterDelete
-$ConnectorRuleType = "ConnectorBeforeModify"
+$ConnectorRuleType = "ConnectorAfterModify"
 
 # Optional display name from the ISC connector rule. Used as the artifact filename prefix when set; otherwise the runtime GUID is used.
-$ConnectorRuleName = "ConnectorBeforeModify - Create Shared Folder in Active Directory"
+$ConnectorRuleName = "ConnectorAfterModify - Create Shared Folder in Active Directory"
 
 # Optional script overrides. Define any of these to take precedence over the source connectorAttributes
 # of the same name (PwshSilentError, PwshUnsafePayloadLogging, PwshReplay). Leave them undefined
@@ -1028,10 +1028,22 @@ function Write-RuleContextBlock {
 }
 
 function Exit-Rule {
-    param([int] $FailureCode)
+    param(
+        [int] $FailureCode,
+        [string] $NoOpReason
+    )
 
     if ($FailureCode -eq 0) {
-        Write-RuleLog -Level INFO -Phase completion -Message "Rule completed successfully. Exiting with code 0."
+        $reason = $null
+        if (-not [string]::IsNullOrWhiteSpace($NoOpReason)) {
+            $reason = $NoOpReason.Trim().TrimEnd('.')
+        }
+
+        if ([string]::IsNullOrWhiteSpace($reason)) {
+            Write-RuleLog -Level INFO -Phase completion -Message "Rule completed successfully. Exiting with code 0."
+        } else {
+            Write-RuleLog -Level INFO -Phase completion -Message ("No-op. Exiting with code 0 because {0}." -f $reason)
+        }
         exit 0
     }
 
@@ -1365,13 +1377,13 @@ try {
     }
 
     if ($ctx.Request.Operation -ne "Modify") {
-        Write-RuleLog -Level INFO -Message "Skipping shared folder workflow. Action is restricted to Modify operations. Current operation: $($ctx.Request.Operation)"
+        Exit-Rule -FailureCode 0 -NoOpReason ("this rule only handles Modify operations (current operation: {0})" -f $ctx.Request.Operation)
     } else {
         $comments = Get-SharedFolderRequestComments
         if ([string]::IsNullOrWhiteSpace($comments)) {
-            Write-RuleLog -Level INFO -Message "No memberOf comments with shared-folder metadata. Skipping."
+            Exit-Rule -FailureCode 0 -NoOpReason "there are no memberOf comments with shared-folder metadata"
         } elseif (-not (Test-SharedFolderMetadataComments -Comments $comments)) {
-            Write-RuleLog -Level INFO -Message "memberOf comments are not shared-folder metadata. Skipping."
+            Exit-Rule -FailureCode 0 -NoOpReason "memberOf comments are not shared-folder metadata"
         } else {
             $metadata = ConvertFrom-SharedFolderMetadata -Comments $comments
             $allowedParentPaths = Get-ApplicationAttribute "SharedFolderAllowedParentPaths"

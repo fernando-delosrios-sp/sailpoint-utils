@@ -1,0 +1,17 @@
+{
+  "name": "Machine Account Owner - Entra ID",
+  "type": "firstValid",
+  "attributes": {
+    "ignoreErrors": true,
+    "values": [
+      {
+        "type": "replace",
+        "attributes": {
+          "regex": "^.*?\"userPrincipalName\"\\s*:\\s*\"([^\"]+)\".*$",
+          "replacement": "$1"
+        }
+      }
+    ]
+  },
+  "internal": false
+}

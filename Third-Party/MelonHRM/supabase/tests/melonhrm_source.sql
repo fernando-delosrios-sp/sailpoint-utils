@@ -9,12 +9,12 @@ select columns_are(
     'MelonHRM'::name,
     array[
         'employee_id', 'employeenumber', 'givenName', 'familyName', 'middlename',
-        'nickname', 'email', 'other_email', 'title', 'country', 'city', 'manager',
+        'nickname', 'email', 'other_email', 'jobTitle', 'location', 'city', 'manager',
         'type', 'empstatus', 'otherid', 'zipcode', 'home_phone', 'mobile',
         'telephone', 'username', 'department', 'term', 'ftostart', 'ftoend',
         'contractStartDate', 'contractEndDate', 'category'
     ],
-    'Table matches the HR account schema attributes'
+    'Table columns match the feed, with term aliased to IIQDisabled in the source'
 );
 
 select results_eq(
@@ -91,15 +91,15 @@ select results_eq(
 
 select results_eq(
     $$select count(*) from public."MelonHRM"
-      where country is not null
-        and country !~ '^[A-Z]{2}$'$$,
+      where location is not null
+        and location !~ '^[A-Z]{2}$'$$,
     array[15::bigint],
-    'Every identity uses a full country name, not an ISO code'
+    'Every identity uses a full location name, not an ISO code'
 );
 
 select results_eq(
     $$select count(*) from public."MelonHRM" t
-      where (t.username, t.title) in (
+      where (t.username, t."jobTitle") in (
           ('jerry.bennett', 'Chief Executive'),
           ('aaron.nichols', 'Head of Operations'),
           ('jane.grant', 'Access Certification Reviewer'),
@@ -108,7 +108,7 @@ select results_eq(
           ('randall.knight', 'Director of Operations'),
           ('patti.jones', 'Finance Manager')
       )
-      and t.title not in (
+      and t."jobTitle" not in (
           'Senior Executive',
           'Operations Manager',
           'SOX Access Reviewer',

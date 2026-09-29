@@ -1,0 +1,392 @@
+{
+  "definition": {
+    "start": "Configuration",
+    "steps": {
+      "App Groups Present?": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Synchronize App Groups",
+            "variableA.$": "$.getMachineAccounts.body[0].connectorAttributes.spn_app_groups[0]"
+          }
+        ],
+        "defaultStep": "Success",
+        "description": "An empty spn_app_groups list intentionally leaves User Entitlements empty.",
+        "displayName": "Any spn_app_groups values?",
+        "type": "choice"
+      },
+      "Clear User Entitlements": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": [
+            {
+              "op": "replace",
+              "path": "/userEntitlements",
+              "value": []
+            }
+          ],
+          "method": "patch",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "requestHeaders": {
+            "Content-Type": "application/json-patch+json",
+            "X-SailPoint-Experimental": "true"
+          },
+          "url": "{{$.configuration.apiUrl}}/machine-identities/v2/{{$.configuration.machineIdentityId}}"
+        },
+        "catch": [
+          {
+            "next": "Failure"
+          }
+        ],
+        "description": "Removes stale user entitlements before rebuilding the exact list from spn_app_groups.",
+        "displayName": "Clear existing User Entitlements",
+        "nextStep": "App Groups Present?",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Configuration": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "ISC API base URL.",
+              "name": "apiUrl",
+              "transforms": [],
+              "variableA": "https://company24509-poc.api.identitynow-demo.com"
+            },
+            {
+              "description": "Microsoft Entra ID NHI source containing spn_app_groups.",
+              "name": "entraSourceId",
+              "transforms": [],
+              "variableA": "1f3680fd99094e4bb70c4880542caf2a"
+            },
+            {
+              "description": "Microsoft Entra ID user source publishing the same Entra groups.",
+              "name": "entraUsersSourceId",
+              "transforms": [],
+              "variableA": "fd753b8266b64d09805d101b77bc35df"
+            },
+            {
+              "description": "Machine identity from the update event.",
+              "name": "machineIdentityId",
+              "transforms": [],
+              "variableA.$": "$.trigger.machineIdentity.id"
+            }
+          ]
+        },
+        "displayName": "Configuration",
+        "nextStep": "Get Machine Accounts",
+        "type": "Mutation"
+      },
+      "Correct Entra Source?": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Clear User Entitlements",
+            "variableA.$": "$.getMachineAccounts.body[0].source.id",
+            "variableB.$": "$.configuration.entraSourceId"
+          }
+        ],
+        "defaultStep": "Skipped",
+        "description": "Limits synchronization to the configured Microsoft Entra ID NHI source.",
+        "displayName": "Account belongs to Entra NHI source?",
+        "type": "choice"
+      },
+      "Entra Account Present?": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Correct Entra Source?",
+            "variableA.$": "$.getMachineAccounts.body[0].id"
+          }
+        ],
+        "defaultStep": "Skipped",
+        "description": "Skips machine identities without a linked machine account.",
+        "displayName": "Linked account found?",
+        "type": "choice"
+      },
+      "Failure": {
+        "actionId": "sp:operator-failure",
+        "description": "User Entitlements could not be synchronized from spn_app_groups.",
+        "displayName": "Synchronization failed",
+        "failureDetails": "Review the failed HTTP or loop step. Existing User Entitlements may have been cleared before the failure.",
+        "failureName": "User Entitlement Synchronization Failed",
+        "type": "failure"
+      },
+      "Get Machine Accounts": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+            "paramType": "3.1"
+          },
+          "requestHeaders": {
+            "X-SailPoint-Experimental": "true"
+          },
+          "url": "{{$.configuration.apiUrl}}/machine-identities/v2/{{$.configuration.machineIdentityId}}/accounts"
+        },
+        "catch": [
+          {
+            "next": "Failure"
+          }
+        ],
+        "description": "Retrieves the source machine account so spn_app_groups can be evaluated.",
+        "displayName": "Get linked machine accounts",
+        "nextStep": "Entra Account Present?",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Skipped": {
+        "actionId": "sp:operator-success",
+        "description": "The updated machine identity is not backed by the configured Entra NHI source.",
+        "displayName": "Skipped",
+        "type": "success"
+      },
+      "Success": {
+        "actionId": "sp:operator-success",
+        "description": "User Entitlements now reflect the Entra application groups.",
+        "displayName": "User Entitlements synchronized",
+        "type": "success"
+      },
+      "Synchronize App Groups": {
+        "actionId": "sp:loop:iterator",
+        "attributes": {
+          "context.$": "$.configuration",
+          "input.$": "$.getMachineAccounts.body[0].connectorAttributes.spn_app_groups",
+          "start": "Resolve Group Entitlements",
+          "steps": {
+            "Add First User Entitlement": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "jsonRequestBody": [
+                  {
+                    "op": "add",
+                    "path": "/userEntitlements/-",
+                    "value": {
+                      "displayName": "{{$.resolveGroupEntitlements.body[0].name}}",
+                      "entitlementId": "{{$.resolveGroupEntitlements.body[0].id}}",
+                      "source": {
+                        "id": "{{$.resolveGroupEntitlements.body[0].source.id}}",
+                        "name": "{{$.resolveGroupEntitlements.body[0].source.name}}",
+                        "type": "SOURCE"
+                      },
+                      "sourceId": "{{$.resolveGroupEntitlements.body[0].source.id}}"
+                    }
+                  }
+                ],
+                "method": "patch",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+                  "paramType": "3.1"
+                },
+                "requestContentType": "json",
+                "requestHeaders": {
+                  "Content-Type": "application/json-patch+json",
+                  "X-SailPoint-Experimental": "true"
+                },
+                "url": "{{$.loop.context.apiUrl}}/machine-identities/v2/{{$.loop.context.machineIdentityId}}"
+              },
+              "displayName": "Add first resolved User Entitlement",
+              "nextStep": "Second Entitlement Found?",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Add Second User Entitlement": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "jsonRequestBody": [
+                  {
+                    "op": "add",
+                    "path": "/userEntitlements/-",
+                    "value": {
+                      "displayName": "{{$.resolveGroupEntitlements.body[1].name}}",
+                      "entitlementId": "{{$.resolveGroupEntitlements.body[1].id}}",
+                      "source": {
+                        "id": "{{$.resolveGroupEntitlements.body[1].source.id}}",
+                        "name": "{{$.resolveGroupEntitlements.body[1].source.name}}",
+                        "type": "SOURCE"
+                      },
+                      "sourceId": "{{$.resolveGroupEntitlements.body[1].source.id}}"
+                    }
+                  }
+                ],
+                "method": "patch",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+                  "paramType": "3.1"
+                },
+                "requestContentType": "json",
+                "requestHeaders": {
+                  "Content-Type": "application/json-patch+json",
+                  "X-SailPoint-Experimental": "true"
+                },
+                "url": "{{$.loop.context.apiUrl}}/machine-identities/v2/{{$.loop.context.machineIdentityId}}"
+              },
+              "displayName": "Add second resolved User Entitlement",
+              "nextStep": "Group Success",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Entitlement Found?": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Add First User Entitlement",
+                  "variableA.$": "$.resolveGroupEntitlements.body[0].id"
+                }
+              ],
+              "defaultStep": "Group Success",
+              "displayName": "Matching groups entitlement found?",
+              "type": "choice"
+            },
+            "Group Success": {
+              "displayName": "Group synchronized",
+              "type": "success"
+            },
+            "Resolve Group Entitlements": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "method": "get",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+                  "paramType": "1.4"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+                  "paramType": "3.1"
+                },
+                "url": "{{$.loop.context.apiUrl}}/v2026/entitlements?filters=source.id%20in%20%28%22{{$.loop.context.entraSourceId}}%22%2C%22{{$.loop.context.entraUsersSourceId}}%22%29%20and%20attribute%20eq%20%22groups%22%20and%20value%20eq%20%22{{$.loop.loopInput}}%22&limit=10"
+              },
+              "description": "Resolves the Entra group object ID on both the NHI and user sources.",
+              "displayName": "Resolve Entra group to ISC entitlements",
+              "nextStep": "Entitlement Found?",
+              "type": "action",
+              "versionNumber": 3
+            },
+            "Second Entitlement Found?": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Add Second User Entitlement",
+                  "variableA.$": "$.resolveGroupEntitlements.body[1].id"
+                }
+              ],
+              "defaultStep": "Group Success",
+              "description": "The same Entra group is published by both the NHI and user sources.",
+              "displayName": "Second source entitlement found?",
+              "type": "choice"
+            }
+          }
+        },
+        "catch": [
+          {
+            "next": "Failure"
+          }
+        ],
+        "description": "Resolves every Entra group object ID on both Entra sources and adds each matching groups entitlement. Machine identities support at most 10 User Entitlements, so at most 5 groups per application.",
+        "displayName": "Synchronize spn_app_groups",
+        "nextStep": "Success",
+        "type": "action",
+        "versionNumber": 1
+      }
+    }
+  },
+  "description": "When an Application machine identity's calculated description changes, synchronize User Entitlements from the linked Entra machine account's spn_app_groups values.",
+  "enabled": false,
+  "name": "Synchronize User Entitlements from Entra App Groups",
+  "owner": {
+    "id": "b41994df5dcf447483c8446436f29c79",
+    "name": "fernando.delosrios",
+    "type": "IDENTITY"
+  },
+  "trigger": {
+    "attributes": {
+      "filter.$": "$[?(@.machineIdentity.subtype == \"Application\" && @.singleValueAttributeChanges[0].attributeName == \"description\")]",
+      "id": "idn:machine-identity-updated",
+      "integrationId": null
+    },
+    "type": "EVENT"
+  }
+}

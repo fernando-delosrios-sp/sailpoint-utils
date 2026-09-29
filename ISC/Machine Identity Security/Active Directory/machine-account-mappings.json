@@ -52,5 +52,25 @@
         "sourceName": "Microsoft Active Directory @emea-tes-team (NHI)"
       }
     }
+  },
+  {
+    "target": {
+      "attributeName": "uid",
+      "sourceId": null,
+      "type": "OWNER_IDENTITY"
+    },
+    "transformDefinition": {
+      "type": "reference",
+      "attributes": {
+        "id": "Machine Account Owner - Active Directory",
+        "input": {
+          "type": "accountAttribute",
+          "attributes": {
+            "attributeName": "manager",
+            "sourceName": "Microsoft Active Directory @emea-tes-team (NHI)"
+          }
+        }
+      }
+    }
   }
 ]

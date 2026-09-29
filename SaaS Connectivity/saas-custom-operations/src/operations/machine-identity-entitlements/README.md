@@ -69,11 +69,11 @@ Connected invokes need PAT/OAuth scopes for:
 
 ## Workflow integration
 
-[`workflows/Machine Identity Entitlements - Scan.json`](../../../workflows/Machine%20Identity%20Entitlements%20-%20Scan.json) is an interactive presentation wrapper. It invokes this command and reports no-work, successful, partial, or failed outcomes from the response summary. There is no Account Created Apply workflow.
+[`workflows/Machine Identity Entitlements.json`](../../../workflows/Machine%20Identity%20Entitlements.json) is an interactive presentation wrapper. It invokes this command and reports no-work, successful, partial, or failed outcomes from the response summary. There is no Account Created Apply workflow.
 
-1. Import Scan, then set its interactive trigger filter to that workflow's own id (`$[?(@.workflowId == '<scan-workflow-id>')]`).
+1. Import the workflow, then set its interactive trigger filter to that workflow's own id (`$[?(@.workflowId == '<workflow-id>')]`).
 2. Re-bind **Get Access Token** basic auth and set the connector id and API URL variables.
-3. Scan uses `requestId` `mie:{{$.trigger.interactiveProcessId}}`, which becomes the scan summary identity on the scan summary account. Omit `identityId` for a full scan, or add it to the invoke input to limit the run.
+3. The workflow uses `requestId` `mie:{{$.trigger.interactiveProcessId}}`, which becomes the scan summary identity on the scan summary account. Omit `identityId` for a full tenant run, or add it to the invoke input to limit the run.
 
 ## Local development
 

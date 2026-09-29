@@ -1,7 +1,7 @@
 {
-    "id": "YOUR_MACHINE_IDENTITY_ENTITLEMENTS_SCAN_WORKFLOW_ID",
-    "name": "Machine Identity Entitlements - Scan",
-    "description": "Interactive scan that matches account values to ISC entitlements, applies userEntitlements directly, persists one run summary, and presents success, no-work, partial, or failed outcomes.",
+    "id": "YOUR_MACHINE_IDENTITY_ENTITLEMENTS_WORKFLOW_ID",
+    "name": "Machine Identity Entitlements",
+    "description": "Interactive process that matches account values to ISC entitlements, applies userEntitlements directly, persists one run summary, and presents success, no-work, partial, or failed outcomes.",
     "definition": {
         "start": "Message About This Process",
         "steps": {
@@ -10,11 +10,11 @@
                 "attributes": {
                     "category": "INFO",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<h3>Machine identity entitlement scan</h3><p>This process reads entitlement values from linked machine accounts, resolves every matching ISC entitlement, and directly PATCHes each machine identity with the union of existing and matched <code>userEntitlements</code>.</p><p>Identity updates run independently. A failure does not stop the remaining identities, and one summary account records updated, skipped, and failed counts. Reruns are safe because existing refs are preserved and deduplicated.</p>",
+                    "message": "<h3>Machine identity entitlements</h3><p>This process reads entitlement values from linked machine accounts, resolves every matching ISC entitlement, and directly PATCHes each machine identity with the union of existing and matched <code>userEntitlements</code>.</p><p>Identity updates run independently. A failure does not stop the remaining identities, and one summary account records updated, skipped, and failed counts. Reruns are safe because existing refs are preserved and deduplicated.</p>",
                     "ownerId.$": "$.trigger.launchedBy.id",
                     "title": "Machine identity entitlements"
                 },
-                "description": "Explains the scan before any tenant API is called.",
+                "description": "Explains the process before any tenant API is called.",
                 "displayName": "Message: About this process",
                 "nextStep": "Configuration",
                 "type": "action",
@@ -127,7 +127,7 @@
                 "choiceList": [
                     {
                         "comparator": "StringContains",
-                        "nextStep": "Message Scan Failed",
+                        "nextStep": "Message Failed",
                         "variableA.$": "$.callSaaSCustomOperation.body",
                         "variableB": "\"status\":\"failed\""
                     }
@@ -157,9 +157,9 @@
                 "attributes": {
                     "category": "INFO",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<h3>No entitlements to add</h3><p>Every machine identity in scope already has its matching catalog refs, or its configured machine accounts had nothing to match. The successful scan summary records zero updates.</p>",
+                    "message": "<h3>No entitlements to add</h3><p>Every machine identity in scope already has its matching catalog refs, or its configured machine accounts had nothing to match. The successful summary records zero updates.</p>",
                     "ownerId.$": "$.trigger.launchedBy.id",
-                    "title": "Scan complete"
+                    "title": "Complete"
                 },
                 "description": "Zero identities updated; one successful summary account was persisted.",
                 "displayName": "Message: No work",
@@ -187,9 +187,9 @@
                 "attributes": {
                     "category": "INFO",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<h3>Entitlements applied</h3><p>The scan directly updated every machine identity that needed matched entitlement refs. Existing <code>userEntitlements</code> were preserved, and one summary account records the run counts.</p>",
+                    "message": "<h3>Entitlements applied</h3><p>This process directly updated every machine identity that needed matched entitlement refs. Existing <code>userEntitlements</code> were preserved, and one summary account records the run counts.</p>",
                     "ownerId.$": "$.trigger.launchedBy.id",
-                    "title": "Scan complete"
+                    "title": "Complete"
                 },
                 "description": "At least one identity was updated and none failed.",
                 "displayName": "Message: Work applied",
@@ -202,7 +202,7 @@
                 "attributes": {
                     "category": "WARNING",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<h3>Scan partially complete</h3><p>Some machine identities received their matched entitlements, while others failed. The response below includes the updated and failed counts; the persisted summary also records failed identity ids.</p><pre>{{$.callSaaSCustomOperation.body}}</pre>",
+                    "message": "<h3>Partially applied</h3><p>Some machine identities received their matched entitlements, while others failed. The response below includes the updated and failed counts; the persisted summary also records failed identity ids.</p><pre>{{$.callSaaSCustomOperation.body}}</pre>",
                     "ownerId.$": "$.trigger.launchedBy.id",
                     "title": "Machine identity entitlements partially applied"
                 },
@@ -212,17 +212,17 @@
                 "type": "action",
                 "versionNumber": 1
             },
-            "Message Scan Failed": {
+            "Message Failed": {
                 "actionId": "sp:interactive-message",
                 "attributes": {
                     "category": "ERROR",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<h3>The scan failed</h3><p>The operation could not update any identity, or discovery failed before apply. Its failed summary and response are shown below.</p><pre>{{$.callSaaSCustomOperation.body}}</pre>",
+                    "message": "<h3>The update failed</h3><p>The operation could not update any identity, or discovery failed before the update. Its failed summary and response are shown below.</p><pre>{{$.callSaaSCustomOperation.body}}</pre>",
                     "ownerId.$": "$.trigger.launchedBy.id",
-                    "title": "Scan did not complete"
+                    "title": "Did not complete"
                 },
                 "description": "Operation-level failure. The body carries the error text, which is the only place the cause appears.",
-                "displayName": "Message: Scan failed",
+                "displayName": "Message: Failed",
                 "nextStep": "End Step - Failure",
                 "type": "action",
                 "versionNumber": 1
@@ -232,9 +232,9 @@
                 "attributes": {
                     "category": "ERROR",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<h3>The connector could not be reached</h3><p>The scan never started. Check the connector id, API URL, deployed version, and token configuration.</p><p><strong>{{$.callSaaSCustomOperation.error.workflowStatusCode}}</strong>: {{$.callSaaSCustomOperation.error.workflowErrorMessage}}</p>",
+                    "message": "<h3>The connector could not be reached</h3><p>The update never started. Check the connector id, API URL, deployed version, and token configuration.</p><p><strong>{{$.callSaaSCustomOperation.error.workflowStatusCode}}</strong>: {{$.callSaaSCustomOperation.error.workflowErrorMessage}}</p>",
                     "ownerId.$": "$.trigger.launchedBy.id",
-                    "title": "Scan could not start"
+                    "title": "Could not start"
                 },
                 "description": "Transport-level failure on the invoke, where the error object exists and the body does not.",
                 "displayName": "Message: Invoke error",
@@ -247,9 +247,9 @@
                 "attributes": {
                     "category": "ERROR",
                     "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fef2f2;border-left:5px solid #dc2626;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b91c1c;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#7f1d1d;margin:0 0 10px 0;\">Could not authenticate to the tenant</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">The OAuth token request failed, so the scan never ran.</div></td></tr></table><table role=\"presentation\" style=\"border-collapse:collapse;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;width:150px;font-size:13px;color:#64748b;\">Status</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\"><strong>{{$.getAccessToken.error.workflowStatusCode}}</strong></td></tr><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;width:150px;font-size:13px;color:#64748b;\">Detail</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\">{{$.getAccessToken.error.workflowErrorMessage}}</td></tr></table><div style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\">Re-apply the basic-auth reference on <strong>Get Access Token</strong> after import, and confirm the client id and secret are valid for this tenant.</div>",
+                    "message": "<table role=\"presentation\" style=\"border-collapse:separate;border-spacing:0;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"background-color:#fef2f2;border-left:5px solid #dc2626;border-radius:6px;padding:24px 26px;\"><div style=\"font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#b91c1c;margin:0 0 10px 0;\">Result</div><div style=\"font-size:20px;font-weight:700;line-height:1.4;color:#7f1d1d;margin:0 0 10px 0;\">Could not authenticate to the tenant</div><div style=\"font-size:14px;line-height:1.7;color:#1e293b;\">The OAuth token request failed, so the update never ran.</div></td></tr></table><table role=\"presentation\" style=\"border-collapse:collapse;width:100%;max-width:660px;margin:0 0 22px 0;\"><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;width:150px;font-size:13px;color:#64748b;\">Status</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\"><strong>{{$.getAccessToken.error.workflowStatusCode}}</strong></td></tr><tr><td style=\"padding:10px 24px 10px 0;vertical-align:top;width:150px;font-size:13px;color:#64748b;\">Detail</td><td style=\"padding:10px 0;vertical-align:top;font-size:14px;color:#0f172a;\">{{$.getAccessToken.error.workflowErrorMessage}}</td></tr></table><div style=\"background-color:#f8fafc;border-left:5px solid #94a3b8;border-radius:6px;padding:18px 22px;font-size:14px;line-height:1.7;color:#1e293b;\">Re-apply the basic-auth reference on <strong>Get Access Token</strong> after import, and confirm the client id and secret are valid for this tenant.</div>",
                     "ownerId.$": "$.trigger.launchedBy.id",
-                    "title": "Scan could not start"
+                    "title": "Could not start"
                 },
                 "description": "OAuth failure. The basic-auth reference is tenant-specific and does not survive an import.",
                 "displayName": "Message: Token failed",
@@ -259,13 +259,13 @@
             },
             "End Step - Success": {
                 "actionId": "sp:operator-success",
-                "displayName": "Success: Scan complete",
+                "displayName": "Success: Complete",
                 "type": "success"
             },
             "End Step - Failure": {
                 "actionId": "sp:operator-failure",
-                "displayName": "Failure: Scan did not complete",
-                "failureName": "Machine Identity Entitlements Scan Failed",
+                "displayName": "Failure: Did not complete",
+                "failureName": "Machine Identity Entitlements Failed",
                 "type": "failure"
             }
         }
@@ -274,7 +274,7 @@
     "trigger": {
         "type": "EVENT",
         "attributes": {
-            "filter.$": "$[?(@.workflowId == 'YOUR_MACHINE_IDENTITY_ENTITLEMENTS_SCAN_WORKFLOW_ID')]",
+            "filter.$": "$[?(@.workflowId == 'YOUR_MACHINE_IDENTITY_ENTITLEMENTS_WORKFLOW_ID')]",
             "id": "idn:interactive-process-launched",
             "integrationId": null
         }

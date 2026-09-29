@@ -38,8 +38,8 @@ flowchart TD
 | --- | --- |
 | [`Active Directory/source-subtypes.json`](Active%20Directory/source-subtypes.json) | `service-account`, `bot-account` |
 | [`Active Directory/machine-classification-config.json`](Active%20Directory/machine-classification-config.json) | Classify **all** accounts on the NHI source (`SOURCE`) |
-| [`Active Directory/Transforms/`](Active%20Directory/Transforms/) | Subtype + environment mapping transforms |
-| [`Active Directory/machine-account-mappings.json`](Active%20Directory/machine-account-mappings.json) | Maps subtype, environment, description |
+| [`Active Directory/Transforms/`](Active%20Directory/Transforms/) | Subtype, environment, and owner mapping transforms |
+| [`Active Directory/machine-account-mappings.json`](Active%20Directory/machine-account-mappings.json) | Maps subtype, environment, description, account owner |
 | [`Active Directory/Forms - Machine Account AD.json`](Active%20Directory/Forms%20-%20Machine%20Account%20AD.json) | Shared create form (VS Code form import array) |
 | [`Active Directory/Provisioning Policies/`](Active%20Directory/Provisioning%20Policies/) | Per-subtype `CREATE_MACHINE_ACCOUNT` profiles |
 | [`Active Directory/machine-config-*.json`](Active%20Directory/) | Enable create, form link, password setting examples |
@@ -51,6 +51,7 @@ flowchart TD
 | [`Microsoft Entra ID/source-subtypes.json`](Microsoft%20Entra%20ID/source-subtypes.json) | User- and system-managed subtypes from the demo tenant |
 | [`Microsoft Entra ID/machine-classification-config.json`](Microsoft%20Entra%20ID/machine-classification-config.json) | Criteria on `spn_servicePrincipalType` |
 | [`Microsoft Entra ID/Transforms/`](Microsoft%20Entra%20ID/Transforms/) | Subtype classifier + machine-identity naming |
+| [`Microsoft Entra ID/Workflows/`](Microsoft%20Entra%20ID/Workflows/) | Synchronize Application User Entitlements from Entra `spn_app_groups` (created + updated triggers) |
 | [`Microsoft Entra ID/machine-account-mappings.json`](Microsoft%20Entra%20ID/machine-account-mappings.json) | Full mapping set including identity correlation |
 | [`Microsoft Entra ID/Forms - Machine Account Entra ID.json`](Microsoft%20Entra%20ID/Forms%20-%20Machine%20Account%20Entra%20ID.json) | Service principal create form |
 | [`Microsoft Entra ID/Provisioning Policies/`](Microsoft%20Entra%20ID/Provisioning%20Policies/) | Service Principal create policy |
@@ -77,8 +78,11 @@ Import or create the transforms under each connector folder, then fix `sourceNam
 ```bash
 sail transform create -f "Active Directory/Transforms/Machine Account Subtype - Active Directory.json" --env <env>
 sail transform create -f "Active Directory/Transforms/Machine Account Environment - Active Directory.json" --env <env>
+sail transform create -f "Active Directory/Transforms/Machine Account Owner - Active Directory.json" --env <env>
 sail transform create -f "Microsoft Entra ID/Transforms/Machine Account Subtype - Entra ID.json" --env <env>
 sail transform create -f "Microsoft Entra ID/Transforms/Machine Identity - Entra ID.json" --env <env>
+sail transform create -f "Microsoft Entra ID/Transforms/Machine Account Owner - Entra ID.json" --env <env>
+sail transform create -f "Microsoft Entra ID/Transforms/Machine Account Description - Entra ID.json" --env <env>
 ```
 
 If a transform already exists: `sail transform update -f … --env <env>`.
@@ -131,7 +135,10 @@ sail api put /v2026/sources/<source-id>/machine-account-mappings \
 | Account Subtype | `Machine Account Subtype - Active Directory` ← `employeeType` |
 | Environment | `Machine Account Environment - Active Directory` ← `department` |
 | Description | Account attribute `description` |
+| Machine account owner | `Machine Account Owner - Active Directory` ← `manager` DN → CN → identity `uid` |
 | Machine Identity | Leave unmapped (uncorrelated application identity per account) |
+
+> **Owner mapping targets are a fixed set.** `OWNER_IDENTITY.attributeName` accepts only `uid`, `name`, and `email` — every other identity attribute (including searchable custom ones such as `distinguishedName`, and even standard searchable ones such as `personalEmail`) is rejected with `400.1.3 Illegal value`. Marking an identity attribute searchable does not add it to the Account to Identity dropdown. To own machine accounts by an AD `manager` DN, strip the DN to its CN with a transform and match `uid`, as `Machine Account Owner - Active Directory` does. Account to Account is not an option on a dedicated NHI source, since it has no human accounts to match.
 
 #### Entra ID mapping targets
 
@@ -140,7 +147,21 @@ sail api put /v2026/sources/<source-id>/machine-account-mappings \
 | Account Subtype | `Machine Account Subtype - Entra ID` |
 | Machine Identity / business application | `Machine Identity - Entra ID @…` (first-party org IDs → shared identity name) |
 | Environment | Account attribute `description` |
-| Description | Account attribute `displayName` |
+| Description | `Machine Account Description - Entra ID` ← `spn_owner` / `spn_app_groups` JSON `displayName` (fallback `displayName`) |
+| Machine account owner | `Machine Account Owner - Entra ID` ← `spn_owner` JSON `userPrincipalName` → identity `email` |
+
+#### User Entitlement synchronization
+
+Two workflows read the linked machine account's `spn_app_groups`, resolve each Entra object ID to the source's `groups` entitlement, and replace the machine identity's User Entitlements:
+
+| Workflow | Trigger | Filter |
+| --- | --- | --- |
+| `Workflow - Synchronize User Entitlements from Entra App Groups.json` | `idn:machine-identity-updated` | `subtype == "Application"` and a `description` change |
+| `Workflow - Synchronize User Entitlements from Entra App Groups (Created).json` | `idn:machine-identity-created` | `subtype == "Application"` |
+
+Both are needed: the created payload carries only `eventType` and `machineIdentity`, so a `description`-change filter can never match a newly mapped identity.
+
+Update the tenant URL, source ID, owner, and `paramID` OAuth references before importing elsewhere. The API rejects creating a workflow that is already enabled, so `enabled` stays `false` in these files — create, attach the HTTP connection, then `PUT` with `enabled: true`. `refID` values are assigned per workflow by the tenant and are intentionally absent here.
 
 ### 6. Create form
 

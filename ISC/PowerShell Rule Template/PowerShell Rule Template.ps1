@@ -1031,10 +1031,22 @@ function Write-RuleContextBlock {
 }
 
 function Exit-Rule {
-    param([int] $FailureCode)
+    param(
+        [int] $FailureCode,
+        [string] $NoOpReason
+    )
 
     if ($FailureCode -eq 0) {
-        Write-RuleLog -Level INFO -Phase completion -Message "Rule completed successfully. Exiting with code 0."
+        $reason = $null
+        if (-not [string]::IsNullOrWhiteSpace($NoOpReason)) {
+            $reason = $NoOpReason.Trim().TrimEnd('.')
+        }
+
+        if ([string]::IsNullOrWhiteSpace($reason)) {
+            Write-RuleLog -Level INFO -Phase completion -Message "Rule completed successfully. Exiting with code 0."
+        } else {
+            Write-RuleLog -Level INFO -Phase completion -Message ("No-op. Exiting with code 0 because {0}." -f $reason)
+        }
         exit 0
     }
 

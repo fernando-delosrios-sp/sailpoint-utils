@@ -1,0 +1,32 @@
+{
+  "name": "Machine Account Owner - Active Directory",
+  "type": "firstValid",
+  "attributes": {
+    "ignoreErrors": true,
+    "values": [
+      {
+        "type": "substring",
+        "attributes": {
+          "begin": 3,
+          "end": -1,
+          "input": {
+            "type": "split",
+            "attributes": {
+              "delimiter": ",",
+              "index": 0,
+              "throws": false,
+              "input": {
+                "type": "accountAttribute",
+                "attributes": {
+                  "attributeName": "manager",
+                  "sourceName": "Microsoft Active Directory @emea-tes-team (NHI)"
+                }
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "internal": false
+}

@@ -65,14 +65,14 @@
       "isGroup": false
     },
     {
-      "name": "title",
+      "name": "jobTitle",
       "type": "STRING",
       "isMulti": false,
       "isEntitlement": false,
       "isGroup": false
     },
     {
-      "name": "country",
+      "name": "location",
       "type": "STRING",
       "isMulti": false,
       "isEntitlement": false,
@@ -156,7 +156,7 @@
       "isGroup": false
     },
     {
-      "name": "term",
+      "name": "IIQDisabled",
       "type": "STRING",
       "isMulti": false,
       "isEntitlement": false,

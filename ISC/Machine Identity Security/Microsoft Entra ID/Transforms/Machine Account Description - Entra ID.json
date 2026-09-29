@@ -1,0 +1,69 @@
+{
+  "name": "Machine Account Description - Entra ID",
+  "type": "firstValid",
+  "attributes": {
+    "ignoreErrors": true,
+    "values": [
+      {
+        "type": "static",
+        "attributes": {
+          "owner": {
+            "type": "firstValid",
+            "attributes": {
+              "ignoreErrors": true,
+              "values": [
+                {
+                  "type": "replace",
+                  "attributes": {
+                    "regex": "^.*?\"displayName\"\\s*:\\s*\"([^\"]+)\".*$",
+                    "replacement": "$1",
+                    "input": {
+                      "type": "accountAttribute",
+                      "attributes": {
+                        "attributeName": "spn_owner",
+                        "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+                      }
+                    }
+                  }
+                },
+                "NONE"
+              ]
+            }
+          },
+          "groups": {
+            "type": "firstValid",
+            "attributes": {
+              "ignoreErrors": true,
+              "values": [
+                {
+                  "type": "replace",
+                  "attributes": {
+                    "regex": "^.*?\"displayName\"\\s*:\\s*\"([^\"]+)\".*$",
+                    "replacement": "$1",
+                    "input": {
+                      "type": "accountAttribute",
+                      "attributes": {
+                        "attributeName": "spn_app_groups",
+                        "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+                      }
+                    }
+                  }
+                },
+                "NONE"
+              ]
+            }
+          },
+          "value": "#if($owner != 'NONE' && $groups != 'NONE')Owners: ${owner}; Groups: ${groups}#elseif($owner != 'NONE')Owners: ${owner}#elseif($groups != 'NONE')Groups: ${groups}#end"
+        }
+      },
+      {
+        "type": "accountAttribute",
+        "attributes": {
+          "attributeName": "displayName",
+          "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+        }
+      }
+    ]
+  },
+  "internal": false
+}

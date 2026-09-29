@@ -16,8 +16,8 @@ create table public."MelonHRM" (
     nickname text,
     email text,
     other_email text,
-    title text,
-    country text,
+    "jobTitle" text,
+    location text,
     city text,
     manager text,
     type text,
@@ -67,7 +67,7 @@ end $$;
 -- Positive-match titles differ from OrangeHRM candidates but stay semantically similar.
 insert into public."MelonHRM" (
     employee_id, employeenumber, "givenName", "familyName", middlename, nickname,
-    email, other_email, title, country, city, manager, type, empstatus,
+    email, other_email, "jobTitle", location, city, manager, type, empstatus,
     otherid, zipcode, home_phone, mobile, telephone, username, department,
     term, ftostart, ftoend, "contractStartDate", "contractEndDate", category
 ) values
@@ -88,7 +88,7 @@ insert into public."MelonHRM" (
     -- 2 automatic matches (titles vary from OrangeHRM)
     ('MEL0012', '112', 'Deb', 'Wood', null, 'Debra', 'deb.wood@melonhrm.example', 'Deb.Wood@sailpointdemo.com', 'Inventory Analyst', 'Belgium', 'Brussels', 'MEL0006', 'Active Employee', '5', 'HR-1012', null, null, '+32 470 00 00 12', '+32 2 555 0112', 'deb.wood', 'Regional Operations', 'false', '2016-11-07', null, null, null, null),
     ('MEL0013', '113', 'Randall', 'Knight', null, 'Randy', 'randall.knight@melonhrm.example', 'Randall.Knight@sailpointdemo.com', 'Director of Operations', 'Japan', 'Tokyo', 'MEL0006', 'Active Employee', '5', null, null, null, '+81 90 0000 0013', '+81 3 5550 0113', 'randall.knight', 'Regional Operations', 'false', '2017-02-20', null, null, null, null),
-    -- 1 true-positive manual match (title varies from OrangeHRM)
+    -- 1 true-positive manual match (job title varies from OrangeHRM)
     ('MEL0014', '114', 'Patti', 'Jones', null, 'Patricia', 'patti.jones@melonhrm.example', 'Patti.Jones@sailpointdemo.com', 'Finance Manager', 'United States', 'San Jose', 'MEL0006', 'Active Employee', '5', 'HR-1014', '95113', null, null, null, 'patti.jones', 'Regional Operations', 'false', '2016-08-08', null, null, null, null),
     -- 1 false-positive manual match: new Melon-only Kate Simmons vs OrangeHRM Catherine Simmons.
     -- Johnny/Jon Williams auto-merged into John Williams (>=95); Kate/Catherine should land in review.

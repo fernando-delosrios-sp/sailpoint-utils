@@ -199,14 +199,14 @@ Every completed evaluation SHALL persist exactly one result-source account whose
 - **THEN** `OperationSignature.response` SHALL include the same scanned, updated, skipped, failed, and entitlements-added counts
 - **AND** the response id list SHALL contain only `requestId`
 
-### Requirement: Interactive Scan workflow is presentation-only
+### Requirement: Interactive workflow is presentation-only
 
-The repository SHALL ship the interactive Scan workflow that invokes only `custom:machine-identity-entitlements` and presents no-work, successful-update, partial, and failed outcomes from its response summary. The repository SHALL NOT register `custom:machine-identity-entitlements-apply` or ship an Account Created Apply workflow for this capability.
+The repository SHALL ship an interactive workflow named Machine Identity Entitlements that invokes only `custom:machine-identity-entitlements` and presents no-work, successful-update, partial, and failed outcomes from its response summary. The repository SHALL NOT register `custom:machine-identity-entitlements-apply` or ship an Account Created Apply workflow for this capability.
 
-#### Scenario: Scan wrapper reports a partial run
+#### Scenario: Wrapper reports a partial run
 
 - **GIVEN** the operation response reports one or more failed identities and at least one updated identity
-- **WHEN** the Scan workflow evaluates the invoke body
+- **WHEN** the workflow evaluates the invoke body
 - **THEN** it SHALL show a partial-completion warning with updated and failed counts
 
 #### Scenario: Standalone apply path is absent

@@ -391,6 +391,14 @@ The trailing message is usually empty. Use the rule log.
 
 For After rules, exiting `1` does not undo the operation by itself. Rollback happens only if the source sets `rollbackCreatedAccountOnError` to `true`.
 
+When custom code decides there is nothing to do, exit through the same function with a reason:
+
+```powershell
+Exit-Rule -FailureCode 0 -NoOpReason "this rule only handles Create operations (current operation: $operation)"
+```
+
+That writes `No-op. Exiting with code 0 because ...` and does not also write `Rule completed successfully`. A skip that still continues the rule — an object that already exists, an optional side step — stays a normal process log.
+
 ## Security
 
 Default logging redacts:
@@ -424,7 +432,7 @@ The runtime file changed during copy, or the destination is not writable. Logged
 
 ### Operation reported failed even though custom logic succeeded
 
-Keep custom code inside the provided `try/catch`. Do not add your own `exit`. Non-terminating errors you leave unhandled can still confuse later checks.
+Keep custom code inside the provided `try/catch`. Do not add your own `exit`. Intentional skips use `Exit-Rule -FailureCode 0 -NoOpReason`. Non-terminating errors you leave unhandled can still confuse later checks.
 
 ### Need raw payloads
 

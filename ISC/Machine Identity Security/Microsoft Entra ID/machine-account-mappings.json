@@ -43,11 +43,17 @@
     },
     "transformDefinition": {
       "attributes": {
-        "attributeName": "displayName",
-        "sourceId": "1f3680fd99094e4bb70c4880542caf2a",
-        "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+        "id": "Machine Account Description - Entra ID",
+        "input": {
+          "attributes": {
+            "attributeName": "displayName",
+            "sourceId": "1f3680fd99094e4bb70c4880542caf2a",
+            "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+          },
+          "type": "accountAttribute"
+        }
       },
-      "type": "accountAttribute"
+      "type": "reference"
     }
   },
   {
@@ -62,6 +68,27 @@
         "input": {
           "attributes": {
             "attributeName": "displayName",
+            "sourceId": "1f3680fd99094e4bb70c4880542caf2a",
+            "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
+          },
+          "type": "accountAttribute"
+        }
+      },
+      "type": "reference"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "email",
+      "sourceId": null,
+      "type": "OWNER_IDENTITY"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "id": "Machine Account Owner - Entra ID",
+        "input": {
+          "attributes": {
+            "attributeName": "spn_owner",
             "sourceId": "1f3680fd99094e4bb70c4880542caf2a",
             "sourceName": "Microsoft Entra ID @emea-tes-team.cloud (NHI)"
           },

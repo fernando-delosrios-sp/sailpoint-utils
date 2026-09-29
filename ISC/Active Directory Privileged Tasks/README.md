@@ -2,16 +2,16 @@
 
 ## Purpose
 
-Interactive ISC workflows that let an operator create an Active Directory **security group** (via Privileged Action Gateway) or a **CIFS shared folder** (access request plus an IQService BeforeModify rule), extracted from a working demo tenant.
+Interactive ISC workflows that let an operator create an Active Directory **security group** (via Privileged Action Gateway) or a **CIFS shared folder** (access request plus an IQService AfterModify rule), extracted from a working demo tenant.
 
-`ConnectorBeforeModify - Create Shared Folder in Active Directory.ps1` is built from [PowerShell Rule Template](../PowerShell%20Rule%20Template/README.md). Bootstrap, logging, redaction, and exit handling come from the template. Folder, share, and group work live in the custom process section.
+`ConnectorAfterModify - Create Shared Folder in Active Directory.ps1` is built from [PowerShell Rule Template](../PowerShell%20Rule%20Template/README.md). Bootstrap, logging, redaction, and exit handling come from the template. Folder, share, and group work live in the custom process section.
 
 ## Overview
 
 Two operator-facing interactive processes:
 
 1. **Create a Group in Active Directory** — Collects name, manager, group type, and OU. Privileged Action Gateway (PAG) lists OUs, checks the name is free, creates the group, sets `managedBy`, and emails the manager. The manager dropdown only offers identities that already have an account on the configured AD source, because `managedBy` needs their distinguished name.
-2. **Create a Shared Folder in Active Directory** — Collects folder, parent path, and share name. Submits a short-lived access request whose `memberOf` comments carry folder metadata. The AD source **ConnectorBeforeModify - Create Shared Folder in Active Directory** rule creates the directory, SMB share, and three permission groups. A child workflow then aggregates AD entitlements.
+2. **Create a Shared Folder in Active Directory** — Collects folder, parent path, and share name. Submits a short-lived access request whose `memberOf` comments carry folder metadata. The AD source **ConnectorAfterModify - Create Shared Folder in Active Directory** rule creates the directory, SMB share, and three permission groups. A child workflow then aggregates AD entitlements.
 
 ## Artifacts
 
@@ -21,7 +21,7 @@ Two operator-facing interactive processes:
 | `Workflow - Create a Shared Folder in Active Directory.json` | Workflow export | Interactive shared-folder request |
 | `Workflow - Aggregate Microsoft Active Directory entitlements.json` | Shared workflow export | External trigger: wait, then aggregate the configured AD source |
 | `Forms - Active Directory Privileged Tasks.json` | Form export (array) | All three forms for VS Code form import |
-| `ConnectorBeforeModify - Create Shared Folder in Active Directory.ps1` | ConnectorBeforeModify rule | IQService script (PowerShell Rule Template) that creates the share from access-request comments |
+| `ConnectorAfterModify - Create Shared Folder in Active Directory.ps1` | ConnectorAfterModify rule | IQService script (PowerShell Rule Template) that creates the share from access-request comments |
 
 > **Form import format:** The SailPoint VS Code extension expects a **JSON array** (`[{ version, self, object }, …]`). Import `Forms - Active Directory Privileged Tasks.json` first. Fields must sit inside a **SECTION**. HTML ampersands are already escaped as `&#39;` / `&nbsp;` where the tenant stored them.
 >
@@ -34,7 +34,7 @@ Two operator-facing interactive processes:
 
 - **Workflows:** `Create a Group in Active Directory`, `Create a Shared Folder in Active Directory`, `Aggregate Microsoft Active Directory entitlements`
 - **Form definitions:** `New Security Group Details`, `Supply Email Address`, `Create Shared Folder in Active Directory`
-- **Connector rule:** `ConnectorBeforeModify - Create Shared Folder in Active Directory`, attached as `nativeRules` on the AD source
+- **Connector rule:** `ConnectorAfterModify - Create Shared Folder in Active Directory`, attached as `nativeRules` on the AD source
 
 Tenant-specific values (PAG instance, Parameter Storage ids, source id, domain controller) are placeholders. Re-bind them after import. The **emea-tes-team** working values below are examples only.
 
@@ -92,7 +92,7 @@ flowchart TD
   scheduling --> agg[POST external Aggregate Microsoft AD entitlements]
   agg -->|accepted| done[Confirm request submitted]
   agg -->|error| refreshFail[Warn: provisioning may still complete]
-  req -.->|IQService BeforeModify| rule["Create Shared Folder rule"]
+  req -.->|IQService AfterModify| rule["Create Shared Folder rule"]
 ```
 
 **Trigger:** `idn:interactive-process-launched`.
@@ -145,7 +145,7 @@ Calls that start the shared aggregation workflow are different. An external trig
 | Variable | Placeholder | Purpose |
 |---|---|---|
 | Active Directory Source | `YOUR_AD_SOURCE_ID` | Source UUID (shared-folder and aggregation) |
-| Entitlement | `YOUR_TRIGGER_ENTITLEMENT_ID` | Requestable dummy entitlement that triggers BeforeModify |
+| Entitlement | `YOUR_TRIGGER_ENTITLEMENT_ID` | Requestable dummy entitlement that triggers AfterModify |
 | url | `https://{tenant}.api.identitynow-demo.com` | ISC API base |
 | sunset | now + 3 minutes | Access-request `removeDate` in the demo export |
 
@@ -207,7 +207,7 @@ Shown when the manager identity has no email. The EMAIL field is required and in
 Import order matters. Workflows reference form definition IDs from this export; after import, ISC assigns new form IDs — update the workflow form steps to match.
 
 1. Import **`Forms - Active Directory Privileged Tasks.json`**.
-2. Create the **ConnectorBeforeModify - Create Shared Folder in Active Directory** connector rule from `ConnectorBeforeModify - Create Shared Folder in Active Directory.ps1`. The `$ConnectorRuleName` constant must match the ISC display name. Add it to the AD source `nativeRules` list (keep every other native rule that source already uses). Configure:
+2. Create the **ConnectorAfterModify - Create Shared Folder in Active Directory** connector rule from `ConnectorAfterModify - Create Shared Folder in Active Directory.ps1`. The `$ConnectorRuleName` constant must match the ISC display name. Add it to the AD source `nativeRules` list (keep every other native rule that source already uses). Configure:
    - `SharedFolderAllowedParentPaths`: list (or semicolon/newline-delimited string) of exact parent paths the rule may write to.
    - `SharedFolderGroupOU`: distinguished name where the permission groups are created.
    - Optional `SharedFolderDebugEnabled`: `true` adds process debug lines.
@@ -244,7 +244,7 @@ Template source attributes control failure reporting and diagnostics:
 - [ ] AD source name set in **both** places: the **Active Directory Source Name** variable and the **Get Active Directory Manager Account** JSONPath. Launch the process once and confirm the manager dropdown is populated; an empty dropdown means the name is wrong.
 - [ ] AD source id, dummy entitlement, API URL, workflow id, and aggregation workflow id set on the shared-folder workflow.
 - [ ] Tenant API HTTP Request actions are v3 and bind Parameter Storage OAuth (`1.4`) and scopes (`3.1`) ids; the two `execute/external` calls use the aggregation external trigger token. Secrets stay in the tenant, not git.
-- [ ] `ConnectorBeforeModify - Create Shared Folder in Active Directory` exists in the tenant **and** its exact name is in the AD source `nativeRules`; confirm a per-run log under `<IQService>\scripts`.
+- [ ] `ConnectorAfterModify - Create Shared Folder in Active Directory` exists in the tenant **and** its exact name is in the AD source `nativeRules`; confirm a per-run log under `<IQService>\scripts`.
 - [ ] `SharedFolderAllowedParentPaths` and `SharedFolderGroupOU` set on the AD source. Both are required; the rule throws without them.
 - [ ] Parent folder options on the form exist on the IQService host and exactly match `SharedFolderAllowedParentPaths`.
 - [ ] Interactive processes linked; workflows enabled.
@@ -321,7 +321,7 @@ sail api get '/beta/entitlements?filters=source.id eq "<sourceId>"&limit=250' --
 
 ### Dummy **Folder Request** entitlement is not removed after sunset
 
-IQService runs this BeforeModify rule on every Modify, including the later `memberOf` Remove for the trigger group. A non-empty comment that is not shared-folder JSON (ISC often sends `fix` on generated revokes) used to make `ConvertFrom-Json` throw, `Exit-Rule 1`, and abort the pending Remove. The rule now skips those comments with exit 0. Re-upload the updated script to ISC, then retry the revoke or wait for the next sunset.
+IQService runs this AfterModify rule on every Modify, including the later `memberOf` Remove for the trigger group. The Remove is already committed before the script runs. A non-empty comment that is not shared-folder JSON (ISC often sends `fix` on generated revokes) is skipped with exit 0, so the rule does not report a failure after that successful Remove.
 
 ### No log under `<IQService>\scripts`
 
@@ -339,7 +339,7 @@ Follow the [PowerShell Rule Template troubleshooting steps](../PowerShell%20Rule
 
 ## Related patterns
 
-- [PowerShell Rule Template](../PowerShell%20Rule%20Template/) — IQService bootstrap used by `ConnectorBeforeModify - Create Shared Folder in Active Directory.ps1`.
+- [PowerShell Rule Template](../PowerShell%20Rule%20Template/) — IQService bootstrap used by `ConnectorAfterModify - Create Shared Folder in Active Directory.ps1`.
 - [Active Directory Home Folders](../Active%20Directory%20Home%20Folders/) — AfterCreate folder + NTFS ACLs from source attributes.
 - [Active Directory OU Management](../Active%20Directory%20OU%20Management/) — BeforeCreate/BeforeModify OU (and optional group) creation.
 - [Identity Match & Onboard](../Identity%20Match%20%26%20Onboard/) — Interactive process + form import format.

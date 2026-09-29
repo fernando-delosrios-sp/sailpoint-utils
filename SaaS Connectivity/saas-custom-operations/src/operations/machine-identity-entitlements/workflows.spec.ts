@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-const SCAN_FILE = 'Machine Identity Entitlements - Scan.json'
+const WORKFLOW_FILE = 'Machine Identity Entitlements.json'
 const WORKFLOWS_DIR = join(__dirname, '../../../workflows')
 
 interface WorkflowStep {
@@ -37,11 +37,11 @@ function readWorkflow(file: string): WorkflowExport {
     return JSON.parse(readFileSync(join(WORKFLOWS_DIR, file), 'utf8')) as WorkflowExport
 }
 
-describe(SCAN_FILE, () => {
+describe(WORKFLOW_FILE, () => {
     const INVOKE_BODY = '$.callSaaSCustomOperation.body'
 
     it('is launched as an interactive process and opens with the explanation panel', () => {
-        const workflow = readWorkflow(SCAN_FILE)
+        const workflow = readWorkflow(WORKFLOW_FILE)
 
         expect(workflow.trigger.type).toBe('EVENT')
         expect(workflow.trigger.attributes?.id).toBe('idn:interactive-process-launched')
@@ -50,7 +50,7 @@ describe(SCAN_FILE, () => {
     })
 
     it('invokes machine-identity-entitlements with a per-run requestId', () => {
-        const invoke = readWorkflow(SCAN_FILE).definition.steps['Call SaaS Custom Operation']?.attributes
+        const invoke = readWorkflow(WORKFLOW_FILE).definition.steps['Call SaaS Custom Operation']?.attributes
             ?.jsonRequestBody as { type?: string; input?: Record<string, unknown> } | undefined
 
         expect(invoke?.type).toBe('custom:machine-identity-entitlements')
@@ -59,7 +59,7 @@ describe(SCAN_FILE, () => {
     })
 
     it('reads the invoke body only through string comparisons', () => {
-        const steps = readWorkflow(SCAN_FILE).definition.steps
+        const steps = readWorkflow(WORKFLOW_FILE).definition.steps
         const invokeFailed = steps['Check Invoke Result']
         const anyWork = steps['Check Identities Updated']
 
@@ -89,16 +89,16 @@ describe(SCAN_FILE, () => {
     })
 
     it('shows the raw invoke body on partial and failure panels', () => {
-        const steps = readWorkflow(SCAN_FILE).definition.steps
+        const steps = readWorkflow(WORKFLOW_FILE).definition.steps
         const showsBody = Object.entries(steps)
             .filter(([, step]) => JSON.stringify(step.attributes ?? {}).includes(INVOKE_BODY))
             .map(([name]) => name)
 
-        expect(showsBody).toEqual(['Message Partial', 'Message Scan Failed'])
+        expect(showsBody).toEqual(['Message Partial', 'Message Failed'])
     })
 
     it('ends every outcome on a panel that names it', () => {
-        const steps = readWorkflow(SCAN_FILE).definition.steps
+        const steps = readWorkflow(WORKFLOW_FILE).definition.steps
 
         expect(steps['Check Invoke Result']?.defaultStep).toBe('Check Identities Updated')
         expect(steps['Check Identities Updated']?.choiceList?.[0]?.nextStep).toBe('Message No Work')
@@ -108,7 +108,7 @@ describe(SCAN_FILE, () => {
         expect(steps['Message No Work']?.nextStep).toBe('End Step - Success')
         expect(steps['Message Work Applied']?.nextStep).toBe('End Step - Success')
         expect(steps['Message Partial']?.nextStep).toBe('End Step - Success')
-        expect(steps['Message Scan Failed']?.nextStep).toBe('End Step - Failure')
+        expect(steps['Message Failed']?.nextStep).toBe('End Step - Failure')
         expect(steps['Get Access Token']?.catch?.[0]?.next).toBe('Message Token Failed')
         expect(steps['Call SaaS Custom Operation']?.catch?.[0]?.next).toBe('Message Invoke Error')
     })

@@ -7,13 +7,13 @@
           "id": "sp:define-variable",
           "variables": [
             {
-              "description": "Active Directory source that owns the trigger entitlement and runs ConnectorBeforeModify - Create Shared Folder in Active Directory.",
+              "description": "Active Directory source that owns the trigger entitlement and runs ConnectorAfterModify - Create Shared Folder in Active Directory.",
               "name": "Active Directory Source",
               "transforms": [],
               "variableA": "YOUR_AD_SOURCE_ID"
             },
             {
-              "description": "Requestable dummy entitlement whose grant invokes the Create Shared Folder BeforeModify rule.",
+              "description": "Requestable dummy entitlement whose grant invokes the Create Shared Folder AfterModify rule.",
               "name": "Entitlement",
               "transforms": [],
               "variableA": "YOUR_TRIGGER_ENTITLEMENT_ID"
@@ -137,7 +137,7 @@
             "next": "Interactive Message - Request Failed"
           }
         ],
-        "description": "Submits a temporary entitlement request carrying the shared-folder metadata consumed by ConnectorBeforeModify - Create Shared Folder in Active Directory.",
+        "description": "Submits a temporary entitlement request carrying the shared-folder metadata consumed by ConnectorAfterModify - Create Shared Folder in Active Directory.",
         "displayName": "Submit Shared Folder Request",
         "nextStep": "Interactive Message - Refreshing",
         "type": "action",

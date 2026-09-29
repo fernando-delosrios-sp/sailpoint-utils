@@ -686,12 +686,12 @@ describe('custom:machine-identity-entitlements', () => {
 
     it('C4 diagram remains linked from the change design', () => {
         const design = readFileSync(
-            join(__dirname, '../../../openspec/changes/machine-identity-entitlements/design.md'),
+            join(__dirname, '../../../openspec/changes/archive/2026-09-25-machine-identity-entitlements/design.md'),
             'utf8'
         )
         const diagram = join(
             __dirname,
-            '../../../openspec/changes/machine-identity-entitlements/diagrams/machine-identity-entitlements.drawio'
+            '../../../openspec/changes/archive/2026-09-25-machine-identity-entitlements/diagrams/machine-identity-entitlements.drawio'
         )
         expect(design).toContain('diagrams/machine-identity-entitlements.drawio')
         expect(existsSync(diagram)).toBe(true)

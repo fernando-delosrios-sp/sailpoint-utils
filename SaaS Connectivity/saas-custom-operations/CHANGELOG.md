@@ -10,7 +10,7 @@ All notable changes to **saas-custom-operations** are documented here.
 
 -   **One summary records the complete run** — instead of creating one trigger account per identity and relying on a second Apply workflow, each invoke persists one account keyed by `requestId` with scanned, updated, skipped, failed, and entitlements-added counts. Identity failures do not stop the remaining updates: mixed outcomes are `partial`, while an all-failed apply reports failure after preserving its summary.
 
--   **Interactive scan wrapper reports the apply outcome** — import `workflows/Machine Identity Entitlements - Scan.json`. It invokes the single operation and presents no-work, successful, partial, or failed results. The previous Account Created Apply workflow and `custom:machine-identity-entitlements-apply` command are no longer required.
+-   **Interactive wrapper reports the apply outcome** — import `workflows/Machine Identity Entitlements.json`. It invokes the single operation and presents no-work, successful, partial, or failed results. The previous Account Created Apply workflow and `custom:machine-identity-entitlements-apply` command are no longer required.
 
 ---
 
