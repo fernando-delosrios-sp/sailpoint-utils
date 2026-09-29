@@ -1,0 +1,15 @@
+{
+  "name": "Machine Account Subtype - OpenDJ",
+  "type": "static",
+  "attributes": {
+    "cn": {
+      "type": "accountAttribute",
+      "attributes": {
+        "attributeName": "cn",
+        "sourceName": "OpenDJ"
+      }
+    },
+    "value": "#if($cn.toLowerCase().startsWith('svc-'))service-account#elseif($cn.toLowerCase().endsWith('-adm'))admin-account#{end}"
+  },
+  "internal": false
+}

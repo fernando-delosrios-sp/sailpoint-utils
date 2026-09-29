@@ -1,0 +1,20 @@
+[
+  {
+    "technicalName": "admin-account",
+    "displayName": "Admin Account",
+    "description": "Privileged OpenDJ administrator account.",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "25cb384f-a241-4d9c-807e-d904147119fa",
+    "sourceId": "d01f06751ad74a45bdeb32b1b83b1690"
+  },
+  {
+    "technicalName": "service-account",
+    "displayName": "Service Account",
+    "description": "OpenDJ service account whose common name starts with svc-.",
+    "type": "MACHINE",
+    "systemManaged": false,
+    "id": "f2557b67-0f96-4336-ae21-49a80d855f45",
+    "sourceId": "d01f06751ad74a45bdeb32b1b83b1690"
+  }
+]

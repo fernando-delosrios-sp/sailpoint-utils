@@ -1,0 +1,46 @@
+{
+  "name": "Machine Account Owner - OpenDJ",
+  "type": "firstValid",
+  "attributes": {
+    "ignoreErrors": true,
+    "values": [
+      {
+        "type": "substring",
+        "attributes": {
+          "begin": 3,
+          "end": -1,
+          "input": {
+            "type": "split",
+            "attributes": {
+              "delimiter": ",",
+              "index": 0,
+              "throws": false,
+              "input": {
+                "type": "accountAttribute",
+                "attributes": {
+                  "attributeName": "manager",
+                  "sourceName": "OpenDJ"
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "type": "replace",
+        "attributes": {
+          "regex": "-adm$",
+          "replacement": "",
+          "input": {
+            "type": "accountAttribute",
+            "attributes": {
+              "attributeName": "uid",
+              "sourceName": "OpenDJ"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "internal": false
+}

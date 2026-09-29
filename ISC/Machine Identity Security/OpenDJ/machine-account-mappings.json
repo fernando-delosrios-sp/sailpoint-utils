@@ -1,0 +1,88 @@
+[
+  {
+    "target": {
+      "attributeName": "nativeIdentity",
+      "sourceId": null,
+      "type": "IDENTITY"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "attributeName": "cn",
+        "sourceId": "d01f06751ad74a45bdeb32b1b83b1690",
+        "sourceName": "OpenDJ"
+      },
+      "type": "accountAttribute"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "environment",
+      "sourceId": null,
+      "type": "ACCOUNT"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "attributeName": "departmentNumber",
+        "sourceId": "d01f06751ad74a45bdeb32b1b83b1690",
+        "sourceName": "OpenDJ"
+      },
+      "type": "accountAttribute"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "description",
+      "sourceId": null,
+      "type": "ACCOUNT"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "attributeName": "description",
+        "sourceId": "d01f06751ad74a45bdeb32b1b83b1690",
+        "sourceName": "OpenDJ"
+      },
+      "type": "accountAttribute"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "subtype",
+      "sourceId": null,
+      "type": "ACCOUNT"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "id": "Machine Account Subtype - OpenDJ"
+      },
+      "type": "reference"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "uid",
+      "sourceId": null,
+      "type": "OWNER_IDENTITY"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "id": "Machine Account Owner - OpenDJ"
+      },
+      "type": "reference"
+    }
+  },
+  {
+    "target": {
+      "attributeName": "businessApplication",
+      "sourceId": null,
+      "type": "IDENTITY"
+    },
+    "transformDefinition": {
+      "attributes": {
+        "attributeName": "cn",
+        "sourceId": "d01f06751ad74a45bdeb32b1b83b1690",
+        "sourceName": "OpenDJ"
+      },
+      "type": "accountAttribute"
+    }
+  }
+]

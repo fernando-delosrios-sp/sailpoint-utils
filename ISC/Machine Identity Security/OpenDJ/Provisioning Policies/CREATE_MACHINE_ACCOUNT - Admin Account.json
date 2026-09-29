@@ -1,0 +1,147 @@
+{
+  "name": "Admin Account",
+  "description": "Creates an OpenDJ inetOrgPerson administrator account in the Admins container from the machine-account request form.",
+  "usageType": "CREATE_MACHINE_ACCOUNT",
+  "subtypeId": "25cb384f-a241-4d9c-807e-d904147119fa",
+  "fields": [
+    {
+      "name": "dn",
+      "transform": {
+        "type": "static",
+        "attributes": {
+          "value": "cn=${userInput.accountName}-adm,ou=Admins,dc=seri,dc=sailpointdemo,dc=com"
+        }
+      },
+      "attributes": {
+        "cloudRequired": "true"
+      },
+      "isRequired": true,
+      "type": "string",
+      "isMultiValued": false
+    },
+    {
+      "name": "cn",
+      "transform": {
+        "type": "static",
+        "attributes": {
+          "value": "${userInput.accountName}-adm"
+        }
+      },
+      "attributes": {
+        "cloudRequired": "true"
+      },
+      "isRequired": true,
+      "type": "string",
+      "isMultiValued": false
+    },
+    {
+      "name": "uid",
+      "transform": {
+        "type": "static",
+        "attributes": {
+          "value": "${userInput.accountName}-adm"
+        }
+      },
+      "attributes": {
+        "cloudMaxUniqueChecks": "50",
+        "cloudRequired": "true"
+      },
+      "isRequired": true,
+      "type": "string",
+      "isMultiValued": false
+    },
+    {
+      "name": "sn",
+      "transform": {
+        "type": "static",
+        "attributes": {
+          "value": "Admin Account"
+        }
+      },
+      "attributes": {
+        "cloudRequired": "true"
+      },
+      "isRequired": true,
+      "type": "string",
+      "isMultiValued": false
+    },
+    {
+      "name": "password",
+      "transform": {
+        "type": "rule",
+        "attributes": {
+          "name": "Create Password"
+        }
+      },
+      "attributes": {},
+      "isRequired": true,
+      "type": "secret",
+      "isMultiValued": false
+    },
+    {
+      "name": "displayName",
+      "transform": {
+        "type": "static",
+        "attributes": {
+          "value": "${userInput.displayName}"
+        }
+      },
+      "attributes": {},
+      "isRequired": true,
+      "type": "string",
+      "isMultiValued": false
+    },
+    {
+      "name": "description",
+      "transform": {
+        "type": "static",
+        "attributes": {
+          "value": "${userInput.description}"
+        }
+      },
+      "attributes": {},
+      "isRequired": true,
+      "type": "string",
+      "isMultiValued": false
+    },
+    {
+      "name": "departmentNumber",
+      "transform": {
+        "type": "static",
+        "attributes": {
+          "value": "${userInput.environment}"
+        }
+      },
+      "attributes": {},
+      "isRequired": true,
+      "type": "string",
+      "isMultiValued": false
+    },
+    {
+      "name": "employeeType",
+      "transform": {
+        "type": "static",
+        "attributes": {
+          "value": "admin-account"
+        }
+      },
+      "attributes": {},
+      "isRequired": true,
+      "type": "string",
+      "isMultiValued": false
+    },
+    {
+      "name": "manager",
+      "transform": {
+        "type": "static",
+        "attributes": {
+          "value": "cn=${userInput.ownerUid},ou=People,dc=seri,dc=sailpointdemo,dc=com"
+        }
+      },
+      "attributes": {},
+      "isRequired": true,
+      "type": "string",
+      "isMultiValued": false
+    }
+  ]
+}

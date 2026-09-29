@@ -1,0 +1,47 @@
+{
+  "enabled": true,
+  "classificationMethod": "CRITERIA",
+  "criteria": {
+    "operation": "OR",
+    "caseSensitive": false,
+    "dataType": null,
+    "attribute": null,
+    "value": null,
+    "children": [
+      {
+        "operation": "AND",
+        "caseSensitive": false,
+        "dataType": null,
+        "attribute": null,
+        "value": null,
+        "children": [
+          {
+            "operation": "ENDS_WITH",
+            "caseSensitive": false,
+            "dataType": null,
+            "attribute": "cn",
+            "value": "-adm",
+            "children": null
+          }
+        ]
+      },
+      {
+        "operation": "AND",
+        "caseSensitive": false,
+        "dataType": null,
+        "attribute": null,
+        "value": null,
+        "children": [
+          {
+            "operation": "STARTS_WITH",
+            "caseSensitive": false,
+            "dataType": null,
+            "attribute": "cn",
+            "value": "svc-",
+            "children": null
+          }
+        ]
+      }
+    ]
+  }
+}

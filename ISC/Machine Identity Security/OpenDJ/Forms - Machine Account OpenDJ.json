@@ -1,0 +1,410 @@
+[
+  {
+    "version": 1,
+    "self": {
+      "id": "0c3d2571-a438-45fa-824f-0b01a5c396a4",
+      "name": "Machine Account - OpenDJ Admin Account",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "0c3d2571-a438-45fa-824f-0b01a5c396a4",
+      "name": "Machine Account - OpenDJ Admin Account",
+      "description": "Request a new OpenDJ administrator account in the Admins container.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "902e15e60b374ff080e729af3e05d325",
+        "name": "SailPoint Services"
+      },
+      "usedBy": [
+        {
+          "id": "25cb384f-a241-4d9c-807e-d904147119fa",
+          "type": "SOURCE_SUBTYPE"
+        }
+      ],
+      "formInput": [],
+      "formElements": [
+        {
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">The account is created in the OpenDJ Admins container. SailPoint automatically appends <strong>-adm</strong> to the requested base name.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "opendj-service-intro",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Use letters, numbers, periods, hyphens, or underscores. The -adm suffix is added automatically.",
+                  "label": "Base account name",
+                  "placeholder": "e.g. svc-finance",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "opendj-service-name",
+                "key": "accountName",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  },
+                  {
+                    "config": {
+                      "message": "Use 1-60 letters, numbers, periods, hyphens, or underscores. Start with a letter or number.",
+                      "regex": "^[A-Za-z0-9][A-Za-z0-9._-]{0,59}$"
+                    },
+                    "validationType": "REGEX"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Friendly name shown in SailPoint and OpenDJ.",
+                  "label": "Display name",
+                  "placeholder": "e.g. Finance Invoice Service",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "opendj-service-display",
+                "key": "displayName",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Describe what the administrator account does and which system uses it.",
+                  "label": "Purpose",
+                  "placeholder": "e.g. Posts approved invoices to the ERP.",
+                  "required": true
+                },
+                "elementType": "TEXTAREA",
+                "id": "opendj-service-purpose",
+                "key": "description",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              }
+            ],
+            "label": "Account details",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "elementType": "SECTION",
+          "id": "opendj-service-section-details",
+          "validations": []
+        },
+        {
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "options": [
+                        {
+                          "label": "Production",
+                          "subLabel": "",
+                          "value": "Production"
+                        },
+                        {
+                          "label": "Non-Production",
+                          "subLabel": "",
+                          "value": "Non-Production"
+                        },
+                        {
+                          "label": "Development",
+                          "subLabel": "",
+                          "value": "Development"
+                        }
+                      ]
+                    },
+                    "dataSourceType": "STATIC"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Used to tag the machine account for reviews and governance.",
+                  "label": "Environment",
+                  "maximum": 1,
+                  "placeholder": "Select an environment...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "opendj-service-environment",
+                "key": "environment",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "indices": [
+                        "identities"
+                      ],
+                      "label": "attributes.displayName",
+                      "query": "@accounts(source.id:\"d01f06751ad74a45bdeb32b1b83b1690\")",
+                      "sublabel": "attributes.email",
+                      "value": "attributes.uid"
+                    },
+                    "dataSourceType": "SEARCH_V2"
+                  },
+                  "forceSelect": true,
+                  "helpText": "The selected identity becomes the accountable owner of the machine account.",
+                  "label": "Account owner",
+                  "maximum": 1,
+                  "placeholder": "Search by name or email...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "opendj-service-owner",
+                "key": "ownerUid",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              }
+            ],
+            "label": "Governance",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "elementType": "SECTION",
+          "id": "opendj-service-section-governance",
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  },
+  {
+    "version": 1,
+    "self": {
+      "id": "1e2bffc0-6ebb-4c26-aa0a-382bfa048c04",
+      "name": "Machine Account - OpenDJ Service Account",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "name": "Machine Account - OpenDJ Service Account",
+      "description": "Request a new OpenDJ service account. The common name is prefixed with svc-.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "902e15e60b374ff080e729af3e05d325",
+        "name": "SailPoint Services"
+      },
+      "formInput": [],
+      "formElements": [
+        {
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">The account is created in the OpenDJ Admins container. SailPoint automatically prefixes the requested base name with <strong>svc-</strong>.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "opendj-svc-intro",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Use letters, numbers, periods, hyphens, or underscores. The svc- prefix is added automatically.",
+                  "label": "Base account name",
+                  "placeholder": "e.g. finance-invoices",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "opendj-svc-name",
+                "key": "accountName",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  },
+                  {
+                    "config": {
+                      "message": "Use 1-60 letters, numbers, periods, hyphens, or underscores. Start with a letter or number.",
+                      "regex": "^[A-Za-z0-9][A-Za-z0-9._-]{0,59}$"
+                    },
+                    "validationType": "REGEX"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Friendly name shown in SailPoint and OpenDJ.",
+                  "label": "Display name",
+                  "placeholder": "e.g. Finance Invoice Service",
+                  "required": true
+                },
+                "elementType": "TEXT",
+                "id": "opendj-svc-display",
+                "key": "displayName",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "default": "",
+                  "description": "",
+                  "helpText": "Describe what the service account does and which system uses it.",
+                  "label": "Purpose",
+                  "placeholder": "e.g. Posts approved invoices to the ERP.",
+                  "required": true
+                },
+                "elementType": "TEXTAREA",
+                "id": "opendj-svc-purpose",
+                "key": "description",
+                "validations": [
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              }
+            ],
+            "label": "Account details",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "elementType": "SECTION",
+          "id": "opendj-svc-section-details",
+          "validations": []
+        },
+        {
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "options": [
+                        {
+                          "label": "Production",
+                          "subLabel": "",
+                          "value": "Production"
+                        },
+                        {
+                          "label": "Non-Production",
+                          "subLabel": "",
+                          "value": "Non-Production"
+                        },
+                        {
+                          "label": "Development",
+                          "subLabel": "",
+                          "value": "Development"
+                        }
+                      ]
+                    },
+                    "dataSourceType": "STATIC"
+                  },
+                  "forceSelect": true,
+                  "helpText": "Used to tag the machine account for reviews and governance.",
+                  "label": "Environment",
+                  "maximum": 1,
+                  "placeholder": "Select an environment...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "opendj-svc-environment",
+                "key": "environment",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              },
+              {
+                "config": {
+                  "dataSource": {
+                    "config": {
+                      "indices": [
+                        "identities"
+                      ],
+                      "label": "attributes.displayName",
+                      "query": "@accounts(source.id:\"d01f06751ad74a45bdeb32b1b83b1690\")",
+                      "sublabel": "attributes.email",
+                      "value": "attributes.uid"
+                    },
+                    "dataSourceType": "SEARCH_V2"
+                  },
+                  "forceSelect": true,
+                  "helpText": "The selected identity becomes the accountable owner of the machine account.",
+                  "label": "Account owner",
+                  "maximum": 1,
+                  "placeholder": "Search by name or email...",
+                  "required": true
+                },
+                "elementType": "SELECT",
+                "id": "opendj-svc-owner",
+                "key": "ownerUid",
+                "validations": [
+                  {
+                    "validationType": "DATA_SOURCE"
+                  },
+                  {
+                    "validationType": "REQUIRED"
+                  }
+                ]
+              }
+            ],
+            "label": "Governance",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "elementType": "SECTION",
+          "id": "opendj-svc-section-governance",
+          "validations": []
+        }
+      ],
+      "formConditions": [],
+      "id": "1e2bffc0-6ebb-4c26-aa0a-382bfa048c04",
+      "usedBy": [
+        {
+          "id": "f2557b67-0f96-4336-ae21-49a80d855f45",
+          "type": "SOURCE_SUBTYPE"
+        }
+      ]
+    }
+  }
+]

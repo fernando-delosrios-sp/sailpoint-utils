@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Reusable Machine Identity Security (MIS) package for **Active Directory** and **Microsoft Entra ID** NHI sources: account subtypes, classification, attribute mappings (with transforms), create forms, and `CREATE_MACHINE_ACCOUNT` provisioning policies.
+Reusable Machine Identity Security (MIS) package for **OpenDJ**, **Active Directory**, and **Microsoft Entra ID** NHI sources: account subtypes, classification, attribute mappings (with transforms), create forms, and `CREATE_MACHINE_ACCOUNT` provisioning policies.
 
 Seeded from the **emea-tes-team** demo tenant. Replace source names, IDs, owners, and OUs before using in another tenant.
 
@@ -10,6 +10,7 @@ Seeded from the **emea-tes-team** demo tenant. Replace source names, IDs, owners
 
 | Connector | Source example | Subtypes (examples) | Create form | Mapping transforms |
 | --- | --- | --- | --- | --- |
+| OpenDJ | `OpenDJ` | Admin Account, Service Account | OpenDJ admin and service account forms | Subtype ← `cn` suffix `-adm` or prefix `svc-`; Environment ← `departmentNumber`; Owner ← `manager` CN or `uid` without `-adm`; Machine identity ← `cn` |
 | Active Directory | `Microsoft Active Directory @emea-tes-team (NHI)` | Service Account, Bot Account | AD machine account form | Subtype ← `employeeType`; Environment ← `department` |
 | Microsoft Entra ID | `Microsoft Entra ID @emea-tes-team.cloud (NHI)` | Service Principal, Managed Identity, … | Entra SPN form | Subtype + Machine Identity transforms from SPN attributes |
 
@@ -31,6 +32,19 @@ flowchart TD
 ```
 
 ## Artifacts
+
+### OpenDJ
+
+| Path | Purpose |
+| --- | --- |
+| [`OpenDJ/source-subtypes.json`](OpenDJ/source-subtypes.json) | `admin-account` and `service-account` subtypes |
+| [`OpenDJ/machine-classification-config.json`](OpenDJ/machine-classification-config.json) | Classifies `cn` values ending in `-adm` or starting with `svc-` |
+| [`OpenDJ/Transforms/`](OpenDJ/Transforms/) | Subtype from the `cn` prefix or suffix, and owner UID from `manager` or `uid` |
+| [`OpenDJ/machine-account-mappings.json`](OpenDJ/machine-account-mappings.json) | Subtype, environment, description, owner, and machine identity mappings |
+| [`OpenDJ/Forms - Machine Account OpenDJ.json`](OpenDJ/Forms%20-%20Machine%20Account%20OpenDJ.json) | Admin Account and Service Account create forms |
+| [`OpenDJ/Provisioning Policies/`](OpenDJ/Provisioning%20Policies/) | Admin Account and Service Account create policies |
+| [`OpenDJ/machine-config-admin-account.json`](OpenDJ/machine-config-admin-account.json) | Admin Account create enablement and form link |
+| [`OpenDJ/machine-config-service-account.json`](OpenDJ/machine-config-service-account.json) | Service Account create enablement and form link |
 
 ### Active Directory
 
@@ -79,6 +93,8 @@ Import or create the transforms under each connector folder, then fix `sourceNam
 sail transform create -f "Active Directory/Transforms/Machine Account Subtype - Active Directory.json" --env <env>
 sail transform create -f "Active Directory/Transforms/Machine Account Environment - Active Directory.json" --env <env>
 sail transform create -f "Active Directory/Transforms/Machine Account Owner - Active Directory.json" --env <env>
+sail transform create -f "OpenDJ/Transforms/Machine Account Owner - OpenDJ.json" --env <env>
+sail transform create -f "OpenDJ/Transforms/Machine Account Subtype - OpenDJ.json" --env <env>
 sail transform create -f "Microsoft Entra ID/Transforms/Machine Account Subtype - Entra ID.json" --env <env>
 sail transform create -f "Microsoft Entra ID/Transforms/Machine Identity - Entra ID.json" --env <env>
 sail transform create -f "Microsoft Entra ID/Transforms/Machine Account Owner - Entra ID.json" --env <env>
@@ -224,6 +240,11 @@ For Entra service principals, demo config also uses `passwordSetting: DO_NOT_SET
 
 | Object | ID / name |
 | --- | --- |
+| OpenDJ source | `d01f06751ad74a45bdeb32b1b83b1690` |
+| OpenDJ Admin Account subtype | `25cb384f-a241-4d9c-807e-d904147119fa` |
+| OpenDJ Service Account subtype | `f2557b67-0f96-4336-ae21-49a80d855f45` |
+| OpenDJ Admin Account form | `0c3d2571-a438-45fa-824f-0b01a5c396a4` |
+| OpenDJ Service Account form | `1e2bffc0-6ebb-4c26-aa0a-382bfa048c04` |
 | AD NHI source | `4327b3e911174ab5b5bb75f9c82764b8` |
 | Entra NHI source | `1f3680fd99094e4bb70c4880542caf2a` |
 | AD form | `19ebbb17-0344-4719-bb7b-8fea39e64c38` |
