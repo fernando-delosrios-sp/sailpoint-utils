@@ -514,6 +514,8 @@ async function resolveAccountAfterProvisioning(
 
 export interface UpsertSourceAccountOptions {
     waitForAccountTask?: (taskId: string) => Promise<AccountProvisioningTaskStatus>
+    /** Return after ISC accepts the write instead of polling its task and indexed account. */
+    waitForCompletion?: boolean
 }
 
 /** Creates or updates a result-source account keyed by native identity. */
@@ -530,6 +532,9 @@ export async function upsertSourceAccount(
     if (existing) {
         getActiveFrameworkLogger().info(`[persist] upsert identity=${nativeId} action=put iscAccountId=${existing.id}`)
         const putTaskId = await putAccount(accounts, existing.id, attributes as { sourceId: string; [key: string]: unknown })
+        if (options.waitForCompletion === false) {
+            return existing.id
+        }
         let completedTask: AccountProvisioningTaskStatus | undefined
         if (putTaskId) {
             getActiveFrameworkLogger().info(`[persist] putAccount taskId=${putTaskId}`)
@@ -546,6 +551,9 @@ export async function upsertSourceAccount(
     let completedTask: AccountProvisioningTaskStatus | undefined
     if (taskId) {
         getActiveFrameworkLogger().info(`[persist] createAccount taskId=${taskId}`)
+        if (options.waitForCompletion === false) {
+            return undefined
+        }
         completedTask = await awaitAccountTask(taskId, options.waitForAccountTask)
     }
 
@@ -588,7 +596,10 @@ export function createPersist<TOutput extends object>(
         )
         registry.set(id, built)
         logPersistAccountContents(deps.log, 'account contents', id, built)
-        const iscAccountId = await deps.upsertAccount(built)
+        const iscAccountId =
+            options?.waitForCompletion === false
+                ? await deps.upsertAccount(built, { waitForCompletion: false })
+                : await deps.upsertAccount(built)
 
         if (options?.verify !== false) {
             await verifyAccountWrite(deps, id, built, iscAccountId)

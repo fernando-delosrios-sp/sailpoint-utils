@@ -28,6 +28,7 @@ const deleteAccountAsyncV1 = vi.fn()
 const listAccountsV1 = vi.fn()
 const getSourceSchemasV1 = vi.fn()
 const resolveSourceByName = vi.fn()
+const getTaskStatusV1 = vi.fn()
 
 const listAccessRequestStatusV1 = vi.fn()
 const searchPostV1 = vi.fn()
@@ -65,9 +66,7 @@ vi.mock('../../framework/sdk-factory', () => ({
             }),
         },
         tasks: {
-            getTaskStatusV1: vi.fn().mockResolvedValue({
-                data: { completed: '2026-08-11T10:00:00Z', completionStatus: 'SUCCESS', messages: [] },
-            }),
+            getTaskStatusV1: (...args: unknown[]) => getTaskStatusV1(...args),
         },
         accessRequests: { listAccessRequestStatusV1: (...args: unknown[]) => listAccessRequestStatusV1(...args) },
         search: { searchPostV1: (...args: unknown[]) => searchPostV1(...args) },
@@ -97,6 +96,7 @@ describe('preventiveSodCheckOperation', () => {
         startPredictSodViolationsV1.mockReset()
         getRoleEntitlementsV1.mockReset()
         getAccessProfileEntitlementsV1.mockReset()
+        getTaskStatusV1.mockReset()
         getSodPolicyV1.mockReset()
         listSodPoliciesV1.mockReset()
 
@@ -104,6 +104,9 @@ describe('preventiveSodCheckOperation', () => {
             const attributes = accountAttributesCreate.attributes as Record<string, unknown>
             persistedAccounts.set(String(attributes.id), attributes)
             return { data: { id: 'task-create-1' } }
+        })
+        getTaskStatusV1.mockResolvedValue({
+            data: { completed: '2026-08-11T10:00:00Z', completionStatus: 'SUCCESS', messages: [] },
         })
         deleteAccountAsyncV1.mockImplementation(async ({ id }) => {
             const nativeId = String(id).replace(/^isc-/, '')
@@ -473,5 +476,35 @@ describe('preventiveSodCheckOperation', () => {
             'Finance Control',
             'Procurement Control',
         ])
+    })
+
+    it('uses trigger identity and items after the access request leaves EXECUTING without polling persistence', async () => {
+        const res = { send: vi.fn() }
+        listAccessRequestStatusV1.mockResolvedValue({ data: [] })
+        getAccessProfileEntitlementsV1.mockResolvedValue({ data: [{ id: 'ent-1' }] })
+
+        await _withConfig(workflowConfig, async () => {
+            await preventiveSodCheckOperation(
+                { commandType: 'custom:preventive-sod-check' } as never,
+                {
+                    requestId: 'req-expired-001',
+                    accessRequestId: 'request-expired',
+                    identityId: 'identity-live-1',
+                    requestedItems: { id: 'ap-1', type: 'ACCESS_PROFILE', name: 'Security' },
+                    inflightOnly: true,
+                    waitForPersist: false,
+                },
+                res as never
+            )
+        })
+
+        expect(listAccessRequestStatusV1).toHaveBeenCalledWith({
+            requestedFor: 'identity-live-1',
+            requestState: 'EXECUTING',
+        })
+        expect(startPredictSodViolationsV1).toHaveBeenCalledTimes(1)
+        expect(getTaskStatusV1).not.toHaveBeenCalled()
+        expect(res.send).toHaveBeenCalledWith({ status: 'success' })
+        expect(persistedAccounts.get('req-expired-001')?.['preventive-sod-check:has-violation']).toBe(true)
     })
 })

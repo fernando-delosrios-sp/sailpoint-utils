@@ -15,8 +15,10 @@ Evaluates SoD violations for an identity. Output semantics depend on whether `ac
 | `identityId` | No* | Target identity for holistic evaluation (identity mode) |
 | `accessRequestId` | No* | When set, switches to **request mode** (predict delta for this request). Resolves target identity from the access request when `identityId` is omitted |
 | `inflightOnly` | No | When `true`, skip existing/active violations and report only inflight (predict) violations. Defaults to `false`. Workflows may send the string `"true"` / `"false"` |
+| `requestedItems` | No | Target request items from the trigger, as an array, single object, or JSON string. In request mode this avoids depending on mutable request status and event indexing |
+| `waitForPersist` | No | Defaults to `true`. Set `false` in deadline-bound workflows to submit the result-account write without polling its provisioning task or indexed account |
 
-\* At least one of `identityId` or `accessRequestId` is required. When both are provided, `accessRequestId` takes precedence and `identityId` is **ignored** (a warning is logged).
+\* At least one of `identityId` or `accessRequestId` is required. When both are provided, the supplied `identityId` is used and `accessRequestId` still selects request mode.
 
 ## Output (persisted)
 
@@ -68,7 +70,10 @@ Workflow-ready example:
     "input": {
         "requestId": "req-preventive-001",
         "accessRequestId": "{{$.trigger.accessRequestId}}",
-        "inflightOnly": "{{$.defineVariable.inflightOnly}}"
+        "identityId": "{{$.trigger.requestedFor.id}}",
+        "inflightOnly": "{{$.defineVariable.inflightOnly}}",
+        "requestedItems.$": "$.trigger.requestedItems",
+        "waitForPersist": false
     },
     "config": {
         "apiUrl": "{{$.defineVariable.aPIURL}}",
@@ -84,13 +89,13 @@ Workflow-ready example:
 |---|---|
 | [`workflows/Access Request Pre-Check - Risk analysis and in-flight SOD.json`](../../../workflows/Access%20Request%20Pre-Check%20-%20Risk%20analysis%20and%20in-flight%20SOD.json) | [Access Request Submitted](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-submitted) event trigger. Runs this operation in request mode alongside `custom:evaluate-access-request-risk`, and denies on a detected violation |
 
-That workflow invokes with `requestId` `preventive-sod-check:{{$.trigger.accessRequestId}}:submitted` and filters **Read SoD Result** on the same value. The prefix keeps the result account clear of other operations writing on the same access request id. **Inflight Only** defaults to `true` in Configuration and is passed as `inflightOnly`. See the [risk operation README](../evaluate-access-request-risk/README.md#access-request-pre-check---risk-analysis-and-in-flight-sod) for its Configuration and decision steps.
+That workflow invokes with `requestId` `preventive-sod-check:{{$.trigger.accessRequestId}}:submitted` and filters **Read SoD Result** on the same value. It passes the trigger identity and requested items directly, so evaluation does not fail if the request leaves `EXECUTING` or its events have not been indexed. It also sets `waitForPersist` to `false`; the existing one-minute result-read retry covers account indexing without holding the connector HTTP call open. **Inflight Only** defaults to `true` in Configuration and is passed as `inflightOnly`.
 
 The access token must also allow SoD policy read (`listSodPoliciesV1` / `getSodPolicyV1`) so the situation summary can include each policy's level.
 
 ## Workflow integration
 
-1. Invoke `custom:preventive-sod-check` with `identityId` for holistic checks, or with `accessRequestId` alone (or plus ignored `identityId`) to gate a specific approval.
+1. Invoke `custom:preventive-sod-check` with `identityId` for holistic checks. For a request gate, pass `accessRequestId`, `identityId`, and `requestedItems` from the trigger.
 2. Read persisted output via **Get Accounts** filtered by `requestId`. The operation persists under the `requestId` you send, verbatim, so pick one that will not collide with another operation's result account.
 3. Branch on `preventive-sod-check:has-violation` or policy names. It persists as a real boolean, so compare the account read itself with `sp:compare-boolean`. If you copy it into a workflow variable first, note that `sp:update-variable` stores it as the string `"true"` / `"false"` — read that variable back with `sp:compare-strings`, never `sp:compare-boolean`.
 

@@ -104,9 +104,13 @@ export function createRequestContext<
                   }
               })()
             : undefined,
-        upsertAccount: async (attributes) => {
+        upsertAccount: async (attributes, options) => {
             return upsertSourceAccount(accountsClient, sourceId, attributes, {
-                waitForAccountTask: (taskId) => waitForAccountProvisioningTask(sdk.tasks, taskId),
+                waitForAccountTask:
+                    options?.waitForCompletion === false
+                        ? undefined
+                        : (taskId) => waitForAccountProvisioningTask(sdk.tasks, taskId),
+                waitForCompletion: options?.waitForCompletion,
             })
         },
         readAccount: async (id) => {

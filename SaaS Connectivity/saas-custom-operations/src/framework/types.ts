@@ -55,6 +55,8 @@ export interface SailPointClients {
 /** Options for {@link PersistFn}. Verification runs by default; set verify to false to defer. */
 export interface PersistOptions {
     verify?: boolean
+    /** Submit the account write without waiting for its provisioning task or account indexing. */
+    waitForCompletion?: boolean
     /** Human-readable outcome text (framework core attribute). Used by automatic failure persist. */
     details?: string
 }
@@ -124,7 +126,10 @@ export interface PersistDependencies {
     operationSchema?: OperationSchemaContract
     ensureSourceSchema?: (attributeKeys: string[]) => Promise<void>
     /** Returns the ISC account UUID when an existing account was updated via put. */
-    upsertAccount: (attributes: Record<string, unknown>) => Promise<string | undefined>
+    upsertAccount: (
+        attributes: Record<string, unknown>,
+        options?: Pick<PersistOptions, 'waitForCompletion'>
+    ) => Promise<string | undefined>
     readAccount: (id: string) => Promise<Record<string, unknown> | undefined>
     readAccountByIscId?: (iscAccountId: string) => Promise<Record<string, unknown> | undefined>
     /** Override for tests to avoid real delays during retry loops. */

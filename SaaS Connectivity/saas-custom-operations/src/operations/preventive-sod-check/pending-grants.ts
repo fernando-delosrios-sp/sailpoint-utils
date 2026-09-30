@@ -30,6 +30,8 @@ import { SailPointClients } from '../../framework/types'
 export interface ResolvePendingGrantEntitlementsOptions {
     sleep?: (ms: number) => Promise<void>
     onSkippedTrackingNumber?: (trackingNumber: string) => void
+    /** Trigger-supplied items for the target request, avoiding mutable request status/event indexing. */
+    requestedItems?: AccessItemRef[]
 }
 
 export interface PreventiveSodEvaluation {
@@ -97,6 +99,14 @@ async function resolveAccessItemsForGrantRequests(
     return accessItems
 }
 
+function unionAccessItems(left: AccessItemRef[], right: AccessItemRef[]): AccessItemRef[] {
+    const items = new Map<string, AccessItemRef>()
+    for (const item of [...left, ...right]) {
+        items.set(`${item.type}:${item.id}`, item)
+    }
+    return [...items.values()]
+}
+
 async function predictViolatedPoliciesForAccessItems(
     sdk: SailPointClients,
     identityId: string,
@@ -162,20 +172,34 @@ export async function evaluatePreventiveSod(
 
     if (accessRequestId) {
         const otherGrants = executingGrants.filter((request) => !matchesAccessRequestId(request, accessRequestId))
-        const baselinePolicies = await predictViolatedPoliciesForGrantRequests(
-            sdk,
-            identityId,
-            otherGrants,
-            offline,
-            options
-        )
-        const fullPolicies = await predictViolatedPoliciesForGrantRequests(
-            sdk,
-            identityId,
-            executingGrants,
-            offline,
-            options
-        )
+        const suppliedRequestItems = options.requestedItems ?? []
+        let baselinePolicies: PolicyNameRef[]
+        let fullPolicies: PolicyNameRef[]
+        if (suppliedRequestItems.length > 0) {
+            const baselineItems = await resolveAccessItemsForGrantRequests(sdk, otherGrants, offline, options)
+            baselinePolicies = await predictViolatedPoliciesForAccessItems(sdk, identityId, baselineItems, offline)
+            fullPolicies = await predictViolatedPoliciesForAccessItems(
+                sdk,
+                identityId,
+                unionAccessItems(baselineItems, suppliedRequestItems),
+                offline
+            )
+        } else {
+            baselinePolicies = await predictViolatedPoliciesForGrantRequests(
+                sdk,
+                identityId,
+                otherGrants,
+                offline,
+                options
+            )
+            fullPolicies = await predictViolatedPoliciesForGrantRequests(
+                sdk,
+                identityId,
+                executingGrants,
+                offline,
+                options
+            )
+        }
         const requestDelta = deltaPolicies(fullPolicies, baselinePolicies)
         violatedPolicies = inflightOnly ? requestDelta : unionPolicies(existingPolicies, requestDelta)
     } else {

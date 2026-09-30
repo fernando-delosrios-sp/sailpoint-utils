@@ -424,6 +424,27 @@ describe('upsertSourceAccount', () => {
         expect(iscAccountId).toBe('isc-account-new')
     })
 
+    it('submits a create without polling or lookup when completion waiting is disabled', async () => {
+        const createAccountV1 = vi.fn().mockResolvedValue({ data: { id: 'task-create-1' } })
+        const listAccountsV1 = vi.fn().mockResolvedValue({ data: [] })
+        const getAccountV1 = vi.fn()
+        const waitForAccountTask = vi.fn()
+        const accounts = { createAccountV1, putAccountV1: vi.fn(), listAccountsV1, getAccountV1 }
+
+        const iscAccountId = await upsertSourceAccount(
+            accounts as never,
+            'source-1',
+            { sourceId: 'source-1', id: 'req-001' },
+            { waitForAccountTask, waitForCompletion: false }
+        )
+
+        expect(createAccountV1).toHaveBeenCalled()
+        expect(waitForAccountTask).not.toHaveBeenCalled()
+        expect(getAccountV1).not.toHaveBeenCalled()
+        expect(listAccountsV1).toHaveBeenCalled()
+        expect(iscAccountId).toBeUndefined()
+    })
+
     it('falls back to account lookup when the provisioning task poll times out', async () => {
         const createAccountV1 = vi.fn().mockResolvedValue({ data: { id: 'task-slow-1' } })
         const putAccountV1 = vi.fn().mockResolvedValue({})
@@ -613,6 +634,22 @@ describe('createPersist', () => {
                 details: 'operation failed',
                 operationName: 'custom:example',
             })
+        )
+        expect(deps.readAccount).not.toHaveBeenCalled()
+    })
+
+    it('forwards non-blocking persistence and skips read-back verification', async () => {
+        const deps = createTestDeps()
+        const persist = createPersist<{ outcome: string }>(deps, new Map())
+
+        await persist('req-001', { outcome: 'done' }, undefined, {
+            verify: false,
+            waitForCompletion: false,
+        })
+
+        expect(deps.upsertAccount).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'req-001', outcome: 'done' }),
+            { waitForCompletion: false }
         )
         expect(deps.readAccount).not.toHaveBeenCalled()
     })

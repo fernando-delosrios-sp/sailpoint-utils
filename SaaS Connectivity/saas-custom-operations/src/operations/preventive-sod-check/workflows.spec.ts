@@ -68,7 +68,10 @@ describe(WORKFLOW_FILE, () => {
 
         expect(invoke?.type).toBe('custom:preventive-sod-check')
         expect(invoke?.input?.accessRequestId).toBe('{{$.trigger.accessRequestId}}')
+        expect(invoke?.input?.identityId).toBe('{{$.trigger.requestedFor.id}}')
         expect(invoke?.input?.inflightOnly).toBe('{{$.configuration.inflightOnly}}')
+        expect(invoke?.input?.['requestedItems.$']).toBe('$.trigger.requestedItems')
+        expect(invoke?.input?.waitForPersist).toBe(false)
         expect(invoke?.input?.requestId).toBe(EXPECTED_REQUEST_ID)
     })
 

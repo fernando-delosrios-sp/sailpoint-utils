@@ -11,6 +11,13 @@ export interface PreventiveSodCheckOperation extends OperationSignature {
         accessRequestId?: string
         /** When true, skip existing/active violations and report only inflight/predictive ones. Defaults to false. */
         inflightOnly?: boolean | string
+        /** Trigger-supplied target request items avoid status/event-index races. */
+        requestedItems?:
+            | Array<{ id?: string; type?: string; name?: string }>
+            | { id?: string; type?: string; name?: string }
+            | string
+        /** Set false for deadline-bound workflows; the result account write is submitted without polling. */
+        waitForPersist?: boolean | string
     }
     output: {
         'preventive-sod-check:has-violation': boolean
@@ -33,18 +40,26 @@ export const preventiveSodCheckOperation = customOperation<PreventiveSodCheckOpe
             resolved.accessRequestId,
             offline,
             clientConfig,
-            { inflightOnly: resolved.inflightOnly }
+            {
+                inflightOnly: resolved.inflightOnly,
+                requestedItems: resolved.requestedItems,
+            }
         )
         const situationSummary = buildPreventiveSituationSummary({
             violatedPolicies: evaluation.violatedPolicies,
             accessRequestId: resolved.accessRequestId,
         })
 
-        await ctx.persist(ctx.requestId, {
-            'preventive-sod-check:has-violation': evaluation.hasViolation,
-            'preventive-sod-check:situation-summary': situationSummary,
-            'preventive-sod-check:violated-policy-names': evaluation.violatedPolicyNames,
-        })
+        await ctx.persist(
+            ctx.requestId,
+            {
+                'preventive-sod-check:has-violation': evaluation.hasViolation,
+                'preventive-sod-check:situation-summary': situationSummary,
+                'preventive-sod-check:violated-policy-names': evaluation.violatedPolicyNames,
+            },
+            undefined,
+            resolved.waitForPersist ? undefined : { verify: false, waitForCompletion: false }
+        )
 
         ctx.res.send({ status: 'success' })
     },

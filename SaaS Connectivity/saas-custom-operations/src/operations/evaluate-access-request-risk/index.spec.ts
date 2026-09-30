@@ -23,6 +23,7 @@ const listAccountsV1 = vi.fn()
 const deleteAccountAsyncV1 = vi.fn()
 const getSourceSchemasV1 = vi.fn()
 const resolveSourceByName = vi.fn()
+const getTaskStatusV1 = vi.fn()
 const persistedAccounts = new Map<string, Record<string, unknown>>()
 
 vi.mock('../../framework/result-source', async (importOriginal) => {
@@ -47,9 +48,7 @@ vi.mock('../../framework/sdk-factory', () => ({
             getAccountV1: vi.fn(),
         },
         tasks: {
-            getTaskStatusV1: vi.fn().mockResolvedValue({
-                data: { completed: '2026-08-11T10:00:00Z', completionStatus: 'SUCCESS', messages: [] },
-            }),
+            getTaskStatusV1: (...args: unknown[]) => getTaskStatusV1(...args),
         },
         accessRequests: { listAccessRequestStatusV1: vi.fn() },
     })),
@@ -82,12 +81,16 @@ describe('evaluateAccessRequestRiskOperation', () => {
         createAccountV1.mockClear()
         listAccountsV1.mockClear()
         deleteAccountAsyncV1.mockClear()
+        getTaskStatusV1.mockReset()
         getEntitlement.mockReset()
         getEntitlement.mockResolvedValue({ effectivePrivilege: 'HIGH', metadata: undefined })
         createAccountV1.mockImplementation(async ({ accountAttributesCreate }) => {
             const attributes = accountAttributesCreate.attributes as Record<string, unknown>
             persistedAccounts.set(String(attributes.id), attributes)
             return { data: { id: 'task-create-1' } }
+        })
+        getTaskStatusV1.mockResolvedValue({
+            data: { completed: '2026-08-11T10:00:00Z', completionStatus: 'SUCCESS', messages: [] },
         })
         resolveSourceByName.mockResolvedValue('source-123')
         getSourceSchemasV1.mockResolvedValue({
@@ -127,6 +130,23 @@ describe('evaluateAccessRequestRiskOperation', () => {
         expect(stored?.['evaluate-access-request-risk:tier']).toBe('High')
         expect(stored?.status).toBe('success')
         expect(JSON.stringify(stored)).not.toContain('approver')
+        expect(res.send).toHaveBeenCalledWith(
+            expect.objectContaining({
+                status: 'success',
+                summary: { tier: 'High' },
+            })
+        )
+    })
+
+    it('submits persistence without task polling when waitForPersist is false', async () => {
+        const res = await invokeRisk({
+            requestId: 'evaluate-access-request-risk:req-fast:submitted',
+            requestedItems: [{ id: 'ent-1', type: 'ENTITLEMENT' }],
+            waitForPersist: false,
+        })
+
+        expect(createAccountV1).toHaveBeenCalled()
+        expect(getTaskStatusV1).not.toHaveBeenCalled()
         expect(res.send).toHaveBeenCalledWith(
             expect.objectContaining({
                 status: 'success',

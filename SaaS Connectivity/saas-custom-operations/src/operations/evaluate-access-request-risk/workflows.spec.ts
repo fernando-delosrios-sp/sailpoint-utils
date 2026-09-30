@@ -68,6 +68,9 @@ describe.each(BUNDLED_RISK_WORKFLOWS)('$file', ({ file, requestIdTemplate, failu
         const steps = readWorkflow(file).definition.steps
 
         expect(steps['Call Evaluate Risk']?.attributes?.jsonRequestBody?.input?.requestId).toBe(requestIdTemplate)
+        if (file === 'Access Request Pre-Check - Risk analysis and in-flight SOD.json') {
+            expect(steps['Call Evaluate Risk']?.attributes?.jsonRequestBody?.input?.waitForPersist).toBe(false)
+        }
     })
 
     it('reads the risk result back on the same requestId', () => {

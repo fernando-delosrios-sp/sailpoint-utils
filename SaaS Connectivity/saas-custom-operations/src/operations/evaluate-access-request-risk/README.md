@@ -29,6 +29,7 @@ A role or access profile is then scored again through its entitlements. Wrapped 
 | `requestedItems`    | No\*     | `{ id, type, name? }` from the trigger. `type` is `ROLE`, `ACCESS_PROFILE`, or `ENTITLEMENT`. An array, a single object, or a JSON string of either — ISC collapses a one-element `$.trigger.requestedItems` to a bare object |
 | `accessRequestId`   | No\*     | Used only when `requestedItems` is omitted. Status rows must include the access-item id                                                                                                                                       |
 | `considerPrivilege` | No       | Default `true`. When `false`, entitlement scoring ignores `privilegeLevel.effective` and uses Risk metadata only                                                                                                              |
+| `waitForPersist`    | No       | Default `true`. Set `false` in deadline-bound workflows to submit the result-account write without polling its provisioning task or indexed account                                                                          |
 
 \* One of the two is required. When both are set, `requestedItems` is used.
 
@@ -127,7 +128,7 @@ After re-import, re-apply Configuration values and the **Get Access Token** basi
 
 Subscribe the Access Request Submitted event trigger to this workflow's external trigger URL. Response type **Async**. Set a response deadline long enough for the role and entitlement reads, plus the SoD predict call.
 
-This workflow runs two checks and answers once. It scores risk with `custom:evaluate-access-request-risk`, then checks in-flight separation of duties with [`custom:preventive-sod-check`](../preventive-sod-check/README.md) in request mode. **Inflight Only** defaults to `true`, so only violations _this request_ would introduce count. Set it to `false` to also flag existing active violations.
+This workflow runs two checks and answers once. It scores risk with `custom:evaluate-access-request-risk`, then checks in-flight separation of duties with [`custom:preventive-sod-check`](../preventive-sod-check/README.md) in request mode. Both invokes set `waitForPersist` to `false`, so the HTTP calls return after ISC accepts each result-account write instead of polling provisioning past the trigger deadline; the existing result-read retry handles indexing. The SoD invoke also receives the trigger identity and requested items directly instead of reconstructing the target request from mutable status. **Inflight Only** defaults to `true`, so only violations _this request_ would introduce count.
 
 **Decision Variables** holds the answer while the workflow builds it: `Approved` starts `true`, `Message` starts as a placeholder. Four Mutation steps are the entire policy, and each one can change both:
 

@@ -20,6 +20,7 @@ describe('persistFailedResult', () => {
 
         expect(persist).toHaveBeenCalledWith('req-001', undefined, 'failed', {
             verify: false,
+            waitForCompletion: false,
             details: 'operation failed',
         })
     })

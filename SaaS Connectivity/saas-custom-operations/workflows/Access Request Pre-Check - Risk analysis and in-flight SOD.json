@@ -136,7 +136,8 @@
               "accessRequestId": "{{$.trigger.accessRequestId}}",
               "considerPrivilege": "{{$.configuration.considerPrivilege}}",
               "requestId": "evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted",
-              "requestedItems.$": "$.trigger.requestedItems"
+                "requestedItems.$": "$.trigger.requestedItems",
+                "waitForPersist": false
             },
             "tag": "latest",
             "type": "custom:evaluate-access-request-risk"
@@ -311,8 +312,11 @@
             "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
             "input": {
               "accessRequestId": "{{$.trigger.accessRequestId}}",
+              "identityId": "{{$.trigger.requestedFor.id}}",
               "inflightOnly": "{{$.configuration.inflightOnly}}",
-              "requestId": "preventive-sod-check:{{$.trigger.accessRequestId}}:submitted"
+              "requestId": "preventive-sod-check:{{$.trigger.accessRequestId}}:submitted",
+              "requestedItems.$": "$.trigger.requestedItems",
+              "waitForPersist": false
             },
             "tag": "latest",
             "type": "custom:preventive-sod-check"

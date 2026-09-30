@@ -16,6 +16,8 @@ export interface EvaluateAccessRequestRiskOperation extends OperationSignature {
             | string
         /** When false, entitlement scoring ignores privilegeLevel.effective. Defaults to true. */
         considerPrivilege?: boolean | string
+        /** Set false for deadline-bound workflows; the result account write is submitted without polling. */
+        waitForPersist?: boolean | string
     }
     output: {
         'evaluate-access-request-risk:tier': string
@@ -32,15 +34,21 @@ export const evaluateAccessRequestRiskOperation = customOperation<EvaluateAccess
     async (ctx, input) => {
         const offline = isOfflineContext(ctx)
         const considerPrivilege = parseConsiderPrivilege(input.considerPrivilege)
+        const waitForPersist = parseConsiderPrivilege(input.waitForPersist)
         const items = await resolveRequestedItems(ctx.sdk.accessRequests, input)
         const catalog = createAccessRiskCatalog(offline, ctx.sdk)
         const result = await evaluateAccessRisk(items, catalog, { considerPrivilege })
 
-        await ctx.persist(ctx.requestId, {
-            'evaluate-access-request-risk:tier': result.tier,
-            'evaluate-access-request-risk:situation-summary': result.situationSummary,
-            'evaluate-access-request-risk:contributing-ids': result.contributingIds,
-        })
+        await ctx.persist(
+            ctx.requestId,
+            {
+                'evaluate-access-request-risk:tier': result.tier,
+                'evaluate-access-request-risk:situation-summary': result.situationSummary,
+                'evaluate-access-request-risk:contributing-ids': result.contributingIds,
+            },
+            undefined,
+            waitForPersist ? undefined : { verify: false, waitForCompletion: false }
+        )
         ctx.respond({ tier: result.tier })
     },
     { operationSchema: evaluateAccessRequestRiskOperationSchema }
