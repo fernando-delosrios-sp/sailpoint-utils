@@ -1,0 +1,9 @@
+{
+  "groups": [
+    "System Configuration Admins"
+  ],
+  "id": "3205bdb2-cde1-4f24-98c2-02c00111b7ca",
+  "name": "System Configuration Admins",
+  "private_role": false,
+  "uid": "b3_system_configuration_admins_neprofile_role"
+}

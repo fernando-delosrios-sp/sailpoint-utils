@@ -1,0 +1,9 @@
+{
+  "groups": [
+    "Read Only"
+  ],
+  "id": "ff7df780-b491-4482-9775-ca71df6dadfa",
+  "name": "Read Only",
+  "private_role": false,
+  "uid": "b3_read_only_neprofile_role"
+}

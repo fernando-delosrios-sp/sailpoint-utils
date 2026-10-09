@@ -1,0 +1,53 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.308-04:00",
+    "description": "",
+    "id": "42db47e9-991d-4006-8540-0e3871eefdd3",
+    "legacy_id": null,
+    "name": "Assignment Department & Location",
+    "uid": "b3_assignment_department_location_form",
+    "updated_at": "2026-08-27T17:44:34.308-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.322-04:00",
+      "form_id": "42db47e9-991d-4006-8540-0e3871eefdd3",
+      "id": "2ffc9f0f-9b26-469c-b996-dd2f132e4b5c",
+      "legacy_id": null,
+      "ne_attribute_id": "a17eb16b-3a90-4a20-8a19-ada4efbb8b08",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_83f620c3fdf440059cf1320e3b70381f",
+      "updated_at": "2026-08-27T17:44:34.322-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.325-04:00",
+      "form_id": "42db47e9-991d-4006-8540-0e3871eefdd3",
+      "id": "faa3a345-68c6-4f64-9707-45b78d39ab21",
+      "legacy_id": null,
+      "ne_attribute_id": "f4019fa3-25b4-4ade-92c9-3825e5256205",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_39b8fa52d77b4f8c924bb04ca7ef7981",
+      "updated_at": "2026-08-27T17:44:34.325-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.328-04:00",
+      "form_id": "42db47e9-991d-4006-8540-0e3871eefdd3",
+      "id": "2f813c1d-5c3d-4cc0-95dc-b172d418284e",
+      "legacy_id": null,
+      "ne_attribute_id": "876487e2-b42a-4230-be57-ff8ffdebb899",
+      "order": 2,
+      "read_only": false,
+      "uid": "27ab9a42712d4c9e95e3e5873be8eb2b",
+      "updated_at": "2026-08-27T17:44:34.328-04:00"
+    }
+  ]
+}

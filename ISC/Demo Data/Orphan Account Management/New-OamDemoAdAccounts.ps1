@@ -2,9 +2,12 @@
 #Requires -Modules ActiveDirectory
 <#
 .SYNOPSIS
-    Creates 13 demo Active Directory accounts for Identity Fusion NG Orphan Account Management.
+    Creates 13 demo Active Directory human accounts for Identity Fusion NG Orphan Account Management.
 
 .DESCRIPTION
+    Human accounts. Machine accounts are created by New-OamDemoMachineAdAccounts.ps1
+    in the NHI OU.
+
     Targets identities on emea-tes-team that have no account on
     "Microsoft Active Directory @emea-tes-team (Users)".
 

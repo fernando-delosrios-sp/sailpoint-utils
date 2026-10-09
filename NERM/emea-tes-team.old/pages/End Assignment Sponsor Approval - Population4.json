@@ -1,0 +1,17 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:43.861-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "cb0c7113-dfa6-4997-87a6-4a0de0c67ec2",
+    "legacy_id": null,
+    "name": "End Assignment Sponsor Approval - Population4",
+    "uid": "b3_end_assignment_sponsor_approval_population4_workflow_page",
+    "updated_at": "2026-08-27T17:44:43.861-04:00"
+  },
+  "elements": [],
+  "page_contents": []
+}

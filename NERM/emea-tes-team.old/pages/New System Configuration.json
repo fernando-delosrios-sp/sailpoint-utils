@@ -1,0 +1,63 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.840-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "e5419ee8-5cd0-48aa-bc43-a93a1b2aea4f",
+    "legacy_id": null,
+    "name": "New System Configuration",
+    "uid": "b3_new_system_configuration_workflow_page",
+    "updated_at": "2026-08-27T17:44:45.840-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.846-04:00",
+      "element_id": "7e24c348-bc9d-4b92-8e59-b413c3cff250",
+      "element_type": "PageContent",
+      "id": "f52b14b2-77aa-45c8-bd5d-0bb78df5061b",
+      "order": 1,
+      "page_id": "e5419ee8-5cd0-48aa-bc43-a93a1b2aea4f",
+      "permissions": false,
+      "read_only": false,
+      "uid": "8c7856a97cd74d34996fa4b503d72592",
+      "updated_at": "2026-08-27T17:44:45.846-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.884-04:00",
+      "element_id": "27fbd1e1-84aa-4f94-8ec3-6fa1b79cd4b1",
+      "element_type": "Form",
+      "id": "0a16cef0-53e7-4247-9809-80c658268dca",
+      "order": 2,
+      "page_id": "e5419ee8-5cd0-48aa-bc43-a93a1b2aea4f",
+      "permissions": false,
+      "read_only": false,
+      "uid": "0750fc9499ff4bd485362f0cd7044f2f",
+      "updated_at": "2026-08-27T17:44:45.884-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.887-04:00",
+      "element_id": "083d9aee-7bed-4150-aa56-061d1610d1aa",
+      "element_type": "Form",
+      "id": "b3ff286d-00ee-4dfb-a863-430ce8779936",
+      "order": 3,
+      "page_id": "e5419ee8-5cd0-48aa-bc43-a93a1b2aea4f",
+      "permissions": false,
+      "read_only": false,
+      "uid": "d855f1440a7a43459854109e4449f829",
+      "updated_at": "2026-08-27T17:44:45.887-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "This will create a new System Configuration profile that can be referenced for integrations in workflows.",
+      "created_at": "2026-08-27T17:44:45.848-04:00",
+      "id": "7e24c348-bc9d-4b92-8e59-b413c3cff250",
+      "type": "FormHeading",
+      "uid": "dd86d842b4a940e7ba1625ebf4c08af9",
+      "updated_at": "2026-08-27T17:44:45.848-04:00"
+    }
+  ]
+}

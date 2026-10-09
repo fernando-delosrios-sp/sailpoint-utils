@@ -1,0 +1,12 @@
+[
+  {
+    "id": "5b4f9e03-c485-44a1-ab50-e42e016c22e5",
+    "name": "Profile Owner",
+    "uid": "profile_owner"
+  },
+  {
+    "id": "c69bab58-8827-4198-b2e7-c3199a5735dc",
+    "name": "Profile Contributor",
+    "uid": "profile_contributor"
+  }
+]

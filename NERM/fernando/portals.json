@@ -1,0 +1,18 @@
+[
+  {
+    "created_at": "2024-10-14T15:48:58.323-04:00",
+    "id": "f47a14bc-6a14-4c96-ba1f-deedcbd863ae",
+    "inactivity_timeout": 60,
+    "jit_provisioning": false,
+    "login_workflow_id": "0fba2d0d-95e5-4a8f-b154-fb157cfa65f0",
+    "name": "Collaborate",
+    "password_reset_workflow_id": "75e5e0a2-6b26-414f-9efc-af0efb3400e4",
+    "profile_attribute_id": null,
+    "profile_type_id": null,
+    "retries": 5,
+    "saml_configuration": null,
+    "uid": "collaborate",
+    "updated_at": "2024-10-14T15:48:58.320-04:00",
+    "url": "collaborate"
+  }
+]

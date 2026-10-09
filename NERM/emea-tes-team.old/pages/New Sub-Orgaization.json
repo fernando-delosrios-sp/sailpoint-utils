@@ -1,0 +1,51 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.788-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "e4af59ba-e0a7-4682-9bd0-82b0a798d947",
+    "legacy_id": null,
+    "name": "New Sub-Orgaization",
+    "uid": "b3_new_suborganization_workflow_page",
+    "updated_at": "2026-08-27T17:44:45.788-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.795-04:00",
+      "element_id": "c8c04787-803d-406c-a33b-b1177b94fba2",
+      "element_type": "PageContent",
+      "id": "aa841513-a266-4b9a-a0a9-5c47e4e0b055",
+      "order": 1,
+      "page_id": "e4af59ba-e0a7-4682-9bd0-82b0a798d947",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_be26d76179974b1db47763a6db3bb0ad",
+      "updated_at": "2026-08-27T17:44:45.795-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.836-04:00",
+      "element_id": "df3e5409-96d0-4e2e-8462-4262827a7f7f",
+      "element_type": "Form",
+      "id": "3edf26f6-9ad7-4c9f-9f35-c2bd2a6c1184",
+      "order": 2,
+      "page_id": "e4af59ba-e0a7-4682-9bd0-82b0a798d947",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_08b948623757421795c90c3481d033ac",
+      "updated_at": "2026-08-27T17:44:45.836-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "New Sub-Organization for {{ attribute.suborganization_organization.first.name }}",
+      "created_at": "2026-08-27T17:44:45.798-04:00",
+      "id": "c8c04787-803d-406c-a33b-b1177b94fba2",
+      "type": "Paragraph",
+      "uid": "b3_21bf0290c37a4308b43ce29a472c5668",
+      "updated_at": "2026-08-27T17:44:45.798-04:00"
+    }
+  ]
+}

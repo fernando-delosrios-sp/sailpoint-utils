@@ -1,0 +1,42 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "model_attr=id_proofing_status",
+    "table_attr=3386e527-105f-4037-93b3-8b92ba6719d0",
+    "table_attr=4c208571-b58c-4c8f-9a9a-1c8b88f902ba",
+    "table_attr=f0793156-21cf-404b-ab02-6134c00b0f75"
+  ],
+  "created_at": "2026-08-27T17:45:31.175-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "id_proofing_status",
+      "label": "Identity Proofing"
+    },
+    {
+      "attr": "location_code",
+      "label": "Location Code"
+    },
+    {
+      "attr": "location_description",
+      "label": "Location Description"
+    },
+    {
+      "attr": "country",
+      "label": "Country"
+    }
+  ],
+  "id": "2fb12c79-6c1e-44d9-a40c-06e3d36636ae",
+  "name": "Locations - Custom",
+  "profile_type_id": "5d99e6a9-30e1-4cd1-8461-e28414e0d2bf",
+  "uid": "b3_locations_profile_type_table",
+  "updated_at": "2026-10-06T07:24:58.821-04:00"
+}

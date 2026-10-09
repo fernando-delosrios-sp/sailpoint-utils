@@ -1,0 +1,102 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": true,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:27.375-04:00",
+    "data_type": "drop-down",
+    "date_format": null,
+    "description": "",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "label": "Organization Risk Score",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "Impact & Probability",
+    "selectable_status": null,
+    "tool_tip": "",
+    "type": "DropDownAttribute",
+    "uid": "organization_risk_score",
+    "updated_at": "2026-08-27T17:18:27.375-04:00"
+  },
+  "options": [
+    {
+      "core": false,
+      "id": "b4fb7a73-4c40-40f8-8821-c7efe929960b",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "1",
+      "uid": "d9bf4494bac8477cad4b7b73786569b7"
+    },
+    {
+      "core": false,
+      "id": "2ad8c651-69ed-473d-a804-c95f78bc8140",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "10",
+      "uid": "51f49d96280f439d9ce7dcd83f985a2f"
+    },
+    {
+      "core": false,
+      "id": "19981f55-f744-4e30-9d3f-9be446439939",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "2",
+      "uid": "0b0d11499709421488281adc016a2844"
+    },
+    {
+      "core": false,
+      "id": "9bf96c23-34c6-4fd6-b665-7a1b7c08bc25",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "3",
+      "uid": "f657a9e4254d414f81b43e8064776d3d"
+    },
+    {
+      "core": false,
+      "id": "76cb29d0-9fb3-457d-b787-6b33939db34d",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "4",
+      "uid": "669067c4545e47ab820ba66d8366802a"
+    },
+    {
+      "core": false,
+      "id": "3d4025f3-f2b2-4f97-a96c-cd311f45ebd4",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "5",
+      "uid": "68b26e55b8664834ab844205173f0550"
+    },
+    {
+      "core": false,
+      "id": "c432a49e-518f-4ab8-9cfd-6cb786e86541",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "6",
+      "uid": "a2e3a778f9724d5593ab0e9cbfe361c1"
+    },
+    {
+      "core": false,
+      "id": "31f78785-a556-4db8-a6c8-955700f24b05",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "7",
+      "uid": "4e5531c7f3da4135852db77eda47de6e"
+    },
+    {
+      "core": false,
+      "id": "64a5eb81-1bc3-44fa-9903-d16754059383",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "8",
+      "uid": "95c49eedf0e245a5a0518871ac5a3e58"
+    },
+    {
+      "core": false,
+      "id": "2c52c634-540e-42d7-91d4-7880b4739b0f",
+      "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+      "option": "9",
+      "uid": "43987a6d4f4043988e514c984f633f88"
+    }
+  ]
+}

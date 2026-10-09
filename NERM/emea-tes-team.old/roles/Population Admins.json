@@ -1,0 +1,10 @@
+{
+  "groups": [
+    "Population Admins",
+    "ORG_ADMIN"
+  ],
+  "id": "f911d6b8-de3c-4112-8dc3-0d9eb0b4659a",
+  "name": "Population Admins",
+  "private_role": false,
+  "uid": "b3_population_admins_neprofile_role"
+}

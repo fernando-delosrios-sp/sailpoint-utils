@@ -1,0 +1,29 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.760-04:00",
+    "description": "",
+    "id": "2d9b02ae-32af-4f98-a518-4e21d84b9ac7",
+    "legacy_id": null,
+    "name": "Population - Approve Update",
+    "uid": "b3_population_approve_update_form",
+    "updated_at": "2026-08-27T17:44:34.760-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.764-04:00",
+      "form_id": "2d9b02ae-32af-4f98-a518-4e21d84b9ac7",
+      "id": "a5fe5405-408e-4989-b54b-869407be6a45",
+      "legacy_id": null,
+      "ne_attribute_id": "4ddaf87e-6aee-42ba-9436-ff8d3bfb5568",
+      "order": 0,
+      "read_only": false,
+      "uid": "30b75a3616184013b577b864075cf00c",
+      "updated_at": "2026-08-27T17:44:34.764-04:00"
+    }
+  ]
+}

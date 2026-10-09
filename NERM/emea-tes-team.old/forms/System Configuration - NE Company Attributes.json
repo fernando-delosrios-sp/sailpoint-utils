@@ -1,0 +1,77 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.902-04:00",
+    "description": "",
+    "id": "7c6ca399-dca2-405f-84e2-dee66de81c7c",
+    "legacy_id": null,
+    "name": "System Configuration - NE Company Attributes",
+    "uid": "b3_system_configuration_ne_company_attributes_form",
+    "updated_at": "2026-08-27T17:44:34.902-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.905-04:00",
+      "form_id": "7c6ca399-dca2-405f-84e2-dee66de81c7c",
+      "id": "5da7791f-4042-4ffe-b279-0736ddfc234b",
+      "legacy_id": null,
+      "ne_attribute_id": "45f27aec-bc69-4609-88fc-9227c144d359",
+      "order": 0,
+      "read_only": false,
+      "uid": "5fbd2aadee5f49feb4c86dff16e290db",
+      "updated_at": "2026-08-27T17:44:34.905-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.908-04:00",
+      "form_id": "7c6ca399-dca2-405f-84e2-dee66de81c7c",
+      "id": "decb228b-0bb6-4045-be81-1567abb0d2bb",
+      "legacy_id": null,
+      "ne_attribute_id": "9c6383ee-6be4-4051-a5b3-26d3e930d7e5",
+      "order": 1,
+      "read_only": false,
+      "uid": "12e6235fca464b1e9bb1d26bf470be6a",
+      "updated_at": "2026-08-27T17:44:34.908-04:00"
+    },
+    {
+      "attr_type": "break",
+      "created_at": "2026-08-27T17:44:34.911-04:00",
+      "form_id": "7c6ca399-dca2-405f-84e2-dee66de81c7c",
+      "id": "04eab93a-ef83-4fe0-95b0-ccf706c94b61",
+      "legacy_id": null,
+      "ne_attribute_id": null,
+      "order": 2,
+      "read_only": false,
+      "uid": "745e2cca17554bc2b19fb94e01bdd0e9",
+      "updated_at": "2026-08-27T17:44:34.911-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.914-04:00",
+      "form_id": "7c6ca399-dca2-405f-84e2-dee66de81c7c",
+      "id": "4d4b9a65-9b2a-441f-b8a5-e45d238c984e",
+      "legacy_id": null,
+      "ne_attribute_id": "e402a5c1-145c-4e1e-90b7-cecbbe060721",
+      "order": 3,
+      "read_only": false,
+      "uid": "ce5193e109a84b789e27539463ac10f0",
+      "updated_at": "2026-08-27T17:44:34.914-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.917-04:00",
+      "form_id": "7c6ca399-dca2-405f-84e2-dee66de81c7c",
+      "id": "d13879a2-7d7e-47a8-a3fb-19ce12ccb803",
+      "legacy_id": null,
+      "ne_attribute_id": "c73d21e1-9b62-4091-8fbd-00d630aa8210",
+      "order": 4,
+      "read_only": false,
+      "uid": "7691b77c2ec942429be93ad40fce9359",
+      "updated_at": "2026-08-27T17:44:34.917-04:00"
+    }
+  ]
+}

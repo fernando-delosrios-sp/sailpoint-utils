@@ -1,0 +1,29 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.342-04:00",
+    "description": "",
+    "id": "dec86413-a82b-4bce-96fc-53af5b15bd72",
+    "legacy_id": null,
+    "name": "Assignment Population",
+    "uid": "b3_assignment_population_form",
+    "updated_at": "2026-08-27T17:44:34.342-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.344-04:00",
+      "form_id": "dec86413-a82b-4bce-96fc-53af5b15bd72",
+      "id": "aab0abc7-2429-490c-9d89-a5c85cf58dc1",
+      "legacy_id": null,
+      "ne_attribute_id": "9757d56b-7287-40a6-a700-066a7ae2e0f2",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_e8cbaf0c42c14d9b849aaf2b4a93029a",
+      "updated_at": "2026-08-27T17:44:34.344-04:00"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:47.363-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "beb04e45-8e7a-4b3d-887a-8f1837aa9115",
+    "legacy_id": null,
+    "name": "Update Organization",
+    "uid": "b3_update_organization_workflow_page",
+    "updated_at": "2026-08-27T17:44:47.363-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:47.366-04:00",
+      "element_id": "5717cc5d-81d7-4c45-a2e6-644cc12d4006",
+      "element_type": "PageContent",
+      "id": "cf2481ef-4b90-4881-a368-f857f22753f2",
+      "order": 1,
+      "page_id": "beb04e45-8e7a-4b3d-887a-8f1837aa9115",
+      "permissions": false,
+      "read_only": false,
+      "uid": "dd4fe06cf1a547c5b1e2d7beaaf2297e",
+      "updated_at": "2026-08-27T17:44:47.366-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.409-04:00",
+      "element_id": "2aa7b95c-3ede-48bb-8f1a-e4169cbcc256",
+      "element_type": "Form",
+      "id": "6f9db561-78d5-4cd3-abc8-c1f13cff5743",
+      "order": 2,
+      "page_id": "beb04e45-8e7a-4b3d-887a-8f1837aa9115",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_b10db63444a44ccc885b8e6ab97782ff",
+      "updated_at": "2026-08-27T17:44:47.409-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "NOTE: Removal of populations, or permitted locations, or permitted departments will NOT change existing assignments.  Changes will only impact NEW assignments added.",
+      "created_at": "2026-08-27T17:44:47.370-04:00",
+      "id": "5717cc5d-81d7-4c45-a2e6-644cc12d4006",
+      "type": "Paragraph",
+      "uid": "1e73d39c97ff4fb394a4207bab00a6a8",
+      "updated_at": "2026-08-27T17:44:47.370-04:00"
+    }
+  ]
+}

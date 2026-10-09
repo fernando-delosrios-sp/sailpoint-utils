@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:46.161-04:00",
+    "data_type": "date",
+    "date_format": "mm/dd/yyyy",
+    "description": "The date the enterprise\u2019s contractual relationship with the organization ends. This date may not be applicable to all organizations.",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "7e50ba7e-c3ef-4082-a478-3edbba772030",
+    "label": "End Date",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": null,
+    "type": "DateAttribute",
+    "uid": "nerm_core_organization_end_date",
+    "updated_at": "2026-08-27T17:46:46.161-04:00"
+  },
+  "options": []
+}

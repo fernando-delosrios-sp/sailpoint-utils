@@ -1,0 +1,30 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:43.004-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "49bf1748-3104-4476-930a-26ed9eef15c8",
+    "legacy_id": null,
+    "name": "Department - New",
+    "uid": "b3_department_new_workflow_page",
+    "updated_at": "2026-08-27T17:44:43.004-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:43.007-04:00",
+      "element_id": "8cf8168c-468e-4fd7-a2ff-9ffc64c928c6",
+      "element_type": "Form",
+      "id": "a45e2929-3761-4dd5-abf7-a488d8b493f5",
+      "order": 1,
+      "page_id": "49bf1748-3104-4476-930a-26ed9eef15c8",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_4bf5fec5f2f74c7e8245c4ce32e9ab96",
+      "updated_at": "2026-08-27T17:44:43.007-04:00"
+    }
+  ],
+  "page_contents": []
+}

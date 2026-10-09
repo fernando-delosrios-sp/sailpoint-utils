@@ -1,0 +1,41 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.925-04:00",
+    "description": "",
+    "id": "cde275d1-96a0-4286-813f-d99cdfe11940",
+    "legacy_id": null,
+    "name": "System Configuration - NE Features",
+    "uid": "b3_system_configuration_ne_features_form",
+    "updated_at": "2026-08-27T17:44:34.925-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.928-04:00",
+      "form_id": "cde275d1-96a0-4286-813f-d99cdfe11940",
+      "id": "bc1393e2-4591-4b34-8517-e7b1fc6ccb81",
+      "legacy_id": null,
+      "ne_attribute_id": "743aefe1-113e-4e5d-95ca-5677b573fa0b",
+      "order": 0,
+      "read_only": false,
+      "uid": "8c7eebd60136407c9db4bfeaa8b078cf",
+      "updated_at": "2026-08-27T17:44:34.928-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.931-04:00",
+      "form_id": "cde275d1-96a0-4286-813f-d99cdfe11940",
+      "id": "c8b17980-cfe3-4250-8ca3-d47e5ad70857",
+      "legacy_id": null,
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "order": 1,
+      "read_only": false,
+      "uid": "a011ebcdb0df4acc8b9ba5b294f696d0",
+      "updated_at": "2026-08-27T17:44:34.931-04:00"
+    }
+  ]
+}

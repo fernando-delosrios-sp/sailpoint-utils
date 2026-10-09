@@ -1,0 +1,101 @@
+{
+  "profile_type": {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": "organization",
+    "core": false,
+    "id": "2346d8b3-ac29-4015-8154-dea4404a73fa",
+    "isc_synced": false,
+    "name": "Organizations - Custom",
+    "permitted_role_ids": [],
+    "profile_type_dup_attributes": [
+      {
+        "id": "f00532b0-0be4-475f-807b-97c62a364e26",
+        "ne_attribute_id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "profile_type_id": "2346d8b3-ac29-4015-8154-dea4404a73fa",
+        "uid": "b3_c915e1514adb4395a6290a1dce2bbf2e"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "287b8036-9583-4f9a-890c-17c30834685f",
+        "ne_attribute_id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "order": 2,
+        "profile_type_id": "2346d8b3-ac29-4015-8154-dea4404a73fa",
+        "uid": "b3_4bc3fe0d472b41a889fa909941fb6862"
+      }
+    ],
+    "table_id": "220426f9-8005-4d91-8d68-7c2554b6501e",
+    "uid": "b3_organizations_profile_type"
+  },
+  "profile_type_attributes": {
+    "count": 215,
+    "records": [
+      {
+        "id": "00285e61-07d1-4be5-a4c2-71de85dc67a7",
+        "label": "import_existing_assignment",
+        "synced": null,
+        "uid": "import_existing_assignment"
+      },
+      {
+        "id": "0032fc92-489d-4b9c-b9f3-5d3af6cd0c76",
+        "label": "Sponsor",
+        "synced": null,
+        "uid": "nerm_core_assignment_sponsor"
+      },
+      {
+        "id": "00a2785c-082f-4a3b-bbd8-d28f112e226f",
+        "label": "import_invalid_subpopulation",
+        "synced": null,
+        "uid": "import_invalid_subpopulation"
+      },
+      {
+        "id": "015b3b97-caac-463a-ad0b-a203bf34824a",
+        "label": "Sub-Organization Assignments",
+        "synced": null,
+        "uid": "suborganization_assignments"
+      },
+      {
+        "id": "021aaf65-49ed-4e94-a38a-dcc0a2293cc5",
+        "label": "nonhuman_owner_email",
+        "synced": null,
+        "uid": "nonhuman_owner_email"
+      },
+      {
+        "id": "033de29f-e22a-43f1-b8d0-1d09f393d313",
+        "label": "assignment_name",
+        "synced": null,
+        "uid": "assignment_name"
+      },
+      {
+        "id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "label": "Organization Name",
+        "synced": null,
+        "uid": "organization_name"
+      },
+      {
+        "id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+        "label": "Configuration Type",
+        "synced": null,
+        "uid": "sysconfig_type"
+      },
+      {
+        "id": "0a8f216b-b7c9-4e4d-8f18-e9d657e58626",
+        "label": "Company ID",
+        "synced": null,
+        "uid": "nerm_core_non_employee_company_id"
+      },
+      {
+        "id": "0bac8b78-0f4e-4ad5-ab58-324da38a0272",
+        "label": "person_risk_impact_score",
+        "synced": null,
+        "uid": "person_risk_impact_score"
+      }
+    ]
+  },
+  "profile_type_attributes_meta": {
+    "profile_type_id": "2346d8b3-ac29-4015-8154-dea4404a73fa",
+    "profile_type_uid": "b3_organizations_profile_type",
+    "profile_type_name": "Organizations - Custom"
+  }
+}

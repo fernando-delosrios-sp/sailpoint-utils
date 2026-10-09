@@ -1,0 +1,39 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.305-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "218ce215-ed64-4f86-85fd-daa016982d54",
+    "legacy_id": null,
+    "name": "Existing Organization Assignment Warning",
+    "uid": "b3_existing_organization_assignment_warning_workflow_page",
+    "updated_at": "2026-08-27T17:44:45.305-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.308-04:00",
+      "element_id": "ec0884d3-d77d-4188-9ce5-7b60f57f1cbc",
+      "element_type": "PageContent",
+      "id": "74122589-0633-4150-ba19-497ccc8b463e",
+      "order": 1,
+      "page_id": "218ce215-ed64-4f86-85fd-daa016982d54",
+      "permissions": false,
+      "read_only": false,
+      "uid": "75a96eb467b94172bdc4ce277884aacf",
+      "updated_at": "2026-08-27T17:44:45.308-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "{{ attribute.first_name }} {{ attribute.last_name }} ( {{ attribute.email }} ) has an existing assignment at {{ attribute.assignment_organization }}.\r\n<br>\r\n<p>\r\nOnly a single active assignment for organizations are allowed.   End the existing assignment before adding a new one.</p>",
+      "created_at": "2026-08-27T17:44:45.312-04:00",
+      "id": "ec0884d3-d77d-4188-9ce5-7b60f57f1cbc",
+      "type": "Paragraph",
+      "uid": "62b81471ab94469ca40337590affcf36",
+      "updated_at": "2026-08-27T17:44:45.312-04:00"
+    }
+  ]
+}

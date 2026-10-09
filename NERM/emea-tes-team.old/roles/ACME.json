@@ -1,0 +1,9 @@
+{
+  "groups": [
+    "ACME"
+  ],
+  "id": "af70e67b-a30c-45fd-9a91-fa1155d9e6ac",
+  "name": "ACME",
+  "private_role": false,
+  "uid": "acme_neprofile_role"
+}

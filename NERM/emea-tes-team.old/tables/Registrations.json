@@ -1,0 +1,32 @@
+{
+  "attr_order": [
+    "model_attr=type",
+    "model_attr=date",
+    "model_attr=user",
+    "model_attr=status"
+  ],
+  "created_at": "2026-08-27T17:45:36.410-04:00",
+  "headers": [
+    {
+      "attr": "workflow_name",
+      "label": "registration"
+    },
+    {
+      "attr": "created_at",
+      "label": "date requested"
+    },
+    {
+      "attr": "requester_name",
+      "label": "request by"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    }
+  ],
+  "id": "c7481338-2305-4f5d-bd0c-107c14f5e0b6",
+  "name": "Registrations",
+  "profile_type_id": null,
+  "uid": "registrations_table",
+  "updated_at": "2026-08-27T17:45:36.410-04:00"
+}

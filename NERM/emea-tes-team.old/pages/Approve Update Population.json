@@ -1,0 +1,51 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:42.668-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "a4d0e47f-91ab-430f-8103-bbd75bfa94a3",
+    "legacy_id": null,
+    "name": "Approve Update Population",
+    "uid": "b3_approve_update_population_workflow_page",
+    "updated_at": "2026-08-27T17:44:42.668-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:42.672-04:00",
+      "element_id": "3ffa6753-9716-477c-a23a-53200856d659",
+      "element_type": "PageContent",
+      "id": "45ed2641-606d-4795-8093-4b9221d70338",
+      "order": 1,
+      "page_id": "a4d0e47f-91ab-430f-8103-bbd75bfa94a3",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b518df8394c24f929b17a21f42d44071",
+      "updated_at": "2026-08-27T17:44:42.672-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:42.712-04:00",
+      "element_id": "2d9b02ae-32af-4f98-a518-4e21d84b9ac7",
+      "element_type": "Form",
+      "id": "e3f15f45-dbf8-441f-8c54-08d1b0e02e19",
+      "order": 2,
+      "page_id": "a4d0e47f-91ab-430f-8103-bbd75bfa94a3",
+      "permissions": false,
+      "read_only": true,
+      "uid": "56923da5636f44a3957eb3c9c606cb13",
+      "updated_at": "2026-08-27T17:44:42.712-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "This will allow the name of the population to be changed from {{ profile.name }}.    Integrations and other components may be impacted by this action - use with caution!",
+      "created_at": "2026-08-27T17:44:42.675-04:00",
+      "id": "3ffa6753-9716-477c-a23a-53200856d659",
+      "type": "Paragraph",
+      "uid": "f5f1a878643e41a6bff256d9ca0f06c1",
+      "updated_at": "2026-08-27T17:44:42.675-04:00"
+    }
+  ]
+}

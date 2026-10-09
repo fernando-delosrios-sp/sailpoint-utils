@@ -1,0 +1,37 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "table_attr=9882a22b-a951-5b0e-a91d-2a9e8b4c5a22",
+    "table_attr=f6433f6f-9029-5b63-aedf-bbbc426a4348",
+    "table_attr=3a9099bd-7bbb-5e59-bebb-1924239382f3"
+  ],
+  "created_at": "2026-08-27T17:46:45.566-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "nerm_core_non_employee_first_name",
+      "label": "First Name"
+    },
+    {
+      "attr": "nerm_core_non_employee_last_name",
+      "label": "Last Name"
+    },
+    {
+      "attr": "nerm_core_non_employee_contact_email",
+      "label": "Contact Email"
+    }
+  ],
+  "id": "090a217b-eb54-458e-b0c0-c240d5cb1426",
+  "name": "Non-Employees",
+  "profile_type_id": "be714afc-b49d-4b1f-a9c5-1b754440c04c",
+  "uid": "b92a1746663243fe8fa4b8f6e1a900dc",
+  "updated_at": "2026-08-27T17:47:05.100-04:00"
+}

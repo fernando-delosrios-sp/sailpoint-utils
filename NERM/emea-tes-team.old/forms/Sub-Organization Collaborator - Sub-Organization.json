@@ -1,0 +1,29 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.806-04:00",
+    "description": "",
+    "id": "bf7563b1-81b4-49b5-97f8-fe29f7c37266",
+    "legacy_id": null,
+    "name": "Sub-Organization Collaborator - Sub-Organization",
+    "uid": "b3_suborganization_collaborator_form",
+    "updated_at": "2026-08-27T17:44:34.806-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.808-04:00",
+      "form_id": "bf7563b1-81b4-49b5-97f8-fe29f7c37266",
+      "id": "f41dc667-7d81-4701-a56d-6eebd3cf4c83",
+      "legacy_id": null,
+      "ne_attribute_id": "9d9cd4da-e568-4e17-9979-4bf9e092d951",
+      "order": 0,
+      "read_only": false,
+      "uid": "d7a0b3c0f5464172b019f45eee88a929",
+      "updated_at": "2026-08-27T17:44:34.808-04:00"
+    }
+  ]
+}

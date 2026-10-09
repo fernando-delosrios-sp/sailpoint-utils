@@ -1,0 +1,47 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "table_attr=ea76caf9-d0d0-4835-8b37-8227f36bdfa6",
+    "table_attr=b2801fc9-0f4d-495b-a325-81c5fa70ed07",
+    "table_attr=0634edea-0354-4bb7-9136-26aa6bd4027c",
+    "table_attr=d2948be2-8cba-4c7a-91ac-b8e6c20879b2",
+    "table_attr=0d0a1862-17e0-4942-b724-c18b09d90626"
+  ],
+  "created_at": "2026-08-27T17:45:30.805-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "assignment_id",
+      "label": "Assignment ID"
+    },
+    {
+      "attr": "assignment_person",
+      "label": "Assignment Person"
+    },
+    {
+      "attr": "sponsor",
+      "label": "Assignment Sponsor"
+    },
+    {
+      "attr": "assignment_population",
+      "label": "Assignment Population"
+    },
+    {
+      "attr": "assignment_organization",
+      "label": "Assignment Organization"
+    }
+  ],
+  "id": "9359b57d-8c09-4ff6-ac89-c24769f7d38a",
+  "name": "Assignments - Custom",
+  "profile_type_id": "978f1283-ca68-4370-9277-dcc51c5f05ca",
+  "uid": "b3_assignments_profile_type_table",
+  "updated_at": "2026-10-07T12:38:30.082-04:00"
+}

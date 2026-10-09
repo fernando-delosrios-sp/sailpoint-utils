@@ -1,0 +1,11 @@
+{
+  "groups": [
+    "NE Admin",
+    "SailPoint",
+    "ORG_ADMIN"
+  ],
+  "id": "c0c847df-c086-4707-a424-6bfe65ad17fe",
+  "name": "NERM Administrator",
+  "private_role": false,
+  "uid": "nerm_administrator_neprofile_role"
+}

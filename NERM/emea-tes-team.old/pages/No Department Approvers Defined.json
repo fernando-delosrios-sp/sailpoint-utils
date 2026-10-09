@@ -1,0 +1,99 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.891-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "7aa664e7-b022-4003-834b-e61ab8b1b0c9",
+    "legacy_id": null,
+    "name": "No Department Approvers Defined",
+    "uid": "b3_no_department_approvers_defined_workflow_page",
+    "updated_at": "2026-08-27T17:44:45.891-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.894-04:00",
+      "element_id": "8236ebdf-4b8d-4f07-a819-f7c2d719c8f1",
+      "element_type": "PageContent",
+      "id": "9136d1c7-53b6-45ca-bca5-274c9e8cd3ae",
+      "order": 1,
+      "page_id": "7aa664e7-b022-4003-834b-e61ab8b1b0c9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b5c0d774271e4709b66a78a180f23f66",
+      "updated_at": "2026-08-27T17:44:45.894-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.932-04:00",
+      "element_id": "0d569d0b-1e0b-438b-8e8c-c44b4cc1e2d5",
+      "element_type": "PageContent",
+      "id": "64e8a48e-b06d-4700-85b4-ce6ee4d72fa8",
+      "order": 2,
+      "page_id": "7aa664e7-b022-4003-834b-e61ab8b1b0c9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "6b10cb52ebdd4d808fcf4ebf553a545a",
+      "updated_at": "2026-08-27T17:44:45.932-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.970-04:00",
+      "element_id": "97d7e095-6e25-4a2e-adb5-2b7bfc687c7e",
+      "element_type": "PageContent",
+      "id": "6bf43d70-0b50-40d5-9c1b-020205a96739",
+      "order": 3,
+      "page_id": "7aa664e7-b022-4003-834b-e61ab8b1b0c9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "dd0c6c3771d64dd09c150920ce82dcaf",
+      "updated_at": "2026-08-27T17:44:45.970-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:46.016-04:00",
+      "element_id": "d80891f0-b584-4406-9b1c-bd716bf80318",
+      "element_type": "PageContent",
+      "id": "75c03354-ce81-465e-bc88-1b8abb429a93",
+      "order": 4,
+      "page_id": "7aa664e7-b022-4003-834b-e61ab8b1b0c9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "4f96cc0c9de045b685a308b07111d1aa",
+      "updated_at": "2026-08-27T17:44:46.016-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Problem with assignment request",
+      "created_at": "2026-08-27T17:44:45.897-04:00",
+      "id": "8236ebdf-4b8d-4f07-a819-f7c2d719c8f1",
+      "type": "FormHeading",
+      "uid": "701506d78f6d46c1a372b896a3d3610c",
+      "updated_at": "2026-08-27T17:44:45.897-04:00"
+    },
+    {
+      "content": "A request was made by {{ requester.name }} for an assignment with the department below.   Department approval is enabled and this department has no approvers defined. ",
+      "created_at": "2026-08-27T17:44:45.936-04:00",
+      "id": "0d569d0b-1e0b-438b-8e8c-c44b4cc1e2d5",
+      "type": "Paragraph",
+      "uid": "01bcadeb0fd241dc83cf3dca8d3f297a",
+      "updated_at": "2026-08-27T17:44:45.936-04:00"
+    },
+    {
+      "content": "Either add at least one approver to the department, or reject this request and notify the requester to select a different department.",
+      "created_at": "2026-08-27T17:44:45.973-04:00",
+      "id": "97d7e095-6e25-4a2e-adb5-2b7bfc687c7e",
+      "type": "Paragraph",
+      "uid": "58ef3d2222c84ad18d4f585dba62568f",
+      "updated_at": "2026-08-27T17:44:45.973-04:00"
+    },
+    {
+      "content": "Click 'Reject' to send the request back to the requester to choose a different department.  Click 'Approve' to be taken to the Update Department page to set an approver.",
+      "created_at": "2026-08-27T17:44:46.023-04:00",
+      "id": "d80891f0-b584-4406-9b1c-bd716bf80318",
+      "type": "Paragraph",
+      "uid": "14991b6d066549d489716cec499735c4",
+      "updated_at": "2026-08-27T17:44:46.023-04:00"
+    }
+  ]
+}

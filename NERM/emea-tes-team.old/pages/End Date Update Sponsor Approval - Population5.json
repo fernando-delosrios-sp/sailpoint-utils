@@ -1,0 +1,17 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:44.771-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "ca859e28-a804-4a6d-a9a8-f3aa1b942de2",
+    "legacy_id": null,
+    "name": "End Date Update Sponsor Approval - Population5",
+    "uid": "b3_end_date_update_sponsor_approval_population5_workflow_page",
+    "updated_at": "2026-08-27T17:44:44.771-04:00"
+  },
+  "elements": [],
+  "page_contents": []
+}

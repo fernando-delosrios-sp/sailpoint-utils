@@ -1,0 +1,53 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": true,
+    "created_at": "2026-08-27T17:46:44.908-04:00",
+    "description": "An organization is a grouping of non-employees and jobs that is used to manage work and permissions. An organization can be internal (e.g. team or department) or external (e.g. vendor, business partner, staffing agency).\nThis form is used for organization profile management.",
+    "id": "f454d755-40e3-44d3-89a5-9604d596917f",
+    "legacy_id": null,
+    "name": "Organizations Profile",
+    "uid": "nerm_core_form_organizations",
+    "updated_at": "2026-08-27T17:46:44.908-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:47:02.555-04:00",
+      "form_id": "f454d755-40e3-44d3-89a5-9604d596917f",
+      "id": "ceb555c1-a60c-53cc-bf38-80cfb42ecaac",
+      "legacy_id": null,
+      "ne_attribute_id": "32cc46f3-2a12-428f-ace3-000fae8f3e34",
+      "order": 0,
+      "read_only": false,
+      "uid": "nerm_core_form_attr_32cc46f3-2a12-428f-ace3-000fae8f3e34",
+      "updated_at": "2026-08-27T17:47:02.555-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:47:02.601-04:00",
+      "form_id": "f454d755-40e3-44d3-89a5-9604d596917f",
+      "id": "10ffc26d-a7da-545f-87ac-29cb45ee6791",
+      "legacy_id": null,
+      "ne_attribute_id": "c942cb0e-4d57-4d17-969f-882aac1c43ed",
+      "order": 1,
+      "read_only": false,
+      "uid": "nerm_core_form_attr_c942cb0e-4d57-4d17-969f-882aac1c43ed",
+      "updated_at": "2026-08-27T17:47:02.601-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:47:02.676-04:00",
+      "form_id": "f454d755-40e3-44d3-89a5-9604d596917f",
+      "id": "e0f6d84e-8548-5b65-af2f-7753aff275e9",
+      "legacy_id": null,
+      "ne_attribute_id": "7e50ba7e-c3ef-4082-a478-3edbba772030",
+      "order": 2,
+      "read_only": false,
+      "uid": "nerm_core_form_attr_7e50ba7e-c3ef-4082-a478-3edbba772030",
+      "updated_at": "2026-08-27T17:47:02.676-04:00"
+    }
+  ]
+}

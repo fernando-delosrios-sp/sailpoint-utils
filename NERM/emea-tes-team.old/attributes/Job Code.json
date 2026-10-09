@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:48.117-04:00",
+    "data_type": "text field",
+    "date_format": null,
+    "description": "Job Code associated to the job.",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "6c2e489f-7790-4ef8-9ae5-e72cc20a8a17",
+    "label": "Job Code",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": null,
+    "type": "TextFieldAttribute",
+    "uid": "nerm_core_job_job_code",
+    "updated_at": "2026-08-27T17:46:48.117-04:00"
+  },
+  "options": []
+}

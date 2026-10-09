@@ -1,0 +1,59 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:47.021-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "c4aa9705-b88a-41b4-a334-2cbdc9c132ed",
+    "legacy_id": null,
+    "name": "Organization - Terminate Warning",
+    "uid": "b3_terminate_organization_warning_workflow_page",
+    "updated_at": "2026-08-27T17:44:47.021-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:47.025-04:00",
+      "element_id": "13ed4200-abc3-48fb-b9a3-1f0bf0539ce0",
+      "element_type": "PageContent",
+      "id": "12325821-3b8c-4594-af22-f3ef457956b9",
+      "order": 1,
+      "page_id": "c4aa9705-b88a-41b4-a334-2cbdc9c132ed",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_b85d58b01ef14beaa93a033fbf89c859",
+      "updated_at": "2026-08-27T17:44:47.025-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.063-04:00",
+      "element_id": "a7b50856-2c43-4153-9d60-220eda94fa4d",
+      "element_type": "PageContent",
+      "id": "01291cc9-a051-4609-8bd6-ef71d73f46b5",
+      "order": 2,
+      "page_id": "c4aa9705-b88a-41b4-a334-2cbdc9c132ed",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_3f0742f06b284b9483675198dfe08a50",
+      "updated_at": "2026-08-27T17:44:47.063-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Terminate Organization: {{profile.name}}",
+      "created_at": "2026-08-27T17:44:47.028-04:00",
+      "id": "13ed4200-abc3-48fb-b9a3-1f0bf0539ce0",
+      "type": "FormHeading",
+      "uid": "b3_9b6c3b9ecd5f4a75bd860832669b4b65",
+      "updated_at": "2026-08-27T17:44:47.028-04:00"
+    },
+    {
+      "content": "You are about to terminate {{ profile.name }}.  This will end all assignments associated with this organization and remove all sub-organizations.",
+      "created_at": "2026-08-27T17:44:47.066-04:00",
+      "id": "a7b50856-2c43-4153-9d60-220eda94fa4d",
+      "type": "Paragraph",
+      "uid": "b3_b703214f2109462ba4b71b5bb58e42c2",
+      "updated_at": "2026-08-27T17:44:47.066-04:00"
+    }
+  ]
+}

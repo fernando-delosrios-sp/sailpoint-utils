@@ -1,0 +1,78 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:40.622-04:00",
+    "description": "For Population9",
+    "elem_order_deprecated": null,
+    "id": "43b3b294-1c94-4f5d-8588-695ccac0cd47",
+    "legacy_id": null,
+    "name": "Add Population9 Assignment Details",
+    "uid": "b3_add_population9_assignment_details_workflow_page",
+    "updated_at": "2026-08-27T17:44:40.622-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:39.090-04:00",
+      "element_id": "8a13beb7-ea80-4d69-b5ae-658cf908f435",
+      "element_type": "PageContent",
+      "id": "c238d891-0322-4638-874d-9e2f8ee721be",
+      "order": 2,
+      "page_id": "43b3b294-1c94-4f5d-8588-695ccac0cd47",
+      "permissions": false,
+      "read_only": false,
+      "uid": "8b754078d9774c5e8f972b111037d2db",
+      "updated_at": "2026-08-27T17:44:40.630-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:39.126-04:00",
+      "element_id": "dec86413-a82b-4bce-96fc-53af5b15bd72",
+      "element_type": "Form",
+      "id": "885b0789-b5c5-4e53-a0b0-2c9f2c724956",
+      "order": 3,
+      "page_id": "43b3b294-1c94-4f5d-8588-695ccac0cd47",
+      "permissions": false,
+      "read_only": true,
+      "uid": "74882b4616d3472aafa63e8d76279b76",
+      "updated_at": "2026-08-27T17:44:40.634-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:39.135-04:00",
+      "element_id": "03458006-b28d-4e62-9387-2ee47870192d",
+      "element_type": "PageContent",
+      "id": "43100d79-ff69-4429-9d14-12990a27edcb",
+      "order": 5,
+      "page_id": "43b3b294-1c94-4f5d-8588-695ccac0cd47",
+      "permissions": false,
+      "read_only": false,
+      "uid": "9e39fc4b88e340a99a565a9eb3cc3947",
+      "updated_at": "2026-08-27T17:44:40.639-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:39.172-04:00",
+      "element_id": "a6fa227f-58db-4d92-986c-250e726d5efa",
+      "element_type": "Form",
+      "id": "3cafd8c6-96af-406c-843b-0c94647cf2af",
+      "order": 6,
+      "page_id": "43b3b294-1c94-4f5d-8588-695ccac0cd47",
+      "permissions": false,
+      "read_only": true,
+      "uid": "96be3e5167a84a9ba9b2e041d5911d85",
+      "updated_at": "2026-08-27T17:44:40.644-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:39.177-04:00",
+      "element_id": "7fee2dbf-d3d4-4e38-80b4-8824feac70fa",
+      "element_type": "PageContent",
+      "id": "55316719-77c1-4628-9479-76e5e009deee",
+      "order": 8,
+      "page_id": "43b3b294-1c94-4f5d-8588-695ccac0cd47",
+      "permissions": false,
+      "read_only": false,
+      "uid": "5bf294fb124c4d00afc82acdd2accbd3",
+      "updated_at": "2026-08-27T17:44:40.649-04:00"
+    }
+  ],
+  "page_contents": []
+}

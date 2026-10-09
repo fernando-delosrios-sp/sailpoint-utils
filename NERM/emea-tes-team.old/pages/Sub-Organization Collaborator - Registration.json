@@ -1,0 +1,75 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:46.620-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "fb8e2674-f3d9-45df-95d5-92c2a6ac58ff",
+    "legacy_id": null,
+    "name": "Sub-Organization Collaborator - Registration",
+    "uid": "b3_suborganization_collaborator_registration_workflow_page",
+    "updated_at": "2026-08-27T17:44:46.620-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:46.623-04:00",
+      "element_id": "c8c1c3e6-5ce0-45f9-abfe-1704e0d5fb05",
+      "element_type": "PageContent",
+      "id": "7cb9aeee-01cd-423b-a98e-f22871bb7f35",
+      "order": 1,
+      "page_id": "fb8e2674-f3d9-45df-95d5-92c2a6ac58ff",
+      "permissions": false,
+      "read_only": false,
+      "uid": "14ddfea335f94d39b2b91450d99fb5e3",
+      "updated_at": "2026-08-27T17:44:46.623-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:46.663-04:00",
+      "element_id": "23d06b03-2c16-4133-b3ab-d3d143dd2ac6",
+      "element_type": "Form",
+      "id": "7402aef8-e256-4eb2-9822-92e9eb3cfbe9",
+      "order": 2,
+      "page_id": "fb8e2674-f3d9-45df-95d5-92c2a6ac58ff",
+      "permissions": false,
+      "read_only": true,
+      "uid": "2fd01b06961c45b3a01b31b147aec4a4",
+      "updated_at": "2026-08-27T17:44:46.663-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:46.666-04:00",
+      "element_id": "bf7563b1-81b4-49b5-97f8-fe29f7c37266",
+      "element_type": "Form",
+      "id": "a2d7a162-6a08-40fc-8870-c8d845856736",
+      "order": 3,
+      "page_id": "fb8e2674-f3d9-45df-95d5-92c2a6ac58ff",
+      "permissions": false,
+      "read_only": true,
+      "uid": "d4db25427483440693fe7cd6a9ea3330",
+      "updated_at": "2026-08-27T17:44:46.666-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:46.669-04:00",
+      "element_id": "b96b481c-5e0e-417e-a3a8-ee9af5ab01ef",
+      "element_type": "Form",
+      "id": "a19125fe-e009-4fcb-8940-ca95dabb2875",
+      "order": 4,
+      "page_id": "fb8e2674-f3d9-45df-95d5-92c2a6ac58ff",
+      "permissions": false,
+      "read_only": false,
+      "uid": "3dd9bc3864534ba797073717b463eb62",
+      "updated_at": "2026-08-27T17:44:46.669-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "{{ attribute.sysconfig_profile.first.sysconfig_company_name }} has invited you to register as a collaborator who can onboard individuals on behalf of your organization's sub-organization. Please update your information below. On the next page, you will select a password.",
+      "created_at": "2026-08-27T17:44:46.626-04:00",
+      "id": "c8c1c3e6-5ce0-45f9-abfe-1704e0d5fb05",
+      "type": "Paragraph",
+      "uid": "af7c49b655f0429692a947b0019540ba",
+      "updated_at": "2026-08-27T17:44:46.626-04:00"
+    }
+  ]
+}

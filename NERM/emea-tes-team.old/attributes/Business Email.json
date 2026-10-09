@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:46.816-04:00",
+    "data_type": "text field",
+    "date_format": null,
+    "description": "The non-employee\u2019s work email address.",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "68aabfbc-32a6-420b-ab50-a5dc97c35cf4",
+    "label": "Business Email",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": null,
+    "type": "TextFieldAttribute",
+    "uid": "nerm_core_non_employee_business_email",
+    "updated_at": "2026-08-27T17:46:46.816-04:00"
+  },
+  "options": []
+}

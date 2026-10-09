@@ -1,0 +1,375 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:49.089-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+    "legacy_id": null,
+    "name": "Update System Configuration - NE",
+    "uid": "b3_update_system_configuration_ne_workflow_page",
+    "updated_at": "2026-08-27T17:44:49.089-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:49.092-04:00",
+      "element_id": "ddcd5b5e-6bce-4fce-afd5-f5ed2d8d4c2e",
+      "element_type": "PageContent",
+      "id": "a87ab878-50a3-4153-8cd1-5a7c67d4e15c",
+      "order": 1,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "cd5ca85a63fe40e9bb67e7af1f3d9c97",
+      "updated_at": "2026-08-27T17:44:49.092-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.132-04:00",
+      "element_id": "ad795695-dc07-4aa0-81f7-73a26c37e744",
+      "element_type": "Form",
+      "id": "b99239d7-da7b-4fbc-992a-c1a4b3a1a3ec",
+      "order": 2,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": true,
+      "uid": "3ca9169e790a42eeb3ef036de0b01295",
+      "updated_at": "2026-08-27T17:44:49.132-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.135-04:00",
+      "element_id": "7f6d3a44-4313-4f0a-90db-9ecd78d24a45",
+      "element_type": "Form",
+      "id": "27d0412e-f7dc-4c46-9fb7-b2807b486267",
+      "order": 3,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "ae7498b949c3444695301d0beff8a71c",
+      "updated_at": "2026-08-27T17:44:49.135-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.139-04:00",
+      "element_id": "f30dd34c-ac19-4ea9-bc79-8419e123c7c5",
+      "element_type": "PageContent",
+      "id": "35b91196-de2c-40c1-b877-2db1499bc68e",
+      "order": 7,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "bc41766c3a004fa6a54c39ec3c501290",
+      "updated_at": "2026-08-27T17:44:49.139-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.178-04:00",
+      "element_id": "c66fb3f6-5d5b-4ca3-a1cc-fbea74799fe0",
+      "element_type": "PageContent",
+      "id": "e93a0bc8-23f0-4de0-b7ad-1bbb74252764",
+      "order": 8,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "ae1b80623c124d67b99c319d78edd7c3",
+      "updated_at": "2026-08-27T17:44:49.178-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.219-04:00",
+      "element_id": "7c6ca399-dca2-405f-84e2-dee66de81c7c",
+      "element_type": "Form",
+      "id": "698e71ff-9099-44eb-a987-f111aeb05843",
+      "order": 9,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "f517213f01de47d496b52ebe7090a920",
+      "updated_at": "2026-08-27T17:44:49.219-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.222-04:00",
+      "element_id": "38cebb5e-c576-4f14-9961-c7eaedfb2dfe",
+      "element_type": "PageContent",
+      "id": "a05e2b66-0e55-4eef-a451-20efd60bee8a",
+      "order": 10,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "31175519603a4fa39ad08a7168ccf9c2",
+      "updated_at": "2026-08-27T17:44:49.222-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.261-04:00",
+      "element_id": "cde3a1c5-9895-403e-b5fa-ffc83f309f8c",
+      "element_type": "PageContent",
+      "id": "47fcd4a5-5ccb-4d54-b50e-9b436a572bef",
+      "order": 11,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "2af5fa6eaf1c4ccf83dd3c9f1c526b5e",
+      "updated_at": "2026-08-27T17:44:49.261-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.300-04:00",
+      "element_id": "cde275d1-96a0-4286-813f-d99cdfe11940",
+      "element_type": "Form",
+      "id": "3672b875-a4d2-4776-91c9-b6106bf9244e",
+      "order": 12,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "ee1750f942644fcf84bf6e2b462e3f28",
+      "updated_at": "2026-08-27T17:44:49.300-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.303-04:00",
+      "element_id": "f09bc431-1805-49b9-9d23-aea0935c562f",
+      "element_type": "PageContent",
+      "id": "c08f9fbe-4b68-4d96-8fdf-394cf5390a00",
+      "order": 13,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "905c726427f447e2b0000e3580878be4",
+      "updated_at": "2026-08-27T17:44:49.303-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.342-04:00",
+      "element_id": "b32ba4f3-f4b4-4765-be4d-1437e834d346",
+      "element_type": "PageContent",
+      "id": "ebbde08d-d477-409d-958c-94f1fa1ec931",
+      "order": 14,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "0b2b1c2d21b942a281b6b497899313c6",
+      "updated_at": "2026-08-27T17:44:49.342-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.383-04:00",
+      "element_id": "8fb7c867-ada5-4491-a4cc-90a0a693d956",
+      "element_type": "Form",
+      "id": "e38a9c5c-fc64-457b-8372-b93e548529cb",
+      "order": 15,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "05da1feb4d6d4e31be1c406956d5051a",
+      "updated_at": "2026-08-27T17:44:49.383-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.389-04:00",
+      "element_id": "97339924-60db-44e8-b9f9-8a2f4769a4cf",
+      "element_type": "PageContent",
+      "id": "9412ae22-42d0-43af-9c37-1020c8299dd0",
+      "order": 16,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "171a0e653a344a3c98dd598ac961975d",
+      "updated_at": "2026-08-27T17:44:49.389-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.429-04:00",
+      "element_id": "d7c845d0-0014-43d9-9d84-4e17145f7dc3",
+      "element_type": "PageContent",
+      "id": "d8e79ef8-65b4-4c87-85e9-6b32b46abe7d",
+      "order": 17,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "5ac7ebdf82414095a624f2aa06e5b3fb",
+      "updated_at": "2026-08-27T17:44:49.429-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.470-04:00",
+      "element_id": "7a166348-362d-4d93-aa7b-589ccc0bc9f1",
+      "element_type": "Form",
+      "id": "f9eb1e58-e2d6-47ae-a114-73a3245d3fb0",
+      "order": 18,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "5cd5302b184b4a4da56a3e24b1f30253",
+      "updated_at": "2026-08-27T17:44:49.470-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.474-04:00",
+      "element_id": "635fe042-1867-40a1-8f16-9422ccf830c7",
+      "element_type": "PageContent",
+      "id": "ee34a05d-66d5-45b3-9cf1-833a682f15be",
+      "order": 19,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "d97b4cbcb08f4be18ce2ddc3ec91b1a4",
+      "updated_at": "2026-08-27T17:44:49.474-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.514-04:00",
+      "element_id": "e404ef39-ff87-4431-b0cc-9b67e62f6193",
+      "element_type": "PageContent",
+      "id": "7147ac99-1158-42ba-84ed-8f960db23563",
+      "order": 20,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "931b4ef3a0674efca7e86b451bf94a56",
+      "updated_at": "2026-08-27T17:44:49.514-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.553-04:00",
+      "element_id": "64b32aa6-0af9-43c1-8b08-2aee65558ce2",
+      "element_type": "Form",
+      "id": "c5e7df8c-778f-45b6-a002-b3185c000543",
+      "order": 21,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "ff675968d150468897d3465f0b14b77d",
+      "updated_at": "2026-08-27T17:44:49.553-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.556-04:00",
+      "element_id": "0ee05a70-0564-4e6c-805a-d5c04c4971b4",
+      "element_type": "PageContent",
+      "id": "0c5a6228-924a-4803-8c18-ac43ad34587a",
+      "order": 22,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "a650a1b002244489806f3feccd7d64b7",
+      "updated_at": "2026-08-27T17:44:49.556-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.594-04:00",
+      "element_id": "95ffe52f-16f4-4a14-97ea-8b615887dbe4",
+      "element_type": "PageContent",
+      "id": "cec2e58e-3309-43ba-a530-1f0d7b180d13",
+      "order": 23,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "9032aaf333e341cea67f13f5e7bbb721",
+      "updated_at": "2026-08-27T17:44:49.594-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.633-04:00",
+      "element_id": "0b669918-1ea5-4725-881b-bd00318dd73f",
+      "element_type": "Form",
+      "id": "400bf3c1-4a35-4ed1-a8e8-7cf16ce9b563",
+      "order": 24,
+      "page_id": "0d347891-f9dd-45ea-ab0c-75423c75c39a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "44df3dcbabd34f3dacc986e7cb8216cf",
+      "updated_at": "2026-08-27T17:44:49.633-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Changing these settings will impact the processes and functioning of the application. ",
+      "created_at": "2026-08-27T17:44:49.095-04:00",
+      "id": "ddcd5b5e-6bce-4fce-afd5-f5ed2d8d4c2e",
+      "type": "FormHeading",
+      "uid": "e2a8150bd6e84af4bd223fc744f06b0f",
+      "updated_at": "2026-08-27T17:44:49.095-04:00"
+    },
+    {
+      "content": "Customer Specific Attributes",
+      "created_at": "2026-08-27T17:44:49.142-04:00",
+      "id": "f30dd34c-ac19-4ea9-bc79-8419e123c7c5",
+      "type": "SmallHeading",
+      "uid": "6356f7cd62084424be65ad18603090ab",
+      "updated_at": "2026-08-27T17:44:49.142-04:00"
+    },
+    {
+      "content": "These attributes are presented on pages and notifications and can be changed at anytime to reflect the customer information.",
+      "created_at": "2026-08-27T17:44:49.182-04:00",
+      "id": "c66fb3f6-5d5b-4ca3-a1cc-fbea74799fe0",
+      "type": "Paragraph",
+      "uid": "902267b30d4549d7a434efa087b37832",
+      "updated_at": "2026-08-27T17:44:49.182-04:00"
+    },
+    {
+      "content": "Features ",
+      "created_at": "2026-08-27T17:44:49.225-04:00",
+      "id": "38cebb5e-c576-4f14-9961-c7eaedfb2dfe",
+      "type": "SmallHeading",
+      "uid": "8488633d123a4a1e87180a24df883c21",
+      "updated_at": "2026-08-27T17:44:49.225-04:00"
+    },
+    {
+      "content": "These attributes will change how processes function in the application.  They can be changed at any time but will not impact any existing assignments.  See the Administrator's Guide for details.",
+      "created_at": "2026-08-27T17:44:49.265-04:00",
+      "id": "cde3a1c5-9895-403e-b5fa-ffc83f309f8c",
+      "type": "Paragraph",
+      "uid": "f581619eaf6b419186a1238eb49aa28b",
+      "updated_at": "2026-08-27T17:44:49.265-04:00"
+    },
+    {
+      "content": "Organization Approvals",
+      "created_at": "2026-08-27T17:44:49.306-04:00",
+      "id": "f09bc431-1805-49b9-9d23-aea0935c562f",
+      "type": "SmallHeading",
+      "uid": "63ee61ff433345e08f01255c1509b6a6",
+      "updated_at": "2026-08-27T17:44:49.306-04:00"
+    },
+    {
+      "content": "This attribute enable(checked) or disable(unchecked) organization and sub-organization termination requests to have an approvals sent to the organization's sponsor(s). When enabling these settings, ensure that all organizations have at least one sponsor set.",
+      "created_at": "2026-08-27T17:44:49.345-04:00",
+      "id": "b32ba4f3-f4b4-4765-be4d-1437e834d346",
+      "type": "Paragraph",
+      "uid": "c82fd429c1474fda90a10e468a215233",
+      "updated_at": "2026-08-27T17:44:49.345-04:00"
+    },
+    {
+      "content": "Assignment Approvals",
+      "created_at": "2026-08-27T17:44:49.394-04:00",
+      "id": "97339924-60db-44e8-b9f9-8a2f4769a4cf",
+      "type": "SmallHeading",
+      "uid": "bbd9780b4f2647fba09a6dea3c12139b",
+      "updated_at": "2026-08-27T17:44:49.394-04:00"
+    },
+    {
+      "content": "These attributes enable(checked) or disable(unchecked) assignment sponsor and/or department approvals for New assignments, updates to assignments, changes to assignment end dates, and the ending of an assignment.   When enabling these settings, ensure that assignments have sponsors set and that all departments have at least one approver set.",
+      "created_at": "2026-08-27T17:44:49.434-04:00",
+      "id": "d7c845d0-0014-43d9-9d84-4e17145f7dc3",
+      "type": "Paragraph",
+      "uid": "e132961c676944fbb2510612c395406e",
+      "updated_at": "2026-08-27T17:44:49.434-04:00"
+    },
+    {
+      "content": "Non-Human Approvals",
+      "created_at": "2026-08-27T17:44:49.477-04:00",
+      "id": "635fe042-1867-40a1-8f16-9422ccf830c7",
+      "type": "SmallHeading",
+      "uid": "aed6d72e81f5477b88b720d4eba11735",
+      "updated_at": "2026-08-27T17:44:49.477-04:00"
+    },
+    {
+      "content": "These attributes enable(checked) or disable(unchecked) non-human owner and/or non-human type approvals for New, Update, and Terminate actions on non-humans.  When enabling these settings, ensure that non-humans have owners set and that non-human types have at least one approver set where approval is needed.",
+      "created_at": "2026-08-27T17:44:49.517-04:00",
+      "id": "e404ef39-ff87-4431-b0cc-9b67e62f6193",
+      "type": "Paragraph",
+      "uid": "819efbf4b7dd4572a61691c9c46a8286",
+      "updated_at": "2026-08-27T17:44:49.517-04:00"
+    },
+    {
+      "content": "Data Loader Settings",
+      "created_at": "2026-08-27T17:44:49.559-04:00",
+      "id": "0ee05a70-0564-4e6c-805a-d5c04c4971b4",
+      "type": "SmallHeading",
+      "uid": "09e2a03457e149fa9f5da78621ab87fd",
+      "updated_at": "2026-08-27T17:44:49.559-04:00"
+    },
+    {
+      "content": "This attribute changes the requirement checks performed by the Data Loader api's.  See the Administrator's Guide for further information.",
+      "created_at": "2026-08-27T17:44:49.596-04:00",
+      "id": "95ffe52f-16f4-4a14-97ea-8b615887dbe4",
+      "type": "Paragraph",
+      "uid": "6fbcd033f79a4b3da2e2f61fe555ba18",
+      "updated_at": "2026-08-27T17:44:49.596-04:00"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "table_attr=f8b3f768-f02f-5957-add6-d24bddf15b01",
+    "table_attr=260b1019-e8c3-534e-8d65-51ef3994ebcb",
+    "table_attr=36e9dd8d-35cb-541f-9eba-9f2521149db6"
+  ],
+  "created_at": "2026-08-27T17:46:45.431-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "nerm_core_organization_name",
+      "label": "Name"
+    },
+    {
+      "attr": "nerm_core_organization_owner",
+      "label": "Owner"
+    },
+    {
+      "attr": "nerm_core_organization_end_date",
+      "label": "End Date"
+    }
+  ],
+  "id": "854021e0-0c33-462d-be12-359dc545e8b6",
+  "name": "Organizations",
+  "profile_type_id": "cb0e16d9-5796-4aa0-9010-b716334f0855",
+  "uid": "c7b0a962656648fe82994e92b3d75378",
+  "updated_at": "2026-08-27T17:47:04.358-04:00"
+}

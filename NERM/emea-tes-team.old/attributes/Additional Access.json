@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": true,
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:47.762-04:00",
+    "data_type": "drop-down",
+    "date_format": null,
+    "description": "Customer defined options for additional access for the assignment.",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "b57a8c0d-b34b-4a04-b683-453dfd9efec9",
+    "label": "Additional Access",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": null,
+    "type": "DropDownAttribute",
+    "uid": "nerm_core_assignment_additional_access",
+    "updated_at": "2026-08-27T17:46:47.762-04:00"
+  },
+  "options": []
+}

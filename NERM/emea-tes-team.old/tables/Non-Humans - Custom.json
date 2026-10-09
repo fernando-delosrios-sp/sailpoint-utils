@@ -1,0 +1,47 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "model_attr=id_proofing_status",
+    "table_attr=fa6e4b8f-65b4-4d7e-8c6f-fa65b3105de3",
+    "table_attr=18bc6257-e552-46d0-95cd-40201a7d7aec",
+    "table_attr=e6ba0415-f501-4daa-b6d3-02c2942a2866",
+    "table_attr=ba8faee2-6cd8-47da-8e6a-f58763c0f20e"
+  ],
+  "created_at": "2026-08-27T17:45:30.867-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "id_proofing_status",
+      "label": "Identity Proofing"
+    },
+    {
+      "attr": "nonhuman_id",
+      "label": "Non-Human ID"
+    },
+    {
+      "attr": "nonhuman_name",
+      "label": "Non-Human Name"
+    },
+    {
+      "attr": "nonhuman_type",
+      "label": "Non-Human Type"
+    },
+    {
+      "attr": "nonhuman_owner",
+      "label": "Non-Human Owner"
+    }
+  ],
+  "id": "af490cff-1ee1-4b1d-bf69-860ebe1d0e96",
+  "name": "Non-Humans - Custom",
+  "profile_type_id": "8e6aee42-9346-437d-b443-7234fd4581e5",
+  "uid": "b3_nonhumans_profile_type_table",
+  "updated_at": "2026-10-06T07:25:11.149-04:00"
+}

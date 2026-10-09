@@ -1,0 +1,30 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:43.191-04:00",
+    "description": null,
+    "elem_order_deprecated": null,
+    "id": "4752f82e-4f40-47a0-829b-e7f07101d667",
+    "legacy_id": null,
+    "name": "Departments - Custom",
+    "uid": "b3_departments_profile_page",
+    "updated_at": "2026-10-06T07:25:23.540-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:43.194-04:00",
+      "element_id": "8789a7cf-508b-415d-b795-0dd23db5e642",
+      "element_type": "Form",
+      "id": "c78f5bc9-07b4-463b-aed1-754d3ed945dd",
+      "order": 1,
+      "page_id": "4752f82e-4f40-47a0-829b-e7f07101d667",
+      "permissions": true,
+      "read_only": false,
+      "uid": "b3_33ddef67ab4c4be78f3ee55463732bbb",
+      "updated_at": "2026-08-27T17:44:43.194-04:00"
+    }
+  ],
+  "page_contents": []
+}

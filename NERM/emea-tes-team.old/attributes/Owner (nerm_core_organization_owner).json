@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:46.061-04:00",
+    "data_type": "contributor select",
+    "date_format": null,
+    "description": "Responsible party for the organization who approves and oversees contractor management inside the enterprise.",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "c942cb0e-4d57-4d17-969f-882aac1c43ed",
+    "label": "Owner",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": null,
+    "type": "ContributorSelectAttribute",
+    "uid": "nerm_core_organization_owner",
+    "updated_at": "2026-08-27T17:46:46.061-04:00"
+  },
+  "options": []
+}

@@ -1,0 +1,103 @@
+{
+  "profile_type": {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": "other",
+    "core": false,
+    "id": "5d99e6a9-30e1-4cd1-8461-e28414e0d2bf",
+    "isc_synced": false,
+    "name": "Locations - Custom",
+    "permitted_role_ids": [
+      "4bf317d8-1393-4d52-a871-00f712dda2b0"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "e0258db3-8263-4738-ad37-65aa9f0dd8f5",
+        "ne_attribute_id": "0f35cd67-3da1-49dd-983f-0aae531993e9",
+        "profile_type_id": "5d99e6a9-30e1-4cd1-8461-e28414e0d2bf",
+        "uid": "b3_0e7cbab1747b4689843866de0a202189"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "67743de2-f1e4-45e8-aea0-4de5c14fa9a5",
+        "ne_attribute_id": "0f35cd67-3da1-49dd-983f-0aae531993e9",
+        "order": 2,
+        "profile_type_id": "5d99e6a9-30e1-4cd1-8461-e28414e0d2bf",
+        "uid": "b3_de408978281b45d79547266e07d34c38"
+      }
+    ],
+    "table_id": "2fb12c79-6c1e-44d9-a40c-06e3d36636ae",
+    "uid": "b3_locations_profile_type"
+  },
+  "profile_type_attributes": {
+    "count": 215,
+    "records": [
+      {
+        "id": "00285e61-07d1-4be5-a4c2-71de85dc67a7",
+        "label": "import_existing_assignment",
+        "synced": null,
+        "uid": "import_existing_assignment"
+      },
+      {
+        "id": "0032fc92-489d-4b9c-b9f3-5d3af6cd0c76",
+        "label": "Sponsor",
+        "synced": null,
+        "uid": "nerm_core_assignment_sponsor"
+      },
+      {
+        "id": "00a2785c-082f-4a3b-bbd8-d28f112e226f",
+        "label": "import_invalid_subpopulation",
+        "synced": null,
+        "uid": "import_invalid_subpopulation"
+      },
+      {
+        "id": "015b3b97-caac-463a-ad0b-a203bf34824a",
+        "label": "Sub-Organization Assignments",
+        "synced": null,
+        "uid": "suborganization_assignments"
+      },
+      {
+        "id": "021aaf65-49ed-4e94-a38a-dcc0a2293cc5",
+        "label": "nonhuman_owner_email",
+        "synced": null,
+        "uid": "nonhuman_owner_email"
+      },
+      {
+        "id": "033de29f-e22a-43f1-b8d0-1d09f393d313",
+        "label": "assignment_name",
+        "synced": null,
+        "uid": "assignment_name"
+      },
+      {
+        "id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "label": "Organization Name",
+        "synced": null,
+        "uid": "organization_name"
+      },
+      {
+        "id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+        "label": "Configuration Type",
+        "synced": null,
+        "uid": "sysconfig_type"
+      },
+      {
+        "id": "0a8f216b-b7c9-4e4d-8f18-e9d657e58626",
+        "label": "Company ID",
+        "synced": null,
+        "uid": "nerm_core_non_employee_company_id"
+      },
+      {
+        "id": "0bac8b78-0f4e-4ad5-ab58-324da38a0272",
+        "label": "person_risk_impact_score",
+        "synced": null,
+        "uid": "person_risk_impact_score"
+      }
+    ]
+  },
+  "profile_type_attributes_meta": {
+    "profile_type_id": "5d99e6a9-30e1-4cd1-8461-e28414e0d2bf",
+    "profile_type_uid": "b3_locations_profile_type",
+    "profile_type_name": "Locations - Custom"
+  }
+}

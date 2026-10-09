@@ -1,0 +1,51 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:38.700-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "4a03a856-0c2e-44bc-99f2-96dce8777712",
+    "legacy_id": null,
+    "name": "Add Assignment - Select Organization by Population",
+    "uid": "b3_add_assignment_select_organization_by_population_workflow_page",
+    "updated_at": "2026-08-27T17:44:38.700-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:38.714-04:00",
+      "element_id": "d4540ea3-0524-43d1-9241-8705274d83ab",
+      "element_type": "PageContent",
+      "id": "d41dbec4-822d-4146-a55b-c4e7acdc3912",
+      "order": 1,
+      "page_id": "4a03a856-0c2e-44bc-99f2-96dce8777712",
+      "permissions": false,
+      "read_only": false,
+      "uid": "387d3e1823834054a35183843d71d130",
+      "updated_at": "2026-08-27T17:44:38.714-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:38.772-04:00",
+      "element_id": "b4e65d1a-454a-42d1-8cd6-e33ffef81790",
+      "element_type": "Form",
+      "id": "3d31a755-59b7-45c5-969c-9aedfc6ca7ae",
+      "order": 2,
+      "page_id": "4a03a856-0c2e-44bc-99f2-96dce8777712",
+      "permissions": false,
+      "read_only": false,
+      "uid": "2661eef416204134ba236b5e747000da",
+      "updated_at": "2026-08-27T17:44:38.772-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Provide the details for the new assignment for {{ profile.name }}",
+      "created_at": "2026-08-27T17:44:38.735-04:00",
+      "id": "d4540ea3-0524-43d1-9241-8705274d83ab",
+      "type": "Paragraph",
+      "uid": "395d8c05674a4faaaade09f47a427ede",
+      "updated_at": "2026-08-27T17:44:38.735-04:00"
+    }
+  ]
+}

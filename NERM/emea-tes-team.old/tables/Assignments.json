@@ -1,0 +1,47 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "table_attr=95831c37-663c-5d74-bf9b-6783319e9614",
+    "table_attr=b42e19c0-e301-5597-97c7-71386cc83180",
+    "table_attr=b4bd5937-4721-53e7-ba8b-82c90149f50e",
+    "table_attr=abcd63bb-b916-5918-9f03-9f1411ff46fb",
+    "table_attr=aff4eddf-6269-5433-995a-0825f5f24631"
+  ],
+  "created_at": "2026-08-27T17:46:45.697-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "nerm_core_assignment_non_employee",
+      "label": "Non-Employee"
+    },
+    {
+      "attr": "nerm_core_assignment_job",
+      "label": "Job"
+    },
+    {
+      "attr": "nerm_core_assignment_sponsor",
+      "label": "Sponsor"
+    },
+    {
+      "attr": "nerm_core_assignment_start_date",
+      "label": "Start Date"
+    },
+    {
+      "attr": "nerm_core_assignment_end_date",
+      "label": "End Date"
+    }
+  ],
+  "id": "b431b88a-fee1-4817-932d-ddc87c911c2e",
+  "name": "Assignments",
+  "profile_type_id": "bfba2ef1-22c8-46bc-ae72-e5d02c2aeb90",
+  "uid": "d2c9f47484e14c7887291f7f128500ae",
+  "updated_at": "2026-08-27T17:47:04.913-04:00"
+}

@@ -1,0 +1,59 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:46.063-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "e28b4492-7589-40cc-b3bd-e32b24a2e66d",
+    "legacy_id": null,
+    "name": "No Organization Sponsor Defined",
+    "uid": "b3_no_organization_sponsor_defined_workflow_page",
+    "updated_at": "2026-08-27T17:44:46.063-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:46.067-04:00",
+      "element_id": "8c535d5a-41b0-41e3-ac63-7400bdc50a0c",
+      "element_type": "PageContent",
+      "id": "f2918e89-cbb2-4221-88f7-26724355ee74",
+      "order": 1,
+      "page_id": "e28b4492-7589-40cc-b3bd-e32b24a2e66d",
+      "permissions": false,
+      "read_only": false,
+      "uid": "9fe61c6204264238973ce6e7412cd63d",
+      "updated_at": "2026-08-27T17:44:46.067-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:46.106-04:00",
+      "element_id": "2006a2fe-0432-47db-9ea9-ed1cac490706",
+      "element_type": "PageContent",
+      "id": "4c89b419-38f7-4628-9239-4d10a5d117f9",
+      "order": 2,
+      "page_id": "e28b4492-7589-40cc-b3bd-e32b24a2e66d",
+      "permissions": false,
+      "read_only": false,
+      "uid": "3a78cae9846d445e9a992f7ab7e70829",
+      "updated_at": "2026-08-27T17:44:46.106-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Problem with request",
+      "created_at": "2026-08-27T17:44:46.070-04:00",
+      "id": "8c535d5a-41b0-41e3-ac63-7400bdc50a0c",
+      "type": "SmallHeading",
+      "uid": "581f7512c4db4af4a9e05481675f5c27",
+      "updated_at": "2026-08-27T17:44:46.070-04:00"
+    },
+    {
+      "content": "This organization, {{ profile.name }}, does not have a sponsor defined.  An organization sponsor is required to approval this request and can not proceed until it's corrected.  Please set at least one sponsor on the organization and try this request again.",
+      "created_at": "2026-08-27T17:44:46.110-04:00",
+      "id": "2006a2fe-0432-47db-9ea9-ed1cac490706",
+      "type": "Paragraph",
+      "uid": "021042f44cf24e478a7770f1ac4a5724",
+      "updated_at": "2026-08-27T17:44:46.110-04:00"
+    }
+  ]
+}

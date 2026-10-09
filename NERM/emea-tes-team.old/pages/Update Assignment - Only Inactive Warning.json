@@ -1,0 +1,39 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:47.221-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "3f4d588c-105f-4752-b9c7-f9fbf3723470",
+    "legacy_id": null,
+    "name": "Update Assignment - Only Inactive Warning",
+    "uid": "b3_update_assignment_only_inactive_warning_workflow_page",
+    "updated_at": "2026-08-27T17:44:47.221-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:47.224-04:00",
+      "element_id": "066c8707-d3af-40e0-a261-5bab45977a08",
+      "element_type": "PageContent",
+      "id": "f9a0c69b-8bd3-4484-b043-ff9801ab492e",
+      "order": 1,
+      "page_id": "3f4d588c-105f-4752-b9c7-f9fbf3723470",
+      "permissions": false,
+      "read_only": false,
+      "uid": "0faab90ef110473da26c6fa1abfe4cc7",
+      "updated_at": "2026-08-27T17:44:47.224-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Assignments that are inactive can be updated.  This assignment is {{ profile.status }} and can not be updated.",
+      "created_at": "2026-08-27T17:44:47.227-04:00",
+      "id": "066c8707-d3af-40e0-a261-5bab45977a08",
+      "type": "Paragraph",
+      "uid": "6fdcb8e9574543b1869f3a78b05e8942",
+      "updated_at": "2026-08-27T17:44:47.227-04:00"
+    }
+  ]
+}

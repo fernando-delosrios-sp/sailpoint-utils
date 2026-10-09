@@ -1,0 +1,119 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:42.777-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "804c2abb-a39b-4c6c-9ffc-2be0dcef8a61",
+    "legacy_id": null,
+    "name": "Debug Page",
+    "uid": "b3_debug_page",
+    "updated_at": "2026-08-27T17:44:42.777-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:42.780-04:00",
+      "element_id": "ea602ea2-b4cb-45d1-ab5a-11266a83d72c",
+      "element_type": "PageContent",
+      "id": "bd6cd314-20bc-4bfa-84cc-a48218a7b1d0",
+      "order": 1,
+      "page_id": "804c2abb-a39b-4c6c-9ffc-2be0dcef8a61",
+      "permissions": false,
+      "read_only": false,
+      "uid": "df9f727d718847a4ba56fcc0e1d6cc56",
+      "updated_at": "2026-08-27T17:44:42.780-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:42.832-04:00",
+      "element_id": "2a48d050-ee2e-4932-a8ca-70d6d1bcf5e3",
+      "element_type": "PageContent",
+      "id": "445be66b-61a7-4eb0-b6a3-0dfbd7dd5bac",
+      "order": 2,
+      "page_id": "804c2abb-a39b-4c6c-9ffc-2be0dcef8a61",
+      "permissions": false,
+      "read_only": false,
+      "uid": "97d4eb7020cb4a96a4f5c5b0b152d188",
+      "updated_at": "2026-08-27T17:44:42.832-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:42.871-04:00",
+      "element_id": "d02cdb47-51f6-47b9-930e-0f8fb7772865",
+      "element_type": "PageContent",
+      "id": "a74b9931-61e6-4747-8bf7-89cd459e3fab",
+      "order": 3,
+      "page_id": "804c2abb-a39b-4c6c-9ffc-2be0dcef8a61",
+      "permissions": false,
+      "read_only": false,
+      "uid": "d8b2463979a24645a2ea20862e156d0d",
+      "updated_at": "2026-08-27T17:44:42.871-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:42.911-04:00",
+      "element_id": "f6769774-d196-416b-a44b-6abb826dc095",
+      "element_type": "PageContent",
+      "id": "bb60c04f-429a-4447-8b91-5d745d34e7a4",
+      "order": 4,
+      "page_id": "804c2abb-a39b-4c6c-9ffc-2be0dcef8a61",
+      "permissions": false,
+      "read_only": false,
+      "uid": "a47c799b5501424c917196c59027f2ba",
+      "updated_at": "2026-08-27T17:44:42.911-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:42.962-04:00",
+      "element_id": "f0b99dba-dd80-439a-b83d-1485ff4ae770",
+      "element_type": "PageContent",
+      "id": "fffdd321-e969-40b7-a5a9-9f4a2681d1f4",
+      "order": 5,
+      "page_id": "804c2abb-a39b-4c6c-9ffc-2be0dcef8a61",
+      "permissions": false,
+      "read_only": false,
+      "uid": "cadc5cd017ee4f1da193358602105257",
+      "updated_at": "2026-08-27T17:44:42.962-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Attribute Debug Page",
+      "created_at": "2026-08-27T17:44:42.788-04:00",
+      "id": "ea602ea2-b4cb-45d1-ab5a-11266a83d72c",
+      "type": "FormHeading",
+      "uid": "8e0c3c4626a341b4b1b6e6196354a12a",
+      "updated_at": "2026-08-27T17:44:42.788-04:00"
+    },
+    {
+      "content": "Profile Attributes",
+      "created_at": "2026-08-27T17:44:42.835-04:00",
+      "id": "2a48d050-ee2e-4932-a8ca-70d6d1bcf5e3",
+      "type": "SmallHeading",
+      "uid": "0eb7de67a8f64c9d8944def20060606a",
+      "updated_at": "2026-08-27T17:44:42.835-04:00"
+    },
+    {
+      "content": "api_response_1: {{ attribute.api_response_1 }}<br>\r\napi_response_2: {{ attribute.api_response_2 }}<br>\r\napi_response_3: {{ attribute.api_response_3 }}<br>\r\napi_response_4: {{ attribute.api_response_4 }}<br>\r\napi_response_5: {{ attribute.api_response_5 }}<br>\r\napi_status_code: {{ attribute.api_status_code }}<br>\r\napprover_login: {{ attribute.approver_login }}<br>\r\napprover_user_id: {{ attribute.approver_user_id }}<br>\r\nassignment_alternate_locations: {{ attribute.assignment_alternate_locations }}<br>\r\nassignment_department: {{ attribute.assignment_department }}<br>\r\nassignment_id: {{ attribute.assignment_id }}<br>\r\nassignment_location: {{ attribute.assignment_location }}<br>\r\nassignment_name: {{ attribute.assignment_name }}<br>\r\nassignment_organization: {{ attribute.assignment_organization }}<br>\r\nassignment_person: {{ attribute.assignment_person }}<br>\r\nassignment_population: {{ attribute.assignment_population }}<br>\r\nassignment_risk_impact_score: {{ attribute.assignment_risk_impact_score }}<br>\r\nassignment_risk_overall_score: {{ attribute.assignment_risk_overall_score }}<br>\r\nassignment_risk_probability_score: {{ attribute.assignment_risk_probability_score }}<br>\r\nassignment_suborganization: {{ attribute.assignment_suborganization }}<br>\r\nassignment_subpopulation: {{ attribute.assignment_subpopulation }}<br>\r\nbirth_day: {{ attribute.birth_day }}<br>\r\nbirth_month: {{ attribute.birth_month }}<br>\r\nbypass_approvals: {{ attribute.bypass_approvals }}<br>\r\ncalling_workflow: {{ attribute.calling_workflow }}<br>\r\ncity: {{ attribute.city }}<br>\r\ncollaborator: {{ attribute.collaborator }}<br>\r\ncollaborator_role_id: {{ attribute.collaborator_role_id }}<br>\r\ncollaborator_type: {{ attribute.collaborator_type }}<br>\r\ncountry: {{ attribute.country }}<br>\r\ncurrent_department_assignments: {{ attribute.current_department_assignments }}<br>\r\ncurrent_location_assignments: {{ attribute.current_location_assignments }}<br>\r\ndate_created: {{ attribute.date_created }}<br>\r\ndepartment_approvers: {{ attribute.department_approvers }}<br>\r\ndepartment_assignments: {{ attribute.department_assignments }}<br>\r\ndepartment_code: {{ attribute.department_code }}<br>\r\ndepartment_name: {{ attribute.department_name }}<br>\r\ndepartment_profile_id: {{ attribute.department_profile_id }}<br>\r\neligible_for_rehire: {{ attribute.eligible_for_rehire }}<br>\r\nemail: {{ attribute.email }}<br>\r\nend_date: {{ attribute.end_date }}<br>\r\nfirst_name: {{ attribute.first_name }}<br>\r\nimport_error: {{ attribute.import_error }}<br>\r\nimport_existing_assignment: {{ attribute.import_existing_assignment }}<br>\r\nimport_existing_collaborator: {{ attribute.import_existing_collaborator }}<br>\r\nimport_invalid_department: {{ attribute.import_invalid_department }}<br>\r\nimport_invalid_location: {{ attribute.import_invalid_location }}<br>\r\nimport_invalid_organization: {{ attribute.import_invalid_organization }}<br>\r\nimport_invalid_population: {{ attribute.import_invalid_population }}<br>\r\nimport_invalid_required_attributes: {{ attribute.import_invalid_required_attributes }}<br>\r\nimport_invalid_sponsor: {{ attribute.import_invalid_sponsor }}<br>\r\nimport_invalid_suborganization: {{ attribute.import_invalid_suborganization }}<br>\r\nimport_invalid_subpopulation: {{ attribute.import_invalid_subpopulation }}<br>\r\nimport_type: {{ attribute.import_type }}<br>\r\nincremental_integer: {{ attribute.incremental_integer }}<br>\r\nintegration_action: {{ attribute.integration_action }}<br>\r\ninvitation_sent_date: {{ attribute.invitation_sent_date }}<br>\r\nis_assignment_still_valid: {{ attribute.is_assignment_still_valid }}<br>\r\njob_title: {{ attribute.job_title }}<br>\r\nlast_name: {{ attribute.last_name }}<br>\r\nlast_verification_date: {{ attribute.last_verification_date }}<br>\r\nleaver_status: {{ attribute.leaver_status }}<br>\r\nlocation_assignments: {{ attribute.location_assignments }}<br>\r\nlocation_code: {{ attribute.location_code }}<br>\r\nlocation_description: {{ attribute.location_description }}<br>\r\nlocation_organizations: {{ attribute.location_organizations }}<br>\r\nlocation_profile_id: {{ attribute.location_profile_id }}<br>\r\nmanaged_organization: {{ attribute.managed_organization }}<br>\r\nmanaged_suborganization: {{ attribute.managed_suborganization }}<br>\r\nmiddle_name: {{ attribute.middle_name }}<br>\r\nnew_assignment_department: {{ attribute.new_assignment_department }}<br>\r\nnew_assignment_location: {{ attribute.new_assignment_location }}<br>\r\norganization_assignments: {{ attribute.organization_assignments }}<br>\r\norganization_departments: {{ attribute.organization_departments }}<br>\r\norganization_locations: {{ attribute.organization_locations }}<br>\r\norganization_name: {{ attribute.organization_name }}<br>\r\norganization_populations: {{ attribute.organization_populations }}<br>\r\norganization_profile_id: {{ attribute.organization_profile_id }}<br>\r\norganization_risk_score: {{ attribute.organization_risk_score }}<br>\r\norganization_sponsor: {{ attribute.organization_sponsor }}<br>\r\norganization_suborganizations: {{ attribute.organization_suborganizations }}<br>\r\nsubpopulation_population: {{ attribute.subpopulation_population }}<br>\r\nperson_assignments: {{ attribute.person_assignments }}<br>\r\nperson_id: {{ attribute.person_id }}<br>\r\nperson_profile_id: {{ attribute.person_profile_id }}<br>\r\nperson_risk_impact_score: {{ attribute.person_risk_impact_score }}<br>\r\nperson_risk_overall_score: {{ attribute.person_risk_overall_score }}<br>\r\nperson_risk_probability_score: {{ attribute.person_risk_probability_score }}<br>\r\npersonal_phone_number: {{ attribute.personal_phone_number }}<br>\r\npolicy_accepted: {{ attribute.policy_accepted }}<br>\r\npopulation_base_name: {{ attribute.population_base_name }}<br>\r\npopulation_name: {{ attribute.population_name }}<br>\r\npopulation_organizations: {{ attribute.population_organizations }}<br>\r\npopulation_profile_id: {{ attribute.population_profile_id }}<br>\r\npopulation_subpopulations: {{ attribute.population_subpopulations }}<br>\r\npostal_code: {{ attribute.postal_code }}<br>\r\nprofessional_phone_number: {{ attribute.professional_phone_number }}<br>\r\nrequester_collaborator: {{ attribute.requester_collaborator }}<br>\r\nrisk_score: {{ attribute.risk_score }}<br>\r\nsource: {{ attribute.source }}<br>\r\nsponsor: {{ attribute.sponsor }}<br>\r\nsponsor_login: {{ attribute.sponsor_login }}<br>\r\nsponsor_user_id: {{ attribute.sponsor_user_id }}<br>\r\nstart_date: {{ attribute.start_date }}<br>\r\nstate: {{ attribute.state }}<br>\r\nstreet_address1: {{ attribute.street_address1 }}<br>\r\nstreet_address2: {{ attribute.street_address2 }}<br>\r\nsuborganization_assignments: {{ attribute.suborganization_assignments }}<br>\r\nsuborganization_name: {{ attribute.suborganization_name }}<br>\r\nsuborganization_organization: {{ attribute.suborganization_organization }}<br>\r\nsuborganization_profile_id: {{ attribute.suborganization_profile_id }}<br>\r\nsubpopulation_assignments: {{ attribute.subpopulation_assignments }}<br>\r\nsubpopulation_name: {{ attribute.subpopulation_name }}<br>\r\nsubpopulation_profile_id: {{ attribute.subpopulation_profile_id }}<br>\r\nsysconfig_api_base_url: {{ attribute.sysconfig_api_base_url }}<br>\r\nsysconfig_api_token: {{ attribute.sysconfig_api_token }}<br>\r\nsysconfig_baselinedataloader_flags: {{ attribute.sysconfig_baselinedataloader_flags }}<br>\r\nsysconfig_client_id: {{ attribute.sysconfig_client_id }}<br>\r\nsysconfig_client_secret: {{ attribute.sysconfig_client_secret }}<br>\r\nsysconfig_collaborate_portal_url: {{ attribute.sysconfig_collaborate_portal_url }}<br>\r\nsysconfig_company_contact_information: {{ attribute.sysconfig_company_contact_information }}<br>\r\nsysconfig_company_name: {{ attribute.sysconfig_company_name }}<br>\r\nsysconfig_description: {{ attribute.sysconfig_description }}<br>\r\nsysconfig_dns_name: {{ attribute.sysconfig_dns_name }}<br>\r\nsysconfig_enabled: {{ attribute.sysconfig_enabled }}<br>\r\nsysconfig_enabled_approvals: {{ attribute.sysconfig_enabled_approvals }}<br>\r\nsysconfig_enabled_approvals_end_assignment: {{ attribute.sysconfig_enabled_approvals_end_assignment }}<br>\r\nsysconfig_enabled_approvals_extend_enddate: {{ attribute.sysconfig_enabled_approvals_extend_enddate }}<br>\r\nsysconfig_enabled_approvals_new_assignment: {{ attribute.sysconfig_enabled_approvals_new_assignment }}<br>\r\nsysconfig_enabled_approvals_update_assignment: {{ attribute.sysconfig_enabled_approvals_update_assignment }}<br>\r\nsysconfig_enabled_features: {{ attribute.sysconfig_enabled_features }}<br>\r\nsysconfig_enabled_features_single_assignment: {{ attribute.sysconfig_enabled_features_single_assignment }}<br>\r\nsysconfig_installed_baseline_version: {{ attribute.sysconfig_installed_baseline_version }}<br>\r\nsysconfig_name: {{ attribute.sysconfig_name }}<br>\r\nsysconfig_password: {{ attribute.sysconfig_password }}<br>\r\nsysconfig_profile: {{ attribute.sysconfig_profile }}<br>\r\nsysconfig_scope: {{ attribute.sysconfig_scope }}<br>\r\nsysconfig_type: {{ attribute.sysconfig_type }}<br>\r\nsysconfig_username: {{ attribute.sysconfig_username }}<br>\r\ntermination_reason: {{ attribute.termination_reason }}<br>\r\nuser_id: {{ attribute.user_id }}<br>\r\n",
+      "created_at": "2026-08-27T17:44:42.873-04:00",
+      "id": "d02cdb47-51f6-47b9-930e-0f8fb7772865",
+      "type": "HtmlContainer",
+      "uid": "a7ef8359bca64c1e8daef30a8abe9b99",
+      "updated_at": "2026-08-27T17:44:42.873-04:00"
+    },
+    {
+      "content": "Request Attributes",
+      "created_at": "2026-08-27T17:44:42.914-04:00",
+      "id": "f6769774-d196-416b-a44b-6abb826dc095",
+      "type": "SmallHeading",
+      "uid": "2428892e4e0c4696acab49f3eaa2ab24",
+      "updated_at": "2026-08-27T17:44:42.914-04:00"
+    },
+    {
+      "content": "requester id: {{ requester.id }}<br>\r\nrequester name: {{ requester.name }}<br>\r\nrequester email: {{ requester.email }}<br>\r\nrequester title: {{ requester.title }}<br>\r\nrequester login: {{ requester.login }}<br>\r\nworkflow name: {{ workflow.name }}<br>\r\nrequest id: {{ request.id }}<br>\r\nrequest created at: {{ requester.created_at }}<br>\r\nrequest current action: {{ request.current_action }}<br>\r\nrequest status: {{ request.status }}<br>\r\nrequest profiles: {{ request.profiles }}<br>\r\nrequest comments: {{ request.comments }}<br>\r\napprover name: {{ approver.name }}<br>\r\napprover email: {{ approver.email }}<br>\r\napprover title: {{ approver.title }}<br>\r\nprofile name: {{ profile.name }}<br>\r\nprofile status: {{ profile.status }}<br>\r\nprofile uid: {{ profile.uid }}<br>\r\nprofile id: {{ profile.id }}<br>",
+      "created_at": "2026-08-27T17:44:42.965-04:00",
+      "id": "f0b99dba-dd80-439a-b83d-1485ff4ae770",
+      "type": "HtmlContainer",
+      "uid": "e0fe0f05a3a64f93bb488de40fc0124b",
+      "updated_at": "2026-08-27T17:44:42.965-04:00"
+    }
+  ]
+}

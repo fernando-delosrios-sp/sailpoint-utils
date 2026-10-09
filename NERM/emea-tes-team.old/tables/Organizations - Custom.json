@@ -1,0 +1,47 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "model_attr=risk_score",
+    "model_attr=id_proofing_status",
+    "table_attr=963bd497-8d34-47a5-a804-987a186e10bd",
+    "table_attr=e0709efa-dfb8-4066-9b5f-dbcc631bff5c",
+    "table_attr=ffcd129b-7cfe-45c1-917d-9a7e79ce9b6f"
+  ],
+  "created_at": "2026-08-27T17:45:31.032-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "overall_risk_score_value",
+      "label": "risk score"
+    },
+    {
+      "attr": "id_proofing_status",
+      "label": "Identity Proofing"
+    },
+    {
+      "attr": "organization_name",
+      "label": "Organization Name"
+    },
+    {
+      "attr": "organization_populations",
+      "label": "Organization Populations"
+    },
+    {
+      "attr": "organization_suborganizations",
+      "label": "Organization Sub-Organizations"
+    }
+  ],
+  "id": "220426f9-8005-4d91-8d68-7c2554b6501e",
+  "name": "Organizations - Custom",
+  "profile_type_id": "2346d8b3-ac29-4015-8154-dea4404a73fa",
+  "uid": "b3_organizations_profile_type_table",
+  "updated_at": "2026-10-06T07:20:56.105-04:00"
+}

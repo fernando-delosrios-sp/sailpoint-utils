@@ -1,0 +1,109 @@
+{
+  "profile_type": {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": "other",
+    "core": false,
+    "id": "781c92b7-24ba-465c-99c4-489dd544de46",
+    "isc_synced": false,
+    "name": "Sub-Organizations - Custom",
+    "permitted_role_ids": [
+      "5720f45a-aaab-4edc-811a-2df2122049b5"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "7eb127c9-5f4e-4aba-9bf2-3bece4836a58",
+        "ne_attribute_id": "c6ad1c6c-dc40-41b7-b4dd-2359d6739a1b",
+        "profile_type_id": "781c92b7-24ba-465c-99c4-489dd544de46",
+        "uid": "b3_297eda13893f4a90bc06fa172137b59f"
+      },
+      {
+        "id": "bdce9c81-0f1d-4204-bd05-aceec7167de5",
+        "ne_attribute_id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "profile_type_id": "781c92b7-24ba-465c-99c4-489dd544de46",
+        "uid": "b3_adeced59ecd547c2a73c1ed9ee2d84e9"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "d1439544-c1e4-4f26-bf3a-cbb2b6411c1b",
+        "ne_attribute_id": "c6ad1c6c-dc40-41b7-b4dd-2359d6739a1b",
+        "order": 1,
+        "profile_type_id": "781c92b7-24ba-465c-99c4-489dd544de46",
+        "uid": "b3_54d377a67b0c49608ea1c0fda9a85317"
+      }
+    ],
+    "table_id": "0af7afa8-9bbb-4911-9cd0-f2e46ffd6a5a",
+    "uid": "b3_suborganizations_profile_type"
+  },
+  "profile_type_attributes": {
+    "count": 215,
+    "records": [
+      {
+        "id": "00285e61-07d1-4be5-a4c2-71de85dc67a7",
+        "label": "import_existing_assignment",
+        "synced": null,
+        "uid": "import_existing_assignment"
+      },
+      {
+        "id": "0032fc92-489d-4b9c-b9f3-5d3af6cd0c76",
+        "label": "Sponsor",
+        "synced": null,
+        "uid": "nerm_core_assignment_sponsor"
+      },
+      {
+        "id": "00a2785c-082f-4a3b-bbd8-d28f112e226f",
+        "label": "import_invalid_subpopulation",
+        "synced": null,
+        "uid": "import_invalid_subpopulation"
+      },
+      {
+        "id": "015b3b97-caac-463a-ad0b-a203bf34824a",
+        "label": "Sub-Organization Assignments",
+        "synced": null,
+        "uid": "suborganization_assignments"
+      },
+      {
+        "id": "021aaf65-49ed-4e94-a38a-dcc0a2293cc5",
+        "label": "nonhuman_owner_email",
+        "synced": null,
+        "uid": "nonhuman_owner_email"
+      },
+      {
+        "id": "033de29f-e22a-43f1-b8d0-1d09f393d313",
+        "label": "assignment_name",
+        "synced": null,
+        "uid": "assignment_name"
+      },
+      {
+        "id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "label": "Organization Name",
+        "synced": null,
+        "uid": "organization_name"
+      },
+      {
+        "id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+        "label": "Configuration Type",
+        "synced": null,
+        "uid": "sysconfig_type"
+      },
+      {
+        "id": "0a8f216b-b7c9-4e4d-8f18-e9d657e58626",
+        "label": "Company ID",
+        "synced": null,
+        "uid": "nerm_core_non_employee_company_id"
+      },
+      {
+        "id": "0bac8b78-0f4e-4ad5-ab58-324da38a0272",
+        "label": "person_risk_impact_score",
+        "synced": null,
+        "uid": "person_risk_impact_score"
+      }
+    ]
+  },
+  "profile_type_attributes_meta": {
+    "profile_type_id": "781c92b7-24ba-465c-99c4-489dd544de46",
+    "profile_type_uid": "b3_suborganizations_profile_type",
+    "profile_type_name": "Sub-Organizations - Custom"
+  }
+}

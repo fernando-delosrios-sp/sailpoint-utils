@@ -1,0 +1,908 @@
+[
+  {
+    "id": "098ab332-5dc0-4b6c-a0eb-2150406abccf",
+    "ne_attribute_id": "f8c714aa-2d8e-4bca-8af2-58e2e02e96ee",
+    "option": "Yes",
+    "uid": "9ef2a6558fba46a7af64aa9204760b8d"
+  },
+  {
+    "id": "0af9a0f7-d483-4ec5-9873-f96bfab47952",
+    "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+    "option": "Terminate Non-Human - Owner Approval",
+    "uid": "675456d1a351491d8abfd45e1c7b428e"
+  },
+  {
+    "id": "0c5f9b72-d51b-4f13-843f-9b7bfa95e352",
+    "ne_attribute_id": "8b87f97b-bcd5-4c15-ae98-ad5dbfdec700",
+    "option": "No",
+    "uid": "7b43033556d546e5b87192cbfc7410e3"
+  },
+  {
+    "id": "0cb5b100-4ff1-4568-8d46-a6ca8f5e8f93",
+    "ne_attribute_id": "785ee5b4-0f5e-404b-a3db-cb24c8265a8e",
+    "option": "Yes",
+    "uid": "6bba6d5fea7941b18ea034cc6d2b0749"
+  },
+  {
+    "id": "14789e23-bb07-47dc-a11f-7437da425ed3",
+    "ne_attribute_id": "c5d423ee-2ec6-402c-b908-25bed7f73232",
+    "option": "Yes",
+    "uid": "cc23cfea511e4f1e93503e5037c9a05a"
+  },
+  {
+    "id": "159c382e-3f8d-4dde-afa6-d7c3ae55c48b",
+    "ne_attribute_id": "a058e90c-7ca8-4542-abe8-6f980a88ccab",
+    "option": "Yes",
+    "uid": "1d6d6e2d04814bb29d35a71aec1ff7fe"
+  },
+  {
+    "id": "1723265c-491c-4b80-9cf8-ee2a7aaa00fc",
+    "ne_attribute_id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+    "option": "NE",
+    "uid": "f7035e76b47144a0a175a8e577315f12"
+  },
+  {
+    "id": "175a4629-725a-46e8-bde5-f2194681bd25",
+    "ne_attribute_id": "58dd1db8-86ea-4ecf-84f7-446570288d4e",
+    "option": "No",
+    "uid": "32ef625e15cd4c53835a537c5b5a958d"
+  },
+  {
+    "id": "188612aa-82dc-4418-85c0-3e60a11639ed",
+    "ne_attribute_id": "639b4e89-b0a3-4b9c-8913-65b4df6a46d3",
+    "option": "Disabled",
+    "uid": "0ebab704fc5a424d824e0206d64cda39"
+  },
+  {
+    "id": "19384cbe-1287-429d-b6bc-bd77ab75f249",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Assignment Location Required",
+    "uid": "e501cf0a0df1491884ade7511c5832fd"
+  },
+  {
+    "id": "19981f55-f744-4e30-9d3f-9be446439939",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "2",
+    "uid": "0b0d11499709421488281adc016a2844"
+  },
+  {
+    "id": "1bc505ae-73b8-464d-8ebe-b261cc3f9d14",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Retired - Department Approval",
+    "uid": "b45d7c0d6d894a58b1f0ac412a34b4e2"
+  },
+  {
+    "id": "1c47bde6-8f0d-4b13-81f7-995f4c4e5522",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Population7 - Sponsor Approval",
+    "uid": "339c2ee6b5594202b8277fbf72f58bb9"
+  },
+  {
+    "id": "28b9f43e-153a-4a21-ad85-644ae660f731",
+    "ne_attribute_id": "f8c714aa-2d8e-4bca-8af2-58e2e02e96ee",
+    "option": "No",
+    "uid": "32bec44f3def46f2932bb20da6fc5e4b"
+  },
+  {
+    "id": "292d4eb4-4d06-42fd-8beb-9b5b23f563f3",
+    "ne_attribute_id": "bff18742-36fb-4646-bf10-a5802b9be13c",
+    "option": "Yes",
+    "uid": "23c454f5d75e4ce0bcf85c1317fe22b4"
+  },
+  {
+    "id": "29442dcb-480b-4ea6-acff-76151925c198",
+    "ne_attribute_id": "f1d297a5-be14-4592-aa09-7664f7e5eb65",
+    "option": "No",
+    "uid": "7fc87311fa4e45efac8da379d46f023b"
+  },
+  {
+    "id": "2ad8c651-69ed-473d-a804-c95f78bc8140",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "10",
+    "uid": "51f49d96280f439d9ce7dcd83f985a2f"
+  },
+  {
+    "id": "2c52c634-540e-42d7-91d4-7880b4739b0f",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "9",
+    "uid": "43987a6d4f4043988e514c984f633f88"
+  },
+  {
+    "id": "30f2385c-4a56-49ea-8efd-11607bfbb17a",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population5 - Department Approval",
+    "uid": "357e81056d9b4efe8731b2eef93884af"
+  },
+  {
+    "id": "31b4acfd-600c-430d-95bb-095ee2043b35",
+    "ne_attribute_id": "40c92a40-8dd0-4a30-830f-46119d31080a",
+    "option": "No",
+    "uid": "944c9be2978343d780d358d999d9b3f7"
+  },
+  {
+    "id": "31f78785-a556-4db8-a6c8-955700f24b05",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "7",
+    "uid": "4e5531c7f3da4135852db77eda47de6e"
+  },
+  {
+    "id": "32805f4e-7229-4d22-b8a0-bb1e175d795c",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Full-time Employee - Sponsor Approval",
+    "uid": "f1d64a0f51e54b33be3c97f135a2a772"
+  },
+  {
+    "id": "329a3c33-09d9-4614-8bbd-96ecc93615af",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population5 - Sponsor Approval",
+    "uid": "9dae1c57ec85413fb1c0a806e1266d6b"
+  },
+  {
+    "id": "333d98b9-e320-4198-8fb6-e625d96aa97a",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population8 - Sponsor Approval",
+    "uid": "a21d2c86e3df4ea898e9012c2a9a7c12"
+  },
+  {
+    "id": "3375398b-3dea-42a0-94fb-dded1c9d669f",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Population10 - Sponsor Approval",
+    "uid": "b95243b245ee446faa9b2fcfa2d46291"
+  },
+  {
+    "id": "3702aa0c-d1c6-4533-bac3-8ebf62ccaadc",
+    "ne_attribute_id": "4ff4d3c7-fc45-4a51-820f-4b151a9192ba",
+    "option": "Yes",
+    "uid": "b916b824d00a4fbcb23ecc9f2138816e"
+  },
+  {
+    "id": "37e9c267-c5a6-451c-8a0d-900d46aea560",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Part-time Employee - Sponsor Approval",
+    "uid": "7da2c93402ab405da0e142fb3f7a16f5"
+  },
+  {
+    "id": "3ca11028-491f-45bc-ae34-df7b85ac16eb",
+    "ne_attribute_id": "743aefe1-113e-4e5d-95ca-5677b573fa0b",
+    "option": "End-User Registration",
+    "uid": "eab99e5631eb41a09cbb8f3004fab46f"
+  },
+  {
+    "id": "3d4025f3-f2b2-4f97-a96c-cd311f45ebd4",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "5",
+    "uid": "68b26e55b8664834ab844205173f0550"
+  },
+  {
+    "id": "3ed59c77-313a-4366-bf05-c06fc4e41c40",
+    "ne_attribute_id": "ee432619-10bd-4fc2-95cf-3ba3a8113ee8",
+    "option": "No",
+    "uid": "7623e6712efe449c8b5677fc191c6db1"
+  },
+  {
+    "id": "429ead63-6aa0-4aa8-9afa-5e7c7a0713cd",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Retired - Sponsor Approval",
+    "uid": "cb4a03983b7c4077ba6d8124975d630e"
+  },
+  {
+    "id": "439ea1eb-c9d2-4e81-b628-e62bd8c048ce",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population7 - Department Approval",
+    "uid": "28b120da16bb4a84af7b548e324def74"
+  },
+  {
+    "id": "458026e4-5e8d-4dc6-9294-3eea51536b44",
+    "ne_attribute_id": "f8da8963-7709-4885-be71-4391cc276b03",
+    "option": "No",
+    "uid": "6eaa913d5fbd4543b6855d202772fed6"
+  },
+  {
+    "id": "4647de26-896a-4200-95fc-71ee15951a19",
+    "ne_attribute_id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+    "option": "Other",
+    "uid": "1ec45150643843da9b4569780e3028a5"
+  },
+  {
+    "id": "47449369-b2fa-4b58-acdc-2c0fa0529e1a",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Population10 - Sponsor Approval",
+    "uid": "3fe4fd262510401784034f612308b1a4"
+  },
+  {
+    "id": "48232f19-154c-48c2-bb25-aaf85194fbdf",
+    "ne_attribute_id": "743aefe1-113e-4e5d-95ca-5677b573fa0b",
+    "option": "API Pull-Integration",
+    "uid": "e3c902723c6a4cde850d75ca6fcc25bd"
+  },
+  {
+    "id": "4d558d75-8fe6-449a-a502-651c9b847769",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Population8",
+    "uid": "5ada9b47afeb410f9c31e6570f10cf8b"
+  },
+  {
+    "id": "4ddabbcb-f001-4bbc-8ee7-65257466b325",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population10 - Department Approval",
+    "uid": "90187c6ed0384d61ab78fd774934ec8b"
+  },
+  {
+    "id": "4eb69794-ef19-4286-b9cc-3fc1d2074354",
+    "ne_attribute_id": "00a2785c-082f-4a3b-bbd8-d28f112e226f",
+    "option": "No",
+    "uid": "c9e2bcecbfd1416ca2ceb58e4cb3af1e"
+  },
+  {
+    "id": "4f3ce4d4-14a8-431d-ab00-d45d5faf01c9",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Intern - Department Approval",
+    "uid": "f3dfc3a611694dcea3651f2f022a5ab2"
+  },
+  {
+    "id": "4fa23322-93ef-4905-be1b-f7eedcce2d89",
+    "ne_attribute_id": "4ff4d3c7-fc45-4a51-820f-4b151a9192ba",
+    "option": "No",
+    "uid": "0d7e2a3fe1204ccd90002856a1ba633f"
+  },
+  {
+    "id": "501c202e-8220-44f7-a479-26fb87abd4d5",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Part-time Employee - Sponsor Approval",
+    "uid": "e12bfbac11504c37a5287971aa336d05"
+  },
+  {
+    "id": "51f108d1-7332-4cfd-b52e-9a65119af0bc",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Full-time Employee - Department Approval",
+    "uid": "9e3b48ebc67e4ba6b87535891a9f2f31"
+  },
+  {
+    "id": "5492d5db-e63a-452a-bd9e-f5e7bbc3e29d",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Any",
+    "uid": "526ef1bdded44b149118d69866750d81"
+  },
+  {
+    "id": "54f4b577-ff8c-4de6-bd13-d85e53d02473",
+    "ne_attribute_id": "58dd1db8-86ea-4ecf-84f7-446570288d4e",
+    "option": "Yes",
+    "uid": "5be1d1737ccb49b4aaa5fe475eb658cb"
+  },
+  {
+    "id": "557fabba-445d-47de-8eb9-ff190ea7c1eb",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population9 - Sponsor Approval",
+    "uid": "f0715ec041c34e8cbced0c38a20c3b33"
+  },
+  {
+    "id": "5633646c-6b2d-4733-ba71-edf025c35b79",
+    "ne_attribute_id": "3c27630a-b0c3-4e00-ad2b-426767c7f9cb",
+    "option": "No",
+    "uid": "12a943991ba249dbbf403ee95ebafd80"
+  },
+  {
+    "id": "5724e7b2-3527-4be4-9ec6-a74c4770bcbd",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Full-time Employee - Sponsor Approval",
+    "uid": "d4c062b173bb4407b19a2baaccefbf8b"
+  },
+  {
+    "id": "5c1543e1-8c94-4d3b-a4ff-810f7431e1f9",
+    "ne_attribute_id": "c2acc0f7-1ea3-4e9d-84df-aa0c59debba9",
+    "option": "suborganization",
+    "uid": "d698e846d9b24d36918cab3206f673e1"
+  },
+  {
+    "id": "5ebc26d8-da54-4944-8f42-257909011942",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population10 - Sponsor Approval",
+    "uid": "f43c7d8f306a49f781809c03c139328e"
+  },
+  {
+    "id": "6021c590-c4da-432f-adf3-d2d5b60017d2",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population5 - Sponsor Approval",
+    "uid": "17c78de193204161aaee9de932bde273"
+  },
+  {
+    "id": "6268d215-76c4-41dc-b427-72549c6c0de0",
+    "ne_attribute_id": "00285e61-07d1-4be5-a4c2-71de85dc67a7",
+    "option": "No",
+    "uid": "065a160333b1443c9f1e92795d8ed90a"
+  },
+  {
+    "id": "64a5eb81-1bc3-44fa-9903-d16754059383",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "8",
+    "uid": "95c49eedf0e245a5a0518871ac5a3e58"
+  },
+  {
+    "id": "674b0975-14d1-4fac-bf33-5081aa1a725c",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population9 - Department Approval",
+    "uid": "d734f5d1917f48458e73d5816839ee71"
+  },
+  {
+    "id": "681f20c1-540c-418d-b1c4-60b36aa37da6",
+    "ne_attribute_id": "743aefe1-113e-4e5d-95ca-5677b573fa0b",
+    "option": "Rehire End-User Registration",
+    "uid": "ceaabe36ecb94a4697d5e185e01d08b9"
+  },
+  {
+    "id": "687a1b85-33c8-470a-8f96-9977efbe0086",
+    "ne_attribute_id": "00285e61-07d1-4be5-a4c2-71de85dc67a7",
+    "option": "Yes",
+    "uid": "cc175f7cca034cd0a316c0b941a6c0df"
+  },
+  {
+    "id": "68a56fe4-97dd-424f-8e61-98aa9f4d2ffc",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population8 - Sponsor Approval",
+    "uid": "7a596d73afe448af81d78c094ef2ec89"
+  },
+  {
+    "id": "699e78fb-3cb4-4282-a424-e7c016e266e5",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Population8 - Sponsor Approval",
+    "uid": "f43207ceefc244ba90363f33725b3696"
+  },
+  {
+    "id": "6ab5bd1e-f961-4464-8b62-a0ce94891993",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Full-time Employee",
+    "uid": "728d441487af4262b71c0368091c11c3"
+  },
+  {
+    "id": "6b20c4e9-1309-4b81-888f-cdb0e8fbf2a2",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Intern - Department Approval",
+    "uid": "d6834e6143b4476db4a3d05f02127926"
+  },
+  {
+    "id": "6b773f16-72fa-46c4-8096-81f767a24588",
+    "ne_attribute_id": "c5d423ee-2ec6-402c-b908-25bed7f73232",
+    "option": "No",
+    "uid": "71c5e3db894c46688472f02bf4a33cd9"
+  },
+  {
+    "id": "6d266297-f9ea-491f-8110-69eeb4b86418",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Organization Location Required",
+    "uid": "5878faa74048440392e8055558c21cdf"
+  },
+  {
+    "id": "6d7b429c-44a4-4ac6-8f5d-40d32ccc52c3",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Full-time Employee - Sponsor Approval",
+    "uid": "9a2508f5eead4edab10e5e4165bd7133"
+  },
+  {
+    "id": "6e2984de-b96e-4810-88ed-fe46298b1e0c",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Intern - Sponsor Approval",
+    "uid": "ff89838661c74514b02b17d91bff46e2"
+  },
+  {
+    "id": "71e19115-b7bc-4d0f-b170-2f0e35091252",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Population7",
+    "uid": "07690c3226c64de3a32289ba34b13125"
+  },
+  {
+    "id": "71e96cf6-1288-4d98-9fab-7ff612fddc32",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Retired - Sponsor Approval",
+    "uid": "cc3e8105010947f8938e16df0349a723"
+  },
+  {
+    "id": "73d03749-5b15-49d1-ba9a-d58b64b42dea",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population8 - Department Approval",
+    "uid": "61b18bf2dad14cbdb786f7261980330e"
+  },
+  {
+    "id": "746c3955-d008-4504-b740-c00b0e4c4c48",
+    "ne_attribute_id": "a992112c-5a52-4f99-b3d0-fbda04d542db",
+    "option": "No",
+    "uid": "d0913999b29245ef91258baa66bdcdc4"
+  },
+  {
+    "id": "74b7d945-1cba-4e5b-98d7-325dd60394aa",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Population5",
+    "uid": "654daae607084a68857d784f0c8e261b"
+  },
+  {
+    "id": "75ce83d2-4466-4d23-a39a-2069b662f97d",
+    "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+    "option": "Update Non-Human - Owner Approval",
+    "uid": "afdea32cb2fb4f158412a1fd145375d9"
+  },
+  {
+    "id": "76cb29d0-9fb3-457d-b787-6b33939db34d",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "4",
+    "uid": "669067c4545e47ab820ba66d8366802a"
+  },
+  {
+    "id": "796eec92-d3ee-4881-bb7d-64e4f6d26a15",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Intern - Sponsor Approval",
+    "uid": "1f7a379be4214b35a0f98c9bc592f58f"
+  },
+  {
+    "id": "7bc3f3e4-7284-41b3-9170-4cf2de450829",
+    "ne_attribute_id": "51d64b80-cf20-4214-ba04-7ce030e82b22",
+    "option": "Yes",
+    "uid": "373bede48e5840009333d307581232f0"
+  },
+  {
+    "id": "7c0da458-ea83-4287-bc79-818fc2ca9551",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population6 - Sponsor Approval",
+    "uid": "a993699bf41549da88cf933e5a0401a3"
+  },
+  {
+    "id": "7cef9b7a-9bb0-4d29-8b15-97136dafd8d0",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Per Organization",
+    "uid": "f3c84e6183b2453184403b8dc0af662c"
+  },
+  {
+    "id": "7f17d08f-da00-4863-9e26-6ef95c844498",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Organization Deparment Required",
+    "uid": "a55b4d658c564b449198bca43473ac51"
+  },
+  {
+    "id": "81878477-1a97-46af-b662-93e43732b6ff",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Part-time Employee",
+    "uid": "88a7c96086a44a71bb3563578b70d8a0"
+  },
+  {
+    "id": "83712276-02e1-4afe-b384-3315bfe16eea",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Part-time Employee - Sponsor Approval",
+    "uid": "33056bfca92346f588546200c6090cf5"
+  },
+  {
+    "id": "83bfccbd-8124-45c5-ab9a-5dcf90033e85",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Population5 - Sponsor Approval",
+    "uid": "af020a273b9b42938f2343cc5045fb8d"
+  },
+  {
+    "id": "83cabefb-ddf9-4170-8bf3-d50c1e0c3242",
+    "ne_attribute_id": "bff18742-36fb-4646-bf10-a5802b9be13c",
+    "option": "No",
+    "uid": "5d347c67980a4b4ba17c540eb559ebe0"
+  },
+  {
+    "id": "866b753c-a3bb-49da-a01e-d77065c3aae0",
+    "ne_attribute_id": "b47b8207-819c-45e0-af0a-82ea16d5c0aa",
+    "option": "No",
+    "uid": "d3891bae82f44fb5a3e02733f4760754"
+  },
+  {
+    "id": "872760ec-733b-440b-81d0-1d2ac2b17dfa",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population7 - Department Approval",
+    "uid": "e324b37b54744c49b5fa5ef8ad36febd"
+  },
+  {
+    "id": "8a2be089-491a-4d6c-a022-acf9445768a8",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population8 - Department Approval",
+    "uid": "970f4a9ed6d645d694ed928a1acc7dd3"
+  },
+  {
+    "id": "8d345d0d-0670-48ab-9932-94de87c5be8a",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Assignment Department Required",
+    "uid": "fe6ce55cad1246b790845dc237a06683"
+  },
+  {
+    "id": "8d758514-bf31-4ff7-87cd-7c5afd86e2e6",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Retired",
+    "uid": "f343803a22cd412e94992fb3218d3f07"
+  },
+  {
+    "id": "8da5906f-7bc9-4e77-aa80-f09128429349",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Full-time Employee - Sponsor Approval",
+    "uid": "baef2d6e22234d438964e86e1297af51"
+  },
+  {
+    "id": "8dcab2ab-39e3-452b-84fc-3abe49414bfb",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Part-time Employee - Department Approval",
+    "uid": "7807ca372ca3440d8f44b1d9ec1b7586"
+  },
+  {
+    "id": "8eb3f41d-e149-4d4c-a6ed-109ea040b3fc",
+    "ne_attribute_id": "b3732920-3db1-4da6-bb15-c39fcd3a5f4d",
+    "option": "Yes",
+    "uid": "e86e19d171d64f6096ca2cc7f1705788"
+  },
+  {
+    "id": "90a6b460-8a9a-4c0c-be25-9396348b7bcc",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Population7 - Sponsor Approval",
+    "uid": "26361b8102e74301940160fe417b1402"
+  },
+  {
+    "id": "935095f9-39a3-413e-887f-616369297c41",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Retired - Department Approval",
+    "uid": "f0d8f3d7553442708e8a00fa14d7797d"
+  },
+  {
+    "id": "9378e255-257e-472d-8a24-806040d0f0d7",
+    "ne_attribute_id": "72965a26-6dc9-4d71-be21-6cdecbd49a76",
+    "option": "No",
+    "uid": "4e51f725b2134c43af12c63281a63973"
+  },
+  {
+    "id": "95a41db1-f68b-444a-af63-44bd652d0b51",
+    "ne_attribute_id": "0d757e5a-a33a-4fe9-867e-7a13131b067f",
+    "option": "Yes",
+    "uid": "484f4b60e30f41f798624771172ccdf7"
+  },
+  {
+    "id": "95c55b46-707e-46bb-b789-9adfa68234e9",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Population5 - Sponsor Approval",
+    "uid": "7a4fa4a8c1124ebc8666b47c215e1e41"
+  },
+  {
+    "id": "95cb7551-4345-4afd-8cd4-a7bd8dd1ffc1",
+    "ne_attribute_id": "a058e90c-7ca8-4542-abe8-6f980a88ccab",
+    "option": "No",
+    "uid": "ca307ee4b0654621b11ab156d614fd26"
+  },
+  {
+    "id": "97292507-3310-4729-80b9-a37fb811472c",
+    "ne_attribute_id": "72965a26-6dc9-4d71-be21-6cdecbd49a76",
+    "option": "Yes",
+    "uid": "ef48d229d58b48c49e55c74c543bf7fd"
+  },
+  {
+    "id": "9bf96c23-34c6-4fd6-b665-7a1b7c08bc25",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "3",
+    "uid": "f657a9e4254d414f81b43e8064776d3d"
+  },
+  {
+    "id": "9c711880-a943-457b-87bb-281ded51e4d5",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Part-time Employee - Sponsor Approval",
+    "uid": "865b26a5f1c04eec811ed7c233d0668a"
+  },
+  {
+    "id": "9ca8e223-f431-466c-832f-e1d872f7ff15",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population7 - Sponsor Approval",
+    "uid": "85eb27f1e05a452b858edaea6307ba02"
+  },
+  {
+    "id": "9d1db3bb-e72d-425b-acbe-b2b07d30bc28",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Population6",
+    "uid": "254c4950b8a0418fb91d09a8302bd775"
+  },
+  {
+    "id": "9ec935a9-0e42-4586-a5b8-a7b43f0a70d0",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Population9 - Sponsor Approval",
+    "uid": "d08a10ced20941589dca77a052b33b60"
+  },
+  {
+    "id": "a07f3171-ef2d-489e-aa27-be097822570f",
+    "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+    "option": "New Non-Human - Non-Human Type Approval",
+    "uid": "06a443add2e04799b64bc9278f2d3eae"
+  },
+  {
+    "id": "a0f6b157-99ea-4482-a44b-2873dd4fd54e",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population5 - Department Approval",
+    "uid": "74df92e870bd4780aa49299f0bf5b1a4"
+  },
+  {
+    "id": "a698f8dd-34d1-4743-ad49-380c83051af9",
+    "ne_attribute_id": "ee432619-10bd-4fc2-95cf-3ba3a8113ee8",
+    "option": "Yes",
+    "uid": "0bb4dd110cf84f30b49019e33329a137"
+  },
+  {
+    "id": "ab5e45b0-5cf7-4f19-a27f-ca5ed514d77f",
+    "ne_attribute_id": "a992112c-5a52-4f99-b3d0-fbda04d542db",
+    "option": "Yes",
+    "uid": "dbd049489a104cb1bff561a658c2251a"
+  },
+  {
+    "id": "aebac0d1-365f-4cfc-9d6b-e186e957b35e",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population6 - Department Approval",
+    "uid": "d794bda3f4534e00817f36112a12f0ab"
+  },
+  {
+    "id": "af0533dd-5904-4914-9c86-98ce71906516",
+    "ne_attribute_id": "51d64b80-cf20-4214-ba04-7ce030e82b22",
+    "option": "No",
+    "uid": "7307aa29c8e14b8383069ed602286457"
+  },
+  {
+    "id": "af758a47-41d6-48ae-9ce1-cfb4d2c332a3",
+    "ne_attribute_id": "f1d297a5-be14-4592-aa09-7664f7e5eb65",
+    "option": "Yes",
+    "uid": "5aed6c8b3f724a2c9f100d32c17afb51"
+  },
+  {
+    "id": "b0390d7d-1aba-4bce-8806-fb79e0c4259c",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Population9 - Sponsor Approval",
+    "uid": "8907aed10b3349519fdb4f5466fe01a4"
+  },
+  {
+    "id": "b099a102-f1c7-4d53-98f8-dd2373043123",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Part-time Employee - Department Approval",
+    "uid": "4078cb692ebc41a4b012c44bff334f2b"
+  },
+  {
+    "id": "b2b6b6ec-4a89-435e-a458-1a32268834e1",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Organization Sponsor Required",
+    "uid": "8016a4663a29441695db9774a4e252c8"
+  },
+  {
+    "id": "b4fb7a73-4c40-40f8-8821-c7efe929960b",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "1",
+    "uid": "d9bf4494bac8477cad4b7b73786569b7"
+  },
+  {
+    "id": "b5f2c873-1edf-478e-bb22-e5475176224b",
+    "ne_attribute_id": "40c92a40-8dd0-4a30-830f-46119d31080a",
+    "option": "Yes",
+    "uid": "5c2fd35743e84e739b4a23141d56d1dd"
+  },
+  {
+    "id": "b922d9ef-ba53-4754-91a0-7ba5440e3929",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population9 - Department Approval",
+    "uid": "3b23c952dfab4baebf19ab439c77117b"
+  },
+  {
+    "id": "ba70301c-91f5-4b4e-957b-366747662730",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Assignment Sub-Organization Required",
+    "uid": "17e8fe3ae12a4672a8fc48322b67f4d0"
+  },
+  {
+    "id": "ba844fe4-fe09-4916-8db0-002ef47071ac",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Retired - Sponsor Approval",
+    "uid": "be81dab0ed1b40bbb91d1f6197fbc7bc"
+  },
+  {
+    "id": "c0a5015c-e58e-4ae1-b322-4565b6323853",
+    "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+    "option": "New Non-Human - Owner Approval",
+    "uid": "9fa657469a0944b5b560151792eb2b4f"
+  },
+  {
+    "id": "c132717b-a127-40a7-bd94-d334b4c44ada",
+    "ne_attribute_id": "84427ff8-a7bc-4577-aacd-6bb5f70f4214",
+    "option": "Population6 - Sponsor Approval",
+    "uid": "d83c9f8e4b4b43b48891cc32e8d01f6a"
+  },
+  {
+    "id": "c3bddaa1-9668-41f6-93aa-24d38d0853cb",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Non-Human Owner Required",
+    "uid": "efd40aba62fc4a368e2247f741fb2d53"
+  },
+  {
+    "id": "c403a57b-bdbc-4689-97cf-25f8d701adb4",
+    "ne_attribute_id": "63954e22-a584-46c9-a385-7c5bb0fdde25",
+    "option": "Terminate Sub-Organization Organization Sponsor Approval",
+    "uid": "986943d3a83f48e0bc7045d78e8bffc9"
+  },
+  {
+    "id": "c432a49e-518f-4ab8-9cfd-6cb786e86541",
+    "ne_attribute_id": "b15cbee0-fda4-4e90-b6f4-3a6874ff5e16",
+    "option": "6",
+    "uid": "a2e3a778f9724d5593ab0e9cbfe361c1"
+  },
+  {
+    "id": "c57abc9e-6fad-4a42-a2b8-f2e932cd4269",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Population9",
+    "uid": "cbf9a19496944cc3b390f61fada26e09"
+  },
+  {
+    "id": "c6d408d5-c764-483f-84df-b1e24b1c9568",
+    "ne_attribute_id": "3c27630a-b0c3-4e00-ad2b-426767c7f9cb",
+    "option": "Yes",
+    "uid": "1413c4f8af2a4907ab83bcb81169b698"
+  },
+  {
+    "id": "c9d4c79d-45d3-4715-81a2-29e68a7795c0",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Intern - Sponsor Approval",
+    "uid": "61b347d5a3fb448cbda3ec4f6442c94d"
+  },
+  {
+    "id": "c9d9fe27-6a55-411b-aed7-b23c10825359",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Organization RiskScore Required",
+    "uid": "44c9c631397342ba80c503395800dcd8"
+  },
+  {
+    "id": "ca73b953-f62e-4d6a-b841-af8502dccc1a",
+    "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+    "option": "Update Non-Human Approval - Non-Human Type Approval",
+    "uid": "dc08d341e1dd4915a69fdcb27de3c8fb"
+  },
+  {
+    "id": "cbdc15af-e0d0-44d0-ba40-9c8648054593",
+    "ne_attribute_id": "743aefe1-113e-4e5d-95ca-5677b573fa0b",
+    "option": "End-User Registration After Assignment",
+    "uid": "b8ccb52acf46434c98ce7274a1fd3fbf"
+  },
+  {
+    "id": "cf08814b-e3d4-4d6f-815b-3cb61d214506",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Assignment Sponsor Required",
+    "uid": "6c73dd7673944d369cbfdc99b9a8976c"
+  },
+  {
+    "id": "d3194374-1524-4d7a-bafe-ffe25e7e42fd",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Population10",
+    "uid": "246114510e7d488d8b799d2b7cb74bb5"
+  },
+  {
+    "id": "d70fe4b2-5baa-4757-9443-3f8ab2b40b70",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Population8 - Sponsor Approval",
+    "uid": "55d8c95f6d3f44848fb5984c698a6277"
+  },
+  {
+    "id": "d9dba344-ac14-4cfa-bda7-88f571e449ee",
+    "ne_attribute_id": "f8da8963-7709-4885-be71-4391cc276b03",
+    "option": "Yes",
+    "uid": "68edb03a52174b6c9cde6c2f974ece08"
+  },
+  {
+    "id": "dc64e1b8-0c63-4d89-a686-84658b4ec707",
+    "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "option": "Intern",
+    "uid": "0004ba6d9e14415e8feb03b9edea4aab"
+  },
+  {
+    "id": "deff416d-b9c3-4c11-8949-b6138e15e0d3",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population10 - Department Approval",
+    "uid": "0948fa38daf540efb2b5410e7ed773bf"
+  },
+  {
+    "id": "e0e18adf-a222-42a3-985d-c84e3b660241",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Intern - Sponsor Approval",
+    "uid": "814bc5b60ef54c5283408f7d13f40947"
+  },
+  {
+    "id": "e14faea5-e040-41f8-be6a-bc0005e22e77",
+    "ne_attribute_id": "743aefe1-113e-4e5d-95ca-5677b573fa0b",
+    "option": "Assignment Inactive Before Start",
+    "uid": "c871f7cf3a584781b6a8442d3d9b044d"
+  },
+  {
+    "id": "e29e79e3-50b4-432a-8cf3-e23cb5a791bd",
+    "ne_attribute_id": "0d757e5a-a33a-4fe9-867e-7a13131b067f",
+    "option": "No",
+    "uid": "a79bf59aae934a9182b5f738e7ebca08"
+  },
+  {
+    "id": "e3125a81-7f4f-4cde-baa1-52c8ba3ccc5a",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Full-time Employee - Department Approval",
+    "uid": "372705a66f07456ca3e9b87e0f9859a7"
+  },
+  {
+    "id": "e3886a8b-e7ab-485e-a550-aedaa0a45934",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population6 - Department Approval",
+    "uid": "e31c90279cb94a9896cf86e00e7c526d"
+  },
+  {
+    "id": "e732a66c-9413-4c05-9b60-f5ec98d63b9c",
+    "ne_attribute_id": "639b4e89-b0a3-4b9c-8913-65b4df6a46d3",
+    "option": "Enabled",
+    "uid": "8fa98b902ec9425092e15f95a572696d"
+  },
+  {
+    "id": "e9e807cb-f1a0-4698-8755-e8cc7c81f6d7",
+    "ne_attribute_id": "00a2785c-082f-4a3b-bbd8-d28f112e226f",
+    "option": "Yes",
+    "uid": "d990a04e1a4046f182921b4e7ff2963b"
+  },
+  {
+    "id": "ea17f1f3-28b9-4468-8366-3764d8f0e157",
+    "ne_attribute_id": "b47b8207-819c-45e0-af0a-82ea16d5c0aa",
+    "option": "Yes",
+    "uid": "42b5568d667a4c3b8ce96f3e8b93dd95"
+  },
+  {
+    "id": "eb3232d4-bc55-4002-95a1-dd0fb64c9b4a",
+    "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "option": "Assignment Sub-Population Required",
+    "uid": "af1e823afeb6405ea8b560fa75aaf28b"
+  },
+  {
+    "id": "eb39dfb5-8cb2-4b9a-bebf-5d645295e8f7",
+    "ne_attribute_id": "8b87f97b-bcd5-4c15-ae98-ad5dbfdec700",
+    "option": "Yes",
+    "uid": "926483259c6d439fbd8392f40f97cfa0"
+  },
+  {
+    "id": "eb6e5a30-fafc-4e1a-96dd-4b92cb9e1aa4",
+    "ne_attribute_id": "56e7b7c2-41b3-4ec8-9824-d3036ecece10",
+    "option": "Population6 - Sponsor Approval",
+    "uid": "1c9818c94a9c4c62a924187026774bf8"
+  },
+  {
+    "id": "f3fe79f1-9c73-42d6-841a-e1c11f3355f6",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population10 - Sponsor Approval",
+    "uid": "24599c9daa20414bbf45292a8962c19d"
+  },
+  {
+    "id": "f3feee18-f45f-4834-bfe1-cdf00d07fcac",
+    "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "option": "Population9 - Sponsor Approval",
+    "uid": "ed902a39e0834508b99061fb49e4644a"
+  },
+  {
+    "id": "f91cdebe-5b28-4a7a-baaa-d6d6cac00c2d",
+    "ne_attribute_id": "b3732920-3db1-4da6-bb15-c39fcd3a5f4d",
+    "option": "No",
+    "uid": "7188819cbd864b6896e0f4c314bacce1"
+  },
+  {
+    "id": "fc1d831d-42be-4631-8335-a1547f7cded6",
+    "ne_attribute_id": "c2acc0f7-1ea3-4e9d-84df-aa0c59debba9",
+    "option": "organization",
+    "uid": "c4ac02488842432eaa528a47d132b6f9"
+  },
+  {
+    "id": "fd8e77ae-ed29-418e-84b9-ba6a06d7eb5d",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Retired - Sponsor Approval",
+    "uid": "7995941c8a3c4feba2404c3462390b80"
+  },
+  {
+    "id": "fd8f1742-e44c-473e-a4c6-d18d8dca604e",
+    "ne_attribute_id": "63954e22-a584-46c9-a385-7c5bb0fdde25",
+    "option": "Terminate Organization Sponsor Approval",
+    "uid": "99f8c6a7f9ca43e584aabe962b107706"
+  },
+  {
+    "id": "ff616e72-6d55-43c7-84c4-bb711863ed72",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population6 - Sponsor Approval",
+    "uid": "eb5f5c6a633c4a4f8288b6c722e70e88"
+  },
+  {
+    "id": "ffbc3005-0c41-4771-ae35-be53000f5289",
+    "ne_attribute_id": "77268e93-0d89-48f5-9f5d-d862c7a744f8",
+    "option": "Population7 - Sponsor Approval",
+    "uid": "50d82128b8464e78a06095ad8567db36"
+  }
+]

@@ -1,0 +1,29 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.854-04:00",
+    "description": "",
+    "id": "64b32aa6-0af9-43c1-8b08-2aee65558ce2",
+    "legacy_id": null,
+    "name": "System Configuration - Non-Human Approvals",
+    "uid": "b3_sysconfig_non-human_approvals_form",
+    "updated_at": "2026-08-27T17:44:34.854-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.857-04:00",
+      "form_id": "64b32aa6-0af9-43c1-8b08-2aee65558ce2",
+      "id": "85913c0f-4143-487f-a744-c3c869114a53",
+      "legacy_id": null,
+      "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+      "order": 0,
+      "read_only": false,
+      "uid": "a4b589eb09684019a7c5d1b3a7d1c99d",
+      "updated_at": "2026-08-27T17:44:34.857-04:00"
+    }
+  ]
+}

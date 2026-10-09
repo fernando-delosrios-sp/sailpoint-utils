@@ -1,0 +1,57 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "model_attr=risk_score",
+    "model_attr=id_proofing_status",
+    "table_attr=f0607a8c-f71f-4065-bb94-b3ec4c5897ba",
+    "table_attr=44c951da-5f44-44df-b76a-c7b7528f3695",
+    "table_attr=b3aebfdf-1bde-48be-adab-2a14b35ebae6",
+    "table_attr=acfc74e5-8ad7-43b1-89ca-e3cf54bb0a65",
+    "table_attr=0d420899-19db-408e-b8e5-f8fd95d03f0f"
+  ],
+  "created_at": "2026-08-27T17:45:30.685-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "overall_risk_score_value",
+      "label": "risk score"
+    },
+    {
+      "attr": "id_proofing_status",
+      "label": "Identity Proofing"
+    },
+    {
+      "attr": "person_id",
+      "label": "Person ID"
+    },
+    {
+      "attr": "first_name",
+      "label": "First Name"
+    },
+    {
+      "attr": "last_name",
+      "label": "Last Name"
+    },
+    {
+      "attr": "email",
+      "label": "Email"
+    },
+    {
+      "attr": "policy_accepted",
+      "label": "Policy Accepted"
+    }
+  ],
+  "id": "f206ae00-d708-4be1-b5a9-c547f29f98be",
+  "name": "People - Custom",
+  "profile_type_id": "de5cb47c-2fcf-4eb5-8bcf-0316ffd563db",
+  "uid": "b3_people_profile_type_table",
+  "updated_at": "2026-10-06T07:25:27.771-04:00"
+}

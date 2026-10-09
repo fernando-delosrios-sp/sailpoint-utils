@@ -1,0 +1,41 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.796-04:00",
+    "description": "",
+    "id": "95839d52-a751-4307-9505-561cd8e9990e",
+    "legacy_id": null,
+    "name": "Start Date & End Date",
+    "uid": "b3_start_date_end_date_form",
+    "updated_at": "2026-08-27T17:44:34.796-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.799-04:00",
+      "form_id": "95839d52-a751-4307-9505-561cd8e9990e",
+      "id": "06bf7789-dd8c-4069-8464-2fd478ebb497",
+      "legacy_id": null,
+      "ne_attribute_id": "fb7019dc-82ae-409d-b9ad-56afee1f3037",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_e100f4988ec64d1496ae3d8b912bea59",
+      "updated_at": "2026-08-27T17:44:34.799-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.802-04:00",
+      "form_id": "95839d52-a751-4307-9505-561cd8e9990e",
+      "id": "a65e824a-dbb5-4a30-b421-242f6620be75",
+      "legacy_id": null,
+      "ne_attribute_id": "6f0fac52-44de-4f87-9909-5b5a5b8e7e2c",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_0d12ac80361f4ad5afe71a27fbad28e7",
+      "updated_at": "2026-08-27T17:44:34.802-04:00"
+    }
+  ]
+}

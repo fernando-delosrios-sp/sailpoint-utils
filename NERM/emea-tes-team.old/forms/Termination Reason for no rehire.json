@@ -1,0 +1,29 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:35.061-04:00",
+    "description": "",
+    "id": "343167fe-ddc7-48c1-b82b-7899f28d3553",
+    "legacy_id": null,
+    "name": "Termination Reason for no rehire",
+    "uid": "b3_termination_reason_for_no_rehire_form",
+    "updated_at": "2026-08-27T17:44:35.061-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:35.065-04:00",
+      "form_id": "343167fe-ddc7-48c1-b82b-7899f28d3553",
+      "id": "f2e19380-14ce-48d3-8e3a-0e6253f133bc",
+      "legacy_id": null,
+      "ne_attribute_id": "3a360eb1-c482-4712-9d66-a1a6d1ef6c65",
+      "order": 0,
+      "read_only": false,
+      "uid": "799166f2c1c6493e99dcfbfb78ca6eb8",
+      "updated_at": "2026-08-27T17:44:35.065-04:00"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:46.326-04:00",
+    "description": null,
+    "elem_order_deprecated": null,
+    "id": "1136d03b-14db-4388-b7ad-76b47e33a5b0",
+    "legacy_id": null,
+    "name": "Organizations - Custom",
+    "uid": "b3_organization_profile_page",
+    "updated_at": "2026-10-06T07:20:56.097-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:46.329-04:00",
+      "element_id": "6de0e00e-9a1a-451a-9ec3-0639cf174fe6",
+      "element_type": "Form",
+      "id": "6d2d174c-34f2-454c-862c-f30f19913787",
+      "order": 1,
+      "page_id": "1136d03b-14db-4388-b7ad-76b47e33a5b0",
+      "permissions": true,
+      "read_only": false,
+      "uid": "b3_edf0a342a4904e7ebfbaff6527599f94",
+      "updated_at": "2026-08-27T17:44:46.329-04:00"
+    }
+  ],
+  "page_contents": []
+}

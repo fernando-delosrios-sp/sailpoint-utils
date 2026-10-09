@@ -1,0 +1,116 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": true,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:33.483-04:00",
+    "data_type": "check boxes",
+    "date_format": null,
+    "description": "",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+    "label": "Configuration - Features - Single Assignments",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": "",
+    "type": "CheckBoxesAttribute",
+    "uid": "sysconfig_enabled_features_single_assignment",
+    "updated_at": "2026-08-27T17:18:33.483-04:00"
+  },
+  "options": [
+    {
+      "core": false,
+      "id": "5492d5db-e63a-452a-bd9e-f5e7bbc3e29d",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Any",
+      "uid": "526ef1bdded44b149118d69866750d81"
+    },
+    {
+      "core": false,
+      "id": "7cef9b7a-9bb0-4d29-8b15-97136dafd8d0",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Per Organization",
+      "uid": "f3c84e6183b2453184403b8dc0af662c"
+    },
+    {
+      "core": false,
+      "id": "6ab5bd1e-f961-4464-8b62-a0ce94891993",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population1",
+      "uid": "728d441487af4262b71c0368091c11c3"
+    },
+    {
+      "core": false,
+      "id": "d3194374-1524-4d7a-bafe-ffe25e7e42fd",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population10",
+      "uid": "246114510e7d488d8b799d2b7cb74bb5"
+    },
+    {
+      "core": false,
+      "id": "81878477-1a97-46af-b662-93e43732b6ff",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population2",
+      "uid": "88a7c96086a44a71bb3563578b70d8a0"
+    },
+    {
+      "core": false,
+      "id": "dc64e1b8-0c63-4d89-a686-84658b4ec707",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population3",
+      "uid": "0004ba6d9e14415e8feb03b9edea4aab"
+    },
+    {
+      "core": false,
+      "id": "8d758514-bf31-4ff7-87cd-7c5afd86e2e6",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population4",
+      "uid": "f343803a22cd412e94992fb3218d3f07"
+    },
+    {
+      "core": false,
+      "id": "74b7d945-1cba-4e5b-98d7-325dd60394aa",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population5",
+      "uid": "654daae607084a68857d784f0c8e261b"
+    },
+    {
+      "core": false,
+      "id": "9d1db3bb-e72d-425b-acbe-b2b07d30bc28",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population6",
+      "uid": "254c4950b8a0418fb91d09a8302bd775"
+    },
+    {
+      "core": false,
+      "id": "71e19115-b7bc-4d0f-b170-2f0e35091252",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population7",
+      "uid": "07690c3226c64de3a32289ba34b13125"
+    },
+    {
+      "core": false,
+      "id": "4d558d75-8fe6-449a-a502-651c9b847769",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population8",
+      "uid": "5ada9b47afeb410f9c31e6570f10cf8b"
+    },
+    {
+      "core": false,
+      "id": "c57abc9e-6fad-4a42-a2b8-f2e932cd4269",
+      "ne_attribute_id": "ac395ed5-6eda-4bd6-b2d8-698dae2e72dc",
+      "option": "Population9",
+      "uid": "cbf9a19496944cc3b390f61fada26e09"
+    }
+  ]
+}

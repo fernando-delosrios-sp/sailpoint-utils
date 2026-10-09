@@ -1,0 +1,91 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:47.100-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "37b94ed0-6f49-4960-afc9-9bcdb4984533",
+    "legacy_id": null,
+    "name": "Terminate Person Warning",
+    "uid": "b3_terminate_person_request_form_warning_workflow_page",
+    "updated_at": "2026-08-27T17:44:47.100-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:47.104-04:00",
+      "element_id": "c5fd613b-f876-4cf4-a6e0-832e0d9a03f8",
+      "element_type": "PageContent",
+      "id": "e9c6ef95-6cb4-4a0b-ac55-a0b02af8c70f",
+      "order": 1,
+      "page_id": "37b94ed0-6f49-4960-afc9-9bcdb4984533",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_3f6842668212439e89f443b9926ea95f",
+      "updated_at": "2026-08-27T17:44:47.104-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.142-04:00",
+      "element_id": "983a4ae1-4ffe-419f-a62d-a8abc0f81c4c",
+      "element_type": "PageContent",
+      "id": "215972cd-4024-40f8-a6ed-f828b8a6c015",
+      "order": 2,
+      "page_id": "37b94ed0-6f49-4960-afc9-9bcdb4984533",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_1df7e43937e54018a62f575d33f50e80",
+      "updated_at": "2026-08-27T17:44:47.142-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.179-04:00",
+      "element_id": "22d1264b-1217-40cd-ac3d-a72e6c4b25ce",
+      "element_type": "PageContent",
+      "id": "2dbcb73a-78c3-4203-972c-95815d78086d",
+      "order": 3,
+      "page_id": "37b94ed0-6f49-4960-afc9-9bcdb4984533",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_a1bae733251240ba871dd6794d53f328",
+      "updated_at": "2026-08-27T17:44:47.179-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.218-04:00",
+      "element_id": "7dd3bb3c-2f92-413a-837e-d7a1d9a41936",
+      "element_type": "Form",
+      "id": "db5ba9c6-4415-45d2-b1f2-7aec48e29b93",
+      "order": 4,
+      "page_id": "37b94ed0-6f49-4960-afc9-9bcdb4984533",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_11f205431a9a4baf95fe183fc7956e07",
+      "updated_at": "2026-08-27T17:44:47.218-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Terminate: {{profile.name}}",
+      "created_at": "2026-08-27T17:44:47.107-04:00",
+      "id": "c5fd613b-f876-4cf4-a6e0-832e0d9a03f8",
+      "type": "SmallHeading",
+      "uid": "b3_e068a03933be41b393663d6001116e98",
+      "updated_at": "2026-08-27T17:44:47.107-04:00"
+    },
+    {
+      "content": "You are about to terminate {{attribute.first_name}}, please provide a reason below and click 'Submit'",
+      "created_at": "2026-08-27T17:44:47.145-04:00",
+      "id": "983a4ae1-4ffe-419f-a62d-a8abc0f81c4c",
+      "type": "Paragraph",
+      "uid": "b3_a7744d422ffd47b09d01998a386ae3f4",
+      "updated_at": "2026-08-27T17:44:47.145-04:00"
+    },
+    {
+      "content": "Termination Info",
+      "created_at": "2026-08-27T17:44:47.182-04:00",
+      "id": "22d1264b-1217-40cd-ac3d-a72e6c4b25ce",
+      "type": "FormHeading",
+      "uid": "b3_59008823cf72445aa06b93d3f80b45cc",
+      "updated_at": "2026-08-27T17:44:47.182-04:00"
+    }
+  ]
+}

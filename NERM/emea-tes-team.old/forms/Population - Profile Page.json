@@ -1,0 +1,53 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.766-04:00",
+    "description": "",
+    "id": "72aeda97-7dda-40c1-bbc3-2be569a1d932",
+    "legacy_id": null,
+    "name": "Population - Profile Page",
+    "uid": "b3_population_profile_form",
+    "updated_at": "2026-08-27T17:44:34.766-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.770-04:00",
+      "form_id": "72aeda97-7dda-40c1-bbc3-2be569a1d932",
+      "id": "13025415-1c9b-4030-b540-641efe6fbe66",
+      "legacy_id": null,
+      "ne_attribute_id": "4ddaf87e-6aee-42ba-9436-ff8d3bfb5568",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_26f662d994944cebb61c8d87ff532392",
+      "updated_at": "2026-08-27T17:44:34.770-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.774-04:00",
+      "form_id": "72aeda97-7dda-40c1-bbc3-2be569a1d932",
+      "id": "90a75d64-7810-4740-9607-a915c750d507",
+      "legacy_id": null,
+      "ne_attribute_id": "3562ebf1-e35e-4012-8d6a-5e2d44b2a37b",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_591fe36e72804a85a3fa3e690f21dfb7",
+      "updated_at": "2026-08-27T17:44:34.774-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.778-04:00",
+      "form_id": "72aeda97-7dda-40c1-bbc3-2be569a1d932",
+      "id": "faeed2e0-3500-4bc1-80ba-20e075a1a679",
+      "legacy_id": null,
+      "ne_attribute_id": "bde33d34-b408-438b-a672-b185cb39d71f",
+      "order": 2,
+      "read_only": false,
+      "uid": "b3_63fd3f02aa024ba29f1fc66eb6c58f4b",
+      "updated_at": "2026-08-27T17:44:34.778-04:00"
+    }
+  ]
+}

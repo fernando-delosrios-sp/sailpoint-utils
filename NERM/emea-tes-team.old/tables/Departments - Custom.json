@@ -1,0 +1,37 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "model_attr=id_proofing_status",
+    "table_attr=ae4f8b7c-1f9f-444d-a99a-11b4a9aab590",
+    "table_attr=4b2b3a84-5ad2-4305-86a0-70ffd5dd880f"
+  ],
+  "created_at": "2026-08-27T17:45:31.095-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "id_proofing_status",
+      "label": "Identity Proofing"
+    },
+    {
+      "attr": "department_code",
+      "label": "Department Code"
+    },
+    {
+      "attr": "department_name",
+      "label": "Department Name"
+    }
+  ],
+  "id": "7aff2a20-c3e9-4b77-87cb-147deb744227",
+  "name": "Departments - Custom",
+  "profile_type_id": "c27434ef-d2e4-48d2-8526-c5857cae01f6",
+  "uid": "b3_departments_profile_type_table",
+  "updated_at": "2026-10-06T07:25:23.546-04:00"
+}

@@ -1,0 +1,16 @@
+{
+  "created_at": "2026-10-06T08:45:18.825-04:00",
+  "id": "4f76069a-98bd-44c7-afee-a5f44c26e44e",
+  "inactivity_timeout": 60,
+  "jit_provisioning": false,
+  "login_workflow_id": "0fba2d0d-95e5-4a8f-b154-fb157cfa65f0",
+  "name": "ACME",
+  "password_reset_workflow_id": "75e5e0a2-6b26-414f-9efc-af0efb3400e4",
+  "profile_attribute_id": null,
+  "profile_type_id": null,
+  "retries": 1,
+  "saml_configuration": null,
+  "uid": "acme",
+  "updated_at": "2026-10-06T08:45:19.005-04:00",
+  "url": "acme"
+}

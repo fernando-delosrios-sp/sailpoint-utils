@@ -1,0 +1,46 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": true,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:34.463-04:00",
+    "data_type": "radio buttons",
+    "date_format": null,
+    "description": "",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "72965a26-6dc9-4d71-be21-6cdecbd49a76",
+    "label": "Terminate Non-Employee?",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": "",
+    "type": "RadioButtonsAttribute",
+    "uid": "terminate_non-employee",
+    "updated_at": "2026-08-27T17:18:34.463-04:00"
+  },
+  "options": [
+    {
+      "core": false,
+      "id": "9378e255-257e-472d-8a24-806040d0f0d7",
+      "ne_attribute_id": "72965a26-6dc9-4d71-be21-6cdecbd49a76",
+      "option": "No",
+      "uid": "4e51f725b2134c43af12c63281a63973"
+    },
+    {
+      "core": false,
+      "id": "97292507-3310-4729-80b9-a37fb811472c",
+      "ne_attribute_id": "72965a26-6dc9-4d71-be21-6cdecbd49a76",
+      "option": "Yes",
+      "uid": "ef48d229d58b48c49e55c74c543bf7fd"
+    }
+  ]
+}

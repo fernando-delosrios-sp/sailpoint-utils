@@ -1,0 +1,30 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:40.665-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "c92fd0f9-43b0-4b9d-9006-65afb7983a4e",
+    "legacy_id": null,
+    "name": "Add Sub-Population",
+    "uid": "b3_add_subpopulation_workflow_page",
+    "updated_at": "2026-08-27T17:44:40.665-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:40.668-04:00",
+      "element_id": "8f7a73ec-8baf-4623-98fe-eb3d2259d8cb",
+      "element_type": "Form",
+      "id": "e83f60a0-a60a-4ba6-a199-7c59942b42c1",
+      "order": 1,
+      "page_id": "c92fd0f9-43b0-4b9d-9006-65afb7983a4e",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_8efd50262c7a4d92ab45d124e08351d1",
+      "updated_at": "2026-08-27T17:44:40.668-04:00"
+    }
+  ],
+  "page_contents": []
+}

@@ -1,0 +1,102 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": true,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:29.582-04:00",
+    "data_type": "check boxes",
+    "date_format": null,
+    "description": "",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+    "label": "Configuration - Baseline Data Loader Flags",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": "",
+    "type": "CheckBoxesAttribute",
+    "uid": "sysconfig_baselinedataloader_flags",
+    "updated_at": "2026-08-27T17:18:29.582-04:00"
+  },
+  "options": [
+    {
+      "core": false,
+      "id": "8d345d0d-0670-48ab-9932-94de87c5be8a",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Assignment Department Required",
+      "uid": "fe6ce55cad1246b790845dc237a06683"
+    },
+    {
+      "core": false,
+      "id": "19384cbe-1287-429d-b6bc-bd77ab75f249",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Assignment Location Required",
+      "uid": "e501cf0a0df1491884ade7511c5832fd"
+    },
+    {
+      "core": false,
+      "id": "cf08814b-e3d4-4d6f-815b-3cb61d214506",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Assignment Sponsor Required",
+      "uid": "6c73dd7673944d369cbfdc99b9a8976c"
+    },
+    {
+      "core": false,
+      "id": "ba70301c-91f5-4b4e-957b-366747662730",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Assignment Sub-Organization Required",
+      "uid": "17e8fe3ae12a4672a8fc48322b67f4d0"
+    },
+    {
+      "core": false,
+      "id": "eb3232d4-bc55-4002-95a1-dd0fb64c9b4a",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Assignment Sub-Population Required",
+      "uid": "af1e823afeb6405ea8b560fa75aaf28b"
+    },
+    {
+      "core": false,
+      "id": "c3bddaa1-9668-41f6-93aa-24d38d0853cb",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Non-Human Owner Required",
+      "uid": "efd40aba62fc4a368e2247f741fb2d53"
+    },
+    {
+      "core": false,
+      "id": "7f17d08f-da00-4863-9e26-6ef95c844498",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Organization Deparment Required",
+      "uid": "a55b4d658c564b449198bca43473ac51"
+    },
+    {
+      "core": false,
+      "id": "6d266297-f9ea-491f-8110-69eeb4b86418",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Organization Location Required",
+      "uid": "5878faa74048440392e8055558c21cdf"
+    },
+    {
+      "core": false,
+      "id": "c9d9fe27-6a55-411b-aed7-b23c10825359",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Organization RiskScore Required",
+      "uid": "44c9c631397342ba80c503395800dcd8"
+    },
+    {
+      "core": false,
+      "id": "b2b6b6ec-4a89-435e-a458-1a32268834e1",
+      "ne_attribute_id": "603aa029-3e94-4ab8-aa74-e769ebc46f6c",
+      "option": "Organization Sponsor Required",
+      "uid": "8016a4663a29441695db9774a4e252c8"
+    }
+  ]
+}

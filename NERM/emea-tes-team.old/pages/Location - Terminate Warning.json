@@ -1,0 +1,91 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.493-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "fac7117b-019e-4262-8557-29abcb277ce8",
+    "legacy_id": null,
+    "name": "Location - Terminate Warning",
+    "uid": "b3_location_terminate_warning_workflow_page",
+    "updated_at": "2026-08-27T17:44:45.493-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.497-04:00",
+      "element_id": "54095a34-ad0a-4ade-9306-751466e240cc",
+      "element_type": "PageContent",
+      "id": "f82c3c7b-ec19-48aa-b77c-2e8afa3a152a",
+      "order": 1,
+      "page_id": "fac7117b-019e-4262-8557-29abcb277ce8",
+      "permissions": false,
+      "read_only": false,
+      "uid": "299f21366a514bdc8b01e2076d23ce79",
+      "updated_at": "2026-08-27T17:44:45.497-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.536-04:00",
+      "element_id": "3302223f-0894-4968-9036-21ae51e15332",
+      "element_type": "Form",
+      "id": "6d4bbbae-1f27-434f-8c74-594181f4400b",
+      "order": 2,
+      "page_id": "fac7117b-019e-4262-8557-29abcb277ce8",
+      "permissions": false,
+      "read_only": true,
+      "uid": "ccd41d55e57549fe83066bcb98b620bb",
+      "updated_at": "2026-08-27T17:44:45.536-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.539-04:00",
+      "element_id": "a9e03e52-2903-46f3-9625-b086acc97ab1",
+      "element_type": "PageContent",
+      "id": "d2221a71-f2a0-4c8b-9c19-492e054eea58",
+      "order": 3,
+      "page_id": "fac7117b-019e-4262-8557-29abcb277ce8",
+      "permissions": false,
+      "read_only": false,
+      "uid": "f69e34e55b9147feb195fc27cadd04f2",
+      "updated_at": "2026-08-27T17:44:45.539-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.578-04:00",
+      "element_id": "2be4c31b-8cd3-4424-a5f9-96514e90c363",
+      "element_type": "PageContent",
+      "id": "478a12c1-46c0-46e9-ac89-bb7c165af89c",
+      "order": 4,
+      "page_id": "fac7117b-019e-4262-8557-29abcb277ce8",
+      "permissions": false,
+      "read_only": false,
+      "uid": "4a31c3613ae6440396961051e64480f9",
+      "updated_at": "2026-08-27T17:44:45.578-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Terminate Location",
+      "created_at": "2026-08-27T17:44:45.500-04:00",
+      "id": "54095a34-ad0a-4ade-9306-751466e240cc",
+      "type": "FormHeading",
+      "uid": "0791935c436548c3a5dbaffefac419af",
+      "updated_at": "2026-08-27T17:44:45.500-04:00"
+    },
+    {
+      "content": "Caution:",
+      "created_at": "2026-08-27T17:44:45.543-04:00",
+      "id": "a9e03e52-2903-46f3-9625-b086acc97ab1",
+      "type": "SmallHeading",
+      "uid": "3d91a4bd55ec46dbb594ff1f2cdd3f8f",
+      "updated_at": "2026-08-27T17:44:45.543-04:00"
+    },
+    {
+      "content": "Terminating this location will end all Non-Employee assignments and terminate all non-human identities with this location assigned.",
+      "created_at": "2026-08-27T17:44:45.581-04:00",
+      "id": "2be4c31b-8cd3-4424-a5f9-96514e90c363",
+      "type": "Paragraph",
+      "uid": "8eb94bdbe13d4a648b019014355992f6",
+      "updated_at": "2026-08-27T17:44:45.581-04:00"
+    }
+  ]
+}

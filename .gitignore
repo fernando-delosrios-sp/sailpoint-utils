@@ -61,3 +61,4 @@ temp/
 ~$*
 ISC/Demo Data/.bootstrap-state.json
 .agents/notes/
+.scratch/

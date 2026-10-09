@@ -1,0 +1,29 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.419-04:00",
+    "description": "",
+    "id": "c97151fc-b5f1-47e6-8ff6-77fe0193247a",
+    "legacy_id": null,
+    "name": "Department - Code only",
+    "uid": "b3_department_code_only_form",
+    "updated_at": "2026-08-27T17:44:34.419-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.422-04:00",
+      "form_id": "c97151fc-b5f1-47e6-8ff6-77fe0193247a",
+      "id": "aa5dbbc8-f2a1-4fce-bf14-9f8c118f766f",
+      "legacy_id": null,
+      "ne_attribute_id": "b5180e20-ea79-43a9-ab35-faca194ec2b6",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_8a65be59f9eb4ab7a1a1087cf43040b8",
+      "updated_at": "2026-08-27T17:44:34.422-04:00"
+    }
+  ]
+}

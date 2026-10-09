@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:48.389-04:00",
+    "data_type": "text field",
+    "date_format": null,
+    "description": "Department associated to the job.",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "688c36ae-06ac-477e-a8a8-b7915c8ee78c",
+    "label": "Department",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": null,
+    "type": "TextFieldAttribute",
+    "uid": "nerm_core_job_department",
+    "updated_at": "2026-08-27T17:46:48.389-04:00"
+  },
+  "options": []
+}

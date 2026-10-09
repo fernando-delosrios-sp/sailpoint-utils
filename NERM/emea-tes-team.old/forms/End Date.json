@@ -1,0 +1,29 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.469-04:00",
+    "description": "",
+    "id": "a1201154-775c-4f67-8455-d0c7cb8e1000",
+    "legacy_id": null,
+    "name": "End Date",
+    "uid": "b3_end_date_form",
+    "updated_at": "2026-08-27T17:44:34.469-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.471-04:00",
+      "form_id": "a1201154-775c-4f67-8455-d0c7cb8e1000",
+      "id": "598d037a-24d0-4f2f-82e7-8721286446e6",
+      "legacy_id": null,
+      "ne_attribute_id": "6f0fac52-44de-4f87-9909-5b5a5b8e7e2c",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_44eeeddee3414929b6fa0131d98d767d",
+      "updated_at": "2026-08-27T17:44:34.471-04:00"
+    }
+  ]
+}

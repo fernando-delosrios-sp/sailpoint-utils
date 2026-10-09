@@ -1,0 +1,283 @@
+[
+  {
+    "groups": [
+      "Aperture Science Collaborators"
+    ],
+    "id": "0db59f5c-3d71-4b4b-a5a3-e2b3cff645c4",
+    "name": "Aperture Science Collaborators",
+    "private_role": false,
+    "uid": "376283563e1f44118ff70e97b6a01522_202412121317_collaborators"
+  },
+  {
+    "groups": [
+      "Guests organization Collaborators"
+    ],
+    "id": "1c335158-c261-4324-ab07-3f91671ab037",
+    "name": "Guests organization Collaborators",
+    "private_role": false,
+    "uid": "169caca659b344098a040e8689948115_202511071458_collaborators"
+  },
+  {
+    "groups": [
+      "System Configuration Admins"
+    ],
+    "id": "3205bdb2-cde1-4f24-98c2-02c00111b7ca",
+    "name": "System Configuration Admins",
+    "private_role": false,
+    "uid": "b3_system_configuration_admins_neprofile_role"
+  },
+  {
+    "groups": [
+      "Department Approvers"
+    ],
+    "id": "322b4dbb-9956-48cc-b6b1-86bcc43d4fd4",
+    "name": "Department Approvers",
+    "private_role": false,
+    "uid": "b3_department_approvers_neprofile_role"
+  },
+  {
+    "groups": [
+      "Location Admins"
+    ],
+    "id": "4bf317d8-1393-4d52-a871-00f712dda2b0",
+    "name": "Location Admins",
+    "private_role": false,
+    "uid": "b3_location_admins_neprofile_role"
+  },
+  {
+    "groups": [
+      "Organization Admins"
+    ],
+    "id": "5720f45a-aaab-4edc-811a-2df2122049b5",
+    "name": "Organization Admins",
+    "private_role": false,
+    "uid": "b3_organization_admins_neprofile_role"
+  },
+  {
+    "groups": [
+      "Non-Human Owners"
+    ],
+    "id": "690f7190-619f-4e53-96d4-2e358666a9be",
+    "name": "Non-Human Owners",
+    "private_role": false,
+    "uid": "b3_nonhuman_owners_neprofile_role"
+  },
+  {
+    "groups": [
+      "Population1 Management"
+    ],
+    "id": "7d8f2309-615e-4706-a5c2-457c8d534441",
+    "name": "Population1 Management",
+    "private_role": false,
+    "uid": "b3_population1_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Department Admins"
+    ],
+    "id": "7dceabc1-1788-467e-b4e0-48ae5c8a5662",
+    "name": "Department Admins",
+    "private_role": false,
+    "uid": "b3_department_admins_neprofile_role"
+  },
+  {
+    "groups": [
+      "All Sub-Organization Collaborators"
+    ],
+    "id": "872f424a-0095-4025-990f-deae3fdd1c12",
+    "name": "All Sub-Organization Collaborators",
+    "private_role": false,
+    "uid": "b3_all_suborganization_collaborators_neaccess_role"
+  },
+  {
+    "groups": [
+      "Population5 Management"
+    ],
+    "id": "8ec7f6e7-2598-4aac-a9a0-9f758f765feb",
+    "name": "Population5 Management",
+    "private_role": false,
+    "uid": "b3_population5_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "All Organization Collaborators"
+    ],
+    "id": "a75186be-2620-4bbe-af6a-3178f8fabafd",
+    "name": "All Organization Collaborators",
+    "private_role": false,
+    "uid": "b3_all_organization_collaborators_neaccess_role"
+  },
+  {
+    "groups": [
+      "Organization Sponsors"
+    ],
+    "id": "a9af04ec-fdb8-45b1-aa4e-b550a9a200c4",
+    "name": "Organization Sponsors",
+    "private_role": false,
+    "uid": "b3_organization_sponsor_neprofile_role"
+  },
+  {
+    "groups": [
+      "Population2 Management"
+    ],
+    "id": "ac3453f2-28d5-4181-96a3-3010869775c2",
+    "name": "Population2 Management",
+    "private_role": false,
+    "uid": "b3_population2_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Population8 Management"
+    ],
+    "id": "addfcdac-e956-4cd6-9266-74064d13c4b7",
+    "name": "Population8 Management",
+    "private_role": false,
+    "uid": "b3_population8_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Stark Industries Collaborators"
+    ],
+    "id": "afa5e0ba-e5ea-4521-a84e-c88c2b3d8b17",
+    "name": "Stark Industries Collaborators",
+    "private_role": false,
+    "uid": "fa20143ff71d4a4180957885b5a39e10_202412121314_collaborators"
+  },
+  {
+    "groups": [
+      "Sponsors"
+    ],
+    "id": "b4ed7d1b-e417-46e2-a57a-33bb8c0ce0ed",
+    "name": "Sponsors",
+    "private_role": false,
+    "uid": "b3_sponsors_neprofile_role"
+  },
+  {
+    "groups": [
+      "Cyberdyne Systems Collaborators"
+    ],
+    "id": "b55c3fd0-cbb2-4af1-8ffb-706ce621d5fb",
+    "name": "Cyberdyne Systems Collaborators",
+    "private_role": false,
+    "uid": "5fb0d85e90f94262b94682b8f7af9686_202412121312_collaborators"
+  },
+  {
+    "groups": [
+      "Population4 Management"
+    ],
+    "id": "b65e5cc9-80c6-4e87-ac73-5ba63516abe0",
+    "name": "Population4 Management",
+    "private_role": false,
+    "uid": "b3_population4_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Non-Human Type Approvers"
+    ],
+    "id": "b6cf7d54-d04e-488f-80e0-ce14d496af13",
+    "name": "Non-Human Type Approvers",
+    "private_role": false,
+    "uid": "b3_nonhuman_type_approvers_neprofile_role"
+  },
+  {
+    "groups": [
+      "Population3 Management"
+    ],
+    "id": "bdc60c09-6193-40f4-9ef3-f3e4a5dd91f8",
+    "name": "Population3 Management",
+    "private_role": false,
+    "uid": "b3_population3_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Frontex Collaborators"
+    ],
+    "id": "bfc87a0a-975d-45e9-a245-9051d77042eb",
+    "name": "Frontex Collaborators",
+    "private_role": false,
+    "uid": "35cef228e9b64fc4977d83f64bd4b7a2_202410220611_collaborators"
+  },
+  {
+    "groups": [
+      "NE Admin",
+      "ORG_ADMIN",
+      "SailPoint"
+    ],
+    "id": "c0c847df-c086-4707-a424-6bfe65ad17fe",
+    "name": "NERM Administrator",
+    "private_role": false,
+    "uid": "nerm_administrator_neprofile_role"
+  },
+  {
+    "groups": [
+      "Population9 Management"
+    ],
+    "id": "c3d9e334-b6f8-494f-80df-0916582f812f",
+    "name": "Population9 Management",
+    "private_role": false,
+    "uid": "b3_population9_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Population10 Management"
+    ],
+    "id": "ca74a221-64e0-4288-bdcc-86bff0871b00",
+    "name": "Population10 Management",
+    "private_role": false,
+    "uid": "b3_population10_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Non-Human Management"
+    ],
+    "id": "cd07ad38-a7ac-4d18-832f-4dfceba41950",
+    "name": "Non-Human Management",
+    "private_role": false,
+    "uid": "b3_nonhuman_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Population6 Management"
+    ],
+    "id": "cdc7e5c6-600b-4f97-82ab-a54228d1add9",
+    "name": "Population6 Management",
+    "private_role": false,
+    "uid": "b3_population6_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "People Management"
+    ],
+    "id": "d167ca01-8d6e-410d-a859-a2bfbc7f9384",
+    "name": "People Management",
+    "private_role": false,
+    "uid": "b3_people_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Population7 Management"
+    ],
+    "id": "e3978524-04cb-4715-b9a4-5d6b6bdeab9f",
+    "name": "Population7 Management",
+    "private_role": false,
+    "uid": "b3_population7_management_neprofile_role"
+  },
+  {
+    "groups": [
+      "Population Admins"
+    ],
+    "id": "f911d6b8-de3c-4112-8dc3-0d9eb0b4659a",
+    "name": "Population Admins",
+    "private_role": false,
+    "uid": "b3_population_admins_neprofile_role"
+  },
+  {
+    "groups": [
+      "Read Only"
+    ],
+    "id": "ff7df780-b491-4482-9775-ca71df6dadfa",
+    "name": "Read Only",
+    "private_role": false,
+    "uid": "b3_read_only_neprofile_role"
+  }
+]

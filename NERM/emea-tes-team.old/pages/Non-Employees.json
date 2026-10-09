@@ -1,0 +1,30 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:44.750-04:00",
+    "description": "This page is used for non-employee profile management.",
+    "elem_order_deprecated": null,
+    "id": "90fb4c55-98c0-4776-9c52-fa9b5944c72a",
+    "legacy_id": null,
+    "name": "Non-Employees",
+    "uid": "nerm_core_page_non_employees",
+    "updated_at": "2026-08-27T17:46:44.750-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:46:45.193-04:00",
+      "element_id": "5802a7dc-e85e-4c0b-901a-72720a94678d",
+      "element_type": "Form",
+      "id": "d04025fe-4aee-4251-b463-8d635921fdef",
+      "order": 0,
+      "page_id": "90fb4c55-98c0-4776-9c52-fa9b5944c72a",
+      "permissions": true,
+      "read_only": false,
+      "uid": "nerm_core_page_form_non_employees",
+      "updated_at": "2026-08-27T17:46:45.193-04:00"
+    }
+  ],
+  "page_contents": []
+}

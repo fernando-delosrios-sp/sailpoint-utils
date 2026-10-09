@@ -1,0 +1,65 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:35.024-04:00",
+    "description": "",
+    "id": "6d18e68f-83d7-4240-ab2d-eba451b88f41",
+    "legacy_id": null,
+    "name": "System Configuration - Profile Page",
+    "uid": "b3_system_configuration_profile_form",
+    "updated_at": "2026-08-27T17:44:35.024-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:35.027-04:00",
+      "form_id": "6d18e68f-83d7-4240-ab2d-eba451b88f41",
+      "id": "c57661da-9cf0-491b-b14a-8ae7916ac744",
+      "legacy_id": null,
+      "ne_attribute_id": "0fba7f81-0f13-4e4d-b202-9efefb58a444",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_020b0885e6814dcb9e98f8ca841d7d86",
+      "updated_at": "2026-08-27T17:44:35.027-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:35.030-04:00",
+      "form_id": "6d18e68f-83d7-4240-ab2d-eba451b88f41",
+      "id": "d8b93e14-f9b4-4a01-ad4e-59b94d7e5775",
+      "legacy_id": null,
+      "ne_attribute_id": "b9c2cf6c-929e-42a5-bc7f-c9736d9dd7ef",
+      "order": 1,
+      "read_only": false,
+      "uid": "7640328aeb434ca6b9d585987d1a8d58",
+      "updated_at": "2026-08-27T17:44:35.030-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:35.033-04:00",
+      "form_id": "6d18e68f-83d7-4240-ab2d-eba451b88f41",
+      "id": "597e8fd3-6c8e-40ca-8bb1-9df2c03ce1c3",
+      "legacy_id": null,
+      "ne_attribute_id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+      "order": 2,
+      "read_only": false,
+      "uid": "8ca519f3afe84d729e62baa4a3dceff4",
+      "updated_at": "2026-08-27T17:44:35.033-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:35.049-04:00",
+      "form_id": "6d18e68f-83d7-4240-ab2d-eba451b88f41",
+      "id": "a45f6f3c-9bb0-4abc-a3c8-2c2dd7875826",
+      "legacy_id": null,
+      "ne_attribute_id": "639b4e89-b0a3-4b9c-8913-65b4df6a46d3",
+      "order": 3,
+      "read_only": false,
+      "uid": "81ef411a6edf474fa0d6bf71dc599fec",
+      "updated_at": "2026-08-27T17:44:35.049-04:00"
+    }
+  ]
+}

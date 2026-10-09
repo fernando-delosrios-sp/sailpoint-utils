@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:21.131-04:00",
+    "data_type": "text field",
+    "date_format": null,
+    "description": "approver user's login value",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "a7863160-a8b4-4c15-8947-7f8d1f8ba447",
+    "label": "approver_login",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": "",
+    "type": "TextFieldAttribute",
+    "uid": "approver_login",
+    "updated_at": "2026-08-27T17:18:21.131-04:00"
+  },
+  "options": []
+}

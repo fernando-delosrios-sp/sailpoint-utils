@@ -1,0 +1,183 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:47.701-04:00",
+    "description": "Shared across populations",
+    "elem_order_deprecated": null,
+    "id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+    "legacy_id": null,
+    "name": "Update Assignment Details",
+    "uid": "b3_update_assignment_details_page",
+    "updated_at": "2026-08-27T17:44:47.701-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2024-10-14T15:52:51.737-04:00",
+      "element_id": "b762e518-af03-4150-af49-dc160f50b9f2",
+      "element_type": "PageContent",
+      "id": "ec2ee936-72ac-4fd9-a14b-aedcca87a686",
+      "order": 1,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_2bc9a56159d14837bf30f99f65f73dbe",
+      "updated_at": "2024-10-14T15:52:51.735-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:54.106-04:00",
+      "element_id": "a035ef85-6a10-4f2c-8ade-e0a39289c366",
+      "element_type": "PageContent",
+      "id": "095f9734-c1a0-402a-8cbb-3f7e54596aad",
+      "order": 2,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": false,
+      "uid": "c02f88881b8a48a883341af2306781ce",
+      "updated_at": "2024-10-14T15:52:53.959-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:54.940-04:00",
+      "element_id": "dec86413-a82b-4bce-96fc-53af5b15bd72",
+      "element_type": "Form",
+      "id": "fcd78473-2e28-4da7-814b-1d6944eef1f9",
+      "order": 3,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": true,
+      "uid": "6e2695110ba04941b2b8c6e0f483ae8f",
+      "updated_at": "2024-10-14T15:52:54.775-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:55.105-04:00",
+      "element_id": "ec8111e4-d952-451f-a905-942dc87f589c",
+      "element_type": "Form",
+      "id": "f35d6812-5239-4298-a9ac-36c27a8a7164",
+      "order": 4,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_e25fc9fd9e574fd5879d0e185416dfa0",
+      "updated_at": "2024-10-14T15:52:55.101-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:55.118-04:00",
+      "element_id": "8d262499-ceb2-4d36-955f-672ce0b16d2f",
+      "element_type": "PageContent",
+      "id": "e1f9a876-e4bd-45dd-b4f3-49f4e1a0a952",
+      "order": 5,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": false,
+      "uid": "0420046477e846358fe1182ba069463e",
+      "updated_at": "2024-10-14T15:52:55.115-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:55.369-04:00",
+      "element_id": "a6fa227f-58db-4d92-986c-250e726d5efa",
+      "element_type": "Form",
+      "id": "fc04445f-8005-488c-a918-24d11a44c822",
+      "order": 6,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": true,
+      "uid": "c7fd7d950746400196a12d0d47427056",
+      "updated_at": "2024-10-14T15:52:55.367-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:55.382-04:00",
+      "element_id": "7f787c68-af26-4932-a7d9-42d660292e56",
+      "element_type": "Form",
+      "id": "f9ad255d-9d70-437e-93cc-a8274666409f",
+      "order": 7,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": false,
+      "uid": "c80f1073096342f08238e4710f95fc94",
+      "updated_at": "2024-10-14T15:52:55.381-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:55.387-04:00",
+      "element_id": "a6d9de4d-06f3-479f-8690-fc606d2da168",
+      "element_type": "PageContent",
+      "id": "be04ca3c-7a57-487f-b51a-a3ea6d735d27",
+      "order": 8,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": false,
+      "uid": "e5cb3529b17343aea2155736f8d026ab",
+      "updated_at": "2024-10-14T15:52:55.385-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:55.477-04:00",
+      "element_id": "8c16a371-2ca3-453d-82e6-f33176fb36b2",
+      "element_type": "Form",
+      "id": "932651d2-d2e8-4414-8272-64dd6e5e19ee",
+      "order": 9,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_cd67605f42e248d0ad94834b9bf4efc7",
+      "updated_at": "2024-10-14T15:52:55.475-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:55.483-04:00",
+      "element_id": "95839d52-a751-4307-9505-561cd8e9990e",
+      "element_type": "Form",
+      "id": "4c1c8fbb-80d0-48e8-a1cd-6efa08eef173",
+      "order": 10,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_197d48345f044f159e666551f042716b",
+      "updated_at": "2024-10-14T15:52:55.481-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:52:55.487-04:00",
+      "element_id": "42db47e9-991d-4006-8540-0e3871eefdd3",
+      "element_type": "Form",
+      "id": "b290c1db-220f-4d51-b985-c8dc3bc3f572",
+      "order": 11,
+      "page_id": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_6c428140f6d546b8b0320b35da5ffe0b",
+      "updated_at": "2024-10-14T15:52:55.486-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Provide the details for the new assignment for {{ attribute.assignment_person.first.name }}\n\nSub-organization collaborators cannot change the assignment sub-organization. Any change they submit is discarded before the profile is updated.",
+      "created_at": "2024-10-14T15:52:51.743-04:00",
+      "id": "b762e518-af03-4150-af49-dc160f50b9f2",
+      "type": "Paragraph",
+      "uid": "b3_808f8ec00df646f8a64c84176235609f",
+      "updated_at": "2024-10-14T15:52:51.741-04:00"
+    },
+    {
+      "content": "Non-Employee Type",
+      "created_at": "2024-10-14T15:52:54.299-04:00",
+      "id": "a035ef85-6a10-4f2c-8ade-e0a39289c366",
+      "type": "SmallHeading",
+      "uid": "3eafc4a60abb40a399a965ce3de634bb",
+      "updated_at": "2024-10-14T15:52:54.235-04:00"
+    },
+    {
+      "content": "Organization Details",
+      "created_at": "2024-10-14T15:52:55.271-04:00",
+      "id": "8d262499-ceb2-4d36-955f-672ce0b16d2f",
+      "type": "SmallHeading",
+      "uid": "2080b2a59564455798a76f91841eb362",
+      "updated_at": "2024-10-14T15:52:55.213-04:00"
+    },
+    {
+      "content": "Assignment Details",
+      "created_at": "2024-10-14T15:52:55.393-04:00",
+      "id": "a6d9de4d-06f3-479f-8690-fc606d2da168",
+      "type": "SmallHeading",
+      "uid": "8dadc2cbcbf54f70a0bac487bfc17cd0",
+      "updated_at": "2024-10-14T15:52:55.391-04:00"
+    }
+  ]
+}

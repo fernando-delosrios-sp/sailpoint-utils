@@ -1,0 +1,349 @@
+{
+  "profile": "emea-tes-team",
+  "url": "https://company24509-poc.mynonemployee.com/api",
+  "layout": "api-dump-aggregated",
+  "note": "Design model: attributes/forms/pages/workflows.json (api-dump composites). Import into NERM UI: use NERM_emea-tes-team_import.json only (SEDemo-compatible class_name array).",
+  "files": {
+    "attributes.json": {
+      "count": 215,
+      "shape": "attribute + options"
+    },
+    "forms.json": {
+      "count": 74,
+      "shape": "form + form_attributes"
+    },
+    "pages.json": {
+      "count": 82,
+      "shape": "page + elements + page_contents"
+    },
+    "workflows.json": {
+      "count": 40,
+      "shape": "workflow_id + label_guess + description + actions (description documents purpose; name is null in the public API dump)"
+    }
+  },
+  "consolidation": {
+    "surviving_pages": [
+      "Add Assignment Details - without Sub-Organization",
+      "Approve Assignment - Department Approval",
+      "Approve Assignment - Sponsor Approval",
+      "Assignment Details",
+      "Assignment Review Approval",
+      "Guest Sponsor Details",
+      "Verify Assignment"
+    ],
+    "workflow_label_guesses": {
+      "9cd0e00d-33ad-4d0c-838f-965fb66fe258": "Update Assignment",
+      "2b583fb6-c8d2-46d4-b881-8ed37c5dc252": "Update Assignment - Inactive",
+      "8e88da4f-f26e-4cb9-a72c-111b3edf8c29": "Create Assignment"
+    },
+    "suborganization_policy": {
+      "position": "before Update Profile",
+      "when": {
+        "attribute": "collaborator_type",
+        "equals": "suborganization"
+      },
+      "then": {
+        "set": "assignment_suborganization",
+        "from": "profile.current.assignment_suborganization",
+        "note": "Discard a sub-organization change submitted by a sub-organization collaborator."
+      }
+    },
+    "excluded_archived_workflows": [
+      {
+        "workflow_id": "07761400-8337-4009-a482-fe97d9243af6",
+        "label_was": "Update Non-Human Type"
+      },
+      {
+        "workflow_id": "269b2285-989b-49d9-964f-2953ebc05a12",
+        "label_was": "Unnamed workflow 5"
+      },
+      {
+        "workflow_id": "28d0da16-4377-4684-a498-c23df275b92f",
+        "label_was": "Unnamed workflow 6"
+      },
+      {
+        "workflow_id": "2c6b9448-1a28-48ea-9ff0-92276e6f9ccf",
+        "label_was": "Unnamed workflow 7"
+      },
+      {
+        "workflow_id": "40a56b95-229a-4e2f-b297-c0afc3355819",
+        "label_was": "Update Non-Human"
+      },
+      {
+        "workflow_id": "4f7e67f4-fc89-49a5-a00d-646bb57ac9ad",
+        "label_was": "Unnamed workflow 12"
+      },
+      {
+        "workflow_id": "63c43fa8-5ce0-4139-b15f-71c9f4b82967",
+        "label_was": "New Non-Human"
+      },
+      {
+        "workflow_id": "6ea3fa10-4643-4ae5-b8a4-47e688c244dd",
+        "label_was": "Unnamed workflow 17"
+      },
+      {
+        "workflow_id": "78cab153-0b35-4139-a600-6bb8aabe1618",
+        "label_was": "Unnamed workflow 21"
+      },
+      {
+        "workflow_id": "830ac88b-bea0-4543-8464-93d1f75afae2",
+        "label_was": "Unnamed workflow 25"
+      },
+      {
+        "workflow_id": "9d9493b2-f2f9-41f0-819e-421119505570",
+        "label_was": "Unnamed workflow 28"
+      },
+      {
+        "workflow_id": "b263d8cd-68cf-4fd3-bdbd-4e9bdbb77b1e",
+        "label_was": "Create New Guest Assignment"
+      },
+      {
+        "workflow_id": "beb5738e-e135-4243-80a9-f2f5df3102a1",
+        "label_was": "New Non-Human Type"
+      },
+      {
+        "workflow_id": "d45fa87d-76ab-4859-8ead-b16e9d132093",
+        "label_was": "Terminate Non-Human Owner Approval"
+      },
+      {
+        "workflow_id": "d85215e4-bfff-4b24-9c3e-ff8716cece4e",
+        "label_was": "Unnamed workflow 35"
+      },
+      {
+        "workflow_id": "de0e47fe-0e18-4189-bf24-46ae6859a4f9",
+        "label_was": "Unnamed workflow 39"
+      },
+      {
+        "workflow_id": "e9f5f58a-c60e-418c-acb9-e654606d6b20",
+        "label_was": "Terminate Non-Human Type"
+      },
+      {
+        "workflow_id": "ee8474c5-ea0f-4c88-b844-8bec666448b4",
+        "label_was": "Verify Non-Human"
+      },
+      {
+        "workflow_id": "f160d496-8d3b-470f-9e5b-b123a7e09eec",
+        "label_was": "UC2 - Request Page"
+      }
+    ],
+    "excluded_unnamed_workflows": [
+      {
+        "file": "Unnamed workflow 16.json",
+        "workflow_id": "7e84b733-7625-4f65-bee4-1245a79ed9e4"
+      },
+      {
+        "file": "Unnamed workflow 3.json",
+        "workflow_id": "16b4b1d9-13f8-48b6-b3fa-21d39334f75f"
+      },
+      {
+        "file": "Unnamed workflow 20.json",
+        "workflow_id": "9aa3f0c9-bded-45ad-a023-f827b4a0dcc2"
+      },
+      {
+        "file": "Unnamed workflow 21.json",
+        "workflow_id": "a0e40b85-2852-4c5d-b094-502c9f804fbd"
+      },
+      {
+        "file": "Unnamed workflow 2.json",
+        "workflow_id": "1340a5f3-371e-4652-84e9-bb64a4f79a48"
+      },
+      {
+        "file": "Unnamed workflow 17.json",
+        "workflow_id": "7ee48661-4d20-46f4-b3f7-5c3ef1bc2370"
+      },
+      {
+        "file": "Unnamed workflow 30.json",
+        "workflow_id": "e13528d5-a0af-4485-a7ef-657a223b9b74"
+      },
+      {
+        "file": "Unnamed workflow 5.json",
+        "workflow_id": "3d476b73-2475-4322-9910-5e0024bac1b1"
+      },
+      {
+        "file": "Unnamed workflow 26.json",
+        "workflow_id": "be2d950c-fab3-4674-8f1d-b039e6f290eb"
+      },
+      {
+        "file": "Unnamed workflow 10.json",
+        "workflow_id": "57df5d2c-380d-40ff-941a-cfd86bda69af"
+      },
+      {
+        "file": "Unnamed workflow 9.json",
+        "workflow_id": "52b4ea28-5497-474a-b1cb-88949f185215"
+      },
+      {
+        "file": "Unnamed workflow 8.json",
+        "workflow_id": "4a7d5e83-b043-401b-8460-ee1cbdd617e6"
+      },
+      {
+        "file": "Unnamed workflow 11.json",
+        "workflow_id": "58cf5cce-058c-4e2d-97d2-abe1b5941b43"
+      },
+      {
+        "file": "Unnamed workflow 27.json",
+        "workflow_id": "db4a3370-7f3a-4996-8fca-546ed4f62d14"
+      },
+      {
+        "file": "Unnamed workflow 4.json",
+        "workflow_id": "1ed08548-53b4-4baf-9a71-07cfaa67f95f"
+      },
+      {
+        "file": "Unnamed workflow 31.json",
+        "workflow_id": "e3b9f416-0494-4408-8fbf-ec94ac0786ef"
+      },
+      {
+        "file": "Unnamed workflow 24.json",
+        "workflow_id": "b78213dd-1bc1-4c2b-adbb-54ceb6fe2640"
+      },
+      {
+        "file": "Unnamed workflow 7.json",
+        "workflow_id": "49954399-ab80-43d5-92cc-cfd65e6b52fd"
+      },
+      {
+        "file": "Unnamed workflow 32.json",
+        "workflow_id": "e78f4285-167e-433f-8e57-ef1bd078478c"
+      },
+      {
+        "file": "Unnamed workflow 28.json",
+        "workflow_id": "dba7302f-54f7-4c39-a475-c367dfb29f19"
+      },
+      {
+        "file": "Unnamed workflow 12.json",
+        "workflow_id": "5eea664b-6d1f-4cc0-bd8e-0f22a49ae415"
+      },
+      {
+        "file": "Unnamed workflow 13.json",
+        "workflow_id": "75e5e0a2-6b26-414f-9efc-af0efb3400e4"
+      },
+      {
+        "file": "Unnamed workflow 29.json",
+        "workflow_id": "dccca383-ee68-4bfb-a8bd-4b319b6fcc1f"
+      },
+      {
+        "file": "Unnamed workflow 33.json",
+        "workflow_id": "edbbc42f-6cc2-4fb6-98e8-1512756b50fd"
+      },
+      {
+        "file": "Unnamed workflow 6.json",
+        "workflow_id": "4567dda2-286a-4b74-a873-4df26f8769c1"
+      },
+      {
+        "file": "Unnamed workflow 25.json",
+        "workflow_id": "bb2903a0-f0c4-40b6-bf55-b432e3f0dd96"
+      },
+      {
+        "file": "Unnamed workflow 14.json",
+        "workflow_id": "7625c23e-be1c-4290-bdb8-b48d0b6bcf2f"
+      },
+      {
+        "file": "Unnamed workflow 22.json",
+        "workflow_id": "b379bec1-86f6-4f18-926d-0a1efa2fa6b1"
+      },
+      {
+        "file": "Unnamed workflow 1.json",
+        "workflow_id": "0fba2d0d-95e5-4a8f-b154-fb157cfa65f0"
+      },
+      {
+        "file": "Unnamed workflow 34.json",
+        "workflow_id": "ef05ccc3-1fc5-48d6-b09e-c503d8d42271"
+      },
+      {
+        "file": "Unnamed workflow 18.json",
+        "workflow_id": "8279930d-eb98-4de1-bda3-299759ee53aa"
+      },
+      {
+        "file": "Unnamed workflow 19.json",
+        "workflow_id": "97424fd7-8118-446e-9986-98a45fdf04b4"
+      },
+      {
+        "file": "Unnamed workflow 35.json",
+        "workflow_id": "fe6b7d68-d95e-4685-9f3b-88b366b78790"
+      },
+      {
+        "file": "Unnamed workflow 23.json",
+        "workflow_id": "b4e4b6ad-20d4-41f3-bf67-acb7fd34defd"
+      },
+      {
+        "file": "Unnamed workflow 15.json",
+        "workflow_id": "778325c7-ba9c-412c-84b0-94b58625b907"
+      }
+    ],
+    "population_page_policy": "No population-specific pages. Approvals and branching are condition/config driven. Shared pages: Add Assignment Details (\u00b1 without Sub-Organization), End Assignment Sponsor Approval, End Date Update Sponsor Approval, Verify Assignment, plus prior Update Assignment Details and Approve Assignment pages.",
+    "dropped_population_page_families": {
+      "Add PopulationN Assignment Details": 10,
+      "Add PopulationN Assignment Details - without Sub-Organization": 10,
+      "End Assignment Sponsor Approval - PopulationN": 10,
+      "End Date Update Sponsor Approval - PopulationN": 10,
+      "Verify PopulationN Assignment": 10
+    },
+    "collapsed_action_families": {
+      "Approve Update Population / Update attribute options": {
+        "kept": "Update attribute options",
+        "omitted": 9
+      }
+    },
+    "simplification_batch": {
+      "shared_pages": {
+        "Assignment Details": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+        "Assignment Review Approval": "8cceea09-9b29-4502-9dd4-62b097bf2c46",
+        "Add Assignment Details - without Sub-Organization": "kept (Sub-Organization RO)"
+      },
+      "dropped_pages": [
+        "Add Assignment Details",
+        "End Date Update Sponsor Approval"
+      ],
+      "restored_pages": [
+        "Guest Sponsor Details"
+      ],
+      "create_assignment_population_management_collapsed": true,
+      "stub_collapse_workflows": [
+        "Create Assignment",
+        "Existing Assignment Warning",
+        "New Non-Employee & Assignment",
+        "Update Assignment",
+        "Update Assignment - Inactive"
+      ],
+      "warning_pages": "Kept separate \u2014 message copy differs per scenario",
+      "notes": [
+        "Restored Guest Sponsor Details (3c2a1b07) from fernando, elements=3",
+        "Dropped pages: ['Add Assignment Details', 'End Date Update Sponsor Approval']"
+      ]
+    }
+  },
+  "import": {
+    "status": "blocked_for_actions",
+    "finding": "Configuration Import and the public NERM API can only CREATE RequestAction/ApprovalAction. They do not update existing actions even when id/uid match. Imports on 2026-10-08 created 61 orphan actions on Update Assignment; the Aug 2026 Population-named actions still drive the graph.",
+    "evidence": {
+      "workflow_id": "9cd0e00d-33ad-4d0c-838f-965fb66fe258",
+      "original_actions_created": "2026-08-27",
+      "orphan_actions_created": "2026-10-08",
+      "api": "GET /workflow_actions; POST /workflow_actions/request_actions|approval_actions only \u2014 no PATCH/PUT/DELETE"
+    },
+    "quarantined": [
+      "NERM_emea-tes-team_import_delta_update_assignment.DO_NOT_IMPORT.json",
+      "NERM_emea-tes-team_import_delta.DO_NOT_IMPORT.json"
+    ],
+    "shared_pages_repaired": {
+      "Assignment Details": "583638b9-3fc4-45f9-92ab-bb7b3ec4ed39",
+      "Assignment Details - without Sub-Organization": "df802b02-340f-49b3-8380-2fc626684ddb",
+      "Approve Assignment - Department Approval": "01a88294-91ce-4a19-8b08-19c72ae87b9a",
+      "Approve Assignment - Sponsor Approval": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "note": "Missing page_elements were created from live population page templates via page-elements create so UI remaps are not blank."
+    },
+    "next": "NERM/emea-tes-team/UPDATE_ASSIGNMENT_REMAP.md \u2014 manually remap the 25 Population-named actions in Admin UI; delete orphan 2026-10-08 actions afterward.",
+    "alternate_workflows": {
+      "doc": "ALTERNATE_WORKFLOWS.md",
+      "reason": "Existing request/approval actions are create-only; built Disabled simplified replacements instead of mutating originals.",
+      "workflows": {
+        "Update Assignment (Simplified)": "2d1778fe-2813-46b1-8f36-826002ee7298",
+        "Update Assignment - Inactive (Simplified)": "ebc93f72-3a84-480c-9da1-ce7436e01df2",
+        "New Assignment (Simplified)": "ce262268-f56f-4251-adea-50dc3859eb9c",
+        "Add Assignment Details (Simplified) [corrupt abandon]": "b335ce2d-1f68-45fd-80ad-f7130fde791f"
+      },
+      "status": "Disabled \u2014 see ALTERNATE_WORKFLOWS.md",
+      "fix_import_update": "NERM_emea-tes-team_import_fix_update_assignment_simplified.json",
+      "fix_import_new_assignment": "NERM_emea-tes-team_import_fix_new_assignment_simplified.json"
+    },
+    "manual_remap_originals": "UPDATE_ASSIGNMENT_REMAP.md"
+  }
+}

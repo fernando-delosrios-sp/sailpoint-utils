@@ -1,0 +1,32 @@
+{
+  "attr_order": [
+    "model_attr=type",
+    "model_attr=date",
+    "model_attr=user",
+    "model_attr=status"
+  ],
+  "created_at": "2026-08-27T17:45:36.467-04:00",
+  "headers": [
+    {
+      "attr": "workflow_name",
+      "label": "request"
+    },
+    {
+      "attr": "created_at",
+      "label": "date requested"
+    },
+    {
+      "attr": "requester_name",
+      "label": "request by"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    }
+  ],
+  "id": "3689624f-556b-4009-abbc-0b0449a79ace",
+  "name": "Actions",
+  "profile_type_id": null,
+  "uid": "actions_table",
+  "updated_at": "2026-08-27T17:45:36.467-04:00"
+}

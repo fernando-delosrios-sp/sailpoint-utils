@@ -1,0 +1,67 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": true,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:32.279-04:00",
+    "data_type": "check boxes",
+    "date_format": null,
+    "description": "",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+    "label": "Configuration - Non-Human - Approvals",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": "",
+    "type": "CheckBoxesAttribute",
+    "uid": "sysconfig_enabled_approvals_nonhuman",
+    "updated_at": "2026-08-27T17:18:32.279-04:00"
+  },
+  "options": [
+    {
+      "core": false,
+      "id": "a07f3171-ef2d-489e-aa27-be097822570f",
+      "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+      "option": "New Non-Human - Non-Human Type Approval",
+      "uid": "06a443add2e04799b64bc9278f2d3eae"
+    },
+    {
+      "core": false,
+      "id": "c0a5015c-e58e-4ae1-b322-4565b6323853",
+      "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+      "option": "New Non-Human - Owner Approval",
+      "uid": "9fa657469a0944b5b560151792eb2b4f"
+    },
+    {
+      "core": false,
+      "id": "0af9a0f7-d483-4ec5-9873-f96bfab47952",
+      "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+      "option": "Terminate Non-Human - Owner Approval",
+      "uid": "675456d1a351491d8abfd45e1c7b428e"
+    },
+    {
+      "core": false,
+      "id": "75ce83d2-4466-4d23-a39a-2069b662f97d",
+      "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+      "option": "Update Non-Human - Owner Approval",
+      "uid": "afdea32cb2fb4f158412a1fd145375d9"
+    },
+    {
+      "core": false,
+      "id": "ca73b953-f62e-4d6a-b841-af8502dccc1a",
+      "ne_attribute_id": "3f0e5cd4-cbab-4fb9-8327-609539bff6f9",
+      "option": "Update Non-Human Approval - Non-Human Type Approval",
+      "uid": "dc08d341e1dd4915a69fdcb27de3c8fb"
+    }
+  ]
+}

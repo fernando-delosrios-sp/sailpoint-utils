@@ -1,0 +1,29 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.654-04:00",
+    "description": "",
+    "id": "4e83d596-f583-498c-a7f2-58562e409c1f",
+    "legacy_id": null,
+    "name": "Non-Human Valid",
+    "uid": "b3_nonhuman_valid_form",
+    "updated_at": "2026-08-27T17:44:34.654-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.656-04:00",
+      "form_id": "4e83d596-f583-498c-a7f2-58562e409c1f",
+      "id": "49bcba95-17d0-426b-88e1-9512c2793302",
+      "legacy_id": null,
+      "ne_attribute_id": "f8c714aa-2d8e-4bca-8af2-58e2e02e96ee",
+      "order": 0,
+      "read_only": false,
+      "uid": "6b1fa49ca089493d9fb8e1a9e83d52e6",
+      "updated_at": "2026-08-27T17:44:34.656-04:00"
+    }
+  ]
+}

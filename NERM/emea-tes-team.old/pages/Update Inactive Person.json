@@ -1,0 +1,63 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:47.263-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "c65df54c-2528-45f4-a0be-370d165ba5ba",
+    "legacy_id": null,
+    "name": "Update Inactive Person",
+    "uid": "b3_update_inactive_person_workflow_page",
+    "updated_at": "2026-08-27T17:44:47.263-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:47.266-04:00",
+      "element_id": "9352e85f-5769-4028-a34d-4fb4514ffb96",
+      "element_type": "PageContent",
+      "id": "eb189ca1-bbc5-4fec-9c18-362692dde341",
+      "order": 1,
+      "page_id": "c65df54c-2528-45f4-a0be-370d165ba5ba",
+      "permissions": false,
+      "read_only": false,
+      "uid": "1958616e27904edbbd1df187149fa09f",
+      "updated_at": "2026-08-27T17:44:47.266-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.306-04:00",
+      "element_id": "994fd7c8-d1be-4824-8e28-8bd831caac08",
+      "element_type": "Form",
+      "id": "974acebf-18fe-4dcc-ac4b-5ab84e34a787",
+      "order": 3,
+      "page_id": "c65df54c-2528-45f4-a0be-370d165ba5ba",
+      "permissions": false,
+      "read_only": false,
+      "uid": "42ba2ae74b754e009c8aea13600d2e1f",
+      "updated_at": "2026-08-27T17:44:47.306-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.310-04:00",
+      "element_id": "78cc6276-a4e7-4ba1-adc1-94dad05eb7d2",
+      "element_type": "Form",
+      "id": "6716b311-d48d-458d-92fe-789247a4f50c",
+      "order": 4,
+      "page_id": "c65df54c-2528-45f4-a0be-370d165ba5ba",
+      "permissions": false,
+      "read_only": false,
+      "uid": "047b00d271c44133955053010c4f1d3f",
+      "updated_at": "2026-08-27T17:44:47.310-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "This form is used to update eligibility and details of an inactive person in order to have a new assignment created.",
+      "created_at": "2026-08-27T17:44:47.269-04:00",
+      "id": "9352e85f-5769-4028-a34d-4fb4514ffb96",
+      "type": "Paragraph",
+      "uid": "dc40ca063f1f43d682ef0ba6d548b56c",
+      "updated_at": "2026-08-27T17:44:47.269-04:00"
+    }
+  ]
+}

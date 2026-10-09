@@ -1,0 +1,9 @@
+{
+  "groups": [
+    "Location Admins"
+  ],
+  "id": "4bf317d8-1393-4d52-a871-00f712dda2b0",
+  "name": "Location Admins",
+  "private_role": false,
+  "uid": "b3_location_admins_neprofile_role"
+}

@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:26.603-04:00",
+    "data_type": "profile search",
+    "date_format": null,
+    "description": "Location related to this non-human",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "88008d73-34f5-4624-aa58-c75dea93c3bc",
+    "label": "Non-Human Location",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": "other",
+    "profile_type_id": "5d99e6a9-30e1-4cd1-8461-e28414e0d2bf",
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": "Active",
+    "tool_tip": "",
+    "type": "ProfileSearchAttribute",
+    "uid": "nonhuman_location",
+    "updated_at": "2026-08-27T17:18:26.603-04:00"
+  },
+  "options": []
+}

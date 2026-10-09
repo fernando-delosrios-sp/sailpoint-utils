@@ -1,0 +1,30 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.662-04:00",
+    "description": null,
+    "elem_order_deprecated": null,
+    "id": "9cdc415e-c923-4462-bdbe-3b1d4a1e26ea",
+    "legacy_id": null,
+    "name": "Locations - Custom",
+    "uid": "b3_locations_profile_page",
+    "updated_at": "2026-10-06T07:24:58.813-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.666-04:00",
+      "element_id": "3302223f-0894-4968-9036-21ae51e15332",
+      "element_type": "Form",
+      "id": "018d665a-8771-47f7-87dc-4cb65e946ebc",
+      "order": 3,
+      "page_id": "9cdc415e-c923-4462-bdbe-3b1d4a1e26ea",
+      "permissions": true,
+      "read_only": false,
+      "uid": "b3_0449214d8cce48e79dbd11f6be00f991",
+      "updated_at": "2026-08-27T17:44:45.666-04:00"
+    }
+  ],
+  "page_contents": []
+}

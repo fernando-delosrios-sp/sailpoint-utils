@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:28.852-04:00",
+    "data_type": "contributor search",
+    "date_format": null,
+    "description": "",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "b4abb4b0-5799-4541-b096-71ec003bf959",
+    "label": "Assignment Sponsor",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": "This sponsor field is an internal employee who will be responsible for this profile. The sponsor will perform Approvals and Verifications for the assignment.",
+    "type": "ContributorSearchAttribute",
+    "uid": "sponsor",
+    "updated_at": "2026-08-27T17:18:28.852-04:00"
+  },
+  "options": []
+}

@@ -115,6 +115,12 @@
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "f84873899dea410b59809836c656d63347878777e0766902998a701868ad149b"
     },
+    "nerm-cli": {
+      "source": "fernando-delosrios-sp/nerm-cli",
+      "sourceType": "github",
+      "skillPath": "skills/nerm-cli/SKILL.md",
+      "computedHash": "5e26dacbea4b77ea9f1cb45516396f296d517418d2f2eb8e08684645cf66aff6"
+    },
     "openspec-init": {
       "source": "fernando-delosrios-sp/skills",
       "sourceType": "github",

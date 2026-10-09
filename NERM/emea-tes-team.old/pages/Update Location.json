@@ -1,0 +1,42 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:47.313-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "c7730047-dd05-46af-b032-2dee85fd9e76",
+    "legacy_id": null,
+    "name": "Update Location",
+    "uid": "b3_update_location_workflow_page",
+    "updated_at": "2026-08-27T17:44:47.313-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:47.316-04:00",
+      "element_id": "ad0876dd-5eec-4656-9019-81bc4ef7b4a9",
+      "element_type": "Form",
+      "id": "9269ed3a-5f60-4876-aa6d-3c75033ff602",
+      "order": 1,
+      "page_id": "c7730047-dd05-46af-b032-2dee85fd9e76",
+      "permissions": false,
+      "read_only": true,
+      "uid": "b3_aa78d32cfefd4c06b2d8fb9299486052",
+      "updated_at": "2026-08-27T17:44:47.316-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.319-04:00",
+      "element_id": "c95a5ff3-1fb5-4c4c-ad95-a1ddf185991f",
+      "element_type": "Form",
+      "id": "3454eaf1-81f6-4342-aff8-b589f5819f29",
+      "order": 2,
+      "page_id": "c7730047-dd05-46af-b032-2dee85fd9e76",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_46de893fc9114474b79b4ef5b0783c20",
+      "updated_at": "2026-08-27T17:44:47.319-04:00"
+    }
+  ],
+  "page_contents": []
+}

@@ -1,0 +1,103 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:39.850-04:00",
+    "description": "For Population3",
+    "elem_order_deprecated": null,
+    "id": "b5038d5d-e939-464f-b3f4-cc4b95bdb8db",
+    "legacy_id": null,
+    "name": "Add Population3 Assignment Details",
+    "uid": "b3_add_population3_assignment_details_workflow_page",
+    "updated_at": "2026-08-27T17:44:39.850-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:39.871-04:00",
+      "element_id": "d7d66d74-6e59-4eb2-b06f-00e4be2cb4d5",
+      "element_type": "PageContent",
+      "id": "4afa8b0f-a303-4781-8acf-bbbe3fc0a6e4",
+      "order": 2,
+      "page_id": "b5038d5d-e939-464f-b3f4-cc4b95bdb8db",
+      "permissions": false,
+      "read_only": false,
+      "uid": "6b60155e0e4b4309864a0ff3daff6c93",
+      "updated_at": "2026-08-27T17:44:39.871-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:39.912-04:00",
+      "element_id": "dec86413-a82b-4bce-96fc-53af5b15bd72",
+      "element_type": "Form",
+      "id": "ab0fbaa4-5760-499a-9025-2f9ca6befc54",
+      "order": 3,
+      "page_id": "b5038d5d-e939-464f-b3f4-cc4b95bdb8db",
+      "permissions": false,
+      "read_only": true,
+      "uid": "d8711869a35448b28a940d9144177607",
+      "updated_at": "2026-08-27T17:44:39.912-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:39.917-04:00",
+      "element_id": "7f8d85a7-88e1-41fe-9077-7a2469476206",
+      "element_type": "PageContent",
+      "id": "6d8a4995-f183-40f5-ba88-1e6b229d97ad",
+      "order": 5,
+      "page_id": "b5038d5d-e939-464f-b3f4-cc4b95bdb8db",
+      "permissions": false,
+      "read_only": false,
+      "uid": "0b5e90090e3042fdaa15744c80297d1e",
+      "updated_at": "2026-08-27T17:44:39.917-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:39.953-04:00",
+      "element_id": "a6fa227f-58db-4d92-986c-250e726d5efa",
+      "element_type": "Form",
+      "id": "f81ee263-b369-4464-aa09-a13bd587de81",
+      "order": 6,
+      "page_id": "b5038d5d-e939-464f-b3f4-cc4b95bdb8db",
+      "permissions": false,
+      "read_only": true,
+      "uid": "7211fb8b12fe46dc8fe29489e5c88458",
+      "updated_at": "2026-08-27T17:44:39.953-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:39.958-04:00",
+      "element_id": "31ea3f4c-ed4e-4aac-89aa-42b50e83dff8",
+      "element_type": "PageContent",
+      "id": "32e59e76-0e7a-4306-a3fb-ba01c7d3b1b4",
+      "order": 8,
+      "page_id": "b5038d5d-e939-464f-b3f4-cc4b95bdb8db",
+      "permissions": false,
+      "read_only": false,
+      "uid": "6d36fa8c8fd14a92963799b99e426ba3",
+      "updated_at": "2026-08-27T17:44:39.958-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Non-Employee Type",
+      "created_at": "2026-08-27T17:44:39.877-04:00",
+      "id": "d7d66d74-6e59-4eb2-b06f-00e4be2cb4d5",
+      "type": "SmallHeading",
+      "uid": "08477c98d8c04e09a936c474f9c6a330",
+      "updated_at": "2026-08-27T17:44:39.877-04:00"
+    },
+    {
+      "content": "Organization Details",
+      "created_at": "2026-08-27T17:44:39.920-04:00",
+      "id": "7f8d85a7-88e1-41fe-9077-7a2469476206",
+      "type": "SmallHeading",
+      "uid": "e3c581633e864682822ac928f75b8dc4",
+      "updated_at": "2026-08-27T17:44:39.920-04:00"
+    },
+    {
+      "content": "Assignment Details",
+      "created_at": "2026-08-27T17:44:39.961-04:00",
+      "id": "31ea3f4c-ed4e-4aac-89aa-42b50e83dff8",
+      "type": "SmallHeading",
+      "uid": "d0dc0d9860184b64860b508d8a17a417",
+      "updated_at": "2026-08-27T17:44:39.961-04:00"
+    }
+  ]
+}

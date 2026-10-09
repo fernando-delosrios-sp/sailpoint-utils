@@ -1,0 +1,75 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:49.636-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "70c93fe5-e3ae-47ef-ad27-1368d92eb39e",
+    "legacy_id": null,
+    "name": "Update System Configuration - Other",
+    "uid": "b3_update_system_configuration_other_workflow_page",
+    "updated_at": "2026-08-27T17:44:49.636-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:49.639-04:00",
+      "element_id": "5e687782-4c1c-46ef-b7f9-0ae8608afa39",
+      "element_type": "PageContent",
+      "id": "f706d1a5-db8a-4be7-9441-36251ae9dbb6",
+      "order": 1,
+      "page_id": "70c93fe5-e3ae-47ef-ad27-1368d92eb39e",
+      "permissions": false,
+      "read_only": false,
+      "uid": "c0056c04cd8b4ffcb4503c7d26250bf6",
+      "updated_at": "2026-08-27T17:44:49.639-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.676-04:00",
+      "element_id": "ad795695-dc07-4aa0-81f7-73a26c37e744",
+      "element_type": "Form",
+      "id": "57644e83-2e38-4686-9e8b-a55a298ce598",
+      "order": 2,
+      "page_id": "70c93fe5-e3ae-47ef-ad27-1368d92eb39e",
+      "permissions": false,
+      "read_only": true,
+      "uid": "5ddf0dff975641609946fb9c4b9fd5e6",
+      "updated_at": "2026-08-27T17:44:49.676-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.679-04:00",
+      "element_id": "7f6d3a44-4313-4f0a-90db-9ecd78d24a45",
+      "element_type": "Form",
+      "id": "c9dabf29-f215-4c36-b966-0fc4dafe0160",
+      "order": 3,
+      "page_id": "70c93fe5-e3ae-47ef-ad27-1368d92eb39e",
+      "permissions": false,
+      "read_only": false,
+      "uid": "43848903c8d249cca889c226776cc220",
+      "updated_at": "2026-08-27T17:44:49.679-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:49.681-04:00",
+      "element_id": "0bebfdac-5b8b-4f01-b446-ae7770fb74a8",
+      "element_type": "Form",
+      "id": "758b711e-dc98-4989-a731-db57cbf485a7",
+      "order": 4,
+      "page_id": "70c93fe5-e3ae-47ef-ad27-1368d92eb39e",
+      "permissions": false,
+      "read_only": false,
+      "uid": "5ccc438ec4e947f5b6cde1f94c5684b2",
+      "updated_at": "2026-08-27T17:44:49.681-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Caution: Changes will take effect immediately and may impact integrations.",
+      "created_at": "2026-08-27T17:44:49.642-04:00",
+      "id": "5e687782-4c1c-46ef-b7f9-0ae8608afa39",
+      "type": "FormHeading",
+      "uid": "b84130e768db44d8b821257bdbea5b4a",
+      "updated_at": "2026-08-27T17:44:49.642-04:00"
+    }
+  ]
+}

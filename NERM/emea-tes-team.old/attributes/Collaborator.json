@@ -1,0 +1,46 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": true,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:22.768-04:00",
+    "data_type": "radio buttons",
+    "date_format": null,
+    "description": "defines if a user is a collaborator user or not",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "a992112c-5a52-4f99-b3d0-fbda04d542db",
+    "label": "Collaborator",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": "Is the person a collaborator for an organization or sub-organization",
+    "type": "RadioButtonsAttribute",
+    "uid": "collaborator",
+    "updated_at": "2026-08-27T17:18:22.768-04:00"
+  },
+  "options": [
+    {
+      "core": false,
+      "id": "746c3955-d008-4504-b740-c00b0e4c4c48",
+      "ne_attribute_id": "a992112c-5a52-4f99-b3d0-fbda04d542db",
+      "option": "No",
+      "uid": "d0913999b29245ef91258baa66bdcdc4"
+    },
+    {
+      "core": false,
+      "id": "ab5e45b0-5cf7-4f19-a27f-ca5ed514d77f",
+      "ne_attribute_id": "a992112c-5a52-4f99-b3d0-fbda04d542db",
+      "option": "Yes",
+      "uid": "dbd049489a104cb1bff561a658c2251a"
+    }
+  ]
+}

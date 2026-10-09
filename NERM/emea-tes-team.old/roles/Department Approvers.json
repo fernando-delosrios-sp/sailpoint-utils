@@ -1,0 +1,9 @@
+{
+  "groups": [
+    "Department Approvers"
+  ],
+  "id": "322b4dbb-9956-48cc-b6b1-86bcc43d4fd4",
+  "name": "Department Approvers",
+  "private_role": false,
+  "uid": "b3_department_approvers_neprofile_role"
+}

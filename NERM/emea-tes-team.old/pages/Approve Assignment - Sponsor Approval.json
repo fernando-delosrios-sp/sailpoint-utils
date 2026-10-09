@@ -1,0 +1,203 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:41.256-04:00",
+    "description": "Shared across populations",
+    "elem_order_deprecated": null,
+    "id": "2f2adb96-7150-4522-abff-eef4966994d9",
+    "legacy_id": null,
+    "name": "Approve Assignment - Sponsor Approval",
+    "uid": "b3_approve_assignment_sponsor_approval_page",
+    "updated_at": "2026-08-27T17:44:41.256-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2024-10-14T15:50:56.489-04:00",
+      "element_id": "e3ee119e-bf5d-4ae4-afc5-90e4c26f4fbc",
+      "element_type": "PageContent",
+      "id": "e9f8afc5-10e1-4219-ae97-81e69ed1a267",
+      "order": 2,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "42a5ff1f737d433eb03e00005c15f219",
+      "updated_at": "2024-10-14T15:50:56.488-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:56.537-04:00",
+      "element_id": "fe851a8a-1a81-4113-bcbc-e9e91901f811",
+      "element_type": "PageContent",
+      "id": "b7c393fc-f00f-487b-9652-666b7a8e5f1a",
+      "order": 3,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_0dac40bb1f194948b8a363957da65d0a",
+      "updated_at": "2024-10-14T15:50:56.536-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:56.808-04:00",
+      "element_id": "365917cd-9f63-4a3e-8745-b28b97cdde20",
+      "element_type": "PageContent",
+      "id": "e1b6a8e9-58f2-49b8-8407-a8839afca110",
+      "order": 4,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "748aa77398884859a3f83718f0683188",
+      "updated_at": "2024-10-14T15:50:56.806-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:56.915-04:00",
+      "element_id": "dec86413-a82b-4bce-96fc-53af5b15bd72",
+      "element_type": "Form",
+      "id": "58d0827d-c079-4a00-b9cf-4867e9ce5a77",
+      "order": 5,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": true,
+      "uid": "92b0fd61806f4a7eb935c1a3c84b2aa4",
+      "updated_at": "2024-10-14T15:50:56.913-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:56.918-04:00",
+      "element_id": "ec8111e4-d952-451f-a905-942dc87f589c",
+      "element_type": "Form",
+      "id": "796aa991-204b-49d7-8623-3fea34deab70",
+      "order": 6,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": true,
+      "uid": "7b7ac057d5b345deb0ee6da27d8b838b",
+      "updated_at": "2024-10-14T15:50:56.917-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:56.922-04:00",
+      "element_id": "89e96fd1-55e3-41ed-86a4-e22a2a5f0439",
+      "element_type": "PageContent",
+      "id": "f886ed2e-cb15-484f-ac77-a5453ebe9c8d",
+      "order": 7,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b5d22d7fc04843808d7214e42087e04f",
+      "updated_at": "2024-10-14T15:50:56.921-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:57.020-04:00",
+      "element_id": "a6fa227f-58db-4d92-986c-250e726d5efa",
+      "element_type": "Form",
+      "id": "f2a9df44-fcbc-4af6-b40a-2ad8ce1980f8",
+      "order": 8,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": true,
+      "uid": "b3_61d7fc3568914da39ac86c35492ea63f",
+      "updated_at": "2024-10-14T15:50:57.019-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:57.035-04:00",
+      "element_id": "7f787c68-af26-4932-a7d9-42d660292e56",
+      "element_type": "Form",
+      "id": "cc0c25cb-1356-40e1-a237-16b0115ac0db",
+      "order": 9,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": true,
+      "uid": "1b9596dc0f2540da8f6252986a150692",
+      "updated_at": "2024-10-14T15:50:57.028-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:57.041-04:00",
+      "element_id": "dd014453-3946-4690-812c-b0da15468ee3",
+      "element_type": "PageContent",
+      "id": "0a246c4d-f618-4a6b-9a7c-79997daa6981",
+      "order": 10,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "fbddc98745574b5f890c9e5588beaf6a",
+      "updated_at": "2024-10-14T15:50:57.039-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:57.150-04:00",
+      "element_id": "8c16a371-2ca3-453d-82e6-f33176fb36b2",
+      "element_type": "Form",
+      "id": "d28377e0-e205-4e3f-8459-8a417f135b21",
+      "order": 11,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "6cc4860b919d447bb9dca890c4a62a9b",
+      "updated_at": "2024-10-14T15:50:57.149-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:57.155-04:00",
+      "element_id": "95839d52-a751-4307-9505-561cd8e9990e",
+      "element_type": "Form",
+      "id": "61656a12-bb00-4e05-aff5-e856aabbb63e",
+      "order": 12,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "8bc0db2824634438ba7f4527c9d3869e",
+      "updated_at": "2024-10-14T15:50:57.154-04:00"
+    },
+    {
+      "created_at": "2024-10-14T15:50:57.160-04:00",
+      "element_id": "42db47e9-991d-4006-8540-0e3871eefdd3",
+      "element_type": "Form",
+      "id": "ae618770-410d-4adb-8e4f-7d3763009f4f",
+      "order": 13,
+      "page_id": "2f2adb96-7150-4522-abff-eef4966994d9",
+      "permissions": false,
+      "read_only": false,
+      "uid": "af77c059ee4b4066b398050716b128f9",
+      "updated_at": "2024-10-14T15:50:57.158-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Person Details",
+      "created_at": "2024-10-14T15:50:56.494-04:00",
+      "id": "e3ee119e-bf5d-4ae4-afc5-90e4c26f4fbc",
+      "type": "SmallHeading",
+      "uid": "386f222bc8f44fd680425deb19edc807",
+      "updated_at": "2024-10-14T15:50:56.492-04:00"
+    },
+    {
+      "content": "<table>\r\n<tr>\r\n<td>First Name</td>\r\n<td>: {{ attribute.assignment_person.first.first_name }}</td>\r\n</tr>\r\n<tr>\r\n<td>Middle Name</td>\r\n<td>: {{ attribute.assignment_person.first.middle_name }}</td>\r\n</tr>\r\n<tr>\r\n<td>Last Name</td>\r\n<td>: {{ attribute.assignment_person.first.last_name }}</td>\r\n</tr>\r\n<tr>\r\n<td>Birth Month (MM)</td>\r\n<td>: {{ attribute.assignment_person.first.birth_month }}</td>\r\n</tr>\r\n<tr>\r\n<td>Birth Day (DD)</td>\r\n<td>: {{ attribute.assignment_person.first.birth_day }}</td>\r\n</tr>\r\n<tr>\r\n<td>Email</td>\r\n<td>: {{ attribute.assignment_person.first.email }}</td>\r\n</tr>\r\n<tr>\r\n<td>Professional Phone Number</td>\r\n<td>: {{ attribute.assignment_person.first.professional_phone_number }}</td>\r\n</tr>\r\n<tr>\r\n<td>Personal Phone Number</td>\r\n<td>: {{ attribute.assignment_person.first.personal_phone_number }}</td>\r\n</tr>\r\n<tr>\r\n<td>Policy Accepted</td>\r\n<td>: {{ attribute.assignment_person.first.policy_accepted }}</td>\r\n</tr>\r\n</table>\r\n",
+      "created_at": "2024-10-14T15:50:56.542-04:00",
+      "id": "fe851a8a-1a81-4113-bcbc-e9e91901f811",
+      "type": "HtmlContainer",
+      "uid": "b3_4c85ae7edde841db945816fb5d446fde",
+      "updated_at": "2024-10-14T15:50:56.540-04:00"
+    },
+    {
+      "content": "Non-Employee Type",
+      "created_at": "2024-10-14T15:50:56.811-04:00",
+      "id": "365917cd-9f63-4a3e-8745-b28b97cdde20",
+      "type": "SmallHeading",
+      "uid": "11aed9b9a6c045feba50a7b30c98aa50",
+      "updated_at": "2024-10-14T15:50:56.810-04:00"
+    },
+    {
+      "content": "Organization Details",
+      "created_at": "2024-10-14T15:50:56.926-04:00",
+      "id": "89e96fd1-55e3-41ed-86a4-e22a2a5f0439",
+      "type": "SmallHeading",
+      "uid": "d1eea2943d1f41f89c017ae7eb01beda",
+      "updated_at": "2024-10-14T15:50:56.925-04:00"
+    },
+    {
+      "content": "Assignment Details",
+      "created_at": "2024-10-14T15:50:57.051-04:00",
+      "id": "dd014453-3946-4690-812c-b0da15468ee3",
+      "type": "SmallHeading",
+      "uid": "c9eba13340ae4ab6a0c6fc7287576849",
+      "updated_at": "2024-10-14T15:50:57.045-04:00"
+    }
+  ]
+}

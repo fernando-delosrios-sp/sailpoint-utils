@@ -1,0 +1,103 @@
+{
+  "profile_type": {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": "other",
+    "core": false,
+    "id": "b45e9e7f-3bdd-4eb4-9bfd-23d7be868aa1",
+    "isc_synced": false,
+    "name": "Populations - Custom",
+    "permitted_role_ids": [
+      "f911d6b8-de3c-4112-8dc3-0d9eb0b4659a"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "24805c87-9d13-4931-bc23-12a4624b15fd",
+        "ne_attribute_id": "4ddaf87e-6aee-42ba-9436-ff8d3bfb5568",
+        "profile_type_id": "b45e9e7f-3bdd-4eb4-9bfd-23d7be868aa1",
+        "uid": "b3_3f25aad20d274f24ae67098758fa7525"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "0c5a64c3-359c-4487-bc93-2187f1c43cb9",
+        "ne_attribute_id": "4ddaf87e-6aee-42ba-9436-ff8d3bfb5568",
+        "order": 1,
+        "profile_type_id": "b45e9e7f-3bdd-4eb4-9bfd-23d7be868aa1",
+        "uid": "b3_aae52294231540aa95d342c01cab91bb"
+      }
+    ],
+    "table_id": "5b78f193-6cb8-467e-aec1-10364f6897d7",
+    "uid": "b3_populations_profile_type"
+  },
+  "profile_type_attributes": {
+    "count": 215,
+    "records": [
+      {
+        "id": "00285e61-07d1-4be5-a4c2-71de85dc67a7",
+        "label": "import_existing_assignment",
+        "synced": null,
+        "uid": "import_existing_assignment"
+      },
+      {
+        "id": "0032fc92-489d-4b9c-b9f3-5d3af6cd0c76",
+        "label": "Sponsor",
+        "synced": null,
+        "uid": "nerm_core_assignment_sponsor"
+      },
+      {
+        "id": "00a2785c-082f-4a3b-bbd8-d28f112e226f",
+        "label": "import_invalid_subpopulation",
+        "synced": null,
+        "uid": "import_invalid_subpopulation"
+      },
+      {
+        "id": "015b3b97-caac-463a-ad0b-a203bf34824a",
+        "label": "Sub-Organization Assignments",
+        "synced": null,
+        "uid": "suborganization_assignments"
+      },
+      {
+        "id": "021aaf65-49ed-4e94-a38a-dcc0a2293cc5",
+        "label": "nonhuman_owner_email",
+        "synced": null,
+        "uid": "nonhuman_owner_email"
+      },
+      {
+        "id": "033de29f-e22a-43f1-b8d0-1d09f393d313",
+        "label": "assignment_name",
+        "synced": null,
+        "uid": "assignment_name"
+      },
+      {
+        "id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "label": "Organization Name",
+        "synced": null,
+        "uid": "organization_name"
+      },
+      {
+        "id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+        "label": "Configuration Type",
+        "synced": null,
+        "uid": "sysconfig_type"
+      },
+      {
+        "id": "0a8f216b-b7c9-4e4d-8f18-e9d657e58626",
+        "label": "Company ID",
+        "synced": null,
+        "uid": "nerm_core_non_employee_company_id"
+      },
+      {
+        "id": "0bac8b78-0f4e-4ad5-ab58-324da38a0272",
+        "label": "person_risk_impact_score",
+        "synced": null,
+        "uid": "person_risk_impact_score"
+      }
+    ]
+  },
+  "profile_type_attributes_meta": {
+    "profile_type_id": "b45e9e7f-3bdd-4eb4-9bfd-23d7be868aa1",
+    "profile_type_uid": "b3_populations_profile_type",
+    "profile_type_name": "Populations - Custom"
+  }
+}

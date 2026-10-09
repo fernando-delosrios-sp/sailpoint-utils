@@ -1,0 +1,53 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.683-04:00",
+    "description": "",
+    "id": "3567b0c4-5920-41bb-88a2-969dc7a07638",
+    "legacy_id": null,
+    "name": "People - Basic Info",
+    "uid": "b3_people_basic_info_form",
+    "updated_at": "2026-08-27T17:44:34.683-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.686-04:00",
+      "form_id": "3567b0c4-5920-41bb-88a2-969dc7a07638",
+      "id": "bdb02c60-dfb1-4d0a-aca7-938919e9b673",
+      "legacy_id": null,
+      "ne_attribute_id": "b6d65fda-1ae1-4644-94da-1d21f2c9c68c",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_70b6fda6a5cb438d92efb3db9ba3f44b",
+      "updated_at": "2026-08-27T17:44:34.686-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.688-04:00",
+      "form_id": "3567b0c4-5920-41bb-88a2-969dc7a07638",
+      "id": "c12fda66-dc39-4e87-813e-3780ef2fe213",
+      "legacy_id": null,
+      "ne_attribute_id": "eca8a57a-4a6a-4dc2-97c7-275898e30467",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_d712e5c4b30f445bb18081d7fce68067",
+      "updated_at": "2026-08-27T17:44:34.688-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.691-04:00",
+      "form_id": "3567b0c4-5920-41bb-88a2-969dc7a07638",
+      "id": "22dfd2e3-6524-40a8-8a10-8532a3dab560",
+      "legacy_id": null,
+      "ne_attribute_id": "86f75e27-f205-479e-b032-578c4422251b",
+      "order": 2,
+      "read_only": false,
+      "uid": "b3_7361d429b6ad4234b37334017395e6f7",
+      "updated_at": "2026-08-27T17:44:34.691-04:00"
+    }
+  ]
+}

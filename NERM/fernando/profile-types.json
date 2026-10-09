@@ -1,0 +1,338 @@
+[
+  {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": null,
+    "id": "2346d8b3-ac29-4015-8154-dea4404a73fa",
+    "isc_synced": false,
+    "name": "Organizations",
+    "permitted_role_ids": [
+      "5720f45a-aaab-4edc-811a-2df2122049b5"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "f00532b0-0be4-475f-807b-97c62a364e26",
+        "ne_attribute_id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "profile_type_id": "2346d8b3-ac29-4015-8154-dea4404a73fa",
+        "uid": "b3_c915e1514adb4395a6290a1dce2bbf2e"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "287b8036-9583-4f9a-890c-17c30834685f",
+        "ne_attribute_id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "order": 2,
+        "profile_type_id": "2346d8b3-ac29-4015-8154-dea4404a73fa",
+        "uid": "b3_4bc3fe0d472b41a889fa909941fb6862"
+      }
+    ],
+    "table_id": "220426f9-8005-4d91-8d68-7c2554b6501e",
+    "uid": "b3_organizations_profile_type"
+  },
+  {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": null,
+    "id": "51348301-4560-4a79-9c85-b1f2700e72f3",
+    "isc_synced": false,
+    "name": "System Configuration",
+    "permitted_role_ids": [
+      "c0c847df-c086-4707-a424-6bfe65ad17fe",
+      "3205bdb2-cde1-4f24-98c2-02c00111b7ca"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "a3ebf01d-7ceb-465e-ac11-3e62ce88c2c4",
+        "ne_attribute_id": "0fba7f81-0f13-4e4d-b202-9efefb58a444",
+        "profile_type_id": "51348301-4560-4a79-9c85-b1f2700e72f3",
+        "uid": "b3_1b20beff224f4e959751fc732af567fa"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "d2facda2-7113-4553-be8d-b024cbb67cc4",
+        "ne_attribute_id": "0fba7f81-0f13-4e4d-b202-9efefb58a444",
+        "order": 2,
+        "profile_type_id": "51348301-4560-4a79-9c85-b1f2700e72f3",
+        "uid": "b3_6f2f44a505ca4be7bc4f05429d2b3b89"
+      }
+    ],
+    "table_id": "21027c8a-4e0d-4be4-a5d6-23de7a843fdf",
+    "uid": "b3_system_configuration_profile_type"
+  },
+  {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": null,
+    "id": "5d99e6a9-30e1-4cd1-8461-e28414e0d2bf",
+    "isc_synced": false,
+    "name": "Locations",
+    "permitted_role_ids": [
+      "4bf317d8-1393-4d52-a871-00f712dda2b0"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "e0258db3-8263-4738-ad37-65aa9f0dd8f5",
+        "ne_attribute_id": "0f35cd67-3da1-49dd-983f-0aae531993e9",
+        "profile_type_id": "5d99e6a9-30e1-4cd1-8461-e28414e0d2bf",
+        "uid": "b3_0e7cbab1747b4689843866de0a202189"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "67743de2-f1e4-45e8-aea0-4de5c14fa9a5",
+        "ne_attribute_id": "0f35cd67-3da1-49dd-983f-0aae531993e9",
+        "order": 2,
+        "profile_type_id": "5d99e6a9-30e1-4cd1-8461-e28414e0d2bf",
+        "uid": "b3_de408978281b45d79547266e07d34c38"
+      }
+    ],
+    "table_id": "2fb12c79-6c1e-44d9-a40c-06e3d36636ae",
+    "uid": "b3_locations_profile_type"
+  },
+  {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": null,
+    "id": "6efd5c50-fc6e-4dd0-a311-7e1a34f26d5a",
+    "isc_synced": false,
+    "name": "Sub-Populations",
+    "permitted_role_ids": [
+      "f911d6b8-de3c-4112-8dc3-0d9eb0b4659a"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "334968b6-7559-4e43-a7c1-056bcfb8f5fd",
+        "ne_attribute_id": "79099fa4-b59a-4ed3-911c-de5c40c26afb",
+        "profile_type_id": "6efd5c50-fc6e-4dd0-a311-7e1a34f26d5a",
+        "uid": "b3_b5b6cd5d474d4abab9a07641d8b156d0"
+      },
+      {
+        "id": "46fbe10b-57e9-4db1-b996-f508ebffab44",
+        "ne_attribute_id": "d71aeca4-b064-4e9e-8c30-926ceb9fb697",
+        "profile_type_id": "6efd5c50-fc6e-4dd0-a311-7e1a34f26d5a",
+        "uid": "fd207fdf1c7a402fa598861d6b629fde"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "1621a1d3-5a86-454d-a66b-f5c80226c670",
+        "ne_attribute_id": "79099fa4-b59a-4ed3-911c-de5c40c26afb",
+        "order": 2,
+        "profile_type_id": "6efd5c50-fc6e-4dd0-a311-7e1a34f26d5a",
+        "uid": "b3_c63ee6d48f3b4efaab9d807fd02179e9"
+      }
+    ],
+    "table_id": "4b010531-4051-4aea-a7ef-85c19287e9a6",
+    "uid": "b3_subpopulations_profile_type"
+  },
+  {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": null,
+    "id": "781c92b7-24ba-465c-99c4-489dd544de46",
+    "isc_synced": false,
+    "name": "Sub-Organizations",
+    "permitted_role_ids": [
+      "5720f45a-aaab-4edc-811a-2df2122049b5"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "7eb127c9-5f4e-4aba-9bf2-3bece4836a58",
+        "ne_attribute_id": "c6ad1c6c-dc40-41b7-b4dd-2359d6739a1b",
+        "profile_type_id": "781c92b7-24ba-465c-99c4-489dd544de46",
+        "uid": "b3_297eda13893f4a90bc06fa172137b59f"
+      },
+      {
+        "id": "bdce9c81-0f1d-4204-bd05-aceec7167de5",
+        "ne_attribute_id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "profile_type_id": "781c92b7-24ba-465c-99c4-489dd544de46",
+        "uid": "b3_adeced59ecd547c2a73c1ed9ee2d84e9"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "d1439544-c1e4-4f26-bf3a-cbb2b6411c1b",
+        "ne_attribute_id": "c6ad1c6c-dc40-41b7-b4dd-2359d6739a1b",
+        "order": 1,
+        "profile_type_id": "781c92b7-24ba-465c-99c4-489dd544de46",
+        "uid": "b3_54d377a67b0c49608ea1c0fda9a85317"
+      }
+    ],
+    "table_id": "0af7afa8-9bbb-4911-9cd0-f2e46ffd6a5a",
+    "uid": "b3_suborganizations_profile_type"
+  },
+  {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": "assignment",
+    "id": "978f1283-ca68-4370-9277-dcc51c5f05ca",
+    "isc_synced": false,
+    "name": "Assignments",
+    "permitted_role_ids": [
+      "0db59f5c-3d71-4b4b-a5a3-e2b3cff645c4",
+      "1c335158-c261-4324-ab07-3f91671ab037",
+      "3205bdb2-cde1-4f24-98c2-02c00111b7ca",
+      "322b4dbb-9956-48cc-b6b1-86bcc43d4fd4",
+      "4bf317d8-1393-4d52-a871-00f712dda2b0",
+      "5720f45a-aaab-4edc-811a-2df2122049b5",
+      "690f7190-619f-4e53-96d4-2e358666a9be",
+      "7d8f2309-615e-4706-a5c2-457c8d534441",
+      "7dceabc1-1788-467e-b4e0-48ae5c8a5662",
+      "872f424a-0095-4025-990f-deae3fdd1c12",
+      "8ec7f6e7-2598-4aac-a9a0-9f758f765feb",
+      "a75186be-2620-4bbe-af6a-3178f8fabafd",
+      "a9af04ec-fdb8-45b1-aa4e-b550a9a200c4",
+      "ac3453f2-28d5-4181-96a3-3010869775c2",
+      "addfcdac-e956-4cd6-9266-74064d13c4b7",
+      "afa5e0ba-e5ea-4521-a84e-c88c2b3d8b17",
+      "b4ed7d1b-e417-46e2-a57a-33bb8c0ce0ed",
+      "b55c3fd0-cbb2-4af1-8ffb-706ce621d5fb",
+      "b65e5cc9-80c6-4e87-ac73-5ba63516abe0",
+      "b6cf7d54-d04e-488f-80e0-ce14d496af13",
+      "bdc60c09-6193-40f4-9ef3-f3e4a5dd91f8",
+      "bfc87a0a-975d-45e9-a245-9051d77042eb",
+      "c0c847df-c086-4707-a424-6bfe65ad17fe",
+      "c3d9e334-b6f8-494f-80df-0916582f812f",
+      "ca74a221-64e0-4288-bdcc-86bff0871b00",
+      "cd07ad38-a7ac-4d18-832f-4dfceba41950",
+      "cdc7e5c6-600b-4f97-82ab-a54228d1add9",
+      "d167ca01-8d6e-410d-a859-a2bfbc7f9384",
+      "e3978524-04cb-4715-b9a4-5d6b6bdeab9f",
+      "f911d6b8-de3c-4112-8dc3-0d9eb0b4659a",
+      "ff7df780-b491-4482-9775-ca71df6dadfa"
+    ],
+    "profile_type_dup_attributes": [],
+    "profile_type_namings": [
+      {
+        "id": "446794a0-160f-4f77-aa6e-9f602b962b1c",
+        "ne_attribute_id": "033de29f-e22a-43f1-b8d0-1d09f393d313",
+        "order": 4,
+        "profile_type_id": "978f1283-ca68-4370-9277-dcc51c5f05ca",
+        "uid": "73eb74289e9c4acebeba83f79f9de96f"
+      }
+    ],
+    "table_id": "9359b57d-8c09-4ff6-ac89-c24769f7d38a",
+    "uid": "b3_assignments_profile_type"
+  },
+  {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": null,
+    "id": "b45e9e7f-3bdd-4eb4-9bfd-23d7be868aa1",
+    "isc_synced": false,
+    "name": "Populations",
+    "permitted_role_ids": [
+      "f911d6b8-de3c-4112-8dc3-0d9eb0b4659a"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "24805c87-9d13-4931-bc23-12a4624b15fd",
+        "ne_attribute_id": "4ddaf87e-6aee-42ba-9436-ff8d3bfb5568",
+        "profile_type_id": "b45e9e7f-3bdd-4eb4-9bfd-23d7be868aa1",
+        "uid": "b3_3f25aad20d274f24ae67098758fa7525"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "0c5a64c3-359c-4487-bc93-2187f1c43cb9",
+        "ne_attribute_id": "4ddaf87e-6aee-42ba-9436-ff8d3bfb5568",
+        "order": 1,
+        "profile_type_id": "b45e9e7f-3bdd-4eb4-9bfd-23d7be868aa1",
+        "uid": "b3_aae52294231540aa95d342c01cab91bb"
+      }
+    ],
+    "table_id": "5b78f193-6cb8-467e-aec1-10364f6897d7",
+    "uid": "b3_populations_profile_type"
+  },
+  {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": null,
+    "id": "c27434ef-d2e4-48d2-8526-c5857cae01f6",
+    "isc_synced": false,
+    "name": "Departments",
+    "permitted_role_ids": [
+      "7dceabc1-1788-467e-b4e0-48ae5c8a5662"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "c18dbba8-61d7-4267-acaf-a1002cd7e405",
+        "ne_attribute_id": "b5180e20-ea79-43a9-ab35-faca194ec2b6",
+        "profile_type_id": "c27434ef-d2e4-48d2-8526-c5857cae01f6",
+        "uid": "b3_f7e8bd0ad935412ca451539c55b962b9"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "97b50606-db44-4c54-9995-9e02807b5b38",
+        "ne_attribute_id": "b5180e20-ea79-43a9-ab35-faca194ec2b6",
+        "order": 1,
+        "profile_type_id": "c27434ef-d2e4-48d2-8526-c5857cae01f6",
+        "uid": "b3_08c7f44f13294953999ffe21fd1a4428"
+      }
+    ],
+    "table_id": "7aff2a20-c3e9-4b77-87cb-147deb744227",
+    "uid": "b3_department_profile_type"
+  },
+  {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": "non-employee",
+    "id": "de5cb47c-2fcf-4eb5-8bcf-0316ffd563db",
+    "isc_synced": false,
+    "name": "People",
+    "permitted_role_ids": [
+      "0db59f5c-3d71-4b4b-a5a3-e2b3cff645c4",
+      "1c335158-c261-4324-ab07-3f91671ab037",
+      "3205bdb2-cde1-4f24-98c2-02c00111b7ca",
+      "322b4dbb-9956-48cc-b6b1-86bcc43d4fd4",
+      "4bf317d8-1393-4d52-a871-00f712dda2b0",
+      "5720f45a-aaab-4edc-811a-2df2122049b5",
+      "690f7190-619f-4e53-96d4-2e358666a9be",
+      "7d8f2309-615e-4706-a5c2-457c8d534441",
+      "7dceabc1-1788-467e-b4e0-48ae5c8a5662",
+      "872f424a-0095-4025-990f-deae3fdd1c12",
+      "8ec7f6e7-2598-4aac-a9a0-9f758f765feb",
+      "a75186be-2620-4bbe-af6a-3178f8fabafd",
+      "a9af04ec-fdb8-45b1-aa4e-b550a9a200c4",
+      "ac3453f2-28d5-4181-96a3-3010869775c2",
+      "addfcdac-e956-4cd6-9266-74064d13c4b7",
+      "afa5e0ba-e5ea-4521-a84e-c88c2b3d8b17",
+      "b4ed7d1b-e417-46e2-a57a-33bb8c0ce0ed",
+      "b55c3fd0-cbb2-4af1-8ffb-706ce621d5fb",
+      "b65e5cc9-80c6-4e87-ac73-5ba63516abe0",
+      "b6cf7d54-d04e-488f-80e0-ce14d496af13",
+      "bdc60c09-6193-40f4-9ef3-f3e4a5dd91f8",
+      "bfc87a0a-975d-45e9-a245-9051d77042eb",
+      "c0c847df-c086-4707-a424-6bfe65ad17fe",
+      "c3d9e334-b6f8-494f-80df-0916582f812f",
+      "ca74a221-64e0-4288-bdcc-86bff0871b00",
+      "cd07ad38-a7ac-4d18-832f-4dfceba41950",
+      "cdc7e5c6-600b-4f97-82ab-a54228d1add9",
+      "d167ca01-8d6e-410d-a859-a2bfbc7f9384",
+      "e3978524-04cb-4715-b9a4-5d6b6bdeab9f",
+      "f911d6b8-de3c-4112-8dc3-0d9eb0b4659a",
+      "ff7df780-b491-4482-9775-ca71df6dadfa"
+    ],
+    "profile_type_dup_attributes": [],
+    "profile_type_namings": [
+      {
+        "id": "e6a7483a-cd26-4d55-a036-98c177cf19ea",
+        "ne_attribute_id": "b6d65fda-1ae1-4644-94da-1d21f2c9c68c",
+        "order": 1,
+        "profile_type_id": "de5cb47c-2fcf-4eb5-8bcf-0316ffd563db",
+        "uid": "b3_7414dd6de9b841088f813ae4ffaf462f"
+      },
+      {
+        "id": "cf1b5b01-593f-4b4e-84ac-89a9b4f7415e",
+        "ne_attribute_id": "eca8a57a-4a6a-4dc2-97c7-275898e30467",
+        "order": 2,
+        "profile_type_id": "de5cb47c-2fcf-4eb5-8bcf-0316ffd563db",
+        "uid": "b3_87549f57f06245e2b8c2481dac5d8baa"
+      }
+    ],
+    "table_id": "f206ae00-d708-4be1-b5a9-c547f29f98be",
+    "uid": "b3_people_profile_type"
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:44.789-04:00",
+    "description": "This page is used for assignment profile management.",
+    "elem_order_deprecated": null,
+    "id": "2746ffd7-a73e-40fd-86a9-7cca9977cdf8",
+    "legacy_id": null,
+    "name": "Assignments",
+    "uid": "nerm_core_page_assignments",
+    "updated_at": "2026-08-27T17:46:44.789-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:46:45.234-04:00",
+      "element_id": "f3d24a4c-6676-4e8c-8faa-f34b9bd41372",
+      "element_type": "Form",
+      "id": "73e8ae91-975b-4714-9680-2b166b25df50",
+      "order": 0,
+      "page_id": "2746ffd7-a73e-40fd-86a9-7cca9977cdf8",
+      "permissions": true,
+      "read_only": false,
+      "uid": "nerm_core_page_form_assignments",
+      "updated_at": "2026-08-27T17:46:45.234-04:00"
+    }
+  ],
+  "page_contents": []
+}

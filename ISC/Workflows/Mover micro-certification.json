@@ -24,10 +24,10 @@
           "emailNotificationEnabled": true,
           "name": "Mover access review — {{$.getIdentity.attributes.displayName}}",
           "recommendationsEnabled": true,
-          "reviewerCertificationType": "GOVERNANCE_GROUP",
+          "reviewerCertificationType": "IDENTITY",
           "reviewerId.$": "$.setConfiguration.governanceGroupID",
           "reviewerIdentitiesToCertify.$": "$.getIdentity.id",
-          "type": "REVIEWER_IDENTITY",
+          "type": "REVIEWER_GOVERNANCE_GROUP",
           "undecidedAccess": false
         },
         "description": "Creates a one-week identity certification for the mover, assigned to the configured governance group, and activates it immediately. Built-in campaign emails notify the group members.",
@@ -53,22 +53,6 @@
         },
         "description": "Creates a one-week identity certification for the mover, assigned to their manager, and activates it immediately.",
         "displayName": "Create manager certification",
-        "nextStep": "Email Manager",
-        "type": "action",
-        "versionNumber": 2
-      },
-      "Email Manager": {
-        "actionId": "sp:send-email",
-        "attributes": {
-          "body": "<div>\n<div>Hello {{$.getManagerIdentity.attributes.displayName}},</div>\n<div>&nbsp;</div>\n<div>{{$.getIdentity.attributes.displayName}}'s job title changed from <strong>{{$.trigger.changes[0].oldValue}}</strong> to <strong>{{$.trigger.changes[0].newValue}}</strong>.</div>\n<div>&nbsp;</div>\n<div>A one-week access review has been assigned to you. Please complete it in Identity Security Cloud and revoke any access that is no longer appropriate.</div>\n<div>&nbsp;</div>\n<div>Campaign: Mover access review — {{$.getIdentity.attributes.displayName}}</div>\n<div>&nbsp;</div>\n<div>Thank you</div>\n</div>",
-          "context": {},
-          "from": null,
-          "recipientEmailList.$": "$.getManagerIdentity.attributes.email",
-          "replyTo": null,
-          "subject": "Access review required: {{$.getIdentity.attributes.displayName}} job title changed"
-        },
-        "description": "Notifies the manager that a mover access review is waiting for them, including the previous and new job title.",
-        "displayName": "Email manager",
         "nextStep": "End Step - Success",
         "type": "action",
         "versionNumber": 2
@@ -129,7 +113,7 @@
     "mode": "advanced",
     "attributes": {
       "attributeToFilter": "jobTitle",
-      "filter.$": "$.changes[?(@.attribute == 'jobTitle' && @.newValue != null)]",
+      "filter.$": "$.changes[?(@.attribute == 'jobTitle' && @.oldValue != null && @.newValue != null)]",
       "id": "idn:identity-attributes-changed",
       "integrationId": null
     }

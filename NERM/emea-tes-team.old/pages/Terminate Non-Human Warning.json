@@ -1,0 +1,99 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:46.960-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "5550898e-4ca7-4e9b-bd91-714abc11599a",
+    "legacy_id": null,
+    "name": "Terminate Non-Human Warning",
+    "uid": "b3_terminate_nonhuman_workflow_page",
+    "updated_at": "2026-08-27T17:44:46.960-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:46.963-04:00",
+      "element_id": "c2850dfd-de1b-4177-87c7-f0a205632d99",
+      "element_type": "PageContent",
+      "id": "374311ed-36d4-4b0f-8b29-9f014ab521fb",
+      "order": 1,
+      "page_id": "5550898e-4ca7-4e9b-bd91-714abc11599a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "d7205125861140edb521749bc43fff1d",
+      "updated_at": "2026-08-27T17:44:46.963-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.004-04:00",
+      "element_id": "39105af5-d056-43ae-8d19-2b2e41e49562",
+      "element_type": "Form",
+      "id": "198887fc-94f5-4882-ab2a-785cf5fa6bd8",
+      "order": 3,
+      "page_id": "5550898e-4ca7-4e9b-bd91-714abc11599a",
+      "permissions": false,
+      "read_only": true,
+      "uid": "61030f1814554e10b1d9cfecf02ba1a0",
+      "updated_at": "2026-08-27T17:44:47.004-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.008-04:00",
+      "element_id": "d19462c7-4282-4d1b-8fec-c295fabb71af",
+      "element_type": "Form",
+      "id": "53836c08-969f-416c-bd7b-83dadcc51f2c",
+      "order": 4,
+      "page_id": "5550898e-4ca7-4e9b-bd91-714abc11599a",
+      "permissions": false,
+      "read_only": true,
+      "uid": "7ebfcd55a49c478da9f29902e6b717fd",
+      "updated_at": "2026-08-27T17:44:47.008-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.011-04:00",
+      "element_id": "b2ea0bc1-7c64-40b6-bb68-e4a4c5b26173",
+      "element_type": "Form",
+      "id": "a3fd1587-5b07-4b52-b1a2-55a0a57655a9",
+      "order": 5,
+      "page_id": "5550898e-4ca7-4e9b-bd91-714abc11599a",
+      "permissions": false,
+      "read_only": true,
+      "uid": "f94b7ee7958d4fd4b8729f2ea759e8f8",
+      "updated_at": "2026-08-27T17:44:47.011-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.015-04:00",
+      "element_id": "32b4f690-d4be-435f-9f4e-305ea3d7c49b",
+      "element_type": "Form",
+      "id": "1fc7b395-8744-42ba-a50f-8ec5904b012d",
+      "order": 6,
+      "page_id": "5550898e-4ca7-4e9b-bd91-714abc11599a",
+      "permissions": false,
+      "read_only": true,
+      "uid": "f251afb9248c48fb95e0b2e0310d62c7",
+      "updated_at": "2026-08-27T17:44:47.015-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:47.018-04:00",
+      "element_id": "3946cee7-a5f1-4589-b4b6-3943cb0b5336",
+      "element_type": "Form",
+      "id": "333ce13b-d0d0-42d6-95cf-0ff4530e7264",
+      "order": 7,
+      "page_id": "5550898e-4ca7-4e9b-bd91-714abc11599a",
+      "permissions": false,
+      "read_only": true,
+      "uid": "e4dadb8b835c44a69bdf23124f70becb",
+      "updated_at": "2026-08-27T17:44:47.018-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Terminate Non-Human",
+      "created_at": "2026-08-27T17:44:46.966-04:00",
+      "id": "c2850dfd-de1b-4177-87c7-f0a205632d99",
+      "type": "SmallHeading",
+      "uid": "5ae77ce5288e4fcf803aa9a1b42d2701",
+      "updated_at": "2026-08-27T17:44:46.966-04:00"
+    }
+  ]
+}

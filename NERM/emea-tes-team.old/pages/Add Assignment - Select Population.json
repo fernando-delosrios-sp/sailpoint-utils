@@ -1,0 +1,51 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:38.817-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "adee9eb8-93cc-4d55-984a-9cdbc07e2fb8",
+    "legacy_id": null,
+    "name": "Add Assignment - Select Population",
+    "uid": "b3_add_assignment_select_population_page",
+    "updated_at": "2026-08-27T17:44:38.817-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:38.820-04:00",
+      "element_id": "1976762d-d7f7-4e5c-9a31-b3d9db2caaa4",
+      "element_type": "PageContent",
+      "id": "e425e8a2-523a-4084-b552-391fd02ecaae",
+      "order": 2,
+      "page_id": "adee9eb8-93cc-4d55-984a-9cdbc07e2fb8",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_22d968b668424920bc10bc1a967e142e_copy_2",
+      "updated_at": "2026-08-27T17:44:38.820-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:38.858-04:00",
+      "element_id": "dec86413-a82b-4bce-96fc-53af5b15bd72",
+      "element_type": "Form",
+      "id": "67460b11-0d7c-4c61-a763-cad8cdb5c1b6",
+      "order": 3,
+      "page_id": "adee9eb8-93cc-4d55-984a-9cdbc07e2fb8",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_f5eb8b118864478f98d15c48ba72efd3_copy_2",
+      "updated_at": "2026-08-27T17:44:38.858-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Provide the details for the new assignment for {{ profile.name }}",
+      "created_at": "2026-08-27T17:44:38.823-04:00",
+      "id": "1976762d-d7f7-4e5c-9a31-b3d9db2caaa4",
+      "type": "Paragraph",
+      "uid": "b3_210db4011c7547c1ac7055e95c8e6811_copy_2",
+      "updated_at": "2026-08-27T17:44:38.823-04:00"
+    }
+  ]
+}

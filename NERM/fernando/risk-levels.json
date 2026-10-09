@@ -1,0 +1,23 @@
+[
+  {
+    "id": "0d44289c-e723-4999-a7c4-a7a97a1f70c8",
+    "label": "Low",
+    "order": 1,
+    "points": 2.5,
+    "uid": "0fa8b46f4a2a4b13ad327b6794506862"
+  },
+  {
+    "id": "08e5d8a6-6c64-4173-9a35-bf3b2c1ea385",
+    "label": "Medium",
+    "order": 2,
+    "points": 7.5,
+    "uid": "4e9bc059663b490289492fb4c064a1d8"
+  },
+  {
+    "id": "a5944d89-d5d3-4a78-b3aa-2d2718d450c8",
+    "label": "High",
+    "order": 3,
+    "points": 10,
+    "uid": "e01eff88ad8d4ebfa77496e9e37b06c4"
+  }
+]

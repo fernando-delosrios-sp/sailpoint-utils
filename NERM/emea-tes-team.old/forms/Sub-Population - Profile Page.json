@@ -1,0 +1,41 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.838-04:00",
+    "description": "",
+    "id": "f019e917-5439-4d3c-90fd-294037d2c32d",
+    "legacy_id": null,
+    "name": "Sub-Population - Profile Page",
+    "uid": "b3_subpopulation_profile_form",
+    "updated_at": "2026-08-27T17:44:34.838-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.841-04:00",
+      "form_id": "f019e917-5439-4d3c-90fd-294037d2c32d",
+      "id": "30816dab-071b-49c8-9a1b-8fef8a40dc4d",
+      "legacy_id": null,
+      "ne_attribute_id": "79099fa4-b59a-4ed3-911c-de5c40c26afb",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_34da3b862b3c4a33a4aff0507de963c4",
+      "updated_at": "2026-08-27T17:44:34.841-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.844-04:00",
+      "form_id": "f019e917-5439-4d3c-90fd-294037d2c32d",
+      "id": "612e7d4b-008a-43c9-aea0-ba45e9528540",
+      "legacy_id": null,
+      "ne_attribute_id": "d71aeca4-b064-4e9e-8c30-926ceb9fb697",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_9d390131492a4e6db1c33eabcf5a0c4e",
+      "updated_at": "2026-08-27T17:44:34.844-04:00"
+    }
+  ]
+}

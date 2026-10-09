@@ -1,0 +1,172 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": true,
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:18:32.496-04:00",
+    "data_type": "check boxes",
+    "date_format": null,
+    "description": "",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+    "label": "Configuration - Approvals - Update Assignment",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": "",
+    "type": "CheckBoxesAttribute",
+    "uid": "sysconfig_enabled_approvals_update_assignment",
+    "updated_at": "2026-08-27T17:18:32.496-04:00"
+  },
+  "options": [
+    {
+      "core": false,
+      "id": "a0f6b157-99ea-4482-a44b-2873dd4fd54e",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Agency Workers - Department Approval",
+      "uid": "74df92e870bd4780aa49299f0bf5b1a4"
+    },
+    {
+      "core": false,
+      "id": "329a3c33-09d9-4614-8bbd-96ecc93615af",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Agency Workers - Sponsor Approval",
+      "uid": "9dae1c57ec85413fb1c0a806e1266d6b"
+    },
+    {
+      "core": false,
+      "id": "439ea1eb-c9d2-4e81-b628-e62bd8c048ce",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Clinical Affiliates - Department Approval",
+      "uid": "28b120da16bb4a84af7b548e324def74"
+    },
+    {
+      "core": false,
+      "id": "9ca8e223-f431-466c-832f-e1d872f7ff15",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Clinical Affiliates - Sponsor Approval",
+      "uid": "85eb27f1e05a452b858edaea6307ba02"
+    },
+    {
+      "core": false,
+      "id": "4ddabbcb-f001-4bbc-8ee7-65257466b325",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Event & Workshop Attendees - Department Approval",
+      "uid": "90187c6ed0384d61ab78fd774934ec8b"
+    },
+    {
+      "core": false,
+      "id": "5ebc26d8-da54-4944-8f42-257909011942",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Event & Workshop Attendees - Sponsor Approval",
+      "uid": "f43c7d8f306a49f781809c03c139328e"
+    },
+    {
+      "core": false,
+      "id": "51f108d1-7332-4cfd-b52e-9a65119af0bc",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "External Contractors - Department Approval",
+      "uid": "9e3b48ebc67e4ba6b87535891a9f2f31"
+    },
+    {
+      "core": false,
+      "id": "6d7b429c-44a4-4ac6-8f5d-40d32ccc52c3",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "External Contractors - Sponsor Approval",
+      "uid": "9a2508f5eead4edab10e5e4165bd7133"
+    },
+    {
+      "core": false,
+      "id": "e3886a8b-e7ab-485e-a550-aedaa0a45934",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Facilities & Maintenance - Department Approval",
+      "uid": "e31c90279cb94a9896cf86e00e7c526d"
+    },
+    {
+      "core": false,
+      "id": "7c0da458-ea83-4287-bc79-818fc2ca9551",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Facilities & Maintenance - Sponsor Approval",
+      "uid": "a993699bf41549da88cf933e5a0401a3"
+    },
+    {
+      "core": false,
+      "id": "b922d9ef-ba53-4754-91a0-7ba5440e3929",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Guests & Visitors - Department Approval",
+      "uid": "3b23c952dfab4baebf19ab439c77117b"
+    },
+    {
+      "core": false,
+      "id": "f3feee18-f45f-4834-bfe1-cdf00d07fcac",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Guests & Visitors - Sponsor Approval",
+      "uid": "ed902a39e0834508b99061fb49e4644a"
+    },
+    {
+      "core": false,
+      "id": "73d03749-5b15-49d1-ba9a-d58b64b42dea",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Partners & Resellers - Department Approval",
+      "uid": "61b18bf2dad14cbdb786f7261980330e"
+    },
+    {
+      "core": false,
+      "id": "333d98b9-e320-4198-8fb6-e625d96aa97a",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Partners & Resellers - Sponsor Approval",
+      "uid": "a21d2c86e3df4ea898e9012c2a9a7c12"
+    },
+    {
+      "core": false,
+      "id": "b099a102-f1c7-4d53-98f8-dd2373043123",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Professional Services - Department Approval",
+      "uid": "4078cb692ebc41a4b012c44bff334f2b"
+    },
+    {
+      "core": false,
+      "id": "37e9c267-c5a6-451c-8a0d-900d46aea560",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Professional Services - Sponsor Approval",
+      "uid": "7da2c93402ab405da0e142fb3f7a16f5"
+    },
+    {
+      "core": false,
+      "id": "4f3ce4d4-14a8-431d-ab00-d45d5faf01c9",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Technology Vendors - Department Approval",
+      "uid": "f3dfc3a611694dcea3651f2f022a5ab2"
+    },
+    {
+      "core": false,
+      "id": "796eec92-d3ee-4881-bb7d-64e4f6d26a15",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Technology Vendors - Sponsor Approval",
+      "uid": "1f7a379be4214b35a0f98c9bc592f58f"
+    },
+    {
+      "core": false,
+      "id": "935095f9-39a3-413e-887f-616369297c41",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Temporary Workers - Department Approval",
+      "uid": "f0d8f3d7553442708e8a00fa14d7797d"
+    },
+    {
+      "core": false,
+      "id": "71e96cf6-1288-4d98-9fab-7ff612fddc32",
+      "ne_attribute_id": "44a74736-4c20-48a7-9f0d-7a8e0e229282",
+      "option": "Temporary Workers - Sponsor Approval",
+      "uid": "cc3e8105010947f8938e16df0349a723"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.206-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "8a965804-a972-4630-9d16-04d12954b7e1",
+    "legacy_id": null,
+    "name": "Existing Collaborator Warning Page",
+    "uid": "b3_existing_collaborator_warning_page_workflow_page",
+    "updated_at": "2026-08-27T17:44:45.206-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.213-04:00",
+      "element_id": "e846de78-f066-4199-bed5-48e4b810b890",
+      "element_type": "PageContent",
+      "id": "c1768284-fc8e-457d-8faf-c53b058cf9d8",
+      "order": 1,
+      "page_id": "8a965804-a972-4630-9d16-04d12954b7e1",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_81d1f67f77324a679a9bb2d2d66c887c",
+      "updated_at": "2026-08-27T17:44:45.213-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.258-04:00",
+      "element_id": "2068cc41-8ead-4689-9c53-d682f1d257a4",
+      "element_type": "PageContent",
+      "id": "0f9e613c-0d72-4586-addc-fc20991f4a5c",
+      "order": 2,
+      "page_id": "8a965804-a972-4630-9d16-04d12954b7e1",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_9cbd7fb9f0794c18a41a54f4dc6084ae",
+      "updated_at": "2026-08-27T17:44:45.258-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "{{ profile.name }} is already a collaborator",
+      "created_at": "2026-08-27T17:44:45.217-04:00",
+      "id": "e846de78-f066-4199-bed5-48e4b810b890",
+      "type": "FormHeading",
+      "uid": "b3_0716f057d17448cdb7f21fe6efb59931",
+      "updated_at": "2026-08-27T17:44:45.217-04:00"
+    },
+    {
+      "content": "The user {{ attribute.first_name }} {{ attribute.last_name }} with the email address {{ attribute.email }} is already a collaborator and can only be a collaborator for a single organization or sub-organization.",
+      "created_at": "2026-08-27T17:44:45.262-04:00",
+      "id": "2068cc41-8ead-4689-9c53-d682f1d257a4",
+      "type": "Paragraph",
+      "uid": "b3_a3e94ca9c5a54d09955b472127d36e86",
+      "updated_at": "2026-08-27T17:44:45.262-04:00"
+    }
+  ]
+}

@@ -1,0 +1,130 @@
+{
+  "profile_type": {
+    "archived": false,
+    "bypass_dup_protection": false,
+    "category": "other",
+    "core": false,
+    "id": "18a270f4-d204-405b-acad-8382d7617ef2",
+    "isc_synced": false,
+    "name": "Non-Human Types - Custom",
+    "permitted_role_ids": [
+      "3205bdb2-cde1-4f24-98c2-02c00111b7ca",
+      "322b4dbb-9956-48cc-b6b1-86bcc43d4fd4",
+      "3b3cabd0-9332-4f11-afb6-fc9710ddd737",
+      "4bf317d8-1393-4d52-a871-00f712dda2b0",
+      "5720f45a-aaab-4edc-811a-2df2122049b5",
+      "690f7190-619f-4e53-96d4-2e358666a9be",
+      "7d8f2309-615e-4706-a5c2-457c8d534441",
+      "7dceabc1-1788-467e-b4e0-48ae5c8a5662",
+      "872f424a-0095-4025-990f-deae3fdd1c12",
+      "8ec7f6e7-2598-4aac-a9a0-9f758f765feb",
+      "a75186be-2620-4bbe-af6a-3178f8fabafd",
+      "a9af04ec-fdb8-45b1-aa4e-b550a9a200c4",
+      "ac3453f2-28d5-4181-96a3-3010869775c2",
+      "addfcdac-e956-4cd6-9266-74064d13c4b7",
+      "af70e67b-a30c-45fd-9a91-fa1155d9e6ac",
+      "b4ed7d1b-e417-46e2-a57a-33bb8c0ce0ed",
+      "b65e5cc9-80c6-4e87-ac73-5ba63516abe0",
+      "b6cf7d54-d04e-488f-80e0-ce14d496af13",
+      "bdc60c09-6193-40f4-9ef3-f3e4a5dd91f8",
+      "c0c847df-c086-4707-a424-6bfe65ad17fe",
+      "c3d9e334-b6f8-494f-80df-0916582f812f",
+      "ca74a221-64e0-4288-bdcc-86bff0871b00",
+      "cd07ad38-a7ac-4d18-832f-4dfceba41950",
+      "cdc7e5c6-600b-4f97-82ab-a54228d1add9",
+      "d167ca01-8d6e-410d-a859-a2bfbc7f9384",
+      "e3978524-04cb-4715-b9a4-5d6b6bdeab9f",
+      "f911d6b8-de3c-4112-8dc3-0d9eb0b4659a",
+      "ff7df780-b491-4482-9775-ca71df6dadfa"
+    ],
+    "profile_type_dup_attributes": [
+      {
+        "id": "c25bedb5-3732-4ec4-a667-44a16c293a1d",
+        "ne_attribute_id": "2f096303-f1e0-41a9-8f02-d53ad7f11e2e",
+        "profile_type_id": "18a270f4-d204-405b-acad-8382d7617ef2",
+        "uid": "eb3a05175b084f33a0a81ce73bbd578a"
+      }
+    ],
+    "profile_type_namings": [
+      {
+        "id": "a9d6c69f-2bac-4c28-96f0-123d014dd18e",
+        "ne_attribute_id": "2f096303-f1e0-41a9-8f02-d53ad7f11e2e",
+        "order": 1,
+        "profile_type_id": "18a270f4-d204-405b-acad-8382d7617ef2",
+        "uid": "269aa8ce60b4490e9f06e5bcccacf12f"
+      }
+    ],
+    "table_id": "1d5064b1-1025-4425-95e6-41b9cfeec417",
+    "uid": "b3_nonhuman_types_profile_type"
+  },
+  "profile_type_attributes": {
+    "count": 215,
+    "records": [
+      {
+        "id": "00285e61-07d1-4be5-a4c2-71de85dc67a7",
+        "label": "import_existing_assignment",
+        "synced": null,
+        "uid": "import_existing_assignment"
+      },
+      {
+        "id": "0032fc92-489d-4b9c-b9f3-5d3af6cd0c76",
+        "label": "Sponsor",
+        "synced": null,
+        "uid": "nerm_core_assignment_sponsor"
+      },
+      {
+        "id": "00a2785c-082f-4a3b-bbd8-d28f112e226f",
+        "label": "import_invalid_subpopulation",
+        "synced": null,
+        "uid": "import_invalid_subpopulation"
+      },
+      {
+        "id": "015b3b97-caac-463a-ad0b-a203bf34824a",
+        "label": "Sub-Organization Assignments",
+        "synced": null,
+        "uid": "suborganization_assignments"
+      },
+      {
+        "id": "021aaf65-49ed-4e94-a38a-dcc0a2293cc5",
+        "label": "nonhuman_owner_email",
+        "synced": null,
+        "uid": "nonhuman_owner_email"
+      },
+      {
+        "id": "033de29f-e22a-43f1-b8d0-1d09f393d313",
+        "label": "assignment_name",
+        "synced": null,
+        "uid": "assignment_name"
+      },
+      {
+        "id": "08fad40d-dd85-49a8-941f-78f1a8b8011a",
+        "label": "Organization Name",
+        "synced": null,
+        "uid": "organization_name"
+      },
+      {
+        "id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+        "label": "Configuration Type",
+        "synced": null,
+        "uid": "sysconfig_type"
+      },
+      {
+        "id": "0a8f216b-b7c9-4e4d-8f18-e9d657e58626",
+        "label": "Company ID",
+        "synced": null,
+        "uid": "nerm_core_non_employee_company_id"
+      },
+      {
+        "id": "0bac8b78-0f4e-4ad5-ab58-324da38a0272",
+        "label": "person_risk_impact_score",
+        "synced": null,
+        "uid": "person_risk_impact_score"
+      }
+    ]
+  },
+  "profile_type_attributes_meta": {
+    "profile_type_id": "18a270f4-d204-405b-acad-8382d7617ef2",
+    "profile_type_uid": "b3_nonhuman_types_profile_type",
+    "profile_type_name": "Non-Human Types - Custom"
+  }
+}

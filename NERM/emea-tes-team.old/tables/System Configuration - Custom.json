@@ -1,0 +1,37 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "model_attr=id_proofing_status",
+    "table_attr=ee31efac-95ab-44b3-af1d-14824c0e20b9",
+    "table_attr=a155d46e-dd9a-4eb8-b9b2-a48f6cb3714d"
+  ],
+  "created_at": "2026-08-27T17:45:30.995-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "id_proofing_status",
+      "label": "Identity Proofing"
+    },
+    {
+      "attr": "sysconfig_name",
+      "label": "Configuration - Name"
+    },
+    {
+      "attr": "sysconfig_type",
+      "label": "Configuration Type"
+    }
+  ],
+  "id": "21027c8a-4e0d-4be4-a5d6-23de7a843fdf",
+  "name": "System Configuration - Custom",
+  "profile_type_id": "51348301-4560-4a79-9c85-b1f2700e72f3",
+  "uid": "b3_system_configuration_profile_type_table",
+  "updated_at": "2026-10-06T07:24:55.408-04:00"
+}

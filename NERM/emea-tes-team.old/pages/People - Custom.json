@@ -1,0 +1,30 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:46.333-04:00",
+    "description": null,
+    "elem_order_deprecated": null,
+    "id": "5b76e802-aa61-4df8-9bdf-ec97eb5b1124",
+    "legacy_id": null,
+    "name": "People - Custom",
+    "uid": "b3_people_profile_page",
+    "updated_at": "2026-10-06T07:25:27.766-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:46.336-04:00",
+      "element_id": "9fa342e0-fd84-416c-8dd2-ff35ad4ba30f",
+      "element_type": "Form",
+      "id": "6b53f5ff-2475-477b-9ecd-d12e0fb39a1f",
+      "order": 1,
+      "page_id": "5b76e802-aa61-4df8-9bdf-ec97eb5b1124",
+      "permissions": true,
+      "read_only": false,
+      "uid": "b3_2601cd0045954f19b6147b1c368f5c9a",
+      "updated_at": "2026-08-27T17:44:46.336-04:00"
+    }
+  ],
+  "page_contents": []
+}

@@ -1,0 +1,69 @@
+{
+  "profile": "fernando",
+  "url": "https://company12926-poc.mynonemployee.com/api",
+  "exported_at": "2026-10-08T08:33:35.359798+00:00",
+  "collections": {
+    "attributes": {
+      "count": 183
+    },
+    "attribute-options": {
+      "count": 151
+    },
+    "forms": {
+      "count": 72
+    },
+    "form-attributes": {
+      "count": 257
+    },
+    "page-contents": {
+      "count": 519
+    },
+    "page-elements": {
+      "count": 1297
+    },
+    "page-content-translations": {
+      "count": 0
+    },
+    "profile-types": {
+      "count": 9
+    },
+    "roles": {
+      "count": 31
+    },
+    "risk-levels": {
+      "count": 3
+    },
+    "risk-scores": {
+      "count": 101
+    },
+    "system-roles": {
+      "count": 2
+    },
+    "workflow-actions": {
+      "count": 906
+    },
+    "portals": {
+      "count": 1
+    },
+    "tables": {
+      "count": 15
+    },
+    "profile-pages": {
+      "count": 162
+    },
+    "workflow-pages": {
+      "count": 162
+    },
+    "profile-type-attributes": {
+      "count": 9
+    }
+  },
+  "unavailable_via_public_api": [
+    "workflow definitions (create/update/batch/automated/registration/login/password reset)",
+    "notifications",
+    "value builders",
+    "role permissions"
+  ],
+  "profile_and_workflow_pages_identical": true,
+  "note": "Public API dump of NERM configuration collections. This is not the Admin Actions > Export JSON bundle. Workflow definitions, notifications, value builders, and role permissions have no list route."
+}

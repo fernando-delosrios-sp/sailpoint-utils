@@ -1,0 +1,42 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:43.182-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "52e83da3-5d37-4f32-b79a-7200ed6d4edc",
+    "legacy_id": null,
+    "name": "Department - Update",
+    "uid": "b3_department_update_workflow_page",
+    "updated_at": "2026-08-27T17:44:43.182-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:43.185-04:00",
+      "element_id": "c97151fc-b5f1-47e6-8ff6-77fe0193247a",
+      "element_type": "Form",
+      "id": "83564611-dc23-437a-995a-d43cd641978a",
+      "order": 1,
+      "page_id": "52e83da3-5d37-4f32-b79a-7200ed6d4edc",
+      "permissions": false,
+      "read_only": true,
+      "uid": "b3_d03b715eac884fc883466abf43cbab78",
+      "updated_at": "2026-08-27T17:44:43.185-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:43.188-04:00",
+      "element_id": "8cecfc7f-4f67-4505-a28f-3ee7598aa3bf",
+      "element_type": "Form",
+      "id": "5eb4d875-1e1a-484e-b06f-062690cce3b5",
+      "order": 2,
+      "page_id": "52e83da3-5d37-4f32-b79a-7200ed6d4edc",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_aa712180e55c4f408962c9ce83e66e2b",
+      "updated_at": "2026-08-27T17:44:43.188-04:00"
+    }
+  ],
+  "page_contents": []
+}

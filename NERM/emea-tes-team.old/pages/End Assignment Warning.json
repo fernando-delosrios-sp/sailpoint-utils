@@ -1,0 +1,111 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:43.197-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "a6c7703b-17bf-44b5-afb4-2aacef70e9e6",
+    "legacy_id": null,
+    "name": "End Assignment Warning",
+    "uid": "b3_end_assignment_request_form_warning_workflow_page",
+    "updated_at": "2026-08-27T17:44:43.197-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:43.201-04:00",
+      "element_id": "4052db81-e947-4b8c-8ee4-32b983400b4f",
+      "element_type": "PageContent",
+      "id": "0ae4d865-a1bf-4c43-90f0-985d203fe9ea",
+      "order": 1,
+      "page_id": "a6c7703b-17bf-44b5-afb4-2aacef70e9e6",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_cc404d79ddf34eda9e809359f104803c",
+      "updated_at": "2026-08-27T17:44:43.201-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:43.244-04:00",
+      "element_id": "32f7f6e7-2527-4b59-b0f7-a075c396daa0",
+      "element_type": "PageContent",
+      "id": "6daa34e1-dd5b-444c-9766-1a0d22fc76a4",
+      "order": 2,
+      "page_id": "a6c7703b-17bf-44b5-afb4-2aacef70e9e6",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_b27736ac6ac64435960d7d91e482d05d",
+      "updated_at": "2026-08-27T17:44:43.244-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:43.283-04:00",
+      "element_id": "9bbe064e-4915-40ab-818c-91fde80bfa92",
+      "element_type": "Form",
+      "id": "f6d32664-8e9b-4493-9971-1a197847addd",
+      "order": 3,
+      "page_id": "a6c7703b-17bf-44b5-afb4-2aacef70e9e6",
+      "permissions": false,
+      "read_only": false,
+      "uid": "ec7f4fd264bc4b45bf1a1fff642870f9",
+      "updated_at": "2026-08-27T17:44:43.283-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:43.286-04:00",
+      "element_id": "9e0096f7-2952-4007-b813-605947969c6a",
+      "element_type": "PageContent",
+      "id": "9d714172-b6d8-4118-beff-2f6bad6c2788",
+      "order": 4,
+      "page_id": "a6c7703b-17bf-44b5-afb4-2aacef70e9e6",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_5a2f9c8a0e464a73bb35092e25b4c3de",
+      "updated_at": "2026-08-27T17:44:43.286-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:43.330-04:00",
+      "element_id": "5c624fa6-bab3-4f59-a778-1d5c953299a9",
+      "element_type": "PageContent",
+      "id": "82a5a130-7036-489b-85b3-1cefd23ff57a",
+      "order": 5,
+      "page_id": "a6c7703b-17bf-44b5-afb4-2aacef70e9e6",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_7ab8b42050da4743a6489aa12a3159e7",
+      "updated_at": "2026-08-27T17:44:43.330-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "End Assignment: {{profile.name}}",
+      "created_at": "2026-08-27T17:44:43.207-04:00",
+      "id": "4052db81-e947-4b8c-8ee4-32b983400b4f",
+      "type": "SmallHeading",
+      "uid": "b3_caaf55b3cb5546598d7db3ea8424063f",
+      "updated_at": "2026-08-27T17:44:43.207-04:00"
+    },
+    {
+      "content": "<p>By ending this assignment, the end date will be set to today and the status will change from <b>Active</b> to <b>Terminated</b>. Also, if this is the only active assignment on this person's profile a termination event will occur.  Indicate if this person would be eligible to be rehired. If not, a reason must be provided and the person will be prevented from a future assignment.</p>",
+      "created_at": "2026-08-27T17:44:43.247-04:00",
+      "id": "32f7f6e7-2527-4b59-b0f7-a075c396daa0",
+      "type": "HtmlContainer",
+      "uid": "b3_7187f7ad6dde49ccbcaebfc81773febd",
+      "updated_at": "2026-08-27T17:44:43.247-04:00"
+    },
+    {
+      "content": "<p style=\"color:#856404;background-color:#fff3cd;border-color:#ffeeba;border-radius:5px;padding:.75rem 1.25rem;margin-bottom:15px;\">Warning: This can have downstream impacts on {{attribute.assignment_person.first.first_name}}'s system access</p>\r\n\r\n\r\n\r\n",
+      "created_at": "2026-08-27T17:44:43.289-04:00",
+      "id": "9e0096f7-2952-4007-b813-605947969c6a",
+      "type": "HtmlContainer",
+      "uid": "b3_8d217f32a92f4169964232ab2dda554f",
+      "updated_at": "2026-08-27T17:44:43.289-04:00"
+    },
+    {
+      "content": "Click submit if you want to continue.",
+      "created_at": "2026-08-27T17:44:43.333-04:00",
+      "id": "5c624fa6-bab3-4f59-a778-1d5c953299a9",
+      "type": "Paragraph",
+      "uid": "b3_5de857561ebd43ab89503ffb05c89011",
+      "updated_at": "2026-08-27T17:44:43.333-04:00"
+    }
+  ]
+}

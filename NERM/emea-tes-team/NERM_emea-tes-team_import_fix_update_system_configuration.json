@@ -1,0 +1,103 @@
+[
+  {
+    "id": "853bedf4-a06e-4df0-acfe-199bafe32d57",
+    "archived": false,
+    "description": "Update System Configuration: show NE or Other form based on sysconfig_type, then update profile.",
+    "name": "Update System Configuration - Other",
+    "options": {},
+    "position": 1,
+    "profile_type_id": "51348301-4560-4a79-9c85-b1f2700e72f3",
+    "runs_other_workflows": false,
+    "status": "Enabled",
+    "type": "UpdateWorkflow",
+    "uid": "b3_update_system_configuration_other_update_workflow",
+    "class_name": "UpdateWorkflow"
+  },
+  {
+    "id": "0619a0db-731b-4006-95ee-2cd23458e016",
+    "archived": false,
+    "name": "sysconfig_type is NE \u2192 Update System Configuration - NE",
+    "uid": "b3_usc_cond_ne_form",
+    "class_name": "WorkflowCondition"
+  },
+  {
+    "id": "975a5804-821a-42f1-b4bd-2c01f49115df",
+    "condition_id": "0619a0db-731b-4006-95ee-2cd23458e016",
+    "condition_type": "WorkflowCondition",
+    "logical_operator": "AND",
+    "comparison_operator": "==",
+    "condition_object_id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+    "condition_object_type": "RadioButtonsAttribute",
+    "order": 0,
+    "secondary_attribute_id": "1723265c-491c-4b80-9cf8-ee2a7aaa00fc",
+    "type": "SessionAttributeRule",
+    "uid": "b3_usc_cond_ne_form_rule_0",
+    "class_name": "SessionAttributeRule",
+    "value": "1723265c-491c-4b80-9cf8-ee2a7aaa00fc"
+  },
+  {
+    "id": "176aa035-6965-463c-afea-4d368c2af249",
+    "position": 1,
+    "uid": "b3_usc_cond_ne_form_action_1",
+    "workflow_action_id": "d9b4683d-7ac9-4a5d-a39f-e00621fbfec3",
+    "workflow_condition_id": "0619a0db-731b-4006-95ee-2cd23458e016",
+    "class_name": "WorkflowConditionAction"
+  },
+  {
+    "id": "e6f0a9c7-00fc-4c1d-82b1-4295542a9568",
+    "archived": false,
+    "name": "sysconfig_type is Other \u2192 Update System Configuration - Other",
+    "uid": "b3_usc_cond_other_form",
+    "class_name": "WorkflowCondition"
+  },
+  {
+    "id": "7ad38df3-6737-424d-87fc-f9010a5ed9f9",
+    "condition_id": "e6f0a9c7-00fc-4c1d-82b1-4295542a9568",
+    "condition_type": "WorkflowCondition",
+    "logical_operator": "AND",
+    "comparison_operator": "==",
+    "condition_object_id": "09f3b04d-040c-41e8-a99b-b0e1dd6942c2",
+    "condition_object_type": "RadioButtonsAttribute",
+    "order": 0,
+    "secondary_attribute_id": "4647de26-896a-4200-95fc-71ee15951a19",
+    "type": "SessionAttributeRule",
+    "uid": "b3_usc_cond_other_form_rule_0",
+    "class_name": "SessionAttributeRule",
+    "value": "4647de26-896a-4200-95fc-71ee15951a19"
+  },
+  {
+    "id": "555e3ebe-0486-4feb-b9f1-5c1152e890c4",
+    "position": 1,
+    "uid": "b3_usc_cond_other_form_action_1",
+    "workflow_action_id": "b35220cd-fafc-4ca9-a21f-cb4d245b90a2",
+    "workflow_condition_id": "e6f0a9c7-00fc-4c1d-82b1-4295542a9568",
+    "class_name": "WorkflowConditionAction"
+  },
+  {
+    "id": "fda907c2-d1a4-457c-aebf-8876ce9ba6cb",
+    "position": 1,
+    "step_id": "0619a0db-731b-4006-95ee-2cd23458e016",
+    "step_type": "WorkflowCondition",
+    "uid": "b3_usc_step_01_ne_form",
+    "workflow_id": "853bedf4-a06e-4df0-acfe-199bafe32d57",
+    "class_name": "WorkflowStep"
+  },
+  {
+    "id": "0449e99c-2597-40b1-b584-749be5df7a90",
+    "position": 2,
+    "step_id": "e6f0a9c7-00fc-4c1d-82b1-4295542a9568",
+    "step_type": "WorkflowCondition",
+    "uid": "b3_usc_step_02_other_form",
+    "workflow_id": "853bedf4-a06e-4df0-acfe-199bafe32d57",
+    "class_name": "WorkflowStep"
+  },
+  {
+    "id": "f579c619-32cc-4260-95cc-a213bf5ac1a5",
+    "position": 3,
+    "step_id": "0800a337-0181-4b1c-bd94-e1287e996f98",
+    "step_type": "WorkflowAction",
+    "uid": "b3_usc_step_03_update_profile",
+    "workflow_id": "853bedf4-a06e-4df0-acfe-199bafe32d57",
+    "class_name": "WorkflowStep"
+  }
+]

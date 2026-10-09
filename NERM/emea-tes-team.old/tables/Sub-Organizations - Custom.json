@@ -1,0 +1,37 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "model_attr=id_proofing_status",
+    "table_attr=0b05f673-af67-476b-b47d-fa361f73db13",
+    "table_attr=ad54eac8-abc2-4197-b7fe-be67549def49"
+  ],
+  "created_at": "2026-08-27T17:45:30.925-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "id_proofing_status",
+      "label": "Identity Proofing"
+    },
+    {
+      "attr": "suborganization_name",
+      "label": "Sub-Organization Name"
+    },
+    {
+      "attr": "suborganization_organization",
+      "label": "Sub-Organization Organization"
+    }
+  ],
+  "id": "0af7afa8-9bbb-4911-9cd0-f2e46ffd6a5a",
+  "name": "Sub-Organizations - Custom",
+  "profile_type_id": "781c92b7-24ba-465c-99c4-489dd544de46",
+  "uid": "b3_suborganizations_profile_type_table",
+  "updated_at": "2026-10-06T07:25:06.853-04:00"
+}

@@ -1,0 +1,51 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.615-04:00",
+    "description": "Transfer all assignments primary location from one location to another.",
+    "elem_order_deprecated": null,
+    "id": "5345e235-d13e-4e10-a813-fe2e4d065030",
+    "legacy_id": null,
+    "name": "Location Transfer",
+    "uid": "b3_location_transfer_workflow_page",
+    "updated_at": "2026-08-27T17:44:45.615-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.618-04:00",
+      "element_id": "cc6fd107-1855-4273-9b77-999f5436dee7",
+      "element_type": "PageContent",
+      "id": "cf368c54-a4b3-41e9-8a4d-c2b8bd33df9f",
+      "order": 1,
+      "page_id": "5345e235-d13e-4e10-a813-fe2e4d065030",
+      "permissions": false,
+      "read_only": false,
+      "uid": "91df44718d664e458aff1a804411dcaf",
+      "updated_at": "2026-08-27T17:44:45.618-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.657-04:00",
+      "element_id": "f41fb652-57d8-4630-b631-7cf9e3aa3c63",
+      "element_type": "Form",
+      "id": "a9ba48c3-ef14-4e27-84a8-799de3b7faa9",
+      "order": 2,
+      "page_id": "5345e235-d13e-4e10-a813-fe2e4d065030",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b7b8366126124588b2d8b1fd406d3d69",
+      "updated_at": "2026-08-27T17:44:45.657-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "This process will move the primary location of all assignments from one location to another.",
+      "created_at": "2026-08-27T17:44:45.621-04:00",
+      "id": "cc6fd107-1855-4273-9b77-999f5436dee7",
+      "type": "Paragraph",
+      "uid": "80b69ea74375429ba7196778406710bc",
+      "updated_at": "2026-08-27T17:44:45.621-04:00"
+    }
+  ]
+}

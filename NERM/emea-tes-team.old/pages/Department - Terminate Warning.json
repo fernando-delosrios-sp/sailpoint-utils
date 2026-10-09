@@ -1,0 +1,91 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:43.012-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "7f2e4a3d-6670-4cc6-a51f-df3b3e4d1e56",
+    "legacy_id": null,
+    "name": "Department - Terminate Warning",
+    "uid": "b3_department_terminate_warning_workflow_page",
+    "updated_at": "2026-08-27T17:44:43.012-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:43.016-04:00",
+      "element_id": "9c6ee6b8-afa9-41c8-a922-cbf2d572c63c",
+      "element_type": "PageContent",
+      "id": "0b4c21c0-b672-4c9e-b77d-6eaa99e82bf5",
+      "order": 1,
+      "page_id": "7f2e4a3d-6670-4cc6-a51f-df3b3e4d1e56",
+      "permissions": false,
+      "read_only": false,
+      "uid": "1ead17449bc74f3797c5af6251dd0f93",
+      "updated_at": "2026-08-27T17:44:43.016-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:43.055-04:00",
+      "element_id": "8789a7cf-508b-415d-b795-0dd23db5e642",
+      "element_type": "Form",
+      "id": "35ae0209-3176-4ef1-ae33-29e2522f5ee4",
+      "order": 2,
+      "page_id": "7f2e4a3d-6670-4cc6-a51f-df3b3e4d1e56",
+      "permissions": false,
+      "read_only": true,
+      "uid": "c36b946b3a3248c48fb903dba678caca",
+      "updated_at": "2026-08-27T17:44:43.055-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:43.058-04:00",
+      "element_id": "05335a49-e1c5-473e-a926-2728dadd53bf",
+      "element_type": "PageContent",
+      "id": "20a0c0cd-5961-4b4a-8b91-a67a5de9ffc8",
+      "order": 3,
+      "page_id": "7f2e4a3d-6670-4cc6-a51f-df3b3e4d1e56",
+      "permissions": false,
+      "read_only": false,
+      "uid": "d3d7793a99524d2bb584a72a6ab9a8a3",
+      "updated_at": "2026-08-27T17:44:43.058-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:43.097-04:00",
+      "element_id": "61e930e6-00ec-4557-a547-a2bde14f1f29",
+      "element_type": "PageContent",
+      "id": "8ac901ae-f538-4557-b165-ccd8d3f6adb8",
+      "order": 4,
+      "page_id": "7f2e4a3d-6670-4cc6-a51f-df3b3e4d1e56",
+      "permissions": false,
+      "read_only": false,
+      "uid": "bcbf759965e24da49700373654795ccb",
+      "updated_at": "2026-08-27T17:44:43.097-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Terminate Department",
+      "created_at": "2026-08-27T17:44:43.019-04:00",
+      "id": "9c6ee6b8-afa9-41c8-a922-cbf2d572c63c",
+      "type": "FormHeading",
+      "uid": "3ca5897003774fd2a02b67db59a1c33e",
+      "updated_at": "2026-08-27T17:44:43.019-04:00"
+    },
+    {
+      "content": "Caution:",
+      "created_at": "2026-08-27T17:44:43.061-04:00",
+      "id": "05335a49-e1c5-473e-a926-2728dadd53bf",
+      "type": "SmallHeading",
+      "uid": "e7f1159637cd4a4eb954e762e5c26cd7",
+      "updated_at": "2026-08-27T17:44:43.061-04:00"
+    },
+    {
+      "content": "Terminating this department will end all Non-Employee assignments and terminate all non-human identities with this department assigned.",
+      "created_at": "2026-08-27T17:44:43.100-04:00",
+      "id": "61e930e6-00ec-4557-a547-a2bde14f1f29",
+      "type": "Paragraph",
+      "uid": "ac95694574634576b78820d2d0750b3e",
+      "updated_at": "2026-08-27T17:44:43.100-04:00"
+    }
+  ]
+}

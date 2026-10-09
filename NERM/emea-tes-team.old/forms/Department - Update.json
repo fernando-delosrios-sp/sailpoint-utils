@@ -1,0 +1,41 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.444-04:00",
+    "description": "",
+    "id": "8cecfc7f-4f67-4505-a28f-3ee7598aa3bf",
+    "legacy_id": null,
+    "name": "Department - Update",
+    "uid": "b3_department_update_form",
+    "updated_at": "2026-08-27T17:44:34.444-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.446-04:00",
+      "form_id": "8cecfc7f-4f67-4505-a28f-3ee7598aa3bf",
+      "id": "09681d3b-e959-4e09-9fa7-95a2b1c5951c",
+      "legacy_id": null,
+      "ne_attribute_id": "1cf038ad-46ea-414f-98b7-37f53e4aa78e",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_bfcdf69dcbf247a2b571b2a435e333ce",
+      "updated_at": "2026-08-27T17:44:34.446-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.449-04:00",
+      "form_id": "8cecfc7f-4f67-4505-a28f-3ee7598aa3bf",
+      "id": "19160620-bcea-4966-ac54-1f2d209ac27e",
+      "legacy_id": null,
+      "ne_attribute_id": "7fdb7a58-3787-4444-ac64-dae3a8df19e3",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_82cb4f484eab4dd0aebeda609a2c9718",
+      "updated_at": "2026-08-27T17:44:34.449-04:00"
+    }
+  ]
+}

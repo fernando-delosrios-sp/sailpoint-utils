@@ -1,0 +1,39 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.136-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "767ce2fe-dd43-4374-b4c9-11d8052a2d3a",
+    "legacy_id": null,
+    "name": "Existing Assignment Warning",
+    "uid": "b3_existing_assignment_warning_workflow_page",
+    "updated_at": "2026-08-27T17:44:45.136-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.140-04:00",
+      "element_id": "d7173b04-d629-41f8-8b99-68159c482c4d",
+      "element_type": "PageContent",
+      "id": "a9dda416-ba8c-4cfa-a294-314635797df2",
+      "order": 1,
+      "page_id": "767ce2fe-dd43-4374-b4c9-11d8052a2d3a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "833aa0241a274edc9115e019b49b11ee",
+      "updated_at": "2026-08-27T17:44:45.140-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "{{ attribute.first_name }} {{ attribute.last_name }} ( {{ attribute.email }} ) has an existing assignment<br>\r\n<p>\r\nOnly a single active assignment is allowed.   End the existing assignment before adding a new one.</p>",
+      "created_at": "2026-08-27T17:44:45.144-04:00",
+      "id": "d7173b04-d629-41f8-8b99-68159c482c4d",
+      "type": "Paragraph",
+      "uid": "bf106a5c8ebc43fb81327b1ca1003239",
+      "updated_at": "2026-08-27T17:44:45.144-04:00"
+    }
+  ]
+}

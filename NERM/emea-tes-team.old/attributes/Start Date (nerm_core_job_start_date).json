@@ -1,0 +1,31 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:48.567-04:00",
+    "data_type": "date",
+    "date_format": "mm/dd/yyyy",
+    "description": "Date the job begins.",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "3e5faa87-44d4-4b9a-9b81-24bc427f29dd",
+    "label": "Start Date",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": null,
+    "type": "DateAttribute",
+    "uid": "nerm_core_job_start_date",
+    "updated_at": "2026-08-27T17:46:48.567-04:00"
+  },
+  "options": []
+}

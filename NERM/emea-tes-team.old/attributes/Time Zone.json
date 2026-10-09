@@ -1,0 +1,1089 @@
+{
+  "attribute": {
+    "allow_multiple_selections": false,
+    "allows_custom_options": false,
+    "archived": false,
+    "archived_on": null,
+    "core": true,
+    "created_at": "2026-08-27T17:46:46.993-04:00",
+    "data_type": "drop-down",
+    "date_format": null,
+    "description": "Time Zone for the non-employee\u2019s work location.",
+    "filtered_by_ne_attribute": false,
+    "filtering_ne_attribute_id": null,
+    "id": "be6be213-085f-417a-a133-1017536d7c4b",
+    "label": "Time Zone",
+    "legacy_id": null,
+    "ne_attribute_filter_id": null,
+    "ownership_driven": false,
+    "profile_type_category": null,
+    "profile_type_id": null,
+    "reverse_association_attribute": null,
+    "risk_score_setting": "standard",
+    "risk_type": "none",
+    "selectable_status": null,
+    "tool_tip": null,
+    "type": "DropDownAttribute",
+    "uid": "nerm_core_non_employee_time_zone",
+    "updated_at": "2026-08-27T17:46:46.993-04:00"
+  },
+  "options": [
+    {
+      "core": true,
+      "id": "346fa40c-79a1-5165-b7d3-ad106b7c0f3e",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Abu Dhabi (UTC +04:00)",
+      "uid": "nerm_core_non_employee_time_zone_abu_dhabi"
+    },
+    {
+      "core": true,
+      "id": "95762990-589b-58df-ac5f-33bea4b95be2",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Adelaide (UTC +09:30)",
+      "uid": "nerm_core_non_employee_time_zone_adelaide"
+    },
+    {
+      "core": true,
+      "id": "5f2c887c-fd7f-5155-b27e-a1e6b685e321",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Alaska (UTC -09:00)",
+      "uid": "nerm_core_non_employee_time_zone_alaska"
+    },
+    {
+      "core": true,
+      "id": "fd1debf3-aee0-5153-a4fc-7c460ac2efe0",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Almaty (UTC +05:00)",
+      "uid": "nerm_core_non_employee_time_zone_almaty"
+    },
+    {
+      "core": true,
+      "id": "3bab24c8-a969-51de-8855-0fbbdb014ad0",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "American Samoa (UTC -11:00)",
+      "uid": "nerm_core_non_employee_time_zone_american_samoa"
+    },
+    {
+      "core": true,
+      "id": "e791da58-e36e-5e35-8a48-f19de1b9b7f9",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Amsterdam (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_amsterdam"
+    },
+    {
+      "core": true,
+      "id": "cc15a72a-542f-5cb7-8cbd-84700337a003",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Arizona (UTC -07:00)",
+      "uid": "nerm_core_non_employee_time_zone_arizona"
+    },
+    {
+      "core": true,
+      "id": "e894ffab-d2d6-5477-b8ba-2de924caf461",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Astana (UTC +05:00)",
+      "uid": "nerm_core_non_employee_time_zone_astana"
+    },
+    {
+      "core": true,
+      "id": "f76d4657-b338-529a-8d7d-9ba4c7fc2ca6",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Athens (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_athens"
+    },
+    {
+      "core": true,
+      "id": "3c11474a-bea9-52aa-8be9-f27a725f6e6a",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Atlantic Time (Canada) (UTC -04:00)",
+      "uid": "nerm_core_non_employee_time_zone_atlantic_time_canada"
+    },
+    {
+      "core": true,
+      "id": "c037feaf-b940-5339-ba86-e9188d68d555",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Auckland (UTC +12:00)",
+      "uid": "nerm_core_non_employee_time_zone_auckland"
+    },
+    {
+      "core": true,
+      "id": "99870476-cf81-5066-9752-d98a11273923",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Azores (UTC -01:00)",
+      "uid": "nerm_core_non_employee_time_zone_azores"
+    },
+    {
+      "core": true,
+      "id": "b61cc1b6-64c6-55df-96a2-46af62d37ebb",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Baghdad (UTC +03:00)",
+      "uid": "nerm_core_non_employee_time_zone_baghdad"
+    },
+    {
+      "core": true,
+      "id": "9db42f9d-e6b3-5bdd-9d5a-43e4b1945b38",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Baku (UTC +04:00)",
+      "uid": "nerm_core_non_employee_time_zone_baku"
+    },
+    {
+      "core": true,
+      "id": "62ec3f1f-0f85-50e6-919a-db9e1ae4fd2c",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Bangkok (UTC +07:00)",
+      "uid": "nerm_core_non_employee_time_zone_bangkok"
+    },
+    {
+      "core": true,
+      "id": "78a32ec0-fa2d-5757-9cb9-969f614df73e",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Beijing (UTC +08:00)",
+      "uid": "nerm_core_non_employee_time_zone_beijing"
+    },
+    {
+      "core": true,
+      "id": "05fe3caa-48d5-513f-92d8-30a01f802900",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Belgrade (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_belgrade"
+    },
+    {
+      "core": true,
+      "id": "2bdab77c-2425-5768-929b-20a771a66f6e",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Berlin (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_berlin"
+    },
+    {
+      "core": true,
+      "id": "41ace70b-409b-5864-9579-96a373094775",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Bern (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_bern"
+    },
+    {
+      "core": true,
+      "id": "2ca6e653-3efd-560e-8b0d-42c687728259",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Bogota (UTC -05:00)",
+      "uid": "nerm_core_non_employee_time_zone_bogota"
+    },
+    {
+      "core": true,
+      "id": "cbfcc9ae-5ff7-5bf5-a61c-0eb6f17da8d7",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Brasilia (UTC -03:00)",
+      "uid": "nerm_core_non_employee_time_zone_brasilia"
+    },
+    {
+      "core": true,
+      "id": "6987d874-20fe-5778-aa3b-c87d31b6330f",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Bratislava (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_bratislava"
+    },
+    {
+      "core": true,
+      "id": "2e16a3f9-12ea-5417-9ee9-1f50bd634329",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Brisbane (UTC +10:00)",
+      "uid": "nerm_core_non_employee_time_zone_brisbane"
+    },
+    {
+      "core": true,
+      "id": "b6380115-6b57-591e-83d6-4508a02bbb9a",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Brussels (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_brussels"
+    },
+    {
+      "core": true,
+      "id": "eeac27ec-0486-57ca-af11-d6e8a89a4649",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Bucharest (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_bucharest"
+    },
+    {
+      "core": true,
+      "id": "f76df932-ad61-5a2a-bbf3-bca7229b0cee",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Budapest (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_budapest"
+    },
+    {
+      "core": true,
+      "id": "84b4dbc9-cccb-564c-a899-bc7e05fe8b74",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Buenos Aires (UTC -03:00)",
+      "uid": "nerm_core_non_employee_time_zone_buenos_aires"
+    },
+    {
+      "core": true,
+      "id": "37492cd3-4696-5739-b861-8d5c99268d5c",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Cairo (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_cairo"
+    },
+    {
+      "core": true,
+      "id": "d610f741-eced-5ea5-bfc4-9dd542e84c42",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Canberra (UTC +10:00)",
+      "uid": "nerm_core_non_employee_time_zone_canberra"
+    },
+    {
+      "core": true,
+      "id": "33a6f681-ceef-5056-9a49-837d7c519738",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Cape Verde Is. (UTC -01:00)",
+      "uid": "nerm_core_non_employee_time_zone_cape_verde_is"
+    },
+    {
+      "core": true,
+      "id": "1ce24e63-2646-537f-98dd-b30f954c4612",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Caracas (UTC -04:00)",
+      "uid": "nerm_core_non_employee_time_zone_caracas"
+    },
+    {
+      "core": true,
+      "id": "ac3ff2d3-8deb-58e5-8fe6-9402875e4c9b",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Casablanca (UTC +00:00)",
+      "uid": "nerm_core_non_employee_time_zone_casablanca"
+    },
+    {
+      "core": true,
+      "id": "cba8b97a-6a67-5adc-86f7-ca1a9f209988",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Central America (UTC -06:00)",
+      "uid": "nerm_core_non_employee_time_zone_central_america"
+    },
+    {
+      "core": true,
+      "id": "9e441b2c-67d9-5784-bf02-30fdd7a442b6",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Central Time (US & Canada) (UTC -06:00)",
+      "uid": "nerm_core_non_employee_time_zone_central_time_us_canada"
+    },
+    {
+      "core": true,
+      "id": "e7296edd-eeb0-5986-856b-b9b3c98d2c17",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Chatham Is. (UTC +12:45)",
+      "uid": "nerm_core_non_employee_time_zone_chatham_is"
+    },
+    {
+      "core": true,
+      "id": "ba5f027c-5c69-56ce-9b0f-d17fbb089af6",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Chennai (UTC +05:30)",
+      "uid": "nerm_core_non_employee_time_zone_chennai"
+    },
+    {
+      "core": true,
+      "id": "e79478be-37d4-568e-bab0-3584241ac498",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Chihuahua (UTC -06:00)",
+      "uid": "nerm_core_non_employee_time_zone_chihuahua"
+    },
+    {
+      "core": true,
+      "id": "f49aa8a9-89d4-5757-9296-b33f8346ba16",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Chongqing (UTC +08:00)",
+      "uid": "nerm_core_non_employee_time_zone_chongqing"
+    },
+    {
+      "core": true,
+      "id": "276ea5f9-3210-5f1b-92cc-57714402c5e1",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Copenhagen (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_copenhagen"
+    },
+    {
+      "core": true,
+      "id": "d0c1354c-2112-5320-af9b-96da362a657a",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Darwin (UTC +09:30)",
+      "uid": "nerm_core_non_employee_time_zone_darwin"
+    },
+    {
+      "core": true,
+      "id": "a596dcb1-9d32-5256-9da6-68cff77ef584",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Dhaka (UTC +06:00)",
+      "uid": "nerm_core_non_employee_time_zone_dhaka"
+    },
+    {
+      "core": true,
+      "id": "0ce4f07e-870d-562e-9bd6-cb23ca8b7c27",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Dublin (UTC +00:00)",
+      "uid": "nerm_core_non_employee_time_zone_dublin"
+    },
+    {
+      "core": true,
+      "id": "0d417f36-6407-56b7-909b-810d8d662f43",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Eastern Time (US & Canada) (UTC -05:00)",
+      "uid": "nerm_core_non_employee_time_zone_eastern_time_us_canada"
+    },
+    {
+      "core": true,
+      "id": "35f7c357-d1e8-57cf-bcde-e0aedae331c1",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Edinburgh (UTC +00:00)",
+      "uid": "nerm_core_non_employee_time_zone_edinburgh"
+    },
+    {
+      "core": true,
+      "id": "b18e18d7-5f21-5db6-9e1f-993bbe7c66f5",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Ekaterinburg (UTC +05:00)",
+      "uid": "nerm_core_non_employee_time_zone_ekaterinburg"
+    },
+    {
+      "core": true,
+      "id": "ff8435a8-6d9b-5edb-af72-f48cd4818198",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Fiji (UTC +12:00)",
+      "uid": "nerm_core_non_employee_time_zone_fiji"
+    },
+    {
+      "core": true,
+      "id": "332f9e7c-f4ba-5516-bdd7-bb9b64886889",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Georgetown (UTC -04:00)",
+      "uid": "nerm_core_non_employee_time_zone_georgetown"
+    },
+    {
+      "core": true,
+      "id": "27c6fa75-87e5-5027-abe3-7f092cf7adf4",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Greenland (UTC -02:00)",
+      "uid": "nerm_core_non_employee_time_zone_greenland"
+    },
+    {
+      "core": true,
+      "id": "63f10894-de67-5655-b34f-a8bfeb28c4db",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Guadalajara (UTC -06:00)",
+      "uid": "nerm_core_non_employee_time_zone_guadalajara"
+    },
+    {
+      "core": true,
+      "id": "ea05d932-bd8f-5194-8b1c-514980ef7655",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Guam (UTC +10:00)",
+      "uid": "nerm_core_non_employee_time_zone_guam"
+    },
+    {
+      "core": true,
+      "id": "ef21f646-0602-5764-94da-0dc9f410ee73",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Hanoi (UTC +07:00)",
+      "uid": "nerm_core_non_employee_time_zone_hanoi"
+    },
+    {
+      "core": true,
+      "id": "23d25445-b317-5bb3-a0c7-8a854f82994b",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Harare (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_harare"
+    },
+    {
+      "core": true,
+      "id": "c8d96cf7-65eb-501a-a467-7e499eb3f8a7",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Hawaii (UTC -10:00)",
+      "uid": "nerm_core_non_employee_time_zone_hawaii"
+    },
+    {
+      "core": true,
+      "id": "e10109a0-d88e-5594-8b4a-09d9a587299e",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Helsinki (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_helsinki"
+    },
+    {
+      "core": true,
+      "id": "0ed7ec98-0ac7-5b06-b5c5-9f06afa3612d",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Hobart (UTC +10:00)",
+      "uid": "nerm_core_non_employee_time_zone_hobart"
+    },
+    {
+      "core": true,
+      "id": "cff09bc0-b414-506d-984d-20801fcd3658",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Hong Kong (UTC +08:00)",
+      "uid": "nerm_core_non_employee_time_zone_hong_kong"
+    },
+    {
+      "core": true,
+      "id": "068839bf-c556-5acd-a2aa-62deca60367a",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Indiana (East) (UTC -05:00)",
+      "uid": "nerm_core_non_employee_time_zone_indiana_east"
+    },
+    {
+      "core": true,
+      "id": "aa6f0aa2-2b7c-5557-b3d1-7f5035ae6029",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "International Date Line West (UTC -12:00)",
+      "uid": "nerm_core_non_employee_time_zone_international_date_line_west"
+    },
+    {
+      "core": true,
+      "id": "ffb55f89-7306-54b0-849b-c5b102f5e2f3",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Irkutsk (UTC +08:00)",
+      "uid": "nerm_core_non_employee_time_zone_irkutsk"
+    },
+    {
+      "core": true,
+      "id": "05a8849d-feca-5865-b42b-fad23ddf378e",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Islamabad (UTC +05:00)",
+      "uid": "nerm_core_non_employee_time_zone_islamabad"
+    },
+    {
+      "core": true,
+      "id": "dc95eb08-b99e-5c3f-af54-1c0dba98bd04",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Istanbul (UTC +03:00)",
+      "uid": "nerm_core_non_employee_time_zone_istanbul"
+    },
+    {
+      "core": true,
+      "id": "00431ff4-b557-5331-9fbc-9cdb42a53a0b",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Jakarta (UTC +07:00)",
+      "uid": "nerm_core_non_employee_time_zone_jakarta"
+    },
+    {
+      "core": true,
+      "id": "2e2e8ada-d8e7-58a5-97d7-aba60edef2bf",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Jerusalem (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_jerusalem"
+    },
+    {
+      "core": true,
+      "id": "bfc8e308-7640-5729-93da-46585feb1056",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Kabul (UTC +04:30)",
+      "uid": "nerm_core_non_employee_time_zone_kabul"
+    },
+    {
+      "core": true,
+      "id": "e8b1ceac-af5f-5450-8f89-3c7a3af4620b",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Kaliningrad (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_kaliningrad"
+    },
+    {
+      "core": true,
+      "id": "cb811334-8e54-5c4f-868c-19ae47121026",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Kamchatka (UTC +12:00)",
+      "uid": "nerm_core_non_employee_time_zone_kamchatka"
+    },
+    {
+      "core": true,
+      "id": "d537c84e-834a-5605-9021-9546b7fef043",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Karachi (UTC +05:00)",
+      "uid": "nerm_core_non_employee_time_zone_karachi"
+    },
+    {
+      "core": true,
+      "id": "e6fea0c8-b922-5bd1-b2ae-e229a91ebeb2",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Kathmandu (UTC +05:45)",
+      "uid": "nerm_core_non_employee_time_zone_kathmandu"
+    },
+    {
+      "core": true,
+      "id": "129d42fa-867b-52df-8eed-d66b0dbdc686",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Kolkata (UTC +05:30)",
+      "uid": "nerm_core_non_employee_time_zone_kolkata"
+    },
+    {
+      "core": true,
+      "id": "7f40e129-8c64-5aae-b2b8-43799200b629",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Krasnoyarsk (UTC +07:00)",
+      "uid": "nerm_core_non_employee_time_zone_krasnoyarsk"
+    },
+    {
+      "core": true,
+      "id": "be5a4b67-cae3-59e1-abf0-ebd273f46d03",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Kuala Lumpur (UTC +08:00)",
+      "uid": "nerm_core_non_employee_time_zone_kuala_lumpur"
+    },
+    {
+      "core": true,
+      "id": "913605fa-a058-54cb-a3d6-46d4797a837e",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Kuwait (UTC +03:00)",
+      "uid": "nerm_core_non_employee_time_zone_kuwait"
+    },
+    {
+      "core": true,
+      "id": "c770be75-b3e9-5f6b-b8e1-9f20620db786",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Kyiv (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_kyiv"
+    },
+    {
+      "core": true,
+      "id": "e5dad923-f2ea-5595-ae0a-bb2fa59d6a93",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "La Paz (UTC -04:00)",
+      "uid": "nerm_core_non_employee_time_zone_la_paz"
+    },
+    {
+      "core": true,
+      "id": "60a5600a-d4b6-519d-a03b-82acdb69c23e",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Lima (UTC -05:00)",
+      "uid": "nerm_core_non_employee_time_zone_lima"
+    },
+    {
+      "core": true,
+      "id": "8533d9c0-a3dc-5a35-ba81-6836b8617491",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Lisbon (UTC +00:00)",
+      "uid": "nerm_core_non_employee_time_zone_lisbon"
+    },
+    {
+      "core": true,
+      "id": "340fa59e-b6d4-5fb9-b9d1-285d53fbcbaa",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Ljubljana (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_ljubljana"
+    },
+    {
+      "core": true,
+      "id": "903c9782-005b-5bdf-8efc-3a01a3701cf3",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "London (UTC +00:00)",
+      "uid": "nerm_core_non_employee_time_zone_london"
+    },
+    {
+      "core": true,
+      "id": "809039d7-4c62-5da4-85e5-a7d87dceb9f1",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Madrid (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_madrid"
+    },
+    {
+      "core": true,
+      "id": "ad606bab-f31e-536c-b1f5-85afd93ffa71",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Magadan (UTC +11:00)",
+      "uid": "nerm_core_non_employee_time_zone_magadan"
+    },
+    {
+      "core": true,
+      "id": "88342ca4-d9be-5514-9c6b-38a3392baba8",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Marshall Is. (UTC +12:00)",
+      "uid": "nerm_core_non_employee_time_zone_marshall_is"
+    },
+    {
+      "core": true,
+      "id": "0645773a-edde-5e8a-b223-3955fc59a67d",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Mazatlan (UTC -07:00)",
+      "uid": "nerm_core_non_employee_time_zone_mazatlan"
+    },
+    {
+      "core": true,
+      "id": "5fea8ec5-c763-559b-8a0d-6139b8d25603",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Melbourne (UTC +10:00)",
+      "uid": "nerm_core_non_employee_time_zone_melbourne"
+    },
+    {
+      "core": true,
+      "id": "83a913f0-3f69-5b17-b49d-1e57bb271097",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Mexico City (UTC -06:00)",
+      "uid": "nerm_core_non_employee_time_zone_mexico_city"
+    },
+    {
+      "core": true,
+      "id": "0d4df1cd-ab06-54ac-be4e-791a2cb70bc7",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Mid-Atlantic (UTC -02:00)",
+      "uid": "nerm_core_non_employee_time_zone_mid-atlantic"
+    },
+    {
+      "core": true,
+      "id": "5c7c15ac-546e-5769-8caf-bd0023abcb23",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Midway Island (UTC -11:00)",
+      "uid": "nerm_core_non_employee_time_zone_midway_island"
+    },
+    {
+      "core": true,
+      "id": "6421fc82-886e-5eeb-8dcb-225eb0117dc2",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Minsk (UTC +03:00)",
+      "uid": "nerm_core_non_employee_time_zone_minsk"
+    },
+    {
+      "core": true,
+      "id": "2f85ace2-7fba-55d8-bdf8-c3ffd8c5f5b0",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Monrovia (UTC +00:00)",
+      "uid": "nerm_core_non_employee_time_zone_monrovia"
+    },
+    {
+      "core": true,
+      "id": "ca38d619-005c-54f8-af26-96b376739520",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Monterrey (UTC -06:00)",
+      "uid": "nerm_core_non_employee_time_zone_monterrey"
+    },
+    {
+      "core": true,
+      "id": "f7c177d0-1ed2-53d0-8aac-54f772697f07",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Montevideo (UTC -03:00)",
+      "uid": "nerm_core_non_employee_time_zone_montevideo"
+    },
+    {
+      "core": true,
+      "id": "b8952c9c-e98c-5f43-ba37-7900b4ca7516",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Moscow (UTC +03:00)",
+      "uid": "nerm_core_non_employee_time_zone_moscow"
+    },
+    {
+      "core": true,
+      "id": "7459feb9-30a9-5f7a-bb99-5efd912e764b",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Mountain Time (US & Canada) (UTC -07:00)",
+      "uid": "nerm_core_non_employee_time_zone_mountain_time_us_canada"
+    },
+    {
+      "core": true,
+      "id": "f7e8723d-2cf3-5c4e-89da-f1a6ff3d42cc",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Mumbai (UTC +05:30)",
+      "uid": "nerm_core_non_employee_time_zone_mumbai"
+    },
+    {
+      "core": true,
+      "id": "7abe8c67-d4b2-5934-9798-df70766c17b0",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Muscat (UTC +04:00)",
+      "uid": "nerm_core_non_employee_time_zone_muscat"
+    },
+    {
+      "core": true,
+      "id": "c8a0e4de-5c75-5d77-89f0-82f7ce87582e",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Nairobi (UTC +03:00)",
+      "uid": "nerm_core_non_employee_time_zone_nairobi"
+    },
+    {
+      "core": true,
+      "id": "ac4822ba-4e9b-5ffe-abf8-8b0baf8a64ab",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "New Caledonia (UTC +11:00)",
+      "uid": "nerm_core_non_employee_time_zone_new_caledonia"
+    },
+    {
+      "core": true,
+      "id": "af3a4a70-a8a4-5421-87ef-71bb2ecc17cd",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "New Delhi (UTC +05:30)",
+      "uid": "nerm_core_non_employee_time_zone_new_delhi"
+    },
+    {
+      "core": true,
+      "id": "5b8d1b13-6312-577f-9843-5e857dd16fdb",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Newfoundland (UTC -03:30)",
+      "uid": "nerm_core_non_employee_time_zone_newfoundland"
+    },
+    {
+      "core": true,
+      "id": "de6367d1-cf26-5219-a12b-9909c592417f",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Novosibirsk (UTC +07:00)",
+      "uid": "nerm_core_non_employee_time_zone_novosibirsk"
+    },
+    {
+      "core": true,
+      "id": "419bcced-3c79-5ca7-8bfb-7091b15d11e3",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Nuku'alofa (UTC +13:00)",
+      "uid": "nerm_core_non_employee_time_zone_nuku_alofa"
+    },
+    {
+      "core": true,
+      "id": "d7d7469f-faed-57bd-9c29-a7e7949c670f",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Osaka (UTC +09:00)",
+      "uid": "nerm_core_non_employee_time_zone_osaka"
+    },
+    {
+      "core": true,
+      "id": "906498c0-4a23-54f3-8127-3fbfa426fff3",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Pacific Time (US & Canada) (UTC -08:00)",
+      "uid": "nerm_core_non_employee_time_zone_pacific_time_us_canada"
+    },
+    {
+      "core": true,
+      "id": "c53c2249-998d-5b78-8683-a4cea6ed5871",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Paris (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_paris"
+    },
+    {
+      "core": true,
+      "id": "6397a763-e609-58ad-81d1-f6dadd293c0f",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Perth (UTC +08:00)",
+      "uid": "nerm_core_non_employee_time_zone_perth"
+    },
+    {
+      "core": true,
+      "id": "ed25099f-32ad-5cf1-ab5b-fb9ff733bde4",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Port Moresby (UTC +10:00)",
+      "uid": "nerm_core_non_employee_time_zone_port_moresby"
+    },
+    {
+      "core": true,
+      "id": "86bdd75f-7e5c-5d9b-aae0-f7565a5fa59a",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Prague (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_prague"
+    },
+    {
+      "core": true,
+      "id": "7e875e56-2bec-573c-9e6f-3f53e4b3f85b",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Pretoria (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_pretoria"
+    },
+    {
+      "core": true,
+      "id": "a9b1005a-3796-5282-b4e6-7ec10f06ccb4",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Puerto Rico (UTC -04:00)",
+      "uid": "nerm_core_non_employee_time_zone_puerto_rico"
+    },
+    {
+      "core": true,
+      "id": "530b87aa-596e-58a2-87ad-72cd51c29dd1",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Quito (UTC -05:00)",
+      "uid": "nerm_core_non_employee_time_zone_quito"
+    },
+    {
+      "core": true,
+      "id": "a7857a79-3534-52ef-9850-0fc6e5a5d30c",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Rangoon (UTC +06:30)",
+      "uid": "nerm_core_non_employee_time_zone_rangoon"
+    },
+    {
+      "core": true,
+      "id": "c5fad818-df59-5c1c-8792-19d119a9a7ce",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Riga (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_riga"
+    },
+    {
+      "core": true,
+      "id": "0ed4391e-7bd5-5b84-a765-f4f01a3dc9a9",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Riyadh (UTC +03:00)",
+      "uid": "nerm_core_non_employee_time_zone_riyadh"
+    },
+    {
+      "core": true,
+      "id": "ebbe83f4-e48f-5c0e-bbce-80400c2d05b7",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Rome (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_rome"
+    },
+    {
+      "core": true,
+      "id": "d46761a6-1c62-5469-ba1a-1742fd73bd37",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Samara (UTC +04:00)",
+      "uid": "nerm_core_non_employee_time_zone_samara"
+    },
+    {
+      "core": true,
+      "id": "242a020b-47a2-5f61-8893-9da88522617e",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Samoa (UTC +13:00)",
+      "uid": "nerm_core_non_employee_time_zone_samoa"
+    },
+    {
+      "core": true,
+      "id": "0eaf97b9-31aa-5661-9c0f-6361271f771f",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Santiago (UTC -04:00)",
+      "uid": "nerm_core_non_employee_time_zone_santiago"
+    },
+    {
+      "core": true,
+      "id": "16134f39-3546-5d09-81a6-d0a59d48ac89",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Sapporo (UTC +09:00)",
+      "uid": "nerm_core_non_employee_time_zone_sapporo"
+    },
+    {
+      "core": true,
+      "id": "a502bd77-ff69-50df-81ef-826af6ea4315",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Sarajevo (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_sarajevo"
+    },
+    {
+      "core": true,
+      "id": "c0491bd5-2290-5f87-8530-a726ed888966",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Saskatchewan (UTC -06:00)",
+      "uid": "nerm_core_non_employee_time_zone_saskatchewan"
+    },
+    {
+      "core": true,
+      "id": "6ff3b146-28cf-5764-8e90-fad53e4e1552",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Seoul (UTC +09:00)",
+      "uid": "nerm_core_non_employee_time_zone_seoul"
+    },
+    {
+      "core": true,
+      "id": "16b8af34-5e0c-5fd8-9c04-1123ea010274",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Singapore (UTC +08:00)",
+      "uid": "nerm_core_non_employee_time_zone_singapore"
+    },
+    {
+      "core": true,
+      "id": "eeb0125f-b579-54bd-b28c-6d44d15e4aad",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Skopje (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_skopje"
+    },
+    {
+      "core": true,
+      "id": "f62e7922-52f7-598c-93c9-8838dfc944f3",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Sofia (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_sofia"
+    },
+    {
+      "core": true,
+      "id": "13ecb880-15de-5cd6-b7ca-53421a00ecac",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Solomon Is. (UTC +11:00)",
+      "uid": "nerm_core_non_employee_time_zone_solomon_is"
+    },
+    {
+      "core": true,
+      "id": "f24c3200-1641-5f1d-9eaa-f9d1478736ca",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Srednekolymsk (UTC +11:00)",
+      "uid": "nerm_core_non_employee_time_zone_srednekolymsk"
+    },
+    {
+      "core": true,
+      "id": "34a313ef-0d0b-575c-8862-20532f033d19",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Sri Jayawardenepura (UTC +05:30)",
+      "uid": "nerm_core_non_employee_time_zone_sri_jayawardenepura"
+    },
+    {
+      "core": true,
+      "id": "15de6e89-62b7-54a5-8f3d-be923bd01abc",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "St. Petersburg (UTC +03:00)",
+      "uid": "nerm_core_non_employee_time_zone_st_petersburg"
+    },
+    {
+      "core": true,
+      "id": "aef7a842-341b-5a9b-933a-298259bd4cd9",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Stockholm (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_stockholm"
+    },
+    {
+      "core": true,
+      "id": "48d842d0-4cbd-538b-aea5-2574a24e69b2",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Sydney (UTC +10:00)",
+      "uid": "nerm_core_non_employee_time_zone_sydney"
+    },
+    {
+      "core": true,
+      "id": "105c5198-067c-5408-9541-81a71854a07a",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Taipei (UTC +08:00)",
+      "uid": "nerm_core_non_employee_time_zone_taipei"
+    },
+    {
+      "core": true,
+      "id": "5cabae15-c410-5f1d-be7a-d6fe48ed9961",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Tallinn (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_tallinn"
+    },
+    {
+      "core": true,
+      "id": "f7e5e1cb-dd04-539e-8685-75c06d275d61",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Tashkent (UTC +05:00)",
+      "uid": "nerm_core_non_employee_time_zone_tashkent"
+    },
+    {
+      "core": true,
+      "id": "74629034-9b82-5273-99d9-3885462f3a1c",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Tbilisi (UTC +04:00)",
+      "uid": "nerm_core_non_employee_time_zone_tbilisi"
+    },
+    {
+      "core": true,
+      "id": "27ebaf6e-fb04-5461-8818-7501464c799a",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Tehran (UTC +03:30)",
+      "uid": "nerm_core_non_employee_time_zone_tehran"
+    },
+    {
+      "core": true,
+      "id": "3d4f2a4d-4f6d-52be-ba4f-ceada94fbccd",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Tijuana (UTC -08:00)",
+      "uid": "nerm_core_non_employee_time_zone_tijuana"
+    },
+    {
+      "core": true,
+      "id": "b97ef9a3-337f-5778-b1d5-3d5e36127808",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Tokelau Is. (UTC +13:00)",
+      "uid": "nerm_core_non_employee_time_zone_tokelau_is"
+    },
+    {
+      "core": true,
+      "id": "359bfee1-ad3f-5774-9deb-1580ea1c2517",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Tokyo (UTC +09:00)",
+      "uid": "nerm_core_non_employee_time_zone_tokyo"
+    },
+    {
+      "core": true,
+      "id": "db091581-c7b8-5410-a8dc-e004038e053a",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "UTC (UTC +00:00)",
+      "uid": "nerm_core_non_employee_time_zone_utc"
+    },
+    {
+      "core": true,
+      "id": "3c55446b-12a5-5e05-8226-ce7e4f1383ab",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Ulaanbaatar (UTC +08:00)",
+      "uid": "nerm_core_non_employee_time_zone_ulaanbaatar"
+    },
+    {
+      "core": true,
+      "id": "16a24b34-6ea0-5580-a330-ae38f5d42a25",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Urumqi (UTC +06:00)",
+      "uid": "nerm_core_non_employee_time_zone_urumqi"
+    },
+    {
+      "core": true,
+      "id": "2f9c9d73-9ee4-5e3d-866e-2ac58d5ddf85",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Vienna (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_vienna"
+    },
+    {
+      "core": true,
+      "id": "2910a377-123e-5c2a-b4af-7358fa6f6dc6",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Vilnius (UTC +02:00)",
+      "uid": "nerm_core_non_employee_time_zone_vilnius"
+    },
+    {
+      "core": true,
+      "id": "2ad71242-cd91-5214-ac1b-15e316639e2f",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Vladivostok (UTC +10:00)",
+      "uid": "nerm_core_non_employee_time_zone_vladivostok"
+    },
+    {
+      "core": true,
+      "id": "fbdb3c66-4089-59e3-a934-9baa747bc1fa",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Volgograd (UTC +03:00)",
+      "uid": "nerm_core_non_employee_time_zone_volgograd"
+    },
+    {
+      "core": true,
+      "id": "e8112135-54a4-559f-8b5e-c0655978d9a7",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Warsaw (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_warsaw"
+    },
+    {
+      "core": true,
+      "id": "5badf2f2-01eb-5539-b45c-5189f2ca03bd",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Wellington (UTC +12:00)",
+      "uid": "nerm_core_non_employee_time_zone_wellington"
+    },
+    {
+      "core": true,
+      "id": "b1ae64e5-11ae-5ea0-a4c5-49389c9dba84",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "West Central Africa (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_west_central_africa"
+    },
+    {
+      "core": true,
+      "id": "c8e39da8-10d8-560e-b517-60a21b75bf91",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Yakutsk (UTC +09:00)",
+      "uid": "nerm_core_non_employee_time_zone_yakutsk"
+    },
+    {
+      "core": true,
+      "id": "0bf526e7-0029-5de4-8013-016781a5b161",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Yerevan (UTC +04:00)",
+      "uid": "nerm_core_non_employee_time_zone_yerevan"
+    },
+    {
+      "core": true,
+      "id": "424eb65b-4585-52be-ac17-683e80f819a7",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Zagreb (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_zagreb"
+    },
+    {
+      "core": true,
+      "id": "c3613740-06bb-528b-aefe-93d8a472e0a5",
+      "ne_attribute_id": "be6be213-085f-417a-a133-1017536d7c4b",
+      "option": "Zurich (UTC +01:00)",
+      "uid": "nerm_core_non_employee_time_zone_zurich"
+    }
+  ]
+}

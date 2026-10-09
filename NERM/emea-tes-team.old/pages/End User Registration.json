@@ -1,0 +1,63 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:45.070-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "7ab12661-a4ba-4337-a1c1-d73fa5595a5a",
+    "legacy_id": null,
+    "name": "End User Registration",
+    "uid": "b3_end_user_registration_workflow_page",
+    "updated_at": "2026-08-27T17:44:45.070-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:45.074-04:00",
+      "element_id": "3567b0c4-5920-41bb-88a2-969dc7a07638",
+      "element_type": "Form",
+      "id": "7c93bbd3-90b2-4d84-8e54-a6a85e30441d",
+      "order": 1,
+      "page_id": "7ab12661-a4ba-4337-a1c1-d73fa5595a5a",
+      "permissions": false,
+      "read_only": true,
+      "uid": "b3_b7eb034cd89d471593878f36c619a933",
+      "updated_at": "2026-08-27T17:44:45.074-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.078-04:00",
+      "element_id": "8549be48-c3c1-4e4a-9f5f-fe072c5f12d0",
+      "element_type": "PageContent",
+      "id": "6c646e1b-4840-42a2-bb14-2da6748cef41",
+      "order": 2,
+      "page_id": "7ab12661-a4ba-4337-a1c1-d73fa5595a5a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "f2f86fa7282a48399bbf0b0eca74cc64",
+      "updated_at": "2026-08-27T17:44:45.078-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:45.131-04:00",
+      "element_id": "7465fc8d-0a32-47e2-8ccd-571485f3c097",
+      "element_type": "Form",
+      "id": "984b8f5f-840f-482e-bfa7-ed74bd68b525",
+      "order": 3,
+      "page_id": "7ab12661-a4ba-4337-a1c1-d73fa5595a5a",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b3_5ad6e091e4ac4702bc6e77e402a2a875",
+      "updated_at": "2026-08-27T17:44:45.131-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "    <b>Acceptable Use Policy</b>\r\n    <p>Services provided by us may only be\r\n    used for lawful purposes. You agree to comply with all applicable laws, rules,\r\n    and regulations in connection with your use of the services. Any material or\r\n    conduct that in our judgment violates this policy in any manner may result in\r\n    suspension or termination of the services or removal of user\u2019s account with or\r\n    without notice.</p>\r\n    <b>Prohibited use</b>\r\n    <p>You may not use the services to\r\n    publish content or engage in activity that is illegal under applicable law,\r\n    that is harmful to others, or that would subject us to liability, including,\r\n    without limitation, in connection with any of the following, each of which is\r\n    prohibited under this AUP:\r\n    <br>- Phishing or engaging in identity theft\r\n    <br>- Distributing computer viruses, worms, Trojan horses, or other malicious code\r\n    <br>- Promoting or facilitating violence or terrorist activities\r\n    <br>- Infringing the intellectual property or other proprietary rights of others</p>\r\n    <b>Enforcement</b>\r\n    <p>Your services may be suspended or terminated with or without notice upon any violation of this policy. Any violations may result in the immediate suspension or termination of your account.</p>\r\n    <b>Reporting violations</b>\r\n    <p>To report a violation of this policy, please contact us.\r\n    <br>We reserve the right to change this policy at any given time, of which you will be promptly updated.</p>",
+      "created_at": "2026-08-27T17:44:45.082-04:00",
+      "id": "8549be48-c3c1-4e4a-9f5f-fe072c5f12d0",
+      "type": "HtmlContainer",
+      "uid": "233b5db0c50f4c34a7173ce2a59e1873",
+      "updated_at": "2026-08-27T17:44:45.082-04:00"
+    }
+  ]
+}

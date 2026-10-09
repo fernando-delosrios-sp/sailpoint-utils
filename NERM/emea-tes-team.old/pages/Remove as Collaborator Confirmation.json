@@ -1,0 +1,59 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:46.535-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "9e7075a4-e129-4f5b-acab-bab69e4fd552",
+    "legacy_id": null,
+    "name": "Remove as Collaborator Confirmation",
+    "uid": "b3_remove_as_collaborator_confirmation_workflow_page",
+    "updated_at": "2026-08-27T17:44:46.535-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:46.538-04:00",
+      "element_id": "fa2c4419-8122-46a5-8fe9-a416818ac21d",
+      "element_type": "PageContent",
+      "id": "44ca3647-f21e-4b35-8da4-4fb1656abdab",
+      "order": 1,
+      "page_id": "9e7075a4-e129-4f5b-acab-bab69e4fd552",
+      "permissions": false,
+      "read_only": false,
+      "uid": "b18c18d2a22149f1bd9b72d585f117a9",
+      "updated_at": "2026-08-27T17:44:46.538-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:46.578-04:00",
+      "element_id": "be23c21a-64ca-4d68-9446-1cbfe7903a0f",
+      "element_type": "PageContent",
+      "id": "d7dba183-330f-4a10-8514-35f585c2550c",
+      "order": 2,
+      "page_id": "9e7075a4-e129-4f5b-acab-bab69e4fd552",
+      "permissions": false,
+      "read_only": false,
+      "uid": "e89db39475be4181abb17d35eb6830f6",
+      "updated_at": "2026-08-27T17:44:46.578-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Remove collaborator access for {{ profile.name }}",
+      "created_at": "2026-08-27T17:44:46.542-04:00",
+      "id": "fa2c4419-8122-46a5-8fe9-a416818ac21d",
+      "type": "FormHeading",
+      "uid": "19bc23151157431eb6414271f557577b",
+      "updated_at": "2026-08-27T17:44:46.542-04:00"
+    },
+    {
+      "content": "You are about to remove the collaborator access for  {{ profile.name }}. <br>\r\n<br>\r\nThis will remove their ability to manage non-employees for {% if attribute.collaborator_type == \"suborganization\" %} the sub-organization {{ attribute.managed_suborganization }} in {{ attribute.managed_suborganization.first.suborganization_organization.first.organization_name }} {% else %} the organization {{ attribute.managed_organization }} {% endif %}.   \r\n",
+      "created_at": "2026-08-27T17:44:46.581-04:00",
+      "id": "be23c21a-64ca-4d68-9446-1cbfe7903a0f",
+      "type": "Paragraph",
+      "uid": "9657dab4f6004ad49b278cb3dffaacfb",
+      "updated_at": "2026-08-27T17:44:46.581-04:00"
+    }
+  ]
+}

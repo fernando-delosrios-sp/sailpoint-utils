@@ -1,0 +1,39 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:46.443-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "fdb38621-90c9-4699-b43d-54c9af448b43",
+    "legacy_id": null,
+    "name": "Rehire Person Terminated Only",
+    "uid": "b3_rehire_person_terminated_only_workflow_page",
+    "updated_at": "2026-08-27T17:44:46.443-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:46.446-04:00",
+      "element_id": "f1841a77-3095-469e-a91c-753c568abe4a",
+      "element_type": "PageContent",
+      "id": "50e5791d-89c7-4f6b-b9bf-a3f0711a6645",
+      "order": 1,
+      "page_id": "fdb38621-90c9-4699-b43d-54c9af448b43",
+      "permissions": false,
+      "read_only": false,
+      "uid": "9698bee9fa8b4926b64dc07cef3ed22a",
+      "updated_at": "2026-08-27T17:44:46.446-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Only a terminated person can be rehired. This person is {{ profile.status }} and can not be updated.",
+      "created_at": "2026-08-27T17:44:46.450-04:00",
+      "id": "f1841a77-3095-469e-a91c-753c568abe4a",
+      "type": "Paragraph",
+      "uid": "50fe75a7b1564b26bdcc1a8307b69ca0",
+      "updated_at": "2026-08-27T17:44:46.450-04:00"
+    }
+  ]
+}

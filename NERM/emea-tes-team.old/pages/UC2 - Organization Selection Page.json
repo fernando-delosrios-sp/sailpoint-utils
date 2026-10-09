@@ -1,0 +1,51 @@
+{
+  "page": {
+    "archived": false,
+    "archived_on": null,
+    "core": false,
+    "created_at": "2026-08-27T17:44:50.776-04:00",
+    "description": "",
+    "elem_order_deprecated": null,
+    "id": "e38a2777-6daa-44e3-b684-3077c21c065c",
+    "legacy_id": null,
+    "name": "UC2 - Organization Selection Page",
+    "uid": "uc2_organization_selection_workflow_page",
+    "updated_at": "2026-08-27T17:44:50.776-04:00"
+  },
+  "elements": [
+    {
+      "created_at": "2026-08-27T17:44:50.781-04:00",
+      "element_id": "72100d89-2030-4b09-b028-234b8d002028",
+      "element_type": "PageContent",
+      "id": "eae3283f-89ec-4010-b99b-757df53b2a65",
+      "order": 1,
+      "page_id": "e38a2777-6daa-44e3-b684-3077c21c065c",
+      "permissions": false,
+      "read_only": false,
+      "uid": "91e4522277354123842618ad804cb58f",
+      "updated_at": "2026-08-27T17:44:50.781-04:00"
+    },
+    {
+      "created_at": "2026-08-27T17:44:50.819-04:00",
+      "element_id": "b4e65d1a-454a-42d1-8cd6-e33ffef81790",
+      "element_type": "Form",
+      "id": "66d13ea1-6c27-4532-aab4-cbe63433ba65",
+      "order": 2,
+      "page_id": "e38a2777-6daa-44e3-b684-3077c21c065c",
+      "permissions": false,
+      "read_only": false,
+      "uid": "2306774bdb7043ddb2e34d04bebd2747",
+      "updated_at": "2026-08-27T17:44:50.819-04:00"
+    }
+  ],
+  "page_contents": [
+    {
+      "content": "Choose the organization that you are representing",
+      "created_at": "2026-08-27T17:44:50.784-04:00",
+      "id": "72100d89-2030-4b09-b028-234b8d002028",
+      "type": "Paragraph",
+      "uid": "042e5f8f86ec492a8c1e1527a447903e",
+      "updated_at": "2026-08-27T17:44:50.784-04:00"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.787-04:00",
+    "description": "",
+    "id": "8c16a371-2ca3-453d-82e6-f33176fb36b2",
+    "legacy_id": null,
+    "name": "Sponsor & Title",
+    "uid": "b3_sponsor_form",
+    "updated_at": "2026-08-27T17:44:34.787-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.790-04:00",
+      "form_id": "8c16a371-2ca3-453d-82e6-f33176fb36b2",
+      "id": "549085dc-f752-4312-aae7-c4d28521f42d",
+      "legacy_id": null,
+      "ne_attribute_id": "203ec958-59eb-400b-8e74-ff9ba24a75aa",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_286b1bcc474f4b10b2ace269f39bbb2e",
+      "updated_at": "2026-08-27T17:44:34.790-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.793-04:00",
+      "form_id": "8c16a371-2ca3-453d-82e6-f33176fb36b2",
+      "id": "8156f41d-7225-44a6-a19f-0e1fcf7b1663",
+      "legacy_id": null,
+      "ne_attribute_id": "b4abb4b0-5799-4541-b096-71ec003bf959",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_6ed6c8a818064aeeb5394f911b8249fb",
+      "updated_at": "2026-08-27T17:44:34.793-04:00"
+    }
+  ]
+}

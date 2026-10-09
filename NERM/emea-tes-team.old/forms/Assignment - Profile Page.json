@@ -1,0 +1,173 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:34.347-04:00",
+    "description": "",
+    "id": "296d247f-7114-4e95-bee0-16df780ce079",
+    "legacy_id": null,
+    "name": "Assignment - Profile Page",
+    "uid": "b3_assignment_profile_form",
+    "updated_at": "2026-08-27T17:44:34.347-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.349-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "1ea47418-12b9-4742-9883-5417284aff3d",
+      "legacy_id": null,
+      "ne_attribute_id": "825fd427-a66c-474b-9913-81ccb898f050",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_94d8ac91e2514a4aae689225994fb03d",
+      "updated_at": "2026-08-27T17:44:34.349-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.352-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "92fb7aa7-4bd1-4e8b-8d09-9534ab6118c5",
+      "legacy_id": null,
+      "ne_attribute_id": "9757d56b-7287-40a6-a700-066a7ae2e0f2",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_c258d14cb7a54429a150173415b31c30",
+      "updated_at": "2026-08-27T17:44:34.352-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.354-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "db9bc372-846e-4146-a98a-4e071ae5975c",
+      "legacy_id": null,
+      "ne_attribute_id": "41e09d3e-66eb-4e11-b82a-0fd94d6a1ca7",
+      "order": 2,
+      "read_only": false,
+      "uid": "b3_3f453d782c1a4e808f9867b12b3158c5",
+      "updated_at": "2026-08-27T17:44:34.354-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.357-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "9b5d3d1d-2251-411c-a9af-f82bda947d43",
+      "legacy_id": null,
+      "ne_attribute_id": "bb51e30b-26ac-4e81-a6ee-3d05b2883afa",
+      "order": 3,
+      "read_only": false,
+      "uid": "b3_41b49855572f43359d6230f69f2e4f92",
+      "updated_at": "2026-08-27T17:44:34.357-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.360-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "6760ee43-970d-4c39-9ec6-bac3f406646d",
+      "legacy_id": null,
+      "ne_attribute_id": "add911cb-50d7-4c61-8163-f48de54530f5",
+      "order": 4,
+      "read_only": false,
+      "uid": "b3_72ca3b6a73dc404e930e9d879790b890",
+      "updated_at": "2026-08-27T17:44:34.360-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.362-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "e8370e70-8ef3-4ba2-a7a8-8e3208ca4ecd",
+      "legacy_id": null,
+      "ne_attribute_id": "6c9fdfd2-7278-406d-bd07-6ce670e53d80",
+      "order": 5,
+      "read_only": false,
+      "uid": "a4b2e002138a4717b065d0b2d7e97a53",
+      "updated_at": "2026-08-27T17:44:34.362-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.367-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "78b788e4-73a8-4c40-aada-ff9eb3bf4941",
+      "legacy_id": null,
+      "ne_attribute_id": "203ec958-59eb-400b-8e74-ff9ba24a75aa",
+      "order": 6,
+      "read_only": false,
+      "uid": "b3_87766861ceaf4ec882fda0f68a635ffe",
+      "updated_at": "2026-08-27T17:44:34.367-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.370-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "794c0dd5-7f3f-469a-95bf-90be93333b4b",
+      "legacy_id": null,
+      "ne_attribute_id": "fb7019dc-82ae-409d-b9ad-56afee1f3037",
+      "order": 7,
+      "read_only": false,
+      "uid": "b3_fbc2603a16a04ac38e90215a0d08add0",
+      "updated_at": "2026-08-27T17:44:34.370-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.374-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "96f0ee06-9fc1-41ee-99ca-3926f9c8e971",
+      "legacy_id": null,
+      "ne_attribute_id": "a17eb16b-3a90-4a20-8a19-ada4efbb8b08",
+      "order": 8,
+      "read_only": false,
+      "uid": "b3_435f729e29554678b52463fc5bd5afd7",
+      "updated_at": "2026-08-27T17:44:34.374-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.377-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "ae728454-cc44-4b01-9581-ba7361d90307",
+      "legacy_id": null,
+      "ne_attribute_id": "b4abb4b0-5799-4541-b096-71ec003bf959",
+      "order": 9,
+      "read_only": false,
+      "uid": "b3_47205edb9b9847289386586f5dfa2ff4",
+      "updated_at": "2026-08-27T17:44:34.377-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.381-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "a0debcf2-8fe1-45d4-877f-78103fa10165",
+      "legacy_id": null,
+      "ne_attribute_id": "6f0fac52-44de-4f87-9909-5b5a5b8e7e2c",
+      "order": 10,
+      "read_only": false,
+      "uid": "b3_ba5202c47bf8437e889e71135c84841b",
+      "updated_at": "2026-08-27T17:44:34.381-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.384-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "0f17fed1-3fd1-4bec-a529-f5a5fa842021",
+      "legacy_id": null,
+      "ne_attribute_id": "f4019fa3-25b4-4ade-92c9-3825e5256205",
+      "order": 11,
+      "read_only": false,
+      "uid": "b3_aba4ce93a5254177906dc9847c2322d8",
+      "updated_at": "2026-08-27T17:44:34.384-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:34.386-04:00",
+      "form_id": "296d247f-7114-4e95-bee0-16df780ce079",
+      "id": "7d91ace9-4458-413d-8fa1-ddfa154f86f0",
+      "legacy_id": null,
+      "ne_attribute_id": "876487e2-b42a-4230-be57-ff8ffdebb899",
+      "order": 13,
+      "read_only": false,
+      "uid": "724a23af243945a8ab4aec1834ac4f87",
+      "updated_at": "2026-08-27T17:44:34.386-04:00"
+    }
+  ]
+}

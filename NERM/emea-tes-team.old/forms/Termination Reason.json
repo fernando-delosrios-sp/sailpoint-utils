@@ -1,0 +1,41 @@
+{
+  "form": {
+    "archived": false,
+    "archived_on": null,
+    "attr_order": [],
+    "core": false,
+    "created_at": "2026-08-27T17:44:35.067-04:00",
+    "description": "",
+    "id": "7dd3bb3c-2f92-413a-837e-d7a1d9a41936",
+    "legacy_id": null,
+    "name": "Termination Reason",
+    "uid": "b3_termination_reason_form",
+    "updated_at": "2026-08-27T17:44:35.067-04:00"
+  },
+  "form_attributes": [
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:35.070-04:00",
+      "form_id": "7dd3bb3c-2f92-413a-837e-d7a1d9a41936",
+      "id": "f29ae9b0-a504-4079-805e-123b8519e3b5",
+      "legacy_id": null,
+      "ne_attribute_id": "c5d423ee-2ec6-402c-b908-25bed7f73232",
+      "order": 0,
+      "read_only": false,
+      "uid": "b3_9d55d7585ef24af98752d7e8bc4db66c",
+      "updated_at": "2026-08-27T17:44:35.070-04:00"
+    },
+    {
+      "attr_type": "ne_attribute",
+      "created_at": "2026-08-27T17:44:35.073-04:00",
+      "form_id": "7dd3bb3c-2f92-413a-837e-d7a1d9a41936",
+      "id": "7936cf17-be0c-4e02-8070-6e6a5f0f4378",
+      "legacy_id": null,
+      "ne_attribute_id": "3a360eb1-c482-4712-9d66-a1a6d1ef6c65",
+      "order": 1,
+      "read_only": false,
+      "uid": "b3_b4d54af7efd046f69d2281976da65f5d",
+      "updated_at": "2026-08-27T17:44:35.073-04:00"
+    }
+  ]
+}

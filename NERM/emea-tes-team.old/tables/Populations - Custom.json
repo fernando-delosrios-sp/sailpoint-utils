@@ -1,0 +1,37 @@
+{
+  "attr_order": [
+    "model_attr=id",
+    "model_attr=status",
+    "model_attr=id_proofing_status",
+    "table_attr=2270e971-30cf-4563-8e4f-e4ecfb13e85d",
+    "table_attr=28fcc2fc-613e-49d9-b0af-6501780dde40"
+  ],
+  "created_at": "2026-08-27T17:45:31.139-04:00",
+  "headers": [
+    {
+      "attr": "id",
+      "label": "id"
+    },
+    {
+      "attr": "status",
+      "label": "status"
+    },
+    {
+      "attr": "id_proofing_status",
+      "label": "Identity Proofing"
+    },
+    {
+      "attr": "population_name",
+      "label": "Population Name"
+    },
+    {
+      "attr": "population_subpopulations",
+      "label": "Population Sub-Populations"
+    }
+  ],
+  "id": "5b78f193-6cb8-467e-aec1-10364f6897d7",
+  "name": "Populations - Custom",
+  "profile_type_id": "b45e9e7f-3bdd-4eb4-9bfd-23d7be868aa1",
+  "uid": "b3_populations_type_table",
+  "updated_at": "2026-10-06T07:25:19.533-04:00"
+}
