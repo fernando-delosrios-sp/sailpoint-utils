@@ -4,6 +4,66 @@
 
 Operator scripts for SailPoint Identity Security Cloud (ISC) source connectivity: cloud IAM setup for Entra ID, AWS, and Google Workspace SaaS connectors; Microsoft 365 service-plan access profile creation; and on-host IQService management for VA-based connectors.
 
+## PowerShell 7+
+
+These scripts are for **PowerShell 7+** (`pwsh`). On Windows, use the PowerShell 7 app, which sits beside the built-in Windows PowerShell 5.1 (`powershell.exe`). Install PowerShell 7 or later, then run the scripts from a `pwsh` session. `IQService Control.ps1` still has to run on the Windows IQService host, in an elevated `pwsh` session.
+
+Confirm the version:
+
+```powershell
+pwsh -NoLogo -Command '$PSVersionTable.PSVersion'
+```
+
+Major version 7 or higher is the expected result.
+
+### macOS
+
+With [Homebrew](https://brew.sh/):
+
+```bash
+brew install --cask powershell
+```
+
+Microsoft's supported installer is the signed package on the [PowerShell releases](https://github.com/PowerShell/PowerShell/releases) page (`powershell-*-osx-arm64.pkg` on Apple silicon, `powershell-*-osx-x64.pkg` on Intel). Details: [Install PowerShell on macOS](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-macos).
+
+### Windows
+
+PowerShell 7 installs beside Windows PowerShell 5.1. On Windows 11 or Windows Server 2025:
+
+```powershell
+winget install --id Microsoft.PowerShell --source winget
+```
+
+Start **PowerShell 7** from the Start menu, or run `pwsh`. The **Windows PowerShell** shortcut is version 5.1. On Windows Server without `winget`, install the MSI from the [releases](https://github.com/PowerShell/PowerShell/releases) page. Details: [Install PowerShell on Windows](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
+
+### Linux
+
+**Ubuntu** 22.04, 24.04, or 26.04. This registers the Microsoft package repository, then installs PowerShell:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y wget apt-transport-https software-properties-common
+source /etc/os-release
+wget -q "https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb"
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+sudo apt-get update
+sudo apt-get install -y powershell
+```
+
+**Red Hat Enterprise Linux** 8, 9, or 10:
+
+```bash
+source /etc/os-release
+majorver=${VERSION_ID%.*}
+curl -sSL -O "https://packages.microsoft.com/config/rhel/$majorver/packages-microsoft-prod.rpm"
+sudo rpm -i packages-microsoft-prod.rpm
+rm packages-microsoft-prod.rpm
+sudo dnf install powershell -y
+```
+
+Debian and other distributions: [Install PowerShell on Linux](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-linux). Then run `pwsh`.
+
 ## Artifacts
 
 - `Entra ID.ps1` — Microsoft Graph script that creates or updates the Entra ID app registration, assigns the documented Graph application permissions, grants admin consent, assigns directory roles, and issues a client secret.
@@ -133,7 +193,7 @@ AD LDAPS / VA TLS: [Configuring Virtual Appliances — Transport Layer Security]
 ### Requirements
 
 - Windows Server with IQService support (.NET Framework 4.8 recommended)
-- Windows PowerShell 5.1 or PowerShell 7+
+- PowerShell 7+ (`pwsh`). See [PowerShell 7+](#powershell-7).
 - **Administrator** elevation for install, update, uninstall, service start/stop/restart, and EnableLdaps
 - A fresh IQService ZIP from ISC: **Connections → Sources → [source requiring IQService] → IQService / Integration Service → Download**
 
@@ -145,7 +205,7 @@ They expire quickly (often within an hour). Paste a new link each time; never co
 
 ### Interactive usage
 
-Run on the IQService host in an elevated PowerShell session:
+Run on the IQService host in an elevated PowerShell 7+ (`pwsh`) session:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
@@ -309,7 +369,7 @@ References:
 
 #### SaaS requirements
 
-- Windows PowerShell 5.1 or PowerShell 7+
+- PowerShell 7+ (`pwsh`). See [PowerShell 7+](#powershell-7).
 - An AWS identity that can create IAM roles and customer-managed policies in the target account
 - Permission to install [AWS Tools for PowerShell](https://docs.aws.amazon.com/powershell/latest/userguide/pstools-getting-set-up.html) modules for the current user (the script offers to install them):
   - `AWS.Tools.SecurityToken`
@@ -633,7 +693,7 @@ References:
 
 ### Requirements
 
-- Windows PowerShell 5.1 or PowerShell 7+
+- PowerShell 7+ (`pwsh`). See [PowerShell 7+](#powershell-7).
 - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) (`gcloud`) on PATH, with permission to create service accounts and keys in the target project
 - A Google identity that can enable APIs in the project. For `Gcp`, `Ciem`, `NhiDiscovery`, or `AgentDiscovery`: organization-level custom role create and IAM bind (typically Organization Admin or equivalent)
 
@@ -856,7 +916,7 @@ Friendly names come from Microsoft’s published [licensing service plan referen
 
 ### Requirements
 
-- PowerShell 7+ recommended (`PSSailpoint` requires 6.2+)
+- PowerShell 7+ (`pwsh`). See [PowerShell 7+](#powershell-7).
 - `PSSailpoint` from the PowerShell Gallery (the script offers to install it)
 - A PAT (or client credentials) that can read sources/entitlements/identities and manage access profiles and source apps
 - Credentials available as one of:
@@ -954,7 +1014,7 @@ Permissions follow SailPoint's [Required Permissions](https://documentation.sail
 
 ### Requirements
 
-- Windows PowerShell 5.1 or PowerShell 7+
+- PowerShell 7+ (`pwsh`). See [PowerShell 7+](#powershell-7).
 - Permission to install [Microsoft Graph PowerShell](https://learn.microsoft.com/powershell/microsoftgraph/installation) modules for the current user (the script offers to install them):
   - `Microsoft.Graph.Authentication`
   - `Microsoft.Graph.Applications`

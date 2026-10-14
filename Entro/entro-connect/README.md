@@ -2,6 +2,58 @@
 
 Tooling to manage SailPoint Entro Integrations: ingest published docs, then (later) distill **integration prep** and **connection details**, and eventually CLI **integration automation**. The agent never handles secrets — you authenticate vendor CLIs locally.
 
+## PowerShell 7+
+
+`Entro-Azure-Onboarding.ps1` (under `skills/entro-connect`) is for **PowerShell 7+** (`pwsh`). The Connect skill runs that script with `pwsh`. On Windows, use the PowerShell 7 app, which sits beside the built-in Windows PowerShell 5.1 (`powershell.exe`).
+
+Confirm the version with `pwsh -NoLogo -Command '$PSVersionTable.PSVersion'` (major version 7 or higher).
+
+### macOS
+
+```bash
+brew install --cask powershell
+```
+
+Microsoft's supported installer is the signed package on the [PowerShell releases](https://github.com/PowerShell/PowerShell/releases) page (`powershell-*-osx-arm64.pkg` on Apple silicon, `powershell-*-osx-x64.pkg` on Intel). Details: [Install PowerShell on macOS](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-macos).
+
+### Windows
+
+PowerShell 7 installs beside Windows PowerShell 5.1. On Windows 11 or Windows Server 2025:
+
+```powershell
+winget install --id Microsoft.PowerShell --source winget
+```
+
+Start **PowerShell 7**, or run `pwsh`. The **Windows PowerShell** shortcut is version 5.1. Without `winget`, use the MSI from the [releases](https://github.com/PowerShell/PowerShell/releases) page. Details: [Install PowerShell on Windows](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
+
+### Linux
+
+**Ubuntu** 22.04, 24.04, or 26.04:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y wget apt-transport-https software-properties-common
+source /etc/os-release
+wget -q "https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb"
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+sudo apt-get update
+sudo apt-get install -y powershell
+```
+
+**Red Hat Enterprise Linux** 8, 9, or 10:
+
+```bash
+source /etc/os-release
+majorver=${VERSION_ID%.*}
+curl -sSL -O "https://packages.microsoft.com/config/rhel/$majorver/packages-microsoft-prod.rpm"
+sudo rpm -i packages-microsoft-prod.rpm
+rm packages-microsoft-prod.rpm
+sudo dnf install powershell -y
+```
+
+Debian and other distributions: [Install PowerShell on Linux](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-linux).
+
 ## Stage 1 (current)
 
 Capture Entro’s Integration documentation as a local **documentation tree** so later work can parse the same hierarchy operators see on the protected documentation source.

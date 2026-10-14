@@ -66,9 +66,69 @@ The My Apps invitation is a one-off for EMEA TES Team, kept aside and not offere
 | `push_templates.py` | Development push: imports from `templates/` with `sail` and re-renders the stored copies |
 | `tools/Render.java` | Velocity renderer with mock ISC context, used by the build |
 
+## PowerShell 7+
+
+`Import-EmailTemplates.ps1` is for **PowerShell 7+** (`pwsh`). On Windows, use the PowerShell 7 app, which sits beside the built-in Windows PowerShell 5.1 (`powershell.exe`). Install PowerShell 7 or later, then run the import from a `pwsh` session.
+
+Confirm the version:
+
+```powershell
+pwsh -NoLogo -Command '$PSVersionTable.PSVersion'
+```
+
+Major version 7 or higher is the expected result.
+
+### macOS
+
+With [Homebrew](https://brew.sh/):
+
+```bash
+brew install --cask powershell
+```
+
+Microsoft's supported installer is the signed package on the [PowerShell releases](https://github.com/PowerShell/PowerShell/releases) page (`powershell-*-osx-arm64.pkg` on Apple silicon, `powershell-*-osx-x64.pkg` on Intel). Details: [Install PowerShell on macOS](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-macos).
+
+### Windows
+
+PowerShell 7 installs beside Windows PowerShell 5.1. On Windows 11 or Windows Server 2025:
+
+```powershell
+winget install --id Microsoft.PowerShell --source winget
+```
+
+Start **PowerShell 7** from the Start menu, or run `pwsh`. The **Windows PowerShell** shortcut is version 5.1. On Windows Server without `winget`, install the MSI from the [releases](https://github.com/PowerShell/PowerShell/releases) page. Details: [Install PowerShell on Windows](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
+
+### Linux
+
+**Ubuntu** 22.04, 24.04, or 26.04. This registers the Microsoft package repository, then installs PowerShell:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y wget apt-transport-https software-properties-common
+source /etc/os-release
+wget -q "https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb"
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+sudo apt-get update
+sudo apt-get install -y powershell
+```
+
+**Red Hat Enterprise Linux** 8, 9, or 10:
+
+```bash
+source /etc/os-release
+majorver=${VERSION_ID%.*}
+curl -sSL -O "https://packages.microsoft.com/config/rhel/$majorver/packages-microsoft-prod.rpm"
+sudo rpm -i packages-microsoft-prod.rpm
+rm packages-microsoft-prod.rpm
+sudo dnf install powershell -y
+```
+
+Debian and other distributions: [Install PowerShell on Linux](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-linux). Then run `pwsh`.
+
 ## Import
 
-Requires PowerShell 7 and the [sail CLI](https://developer.sailpoint.com/docs/tools/cli). The import script talks to the tenant only through sail; it never asks for a client secret itself.
+Requires PowerShell 7+ (`pwsh`) and the [sail CLI](https://developer.sailpoint.com/docs/tools/cli). The import script talks to the tenant only through sail; it never asks for a client secret itself.
 
 Run with no parameters and it walks you through the import:
 

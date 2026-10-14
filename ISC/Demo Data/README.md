@@ -72,9 +72,69 @@ Birthright title roles use **`titleHistory`** (multi-value / bracketed tokens su
 
 Enable **city** as a dimension attribute for Dynamic Access Roles before creating dimensions.
 
+## PowerShell 7+
+
+`Demo Data.ps1` is for **PowerShell 7+** (`pwsh`). On Windows, use the PowerShell 7 app, which sits beside the built-in Windows PowerShell 5.1 (`powershell.exe`). Install PowerShell 7 or later, then run the bootstrap from a `pwsh` session.
+
+Confirm the version:
+
+```powershell
+pwsh -NoLogo -Command '$PSVersionTable.PSVersion'
+```
+
+Major version 7 or higher is the expected result.
+
+### macOS
+
+With [Homebrew](https://brew.sh/):
+
+```bash
+brew install --cask powershell
+```
+
+Microsoft's supported installer is the signed package on the [PowerShell releases](https://github.com/PowerShell/PowerShell/releases) page (`powershell-*-osx-arm64.pkg` on Apple silicon, `powershell-*-osx-x64.pkg` on Intel). Details: [Install PowerShell on macOS](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-macos).
+
+### Windows
+
+PowerShell 7 installs beside Windows PowerShell 5.1. On Windows 11 or Windows Server 2025:
+
+```powershell
+winget install --id Microsoft.PowerShell --source winget
+```
+
+Start **PowerShell 7** from the Start menu, or run `pwsh`. The **Windows PowerShell** shortcut is version 5.1. On Windows Server without `winget`, install the MSI from the [releases](https://github.com/PowerShell/PowerShell/releases) page. Details: [Install PowerShell on Windows](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
+
+### Linux
+
+**Ubuntu** 22.04, 24.04, or 26.04. This registers the Microsoft package repository, then installs PowerShell:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y wget apt-transport-https software-properties-common
+source /etc/os-release
+wget -q "https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb"
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+sudo apt-get update
+sudo apt-get install -y powershell
+```
+
+**Red Hat Enterprise Linux** 8, 9, or 10:
+
+```bash
+source /etc/os-release
+majorver=${VERSION_ID%.*}
+curl -sSL -O "https://packages.microsoft.com/config/rhel/$majorver/packages-microsoft-prod.rpm"
+sudo rpm -i packages-microsoft-prod.rpm
+rm packages-microsoft-prod.rpm
+sudo dnf install powershell -y
+```
+
+Debian and other distributions: [Install PowerShell on Linux](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-linux). Then run `pwsh`.
+
 ## Prerequisites
 
-- PowerShell 5.1+ or PowerShell 7+
+- PowerShell 7+ (`pwsh`). See [PowerShell 7+](#powershell-7).
 - [PSSailpoint](https://www.powershellgallery.com/packages/PSSailpoint) module
 - Named environment in `~/.sailpoint/config.yaml` plus `SAIL_*` env vars or a local `config.json`
 - Operator PAT with rights to manage sources, entitlements, source apps, and roles

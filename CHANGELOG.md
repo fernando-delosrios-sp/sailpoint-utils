@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-10-14
+
+### 🔧 Improvements
+
+- **PowerShell 7+** — Email Templates, Source Connection Setup, Demo Data, PowerShell Rule Template, the Active Directory rules built from that template, and Entro Azure onboarding now state that their scripts are for PowerShell 7+ (`pwsh`), with install steps for macOS, Windows, and Linux.
+
 ## 2026-09-24
 
 ### ✨ New Features

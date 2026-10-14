@@ -6,6 +6,58 @@ Interactive ISC workflows that let an operator create an Active Directory **secu
 
 `ConnectorAfterModify - Create Shared Folder in Active Directory.ps1` is built from [PowerShell Rule Template](../PowerShell%20Rule%20Template/README.md). Bootstrap, logging, redaction, and exit handling come from the template. Folder, share, and group work live in the custom process section.
 
+## PowerShell 7+
+
+`ConnectorAfterModify - Create Shared Folder in Active Directory.ps1` is for **PowerShell 7+** (`pwsh`). Use `pwsh` for local checks. IQService executes the uploaded rule on the Windows host, where Windows PowerShell 5.1 may still be the host runtime, so the script stays compatible with that host. The workflows and forms in this folder are not PowerShell.
+
+Install PowerShell 7 or later, then confirm the version with `pwsh -NoLogo -Command '$PSVersionTable.PSVersion'` (major version 7 or higher).
+
+### macOS
+
+```bash
+brew install --cask powershell
+```
+
+Microsoft's supported installer is the signed package on the [PowerShell releases](https://github.com/PowerShell/PowerShell/releases) page (`powershell-*-osx-arm64.pkg` on Apple silicon, `powershell-*-osx-x64.pkg` on Intel). Details: [Install PowerShell on macOS](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-macos).
+
+### Windows
+
+PowerShell 7 installs beside Windows PowerShell 5.1. On Windows 11 or Windows Server 2025:
+
+```powershell
+winget install --id Microsoft.PowerShell --source winget
+```
+
+Start **PowerShell 7**, or run `pwsh`. The **Windows PowerShell** shortcut is version 5.1. Without `winget`, use the MSI from the [releases](https://github.com/PowerShell/PowerShell/releases) page. Details: [Install PowerShell on Windows](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-windows).
+
+### Linux
+
+**Ubuntu** 22.04, 24.04, or 26.04:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y wget apt-transport-https software-properties-common
+source /etc/os-release
+wget -q "https://packages.microsoft.com/config/ubuntu/$VERSION_ID/packages-microsoft-prod.deb"
+sudo dpkg -i packages-microsoft-prod.deb
+rm packages-microsoft-prod.deb
+sudo apt-get update
+sudo apt-get install -y powershell
+```
+
+**Red Hat Enterprise Linux** 8, 9, or 10:
+
+```bash
+source /etc/os-release
+majorver=${VERSION_ID%.*}
+curl -sSL -O "https://packages.microsoft.com/config/rhel/$majorver/packages-microsoft-prod.rpm"
+sudo rpm -i packages-microsoft-prod.rpm
+rm packages-microsoft-prod.rpm
+sudo dnf install powershell -y
+```
+
+Debian and other distributions: [Install PowerShell on Linux](https://learn.microsoft.com/powershell/scripting/install/installing-powershell-on-linux).
+
 ## Overview
 
 Two operator-facing interactive processes:
