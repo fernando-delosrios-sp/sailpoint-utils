@@ -24,7 +24,10 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | [Active Directory Privileged Tasks](ISC/Active%20Directory%20Privileged%20Tasks/) | Interactive workflows to create an AD security group (PAG) or a CIFS share (access request + template-based BeforeModify rule) |
 | [Demo Data](ISC/Demo%20Data/) | Tenant-seeded demo access model: delimited sources, birthright title/department roles, dimensional Workplace User with city dimensions, requestable SoD Demo roles that contain policy violations, and conflicting-access SoD policies |
 | [Dynamic forms and user data collection](ISC/Dynamic%20forms%20and%20user%20data%20collection/) | Example form with cascading dropdowns and CSV-backed reference data |
+| [Email Templates](ISC/Email%20Templates/) | Branded replacements for all ISC email templates: end-user wording translated into seven languages, and admin alerts kept in SailPoint's English inside the branded layout |
+| [Emergency Termination](ISC/Emergency%20Termination/) | Interactive workflow that sets an active direct report to an Emergency Termination lifecycle state, with optional second-level manager approval |
 | [Generic Manager Correlation](ISC/Generic%20Manager%20Correlation/) | Reusable pattern for correlating managers across heterogeneous sources |
+| [Identity Match & Onboard](ISC/Identity%20Match%20%26%20Onboard/) | Interactive onboarding with a duplicate check and optional manager approval before creating a source account |
 | [JDBC SaaS Driver Downloader](ISC/JDBC%20SaaS%20Driver%20Downloader/) | Download and package JDBC drivers from Maven Central for SaaS upload |
 | [LCS Operations](ISC/LCS%20Operations/) | BeforeProvisioning rule that maps lifecycle-state dummy attributes to native connector operations |
 | [Machine Identity Security](ISC/Machine%20Identity%20Security/) | AD and Entra ID NHI package: subtypes, classification, mapping transforms, create forms, and machine-account provisioning policies |
@@ -32,7 +35,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | [Organizational Hierarchy Path](ISC/Organizational%20Hierarchy%20Path/) | Transform rule that builds a consolidated org hierarchy path from entitlements |
 | [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) | Copy-ready IQService connector-rule bootstrap with logging, redaction, exit handling, and optional replay |
 | [Source Connection Setup](ISC/Source%20Connection%20Setup/) | Entra ID app registration, Microsoft 365 access-profile wizard (service plans), AWS SaaS IAM role setup, Google Workspace SaaS service account setup, and IQService host control |
-| [Source Management](ISC/Source%20Management/) | Interactive workflow to pick a source and run account aggregation (optimised/full), entitlement aggregation, or source reset (accounts and/or entitlements) |
+| [Source Management](ISC/Workflows/Source%20Management/) | Interactive workflow to pick a source and run account aggregation (optimised/full), entitlement aggregation, identity profile refresh, or source reset (accounts and/or entitlements) |
 | [Transforms](ISC/Transforms/) | Reusable transform definitions (dates, lifecycle state, attribute history, manager flag) |
 
 ## SaaS Connectivity
@@ -68,7 +71,7 @@ Use `--skill` when installing so repo-root [`.agents/skills/`](.agents/skills/) 
 | Skill | Install path | Authoring |
 | --- | --- | --- |
 | [sail](skills/sail/) | `skills/sail/` | Definition-only; identical working copy at [`.agents/skills/sail/`](.agents/skills/sail/). Install: `npx skills add fernando-delosrios-sp/sailpoint-utils --skill sail` |
-| [nerm](skills/nerm/) | `skills/nerm/` | Definition-only; identical working copy at [`.agents/skills/nerm/`](.agents/skills/nerm/). Sail-associated NERM API helper (`scripts/nerm_api.ps1`, PowerShell Core) with sidecar `~/.sailpoint/nerm.yaml`. Install: `npx skills add fernando-delosrios-sp/sailpoint-utils --skill nerm` |
+| [nerm-cli](.agents/skills/nerm-cli/) | — | Maintainer skill only (not under `skills/`). Drives the external [`nerm`](https://www.npmjs.com/package/nerm-cli) CLI for NERM profiles, domain commands, and raw REST. Install the CLI with `npm install -g nerm-cli`. |
 | [entro-connect](skills/entro-connect/) | `skills/entro-connect/` | Dedicated project under [`Entro/entro-connect/`](Entro/entro-connect/); local working copy at `.agents/skills/entro-connect/`; [`Entro/entro-connect/skills`](Entro/entro-connect/skills) symlinks to repo-root `skills/` |
 
 **Adding a skill**
