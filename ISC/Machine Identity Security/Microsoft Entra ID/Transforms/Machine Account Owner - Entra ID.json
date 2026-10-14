@@ -7,8 +7,8 @@
       {
         "type": "replace",
         "attributes": {
-          "regex": "^.*?\"userPrincipalName\"\\s*:\\s*\"([^\"]+)\".*$",
-          "replacement": "$1"
+          "regex": "^.*?\"userPrincipalName\"\\s*:\\s*\"([^\"@]+)@(?:global\\.)?([^\"]+)\".*$",
+          "replacement": "$1@global.$2"
         }
       }
     ]
