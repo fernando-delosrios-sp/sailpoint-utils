@@ -1,0 +1,17 @@
+{
+  "Add Assignment Details (c)": {
+    "id": "6baf4a98-fcf0-4b45-b567-7276ca2d1ca6",
+    "uid": "b3_aad_details_c_v5",
+    "import": "NERM_emea-tes-team_import_add_assignment_details_c.json"
+  },
+  "Add Assignment (c)": {
+    "id": "4f339dd6-154b-4f6a-ac6b-6ad3d02ddf67",
+    "uid": "b3_aa_people_c_v3",
+    "import": "NERM_emea-tes-team_import_add_assignment_c.json"
+  },
+  "Update Assignment (c)": {
+    "id": "584cbc70-90a0-4b4f-bea9-b60a586f9f85",
+    "uid": "b3_ua_c_v5",
+    "import": "NERM_emea-tes-team_import_update_assignment_c.json"
+  }
+}

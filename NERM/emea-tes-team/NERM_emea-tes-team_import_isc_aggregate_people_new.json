@@ -1,0 +1,127 @@
+[
+  {
+    "id": "c815367c-ba3e-4bd9-923a-063c312abf8d",
+    "archived": false,
+    "bulk_import_usage": false,
+    "description": "Clone of ISC - Aggregate People. Runs the existing ISC - Run source aggregation workflow.",
+    "name": "ISC - Aggregate People",
+    "options": {},
+    "position": 1,
+    "profile_status": "active",
+    "profile_type_id": "51348301-4560-4a79-9c85-b1f2700e72f3",
+    "recursive": false,
+    "runs_other_workflows": true,
+    "status": "Disabled",
+    "type": "UpdateWorkflow",
+    "uid": "isc_aggregate_people",
+    "class_name": "UpdateWorkflow"
+  },
+  {
+    "id": "f40010a1-18f9-4704-b49e-c8233b8a448b",
+    "profile_to_send": "attribute",
+    "return_profile": false,
+    "run_workflow_action_id": "c7761ba4-c5ca-4319-ae06-9f7ce7a26daf",
+    "uid": "isc_agg_people_e948d06fafa048e0b49c074e8dc04e1e",
+    "wait_for_completion": true,
+    "workflow_id": "e48bd694-41d5-4165-b83b-de6c415d478b",
+    "class_name": "RunWorkflowActionConfiguration"
+  },
+  {
+    "id": "c7761ba4-c5ca-4319-ae06-9f7ce7a26daf",
+    "add_requester_as_owner": true,
+    "archived": false,
+    "contributors_deprecated": false,
+    "description": "ISC - Run source aggregation",
+    "email_addresses": [],
+    "manager_deprecated": false,
+    "options": {},
+    "owner_deprecated": false,
+    "requires_comment": false,
+    "skippable": false,
+    "type": "RunWorkflowAction",
+    "uid": "isc_agg_people_087d3e3863ca46d58abd6b890de7755c",
+    "workflow_id": "c815367c-ba3e-4bd9-923a-063c312abf8d",
+    "allow_bulk_approval_or_rejection": false,
+    "class_name": "RunWorkflowAction"
+  },
+  {
+    "id": "60e50885-b9d3-4b0b-a230-ca3d4381c1cf",
+    "ne_attribute_id": "3baabf2d-4150-4c35-bd60-3e3578cf87e1",
+    "operation": "set value",
+    "type": "OutgoingTransferAttribute",
+    "uid": "isc_agg_people_5fe7d63a40284bf982b28af792097c2d",
+    "value_type": "requests value",
+    "workflow_action_id": "c7761ba4-c5ca-4319-ae06-9f7ce7a26daf",
+    "class_name": "OutgoingTransferAttribute"
+  },
+  {
+    "id": "165b5e58-aab0-4cfe-86d7-c12e06e9c63a",
+    "add_requester_as_owner": true,
+    "archived": false,
+    "contributors_deprecated": false,
+    "description": "Set source ID and System Configuration Profile",
+    "email_addresses": [],
+    "manager_deprecated": false,
+    "options": {},
+    "owner_deprecated": false,
+    "requires_comment": false,
+    "skippable": false,
+    "type": "SetAttributesAction",
+    "uid": "isc_agg_people_d004f6bf6a1146d9ae77fe42e8e8d582",
+    "workflow_id": "c815367c-ba3e-4bd9-923a-063c312abf8d",
+    "allow_bulk_approval_or_rejection": false,
+    "class_name": "SetAttributesAction"
+  },
+  {
+    "id": "00eb94a3-8f8a-4fc6-9a82-e591b719998b",
+    "ne_attribute_id": "3baabf2d-4150-4c35-bd60-3e3578cf87e1",
+    "operation": "set value",
+    "static_value": "6d05a773d063435491ea732c1bc12d0e",
+    "uid": "isc_agg_people_8b9d1da603454ff7bfbc7748665eab5e",
+    "value_type": "static value",
+    "workflow_action_id": "165b5e58-aab0-4cfe-86d7-c12e06e9c63a",
+    "class_name": "WorkflowActionSetAttribute"
+  },
+  {
+    "id": "c51f9b06-8900-415e-a498-d3e09280d5b4",
+    "ne_attribute_id": "fd6c4495-67d0-448d-8d3c-936e2940eede",
+    "operation": "set value",
+    "static_value": "b4fe8590-f61e-40f0-bdd0-e3a4ae3e1e8d, b4fe8590-f61e-40f0-bdd0-e3a4ae3e1e8d",
+    "uid": "isc_agg_people_09041612edb6465392729743cb20cc1f",
+    "value_type": "static value",
+    "workflow_action_id": "165b5e58-aab0-4cfe-86d7-c12e06e9c63a",
+    "class_name": "WorkflowActionSetAttribute"
+  },
+  {
+    "id": "cbd55c76-5421-47a4-a3f6-475de0c37892",
+    "ne_attribute_id": "fd6c4495-67d0-448d-8d3c-936e2940eede",
+    "run_workflow_action_id": "c7761ba4-c5ca-4319-ae06-9f7ce7a26daf",
+    "uid": "isc_agg_people_74ebe98652ce4cc9a174f2c564f29705",
+    "class_name": "RunWorkflowActionProfileAttribute"
+  },
+  {
+    "id": "fc9de515-dca3-410a-9944-c160c4dfd53c",
+    "pause_action_id": "c7761ba4-c5ca-4319-ae06-9f7ce7a26daf",
+    "uid": "isc_agg_people_11066df2dd364b79a1b73b8902fcac62",
+    "workflow_action_id": "c7761ba4-c5ca-4319-ae06-9f7ce7a26daf",
+    "class_name": "WorkflowActionPauseAction"
+  },
+  {
+    "id": "ee80245e-b07b-4c48-8d07-7c26620b231c",
+    "position": 1,
+    "step_id": "165b5e58-aab0-4cfe-86d7-c12e06e9c63a",
+    "step_type": "WorkflowAction",
+    "uid": "isc_agg_people_7fc0080003e34b479ced3cb33a6409aa",
+    "workflow_id": "c815367c-ba3e-4bd9-923a-063c312abf8d",
+    "class_name": "WorkflowStep"
+  },
+  {
+    "id": "4b61bd84-d386-4ba6-a835-3f914bf0e394",
+    "position": 2,
+    "step_id": "c7761ba4-c5ca-4319-ae06-9f7ce7a26daf",
+    "step_type": "WorkflowAction",
+    "uid": "isc_agg_people_4757d8a514d640eb9cf896d7ddf2a2d3",
+    "workflow_id": "c815367c-ba3e-4bd9-923a-063c312abf8d",
+    "class_name": "WorkflowStep"
+  }
+]
