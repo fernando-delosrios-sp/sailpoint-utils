@@ -137,11 +137,13 @@ Run with no parameters and it walks you through the import:
 ```
 
 1. Ensures sail is installed (`brew tap sailpoint-oss/tap && brew install sailpoint-cli` on macOS).
-2. Asks which sail environment to use, or creates one (`sail env create`, then `sail set pat` so the PAT is stored in your OS keyring).
-3. Checks that the environment can reach the tenant and read email templates.
+2. Asks which sail environment to use, or creates one. The script asks for the tenant URL, the API URL, and the personal access token. Arrow keys, Home, End and Backspace edit a pasted value. The script checks the token length, then passes it to sail, which stores it in your OS keyring. A wrong URL or token can be entered again.
+3. Checks the saved configuration before using the environment, whether it was just registered or already in sail: https tenant and API URLs that belong together, authentication type `pat` or `oauth`, and a personal access token in the keyring. It then checks that the environment can reach the tenant and read email templates. A wrong registration can be corrected and checked again.
 4. Asks for the tenant owner, colours, support email and default language.
 5. Shows a checklist of templates (Space selects one, the first line selects or clears all).
 6. Prints the changes and asks for confirmation before writing anything.
+
+During the interactive questions, press **Esc** to return to the previous question and **Ctrl+C** to exit. When a text question falls back to a normal prompt, enter `b` or `back` to go back.
 
 Review the configured templates locally first. This writes them to a folder and does not contact the tenant:
 
