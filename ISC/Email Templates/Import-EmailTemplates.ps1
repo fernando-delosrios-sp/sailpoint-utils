@@ -1,7 +1,7 @@
 #Requires -Version 7.0
 <#
 .SYNOPSIS
-    Imports the EMEA TES Team email templates into an Identity Security Cloud tenant.
+    Imports the branded email templates into an Identity Security Cloud tenant.
 
 .DESCRIPTION
     Creates or updates one custom email template per JSON file in -Path (default: ./templates) with
@@ -13,7 +13,7 @@
       1. Ensures sail is installed (install steps if it is missing), then asks which sail environment to use
          or creates one. Credentials are stored with `sail set pat`, not typed into this script.
       2. Checks that the environment can reach the tenant and read email templates.
-      3. Asks for each template setting (organisation name, banner tagline, brand colours, support email
+      3. Asks for each template setting (tenant owner, banner tagline, brand colours, support email
          and default language). Press Enter to keep the value shown in brackets.
       4. Shows the templates to import. Space selects or clears the highlighted one; the first line selects
          or clears them all. Enter continues.
@@ -49,11 +49,11 @@
     Templates selected initially, by key. Wildcards are allowed, for example 'access_request_*'.
 
 .PARAMETER OrganizationName
-    Name shown in the banner, the sign-off and the footer ("This is an automated message from the ...
-    identity platform"). Default in the templates: EMEA TES Team.
+    Tenant owner or team name shown in the banner, the sign-off and the footer ("This is an automated
+    message from the ... identity platform"). Default in the templates: EMEA TES Team.
 
 .PARAMETER BannerTagline
-    Small capitalised text above the organisation name in the banner. Default: Identity & Access.
+    Small capitalised text above the tenant owner name in the banner. Default: Identity & Access.
 
 .PARAMETER PrimaryColor
     Banner, headings and buttons, as #RRGGBB. Default: #0033A1 (SailPoint navy).
@@ -177,14 +177,14 @@ $Esc = [char]27
 # Template settings (#set lines at the top of every template): the parameter that sets each one, the
 # prompt label and the accepted values (a regex, or the manifest languages for the default language).
 $Settings = [ordered]@{
-    emeaDefaultLanguage = @{ Parameter = 'DefaultLanguage'; Label = 'Default language' }
-    emeaOrgName         = @{ Parameter = 'OrganizationName'; Label = 'Organisation name'; Pattern = '\S'; Problem = 'Enter a name.' }
-    emeaBannerTagline   = @{ Parameter = 'BannerTagline'; Label = 'Banner tagline' }
-    emeaColorPrimary    = @{ Parameter = 'PrimaryColor'; Label = 'Primary colour'; Pattern = '^#[0-9A-Fa-f]{6}$'; Problem = 'Use #RRGGBB.' }
-    emeaColorDark       = @{ Parameter = 'DarkColor'; Label = 'Dark colour'; Pattern = '^#[0-9A-Fa-f]{6}$'; Problem = 'Use #RRGGBB.' }
-    emeaColorAccent     = @{ Parameter = 'AccentColor'; Label = 'Accent colour'; Pattern = '^#[0-9A-Fa-f]{6}$'; Problem = 'Use #RRGGBB.' }
-    emeaColorHighlight  = @{ Parameter = 'HighlightColor'; Label = 'Highlight colour'; Pattern = '^#[0-9A-Fa-f]{6}$'; Problem = 'Use #RRGGBB.' }
-    emeaSupportEmail    = @{ Parameter = 'SupportEmail'; Label = 'Support email'; Pattern = '^$|^[^@\s]+@[^@\s]+\.[^@\s]+$'; Problem = 'Enter an email address, or - for none.'; Optional = $true }
+    mailDefaultLanguage = @{ Parameter = 'DefaultLanguage'; Label = 'Default language' }
+    mailOrgName         = @{ Parameter = 'OrganizationName'; Label = 'Tenant owner'; Pattern = '\S'; Problem = 'Enter a name.' }
+    mailBannerTagline   = @{ Parameter = 'BannerTagline'; Label = 'Banner tagline' }
+    mailColorPrimary    = @{ Parameter = 'PrimaryColor'; Label = 'Primary colour'; Pattern = '^#[0-9A-Fa-f]{6}$'; Problem = 'Use #RRGGBB.' }
+    mailColorDark       = @{ Parameter = 'DarkColor'; Label = 'Dark colour'; Pattern = '^#[0-9A-Fa-f]{6}$'; Problem = 'Use #RRGGBB.' }
+    mailColorAccent     = @{ Parameter = 'AccentColor'; Label = 'Accent colour'; Pattern = '^#[0-9A-Fa-f]{6}$'; Problem = 'Use #RRGGBB.' }
+    mailColorHighlight  = @{ Parameter = 'HighlightColor'; Label = 'Highlight colour'; Pattern = '^#[0-9A-Fa-f]{6}$'; Problem = 'Use #RRGGBB.' }
+    mailSupportEmail    = @{ Parameter = 'SupportEmail'; Label = 'Support email'; Pattern = '^$|^[^@\s]+@[^@\s]+\.[^@\s]+$'; Problem = 'Enter an email address, or - for none.'; Optional = $true }
 }
 
 function Set-TemplateSetting {
@@ -600,7 +600,7 @@ if ($manifest -and $Interactive) {
         $setting = $Settings[$variable]
         if (-not $defaults.Contains($variable) -or $PSBoundParameters.ContainsKey($setting.Parameter)) { continue }
         $default = if ($UseTenantBranding -and $tenantColors.ContainsKey($setting.Parameter)) { $tenantColors[$setting.Parameter] } else { $defaults[$variable] }
-        $validate = if ($variable -eq 'emeaDefaultLanguage') {
+        $validate = if ($variable -eq 'mailDefaultLanguage') {
             { param($v) if ($v -notin $manifest.languages) { "Use one of: $($manifest.languages -join ', ')." } }
         }
         elseif ($setting.ContainsKey('Pattern')) {
@@ -608,7 +608,7 @@ if ($manifest -and $Interactive) {
             { param($v) if ($v -notmatch $pattern) { $problem } }.GetNewClosure()
         }
         $value = Read-Value $setting.Label $default -Hint $descriptions[$variable] -Validate $validate -Optional:([bool]$setting['Optional'])
-        if ($variable -like 'emeaColor*') { Write-Host "  $(Format-Swatch $value)" }
+        if ($variable -like 'mailColor*') { Write-Host "  $(Format-Swatch $value)" }
         $PSBoundParameters[$setting.Parameter] = $value
     }
 }
@@ -688,7 +688,7 @@ if ($manifest) {
     foreach ($variable in $Settings.Keys) {
         if (-not $defaults.Contains($variable)) { continue }
         $value = if ($applied.Contains($variable)) { $applied[$variable] } else { $defaults[$variable] }
-        $shown = if ($variable -like 'emeaColor*') { Format-Swatch $value } elseif ($value) { $value } else { '(none)' }
+        $shown = if ($variable -like 'mailColor*') { Format-Swatch $value } elseif ($value) { $value } else { '(none)' }
         $note = if ($value -ne $defaults[$variable]) { '' } else { "$Esc[2m  template default$Esc[0m" }
         Write-Host ("  {0,-18} {1}{2}" -f $Settings[$variable].Label, $shown, $note)
     }

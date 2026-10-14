@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Branded, language-aware replacements for all 116 Identity Security Cloud (ISC) email templates. Every email gets a banner with your organisation's name in SailPoint colours (or your own) and a footer in the recipient's language. End-user emails are also rewritten and translated into English, Spanish, French, Italian, German, Portuguese and Arabic.
+Branded, language-aware replacements for all 116 Identity Security Cloud (ISC) email templates. Every email gets a banner with the tenant owner's name in SailPoint colours (or your own) and a footer in the recipient's language. End-user emails are also rewritten and translated into English, Spanish, French, Italian, German, Portuguese and Arabic.
 
-The templates were built for **EMEA TES Team**, which is the default organisation name; the install script sets your own.
+The default tenant owner is **EMEA TES Team**; the install script sets your own.
 
 ## Overview
 
@@ -21,24 +21,24 @@ Every template body starts with a settings block. The install script fills it in
 
 ```velocity
 ## Email settings: edit the values between quotes. Import-EmailTemplates.ps1 sets them on import.
-#set($emeaDefaultLanguage = 'en') ## language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar)
-#set($emeaOrgName = 'EMEA TES Team') ## organisation name in the banner, sign-off and footer
-#set($emeaBannerTagline = 'Identity & Access') ## small text above the organisation name in the banner
-#set($emeaColorPrimary = '#0033A1') ## banner, headings and buttons
-#set($emeaColorDark = '#011E69') ## start of the banner gradient
-#set($emeaColorAccent = '#0071CE') ## links, section titles and information boxes
-#set($emeaColorHighlight = '#CC27B0') ## banner stripe and warning boxes
-#set($emeaSupportEmail = '') ## support address shown in the footer; empty hides it
+#set($mailDefaultLanguage = 'en') ## language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar)
+#set($mailOrgName = 'EMEA TES Team') ## tenant owner or team name in the banner, sign-off and footer
+#set($mailBannerTagline = 'Identity & Access') ## small text above the tenant owner name in the banner
+#set($mailColorPrimary = '#0033A1') ## banner, headings and buttons
+#set($mailColorDark = '#011E69') ## start of the banner gradient
+#set($mailColorAccent = '#0071CE') ## links, section titles and information boxes
+#set($mailColorHighlight = '#CC27B0') ## banner stripe and warning boxes
+#set($mailSupportEmail = '') ## support address shown in the footer; empty hides it
 ```
 
-The organisation name also replaces "The SailPoint Team" sign-off in the wrapped templates. A single quote inside a value is written twice (`'O''Neill'`). Subjects are evaluated apart from the body, so a subject that uses a setting (the User Invitation's) carries its own copy of that line.
+The tenant owner name also replaces "The SailPoint Team" sign-off in the wrapped templates. A single quote inside a value is written twice (`'O''Neill'`). Subjects are evaluated apart from the body, so a subject that uses a setting (the User Invitation's) carries its own copy of that line.
 
 ### Language selection
 
 Each email picks its language when it is sent:
 
 1. It reads the recipient's `preferredLanguage` identity attribute and uses the first two letters, so `es`, `es-ES` and `es_ES` all mean Spanish.
-2. If the attribute is missing, or the language is not one of `en`, `es`, `fr`, `it`, `de`, `pt`, `ar`, the email uses `$emeaDefaultLanguage`. An unsupported value or a deleted line falls back to English.
+2. If the attribute is missing, or the language is not one of `en`, `es`, `fr`, `it`, `de`, `pt`, `ar`, the email uses `$mailDefaultLanguage`. An unsupported value or a deleted line falls back to English.
 
 Arabic emails are laid out right to left: text, labels and bullets align right, accent bars move to the right edge and button arrows point left. Wrapped templates keep their English body left to right; only their footer follows the recipient's language.
 
@@ -48,7 +48,7 @@ To fill `preferredLanguage` from each identity's country, use the [Country to La
 
 The install script always imports the standard invitation, `templates/user_invitation-custom.json`: SailPoint's default, with the same content and order, branded and translated. It has the invitation to use the product, the username, a **Register now** button, and the link to sign in afterwards.
 
-The My Apps invitation is a one-off for EMEA TES Team, kept aside and not offered by the install script. `templates/variants/user_invitation-custom.my-apps.json` is the generated version (sign-in email, username, then five steps through Microsoft My Apps). `User Invitation/User Invitation.tenant.json` is the copy stored in `emea-tes-team`. It has two settings of its own, `$emeaSignInDomain` and `$emeaMyAppsUrl`, edited in the file or in the ISC template editor.
+The My Apps invitation is a one-off for EMEA TES Team, kept aside and not offered by the install script. `templates/variants/user_invitation-custom.my-apps.json` is the generated version (sign-in email, username, then five steps through Microsoft My Apps). It has two settings of its own, `$mailSignInDomain` and `$mailMyAppsUrl`, edited in the file or in the ISC template editor. `User Invitation/User Invitation.tenant.json` is the copy stored in `emea-tes-team` before that parameterised build.
 
 ## Artifacts
 
@@ -79,7 +79,7 @@ Run with no parameters and it walks you through the import:
 1. Ensures sail is installed (`brew tap sailpoint-oss/tap && brew install sailpoint-cli` on macOS).
 2. Asks which sail environment to use, or creates one (`sail env create`, then `sail set pat` so the PAT is stored in your OS keyring).
 3. Checks that the environment can reach the tenant and read email templates.
-4. Asks for the organisation name, colours, support email and default language.
+4. Asks for the tenant owner, colours, support email and default language.
 5. Shows a checklist of templates (Space selects one, the first line selects or clears all).
 6. Prints the changes and asks for confirmation before writing anything.
 
@@ -109,12 +109,12 @@ Settings you do not pass keep the template defaults shown in [Settings](#setting
 
 | Option | Sets |
 |---|---|
-| `-OrganizationName 'Acme Corp'` | `$emeaOrgName` |
-| `-BannerTagline 'Access Services'` | `$emeaBannerTagline` |
+| `-OrganizationName 'Acme Corp'` | `$mailOrgName` |
+| `-BannerTagline 'Access Services'` | `$mailBannerTagline` |
 | `-PrimaryColor`, `-DarkColor`, `-AccentColor`, `-HighlightColor` (`#RRGGBB`) | Brand colours |
 | `-UseTenantBranding` | Primary and accent colours from the tenant's branding (Global > Branding), unless passed explicitly |
 | `-SupportEmail it-help@acme.com` | "Need help? Contact …" in every footer |
-| `-DefaultLanguage es` | `$emeaDefaultLanguage` |
+| `-DefaultLanguage es` | `$mailDefaultLanguage` |
 | `-Scope rewritten` / `-Scope wrapped` | Only the translated end-user templates, or only the admin alerts |
 | `-Key 'access_request_*'` | Only matching template keys (wildcards allowed) |
 | `-Path <folder>` | Import another folder, such as a backup or an `-OutputPath` folder |
@@ -176,7 +176,7 @@ Notes:
 
 - **The input must be a country name** as written in the table (`Spain`, `United Kingdom`). Other values return the default `en`. If the source holds an office or city, chain a location-to-country lookup first: in `emea-tes-team`, the Identity Fusion NG profile uses `Location to Country Map` as the input of this transform. If the source holds ISO country codes, add those codes as keys.
 - **Countries map to their main language.** Multilingual countries get one language: Belgium `nl`, Switzerland `de`, Canada `en`. Edit the table if your users there should get another.
-- **Languages without a translation** (for example `nl`, `zh`, `ja`) are kept as the identity's preference; the emails use `$emeaDefaultLanguage` for them.
+- **Languages without a translation** (for example `nl`, `zh`, `ja`) are kept as the identity's preference; the emails use `$mailDefaultLanguage` for them.
 - In `emea-tes-team`, the OrangeHRM profile maps `preferredLanguage` with this transform from the account's `location`.
 
 ## Limitations

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build language-aware, EMEA TES Team-branded ISC email templates.
+"""Build language-aware, branded ISC email templates.
 
 Every email template in the tenant is produced from one of two sources:
 
@@ -9,7 +9,7 @@ Every email template in the tenant is produced from one of two sources:
 
 The recipient's language comes from the `preferredLanguage` identity attribute: `$user` in version 1
 templates, `$__util.getIdentityDetailsByID($__recipient.id)` in version 2 templates. Values are matched
-on their first two letters; anything unsupported falls back to `$emeaDefaultLanguage`, set on the
+on their first two letters; anything unsupported falls back to `$mailDefaultLanguage`, set on the
 first line of every template (English unless an admin edits it).
 
 Usage:
@@ -48,20 +48,20 @@ class Setting:
 
 
 SETTINGS = [
-    Setting("emeaDefaultLanguage", DEFAULT_LANGUAGE, f"language when preferredLanguage is missing or unsupported ({', '.join(LANGUAGES)})"),
-    Setting("emeaOrgName", "EMEA TES Team", "organisation name in the banner, sign-off and footer"),
-    Setting("emeaBannerTagline", "Identity & Access", "small text above the organisation name in the banner"),
-    Setting("emeaColorPrimary", "#0033A1", "banner, headings and buttons"),
-    Setting("emeaColorDark", "#011E69", "start of the banner gradient"),
-    Setting("emeaColorAccent", "#0071CE", "links, section titles and information boxes"),
-    Setting("emeaColorHighlight", "#CC27B0", "banner stripe and warning boxes"),
-    Setting("emeaSupportEmail", "", "support address shown in the footer; empty hides it"),
+    Setting("mailDefaultLanguage", DEFAULT_LANGUAGE, f"language when preferredLanguage is missing or unsupported ({', '.join(LANGUAGES)})"),
+    Setting("mailOrgName", "EMEA TES Team", "tenant owner or team name in the banner, sign-off and footer"),
+    Setting("mailBannerTagline", "Identity & Access", "small text above the tenant owner name in the banner"),
+    Setting("mailColorPrimary", "#0033A1", "banner, headings and buttons"),
+    Setting("mailColorDark", "#011E69", "start of the banner gradient"),
+    Setting("mailColorAccent", "#0071CE", "links, section titles and information boxes"),
+    Setting("mailColorHighlight", "#CC27B0", "banner stripe and warning boxes"),
+    Setting("mailSupportEmail", "", "support address shown in the footer; empty hides it"),
 ]
 
-NAVY_DARK = "$emeaColorDark"
-NAVY = "$emeaColorPrimary"
-BLUE = "$emeaColorAccent"
-MAGENTA = "$emeaColorHighlight"
+NAVY_DARK = "$mailColorDark"
+NAVY = "$mailColorPrimary"
+BLUE = "$mailColorAccent"
+MAGENTA = "$mailColorHighlight"
 GREEN = "#1E7B4F"
 RED = "#B42318"
 INK = "#1F2A44"
@@ -70,7 +70,7 @@ PAGE_BG = "#F3F5F9"
 FONT = "'Segoe UI', Helvetica, Arial, sans-serif"
 MONO = "Consolas,'Courier New',monospace"
 
-SIGNATURE = "$emeaOrgName"
+SIGNATURE = "$mailOrgName"
 
 # Velocity double-quoted strings are parsed as templates: quotes and '#' would break them.
 _FORBIDDEN_IN_STRINGS = re.compile(r'["#]')
@@ -111,8 +111,8 @@ def language_detection(var: str) -> str:
     ident = f"{var}Identity"
     supported = ", ".join(f'"{lang}"' for lang in LANGUAGES)
     return (
-        f'#if(!$emeaDefaultLanguage)#set($emeaDefaultLanguage = "{DEFAULT_LANGUAGE}")#end'
-        f'#set(${var} = "$emeaDefaultLanguage")'
+        f'#if(!$mailDefaultLanguage)#set($mailDefaultLanguage = "{DEFAULT_LANGUAGE}")#end'
+        f'#set(${var} = "$mailDefaultLanguage")'
         f'#if($user && $user.preferredLanguage)#set(${var} = "$user.preferredLanguage")'
         f"#elseif($__util && $__recipient && $__recipient.id)"
         f"#set(${ident} = $__util.getIdentityDetailsByID($__recipient.id))"
@@ -122,18 +122,18 @@ def language_detection(var: str) -> str:
         f"#end"
         f"#set(${var} = ${var}.toLowerCase())"
         f"#if(${var}.length() > 2)#set(${var} = ${var}.substring(0, 2))#end"
-        f"#set($emeaSupportedLanguages = [{supported}])"
-        f'#if(!$emeaSupportedLanguages.contains(${var}))#set(${var} = "$emeaDefaultLanguage")#end'
+        f"#set($mailSupportedLanguages = [{supported}])"
+        f'#if(!$mailSupportedLanguages.contains(${var}))#set(${var} = "$mailDefaultLanguage")#end'
     )
 
 
 def text_direction(rtl_capable: bool) -> str:
-    """Velocity setting layout variables from `$emeaLang`. The body follows the language only when
+    """Velocity setting layout variables from `$mailLang`. The body follows the language only when
     `rtl_capable` (rewritten templates); the footer always does."""
-    rtl = " || ".join(f'$emeaLang == "{lang}"' for lang in RTL_LANGUAGES)
-    ltr_vars = '#set($emeaDir = "ltr")#set($emeaAlign = "left")#set($emeaAccentL = "4px")#set($emeaAccentR = "0")#set($emeaLabelPad = "4px 16px 4px 0")#set($emeaListPad = "0 0 0 22px")#set($emeaArrow = "→")'
-    rtl_vars = '#set($emeaDir = "rtl")#set($emeaAlign = "right")#set($emeaAccentL = "0")#set($emeaAccentR = "4px")#set($emeaLabelPad = "4px 0 4px 16px")#set($emeaListPad = "0 22px 0 0")#set($emeaArrow = "←")'
-    footer = f'#if({rtl})#set($emeaFootDir = "rtl")#set($emeaFootAlign = "right")#else#set($emeaFootDir = "ltr")#set($emeaFootAlign = "left")#end'
+    rtl = " || ".join(f'$mailLang == "{lang}"' for lang in RTL_LANGUAGES)
+    ltr_vars = '#set($mailDir = "ltr")#set($mailAlign = "left")#set($mailAccentL = "4px")#set($mailAccentR = "0")#set($mailLabelPad = "4px 16px 4px 0")#set($mailListPad = "0 0 0 22px")#set($mailArrow = "→")'
+    rtl_vars = '#set($mailDir = "rtl")#set($mailAlign = "right")#set($mailAccentL = "0")#set($mailAccentR = "4px")#set($mailLabelPad = "4px 0 4px 16px")#set($mailListPad = "0 22px 0 0")#set($mailArrow = "←")'
+    footer = f'#if({rtl})#set($mailFootDir = "rtl")#set($mailFootAlign = "right")#else#set($mailFootDir = "ltr")#set($mailFootAlign = "left")#end'
     body = f"#if({rtl}){rtl_vars}#else{ltr_vars}#end" if rtl_capable else ltr_vars
     return body + footer
 
@@ -152,7 +152,7 @@ def switch(var: str, per_language: dict[str, str], inline: bool = False) -> str:
 def tr(values: Tr) -> str:
     """Inline per-language text, evaluated where it appears (use inside loops: `#set` strings are
     interpolated once, when they are set)."""
-    return switch("emeaLang", dict(zip(LANGUAGES, values)), inline=True)
+    return switch("mailLang", dict(zip(LANGUAGES, values)), inline=True)
 
 
 def set_strings(strings: dict[str, Tr], lang: str) -> str:
@@ -169,7 +169,7 @@ def set_strings(strings: dict[str, Tr], lang: str) -> str:
 
 
 def string_switch(strings: dict[str, Tr]) -> str:
-    return switch("emeaLang", {lang: set_strings(strings, lang) for lang in LANGUAGES})
+    return switch("mailLang", {lang: set_strings(strings, lang) for lang in LANGUAGES})
 
 
 # ---------------------------------------------------------------------------
@@ -189,13 +189,13 @@ def section(title: str) -> str:
 
 def accent_border(color: str) -> str:
     """4px bar on the side where the text starts (left, or right for RTL languages)."""
-    return f"border-style:solid;border-color:{color};border-width:0;border-left-width:$emeaAccentL;border-right-width:$emeaAccentR;"
+    return f"border-style:solid;border-color:{color};border-width:0;border-left-width:$mailAccentL;border-right-width:$mailAccentR;"
 
 
 def details(rows: list[tuple[str, ...]], title: str | None = None) -> str:
     """Blue box with (label, value) rows; a third element is a Velocity condition for that row."""
-    label = f"vertical-align:top;padding:$emeaLabelPad;text-align:$emeaAlign;font-family:{FONT};font-size:13px;line-height:20px;color:{MUTED};white-space:nowrap;"
-    value = f"vertical-align:top;padding:4px 0;text-align:$emeaAlign;unicode-bidi:plaintext;font-family:{FONT};font-size:15px;line-height:20px;font-weight:600;color:{NAVY};"
+    label = f"vertical-align:top;padding:$mailLabelPad;text-align:$mailAlign;font-family:{FONT};font-size:13px;line-height:20px;color:{MUTED};white-space:nowrap;"
+    value = f"vertical-align:top;padding:4px 0;text-align:$mailAlign;unicode-bidi:plaintext;font-family:{FONT};font-size:15px;line-height:20px;font-weight:600;color:{NAVY};"
     body = []
     for row in rows:
         html = f'<tr><td style="{label}">{row[0]}</td><td style="{value}">{row[1]}</td></tr>'
@@ -208,7 +208,7 @@ def details(rows: list[tuple[str, ...]], title: str | None = None) -> str:
     )
     rows_html = "\n".join(body)
     return f"""<table style="{FULL_TABLE}margin:4px 0 18px 0;background-color:#F2F7FD;{accent_border(BLUE)}border-radius:6px;">
-<tr><td style="padding:16px 20px;text-align:$emeaAlign;">
+<tr><td style="padding:16px 20px;text-align:$mailAlign;">
 {heading}<table style="{TABLE}">
 {rows_html}
 </table>
@@ -225,7 +225,7 @@ def code(value: str) -> str:
 def button(url: str, label: str) -> str:
     return f"""<table style="{TABLE}margin:6px 0 22px 0;">
 <tr><td style="padding:13px 28px;border-radius:6px;background-color:{NAVY};font-family:{FONT};font-size:15px;line-height:20px;font-weight:600;">
-<a href="{url}" style="color:#FFFFFF;text-decoration:none;">{label} $emeaArrow</a>
+<a href="{url}" style="color:#FFFFFF;text-decoration:none;">{label} $mailArrow</a>
 </td></tr>
 </table>"""
 
@@ -239,7 +239,7 @@ def link_fallback(text: str, url: str) -> str:
 
 def note(text: str, accent: str = MAGENTA, background: str = "#FCF0FA") -> str:
     return f"""<table style="{FULL_TABLE}margin:4px 0 18px 0;background-color:{background};{accent_border(accent)}border-radius:6px;">
-<tr><td style="padding:14px 20px;text-align:$emeaAlign;font-family:{FONT};font-size:14px;line-height:21px;color:{INK};">{text}</td></tr>
+<tr><td style="padding:14px 20px;text-align:$mailAlign;font-family:{FONT};font-size:14px;line-height:21px;color:{INK};">{text}</td></tr>
 </table>"""
 
 
@@ -257,7 +257,7 @@ def subheading(text: str) -> str:
 
 def bullets(items: str) -> str:
     """`items` is Velocity/HTML producing <li> elements."""
-    return f'<ul style="margin:0 0 18px 0;padding:$emeaListPad;font-family:{FONT};font-size:15px;line-height:23px;color:{INK};">{items}</ul>'
+    return f'<ul style="margin:0 0 18px 0;padding:$mailListPad;font-family:{FONT};font-size:15px;line-height:23px;color:{INK};">{items}</ul>'
 
 
 def li(text: str) -> str:
@@ -275,8 +275,8 @@ def bad(text: str) -> str:
 def banner() -> str:
     return f"""<tr>
 <td style="background-color:{NAVY};background-image:linear-gradient(120deg,{NAVY_DARK} 0%,{NAVY} 55%,{BLUE} 100%);padding:30px 36px 26px 36px;">
-<div style="font-family:{FONT};font-size:11px;line-height:16px;letter-spacing:3px;text-transform:uppercase;color:#A9C8F2;">$emeaBannerTagline</div>
-<div style="font-family:{FONT};font-size:26px;line-height:34px;font-weight:600;letter-spacing:0.5px;color:#FFFFFF;">$emeaOrgName</div>
+<div style="font-family:{FONT};font-size:11px;line-height:16px;letter-spacing:3px;text-transform:uppercase;color:#A9C8F2;">$mailBannerTagline</div>
+<div style="font-family:{FONT};font-size:26px;line-height:34px;font-weight:600;letter-spacing:0.5px;color:#FFFFFF;">$mailOrgName</div>
 </td>
 </tr>
 <tr>
@@ -297,12 +297,12 @@ def layout(inner: str, closing: bool) -> str:
 <table style="{FULL_TABLE}max-width:600px;margin:0 auto;background-color:#FFFFFF;border-radius:10px;overflow:hidden;border:1px solid #E3E7EF;">
 {banner()}
 <tr>
-<td style="direction:$emeaDir;text-align:$emeaAlign;padding:34px 36px 12px 36px;font-family:{FONT};font-size:15px;line-height:23px;color:{INK};">
+<td style="direction:$mailDir;text-align:$mailAlign;padding:34px 36px 12px 36px;font-family:{FONT};font-size:15px;line-height:23px;color:{INK};">
 {inner}
 {sign_off}</td>
 </tr>
 <tr>
-<td style="direction:$emeaFootDir;text-align:$emeaFootAlign;padding:16px 36px;background-color:#F7F8FB;border-top:1px solid #E3E7EF;font-family:{FONT};font-size:12px;line-height:18px;color:{MUTED};">$tx_footer#if($emeaSupportEmail && $emeaSupportEmail != '') $tx_needHelp <a href="mailto:$emeaSupportEmail" style="color:{BLUE};">$emeaSupportEmail</a>#end</td>
+<td style="direction:$mailFootDir;text-align:$mailFootAlign;padding:16px 36px;background-color:#F7F8FB;border-top:1px solid #E3E7EF;font-family:{FONT};font-size:12px;line-height:18px;color:{MUTED};">$tx_footer#if($mailSupportEmail && $mailSupportEmail != '') $tx_needHelp <a href="mailto:$mailSupportEmail" style="color:{BLUE};">$mailSupportEmail</a>#end</td>
 </tr>
 </table>
 </td>
@@ -339,9 +339,9 @@ class Rewrite:
 
 
 def rewrite_body(t: Rewrite, common: dict[str, Tr]) -> str:
-    parts = [settings_block(t.settings), language_detection("emeaLang") + text_direction(rtl_capable=True)]
+    parts = [settings_block(t.settings), language_detection("mailLang") + text_direction(rtl_capable=True)]
     if t.greet:
-        parts.append(f'#set($emeaName = "{t.greet}")')
+        parts.append(f'#set($mailName = "{t.greet}")')
     parts.append(string_switch(common))
     if t.prelude:
         parts.append(t.prelude.strip())
@@ -368,9 +368,9 @@ def rewrite_subject(t: Rewrite) -> str:
     and Import-EmailTemplates.ps1 falls back to english_subject when it must create one."""
     if not t.multilingual_subject:
         return english_subject(t)
-    settings = subject_settings("$emeaDefaultLanguage", *t.subject, extra=t.settings)
-    return settings + language_detection("emeaSubjectLang") + switch(
-        "emeaSubjectLang", dict(zip(LANGUAGES, t.subject)), inline=True
+    settings = subject_settings("$mailDefaultLanguage", *t.subject, extra=t.settings)
+    return settings + language_detection("mailSubjectLang") + switch(
+        "mailSubjectLang", dict(zip(LANGUAGES, t.subject)), inline=True
     )
 
 
@@ -386,7 +386,7 @@ def wrap_body(default_body: str, wrap_common: dict[str, Tr]) -> str:
         body = f'<table style="{FULL_TABLE}"><tr><td style="white-space:pre-wrap;font-family:{FONT};font-size:14px;line-height:21px;color:{INK};">{body}</td></tr></table>'
     return (
         settings_block() + "\n"
-        + language_detection("emeaLang") + text_direction(rtl_capable=False) + "\n"
+        + language_detection("mailLang") + text_direction(rtl_capable=False) + "\n"
         + string_switch(wrap_common) + layout(body, closing=False)
     )
 
@@ -458,7 +458,7 @@ SAMPLE = {
 
 
 def _version2(text: str) -> bool:
-    for var in ("emeaLang", "emeaSubjectLang"):
+    for var in ("mailLang", "mailSubjectLang"):
         text = text.replace(language_detection(var), "")
     return bool(re.search(r"\$!?\{?__(recipient|global|contentJson|util|dateTool|numberTool)", text))
 
@@ -503,7 +503,7 @@ def render_all(items: dict[str, dict], samples: dict[str, dict], preview: bool) 
             if "\n" in subj.strip() or "$tx_" in subj:
                 raise SystemExit(f"{key} [{lang}] subject renders badly: {subj!r}")
             body = (work / f"{key}.{lang}.body.out").read_text(encoding="utf-8")
-            leftovers = re.findall(r"[$]!?\{?(?:tx_|emea)[A-Za-z0-9]+|[$]\{\{", subj + body)
+            leftovers = re.findall(r"[$]!?\{?(?:tx_|mail)[A-Za-z0-9]+|[$]\{\{", subj + body)
             if leftovers:
                 raise SystemExit(f"{key} [{lang}] has unresolved variables: {leftovers[:5]}")
 

@@ -10,42 +10,42 @@
   ],
   "settings": [
     {
-      "variable": "emeaDefaultLanguage",
+      "variable": "mailDefaultLanguage",
       "default": "en",
       "description": "language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar)"
     },
     {
-      "variable": "emeaOrgName",
+      "variable": "mailOrgName",
       "default": "EMEA TES Team",
-      "description": "organisation name in the banner, sign-off and footer"
+      "description": "tenant owner or team name in the banner, sign-off and footer"
     },
     {
-      "variable": "emeaBannerTagline",
+      "variable": "mailBannerTagline",
       "default": "Identity & Access",
-      "description": "small text above the organisation name in the banner"
+      "description": "small text above the tenant owner name in the banner"
     },
     {
-      "variable": "emeaColorPrimary",
+      "variable": "mailColorPrimary",
       "default": "#0033A1",
       "description": "banner, headings and buttons"
     },
     {
-      "variable": "emeaColorDark",
+      "variable": "mailColorDark",
       "default": "#011E69",
       "description": "start of the banner gradient"
     },
     {
-      "variable": "emeaColorAccent",
+      "variable": "mailColorAccent",
       "default": "#0071CE",
       "description": "links, section titles and information boxes"
     },
     {
-      "variable": "emeaColorHighlight",
+      "variable": "mailColorHighlight",
       "default": "#CC27B0",
       "description": "banner stripe and warning boxes"
     },
     {
-      "variable": "emeaSupportEmail",
+      "variable": "mailSupportEmail",
       "default": "",
       "description": "support address shown in the footer; empty hides it"
     }
@@ -53,7 +53,7 @@
   "subjectLimit": 255,
   "subjectFallback": {
     "user_invitation-custom": "Welcome to $__global.productName",
-    "user_invitation-custom.my-apps": "#set($emeaOrgName = 'EMEA TES Team')Welcome to ${emeaOrgName} – your access details"
+    "user_invitation-custom.my-apps": "#set($mailOrgName = 'EMEA TES Team')Welcome to ${mailOrgName} – your access details"
   },
   "variants": {
     "user_invitation-custom": {
@@ -61,12 +61,12 @@
       "file": "variants/user_invitation-custom.my-apps.json",
       "settings": [
         {
-          "variable": "emeaMyAppsUrl",
+          "variable": "mailMyAppsUrl",
           "default": "https://myapps.microsoft.com",
           "description": "Microsoft My Apps address"
         },
         {
-          "variable": "emeaSignInDomain",
+          "variable": "mailSignInDomain",
           "default": "emea-tes-team.cloud",
           "description": "domain of the sign-in email, after the username"
         }

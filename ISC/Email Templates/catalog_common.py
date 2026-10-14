@@ -7,16 +7,16 @@ Portuguese is European Portuguese; Arabic is Modern Standard Arabic.
 
 from build_templates import BLUE, FONT, INK, MAGENTA, MONO, NAVY, Rewrite, Setting, button, details, link_fallback, note, p, section
 
-# Set before every rewritten template's own strings. `$emeaName` is the recipient's name.
+# Set before every rewritten template's own strings. `$mailName` is the recipient's name.
 COMMON = {
     "hello": (
-        "Hello $emeaName,",
-        "Hola, $emeaName:",
-        "Bonjour $emeaName,",
-        "Ciao $emeaName,",
-        "Hallo $emeaName,",
-        "Olá $emeaName,",
-        "مرحبًا $emeaName،",
+        "Hello $mailName,",
+        "Hola, $mailName:",
+        "Bonjour $mailName,",
+        "Ciao $mailName,",
+        "Hallo $mailName,",
+        "Olá $mailName,",
+        "مرحبًا $mailName،",
     ),
     "closing": (
         "Kind regards,",
@@ -28,13 +28,13 @@ COMMON = {
         "مع أطيب التحيات،",
     ),
     "footer": (
-        "This is an automated message from the ${emeaOrgName} identity platform.",
-        "Este es un mensaje automático de la plataforma de identidades de ${emeaOrgName}.",
-        "Ce message automatique a été envoyé par la plateforme d’identités ${emeaOrgName}.",
-        "Messaggio automatico inviato dalla piattaforma di gestione delle identità di ${emeaOrgName}.",
-        "Diese Nachricht wurde automatisch von der Identitätsplattform von ${emeaOrgName} versendet.",
-        "Mensagem automática enviada pela plataforma de identidades de ${emeaOrgName}.",
-        "هذه رسالة آلية من منصة الهوية لدى ${emeaOrgName}.",
+        "This is an automated message from the ${mailOrgName} identity platform.",
+        "Este es un mensaje automático de la plataforma de identidades de ${mailOrgName}.",
+        "Ce message automatique a été envoyé par la plateforme d’identités ${mailOrgName}.",
+        "Messaggio automatico inviato dalla piattaforma di gestione delle identità di ${mailOrgName}.",
+        "Diese Nachricht wurde automatisch von der Identitätsplattform von ${mailOrgName} versendet.",
+        "Mensagem automática enviada pela plataforma de identidades de ${mailOrgName}.",
+        "هذه رسالة آلية من منصة الهوية لدى ${mailOrgName}.",
     ),
     "needHelp": (
         "Need help? Contact",
@@ -102,9 +102,9 @@ COMMON = {
 # Wrapped default templates keep their own wording and sign-off; only the footer is translated.
 WRAP_COMMON = {"footer": COMMON["footer"], "needHelp": COMMON["needHelp"]}
 
-# Velocity that sets `$emeaType` to the translated object type ("Role", "Entitlement", else access profile).
+# Velocity that sets `$mailType` to the translated object type ("Role", "Entitlement", else access profile).
 OBJECT_TYPE = """
-#if($requestedObjectType == "Role")#set($emeaType = $tx_typeRole)#elseif($requestedObjectType == "Entitlement")#set($emeaType = $tx_typeEntitlement)#else#set($emeaType = $tx_typeAccessProfile)#end
+#if($requestedObjectType == "Role")#set($mailType = $tx_typeRole)#elseif($requestedObjectType == "Entitlement")#set($mailType = $tx_typeEntitlement)#else#set($mailType = $tx_typeAccessProfile)#end
 """
 
 
@@ -163,8 +163,8 @@ USER_INVITATION = Rewrite(
 
 # My Apps version (EMEA TES Team only): first sign-in through Microsoft My Apps and SailPoint password reset.
 # Kept as a variant file; Import-EmailTemplates.ps1 always imports the standard invitation.
-MY_APPS_URL = Setting("emeaMyAppsUrl", "https://myapps.microsoft.com", "Microsoft My Apps address")
-SIGN_IN_DOMAIN = Setting("emeaSignInDomain", "emea-tes-team.cloud", "domain of the sign-in email, after the username")
+MY_APPS_URL = Setting("mailMyAppsUrl", "https://myapps.microsoft.com", "Microsoft My Apps address")
+SIGN_IN_DOMAIN = Setting("mailSignInDomain", "emea-tes-team.cloud", "domain of the sign-in email, after the username")
 
 _STEP_ROW = (
     '<tr><td style="width:28px;vertical-align:top;padding:0 14px 14px 0;">'
@@ -181,40 +181,40 @@ USER_INVITATION_MY_APPS = Rewrite(
     multilingual_subject=True,
     greet="${__recipient.name}",
     prelude=(
-        f"""#set($emeaMyAppsLink = '<a href="URL" style="color:COLOR;font-weight:600;text-decoration:none;">Microsoft My Apps</a>')"""
-        "#set($emeaMyAppsLink = $emeaMyAppsLink.replace('URL', $emeaMyAppsUrl).replace('COLOR', $emeaColorAccent))"
+        f"""#set($mailMyAppsLink = '<a href="URL" style="color:COLOR;font-weight:600;text-decoration:none;">Microsoft My Apps</a>')"""
+        "#set($mailMyAppsLink = $mailMyAppsLink.replace('URL', $mailMyAppsUrl).replace('COLOR', $mailColorAccent))"
     ),
     subject=(
-        "Welcome to ${emeaOrgName} – your access details",
-        "Te damos la bienvenida a ${emeaOrgName}: tus datos de acceso",
-        "Bienvenue chez ${emeaOrgName}\u00a0: vos informations d’accès",
-        "Ti diamo il benvenuto in ${emeaOrgName}: i tuoi dati di accesso",
-        "Willkommen bei ${emeaOrgName} – Ihre Zugangsdaten",
-        "Boas-vindas a ${emeaOrgName}: os seus dados de acesso",
-        "مرحبًا بك في ${emeaOrgName} – بيانات الوصول الخاصة بك",
+        "Welcome to ${mailOrgName} – your access details",
+        "Te damos la bienvenida a ${mailOrgName}: tus datos de acceso",
+        "Bienvenue chez ${mailOrgName}\u00a0: vos informations d’accès",
+        "Ti diamo il benvenuto in ${mailOrgName}: i tuoi dati di accesso",
+        "Willkommen bei ${mailOrgName} – Ihre Zugangsdaten",
+        "Boas-vindas a ${mailOrgName}: os seus dados de acesso",
+        "مرحبًا بك في ${mailOrgName} – بيانات الوصول الخاصة بك",
     ),
     strings={
         "intro": (
-            "Your ${emeaOrgName} account is ready. Follow the steps below to sign in for the first time – it only takes a couple of minutes.",
-            "Tu cuenta de ${emeaOrgName} ya está lista. Sigue estos pasos para iniciar sesión por primera vez; solo te llevará un par de minutos.",
-            "Votre compte ${emeaOrgName} est prêt. Suivez les étapes ci-dessous pour vous connecter pour la première fois&nbsp;: cela ne prend que quelques minutes.",
-            "Il tuo account ${emeaOrgName} è pronto. Segui i passaggi qui sotto per accedere per la prima volta: bastano pochi minuti.",
-            "Ihr ${emeaOrgName}-Konto ist eingerichtet. Folgen Sie den Schritten unten, um sich zum ersten Mal anzumelden – das dauert nur wenige Minuten.",
-            "A sua conta ${emeaOrgName} está pronta. Siga os passos abaixo para iniciar sessão pela primeira vez; demora apenas alguns minutos.",
-            "حسابك في ${emeaOrgName} جاهز. اتبع الخطوات أدناه لتسجيل الدخول لأول مرة – لن يستغرق ذلك سوى دقيقتين.",
+            "Your ${mailOrgName} account is ready. Follow the steps below to sign in for the first time – it only takes a couple of minutes.",
+            "Tu cuenta de ${mailOrgName} ya está lista. Sigue estos pasos para iniciar sesión por primera vez; solo te llevará un par de minutos.",
+            "Votre compte ${mailOrgName} est prêt. Suivez les étapes ci-dessous pour vous connecter pour la première fois&nbsp;: cela ne prend que quelques minutes.",
+            "Il tuo account ${mailOrgName} è pronto. Segui i passaggi qui sotto per accedere per la prima volta: bastano pochi minuti.",
+            "Ihr ${mailOrgName}-Konto ist eingerichtet. Folgen Sie den Schritten unten, um sich zum ersten Mal anzumelden – das dauert nur wenige Minuten.",
+            "A sua conta ${mailOrgName} está pronta. Siga os passos abaixo para iniciar sessão pela primeira vez; demora apenas alguns minutos.",
+            "حسابك في ${mailOrgName} جاهز. اتبع الخطوات أدناه لتسجيل الدخول لأول مرة – لن يستغرق ذلك سوى دقيقتين.",
         ),
         "detailsTitle": ("Your account details", "Datos de tu cuenta", "Vos informations de compte", "I dati del tuo account", "Ihre Kontodaten", "Dados da sua conta", "تفاصيل حسابك"),
         "emailLabel": ("Sign-in email", "Correo de inicio de sesión", "E-mail de connexion", "E-mail di accesso", "Anmelde-E-Mail", "E-mail de início de sessão", "البريد الإلكتروني لتسجيل الدخول"),
         "userLabel": ("Username", "Nombre de usuario", "Nom d’utilisateur", "Nome utente", "Benutzername", "Nome de utilizador", "اسم المستخدم"),
         "stepsTitle": ("First-time sign-in", "Primer inicio de sesión", "Première connexion", "Primo accesso", "Erstanmeldung", "Primeiro início de sessão", "تسجيل الدخول لأول مرة"),
         "step1": (
-            "Go to $emeaMyAppsLink and enter your sign-in email.",
-            "Ve a $emeaMyAppsLink e introduce tu correo de inicio de sesión.",
-            "Rendez-vous sur $emeaMyAppsLink et saisissez votre e-mail de connexion.",
-            "Vai su $emeaMyAppsLink e inserisci la tua e-mail di accesso.",
-            "Öffnen Sie $emeaMyAppsLink und geben Sie Ihre Anmelde-E-Mail ein.",
-            "Aceda a $emeaMyAppsLink e introduza o seu e-mail de início de sessão.",
-            "انتقل إلى $emeaMyAppsLink وأدخل البريد الإلكتروني لتسجيل الدخول.",
+            "Go to $mailMyAppsLink and enter your sign-in email.",
+            "Ve a $mailMyAppsLink e introduce tu correo de inicio de sesión.",
+            "Rendez-vous sur $mailMyAppsLink et saisissez votre e-mail de connexion.",
+            "Vai su $mailMyAppsLink e inserisci la tua e-mail di accesso.",
+            "Öffnen Sie $mailMyAppsLink und geben Sie Ihre Anmelde-E-Mail ein.",
+            "Aceda a $mailMyAppsLink e introduza o seu e-mail de início de sessão.",
+            "انتقل إلى $mailMyAppsLink وأدخل البريد الإلكتروني لتسجيل الدخول.",
         ),
         "step2": (
             "Select <strong>Forgot my password</strong>. You will be taken to SailPoint self-service password reset.",
@@ -244,13 +244,13 @@ USER_INVITATION_MY_APPS = Rewrite(
             "تحقّق من هويتك باستخدام بريدك الإلكتروني البديل (أو هاتفك، إن توفّر) ثم عيّن كلمة مرور جديدة.",
         ),
         "step5": (
-            "Sign in to My Apps with your new password. Your dashboard has shortcuts to every ${emeaOrgName} system you have access to.",
-            "Inicia sesión en My Apps con tu nueva contraseña. Tu panel incluye accesos directos a todos los sistemas de ${emeaOrgName} a los que tienes acceso.",
-            "Connectez-vous à My Apps avec votre nouveau mot de passe. Votre tableau de bord contient des raccourcis vers tous les systèmes ${emeaOrgName} auxquels vous avez accès.",
-            "Accedi a My Apps con la nuova password. La tua dashboard contiene i collegamenti a tutti i sistemi ${emeaOrgName} a cui hai accesso.",
-            "Melden Sie sich mit Ihrem neuen Kennwort bei My Apps an. Ihr Dashboard enthält Verknüpfungen zu allen ${emeaOrgName}-Systemen, auf die Sie Zugriff haben.",
-            "Inicie sessão no My Apps com a nova palavra-passe. O seu painel contém atalhos para todos os sistemas ${emeaOrgName} a que tem acesso.",
-            "سجّل الدخول إلى My Apps بكلمة المرور الجديدة. تحتوي لوحتك على اختصارات لكل أنظمة ${emeaOrgName} التي يمكنك الوصول إليها.",
+            "Sign in to My Apps with your new password. Your dashboard has shortcuts to every ${mailOrgName} system you have access to.",
+            "Inicia sesión en My Apps con tu nueva contraseña. Tu panel incluye accesos directos a todos los sistemas de ${mailOrgName} a los que tienes acceso.",
+            "Connectez-vous à My Apps avec votre nouveau mot de passe. Votre tableau de bord contient des raccourcis vers tous les systèmes ${mailOrgName} auxquels vous avez accès.",
+            "Accedi a My Apps con la nuova password. La tua dashboard contiene i collegamenti a tutti i sistemi ${mailOrgName} a cui hai accesso.",
+            "Melden Sie sich mit Ihrem neuen Kennwort bei My Apps an. Ihr Dashboard enthält Verknüpfungen zu allen ${mailOrgName}-Systemen, auf die Sie Zugriff haben.",
+            "Inicie sessão no My Apps com a nova palavra-passe. O seu painel contém atalhos para todos os sistemas ${mailOrgName} a que tem acesso.",
+            "سجّل الدخول إلى My Apps بكلمة المرور الجديدة. تحتوي لوحتك على اختصارات لكل أنظمة ${mailOrgName} التي يمكنك الوصول إليها.",
         ),
         "cta": ("Open My Apps", "Abrir My Apps", "Ouvrir My Apps", "Apri My Apps", "My Apps öffnen", "Abrir My Apps", "فتح My Apps"),
         "importantTitle": ("Important", "Importante", "Important", "Importante", "Wichtig", "Importante", "مهم"),
@@ -267,11 +267,11 @@ USER_INVITATION_MY_APPS = Rewrite(
     },
     content=f"""
 {p("$tx_intro")}
-{details([("$tx_emailLabel", _MONO_SPAN.format("${__recipient.alias}@${emeaSignInDomain}")), ("$tx_userLabel", _MONO_SPAN.format("${__recipient.alias}"))], title="$tx_detailsTitle")}
+{details([("$tx_emailLabel", _MONO_SPAN.format("${__recipient.alias}@${mailSignInDomain}")), ("$tx_userLabel", _MONO_SPAN.format("${__recipient.alias}"))], title="$tx_detailsTitle")}
 {section("$tx_stepsTitle")}
 <table style="width:100%;border-spacing:0;border-collapse:separate;">
 {"".join(_STEP_ROW.format(n=n) + chr(10) for n in range(1, 6))}</table>
-{button("${emeaMyAppsUrl}", "$tx_cta")}
+{button("${mailMyAppsUrl}", "$tx_cta")}
 {note(f'<strong style="color:{MAGENTA};">$tx_importantTitle:</strong> $tx_important')}
 """,
 )

@@ -12,14 +12,14 @@ R2 = "${__recipient.name}"
 
 # --- approvals -------------------------------------------------------------
 
-# `$emeaWho`: "onBehalf" (submitted for the recipient by someone else), "you", or "other" (`$emeaBy` = submitter).
-# `$emeaMine`: the recipient is the requester or the requestee.
+# `$mailWho`: "onBehalf" (submitted for the recipient by someone else), "you", or "other" (`$mailBy` = submitter).
+# `$mailMine`: the recipient is the requester or the requestee.
 WHO = """
-#set($emeaMine = false)#if($requestee.identityID == $__recipient.id || $requester.identityID == $__recipient.id)#set($emeaMine = true)#end
-#if($requestee.name && $requestee.name != '' && $requestee.identityID == $__recipient.id)#set($emeaWho = "onBehalf")
-#elseif($requestee.name && $requestee.name != '')#set($emeaWho = "other")#set($emeaBy = "$requestee.name")
-#elseif($requester.identityID == $__recipient.id)#set($emeaWho = "you")
-#else#set($emeaWho = "other")#set($emeaBy = "$requester.name")#end
+#set($mailMine = false)#if($requestee.identityID == $__recipient.id || $requester.identityID == $__recipient.id)#set($mailMine = true)#end
+#if($requestee.name && $requestee.name != '' && $requestee.identityID == $__recipient.id)#set($mailWho = "onBehalf")
+#elseif($requestee.name && $requestee.name != '')#set($mailWho = "other")#set($mailBy = "$requestee.name")
+#elseif($requester.identityID == $__recipient.id)#set($mailWho = "you")
+#else#set($mailWho = "other")#set($mailBy = "$requester.name")#end
 """
 
 APPROVER_LINK = f"{URL2}/ui/d/$approverPath"
@@ -33,9 +33,9 @@ SUBMITTED_ROWS = [
 
 def who_content(strings_prefix: str) -> str:
     return f"""
-#if($emeaWho == "onBehalf")
+#if($mailWho == "onBehalf")
 {p(f"$tx_{strings_prefix}OnBehalf")}
-#elseif($emeaWho == "you")
+#elseif($mailWho == "you")
 {p(f"$tx_{strings_prefix}You")}
 #else
 {p(f"$tx_{strings_prefix}Other")}
@@ -44,7 +44,7 @@ def who_content(strings_prefix: str) -> str:
 
 def mine_button() -> str:
     return f"""
-#if($emeaMine)
+#if($mailMine)
 {button(REQUESTER_LINK, "$tx_viewRequests")}
 #else
 {button(APPROVER_LINK, "$tx_reviewNow")}
@@ -72,11 +72,11 @@ _STATUS_WORDS = {
 }
 
 APPROVAL_STATUS_PRELUDE = f"""
-#set($emeaSt = "$!approvalStatus")#set($emeaSt = $emeaSt.toLowerCase())
-#if($emeaSt == "approved")#set($emeaStatusHtml = "<strong>$tx_statusApproved</strong>")
-#elseif($emeaSt == "rejected" || $emeaSt == "denied")#set($emeaStatusHtml = "<strong>$tx_statusDenied</strong>")
-#elseif($emeaSt == "cancelled" || $emeaSt == "canceled")#set($emeaStatusHtml = "<strong>$tx_statusCancelled</strong>")
-#else#set($emeaStatusHtml = "<strong>$emeaSt</strong>")#end
+#set($mailSt = "$!approvalStatus")#set($mailSt = $mailSt.toLowerCase())
+#if($mailSt == "approved")#set($mailStatusHtml = "<strong>$tx_statusApproved</strong>")
+#elseif($mailSt == "rejected" || $mailSt == "denied")#set($mailStatusHtml = "<strong>$tx_statusDenied</strong>")
+#elseif($mailSt == "cancelled" || $mailSt == "canceled")#set($mailStatusHtml = "<strong>$tx_statusCancelled</strong>")
+#else#set($mailStatusHtml = "<strong>$mailSt</strong>")#end
 """
 
 CONTACT_OWNER = (
@@ -107,9 +107,9 @@ ENTITLEMENT = ("Entitlement", "Derecho", "Droit d’accès", "Autorizzazione", "
 # --- certifications (version 1) ---------------------------------------------
 
 CERT_PRELUDE = """
-#set($emeaCampaign = "$certification.certificationGroups.get(0).name")
-#if($certification.expiration)#set($emeaDue = "$spTools.formatDate($certification.expiration,3,0)")#end
-#set($emeaCertUrl = "$identityNowUrl/ui/d/certifications-review/certification/${certification.id}")
+#set($mailCampaign = "$certification.certificationGroups.get(0).name")
+#if($certification.expiration)#set($mailDue = "$spTools.formatDate($certification.expiration,3,0)")#end
+#set($mailCertUrl = "$identityNowUrl/ui/d/certifications-review/certification/${certification.id}")
 """
 
 DUE_BY = ("Due by", "Fecha límite", "À terminer avant le", "Scadenza", "Fällig bis", "Prazo", "الموعد النهائي")
@@ -121,11 +121,11 @@ REVIEW_CERT = ("Review certification", "Revisar certificación", "Examiner la ce
 
 def reassignment_prelude(prefix: str) -> str:
     return f"""
-#if($emeaLang == "en")#set($emeaDatePattern = "EEEE, MMMM d, yyyy")#elseif($emeaLang == "de")#set($emeaDatePattern = "dd.MM.yyyy")#else#set($emeaDatePattern = "dd/MM/yyyy")#end
+#if($mailLang == "en")#set($mailDatePattern = "EEEE, MMMM d, yyyy")#elseif($mailLang == "de")#set($mailDatePattern = "dd.MM.yyyy")#else#set($mailDatePattern = "dd/MM/yyyy")#end
 #set($_startDate = $__dateTool.toDate("yyyy-MM-dd'T'HH:mm:ss", ${{{prefix}startDate}}))
-#set($emeaStart = $__dateTool.format($emeaDatePattern, $_startDate))
-#set($emeaHasEnd = false)
-#if(${{{prefix}endDate}} && ${{{prefix}endDate}} != "0001-01-01T00:00:00Z")#set($emeaHasEnd = true)#set($_endDate = $__dateTool.toDate("yyyy-MM-dd'T'HH:mm:ss", ${{{prefix}endDate}}))#set($emeaEnd = $__dateTool.format($emeaDatePattern, $_endDate))#end
+#set($mailStart = $__dateTool.format($mailDatePattern, $_startDate))
+#set($mailHasEnd = false)
+#if(${{{prefix}endDate}} && ${{{prefix}endDate}} != "0001-01-01T00:00:00Z")#set($mailHasEnd = true)#set($_endDate = $__dateTool.toDate("yyyy-MM-dd'T'HH:mm:ss", ${{{prefix}endDate}}))#set($mailEnd = $__dateTool.format($mailDatePattern, $_endDate))#end
 """
 
 
@@ -147,10 +147,10 @@ def reassignment_strings(prefix: str) -> dict:
 
 REASSIGNMENT_CONTENT = f"""
 {p("$tx_intro")}
-#if($emeaHasEnd)
-{details([("$tx_startsOn", "$emeaStart"), ("$tx_endsOn", "$emeaEnd")])}
+#if($mailHasEnd)
+{details([("$tx_startsOn", "$mailStart"), ("$tx_endsOn", "$mailEnd")])}
 #else
-{details([("$tx_startsOn", "$emeaStart"), ("$tx_endsOn", "$tx_noEnd")])}
+{details([("$tx_startsOn", "$mailStart"), ("$tx_endsOn", "$tx_noEnd")])}
 #end
 """
 
@@ -212,13 +212,13 @@ TEMPLATES = [
                 "يوجد تعليق جديد على طلب الموافقة الخاص بك لـ <strong>$approvalName</strong>.",
             ),
             "introOther": (
-                "There is a new comment on the approval request for <strong>$approvalName</strong>, submitted by $emeaBy.",
-                "Hay un comentario nuevo en la solicitud de aprobación de <strong>$approvalName</strong>, enviada por $emeaBy.",
-                "Un nouveau commentaire a été ajouté à la demande d’approbation de <strong>$approvalName</strong>, envoyée par $emeaBy.",
-                "C’è un nuovo commento sulla richiesta di approvazione di <strong>$approvalName</strong>, inviata da $emeaBy.",
-                "Zur Genehmigungsanfrage für <strong>$approvalName</strong> von $emeaBy gibt es einen neuen Kommentar.",
-                "Há um novo comentário no pedido de aprovação de <strong>$approvalName</strong>, enviado por $emeaBy.",
-                "يوجد تعليق جديد على طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $emeaBy.",
+                "There is a new comment on the approval request for <strong>$approvalName</strong>, submitted by $mailBy.",
+                "Hay un comentario nuevo en la solicitud de aprobación de <strong>$approvalName</strong>, enviada por $mailBy.",
+                "Un nouveau commentaire a été ajouté à la demande d’approbation de <strong>$approvalName</strong>, envoyée par $mailBy.",
+                "C’è un nuovo commento sulla richiesta di approvazione di <strong>$approvalName</strong>, inviata da $mailBy.",
+                "Zur Genehmigungsanfrage für <strong>$approvalName</strong> von $mailBy gibt es einen neuen Kommentar.",
+                "Há um novo comentário no pedido de aprovação de <strong>$approvalName</strong>, enviado por $mailBy.",
+                "يوجد تعليق جديد على طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $mailBy.",
             ),
         },
         content=who_content("intro") + mine_button(),
@@ -241,30 +241,30 @@ TEMPLATES = [
             for lang in LANGUAGES
         ),
         prelude="""
-#set($emeaOnBehalf = false)#if($requestee.name && $requestee.name != '' && $requestee.identityID == $__recipient.id)#set($emeaOnBehalf = true)#end
+#set($mailOnBehalf = false)#if($requestee.name && $requestee.name != '' && $requestee.identityID == $__recipient.id)#set($mailOnBehalf = true)#end
 """ + APPROVAL_STATUS_PRELUDE,
         strings={
             "introOnBehalf": (
-                "The approval request for <strong>$approvalName</strong>, submitted on your behalf by $requester.name, has been $emeaStatusHtml.",
-                "La solicitud de aprobación de <strong>$approvalName</strong>, enviada en tu nombre por $requester.name, ha sido $emeaStatusHtml.",
-                "La demande d’approbation de <strong>$approvalName</strong>, envoyée en votre nom par $requester.name, a été $emeaStatusHtml.",
-                "La richiesta di approvazione di <strong>$approvalName</strong>, inviata per tuo conto da $requester.name, è stata $emeaStatusHtml.",
-                "Die Genehmigungsanfrage für <strong>$approvalName</strong>, die $requester.name in Ihrem Namen gestellt hat, wurde $emeaStatusHtml.",
-                "O pedido de aprovação de <strong>$approvalName</strong>, enviado em seu nome por $requester.name, foi $emeaStatusHtml.",
-                "طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $requester.name نيابةً عنك، $emeaStatusHtml.",
+                "The approval request for <strong>$approvalName</strong>, submitted on your behalf by $requester.name, has been $mailStatusHtml.",
+                "La solicitud de aprobación de <strong>$approvalName</strong>, enviada en tu nombre por $requester.name, ha sido $mailStatusHtml.",
+                "La demande d’approbation de <strong>$approvalName</strong>, envoyée en votre nom par $requester.name, a été $mailStatusHtml.",
+                "La richiesta di approvazione di <strong>$approvalName</strong>, inviata per tuo conto da $requester.name, è stata $mailStatusHtml.",
+                "Die Genehmigungsanfrage für <strong>$approvalName</strong>, die $requester.name in Ihrem Namen gestellt hat, wurde $mailStatusHtml.",
+                "O pedido de aprovação de <strong>$approvalName</strong>, enviado em seu nome por $requester.name, foi $mailStatusHtml.",
+                "طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $requester.name نيابةً عنك، $mailStatusHtml.",
             ),
             "introYou": (
-                "Your approval request for <strong>$approvalName</strong> has been $emeaStatusHtml.",
-                "Tu solicitud de aprobación de <strong>$approvalName</strong> ha sido $emeaStatusHtml.",
-                "Votre demande d’approbation de <strong>$approvalName</strong> a été $emeaStatusHtml.",
-                "La tua richiesta di approvazione di <strong>$approvalName</strong> è stata $emeaStatusHtml.",
-                "Ihre Genehmigungsanfrage für <strong>$approvalName</strong> wurde $emeaStatusHtml.",
-                "O seu pedido de aprovação de <strong>$approvalName</strong> foi $emeaStatusHtml.",
-                "طلب الموافقة الخاص بك لـ <strong>$approvalName</strong> $emeaStatusHtml.",
+                "Your approval request for <strong>$approvalName</strong> has been $mailStatusHtml.",
+                "Tu solicitud de aprobación de <strong>$approvalName</strong> ha sido $mailStatusHtml.",
+                "Votre demande d’approbation de <strong>$approvalName</strong> a été $mailStatusHtml.",
+                "La tua richiesta di approvazione di <strong>$approvalName</strong> è stata $mailStatusHtml.",
+                "Ihre Genehmigungsanfrage für <strong>$approvalName</strong> wurde $mailStatusHtml.",
+                "O seu pedido de aprovação de <strong>$approvalName</strong> foi $mailStatusHtml.",
+                "طلب الموافقة الخاص بك لـ <strong>$approvalName</strong> $mailStatusHtml.",
             ),
         },
         content=f"""
-#if($emeaOnBehalf)
+#if($mailOnBehalf)
 {p("$tx_introOnBehalf")}
 #else
 {p("$tx_introYou")}
@@ -331,8 +331,8 @@ TEMPLATES = [
             "#if($requestee.name && $requestee.name != '' && $requester.identityID != $__recipient.id)تم تصعيد طلب موافقة مقدَّم نيابةً عنك#{else}تم تصعيد طلب الموافقة الخاص بك#end",
         ),
         prelude="""
-#set($emeaOnBehalf = false)#if($requestee.name && $requestee.name != '' && $requester.identityID != $__recipient.id)#set($emeaOnBehalf = true)#end
-#set($emeaFromPrev = false)#if($previousApprover.name && $previousApprover.name != '')#set($emeaFromPrev = true)#end
+#set($mailOnBehalf = false)#if($requestee.name && $requestee.name != '' && $requester.identityID != $__recipient.id)#set($mailOnBehalf = true)#end
+#set($mailFromPrev = false)#if($previousApprover.name && $previousApprover.name != '')#set($mailFromPrev = true)#end
 """,
         strings={
             "introOnBehalf": (
@@ -373,12 +373,12 @@ TEMPLATES = [
             ),
         },
         content=f"""
-#if($emeaOnBehalf)
+#if($mailOnBehalf)
 {p("$tx_introOnBehalf")}
 #else
 {p("$tx_introYou")}
 #end
-#if($emeaFromPrev){info("$tx_escalatedFrom")}#else{info("$tx_escalated")}#end
+#if($mailFromPrev){info("$tx_escalatedFrom")}#else{info("$tx_escalated")}#end
 {button(REQUESTER_LINK, "$tx_viewRequests")}
 """,
         sample={"escalationDelay": "3 days", "escalatedApprover.name": "Lena Müller"},
@@ -484,13 +484,13 @@ TEMPLATES = [
                 "لم تتم معالجة طلب الموافقة الخاص بك لـ <strong>$approvalName</strong> خلال $timeoutDays أيام، وقد تم إغلاقه.",
             ),
             "introOther": (
-                "The approval request for <strong>$approvalName</strong>, submitted by $emeaBy, was not resolved within $timeoutDays days and is now closed.",
-                "La solicitud de aprobación de <strong>$approvalName</strong>, enviada por $emeaBy, no se ha resuelto en $timeoutDays días y se ha cerrado.",
-                "La demande d’approbation de <strong>$approvalName</strong>, envoyée par $emeaBy, n’a pas été traitée dans un délai de $timeoutDays jours et est désormais close.",
-                "La richiesta di approvazione di <strong>$approvalName</strong>, inviata da $emeaBy, non è stata risolta entro $timeoutDays giorni ed è stata chiusa.",
-                "Die Genehmigungsanfrage für <strong>$approvalName</strong> von $emeaBy wurde nicht innerhalb von $timeoutDays Tagen bearbeitet und ist jetzt geschlossen.",
-                "O pedido de aprovação de <strong>$approvalName</strong>, enviado por $emeaBy, não foi resolvido em $timeoutDays dias e foi encerrado.",
-                "لم تتم معالجة طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $emeaBy، خلال $timeoutDays أيام، وقد تم إغلاقه.",
+                "The approval request for <strong>$approvalName</strong>, submitted by $mailBy, was not resolved within $timeoutDays days and is now closed.",
+                "La solicitud de aprobación de <strong>$approvalName</strong>, enviada por $mailBy, no se ha resuelto en $timeoutDays días y se ha cerrado.",
+                "La demande d’approbation de <strong>$approvalName</strong>, envoyée par $mailBy, n’a pas été traitée dans un délai de $timeoutDays jours et est désormais close.",
+                "La richiesta di approvazione di <strong>$approvalName</strong>, inviata da $mailBy, non è stata risolta entro $timeoutDays giorni ed è stata chiusa.",
+                "Die Genehmigungsanfrage für <strong>$approvalName</strong> von $mailBy wurde nicht innerhalb von $timeoutDays Tagen bearbeitet und ist jetzt geschlossen.",
+                "O pedido de aprovação de <strong>$approvalName</strong>, enviado por $mailBy, não foi resolvido em $timeoutDays dias e foi encerrado.",
+                "لم تتم معالجة طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $mailBy، خلال $timeoutDays أيام، وقد تم إغلاقه.",
             ),
             "newRequest": (
                 "You can submit a new request if you still need it.",
@@ -504,7 +504,7 @@ TEMPLATES = [
         },
         content=who_content("intro")
         + f"""
-#if($emeaMine)
+#if($mailMine)
 {p("$tx_newRequest")}
 #end"""
         + mine_button(),
@@ -526,13 +526,13 @@ TEMPLATES = [
         prelude=CERT_PRELUDE,
         strings={
             "intro": (
-                "The <strong>$emeaCampaign</strong> certification campaign has started. Please confirm that each person you review has the right access.",
-                "Ha comenzado la campaña de certificación <strong>$emeaCampaign</strong>. Confirma que cada persona que revisas tiene el acceso adecuado.",
-                "La campagne de certification <strong>$emeaCampaign</strong> a commencé. Veuillez confirmer que chaque personne que vous examinez dispose des accès appropriés.",
-                "È iniziata la campagna di certificazione <strong>$emeaCampaign</strong>. Conferma che ogni persona che esamini abbia gli accessi corretti.",
-                "Die Zertifizierungskampagne <strong>$emeaCampaign</strong> hat begonnen. Bitte bestätigen Sie, dass jede von Ihnen geprüfte Person die richtigen Zugriffe hat.",
-                "A campanha de certificação <strong>$emeaCampaign</strong> começou. Confirme que cada pessoa que revê tem os acessos adequados.",
-                "بدأت حملة الاعتماد <strong>$emeaCampaign</strong>. يُرجى التأكد من أن كل شخص تراجعه لديه الوصول المناسب.",
+                "The <strong>$mailCampaign</strong> certification campaign has started. Please confirm that each person you review has the right access.",
+                "Ha comenzado la campaña de certificación <strong>$mailCampaign</strong>. Confirma que cada persona que revisas tiene el acceso adecuado.",
+                "La campagne de certification <strong>$mailCampaign</strong> a commencé. Veuillez confirmer que chaque personne que vous examinez dispose des accès appropriés.",
+                "È iniziata la campagna di certificazione <strong>$mailCampaign</strong>. Conferma che ogni persona che esamini abbia gli accessi corretti.",
+                "Die Zertifizierungskampagne <strong>$mailCampaign</strong> hat begonnen. Bitte bestätigen Sie, dass jede von Ihnen geprüfte Person die richtigen Zugriffe hat.",
+                "A campanha de certificação <strong>$mailCampaign</strong> começou. Confirme que cada pessoa que revê tem os acessos adequados.",
+                "بدأت حملة الاعتماد <strong>$mailCampaign</strong>. يُرجى التأكد من أن كل شخص تراجعه لديه الوصول المناسب.",
             ),
             "how": (
                 "For each person you will see their entitlements and, where available, the sources and applications they come from. You can approve, change or revoke each item.",
@@ -547,8 +547,8 @@ TEMPLATES = [
         content=f"""
 {p("$tx_intro")}
 {p("$tx_how")}
-{details([("$tx_certificationLabel", "$emeaCampaign"), ("$tx_dueBy", "$emeaDue", "$emeaDue")])}
-{button("$emeaCertUrl", "$tx_reviewCert")}
+{details([("$tx_certificationLabel", "$mailCampaign"), ("$tx_dueBy", "$mailDue", "$mailDue")])}
+{button("$mailCertUrl", "$tx_reviewCert")}
 """,
     ),
     Rewrite(
@@ -566,19 +566,19 @@ TEMPLATES = [
         prelude=CERT_PRELUDE,
         strings={
             "intro": (
-                "The certification <strong>$emeaCampaign</strong> is still open and needs to be completed.",
-                "La certificación <strong>$emeaCampaign</strong> sigue abierta y debe completarse.",
-                "La certification <strong>$emeaCampaign</strong> est toujours ouverte et doit être terminée.",
-                "La certificazione <strong>$emeaCampaign</strong> è ancora aperta e deve essere completata.",
-                "Die Zertifizierung <strong>$emeaCampaign</strong> ist noch offen und muss abgeschlossen werden.",
-                "A certificação <strong>$emeaCampaign</strong> continua aberta e tem de ser concluída.",
-                "لا يزال الاعتماد <strong>$emeaCampaign</strong> مفتوحًا ويجب إكماله.",
+                "The certification <strong>$mailCampaign</strong> is still open and needs to be completed.",
+                "La certificación <strong>$mailCampaign</strong> sigue abierta y debe completarse.",
+                "La certification <strong>$mailCampaign</strong> est toujours ouverte et doit être terminée.",
+                "La certificazione <strong>$mailCampaign</strong> è ancora aperta e deve essere completata.",
+                "Die Zertifizierung <strong>$mailCampaign</strong> ist noch offen und muss abgeschlossen werden.",
+                "A certificação <strong>$mailCampaign</strong> continua aberta e tem de ser concluída.",
+                "لا يزال الاعتماد <strong>$mailCampaign</strong> مفتوحًا ويجب إكماله.",
             ),
         },
         content=f"""
 {p("$tx_intro")}
-{details([("$tx_certificationLabel", "$emeaCampaign"), ("$tx_dueBy", "$emeaDue", "$emeaDue")])}
-{button("$emeaCertUrl", "$tx_reviewCert")}
+{details([("$tx_certificationLabel", "$mailCampaign"), ("$tx_dueBy", "$mailDue", "$mailDue")])}
+{button("$mailCertUrl", "$tx_reviewCert")}
 """,
         sample={"ownerName": "Lena Müller"},
     ),
@@ -632,8 +632,8 @@ TEMPLATES = [
 {quote("${description}")}
 #end
 {p("$tx_task")}
-{details([("$tx_certificationLabel", "$emeaCampaign"), ("$tx_dueBy", "$emeaDue", "$emeaDue")])}
-{button("$emeaCertUrl", "$tx_reviewCert")}
+{details([("$tx_certificationLabel", "$mailCampaign"), ("$tx_dueBy", "$mailDue", "$mailDue")])}
+{button("$mailCertUrl", "$tx_reviewCert")}
 """,
         sample={"numNewIdentities": "int:4", "description": "Team restructuring."},
     ),
@@ -736,7 +736,7 @@ TEMPLATES = [
         ),
         prelude="""
 #set($numberOfPendingTasks = $__numberTool.integer($numberOfPendingTasks))
-#set($emeaUrl = "${__global.productUrl}/ui/d/dashboard/task-manager")
+#set($mailUrl = "${__global.productUrl}/ui/d/dashboard/task-manager")
 """,
         strings={
             "one": (
@@ -771,7 +771,7 @@ TEMPLATES = [
         content=f"""
 #if($numberOfPendingTasks == 1){p("$tx_one")}#else{p("$tx_many")}#end
 {p("$tx_how")}
-{button("$emeaUrl", "$tx_open")}
+{button("$mailUrl", "$tx_open")}
 """,
         sample={"numberOfPendingTasks": "3"},
     ),
@@ -826,17 +826,17 @@ TEMPLATES = [
             "تمت إعادة توجيه عنصر العمل: $workItemName",
         ),
         prelude="""
-#set($emeaForwardDate = "$spTools.formatDate($forwardDate,3,1)")
+#set($mailForwardDate = "$spTools.formatDate($forwardDate,3,1)")
 """,
         strings={
             "intro": (
-                "$requester forwarded the work item <strong>$workItemName</strong> from $previousOwner to <strong>$newOwner</strong> on $emeaForwardDate.",
-                "$requester reenvió la tarea <strong>$workItemName</strong> de $previousOwner a <strong>$newOwner</strong> el $emeaForwardDate.",
-                "$requester a transféré la tâche <strong>$workItemName</strong> de $previousOwner à <strong>$newOwner</strong> le $emeaForwardDate.",
-                "$requester ha inoltrato l’attività <strong>$workItemName</strong> da $previousOwner a <strong>$newOwner</strong> il $emeaForwardDate.",
-                "$requester hat die Aufgabe <strong>$workItemName</strong> am $emeaForwardDate von $previousOwner an <strong>$newOwner</strong> weitergeleitet.",
-                "$requester reencaminhou a tarefa <strong>$workItemName</strong> de $previousOwner para <strong>$newOwner</strong> em $emeaForwardDate.",
-                "أعاد $requester توجيه عنصر العمل <strong>$workItemName</strong> من $previousOwner إلى <strong>$newOwner</strong> في $emeaForwardDate.",
+                "$requester forwarded the work item <strong>$workItemName</strong> from $previousOwner to <strong>$newOwner</strong> on $mailForwardDate.",
+                "$requester reenvió la tarea <strong>$workItemName</strong> de $previousOwner a <strong>$newOwner</strong> el $mailForwardDate.",
+                "$requester a transféré la tâche <strong>$workItemName</strong> de $previousOwner à <strong>$newOwner</strong> le $mailForwardDate.",
+                "$requester ha inoltrato l’attività <strong>$workItemName</strong> da $previousOwner a <strong>$newOwner</strong> il $mailForwardDate.",
+                "$requester hat die Aufgabe <strong>$workItemName</strong> am $mailForwardDate von $previousOwner an <strong>$newOwner</strong> weitergeleitet.",
+                "$requester reencaminhou a tarefa <strong>$workItemName</strong> de $previousOwner para <strong>$newOwner</strong> em $mailForwardDate.",
+                "أعاد $requester توجيه عنصر العمل <strong>$workItemName</strong> من $previousOwner إلى <strong>$newOwner</strong> في $mailForwardDate.",
             ),
         },
         content=f"""
@@ -1319,17 +1319,17 @@ TEMPLATES = [
             "طلب الوصول الخاص بك يحتاج إلى متابعة",
         ),
         prelude="""
-#set($emeaItems = "")#set($sep = "")#foreach($item in $accessRequestItems.split(","))#set($emeaItems = "$emeaItems$sep<strong>$item.trim()</strong>")#set($sep = ", ")#end
+#set($mailItems = "")#set($sep = "")#foreach($item in $accessRequestItems.split(","))#set($mailItems = "$mailItems$sep<strong>$item.trim()</strong>")#set($sep = ", ")#end
 """,
         strings={
             "intro": (
-                "You recently requested access to $emeaItems. We could not send it to your approver yet because of a <strong>separation of duties (SoD) conflict</strong>.",
-                "Has solicitado recientemente acceso a $emeaItems. Todavía no hemos podido enviarla a tu aprobador debido a un <strong>conflicto de segregación de funciones (SoD)</strong>.",
-                "Vous avez récemment demandé l’accès à $emeaItems. Nous n’avons pas encore pu transmettre la demande à votre approbateur en raison d’un <strong>conflit de séparation des tâches (SoD)</strong>.",
-                "Di recente hai richiesto l’accesso a $emeaItems. Non è stato ancora possibile inviare la richiesta al tuo approvatore a causa di un <strong>conflitto di separazione dei compiti (SoD)</strong>.",
-                "Sie haben kürzlich Zugriff auf $emeaItems angefordert. Wegen eines <strong>Konflikts bei der Funktionstrennung (SoD)</strong> konnten wir die Anfrage noch nicht an Ihre genehmigende Person senden.",
-                "Pediu recentemente acesso a $emeaItems. Ainda não foi possível enviar o pedido ao seu aprovador devido a um <strong>conflito de segregação de funções (SoD)</strong>.",
-                "طلبت مؤخرًا الوصول إلى $emeaItems. لم نتمكن من إرساله إلى الموافِق بعد بسبب <strong>تعارض في الفصل بين المهام (SoD)</strong>.",
+                "You recently requested access to $mailItems. We could not send it to your approver yet because of a <strong>separation of duties (SoD) conflict</strong>.",
+                "Has solicitado recientemente acceso a $mailItems. Todavía no hemos podido enviarla a tu aprobador debido a un <strong>conflicto de segregación de funciones (SoD)</strong>.",
+                "Vous avez récemment demandé l’accès à $mailItems. Nous n’avons pas encore pu transmettre la demande à votre approbateur en raison d’un <strong>conflit de séparation des tâches (SoD)</strong>.",
+                "Di recente hai richiesto l’accesso a $mailItems. Non è stato ancora possibile inviare la richiesta al tuo approvatore a causa di un <strong>conflitto di separazione dei compiti (SoD)</strong>.",
+                "Sie haben kürzlich Zugriff auf $mailItems angefordert. Wegen eines <strong>Konflikts bei der Funktionstrennung (SoD)</strong> konnten wir die Anfrage noch nicht an Ihre genehmigende Person senden.",
+                "Pediu recentemente acesso a $mailItems. Ainda não foi possível enviar o pedido ao seu aprovador devido a um <strong>conflito de segregação de funções (SoD)</strong>.",
+                "طلبت مؤخرًا الوصول إلى $mailItems. لم نتمكن من إرساله إلى الموافِق بعد بسبب <strong>تعارض في الفصل بين المهام (SoD)</strong>.",
             ),
             "why": (
                 "Some combinations of access are not allowed under the company’s security policy. These SoD rules prevent one person from having too much control over a sensitive process.",

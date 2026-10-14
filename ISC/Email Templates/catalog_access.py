@@ -5,13 +5,13 @@ from catalog_common import OBJECT_TYPE
 
 PN = "${PRODUCT_NAME}"
 
-# `$emeaStatusHtml`: translated, bold "approved"/"denied" (agrees with "request" in every language).
+# `$mailStatusHtml`: translated, bold "approved"/"denied" (agrees with "request" in every language).
 STATUS = """
-#if($approved)#set($emeaStatusHtml = "<strong>$tx_statusApproved</strong>")#else#set($emeaStatusHtml = "<strong>$tx_statusDenied</strong>")#end
+#if($approved)#set($mailStatusHtml = "<strong>$tx_statusApproved</strong>")#else#set($mailStatusHtml = "<strong>$tx_statusDenied</strong>")#end
 """
 
 FOR_OTHER = """
-#set($emeaForOther = false)#if($requesterName != $requestedForIdentityName)#set($emeaForOther = true)#end
+#set($mailForOther = false)#if($requesterName != $requestedForIdentityName)#set($mailForOther = true)#end
 """
 
 JIT_NOTE = (
@@ -99,26 +99,26 @@ TEMPLATES = [
         + STATUS
         + FOR_OTHER
         + """
-#if($roleRequestEnabled)#set($emeaItem = "$requestedObjectName")#else#set($emeaItem = "$accessProfileName")#set($emeaType = $tx_typeAccessProfile)#end
+#if($roleRequestEnabled)#set($mailItem = "$requestedObjectName")#else#set($mailItem = "$accessProfileName")#set($mailType = $tx_typeAccessProfile)#end
 """,
         strings={
             "decisionSelf": (
-                "Your request for <strong>$emeaItem</strong> ($emeaType) has been $emeaStatusHtml.",
-                "Tu solicitud de <strong>$emeaItem</strong> ($emeaType) ha sido $emeaStatusHtml.",
-                "Votre demande d’accès à <strong>$emeaItem</strong> ($emeaType) a été $emeaStatusHtml.",
-                "La tua richiesta per <strong>$emeaItem</strong> ($emeaType) è stata $emeaStatusHtml.",
-                "Ihre Anfrage für <strong>$emeaItem</strong> ($emeaType) wurde $emeaStatusHtml.",
-                "O seu pedido de <strong>$emeaItem</strong> ($emeaType) foi $emeaStatusHtml.",
-                "طلبك للحصول على <strong>$emeaItem</strong> ($emeaType) $emeaStatusHtml.",
+                "Your request for <strong>$mailItem</strong> ($mailType) has been $mailStatusHtml.",
+                "Tu solicitud de <strong>$mailItem</strong> ($mailType) ha sido $mailStatusHtml.",
+                "Votre demande d’accès à <strong>$mailItem</strong> ($mailType) a été $mailStatusHtml.",
+                "La tua richiesta per <strong>$mailItem</strong> ($mailType) è stata $mailStatusHtml.",
+                "Ihre Anfrage für <strong>$mailItem</strong> ($mailType) wurde $mailStatusHtml.",
+                "O seu pedido de <strong>$mailItem</strong> ($mailType) foi $mailStatusHtml.",
+                "طلبك للحصول على <strong>$mailItem</strong> ($mailType) $mailStatusHtml.",
             ),
             "decisionOther": (
-                "Your request for <strong>$emeaItem</strong> ($emeaType) for <strong>${requestedForIdentityName}</strong> has been $emeaStatusHtml.",
-                "Tu solicitud de <strong>$emeaItem</strong> ($emeaType) para <strong>${requestedForIdentityName}</strong> ha sido $emeaStatusHtml.",
-                "Votre demande d’accès à <strong>$emeaItem</strong> ($emeaType) pour <strong>${requestedForIdentityName}</strong> a été $emeaStatusHtml.",
-                "La tua richiesta per <strong>$emeaItem</strong> ($emeaType) per conto di <strong>${requestedForIdentityName}</strong> è stata $emeaStatusHtml.",
-                "Ihre Anfrage für <strong>$emeaItem</strong> ($emeaType) für <strong>${requestedForIdentityName}</strong> wurde $emeaStatusHtml.",
-                "O seu pedido de <strong>$emeaItem</strong> ($emeaType) para <strong>${requestedForIdentityName}</strong> foi $emeaStatusHtml.",
-                "طلبك للحصول على <strong>$emeaItem</strong> ($emeaType) لـ <strong>${requestedForIdentityName}</strong> $emeaStatusHtml.",
+                "Your request for <strong>$mailItem</strong> ($mailType) for <strong>${requestedForIdentityName}</strong> has been $mailStatusHtml.",
+                "Tu solicitud de <strong>$mailItem</strong> ($mailType) para <strong>${requestedForIdentityName}</strong> ha sido $mailStatusHtml.",
+                "Votre demande d’accès à <strong>$mailItem</strong> ($mailType) pour <strong>${requestedForIdentityName}</strong> a été $mailStatusHtml.",
+                "La tua richiesta per <strong>$mailItem</strong> ($mailType) per conto di <strong>${requestedForIdentityName}</strong> è stata $mailStatusHtml.",
+                "Ihre Anfrage für <strong>$mailItem</strong> ($mailType) für <strong>${requestedForIdentityName}</strong> wurde $mailStatusHtml.",
+                "O seu pedido de <strong>$mailItem</strong> ($mailType) para <strong>${requestedForIdentityName}</strong> foi $mailStatusHtml.",
+                "طلبك للحصول على <strong>$mailItem</strong> ($mailType) لـ <strong>${requestedForIdentityName}</strong> $mailStatusHtml.",
             ),
             "includesSelf": (
                 "You now have access to:",
@@ -143,20 +143,20 @@ TEMPLATES = [
             "contactRejecter": CONTACT_REJECTER,
         },
         content=f"""
-#if($emeaForOther)
+#if($mailForOther)
 {p("$tx_decisionOther")}
 #else
 {p("$tx_decisionSelf")}
 #end
 #if($approved)
 #if($roleRequestEnabled && $accessibleItems && $accessibleItems.size() > 0)
-#if($emeaForOther){p("$tx_includesOther")}#else{p("$tx_includesSelf")}#end
+#if($mailForOther){p("$tx_includesOther")}#else{p("$tx_includesSelf")}#end
 {bullets("#foreach($item in $accessibleItems)" + li("$item") + "#end")}
 #end
 #if($startDate || $removeDate)
 {details(DATE_ROWS)}
 #end
-#if($activationRequired && !$emeaForOther)
+#if($activationRequired && !$mailForOther)
 {info("$tx_jit")}
 #end
 #else
@@ -183,13 +183,13 @@ TEMPLATES = [
         prelude=STATUS,
         strings={
             "intro": (
-                "On ${dateRequested}, ${requesterName} requested <strong>${requestedObjectName}</strong> for you. The request has been $emeaStatusHtml.",
-                "El ${dateRequested}, ${requesterName} solicitó <strong>${requestedObjectName}</strong> para ti. La solicitud ha sido $emeaStatusHtml.",
-                "Le ${dateRequested}, ${requesterName} a demandé <strong>${requestedObjectName}</strong> pour vous. La demande a été $emeaStatusHtml.",
-                "Il ${dateRequested}, ${requesterName} ha richiesto <strong>${requestedObjectName}</strong> per te. La richiesta è stata $emeaStatusHtml.",
-                "Am ${dateRequested} hat ${requesterName} <strong>${requestedObjectName}</strong> für Sie angefordert. Die Anfrage wurde $emeaStatusHtml.",
-                "Em ${dateRequested}, ${requesterName} pediu <strong>${requestedObjectName}</strong> para si. O pedido foi $emeaStatusHtml.",
-                "في ${dateRequested}، طلب ${requesterName} <strong>${requestedObjectName}</strong> لك. الطلب $emeaStatusHtml.",
+                "On ${dateRequested}, ${requesterName} requested <strong>${requestedObjectName}</strong> for you. The request has been $mailStatusHtml.",
+                "El ${dateRequested}, ${requesterName} solicitó <strong>${requestedObjectName}</strong> para ti. La solicitud ha sido $mailStatusHtml.",
+                "Le ${dateRequested}, ${requesterName} a demandé <strong>${requestedObjectName}</strong> pour vous. La demande a été $mailStatusHtml.",
+                "Il ${dateRequested}, ${requesterName} ha richiesto <strong>${requestedObjectName}</strong> per te. La richiesta è stata $mailStatusHtml.",
+                "Am ${dateRequested} hat ${requesterName} <strong>${requestedObjectName}</strong> für Sie angefordert. Die Anfrage wurde $mailStatusHtml.",
+                "Em ${dateRequested}, ${requesterName} pediu <strong>${requestedObjectName}</strong> para si. O pedido foi $mailStatusHtml.",
+                "في ${dateRequested}، طلب ${requesterName} <strong>${requestedObjectName}</strong> لك. الطلب $mailStatusHtml.",
             ),
             "processing": (
                 "Your access is now being set up.",
@@ -239,13 +239,13 @@ TEMPLATES = [
         prelude=OBJECT_TYPE + FOR_OTHER,
         strings={
             "intro": (
-                "${requesterName} has requested <strong>${requestedObjectName}</strong> ($emeaType). Please review the request.",
-                "${requesterName} ha solicitado <strong>${requestedObjectName}</strong> ($emeaType). Revisa la solicitud.",
-                "${requesterName} a demandé <strong>${requestedObjectName}</strong> ($emeaType). Veuillez examiner la demande.",
-                "${requesterName} ha richiesto <strong>${requestedObjectName}</strong> ($emeaType). Esamina la richiesta.",
-                "${requesterName} hat <strong>${requestedObjectName}</strong> ($emeaType) angefordert. Bitte prüfen Sie die Anfrage.",
-                "${requesterName} pediu <strong>${requestedObjectName}</strong> ($emeaType). Reveja o pedido.",
-                "طلب ${requesterName} <strong>${requestedObjectName}</strong> ($emeaType). يُرجى مراجعة الطلب.",
+                "${requesterName} has requested <strong>${requestedObjectName}</strong> ($mailType). Please review the request.",
+                "${requesterName} ha solicitado <strong>${requestedObjectName}</strong> ($mailType). Revisa la solicitud.",
+                "${requesterName} a demandé <strong>${requestedObjectName}</strong> ($mailType). Veuillez examiner la demande.",
+                "${requesterName} ha richiesto <strong>${requestedObjectName}</strong> ($mailType). Esamina la richiesta.",
+                "${requesterName} hat <strong>${requestedObjectName}</strong> ($mailType) angefordert. Bitte prüfen Sie die Anfrage.",
+                "${requesterName} pediu <strong>${requestedObjectName}</strong> ($mailType). Reveja o pedido.",
+                "طلب ${requesterName} <strong>${requestedObjectName}</strong> ($mailType). يُرجى مراجعة الطلب.",
             ),
             "reason": (
                 "Reason given by ${requesterName}:",
@@ -307,13 +307,13 @@ TEMPLATES = [
         prelude=OBJECT_TYPE,
         strings={
             "intro": (
-                "${previousOwnerName} has reassigned ${requesterName}’s request for <strong>${requestedObjectName}</strong> ($emeaType) to you for review.",
-                "${previousOwnerName} te ha reasignado la solicitud de ${requesterName} de <strong>${requestedObjectName}</strong> ($emeaType) para que la revises.",
-                "${previousOwnerName} vous a réattribué la demande de ${requesterName} pour <strong>${requestedObjectName}</strong> ($emeaType) afin que vous l’examiniez.",
-                "${previousOwnerName} ti ha riassegnato la richiesta di ${requesterName} per <strong>${requestedObjectName}</strong> ($emeaType) da esaminare.",
-                "${previousOwnerName} hat Ihnen die Anfrage von ${requesterName} für <strong>${requestedObjectName}</strong> ($emeaType) zur Prüfung zugewiesen.",
-                "${previousOwnerName} reatribuiu-lhe o pedido de ${requesterName} de <strong>${requestedObjectName}</strong> ($emeaType) para revisão.",
-                "أعاد ${previousOwnerName} إليك إسناد طلب ${requesterName} للحصول على <strong>${requestedObjectName}</strong> ($emeaType) لمراجعته.",
+                "${previousOwnerName} has reassigned ${requesterName}’s request for <strong>${requestedObjectName}</strong> ($mailType) to you for review.",
+                "${previousOwnerName} te ha reasignado la solicitud de ${requesterName} de <strong>${requestedObjectName}</strong> ($mailType) para que la revises.",
+                "${previousOwnerName} vous a réattribué la demande de ${requesterName} pour <strong>${requestedObjectName}</strong> ($mailType) afin que vous l’examiniez.",
+                "${previousOwnerName} ti ha riassegnato la richiesta di ${requesterName} per <strong>${requestedObjectName}</strong> ($mailType) da esaminare.",
+                "${previousOwnerName} hat Ihnen die Anfrage von ${requesterName} für <strong>${requestedObjectName}</strong> ($mailType) zur Prüfung zugewiesen.",
+                "${previousOwnerName} reatribuiu-lhe o pedido de ${requesterName} de <strong>${requestedObjectName}</strong> ($mailType) para revisão.",
+                "أعاد ${previousOwnerName} إليك إسناد طلب ${requesterName} للحصول على <strong>${requestedObjectName}</strong> ($mailType) لمراجعته.",
             ),
             "reason": (
                 "Reason for reassignment:",
@@ -425,12 +425,12 @@ TEMPLATES = [
 #set($successDetails = $requestDetail.successDetails)
 #if($successDetails && $successDetails.size() > 0)
 <p style="margin:6px 0 4px 0;font-size:13px;font-weight:700;color:#1E7B4F;">$tx_submitted</p>
-<ul style="margin:0 0 14px 0;padding:$emeaListPad;">#foreach($typeEntry in $objectTypeToPrettyPrint.entrySet())#set($type = $typeEntry.getKey())#set($prettyType = $typeEntry.getValue())#set($objectDetails = {{}})#set($objectDetails = ${{successDetails.get($type)}})#if($objectDetails.size() > 0)#foreach($requestedObjectDetail in $objectDetails)<li style="margin:0 0 4px 0;">$prettyType: <strong>${{requestedObjectDetail.objectName}}</strong>#if($requestedObjectDetail.startDate) · $tx_startsOn: $spTools.formatOffsetDateTimeForEmail($requestedObjectDetail.startDate)#end#if($requestedObjectDetail.removeDate) · $tx_endsOn: $spTools.formatOffsetDateTimeForEmail($requestedObjectDetail.removeDate)#end</li>#end#end#end</ul>
+<ul style="margin:0 0 14px 0;padding:$mailListPad;">#foreach($typeEntry in $objectTypeToPrettyPrint.entrySet())#set($type = $typeEntry.getKey())#set($prettyType = $typeEntry.getValue())#set($objectDetails = {{}})#set($objectDetails = ${{successDetails.get($type)}})#if($objectDetails.size() > 0)#foreach($requestedObjectDetail in $objectDetails)<li style="margin:0 0 4px 0;">$prettyType: <strong>${{requestedObjectDetail.objectName}}</strong>#if($requestedObjectDetail.startDate) · $tx_startsOn: $spTools.formatOffsetDateTimeForEmail($requestedObjectDetail.startDate)#end#if($requestedObjectDetail.removeDate) · $tx_endsOn: $spTools.formatOffsetDateTimeForEmail($requestedObjectDetail.removeDate)#end</li>#end#end#end</ul>
 #end
 #set($exclusionDetails = $requestDetail.exclusionDetails)
 #if($exclusionDetails && $exclusionDetails.size() > 0)
 <p style="margin:6px 0 4px 0;font-size:13px;font-weight:700;color:#B42318;">$tx_failed</p>
-<ul style="margin:0 0 14px 0;padding:$emeaListPad;">#foreach($typeEntry in $objectTypeToPrettyPrint.entrySet())#set($type = $typeEntry.getKey())#set($prettyType = $typeEntry.getValue())#set($objectDetails = {{}})#set($objectDetails = ${{exclusionDetails.get($type)}})#if($objectDetails.size() > 0)#foreach($requestedObjectDetail in $objectDetails)<li style="margin:0 0 4px 0;">$prettyType: <strong>${{requestedObjectDetail.objectName}}</strong>#if($requestedObjectDetail.exclusionReason) – $requestedObjectDetail.exclusionReason#end</li>#end#end#end</ul>
+<ul style="margin:0 0 14px 0;padding:$mailListPad;">#foreach($typeEntry in $objectTypeToPrettyPrint.entrySet())#set($type = $typeEntry.getKey())#set($prettyType = $typeEntry.getValue())#set($objectDetails = {{}})#set($objectDetails = ${{exclusionDetails.get($type)}})#if($objectDetails.size() > 0)#foreach($requestedObjectDetail in $objectDetails)<li style="margin:0 0 4px 0;">$prettyType: <strong>${{requestedObjectDetail.objectName}}</strong>#if($requestedObjectDetail.exclusionReason) – $requestedObjectDetail.exclusionReason#end</li>#end#end#end</ul>
 #end
 #end
 {p("$tx_pending")}
@@ -450,8 +450,8 @@ TEMPLATES = [
             "تم إلغاء طلب وصول",
         ),
         prelude="""
-#set($emeaMine = false)#if($emailRecipientName == $requesterName)#set($emeaMine = true)#end
-#set($emeaByOther = false)#if($cancelerName != $emailRecipientName)#set($emeaByOther = true)#end
+#set($mailMine = false)#if($emailRecipientName == $requesterName)#set($mailMine = true)#end
+#set($mailByOther = false)#if($cancelerName != $emailRecipientName)#set($mailByOther = true)#end
 """,
         strings={
             "introMine": (
@@ -485,18 +485,18 @@ TEMPLATES = [
             ),
         },
         content=f"""
-#if($emeaMine)
+#if($mailMine)
 {p("$tx_introMine")}
 #else
 {p("$tx_introOther")}
 #end
-{details([("$tx_requestedFor", "$requestedForName", "$isRobo"), ("$tx_cancelledBy", "$cancelerName", "$emeaByOther")])}
+{details([("$tx_requestedFor", "$requestedForName", "$isRobo"), ("$tx_cancelledBy", "$cancelerName", "$mailByOther")])}
 {by_type()}
 #if($cancelComment)
 {p("$tx_reason")}
 {quote("$cancelComment")}
 #end
-#if($emeaByOther)
+#if($mailByOther)
 {p("$tx_contactCanceler")}
 #end
 """,
@@ -584,17 +584,17 @@ TEMPLATES = [
         ),
         prelude=OBJECT_TYPE
         + """
-#set($emeaCascade = false)#if($requestedObjectType == "Role" || $requestedObjectType == "AccessProfile")#set($emeaCascade = true)#end
+#set($mailCascade = false)#if($requestedObjectType == "Role" || $requestedObjectType == "AccessProfile")#set($mailCascade = true)#end
 """,
         strings={
             "intro": (
-                "${previousOwnerName} has reassigned to you a request to remove <strong>${requestedObjectName}</strong> ($emeaType) from <strong>${requestedForIdentityName}</strong>.",
-                "${previousOwnerName} te ha reasignado una solicitud para retirar <strong>${requestedObjectName}</strong> ($emeaType) a <strong>${requestedForIdentityName}</strong>.",
-                "${previousOwnerName} vous a réattribué une demande de retrait de <strong>${requestedObjectName}</strong> ($emeaType) pour <strong>${requestedForIdentityName}</strong>.",
-                "${previousOwnerName} ti ha riassegnato una richiesta di rimozione di <strong>${requestedObjectName}</strong> ($emeaType) per <strong>${requestedForIdentityName}</strong>.",
-                "${previousOwnerName} hat Ihnen eine Anfrage zugewiesen, <strong>${requestedObjectName}</strong> ($emeaType) von <strong>${requestedForIdentityName}</strong> zu entfernen.",
-                "${previousOwnerName} reatribuiu-lhe um pedido para remover <strong>${requestedObjectName}</strong> ($emeaType) a <strong>${requestedForIdentityName}</strong>.",
-                "أعاد ${previousOwnerName} إليك إسناد طلب لإزالة <strong>${requestedObjectName}</strong> ($emeaType) من <strong>${requestedForIdentityName}</strong>.",
+                "${previousOwnerName} has reassigned to you a request to remove <strong>${requestedObjectName}</strong> ($mailType) from <strong>${requestedForIdentityName}</strong>.",
+                "${previousOwnerName} te ha reasignado una solicitud para retirar <strong>${requestedObjectName}</strong> ($mailType) a <strong>${requestedForIdentityName}</strong>.",
+                "${previousOwnerName} vous a réattribué une demande de retrait de <strong>${requestedObjectName}</strong> ($mailType) pour <strong>${requestedForIdentityName}</strong>.",
+                "${previousOwnerName} ti ha riassegnato una richiesta di rimozione di <strong>${requestedObjectName}</strong> ($mailType) per <strong>${requestedForIdentityName}</strong>.",
+                "${previousOwnerName} hat Ihnen eine Anfrage zugewiesen, <strong>${requestedObjectName}</strong> ($mailType) von <strong>${requestedForIdentityName}</strong> zu entfernen.",
+                "${previousOwnerName} reatribuiu-lhe um pedido para remover <strong>${requestedObjectName}</strong> ($mailType) a <strong>${requestedForIdentityName}</strong>.",
+                "أعاد ${previousOwnerName} إليك إسناد طلب لإزالة <strong>${requestedObjectName}</strong> ($mailType) من <strong>${requestedForIdentityName}</strong>.",
             ),
             "reason": ("Reason for reassignment:", "Motivo de la reasignación:", "Motif de la réattribution :", "Motivo della riassegnazione:", "Grund für die Neuzuweisung:", "Motivo da reatribuição:", "سبب إعادة الإسناد:"),
             "lose": (
@@ -622,7 +622,7 @@ TEMPLATES = [
 {p("$tx_reason")}
 {quote("${commentText}")}
 #end
-#if($emeaCascade)
+#if($mailCascade)
 {note("$tx_loseAll")}
 #else
 {note("$tx_lose")}
@@ -645,13 +645,13 @@ TEMPLATES = [
         prelude=OBJECT_TYPE + STATUS,
         strings={
             "intro": (
-                "${requesterName}’s request to remove your access to <strong>${requestedObjectName}</strong> ($emeaType) has been $emeaStatusHtml.",
-                "La solicitud de ${requesterName} para retirar tu acceso a <strong>${requestedObjectName}</strong> ($emeaType) ha sido $emeaStatusHtml.",
-                "La demande de ${requesterName} visant à retirer votre accès à <strong>${requestedObjectName}</strong> ($emeaType) a été $emeaStatusHtml.",
-                "La richiesta di ${requesterName} di rimuovere il tuo accesso a <strong>${requestedObjectName}</strong> ($emeaType) è stata $emeaStatusHtml.",
-                "Die Anfrage von ${requesterName}, Ihren Zugriff auf <strong>${requestedObjectName}</strong> ($emeaType) zu entziehen, wurde $emeaStatusHtml.",
-                "O pedido de ${requesterName} para remover o seu acesso a <strong>${requestedObjectName}</strong> ($emeaType) foi $emeaStatusHtml.",
-                "طلب ${requesterName} لإزالة وصولك إلى <strong>${requestedObjectName}</strong> ($emeaType) $emeaStatusHtml.",
+                "${requesterName}’s request to remove your access to <strong>${requestedObjectName}</strong> ($mailType) has been $mailStatusHtml.",
+                "La solicitud de ${requesterName} para retirar tu acceso a <strong>${requestedObjectName}</strong> ($mailType) ha sido $mailStatusHtml.",
+                "La demande de ${requesterName} visant à retirer votre accès à <strong>${requestedObjectName}</strong> ($mailType) a été $mailStatusHtml.",
+                "La richiesta di ${requesterName} di rimuovere il tuo accesso a <strong>${requestedObjectName}</strong> ($mailType) è stata $mailStatusHtml.",
+                "Die Anfrage von ${requesterName}, Ihren Zugriff auf <strong>${requestedObjectName}</strong> ($mailType) zu entziehen, wurde $mailStatusHtml.",
+                "O pedido de ${requesterName} para remover o seu acesso a <strong>${requestedObjectName}</strong> ($mailType) foi $mailStatusHtml.",
+                "طلب ${requesterName} لإزالة وصولك إلى <strong>${requestedObjectName}</strong> ($mailType) $mailStatusHtml.",
             ),
             "contactRequester": CONTACT_REQUESTER,
         },
@@ -678,13 +678,13 @@ TEMPLATES = [
         prelude=OBJECT_TYPE + STATUS,
         strings={
             "intro": (
-                "Your request to remove <strong>${requestedObjectName}</strong> ($emeaType) from <strong>${requestedForIdentityName}</strong> has been $emeaStatusHtml.",
-                "Tu solicitud para retirar <strong>${requestedObjectName}</strong> ($emeaType) a <strong>${requestedForIdentityName}</strong> ha sido $emeaStatusHtml.",
-                "Votre demande de retrait de <strong>${requestedObjectName}</strong> ($emeaType) pour <strong>${requestedForIdentityName}</strong> a été $emeaStatusHtml.",
-                "La tua richiesta di rimuovere <strong>${requestedObjectName}</strong> ($emeaType) a <strong>${requestedForIdentityName}</strong> è stata $emeaStatusHtml.",
-                "Ihre Anfrage, <strong>${requestedObjectName}</strong> ($emeaType) von <strong>${requestedForIdentityName}</strong> zu entfernen, wurde $emeaStatusHtml.",
-                "O seu pedido para remover <strong>${requestedObjectName}</strong> ($emeaType) a <strong>${requestedForIdentityName}</strong> foi $emeaStatusHtml.",
-                "طلبك لإزالة <strong>${requestedObjectName}</strong> ($emeaType) من <strong>${requestedForIdentityName}</strong> $emeaStatusHtml.",
+                "Your request to remove <strong>${requestedObjectName}</strong> ($mailType) from <strong>${requestedForIdentityName}</strong> has been $mailStatusHtml.",
+                "Tu solicitud para retirar <strong>${requestedObjectName}</strong> ($mailType) a <strong>${requestedForIdentityName}</strong> ha sido $mailStatusHtml.",
+                "Votre demande de retrait de <strong>${requestedObjectName}</strong> ($mailType) pour <strong>${requestedForIdentityName}</strong> a été $mailStatusHtml.",
+                "La tua richiesta di rimuovere <strong>${requestedObjectName}</strong> ($mailType) a <strong>${requestedForIdentityName}</strong> è stata $mailStatusHtml.",
+                "Ihre Anfrage, <strong>${requestedObjectName}</strong> ($mailType) von <strong>${requestedForIdentityName}</strong> zu entfernen, wurde $mailStatusHtml.",
+                "O seu pedido para remover <strong>${requestedObjectName}</strong> ($mailType) a <strong>${requestedForIdentityName}</strong> foi $mailStatusHtml.",
+                "طلبك لإزالة <strong>${requestedObjectName}</strong> ($mailType) من <strong>${requestedForIdentityName}</strong> $mailStatusHtml.",
             ),
             "removedOn": (
                 "The access will be removed on ${removeDate}.",
@@ -734,17 +734,17 @@ TEMPLATES = [
         ),
         prelude=OBJECT_TYPE
         + """
-#set($emeaCascade = false)#if($requestedObjectType == "Role" || $requestedObjectType == "AccessProfile")#set($emeaCascade = true)#end
+#set($mailCascade = false)#if($requestedObjectType == "Role" || $requestedObjectType == "AccessProfile")#set($mailCascade = true)#end
 """,
         strings={
             "intro": (
-                "$requesterName has requested to remove <strong>$requestedObjectName</strong> ($emeaType) from <strong>$requestedForIdentityName</strong>. Please review the request.",
-                "$requesterName ha solicitado retirar <strong>$requestedObjectName</strong> ($emeaType) a <strong>$requestedForIdentityName</strong>. Revisa la solicitud.",
-                "$requesterName a demandé le retrait de <strong>$requestedObjectName</strong> ($emeaType) pour <strong>$requestedForIdentityName</strong>. Veuillez examiner la demande.",
-                "$requesterName ha richiesto di rimuovere <strong>$requestedObjectName</strong> ($emeaType) a <strong>$requestedForIdentityName</strong>. Esamina la richiesta.",
-                "$requesterName hat beantragt, <strong>$requestedObjectName</strong> ($emeaType) von <strong>$requestedForIdentityName</strong> zu entfernen. Bitte prüfen Sie die Anfrage.",
-                "$requesterName pediu para remover <strong>$requestedObjectName</strong> ($emeaType) a <strong>$requestedForIdentityName</strong>. Reveja o pedido.",
-                "طلب $requesterName إزالة <strong>$requestedObjectName</strong> ($emeaType) من <strong>$requestedForIdentityName</strong>. يُرجى مراجعة الطلب.",
+                "$requesterName has requested to remove <strong>$requestedObjectName</strong> ($mailType) from <strong>$requestedForIdentityName</strong>. Please review the request.",
+                "$requesterName ha solicitado retirar <strong>$requestedObjectName</strong> ($mailType) a <strong>$requestedForIdentityName</strong>. Revisa la solicitud.",
+                "$requesterName a demandé le retrait de <strong>$requestedObjectName</strong> ($mailType) pour <strong>$requestedForIdentityName</strong>. Veuillez examiner la demande.",
+                "$requesterName ha richiesto di rimuovere <strong>$requestedObjectName</strong> ($mailType) a <strong>$requestedForIdentityName</strong>. Esamina la richiesta.",
+                "$requesterName hat beantragt, <strong>$requestedObjectName</strong> ($mailType) von <strong>$requestedForIdentityName</strong> zu entfernen. Bitte prüfen Sie die Anfrage.",
+                "$requesterName pediu para remover <strong>$requestedObjectName</strong> ($mailType) a <strong>$requestedForIdentityName</strong>. Reveja o pedido.",
+                "طلب $requesterName إزالة <strong>$requestedObjectName</strong> ($mailType) من <strong>$requestedForIdentityName</strong>. يُرجى مراجعة الطلب.",
             ),
             "reason": (
                 "Reason given by $requesterName:",
@@ -781,7 +781,7 @@ TEMPLATES = [
 {p("$tx_reason")}
 {quote("$requesterComments")}
 #end
-#if($emeaCascade)
+#if($mailCascade)
 {note("$tx_loseAll")}
 #else
 {note("$tx_lose")}

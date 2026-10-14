@@ -27,13 +27,13 @@ _PASSWORD_CHANGE_STRINGS = {
         "تم تحديث كلمة المرور للتطبيقات التالية التي تشترك في كلمة المرور نفسها:",
     ),
     "changed": (
-        "Your $emeaProduct password has been changed.",
-        "Tu contraseña de $emeaProduct se ha cambiado.",
-        "Votre mot de passe $emeaProduct a été modifié.",
-        "La tua password di $emeaProduct è stata modificata.",
-        "Ihr $emeaProduct-Kennwort wurde geändert.",
-        "A sua palavra-passe do $emeaProduct foi alterada.",
-        "تم تغيير كلمة مرور $emeaProduct الخاصة بك.",
+        "Your $mailProduct password has been changed.",
+        "Tu contraseña de $mailProduct se ha cambiado.",
+        "Votre mot de passe $mailProduct a été modifié.",
+        "La tua password di $mailProduct è stata modificata.",
+        "Ihr $mailProduct-Kennwort wurde geändert.",
+        "A sua palavra-passe do $mailProduct foi alterada.",
+        "تم تغيير كلمة مرور $mailProduct الخاصة بك.",
     ),
     "appsFailed": (
         "However, your password could not be updated for these apps, which also share it:",
@@ -93,9 +93,9 @@ _PASSWORD_CHANGE_SUBJECT = (
 )
 
 _PASSWORD_CHANGE_PRELUDE = """
-#set($emeaProduct = "${PRODUCT_NAME}")
-#set($emeaFailed = false)
-#if(($sourceFailedCount && $sourceFailedCount > 0) || ($appFailedCount && $appFailedCount > 0))#set($emeaFailed = true)#end
+#set($mailProduct = "${PRODUCT_NAME}")
+#set($mailFailed = false)
+#if(($sourceFailedCount && $sourceFailedCount > 0) || ($appFailedCount && $appFailedCount > 0))#set($mailFailed = true)#end
 """
 
 
@@ -122,7 +122,7 @@ def _password_change_content(list_apps: bool) -> str:
 #if($appCount && $appCount > 0)
 {p("$tx_appsUpdated")}
 {apps("appList")}
-#elseif(!$emeaFailed)
+#elseif(!$mailFailed)
 {info("$tx_changed")}
 #end
 #if($appFailedCount && $appFailedCount > 0)
@@ -131,7 +131,7 @@ def _password_change_content(list_apps: bool) -> str:
 #elseif($sourceFailedCount && $sourceFailedCount > 0)
 {p("$tx_systemsFailed")}
 #end{not_attempted}
-#if($emeaFailed)
+#if($mailFailed)
 {note("$tx_tryAgain")}
 #end
 {p("$tx_notYouChange")}
