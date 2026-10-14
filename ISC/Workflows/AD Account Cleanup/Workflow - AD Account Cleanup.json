@@ -1,0 +1,583 @@
+{
+  "name": "AD Account Cleanup",
+  "description": "Interactive process that removes owners from nhi.* accounts on Microsoft Active Directory @emea-tes-team (NHI), uncorrelates oam.* accounts on Microsoft Active Directory @emea-tes-team (Users), then starts a full account aggregation on that Users source.",
+  "enabled": true,
+  "owner": {
+    "id": "b41994df5dcf447483c8446436f29c79",
+    "name": "Fernando de los Ríos",
+    "type": "IDENTITY"
+  },
+  "definition": {
+    "start": "Define Variable",
+    "steps": {
+      "Check Nhi Accounts": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Loop Remove Owners",
+            "variableA.$": "$.listNhiAccounts.body[0].id"
+          }
+        ],
+        "defaultStep": "Message No Nhi",
+        "description": "True when at least one nhi.* account was returned.",
+        "displayName": "Any nhi accounts?",
+        "type": "choice"
+      },
+      "Check Oam Accounts": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Loop Uncorrelate",
+            "variableA.$": "$.listOamAccounts.body[0].id"
+          }
+        ],
+        "defaultStep": "Load Accounts Full",
+        "description": "True when at least one oam.* account was returned.",
+        "displayName": "Any oam accounts?",
+        "type": "choice"
+      },
+      "Check Proceed": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Message Starting",
+            "variableA.$": "$.confirmForm.formData.proceed",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Message Cancelled",
+        "description": "True when the operator set Run both actions to Yes.",
+        "displayName": "Run both actions?",
+        "type": "choice"
+      },
+      "Confirm Form": {
+        "actionId": "sp:interactive-form",
+        "attributes": {
+          "formDefinitionId": "bc87e97e-56d2-45e1-93af-9bef1b0c9616",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "AD account cleanup"
+        },
+        "description": "Operator confirms that both the owner removal and the uncorrelation should run.",
+        "displayName": "Form: Confirm both actions",
+        "nextStep": "Check Proceed",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Define Variable": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "ISC API base URL (no trailing slash).",
+              "name": "url",
+              "transforms": [],
+              "variableA": "https://company24509-poc.api.identitynow-demo.com"
+            },
+            {
+              "description": "Interactive process id, passed into the loops so a failure message can be posted.",
+              "name": "interactiveProcessId",
+              "transforms": [],
+              "variableA.$": "$.trigger.interactiveProcessId"
+            },
+            {
+              "description": "Launcher identity id, passed into the loops with the interactive process.",
+              "name": "launchedById",
+              "transforms": [],
+              "variableA.$": "$.trigger.launchedBy.id"
+            }
+          ]
+        },
+        "displayName": "Configuration",
+        "nextStep": "Message Intro",
+        "type": "Mutation"
+      },
+      "End Cancelled": {
+        "actionId": "sp:operator-success",
+        "description": "The operator chose not to run the cleanup.",
+        "displayName": "Success: Cancelled",
+        "type": "success"
+      },
+      "End Failure List Nhi": {
+        "actionId": "sp:operator-failure",
+        "description": "Listing nhi.* accounts failed.",
+        "displayName": "Failure: List nhi accounts",
+        "failureName": "List Nhi Accounts Failed",
+        "type": "failure"
+      },
+      "End Failure List Oam": {
+        "actionId": "sp:operator-failure",
+        "description": "Listing oam.* accounts failed after owner removal.",
+        "displayName": "Failure: List oam accounts",
+        "failureName": "List Oam Accounts Failed",
+        "type": "failure"
+      },
+      "End Success": {
+        "actionId": "sp:operator-success",
+        "description": "Owner removal, uncorrelation, and the full account aggregation finished or were accepted.",
+        "displayName": "Success: Cleanup finished",
+        "type": "success"
+      },
+      "List Nhi Accounts": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramType": "1.4",
+            "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+            "refID": "85245f00-fd95-46b2-b3b5-d9c13409614d"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramType": "3.1",
+            "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+            "refID": "dd7413ed-abde-40f3-9a71-e623f8971d9a"
+          },
+          "requestContentType": "json",
+          "requestHeaders": {
+            "X-SailPoint-Experimental": "true"
+          },
+          "url": "{{$.defineVariable.url}}/v2025/machine-accounts?limit=250&filters=name%20sw%20%22nhi.%22%20and%20source.id%20eq%20%224327b3e911174ab5b5bb75f9c82764b8%22"
+        },
+        "catch": [
+          {
+            "next": "Message List Nhi Failed"
+          }
+        ],
+        "description": "Lists up to 250 nhi.* machine accounts on the NHI Active Directory source.",
+        "displayName": "API: List nhi accounts",
+        "nextStep": "Check Nhi Accounts",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "List Oam Accounts": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramType": "1.4",
+            "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+            "refID": "85245f00-fd95-46b2-b3b5-d9c13409614d"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramType": "3.1",
+            "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+            "refID": "dd7413ed-abde-40f3-9a71-e623f8971d9a"
+          },
+          "requestContentType": "json",
+          "url": "{{$.defineVariable.url}}/v3/accounts?limit=250&filters=sourceId%20eq%20%22a67f790e42c04da3bdba05d7dd7ccdd9%22%20and%20name%20sw%20%22oam.%22"
+        },
+        "catch": [
+          {
+            "next": "Message List Oam Failed"
+          }
+        ],
+        "description": "Lists up to 250 oam.* accounts on the Users Active Directory source.",
+        "displayName": "API: List oam accounts",
+        "nextStep": "Check Oam Accounts",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Loop Remove Owners": {
+        "actionId": "sp:loop:iterator",
+        "attributes": {
+          "context.$": "$.defineVariable",
+          "input.$": "$.listNhiAccounts.body",
+          "start": "Owner Present",
+          "steps": {
+            "Owner Done": {
+              "displayName": "Owner step complete",
+              "type": "success"
+            },
+            "Owner Present": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Remove Owner",
+                  "variableA.$": "$.loop.loopInput.ownerIdentity.id"
+                }
+              ],
+              "defaultStep": "Owner Done",
+              "description": "Skip accounts that already have no owner.",
+              "displayName": "Owner set?",
+              "type": "choice"
+            },
+            "Remove Owner": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "jsonRequestBody": [
+                  {
+                    "op": "remove",
+                    "path": "/ownerIdentity"
+                  }
+                ],
+                "method": "patch",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramType": "1.4",
+                  "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+                  "refID": "85245f00-fd95-46b2-b3b5-d9c13409614d"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramType": "3.1",
+                  "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+                  "refID": "dd7413ed-abde-40f3-9a71-e623f8971d9a"
+                },
+                "requestContentType": "json",
+                "requestHeaders": {
+                  "Content-Type": "application/json-patch+json",
+                  "X-SailPoint-Experimental": "true"
+                },
+                "url": "{{$.loop.context.url}}/v2025/machine-accounts/{{$.loop.loopInput.id}}"
+              },
+              "description": "Clears the machine account owner. Primary and secondary owner fields clear with it.",
+              "displayName": "API: Remove owner",
+              "nextStep": "Owner Done",
+              "type": "action",
+              "versionNumber": 3,
+              "catch": [
+                {
+                  "next": "Message Remove Owners Failed"
+                }
+              ]
+            },
+            "Message Remove Owners Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.loop.context.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 12px 0; line-height: 1.5;\">Owner removal stopped before uncorrelation started.</p><p><strong>Status:</strong> {{ $.removeOwner.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.removeOwner.error.workflowErrorMessage }}</p>",
+                "ownerId.$": "$.loop.context.launchedById",
+                "title": "Owner removal failed"
+              },
+              "displayName": "Message: Owner removal failed",
+              "nextStep": "End Failure Remove Owners",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "End Failure Remove Owners": {
+              "actionId": "sp:operator-failure",
+              "description": "The owner-removal loop failed.",
+              "displayName": "Failure: Remove owners",
+              "failureName": "Remove Owners Failed",
+              "type": "failure"
+            }
+          }
+        },
+        "description": "Removes the owner from each nhi.* account that has one.",
+        "displayName": "Loop: Remove owners",
+        "nextStep": "List Oam Accounts",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Loop Uncorrelate": {
+        "actionId": "sp:loop:iterator",
+        "attributes": {
+          "context.$": "$.defineVariable",
+          "input.$": "$.listOamAccounts.body",
+          "start": "Identity Present",
+          "steps": {
+            "Account Done": {
+              "displayName": "Uncorrelate step complete",
+              "type": "success"
+            },
+            "Identity Present": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Uncorrelate Account",
+                  "variableA.$": "$.loop.loopInput.identityId"
+                }
+              ],
+              "defaultStep": "Account Done",
+              "description": "Skip accounts that already have no identity link.",
+              "displayName": "Identity linked?",
+              "type": "choice"
+            },
+            "Uncorrelate Account": {
+              "actionId": "sp:http",
+              "attributes": {
+                "authenticationType": "OAuth",
+                "jsonRequestBody": [
+                  {
+                    "op": "remove",
+                    "path": "/identityId"
+                  }
+                ],
+                "method": "patch",
+                "param_authenticationRef": "oauth",
+                "param_oauth": {
+                  "mapping": {
+                    "auth_client_id": "clientId",
+                    "auth_client_secret": "clientSecret",
+                    "auth_credential_location": "credentialLocation",
+                    "auth_token_url": "tokenURL"
+                  },
+                  "paramType": "1.4",
+                  "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+                  "refID": "85245f00-fd95-46b2-b3b5-d9c13409614d"
+                },
+                "param_oauth_scopes": {
+                  "mapping": {
+                    "auth_scopes": "scopes"
+                  },
+                  "paramType": "3.1",
+                  "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+                  "refID": "dd7413ed-abde-40f3-9a71-e623f8971d9a"
+                },
+                "requestContentType": "json",
+                "requestHeaders": {
+                  "Content-Type": "application/json-patch+json"
+                },
+                "url": "{{$.loop.context.url}}/v3/accounts/{{$.loop.loopInput.id}}"
+              },
+              "description": "Removes the account identity link in Identity Security Cloud.",
+              "displayName": "API: Uncorrelate account",
+              "nextStep": "Account Done",
+              "type": "action",
+              "versionNumber": 3,
+              "catch": [
+                {
+                  "next": "Message Uncorrelate Failed"
+                }
+              ]
+            },
+            "Message Uncorrelate Failed": {
+              "actionId": "sp:interactive-message",
+              "attributes": {
+                "category": "ERROR",
+                "interactiveProcessId.$": "$.loop.context.interactiveProcessId",
+                "message": "<p style=\"margin: 0 0 12px 0; line-height: 1.5;\">Owner removal already finished. Uncorrelation did not complete.</p><p><strong>Status:</strong> {{ $.uncorrelateAccount.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.uncorrelateAccount.error.workflowErrorMessage }}</p>",
+                "ownerId.$": "$.loop.context.launchedById",
+                "title": "Uncorrelation failed"
+              },
+              "displayName": "Message: Uncorrelation failed",
+              "nextStep": "End Failure Uncorrelate",
+              "type": "action",
+              "versionNumber": 1
+            },
+            "End Failure Uncorrelate": {
+              "actionId": "sp:operator-failure",
+              "description": "The uncorrelation loop failed.",
+              "displayName": "Failure: Uncorrelate accounts",
+              "failureName": "Uncorrelate Accounts Failed",
+              "type": "failure"
+            }
+          }
+        },
+        "description": "Uncorrelates each oam.* account that still has an identity link.",
+        "displayName": "Loop: Uncorrelate accounts",
+        "nextStep": "Load Accounts Full",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message Cancelled": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">No accounts were changed.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Cancelled"
+        },
+        "displayName": "Message: Cancelled",
+        "nextStep": "End Cancelled",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message Done": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Both passes finished. Accounts with nothing to change were skipped.</p><p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\"><strong>Owners.</strong> nhi.* on Microsoft Active Directory @emea-tes-team (NHI).</p><p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\"><strong>Uncorrelate.</strong> oam.* on Microsoft Active Directory @emea-tes-team (Users).</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\"><strong>Aggregation.</strong> A full account aggregation was started on Microsoft Active Directory @emea-tes-team (Users).</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Cleanup finished"
+        },
+        "displayName": "Message: Cleanup finished",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message Intro": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Confirm on the next screen to run both actions. Nothing is changed in Active Directory.</p><p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\"><strong>Owners.</strong> Clear the account owner on <strong>nhi.*</strong> accounts in Microsoft Active Directory @emea-tes-team (NHI) when one is set.</p><p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\"><strong>Uncorrelate.</strong> Clear the identity link on <strong>oam.*</strong> accounts in Microsoft Active Directory @emea-tes-team (Users).</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\"><strong>Then.</strong> Start a full account aggregation on Microsoft Active Directory @emea-tes-team (Users).</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "AD account cleanup"
+        },
+        "displayName": "Message: Introduction",
+        "nextStep": "Confirm Form",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message List Nhi Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 12px 0; line-height: 1.5;\">The nhi.* account list failed, so neither action ran.</p><p><strong>Status:</strong> {{ $.listNhiAccounts.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.listNhiAccounts.error.workflowErrorMessage }}</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Could not list nhi accounts"
+        },
+        "displayName": "Message: List nhi accounts failed",
+        "nextStep": "End Failure List Nhi",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message List Oam Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 12px 0; line-height: 1.5;\">Owner removal already finished. Uncorrelation did not start because the oam.* list failed.</p><p><strong>Status:</strong> {{ $.listOamAccounts.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.listOamAccounts.error.workflowErrorMessage }}</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Could not list oam accounts"
+        },
+        "displayName": "Message: List oam accounts failed",
+        "nextStep": "End Failure List Oam",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message No Nhi": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "WARN",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">No <strong>nhi.*</strong> accounts were found on Microsoft Active Directory @emea-tes-team (NHI). Continuing with <strong>oam.*</strong> uncorrelation.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "No nhi accounts"
+        },
+        "displayName": "Message: No nhi accounts",
+        "nextStep": "List Oam Accounts",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Message Starting": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0; line-height: 1.5; color: #475569;\">Removing owners from <strong>nhi.*</strong>, then uncorrelating <strong>oam.*</strong>. Each list is the first 250 matching accounts.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Starting"
+        },
+        "displayName": "Message: Starting",
+        "nextStep": "List Nhi Accounts",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Load Accounts Full": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "disableOptimization": true
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "b1ac0177-b66b-4ada-840e-73f500f4822b",
+            "paramType": "1.4",
+            "refID": "85245f00-fd95-46b2-b3b5-d9c13409614d"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "4b5bad41-562e-4622-b3df-1cd7b1e5ccb2",
+            "paramType": "3.1",
+            "refID": "dd7413ed-abde-40f3-9a71-e623f8971d9a"
+          },
+          "requestContentType": "json",
+          "url": "{{$.defineVariable.url}}/v2026/sources/a67f790e42c04da3bdba05d7dd7ccdd9/load-accounts"
+        },
+        "catch": [
+          {
+            "next": "Message Load Accounts Failed"
+          }
+        ],
+        "description": "Starts a full account aggregation, with optimization disabled, on Microsoft Active Directory @emea-tes-team (Users).",
+        "displayName": "API: Load accounts (full)",
+        "nextStep": "Message Done",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Message Load Accounts Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 12px 0; line-height: 1.5;\">Owner removal and uncorrelation already finished. The full account aggregation did not start.</p><p><strong>Status:</strong> {{ $.loadAccountsFull.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.loadAccountsFull.error.workflowErrorMessage }}</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Account aggregation failed"
+        },
+        "displayName": "Message: Account aggregation failed",
+        "nextStep": "End Failure Aggregate Accounts",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "End Failure Aggregate Accounts": {
+        "actionId": "sp:operator-failure",
+        "description": "The full account aggregation on the Users Active Directory source did not start.",
+        "displayName": "Failure: Account aggregation",
+        "failureName": "Account Aggregation Failed",
+        "type": "failure"
+      }
+    }
+  },
+  "trigger": {
+    "attributes": {
+      "filter.$": "$[?(@.workflowId == '701e79b8-1fb0-462d-9b9e-e7da32e8b0c2')]",
+      "id": "idn:interactive-process-launched",
+      "integrationId": null
+    },
+    "type": "EVENT"
+  },
+  "id": "701e79b8-1fb0-462d-9b9e-e7da32e8b0c2"
+}

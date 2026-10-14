@@ -1,0 +1,69 @@
+[
+  {
+    "version": 1,
+    "self": {
+      "id": "bc87e97e-56d2-45e1-93af-9bef1b0c9616",
+      "name": "AD Account Cleanup",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "bc87e97e-56d2-45e1-93af-9bef1b0c9616",
+      "name": "AD Account Cleanup",
+      "description": "Confirm removal of nhi.* account owners and uncorrelation of oam.* accounts on the emea-tes-team Active Directory sources.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "b41994df5dcf447483c8446436f29c79",
+        "fullName": "Fernando de los Ríos",
+        "name": "Fernando de los Ríos"
+      },
+      "usedBy": [
+        {
+          "type": "WORKFLOW",
+          "id": "701e79b8-1fb0-462d-9b9e-e7da32e8b0c2"
+        }
+      ],
+      "formInput": [],
+      "formElements": [
+        {
+          "id": "cleanup-section",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "formElements": [
+              {
+                "config": {
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">This run does both actions. It does not change Active Directory.</p><p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\"><strong>Remove owners</strong> from accounts named <strong>nhi.*</strong> on Microsoft Active Directory @emea-tes-team (NHI). Accounts that already have no owner are left as they are.</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\"><strong>Uncorrelate</strong> accounts named <strong>oam.*</strong> on Microsoft Active Directory @emea-tes-team (Users) by clearing the identity link in Identity Security Cloud.</p>",
+                  "label": "Introduction",
+                  "showLabel": false
+                },
+                "elementType": "DESCRIPTION",
+                "id": "cleanup-intro",
+                "key": "",
+                "validations": []
+              },
+              {
+                "config": {
+                  "default": false,
+                  "falseLabel": "No",
+                  "helpText": "Yes removes nhi.* owners and uncorrelates oam.* accounts. No stops without calling the APIs.",
+                  "label": "Run both actions",
+                  "trueLabel": "Yes"
+                },
+                "elementType": "TOGGLE",
+                "id": "cleanup-proceed",
+                "key": "proceed",
+                "validations": []
+              }
+            ],
+            "label": "AD account cleanup",
+            "labelStyle": "h2",
+            "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  }
+]
