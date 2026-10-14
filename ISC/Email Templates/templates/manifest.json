@@ -1,0 +1,196 @@
+{
+  "languages": [
+    "en",
+    "es",
+    "fr",
+    "it",
+    "de",
+    "pt",
+    "ar"
+  ],
+  "settings": [
+    {
+      "variable": "emeaDefaultLanguage",
+      "default": "en",
+      "description": "language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar)"
+    },
+    {
+      "variable": "emeaOrgName",
+      "default": "EMEA TES Team",
+      "description": "organisation name in the banner, sign-off and footer"
+    },
+    {
+      "variable": "emeaBannerTagline",
+      "default": "Identity & Access",
+      "description": "small text above the organisation name in the banner"
+    },
+    {
+      "variable": "emeaColorPrimary",
+      "default": "#0033A1",
+      "description": "banner, headings and buttons"
+    },
+    {
+      "variable": "emeaColorDark",
+      "default": "#011E69",
+      "description": "start of the banner gradient"
+    },
+    {
+      "variable": "emeaColorAccent",
+      "default": "#0071CE",
+      "description": "links, section titles and information boxes"
+    },
+    {
+      "variable": "emeaColorHighlight",
+      "default": "#CC27B0",
+      "description": "banner stripe and warning boxes"
+    },
+    {
+      "variable": "emeaSupportEmail",
+      "default": "",
+      "description": "support address shown in the footer; empty hides it"
+    }
+  ],
+  "subjectLimit": 255,
+  "subjectFallback": {
+    "user_invitation-custom": "Welcome to $__global.productName",
+    "user_invitation-custom.my-apps": "#set($emeaOrgName = 'EMEA TES Team')Welcome to ${emeaOrgName} – your access details"
+  },
+  "variants": {
+    "user_invitation-custom": {
+      "name": "my-apps",
+      "file": "variants/user_invitation-custom.my-apps.json",
+      "settings": [
+        {
+          "variable": "emeaMyAppsUrl",
+          "default": "https://myapps.microsoft.com",
+          "description": "Microsoft My Apps address"
+        },
+        {
+          "variable": "emeaSignInDomain",
+          "default": "emea-tes-team.cloud",
+          "description": "domain of the sign-in email, after the username"
+        }
+      ]
+    }
+  },
+  "rewritten": [
+    "access_request_decision",
+    "access_request_decision_email_for_requested-for_identity",
+    "access_request_for_identity_with_multiple_accounts_failed",
+    "access_request_reassignment",
+    "access_request_reviewer",
+    "access_request_submitted_email_for_requested-for_identity",
+    "access_request_submitted_email_for_requester_after_validation",
+    "access_revoke_approval_reassignment",
+    "access_revoke_request_decision_email_for_requested-for_identity",
+    "access_revoke_request_decision_for_requester",
+    "access_revoke_request_reviewer",
+    "access_revoke_request_submitted_email_for_requested-for_identity",
+    "access_revoke_request_submitted_email_for_requester_identity",
+    "access_sunset_date_reminder",
+    "account_deletion_request_completed",
+    "account_request_failed",
+    "account_request_submitted",
+    "approval_commented_notification",
+    "approval_completed_notification",
+    "approval_request_escalation_approver",
+    "approval_request_escalation_requester",
+    "approval_request_notification",
+    "approval_request_reminder",
+    "approval_request_timeout",
+    "bulk_reassignment",
+    "certification",
+    "certification_due",
+    "certification_end_date_modified_notification",
+    "cloud_lifecycle_state_change",
+    "cloud_manual_work_item_summary",
+    "cloud_user_app_password_changed",
+    "cloud_user_authentication_setting_change",
+    "cloud_user_forgot_user_name",
+    "cloud_user_locked_out",
+    "cloud_user_new_account_notification",
+    "cloud_user_password_changed",
+    "cloud_user_password_expiration",
+    "cloud_user_password_reset_token",
+    "cloud_user_unlock_token",
+    "cloud_user_unlocked",
+    "cloud_user_verification_token",
+    "jit_access_request_assignment",
+    "jit_activation_extended",
+    "jit_activation_failed",
+    "jit_activation_fifteen_min",
+    "jit_activation_fifteen_min_for_requested-for_identity",
+    "jit_activation_ready",
+    "jit_activation_ready_for_requested-for_identity",
+    "jit_assignment_converted_to_jit",
+    "jit_deactivation",
+    "onboarding_password_reset",
+    "pending_access_request_cancelled",
+    "remediation_work_item",
+    "sod_conflicts_on_access_request_notification",
+    "task_reassignment",
+    "user_invitation-custom",
+    "work_item_forward",
+    "work_reassignment_created",
+    "work_reassignment_updated"
+  ],
+  "wrapped": [
+    "SOURCE_CONFIG_COLLAB_ASSIGNEE_REASSIGN",
+    "access_profile_cleanup_notification",
+    "access_profile_owner_approval_notification",
+    "account_correlation_recommendation",
+    "account_correlation_statistics_recommendation",
+    "campaign_template_pregen_notification",
+    "cloud_system_notification_apps",
+    "cloud_system_notification_identities",
+    "cloud_system_notification_sources",
+    "cloud_system_notification_vas",
+    "create_account_policy_recommendation",
+    "das_alert_rule",
+    "das_campaign_assigned",
+    "das_campaign_reminder",
+    "das_campaign_revocation_failure",
+    "das_campaign_revocation_success",
+    "das_owner_election_assignment",
+    "das_owner_election_invite",
+    "das_owner_election_reminder",
+    "das_owner_election_reviewer_invite",
+    "das_report_created",
+    "das_report_shared",
+    "express_source_aggregation_status",
+    "machine_account_creation_request_completed",
+    "new_applications_discovered_notification",
+    "new_machine_account_assigned",
+    "non_employee_approval_required",
+    "non_employee_bulk_import_failed_email_notification",
+    "non_employee_bulk_import_passed_email_notification",
+    "non_employee_request_action_completed",
+    "non_employee_request_created",
+    "non_employee_term_end_date_near",
+    "pending_manual_changes",
+    "policy_version_changed_while_disabled",
+    "privilege_recommendation_review_notification",
+    "regen_sed_notification",
+    "resource_lifecycle_request_notification_completed",
+    "resource_lifecycle_request_notification_failed",
+    "saf_aws_onboarding_fail",
+    "saf_aws_onboarding_partial",
+    "saf_aws_onboarding_success",
+    "saf_onboarding_source_assigned",
+    "sod_policy_scheduled_evaluation",
+    "sod_violation_owner_notification",
+    "source_config_collab_changes_required",
+    "source_config_collab_in_progress",
+    "source_config_collab_in_review",
+    "source_config_collab_pending_access",
+    "source_config_collab_reassign",
+    "source_config_collab_revoke_user_level",
+    "source_config_collaboration_comments",
+    "subscription_notification",
+    "va_error_state_active_notification",
+    "va_error_state_resolved_notification",
+    "va_out_of_date_auto_pref",
+    "va_pinned_component_expiration_notification",
+    "va_unpinned_notification"
+  ]
+}
