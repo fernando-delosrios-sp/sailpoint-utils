@@ -237,13 +237,17 @@ Assert-True (@($badValidation.Errors | Where-Object { $_ -match 'must not match'
 
 # --- SoD policies + mitigating controls ---
 $sod = Import-DemoSodPolicies
-Assert-equal 20 @($sod['policies']).Count '20 SoD policies'
+Assert-equal 21 @($sod['policies']).Count '21 SoD policies'
 Assert-equal 7 @($sod['mitigatingControls']).Count '7 mitigating controls'
 $fin01 = @($sod['policies'] | Where-Object { $_['id'] -eq 'SOD-FIN-01' })[0]
 Assert-True ($null -ne $fin01) 'SOD-FIN-01 present'
 $severitySet = @($sod['policies'] | ForEach-Object { [string]$_['severity'] } | Sort-Object -Unique)
 Assert-True ($severitySet.Count -ge 4) 'SoD severities include mixed risk levels'
 Assert-True ([bool]$fin01['sameRoleBundle']) 'SOD-FIN-01 marked same-role bundle'
+$fin07 = @($sod['policies'] | Where-Object { $_['id'] -eq 'SOD-FIN-07' })[0]
+Assert-equal 'ENFORCED' ([string]$fin07['state']) 'SOD-FIN-07 enforced'
+Assert-equal 2 @($fin07['left']['entitlementNames']).Count 'SOD-FIN-07 has both payable entitlements'
+Assert-equal 2 @($fin07['right']['entitlementNames']).Count 'SOD-FIN-07 has both receivable entitlements'
 Assert-True (@($fin01['allowedControlIds']).Count -ge 2) 'SOD-FIN-01 has allowed controls'
 
 foreach ($role in @($model['sodViolationRoles'])) {
@@ -299,6 +303,7 @@ $entMap = @{
     'Vendor Master Desk'       = 'e3'
     'Bank Portal Access'       = 'e4'
     'Credit Memo Desk'         = 'e5'
+    'Collections Queue'        = 'e5b'
     'Cash App Desk'            = 'e6'
     'Ledger Close Desk'        = 'e7'
     'Audit Workpaper Desk'     = 'e8'
@@ -337,6 +342,6 @@ $sodBootstrap = Invoke-DemoSodPolicyBootstrap -SodModel $sod -OwnerId 'owner-1' 
         FindSodPolicies = { param($name, $id) @() }
     }
 $sodWould = @($sodBootstrap.Results | Where-Object { $_.Status -eq 'would-create' })
-Assert-equal 20 $sodWould.Count 'SoD whatif would-create all policies'
+Assert-equal 21 $sodWould.Count 'SoD whatif would-create all policies'
 
 Write-Host ("PASS ({0} assertions)" -f $script:AssertionCount)

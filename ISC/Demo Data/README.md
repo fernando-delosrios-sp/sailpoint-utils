@@ -188,7 +188,7 @@ If entitlements are not yet searchable after import, the script reports `missing
 
 ## SoD policies
 
-Twenty preventive **CONFLICTING_ACCESS_BASED** policies cover Finance, HR/Payroll, Security/IT, Engineering, and Supply chain. Each policy is an entitlement-vs-entitlement conflict owned by **slpt.services**, with manager violation assignment. Allowed mitigating controls are assigned as `allowedControls` with type `COMPENSATING_CONTROL`.
+Twenty-one preventive **CONFLICTING_ACCESS_BASED** policies cover Finance, HR/Payroll, Security/IT, Engineering, and Supply chain. Each policy is an entitlement-vs-entitlement conflict owned by **slpt.services**, with manager violation assignment. Allowed mitigating controls are assigned as `allowedControls` with type `COMPENSATING_CONTROL`.
 
 | ID | Left entitlement(s) | Right entitlement(s) | Associated roles | Allowed controls |
 | --- | --- | --- | --- | --- |
@@ -198,6 +198,7 @@ Twenty preventive **CONFLICTING_ACCESS_BASED** policies cover Finance, HR/Payrol
 | SOD-FIN-04 | Credit Memo Desk | Cash App Desk | Accounts Receivable Analyst ↔ AR Accounting Manager | Manager dual review, Remediate |
 | SOD-FIN-05 | Ledger Close Desk | Audit Workpaper Desk | Accounting Department ↔ Internal Auditor | Audit independence attestation, Remediate |
 | SOD-FIN-06 | ERP Config Desk | Control Test Desk | Financial Systems Analyst ↔ Internal Auditor | Audit independence attestation, Remediate |
+| SOD-FIN-07 | Invoice Settlement Queue, Vendor Payment Release | Collections Queue, Credit Memo Desk | Accounts Payable Analyst ↔ Accounts Receivable Analyst | Manager dual review, Remediate |
 | SOD-HR-01 | Payroll Run Desk | Comp Band Desk | Payroll Analyst I ↔ Compensation; **SoD Demo — Payroll Run and Compensation Bands** | Compensation committee exception, Manager dual review, Remediate |
 | SOD-HR-02 | Payroll Run / Exception / Calendar desks | Equity Plan Desk | Payroll Analyst I, Senior Payroll Analyst, Payroll Manager ↔ Compensation & Benefits Manager | Compensation committee exception, Remediate |
 | SOD-HR-03 | Offer Desk | Payroll Calendar Desk | Employment Manager ↔ Payroll Manager | Compensation committee exception, Manager dual review, Remediate |

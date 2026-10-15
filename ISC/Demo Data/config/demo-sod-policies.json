@@ -4,6 +4,7 @@
     "Conflicting-access SoD policies for the Demo Data entitlement catalog.",
     "Policies are entitlement-vs-entitlement (CONFLICTING_ACCESS_BASED).",
     "SOD-FIN-01 and SOD-SCM-03 conflict within a single birthright role; expect violations until those roles are split.",
+    "SOD-FIN-07 makes every Accounts Payable Analyst entitlement incompatible with every Accounts Receivable Analyst entitlement.",
     "Five requestable SoD Demo roles in demo-access-model.json deliberately bundle both sides of SOD-FIN-03, SOD-HR-01, SOD-SEC-01, SOD-ENG-01, and SOD-SCM-01.",
     "Mitigating controls are created via /controls/v1 and assigned on policies as allowedControls with type COMPENSATING_CONTROL."
   ],
@@ -208,6 +209,41 @@
       "correctionAdvice": "Remove either ERP Config Desk or Control Test Desk.",
       "allowedControlIds": [
         "CTRL-AUDIT",
+        "CTRL-REMEDIATE"
+      ]
+    },
+    {
+      "id": "SOD-FIN-07",
+      "name": "Accounts Payable vs Accounts Receivable",
+      "description": "Accounts Payable access must not combine with Accounts Receivable access.",
+      "severity": "High",
+      "domain": "Finance",
+      "state": "ENFORCED",
+      "left": {
+        "name": "Accounts Payable",
+        "entitlementNames": [
+          "Invoice Settlement Queue",
+          "Vendor Payment Release"
+        ],
+        "roles": [
+          "Accounts Payable Analyst",
+          "SoD Demo — Payment Release and Bank Portal"
+        ]
+      },
+      "right": {
+        "name": "Accounts Receivable",
+        "entitlementNames": [
+          "Collections Queue",
+          "Credit Memo Desk"
+        ],
+        "roles": [
+          "Accounts Receivable Analyst"
+        ]
+      },
+      "compensatingControls": "Separate payable and receivable duties; manager review if a temporary exception is required.",
+      "correctionAdvice": "Remove either the Accounts Payable entitlements or the Accounts Receivable entitlements.",
+      "allowedControlIds": [
+        "CTRL-MGR-DUAL",
         "CTRL-REMEDIATE"
       ]
     },
