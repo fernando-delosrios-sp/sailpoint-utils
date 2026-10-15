@@ -1,6 +1,6 @@
 # Transforms
 
-Official: [CLI Transforms](https://developer.sailpoint.com/docs/tools/cli/transforms/). Flags: `sail transform --help`.
+Flags: `sail transform --help` (alias `tran`).
 
 ## Intent map
 
@@ -8,15 +8,14 @@ Official: [CLI Transforms](https://developer.sailpoint.com/docs/tools/cli/transf
 | --- | --- |
 | List / download | `sail transform list`, `sail transform download` |
 | Create / update / delete | `sail transform create`, `update`, `delete` |
-| Preview | `sail transform preview` — prefer non-interactive flags (`--profile`, `--identity`, `--file`, `--result-only`) so the agent is not stuck in prompts |
+| Preview | `sail transform preview` with `--file` and `--identity` or `--profile`, plus `--result-only` |
 
 Always `--env <name>`. Mutating goals use the single goal confirm from `SKILL.md`.
 
-## Gotchas
+The command's default endpoint is `/v3/transforms` (`--transforms-endpoint`). The collection path is `/transforms/v1` in the Transforms group. Keep the domain command on its default unless that call 404s, then override the flag or call the group-file path with [`api.md`](api.md).
 
-- Interactive preview prompts block automation; pass the direct-mode flags from `--help`.
-- Large lists: paginate or filter per `--help`; otherwise fetch what the CLI returns and say if truncated.
+Preview without those flags sits in an interactive prompt. Pass them so the run finishes.
 
 ## Done when
 
-Transform CRUD/download finished, or preview output is returned to the operator.
+The transform create, read, update, delete, or download finished, or preview output is back with the operator.

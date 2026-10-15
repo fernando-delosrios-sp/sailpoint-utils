@@ -1,24 +1,23 @@
 # SaaS connectors (`conn`)
 
-Official: [CLI Connectors](https://developer.sailpoint.com/docs/tools/cli/connectors/), [common CLI commands](https://developer.sailpoint.com/docs/connectivity/saas-connectivity/common-cli-commands). Flags: `sail conn --help` (command `connectors`, alias `conn`).
+Flags: `sail conn --help` (command `connectors`, alias `conn`).
 
 ## Intent map
 
 | Intent | Start with |
 | --- | --- |
-| Scaffold local project | `sail conn init` (local; no tenant `--env` required for scaffold itself) |
-| Create / upload / update / delete in tenant | `sail conn create`, `upload`, `update`, `delete` |
+| Scaffold a local project | `sail conn init` |
+| Create / upload / update / delete in the tenant | `sail conn create`, `upload`, `update`, `delete` |
 | Invoke / validate / logs | `sail conn invoke`, `validate`, `logs` |
-| List | `sail conn list` |
+| List / get | `sail conn list`, `sail conn get` |
+| Instances, customizers, tags, versions, stats | the matching subcommand |
 
-Tenant operations always `--env <name>`. Uploads and other writes use the single goal confirm from `SKILL.md`.
+`init` is local and needs no `--env`. Every tenant call uses `--env <name>`. Uploads and other writes use the single goal confirm from `SKILL.md`.
 
-## Gotchas
+The command's default endpoint is `/beta/platform-connectors` (`--conn-endpoint`). Connector objects that this command does not cover use the Connectors group via [`api.md`](api.md).
 
-- Local debug is often `npm run debug` inside the connector project — that is local tooling, not a tenant mutate.
-- Upload targets the configured tenant; confirm shows the env.
-- For connector config objects only available via REST, fall back to [`api.md`](api.md).
+`npm run debug` inside a connector project is local tooling, not a tenant write.
 
 ## Done when
 
-The connector lifecycle step finished (scaffold created, list returned, or upload/invoke/validate completed with clear output).
+The scaffold exists, the list or get returned, or the upload, invoke, or validate finished with clear output.

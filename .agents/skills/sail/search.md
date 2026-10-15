@@ -1,22 +1,20 @@
 # Search
 
-Official: [CLI Search](https://developer.sailpoint.com/docs/tools/cli/search). Flags: `sail search --help`.
+Flags: `sail search --help` (alias `se`).
 
 ## Intent map
 
 | Intent | Start with |
 | --- | --- |
-| Ad-hoc query | `sail search query` (indices, query string per `--help`) |
+| Ad-hoc query | `sail search query "<query>" --indices <name>` |
 | Template | `sail search template` |
 
-Always `--env <name>`. Results typically write JSON under `search_results/` (CLI 2.0+ is JSON-oriented).
+Indices the command accepts: `accessprofiles`, `accountactivities`, `entitlements`, `events`, `identities`, `roles`. Results write JSON under `search_results/` unless `--folderPath` says otherwise. Template file location is `sail set searchTemplates`.
 
-## Gotchas
+Always `--env <name>`. This command is read-only. A later write that uses the hits takes the mutating confirm from `SKILL.md`.
 
-- For raw Search API control (body, `searchAfter`), use [`api.md`](api.md) against the Search endpoint and paginate there.
-- Template paths can be configured via `sail set`; see [`env.md`](env.md) / `sail set --help`.
-- Reads only — no mutating goal confirm unless a follow-on write uses the results.
+A custom body, aggregation, or `searchAfter` page past 10,000 rows is `sail api` against the Search group. Open [`api/conventions.md`](api/conventions.md) for that paging.
 
 ## Done when
 
-Query/template completed and the operator has the result path or summarized hits.
+The query or template finished and the operator has the result path or a summary of the hits.

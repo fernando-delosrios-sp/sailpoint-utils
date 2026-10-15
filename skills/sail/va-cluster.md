@@ -1,23 +1,22 @@
 # VA and clusters
 
-Official: [VA](https://developer.sailpoint.com/docs/tools/cli/va/), [Clusters](https://developer.sailpoint.com/docs/tools/cli/cluster). Flags: `sail va --help`, `sail cluster --help`.
+Flags: `sail va --help`, `sail cluster --help` (alias `cl`).
 
 ## Intent map
 
 | Intent | Start with |
 | --- | --- |
-| VA collect / update by IP | `sail va` subcommands per `--help` |
-| Parse VA logs locally | `sail va parse` (local file work) |
+| List / get VAs from the tenant | `sail va list`, `sail va get` |
+| Collect files from a VA | `sail va collect <host>` |
+| Update a VA over the network | `sail va update` |
+| Parse VA logs locally | `sail va parse` |
 | List / get clusters | `sail cluster list`, `sail cluster get` |
-| Cluster log get/set | `sail cluster` log subcommands per `--help` |
+| Cluster log level | `sail cluster log get`, `sail cluster log set` |
 
-Tenant-facing calls use `--env <name>`. Log level changes and updates are mutating — goal confirm from `SKILL.md`.
+Tenant calls use `--env <name>`. Log-level changes and VA updates are mutating: goal confirm from `SKILL.md`.
 
-## Gotchas
-
-- Some VA operations need network reachability to the appliance IP, not only API auth.
-- `parse` is local; still useful after collect.
+`collect` and `update` open SSH (port 22) and SFTP to the VA as the `sailpoint` user. They need network reach to that host, not only API auth. Let the CLI prompt for the VA password. `parse` reads local files after a collect.
 
 ## Done when
 
-VA/cluster list/get/log action completed, or the operator has the connectivity/auth blocker named.
+The list, get, collect, parse, or log action finished, or the operator has the connectivity or auth blocker named.

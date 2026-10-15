@@ -1,33 +1,47 @@
 # sail api
 
-Official: [CLI API](https://developer.sailpoint.com/docs/tools/cli/api/). Flags: `sail api --help` and `sail api get|post|put|patch|delete --help`.
+`sail api` calls the API host stored on the selected environment. The path, including its `/service/vN` prefix, comes from the group file. Examples in `sail api --help` that show `/beta/...` are legacy; ignore them.
 
-Generic HTTP client over the tenant API base URL. Path is caller-supplied (include the version prefix).
+## Load
 
-## Defaults
+1. Open [`api/index.md`](api/index.md) and the one group file for the object.
+2. Open [`api/conventions.md`](api/conventions.md) when the call lists, filters, sorts, paginates, or searches.
 
-- Path prefix when the operator did not name a version: **`/v2026/`**.
-- Always pass `--env <name>`.
-- JSON body: `--body` / `-b` or `--body-file` / `-f`. Query: repeated `-q key=value`. Headers: repeated `-H "Key: Value"`. Filter response: `--jsonpath` / `-j`.
+**Done when:** the group file is loaded before the first request, and conventions are loaded when the call is a collection or a search.
+
+## Call
+
+Always `--env <name>`.
+
+| Method | Command | Body / query |
+| --- | --- | --- |
+| GET | `sail api get <path>` | repeated `-q key=value` |
+| POST | `sail api post <path>` | `-b` or `-f`. `--content-type` when the body is not JSON |
+| PUT | `sail api put <path>` | `-b` or `-f` |
+| PATCH | `sail api patch <path>` | `-b` or `-f`. Optional `-o` to write the response |
+| DELETE | `sail api delete <path>` | repeated `-q key=value` |
+
+Shared flags: repeated `-H "Key: Value"`, `-j` JSONPath, `-p` pretty. Take any other flag from `sail api <method> --help`.
+
+An endpoint marked Experimental in the group file needs `-H "X-SailPoint-Experimental: true"`.
+
+`sail` attaches the bearer token. A 401 is an auth gap: return to [`env.md`](env.md). Leave `/oauth/token` alone.
+
+A trailing `Status:` line after the body is CLI chrome. Strip it before parsing JSON.
+
+Use the domain command (`workflow`, `transform`, `search`, `spconfig`, `conn`, `cluster`, `va`) when that command already does the job. Those commands may still call a legacy path; their `--help` prints the default endpoint.
 
 ## Pagination
 
-No built-in pager. For collection endpoints:
+`sail api` has no pager. For a collection GET:
 
-1. Request with `-q limit=<page>` and `-q offset=<n>` (typical page 250; check the endpoint).
-2. Append results; advance offset by page size.
-3. Stop when a page returns fewer than `limit` items.
-4. Cap the loop (e.g. stop after a large total) and report how many were fetched if still incomplete.
+1. `-q limit=250 -q offset=<n>` unless the group file states another page size.
+2. Append the page. Advance offset by the page size.
+3. Stop when a page returns fewer items than `limit`.
+4. Cap a long loop and report how many rows were fetched.
 
-Search API: POST body; beyond ~10k use `searchAfter` per [standard collection parameters](https://developer.sailpoint.com/docs/api/standard-collection-parameters).
-
-## Gotchas
-
-- Experimental endpoints need `-H "X-SailPoint-Experimental: true"`.
-- Multipart/binary upload is not a first-class `sail api` feature; stick to JSON/`--content-type` the CLI supports, or a dedicated command family when one exists.
-- Response may include a `Status: …` line after the body; strip it before parsing JSON if needed.
-- Prefer a domain command (`workflow`, `spconfig`, …) when one exists; use `api` for everything else.
+Search paging past 10,000 rows is `searchAfter` in [`api/conventions.md`](api/conventions.md). On 429, wait the `Retry-After` seconds and retry.
 
 ## Done when
 
-The requested method/path completed (or pagination finished / capped with a clear report), and stdout/errors are summarized for the operator.
+The method and path finished, or pagination finished or capped with a count, and stdout or the error is summarized.

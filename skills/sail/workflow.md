@@ -1,6 +1,6 @@
 # Workflows
 
-Official: [CLI Workflows](https://developer.sailpoint.com/docs/tools/cli/workflow). Flags: `sail workflow --help` (alias `work`).
+Flags: `sail workflow --help` (alias `work`).
 
 ## Intent map
 
@@ -13,12 +13,10 @@ Official: [CLI Workflows](https://developer.sailpoint.com/docs/tools/cli/workflo
 
 Always `--env <name>`. Mutating goals use the single goal confirm from `SKILL.md`.
 
-## Gotchas
+Create and update take `-f` file paths or `-d` a directory of JSON files, matching the examples in `--help`. One workflow per file. Round-trip edits through the downloaded JSON.
 
-- Round-trip is file-based JSON download/create/update — treat downloaded files as source of truth for edits.
-- There is no reliable `test` subcommand in current CLI; exercise via tenant APIs or the UI if needed.
-- For Forms or other objects without a workflow subcommand, use [`api.md`](api.md).
+There is no test subcommand. Exercise a workflow through the Workflows group in [`api/index.md`](api/index.md) or the tenant UI. Forms and other objects without a workflow subcommand go through [`api.md`](api.md).
 
 ## Done when
 
-The workflow list/get/download succeeded, or the create/update/delete completed under the confirmed goal.
+The list, get, or download succeeded, or the create, update, or delete completed under the confirmed goal.
