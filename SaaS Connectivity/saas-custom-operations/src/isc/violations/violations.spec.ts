@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { EXPERIMENTAL_HEADER } from '../http'
-import { getViolationV1, normalizeViolationV1Response } from './index'
+import { getViolationV1, listViolatingIdentityIdsForPolicy, normalizeViolationV1Response } from './index'
 
 describe('isc/violations', () => {
     it('getViolationV1 calls GET /violations/v1/{id} with experimental header', async () => {
@@ -171,5 +171,43 @@ describe('isc/violations', () => {
         await expect(
             getViolationV1({ apiUrl: 'https://tenant.api.identitynow.com', token: 'tok', fetchFn }, 'missing')
         ).rejects.toThrow(/404/)
+    })
+
+    it('listViolatingIdentityIdsForPolicy pages GET /violations/v1 with experimental header', async () => {
+        const fetchFn = vi
+            .fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () =>
+                    Array.from({ length: 250 }, (_, i) => ({
+                        id: `vio-${i}`,
+                        status: 'OPEN',
+                        target: { id: `ident-${i}` },
+                    })),
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => [
+                    { id: 'vio-closed', status: 'Closed', identity: { id: 'ident-closed' } },
+                    { id: 'vio-mitigated', status: 'Mitigated', identity: { id: 'ident-mitigated' } },
+                    { id: 'vio-dup', status: 'Open', identity: { id: 'ident-0' } },
+                    { id: 'vio-last', target: { id: 'ident-last' } },
+                ],
+            })
+
+        const ids = await listViolatingIdentityIdsForPolicy(
+            { apiUrl: 'https://tenant.api.identitynow.com', token: 'tok', fetchFn },
+            'pol-1'
+        )
+
+        expect(fetchFn).toHaveBeenCalledTimes(2)
+        expect(fetchFn.mock.calls[0][0]).toContain('/violations/v1?filters=')
+        expect(fetchFn.mock.calls[0][0]).toContain(encodeURIComponent('policyId eq "pol-1"'))
+        expect(fetchFn.mock.calls[0][1].headers[EXPERIMENTAL_HEADER]).toBe('true')
+        expect(ids).toContain('ident-0')
+        expect(ids).toContain('ident-last')
+        expect(ids).toContain('ident-mitigated')
+        expect(ids).not.toContain('ident-closed')
+        expect(ids.filter((id) => id === 'ident-0')).toHaveLength(1)
     })
 })

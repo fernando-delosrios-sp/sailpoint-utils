@@ -11,6 +11,7 @@ export async function getSodPolicy(sodPolicies: SODPoliciesApi, policyId: string
             throw new Error(`Policy ${policyId} response missing id or name`)
         }
 
+        const tags = Array.isArray(raw.tags) ? raw.tags.filter((tag): tag is string => typeof tag === 'string') : []
         return {
             id: raw.id,
             name: raw.name,
@@ -18,6 +19,7 @@ export async function getSodPolicy(sodPolicies: SODPoliciesApi, policyId: string
                 ? { level: (raw as { level: string }).level }
                 : {}),
             policyQuery: raw.policyQuery,
+            ...(tags.length > 0 ? { tags } : {}),
             ownerRef: raw.ownerRef,
             conflictingAccessCriteria: raw.conflictingAccessCriteria,
         }

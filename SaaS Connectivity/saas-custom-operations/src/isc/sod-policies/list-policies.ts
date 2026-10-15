@@ -12,6 +12,7 @@ function mapPolicy(raw: {
     level?: string
     state?: SodPolicySummary['state']
     policyQuery?: string
+    tags?: string[]
     ownerRef?: SodPolicySummary['ownerRef']
     conflictingAccessCriteria?: SodPolicySummary['conflictingAccessCriteria']
 }): SodPolicySummary | undefined {
@@ -25,6 +26,7 @@ function mapPolicy(raw: {
         ...(raw.level ? { level: raw.level } : {}),
         state: raw.state,
         policyQuery: raw.policyQuery,
+        ...(Array.isArray(raw.tags) && raw.tags.length > 0 ? { tags: raw.tags.filter((tag) => Boolean(tag)) } : {}),
         ownerRef: raw.ownerRef,
         conflictingAccessCriteria: raw.conflictingAccessCriteria,
     }

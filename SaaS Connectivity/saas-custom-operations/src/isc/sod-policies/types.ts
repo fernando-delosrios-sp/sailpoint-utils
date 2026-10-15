@@ -6,6 +6,8 @@ export interface SodPolicySummary {
     level?: string
     state?: 'ENFORCED' | 'NOT_ENFORCED'
     policyQuery?: string
+    /** Tags assigned on the SoD policy object. */
+    tags?: string[]
     ownerRef?: {
         type?: string
         id?: string

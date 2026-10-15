@@ -1,0 +1,13 @@
+{
+    "config": {
+        "apiUrl": "{{$.configuration.aPIURL}}",
+        "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}",
+        "token": "{{$.getAccessToken.body.access_token}}"
+    },
+    "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+    "input": {
+        "requestId": "access-classification:{{$.getAccessToken.timestamp}}"
+    },
+    "tag": "latest",
+    "type": "custom:access-classification"
+}

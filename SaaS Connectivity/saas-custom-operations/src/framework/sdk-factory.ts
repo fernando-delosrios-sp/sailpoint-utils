@@ -14,6 +14,8 @@ import {
     SODPoliciesApi,
     SODViolationsApi,
     SourcesApi,
+    TaggedObjectsApi,
+    TagsApi,
     TaskManagementApi,
 } from 'sailpoint-api-client'
 import { getActiveFrameworkLogger } from './logger'
@@ -50,5 +52,7 @@ export function createSailPointClients(apiUrl: string, token: string): SailPoint
         sodViolations: new SODViolationsApi(configuration),
         machineAccounts: new MachineAccountsApi(configuration),
         machineIdentities: new MachineIdentitiesApi(configuration),
+        tags: new TagsApi(configuration),
+        taggedObjects: new TaggedObjectsApi(configuration),
     }
 }

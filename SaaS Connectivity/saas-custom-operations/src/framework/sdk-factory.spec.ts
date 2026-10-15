@@ -24,6 +24,11 @@ describe('sdk-factory', () => {
         expect(typeof clients.machineIdentities.getMachineIdentityV1).toBe('function')
         expect(typeof clients.machineAccounts.listMachineAccountsV1).toBe('function')
         expect(typeof clients.entitlements.listEntitlementsV1).toBe('function')
+        expect(typeof clients.tags.listTagsV1).toBe('function')
+        expect(typeof clients.tags.createTagV1).toBe('function')
+        expect(typeof clients.taggedObjects.listTaggedObjectsV1).toBe('function')
+        expect(typeof clients.taggedObjects.setTagsToManyObjectsV1).toBe('function')
+        expect(typeof clients.taggedObjects.deleteTagsToManyObjectV1).toBe('function')
     })
 
     it('Machine identities client configured for machine identity entitlements', () => {

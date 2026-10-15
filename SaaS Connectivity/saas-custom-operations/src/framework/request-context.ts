@@ -228,5 +228,14 @@ function createOfflineSdkStub(): SailPointClients {
             listMachineIdentitiesV1: stub,
             getMachineIdentityV1: stub,
         } as unknown as SailPointClients['machineIdentities'],
+        tags: {
+            listTagsV1: stub,
+            createTagV1: stub,
+        } as unknown as SailPointClients['tags'],
+        taggedObjects: {
+            listTaggedObjectsV1: stub,
+            setTagsToManyObjectsV1: stub,
+            deleteTagsToManyObjectV1: stub,
+        } as unknown as SailPointClients['taggedObjects'],
     }
 }

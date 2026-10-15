@@ -1,6 +1,7 @@
 {
 	"name": "saas-custom-operations",
 	"commands": [
+		"custom:access-classification",
 		"custom:access-model-sod-remediation",
 		"custom:access-model-sod-remediation-apply",
 		"custom:evaluate-access-request-risk",

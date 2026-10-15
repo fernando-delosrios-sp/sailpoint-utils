@@ -14,6 +14,8 @@ import {
     SODPoliciesApi,
     SODViolationsApi,
     SourcesApi,
+    TaggedObjectsApi,
+    TagsApi,
     TaskManagementApi,
 } from 'sailpoint-api-client'
 import { FrameworkLogger } from './logger'
@@ -50,6 +52,8 @@ export interface SailPointClients {
     sodViolations: SODViolationsApi
     machineAccounts: MachineAccountsApi
     machineIdentities: MachineIdentitiesApi
+    tags: TagsApi
+    taggedObjects: TaggedObjectsApi
 }
 
 /** Options for {@link PersistFn}. Verification runs by default; set verify to false to defer. */

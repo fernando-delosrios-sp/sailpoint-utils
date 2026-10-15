@@ -1,0 +1,6 @@
+{
+    "type": "custom:access-classification",
+    "input": {
+        "requestId": "access-classification:offline"
+    }
+}

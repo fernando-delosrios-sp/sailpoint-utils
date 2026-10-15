@@ -1,0 +1,147 @@
+{
+    "id": "YOUR_ACCESS_CLASSIFICATION_WORKFLOW_ID",
+    "name": "Access Classification",
+    "description": "Scheduled process that reconciles privileged, risk, and SoD-policy tags on entitlements, access profiles, roles, and violating identities, then persists one run summary.",
+    "definition": {
+        "start": "Configuration",
+        "steps": {
+            "Configuration": {
+                "actionId": "sp:define-variable",
+                "attributes": {
+                    "id": "sp:define-variable",
+                    "variables": [
+                        {
+                            "description": "ISC API base URL, no trailing slash.",
+                            "name": "API URL",
+                            "transforms": [],
+                            "variableA": "https://tenant.api.identitynow-demo.com"
+                        },
+                        {
+                            "description": "Result source that stores custom operation output.",
+                            "name": "SaaS Custom Operations Source Name",
+                            "transforms": [],
+                            "variableA": "SaaS Custom Operations"
+                        },
+                        {
+                            "description": "Platform connector id for saas-custom-operations.",
+                            "name": "SaaS Custom Operations Connector ID",
+                            "transforms": [],
+                            "variableA": "<CONNECTOR ID>"
+                        }
+                    ]
+                },
+                "displayName": "Configuration",
+                "nextStep": "Get Access Token",
+                "type": "Mutation"
+            },
+            "Get Access Token": {
+                "actionId": "sp:http",
+                "attributes": {
+                    "formRequestBody": {
+                        "grant_type": "client_credentials"
+                    },
+                    "method": "post",
+                    "param_authenticationRef": "basic",
+                    "param_basic": {
+                        "mapping": {
+                            "auth_password": "password",
+                            "auth_username": "username"
+                        },
+                        "paramID": "YOUR_OAUTH_BASIC_AUTH_PARAM_ID",
+                        "paramType": "1.1",
+                        "refID": "YOUR_OAUTH_BASIC_AUTH_REF_ID"
+                    },
+                    "requestContentType": "form",
+                    "url": "{{$.configuration.aPIURL}}/oauth/token"
+                },
+                "catch": [
+                    {
+                        "next": "End Step - Failure"
+                    }
+                ],
+                "displayName": "Get Access Token",
+                "nextStep": "Call SaaS Custom Operation",
+                "type": "action",
+                "versionNumber": 3
+            },
+            "Call SaaS Custom Operation": {
+                "actionId": "sp:http",
+                "attributes": {
+                    "jsonRequestBody": {
+                        "config": {
+                            "apiUrl": "{{$.configuration.aPIURL}}",
+                            "sourceName": "{{$.configuration.saaSCustomOperationsSourceName}}",
+                            "token": "{{$.getAccessToken.body.access_token}}"
+                        },
+                        "connectorRef": "{{$.configuration.saaSCustomOperationsConnectorID}}",
+                        "input": {
+                            "requestId": "access-classification:{{$.getAccessToken.timestamp}}"
+                        },
+                        "tag": "latest",
+                        "type": "custom:access-classification"
+                    },
+                    "method": "post",
+                    "param_authenticationRef": "none",
+                    "param_basic": {
+                        "mapping": {
+                            "auth_password": "password",
+                            "auth_username": "username"
+                        },
+                        "paramType": "1.1"
+                    },
+                    "requestContentType": "json",
+                    "requestHeaders": {
+                        "Authorization": "Bearer {{$.getAccessToken.body.access_token}}"
+                    },
+                    "url": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke",
+                    "urlParams": {}
+                },
+                "catch": [
+                    {
+                        "next": "End Step - Failure"
+                    }
+                ],
+                "description": "{{$.configuration.aPIURL}}/beta/platform-connectors/{{$.configuration.saaSCustomOperationsConnectorID}}/invoke",
+                "displayName": "Call SaaS Custom Operation",
+                "nextStep": "Check Invoke Result",
+                "type": "action",
+                "versionNumber": 3
+            },
+            "Check Invoke Result": {
+                "actionId": "sp:compare-strings",
+                "choiceList": [
+                    {
+                        "comparator": "StringContains",
+                        "nextStep": "End Step - Failure",
+                        "variableA.$": "$.callSaaSCustomOperation.body",
+                        "variableB": "\"status\":\"failed\""
+                    }
+                ],
+                "defaultStep": "End Step - Success",
+                "description": "The connector answers HTTP 200 even when the operation failed, so catch never fires for an operation-level failure. The body is a text/plain NDJSON stream, which is why this is a string check and not a JSONPath read.",
+                "displayName": "Invoke failed?",
+                "type": "choice"
+            },
+            "End Step - Success": {
+                "actionId": "sp:operator-success",
+                "displayName": "Success: Complete",
+                "type": "success"
+            },
+            "End Step - Failure": {
+                "actionId": "sp:operator-failure",
+                "displayName": "Failure: Did not complete",
+                "failureName": "Access Classification Failed",
+                "type": "failure"
+            }
+        }
+    },
+    "enabled": false,
+    "trigger": {
+        "type": "SCHEDULED",
+        "attributes": {
+            "cronString": "0 2 * * *",
+            "frequency": "cronSchedule",
+            "timeZone": "Europe/Madrid"
+        }
+    }
+}
