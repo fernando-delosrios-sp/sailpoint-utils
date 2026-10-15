@@ -1263,7 +1263,7 @@ trap {
     }
 
     Write-RuleLog -Level ERROR -Phase bootstrap -Message ("Unhandled error: $(Format-RuleErrorRecord $_)")
-    Exit-Rule 1
+    Exit-Rule -FailureCode 1
 }
 
 $ruleRuntimeScriptPath = $PSCommandPath
@@ -1282,7 +1282,7 @@ try {
 } catch {
     Initialize-EmergencyLogFile -runtimeBaseName (Get-RuleArtifactBaseName -FallbackBaseName $runtimeIdentity.BaseName) | Out-Null
     Write-RuleLog -Level ERROR -Phase bootstrap -Message ("Artifact initialization failed: $(Format-RuleErrorRecord $_)")
-    Exit-Rule 1
+    Exit-Rule -FailureCode 1
 }
 
 Write-RuleLog -Level INFO -Phase bootstrap -Message ("=== Rule bootstrap started | {0}{1} ===" -f $ConnectorRuleType, $(if ([string]::IsNullOrWhiteSpace($ConnectorRuleName)) { "" } else { " | $ConnectorRuleName" }))
@@ -1407,7 +1407,7 @@ try {
 }
 catch {
     Write-RuleLog -Level ERROR -Phase process -Message ("Process error: $(Format-RuleErrorRecord $_)")
-    Exit-Rule 1
+    Exit-Rule -FailureCode 1
 }
 
-Exit-Rule 0
+Exit-Rule -FailureCode 0
