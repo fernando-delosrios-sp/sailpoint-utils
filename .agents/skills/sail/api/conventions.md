@@ -4,11 +4,13 @@ Rules that sit across the collection. The group file still names the path and th
 
 ## Paths
 
-The current contract versions each service on its own: `/service/vN/...`, as written in the group file (`/identities/v1/`, `/sources/v1/:id`). Build the path from that file.
+The current contract versions each service on its own: `/service/vN/...`, as written in the group file (`/identities/v1/`, `/sources/v1/:id`). Build the path from that file. That prefix is primary.
+
+`/v2026` is the secondary option in front of `/service/vN`. It is not legacy. Use it when the operator names that generation, or when the group file has no `/service/vN` path for the call.
 
 The developer site may say SailPoint Human Fabric. That is this same tenant API.
 
-Beta, v3, and the yearly generations (`/v2024`, `/v2025`, `/v2026`) are legacy. Support tickets for them run through Q2 2028; the endpoints stop in Q1 2029. Use one only when the operator names that generation, or when a domain command's own default endpoint still points there.
+Beta, v3, and the older yearly generations (`/v2024`, `/v2025`) are legacy. Support tickets for them run through Q2 2028; the endpoints stop in Q1 2029. Use one only when the operator names that generation, or when a domain command's own default endpoint still points there.
 
 A response header `X-Deprecated: true` means that path is on a two-year retirement clock. Prefer the successor path when the group file lists one.
 

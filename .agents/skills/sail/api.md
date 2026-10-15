@@ -1,6 +1,6 @@
 # sail api
 
-`sail api` calls the API host stored on the selected environment. The path, including its `/service/vN` prefix, comes from the group file. Examples in `sail api --help` that show `/beta/...` are legacy; ignore them.
+`sail api` calls the API host stored on the selected environment. The path, including its `/service/vN` prefix, comes from the group file. `/v2026` is the secondary current prefix in front of that; it is not legacy. Examples in `sail api --help` that show `/beta/...` are legacy; ignore them.
 
 ## Load
 
