@@ -1,8 +1,8 @@
 {
-    "type": "custom:access-model-sod-remediation-apply",
-    "input": {
-        "requestId": "access-model-sod-remediation-apply",
-        "formInstanceId": "fi-role-group-b-nested",
-        "formName": "Access Model SOD Remediation"
-    }
+  "type": "custom:access-model-sod-remediation",
+  "input": {
+    "requestId": "access-model-sod-remediation-apply",
+    "formInstanceId": "fi-role-group-b-nested",
+    "formName": "Access Model SOD Remediation"
+  }
 }

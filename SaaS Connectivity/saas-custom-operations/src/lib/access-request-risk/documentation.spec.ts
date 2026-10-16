@@ -19,14 +19,14 @@ describe('ubiquitous-language documentation contracts', () => {
 
     it('Wrapper discriminator term', () => {
         expect(operationReadme).toContain('**wrapper discriminator**')
-        expect(operationReadme).toContain('`:submitted`, `:dynamic`, or `:dynamic-approval`')
+        expect(operationReadme).toContain('`:dynamic` or `:dynamic-approval`')
     })
 
     it('Discriminator is retained inside the request id', () => {
         expect(operationReadme).toContain('wrapper discriminator')
-        expect(operationReadme).toContain('evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted')
         expect(operationReadme).toContain('evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic')
         expect(operationReadme).toContain('evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic-approval')
+        expect(operationReadme).toContain('access-request-precheck:{accessRequestId}:submitted')
     })
 
     it('Result identity term', () => {

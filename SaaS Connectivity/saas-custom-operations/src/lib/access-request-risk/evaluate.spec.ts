@@ -128,6 +128,40 @@ describe('evaluateAccessRisk', () => {
         expect(getEntitlement).toHaveBeenCalledTimes(1)
     })
 
+    it('fetches a shared entitlement once when nested profiles score concurrently', async () => {
+        let inFlight = 0
+        let maxInFlight = 0
+        const getEntitlement = vi.fn().mockImplementation(async () => {
+            inFlight++
+            maxInFlight = Math.max(maxInFlight, inFlight)
+            await new Promise((resolve) => setTimeout(resolve, 15))
+            inFlight--
+            return { effectivePrivilege: 'HIGH', metadata: undefined }
+        })
+
+        const result = await evaluateAccessRisk(
+            [{ id: 'role-1', type: 'ROLE' }],
+            catalog({
+                getRole: vi.fn().mockResolvedValue({
+                    metadata: undefined,
+                    accessProfileIds: ['ap-1', 'ap-2'],
+                    entitlementIds: [],
+                }),
+                getAccessProfile: vi.fn().mockResolvedValue({
+                    metadata: undefined,
+                    entitlementIds: ['ent-shared'],
+                }),
+                getEntitlement,
+            }),
+            { concurrency: 4 }
+        )
+
+        expect(getEntitlement).toHaveBeenCalledTimes(1)
+        expect(maxInFlight).toBeLessThanOrEqual(4)
+        expect(result.tier).toBe('High')
+        expect(result.situationSummary).toContain('1 of 1 entitlement scored High')
+    })
+
     it('Privilege is not credited when considerPrivilege is false', async () => {
         const result = await evaluateAccessRisk(
             [{ id: 'ent-1', type: 'ENTITLEMENT' }],

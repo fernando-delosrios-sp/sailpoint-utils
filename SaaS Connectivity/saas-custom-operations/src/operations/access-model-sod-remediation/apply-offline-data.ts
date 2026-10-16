@@ -3,7 +3,7 @@ import { CatalogAccessItem } from '../../isc/roles/list-enabled-roles'
 import {
     ExpandedAccessItemEntitlements,
     NestedAccessProfileBundle,
-} from '../access-model-sod-remediation/expand-access-item-entitlements'
+} from './expand-access-item-entitlements'
 import { CorrectionPlan } from './build-correction-plan'
 
 interface OfflineRoleState {

@@ -1,7 +1,7 @@
 import {
     ExpandedAccessItemEntitlements,
     NestedAccessProfileBundle,
-} from '../access-model-sod-remediation/expand-access-item-entitlements'
+} from './expand-access-item-entitlements'
 import { AccessItemType, ParsedFormInstance } from './parse-form-instance'
 
 export interface DetachedAccessProfileDetail {

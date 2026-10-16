@@ -4,14 +4,14 @@ import { join } from 'path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import '../auto-registry'
 import { beginPayloadOutputCapture, endPayloadOutputCapture } from '../../framework/payload-persist-collector'
-import { accessModelSodRemediationApplyOperation } from './index'
+import { accessModelSodRemediationOperation } from './index'
 import { FORM_INSTANCE_LIST_PAGE_SIZE } from '../../isc/forms'
 import {
     getFormInstanceByIdOffline,
     markOfflineRoleAlreadyClean,
     OFFLINE_FORM_INSTANCES,
     resetOfflineCatalogState,
-} from './offline-data'
+} from './apply-offline-data'
 
 const workflowConfig = {
     apiUrl: 'https://company22986-poc.api.identitynow.com',
@@ -160,7 +160,7 @@ vi.mock('../../framework/sdk-factory', () => ({
     })),
 }))
 
-describe('accessModelSodRemediationApplyOperation', () => {
+describe('accessModelSodRemediationOperation', () => {
     beforeEach(() => {
         resetOfflineCatalogState()
         persistedAccounts.clear()
@@ -233,8 +233,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         beginPayloadOutputCapture()
 
         try {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply' } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
                 {
                     requestId: 'req-apply-offline-1',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -272,8 +272,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         try {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply' } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
                 {
                     requestId: 'req-apply-offline-2',
                     formInstanceId: 'fi-role-group-b-nested',
@@ -305,8 +305,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         try {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply' } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
                 {
                     requestId: 'req-apply-offline-skip',
                     formInstanceId: 'fi-role-already-clean',
@@ -336,8 +336,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         try {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply' } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
                 {
                     requestId: 'req-apply-invalid',
                     formInstanceId: 'fi-in-progress',
@@ -366,8 +366,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const resSecond = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -381,8 +381,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         patchRoleV1.mockClear()
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -408,8 +408,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'req-apply-live',
                     formInstanceId: 'fi-role-group-b-nested',
@@ -435,8 +435,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         try {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply' } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation' } as never,
                 {
                     requestId: 'req-apply-ap',
                     formInstanceId: 'fi-ap-group-a',
@@ -461,15 +461,15 @@ describe('accessModelSodRemediationApplyOperation', () => {
         }
     })
 
-    it('List filtered by form definition id', async () => {
+    it('List filtered by form definition id and instance id', async () => {
         const res = { send: vi.fn() }
         searchFormInstancesByTenantV1.mockResolvedValue({
             data: [listRowFromOffline('fi-role-group-a-direct')],
         })
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'req-apply-list-filter',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -481,8 +481,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
 
         expect(searchFormInstancesByTenantV1).toHaveBeenCalledWith({
             offset: 0,
-            limit: FORM_INSTANCE_LIST_PAGE_SIZE,
-            filters: `formDefinitionId eq "${DEFAULT_FORM_DEFINITION_ID}"`,
+            limit: 1,
+            filters: `formDefinitionId eq "${DEFAULT_FORM_DEFINITION_ID}" and id eq "fi-role-group-a-direct"`,
         })
         expect(searchFormDefinitionsByTenantV1).toHaveBeenCalledWith({
             filters: `name eq "${DEFAULT_FORM_NAME}"`,
@@ -498,7 +498,7 @@ describe('accessModelSodRemediationApplyOperation', () => {
         )
     })
 
-    it('Instance found on a later page', async () => {
+    it('falls back to page walk when the id filter is rejected', async () => {
         const res = { send: vi.fn() }
         const firstPage = Array.from({ length: FORM_INSTANCE_LIST_PAGE_SIZE }, (_, index) => ({
             id: `fi-other-${index}`,
@@ -507,12 +507,13 @@ describe('accessModelSodRemediationApplyOperation', () => {
             formData: {},
         }))
         searchFormInstancesByTenantV1
+            .mockRejectedValueOnce({ status: 400, data: 'unsupported filter' })
             .mockResolvedValueOnce({ data: firstPage })
             .mockResolvedValueOnce({ data: [listRowFromOffline('fi-role-group-b-nested')] })
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'req-apply-later-page',
                     formInstanceId: 'fi-role-group-b-nested',
@@ -522,7 +523,12 @@ describe('accessModelSodRemediationApplyOperation', () => {
             )
         })
 
-        expect(searchFormInstancesByTenantV1).toHaveBeenNthCalledWith(2, {
+        expect(searchFormInstancesByTenantV1).toHaveBeenNthCalledWith(1, {
+            offset: 0,
+            limit: 1,
+            filters: `formDefinitionId eq "${DEFAULT_FORM_DEFINITION_ID}" and id eq "fi-role-group-b-nested"`,
+        })
+        expect(searchFormInstancesByTenantV1).toHaveBeenNthCalledWith(3, {
             offset: FORM_INSTANCE_LIST_PAGE_SIZE,
             limit: FORM_INSTANCE_LIST_PAGE_SIZE,
             filters: `formDefinitionId eq "${DEFAULT_FORM_DEFINITION_ID}"`,
@@ -540,8 +546,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         searchFormInstancesByTenantV1.mockResolvedValue({ data: [] })
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'req-apply-missing',
                     formInstanceId: 'fi-missing',
@@ -567,8 +573,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         searchFormDefinitionsByTenantV1.mockResolvedValue({ data: { results: [] } })
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'req-apply-missing-definition',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -594,8 +600,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const resSecond = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -609,8 +615,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         searchFormDefinitionsByTenantV1.mockClear()
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -633,8 +639,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -662,8 +668,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'access-model-sod-remediation-apply-fi-1',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -685,8 +691,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-1',
@@ -703,10 +709,10 @@ describe('accessModelSodRemediationApplyOperation', () => {
             })
         )
         expect(accountLookupIdentities()).toContain('access-model-sod-remediation-apply:fi-1')
-        expect(accountLookupIdentities()).not.toContain('fi-1')
         expect(patchRoleV1).not.toHaveBeenCalled()
         expect(patchAccessProfileV1).not.toHaveBeenCalled()
         expect(searchFormDefinitionsByTenantV1).not.toHaveBeenCalled()
+        expect(searchFormInstancesByTenantV1).not.toHaveBeenCalled()
     })
 
     it('Legacy account keeps a pre-rename apply deduped', async () => {
@@ -722,8 +728,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-1',
@@ -761,8 +767,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'access-model-sod-remediation-apply',
                     formInstanceId: 'fi-1',
@@ -794,8 +800,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'req-non-terminal-legacy',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -819,8 +825,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'req-neither-identity',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -844,8 +850,8 @@ describe('accessModelSodRemediationApplyOperation', () => {
         const res = { send: vi.fn() }
 
         await _withConfig(workflowConfig, async () => {
-            await accessModelSodRemediationApplyOperation(
-                { commandType: 'custom:access-model-sod-remediation-apply', config: workflowConfig } as never,
+            await accessModelSodRemediationOperation(
+                { commandType: 'custom:access-model-sod-remediation', config: workflowConfig } as never,
                 {
                     requestId: 'req-apply-missing-def',
                     formInstanceId: 'fi-role-group-a-direct',
@@ -867,10 +873,6 @@ describe('accessModelSodRemediationApplyOperation', () => {
     })
 
     it('Form submit returns remediation side through documented workflow binding', () => {
-        const applyReadme = readFileSync(
-            join(process.cwd(), 'src/operations/access-model-sod-remediation-apply/README.md'),
-            'utf-8'
-        )
         const scanReadme = readFileSync(
             join(process.cwd(), 'src/operations/access-model-sod-remediation/README.md'),
             'utf-8'
@@ -881,13 +883,14 @@ describe('accessModelSodRemediationApplyOperation', () => {
             'utf-8'
         )
 
-        expect(applyReadme).toMatch(/formName/)
-        expect(applyReadme).toMatch(/searchFormInstancesByTenantV1/)
-        expect(applyReadme).not.toMatch(/formInstanceId` only/)
+        expect(scanReadme).toMatch(/formInstanceId/)
+        expect(scanReadme).toMatch(/searchFormInstancesByTenantV1/)
         expect(scanReadme).toMatch(/same `formName`/)
         expect(workflow).toContain('"formName": "Access Model SOD Remediation"')
+        expect(workflow).toContain('"type": "custom:access-model-sod-remediation"')
         expect(workflow).not.toContain('"formDefinitionId": "{{$.trigger.formDefinitionId}}"')
         expect(offlinePayload).toMatch(/"formName"/)
+        expect(offlinePayload).toMatch(/"formInstanceId"/)
         expect(offlinePayload).not.toMatch(/"formDefinitionId"/)
     })
 })

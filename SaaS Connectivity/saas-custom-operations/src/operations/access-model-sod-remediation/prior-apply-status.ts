@@ -1,7 +1,7 @@
-import { findAccountOnSource } from '../../isc/accounts'
+import { findAccountByNativeIdentityOnSource } from '../../isc/accounts'
 import { RequestContext } from '../../framework/types'
 import { applyPersistIdentity, legacyPrefixedApplyPersistIdentity } from './constants'
-import type { AccessModelSodRemediationApplyOperation } from './index'
+import type { AccessModelSodApplyOutput } from './apply-outputs'
 
 const STATUS_FIELD = 'access-model-sod-remediation-apply:status'
 const ACCESS_ITEM_ID_FIELD = 'access-model-sod-remediation-apply:access-item-id'
@@ -30,9 +30,7 @@ function readStringArray(value: unknown): string[] | undefined {
     return undefined
 }
 
-function outputsFromAccount(
-    account: { attributes?: unknown } | undefined
-): AccessModelSodRemediationApplyOperation['output'] | undefined {
+function outputsFromAccount(account: { attributes?: unknown } | undefined): AccessModelSodApplyOutput | undefined {
     const attrs = account?.attributes as Record<string, unknown> | undefined
     if (!attrs) {
         return undefined
@@ -49,7 +47,7 @@ function outputsFromAccount(
         return undefined
     }
 
-    const outputs: AccessModelSodRemediationApplyOperation['output'] = {
+    const outputs: AccessModelSodApplyOutput = {
         'access-model-sod-remediation-apply:status': 'skipped-already-applied',
         'access-model-sod-remediation-apply:access-item-id': accessItemId,
         'access-model-sod-remediation-apply:access-item-type': accessItemType,
@@ -75,10 +73,10 @@ function outputsFromAccount(
 
 /** Returns skip outputs when a prior terminal apply persist exists for the form instance. */
 export async function readPriorTerminalApplyOutputs(
-    ctx: RequestContext<AccessModelSodRemediationApplyOperation['output']>,
+    ctx: RequestContext<AccessModelSodApplyOutput>,
     requestId: string,
     formInstanceId: string
-): Promise<AccessModelSodRemediationApplyOperation['output'] | undefined> {
+): Promise<AccessModelSodApplyOutput | undefined> {
     const identities = [applyPersistIdentity(requestId, formInstanceId)]
     const legacyPrefixed = legacyPrefixedApplyPersistIdentity(formInstanceId)
     if (!identities.includes(legacyPrefixed)) {
@@ -86,8 +84,11 @@ export async function readPriorTerminalApplyOutputs(
     }
     identities.push(formInstanceId)
 
-    for (const identity of identities) {
-        const account = await findAccountOnSource(ctx.sdk.accounts, ctx.sourceId, identity)
+    const accounts = await Promise.all(
+        identities.map((identity) => findAccountByNativeIdentityOnSource(ctx.sdk.accounts, ctx.sourceId, identity))
+    )
+
+    for (const account of accounts) {
         const outputs = outputsFromAccount(account)
         if (outputs) {
             return outputs

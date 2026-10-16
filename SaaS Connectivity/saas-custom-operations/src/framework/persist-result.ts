@@ -17,7 +17,8 @@ const DEFAULT_MAX_ATTEMPTS = 60
 const DEFAULT_RETRY_DELAY_MS = 500
 const POST_CREATE_LOOKUP_ATTEMPTS = DEFAULT_MAX_ATTEMPTS
 /** DelimitedFile provisioning can outlast the default budget on a busy tenant. */
-const PROVISIONING_TASK_MAX_ATTEMPTS = 180
+/** 500ms polls. Three minutes covers a delimited-file create that becomes listable after the old 90s budget. */
+const PROVISIONING_TASK_MAX_ATTEMPTS = 360
 /** Brief pause after provisioning task SUCCESS before first account lookup (DelimitedFile aggregation). */
 const POST_CREATE_INITIAL_DELAY_MS = 1000
 
@@ -278,15 +279,9 @@ async function defaultSleep(ms: number): Promise<void> {
 
 async function readPersistedAccount(
     deps: PersistDependencies,
-    nativeIdentity: string,
-    iscAccountId?: string
+    nativeIdentity: string
 ): Promise<Record<string, unknown> | undefined> {
-    if (iscAccountId && deps.readAccountByIscId) {
-        const byId = await deps.readAccountByIscId(iscAccountId)
-        if (byId) {
-            return byId
-        }
-    }
+    // A direct GET by ISC account id can succeed before Get Accounts nativeIdentity eq returns the row.
     return deps.readAccount(nativeIdentity)
 }
 
@@ -320,7 +315,7 @@ export async function verifyAccountWrite(
     const sleep = deps.sleep ?? defaultSleep
 
     for (let attempt = 1; attempt <= DEFAULT_MAX_ATTEMPTS; attempt++) {
-        const actual = await readPersistedAccount(deps, id, iscAccountId)
+        const actual = await readPersistedAccount(deps, id)
 
         if (actual) {
             const mismatches = verifyPersistedAccount(expected, actual)

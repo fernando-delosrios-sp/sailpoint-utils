@@ -1,5 +1,5 @@
 {
-    "type": "custom:evaluate-access-request-risk",
+    "type": "custom:evaluate-access-request",
     "input": {
         "requestId": "evaluate-access-request-risk:offline-risk-001",
         "requestedItems": [

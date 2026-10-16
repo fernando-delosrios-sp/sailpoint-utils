@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { escapeODataString, findAccountOnSource } from './find-account'
+import { escapeODataString, findAccountByNativeIdentityOnSource, findAccountForCaller, findAccountOnSource } from './find-account'
 
 describe('escapeODataString', () => {
     it('escapes double quotes for OData filters', () => {
@@ -8,6 +8,42 @@ describe('escapeODataString', () => {
 
     it('escapes backslashes for OData filters', () => {
         expect(escapeODataString('path\\to\\value')).toBe('path\\\\to\\\\value')
+    })
+})
+
+describe('findAccountForCaller', () => {
+    it('uses only the nativeIdentity filter a workflow Get Accounts step sends', async () => {
+        const filtersSeen: string[] = []
+        const listAccountsV1 = vi.fn().mockImplementation(async ({ filters }) => {
+            filtersSeen.push(String(filters))
+            if (String(filters) === 'nativeIdentity eq "req-001"') {
+                return {
+                    data: [
+                        {
+                            id: 'isc-account-1',
+                            sourceId: 'source-1',
+                            nativeIdentity: 'req-001',
+                            attributes: { id: 'req-001', outcome: 'ready' },
+                        },
+                    ],
+                }
+            }
+            return {
+                data: [
+                    {
+                        id: 'isc-account-1',
+                        sourceId: 'source-1',
+                        nativeIdentity: 'req-001',
+                        attributes: { id: 'req-001', outcome: 'ready' },
+                    },
+                ],
+            }
+        })
+
+        const found = await findAccountForCaller({ listAccountsV1 } as never, 'source-1', 'req-001')
+
+        expect(found?.attributes.outcome).toBe('ready')
+        expect(filtersSeen).toEqual(['nativeIdentity eq "req-001"'])
     })
 })
 
@@ -149,5 +185,20 @@ describe('findAccountOnSource', () => {
             id: 'isc-account-4',
             attributes: { id: 'req-004', outcome: 'stored' },
         })
+    })
+})
+
+describe('findAccountByNativeIdentityOnSource', () => {
+    it('issues a single nativeIdentity and sourceId filter', async () => {
+        const listAccountsV1 = vi.fn().mockResolvedValue({ data: [] })
+
+        await findAccountByNativeIdentityOnSource({ listAccountsV1 } as never, 'source-1', 'child-1')
+
+        expect(listAccountsV1).toHaveBeenCalledTimes(1)
+        expect(listAccountsV1).toHaveBeenCalledWith(
+            expect.objectContaining({
+                filters: 'nativeIdentity eq "child-1" and sourceId eq "source-1"',
+            })
+        )
     })
 })

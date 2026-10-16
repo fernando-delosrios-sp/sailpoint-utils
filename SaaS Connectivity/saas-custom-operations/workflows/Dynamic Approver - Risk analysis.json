@@ -1,7 +1,7 @@
 {
   "id": "YOUR_DYNAMIC_APPROVER_WORKFLOW_ID",
   "name": "Dynamic Approver - Risk analysis",
-  "description": "Access Request Dynamic Approval event-trigger wrapper. Adds at most one extra approver, or none, depending on the risk tier. Phase 1 stores Manager and Managers Manager as identity ids, falling back to Default Approver. Phase 2 scores risk with custom:evaluate-access-request-risk. Phase 3 sets Approver to a bare id on each tier step, or leaves NONE to add nobody. Any failure, and a missing or unknown tier, takes Set Error approver instead of a tier step. Phase 4 detects whether that id is an identity or a governance group, reads its display name, and sends the callback; the none callback goes out when Approver is NONE. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
+  "description": "Access Request Dynamic Approval event-trigger wrapper. Adds at most one extra approver, or none, depending on the risk tier. Phase 1 stores Manager and Managers Manager as identity ids, falling back to Default Approver. Phase 2 scores risk with custom:evaluate-access-request. Phase 3 sets Approver to a bare id on each tier step, or leaves NONE to add nobody. Any failure, and a missing or unknown tier, takes Set Error approver instead of a tier step. Phase 4 detects whether that id is an identity or a governance group, reads its display name, and sends the callback; the none callback goes out when Approver is NONE. Import disabled, set Configuration, then subscribe the event trigger to this workflow external URL as Async.",
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -254,7 +254,7 @@
               "requestedItems.$": "$.trigger.requestedItems"
             },
             "tag": "latest",
-            "type": "custom:evaluate-access-request-risk"
+            "type": "custom:evaluate-access-request"
           },
           "method": "post",
           "param_authenticationRef": "none",

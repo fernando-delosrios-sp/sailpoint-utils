@@ -366,13 +366,13 @@ describe('customOperation', () => {
         const res1 = mockResponse()
         const res2 = mockResponse()
         const first = wrapped(
-            { commandType: 'custom:access-model-sod-remediation-apply' } as any,
+            { commandType: 'custom:access-model-sod-remediation' } as any,
             { requestId: 'req-a', formInstanceId: 'fi-dup' },
             res1 as any
         )
         await Promise.resolve()
         const second = wrapped(
-            { commandType: 'custom:access-model-sod-remediation-apply' } as any,
+            { commandType: 'custom:access-model-sod-remediation' } as any,
             { requestId: 'req-b', formInstanceId: 'fi-dup' },
             res2 as any
         )

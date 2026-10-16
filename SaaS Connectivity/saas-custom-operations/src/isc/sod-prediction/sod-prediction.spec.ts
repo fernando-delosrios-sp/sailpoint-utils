@@ -1,6 +1,7 @@
 import { ConnectorError } from '@sailpoint/connector-sdk'
 import { describe, expect, it, vi } from 'vitest'
 import {
+    createEntitlementExpansionCache,
     expandAccessItemsToEntitlementIds,
     parseViolatedPolicies,
     parseViolatedPolicyNames,
@@ -64,6 +65,29 @@ describe('isc/sod-prediction', () => {
         expect(getRoleEntitlementsV1).toHaveBeenCalledWith({ id: 'role-1' })
         expect(getAccessProfileEntitlementsV1).toHaveBeenCalledWith({ id: 'ap-1' })
         expect(ids).toEqual(['ent-direct', 'ent-role-1', 'ent-ap-1'])
+    })
+
+    it('expandAccessItemsToEntitlementIds reuses a request-scoped role cache', async () => {
+        const getRoleEntitlementsV1 = vi.fn().mockResolvedValue({ data: [{ id: 'ent-role-1' }] })
+        const clients = {
+            roles: { getRoleEntitlementsV1 } as never,
+            accessProfiles: { getAccessProfileEntitlementsV1: vi.fn() } as never,
+        }
+        const cache = createEntitlementExpansionCache(clients)
+
+        const first = await expandAccessItemsToEntitlementIds(
+            clients,
+            [
+                { id: 'role-1', type: 'ROLE' },
+                { id: 'role-1', type: 'ROLE' },
+            ],
+            cache
+        )
+        const second = await expandAccessItemsToEntitlementIds(clients, [{ id: 'role-1', type: 'ROLE' }], cache)
+
+        expect(first).toEqual(['ent-role-1'])
+        expect(second).toEqual(['ent-role-1'])
+        expect(getRoleEntitlementsV1).toHaveBeenCalledTimes(1)
     })
 
     it('predictSodViolationsForIdentity skips predict call when zero entitlements', async () => {

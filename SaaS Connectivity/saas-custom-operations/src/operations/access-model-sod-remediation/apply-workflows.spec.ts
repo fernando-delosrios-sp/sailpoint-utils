@@ -26,7 +26,7 @@ describe(WORKFLOW_FILE, () => {
         const parsed = JSON.parse(readFileSync(join(WORKFLOWS_DIR, WORKFLOW_FILE), 'utf8')) as WorkflowExport
         const invoke = parsed.definition.steps['Call SaaS Custom Operation']?.attributes?.jsonRequestBody
 
-        expect(invoke?.type).toBe('custom:access-model-sod-remediation-apply')
+        expect(invoke?.type).toBe('custom:access-model-sod-remediation')
         expect(invoke?.input?.requestId).toBe(EXPECTED_REQUEST_ID)
         expect(invoke?.input?.formInstanceId).toBe('{{$.trigger.formInstanceId}}')
         expect(invoke?.input?.formName).toBe('Access Model SOD Remediation')

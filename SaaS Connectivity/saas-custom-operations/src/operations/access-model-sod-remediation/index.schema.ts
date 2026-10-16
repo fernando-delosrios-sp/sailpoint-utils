@@ -2,6 +2,12 @@
 import { defineOperationSchema } from '../../framework'
 
 export const accessModelSodRemediationOperationSchema = defineOperationSchema({
+    'access-model-sod-remediation-apply:access-item-id': { type: 'string', optional: true },
+    'access-model-sod-remediation-apply:access-item-type': { type: 'string', optional: true },
+    'access-model-sod-remediation-apply:description-appended': { type: 'string', optional: true },
+    'access-model-sod-remediation-apply:detached-access-profile-ids': { type: 'string[]', optional: true },
+    'access-model-sod-remediation-apply:removed-entitlement-ids': { type: 'string[]', optional: true },
+    'access-model-sod-remediation-apply:status': { type: 'string', optional: true },
     'access-model-sod-remediation:access-item-id': { type: 'string', optional: true },
     'access-model-sod-remediation:access-item-name': { type: 'string', optional: true },
     'access-model-sod-remediation:access-item-type': { type: 'string', optional: true },

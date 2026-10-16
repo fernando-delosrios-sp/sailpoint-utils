@@ -6,7 +6,7 @@ import {
     upsertSourceAccount,
     waitForAccountProvisioningTask,
 } from './persist-result'
-import { findAccountOnSource, getAccount } from '../isc/accounts'
+import { findAccountForCaller, getAccount } from '../isc/accounts'
 import { createSailPointClients } from './sdk-factory'
 import { ensureSourceSchema } from './result-source'
 import { createFrameworkLogger, FrameworkLogger } from './logger'
@@ -114,7 +114,7 @@ export function createRequestContext<
             })
         },
         readAccount: async (id) => {
-            const account = await findAccountOnSource(accountsClient, sourceId, id)
+            const account = await findAccountForCaller(accountsClient, sourceId, id)
             return account?.attributes
         },
         readAccountByIscId: async (iscAccountId) => {

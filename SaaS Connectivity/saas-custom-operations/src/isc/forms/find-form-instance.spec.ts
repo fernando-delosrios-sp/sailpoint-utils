@@ -3,15 +3,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { FORM_INSTANCE_LIST_PAGE_SIZE, getFormInstanceByDefinitionAndId } from './find-form-instance'
 
 describe('isc/forms getFormInstanceByDefinitionAndId', () => {
-    it('Filter and pick', async () => {
+    it('Filter and pick by definition id and instance id', async () => {
         const searchFormInstancesByTenantV1 = vi.fn().mockResolvedValue({
             data: [
-                {
-                    id: 'fi-other',
-                    state: 'ASSIGNED',
-                    formInput: { accessItemId: 'other' },
-                    formData: {},
-                },
                 {
                     id: 'fi-1',
                     state: 'COMPLETED',
@@ -29,15 +23,16 @@ describe('isc/forms getFormInstanceByDefinitionAndId', () => {
 
         expect(searchFormInstancesByTenantV1).toHaveBeenCalledWith({
             offset: 0,
-            limit: FORM_INSTANCE_LIST_PAGE_SIZE,
-            filters: 'formDefinitionId eq "fd-1"',
+            limit: 1,
+            filters: 'formDefinitionId eq "fd-1" and id eq "fi-1"',
         })
+        expect(searchFormInstancesByTenantV1).toHaveBeenCalledTimes(1)
         expect(result.id).toBe('fi-1')
         expect(result.formInput.accessItemId).toBe('role-1')
         expect(result.formData.remediationSide).toBe('groupA')
     })
 
-    it('Pagination continues until match or exhaustion', async () => {
+    it('falls back to pagination when the id filter is rejected', async () => {
         const firstPage = Array.from({ length: FORM_INSTANCE_LIST_PAGE_SIZE }, (_, index) => ({
             id: `fi-other-${index}`,
             state: 'ASSIGNED',
@@ -46,6 +41,7 @@ describe('isc/forms getFormInstanceByDefinitionAndId', () => {
         }))
         const searchFormInstancesByTenantV1 = vi
             .fn()
+            .mockRejectedValueOnce({ status: 400, data: 'unsupported filter' })
             .mockResolvedValueOnce({ data: firstPage })
             .mockResolvedValueOnce({
                 data: [
@@ -64,13 +60,18 @@ describe('isc/forms getFormInstanceByDefinitionAndId', () => {
             'fi-1'
         )
 
-        expect(searchFormInstancesByTenantV1).toHaveBeenNthCalledWith(2, {
+        expect(searchFormInstancesByTenantV1).toHaveBeenNthCalledWith(1, {
+            offset: 0,
+            limit: 1,
+            filters: 'formDefinitionId eq "fd-1" and id eq "fi-1"',
+        })
+        expect(searchFormInstancesByTenantV1).toHaveBeenNthCalledWith(3, {
             offset: FORM_INSTANCE_LIST_PAGE_SIZE,
             limit: FORM_INSTANCE_LIST_PAGE_SIZE,
             filters: 'formDefinitionId eq "fd-1"',
         })
         expect(result.id).toBe('fi-1')
-        expect(searchFormInstancesByTenantV1).toHaveBeenCalledTimes(2)
+        expect(searchFormInstancesByTenantV1).toHaveBeenCalledTimes(3)
     })
 
     it('Missing instance surfaced as ConnectorError', async () => {
@@ -116,8 +117,8 @@ describe('isc/forms getFormInstanceByDefinitionAndId', () => {
 
         expect(searchFormInstancesByTenantV1).toHaveBeenCalledWith({
             offset: 0,
-            limit: FORM_INSTANCE_LIST_PAGE_SIZE,
-            filters: 'formDefinitionId eq "fd-quote""""id"',
+            limit: 1,
+            filters: 'formDefinitionId eq "fd-quote""""id" and id eq "fi-2"',
         })
         expect(result.formInput.accessItemType).toBe('ROLE')
         expect(result.formInput.accessItemId).toBe('role-2')

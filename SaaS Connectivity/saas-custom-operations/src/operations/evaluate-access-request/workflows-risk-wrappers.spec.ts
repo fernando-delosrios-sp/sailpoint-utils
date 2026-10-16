@@ -7,14 +7,11 @@ const WORKFLOWS_DIR = join(__dirname, '../../../workflows')
 /**
  * `failureStep` is where a workflow must land when it cannot obtain a tier. A missing tier means the
  * request was never scored, so it can never share a step with a tier the scorer actually returned.
+ *
+ * Access Request Pre-Check uses `custom:evaluate-access-request` with evaluateSod true and is
+ * covered under that operation.
  */
 const BUNDLED_RISK_WORKFLOWS = [
-    {
-        file: 'Access Request Pre-Check - Risk analysis and in-flight SOD.json',
-        requestIdTemplate: 'evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted',
-        failureStep: 'Set Evaluation Failed',
-        tierSteps: ['Set High Risk', 'Set Medium Risk', 'Set Low Risk'],
-    },
     {
         file: 'Dynamic Approver - Risk analysis.json',
         requestIdTemplate: 'evaluate-access-request-risk:{{$.trigger.accessRequestId}}:dynamic',
@@ -35,6 +32,7 @@ interface WorkflowStep {
         operator?: string
         value?: string
         jsonRequestBody?: {
+            type?: string
             input?: Record<string, unknown>
         }
     }
@@ -64,13 +62,19 @@ describe.each(BUNDLED_RISK_WORKFLOWS)('$file', ({ file, requestIdTemplate, failu
         expect(() => readWorkflow(file)).not.toThrow()
     })
 
-    it('calls the risk operation with the expected requestId template', () => {
+    it('calls the unified evaluate-access-request command with the expected requestId template', () => {
+        const steps = readWorkflow(file).definition.steps
+        const invoke = steps['Call Evaluate Risk']?.attributes?.jsonRequestBody
+
+        expect(invoke?.type).toBe('custom:evaluate-access-request')
+        expect(invoke?.input?.requestId).toBe(requestIdTemplate)
+        expect(invoke?.input?.evaluateSod).toBeUndefined()
+    })
+
+    it('waits for persistence before reading the risk result account', () => {
         const steps = readWorkflow(file).definition.steps
 
-        expect(steps['Call Evaluate Risk']?.attributes?.jsonRequestBody?.input?.requestId).toBe(requestIdTemplate)
-        if (file === 'Access Request Pre-Check - Risk analysis and in-flight SOD.json') {
-            expect(steps['Call Evaluate Risk']?.attributes?.jsonRequestBody?.input?.waitForPersist).toBe(false)
-        }
+        expect(steps['Call Evaluate Risk']?.attributes?.jsonRequestBody?.input?.waitForPersist).toBeUndefined()
     })
 
     it('reads the risk result back on the same requestId', () => {

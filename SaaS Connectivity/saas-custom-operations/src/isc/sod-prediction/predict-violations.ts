@@ -2,6 +2,7 @@ import { AccessProfilesApi, RolesApi, SODViolationsApi } from 'sailpoint-api-cli
 import type { SodViolationPrediction } from './types'
 import { ConnectorError } from '@sailpoint/connector-sdk'
 import { toConnectorError } from '../../framework/connector-error'
+import { DEFAULT_ISC_CONCURRENCY, mapWithConcurrency, memoizeAsync } from '../../framework/concurrency'
 import { listAccessProfileEntitlementIds } from '../access-profiles/access-profile-entitlements'
 import { listRoleEntitlementIds } from '../roles/role-entitlements'
 import { AccessItemRef } from '../events-search/types'
@@ -70,30 +71,57 @@ export interface EntitlementExpansionClients {
     accessProfiles: AccessProfilesApi
 }
 
+export interface ExpandAccessItemsOptions {
+    concurrency?: number
+    listRoleEntitlementIds?: (roleId: string) => Promise<string[]>
+    listAccessProfileEntitlementIds?: (accessProfileId: string) => Promise<string[]>
+}
+
+/**
+ * Builds request-scoped memoized role/access-profile entitlement expanders for sharing
+ * across risk scoring and SoD prediction in one invocation.
+ */
+export function createEntitlementExpansionCache(clients: EntitlementExpansionClients): {
+    listRoleEntitlementIds: (roleId: string) => Promise<string[]>
+    listAccessProfileEntitlementIds: (accessProfileId: string) => Promise<string[]>
+} {
+    return {
+        listRoleEntitlementIds: memoizeAsync((roleId) => listRoleEntitlementIds(clients.roles, roleId)),
+        listAccessProfileEntitlementIds: memoizeAsync((accessProfileId) =>
+            listAccessProfileEntitlementIds(clients.accessProfiles, accessProfileId)
+        ),
+    }
+}
+
 /** Expands access item refs to deduplicated entitlement ids suitable for predict. */
 export async function expandAccessItemsToEntitlementIds(
     clients: EntitlementExpansionClients,
-    items: AccessItemRef[]
+    items: AccessItemRef[],
+    options: ExpandAccessItemsOptions = {}
 ): Promise<string[]> {
-    const entitlementIds: string[] = []
-    const seen = new Set<string>()
+    const concurrency = options.concurrency ?? DEFAULT_ISC_CONCURRENCY
+    const listRoleIds =
+        options.listRoleEntitlementIds ?? ((id: string) => listRoleEntitlementIds(clients.roles, id))
+    const listProfileIds =
+        options.listAccessProfileEntitlementIds ??
+        ((id: string) => listAccessProfileEntitlementIds(clients.accessProfiles, id))
 
-    for (const item of items) {
-        let resolved: string[] = []
+    const resolvedPerItem = await mapWithConcurrency(items, concurrency, async (item) => {
         switch (item.type) {
             case 'ENTITLEMENT':
-                resolved = [item.id]
-                break
+                return [item.id]
             case 'ROLE':
-                resolved = await listRoleEntitlementIds(clients.roles, item.id)
-                break
+                return listRoleIds(item.id)
             case 'ACCESS_PROFILE':
-                resolved = await listAccessProfileEntitlementIds(clients.accessProfiles, item.id)
-                break
+                return listProfileIds(item.id)
             default:
                 throw new ConnectorError(`Unsupported access item type: ${String(item.type)}`)
         }
+    })
 
+    const entitlementIds: string[] = []
+    const seen = new Set<string>()
+    for (const resolved of resolvedPerItem) {
         for (const id of resolved) {
             if (!seen.has(id)) {
                 seen.add(id)

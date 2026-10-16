@@ -118,6 +118,48 @@ async function scanAccountsOnSourceForIdentity(
     }
 }
 
+/**
+ * The workflow Get Accounts read: `nativeIdentity eq`, with no name, attribute, or source-scan fallback.
+ * Those fallbacks can see a row before this filter does.
+ */
+export async function findAccountForCaller(
+    accounts: AccountsApi,
+    sourceId: string,
+    nativeIdentity: string
+): Promise<SourceAccountMatch | undefined> {
+    const filters = `nativeIdentity eq "${escapeODataString(nativeIdentity)}"`
+    try {
+        return await listAccountsMatchingFilter(accounts, filters, sourceId, nativeIdentity)
+    } catch (error) {
+        if (isHttpStatus(error, 400)) {
+            return undefined
+        }
+        throw error
+    }
+}
+
+/**
+ * Single-filter existence check: `nativeIdentity eq` and `sourceId eq`.
+ * No name, attributes.id, or full-source-scan fallback — used when a miss must stay cheap
+ * (scan idempotency, prior-apply lookup).
+ */
+export async function findAccountByNativeIdentityOnSource(
+    accounts: AccountsApi,
+    sourceId: string,
+    nativeIdentity: string
+): Promise<SourceAccountMatch | undefined> {
+    const escaped = escapeODataString(nativeIdentity)
+    const filters = `nativeIdentity eq "${escaped}" and sourceId eq "${sourceId}"`
+    try {
+        return await listAccountsMatchingFilter(accounts, filters, sourceId, nativeIdentity)
+    } catch (error) {
+        if (isHttpStatus(error, 400)) {
+            return undefined
+        }
+        throw error
+    }
+}
+
 /** Looks up an account on a source by native identity. */
 export async function findAccountOnSource(
     accounts: AccountsApi,

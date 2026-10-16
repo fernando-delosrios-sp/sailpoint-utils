@@ -23,7 +23,7 @@
               "requestId": "access-model-sod-remediation-apply"
             },
             "tag": "latest",
-            "type": "custom:access-model-sod-remediation-apply"
+            "type": "custom:access-model-sod-remediation"
           },
           "method": "post",
           "param_authenticationRef": "none",

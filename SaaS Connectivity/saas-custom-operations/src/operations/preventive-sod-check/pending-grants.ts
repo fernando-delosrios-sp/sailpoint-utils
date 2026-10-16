@@ -12,11 +12,13 @@ import {
     type AccessItemRef,
 } from '../../isc/events-search'
 import {
+    createEntitlementExpansionCache,
     expandAccessItemsToEntitlementIds,
     parseViolatedPolicies,
     predictSodViolationsForIdentity,
     predictSodViolationsForIdentityOffline,
     OFFLINE_ROLE_ENTITLEMENT_IDS,
+    type ExpandAccessItemsOptions,
 } from '../../isc/sod-prediction'
 import { attachSodPolicyLevels } from '../../isc/sod-policies'
 import {
@@ -25,6 +27,7 @@ import {
 } from '../../isc/violations/list-active-policy-names'
 import { deltaPolicies, unionPolicies, type PolicyNameRef } from '../../isc/violations/policy-name-sets'
 import { type IscClientConfig } from '../../isc/http'
+import { DEFAULT_ISC_CONCURRENCY, mapWithConcurrency } from '../../framework/concurrency'
 import { SailPointClients } from '../../framework/types'
 
 export interface ResolvePendingGrantEntitlementsOptions {
@@ -32,6 +35,8 @@ export interface ResolvePendingGrantEntitlementsOptions {
     onSkippedTrackingNumber?: (trackingNumber: string) => void
     /** Trigger-supplied items for the target request, avoiding mutable request status/event indexing. */
     requestedItems?: AccessItemRef[]
+    concurrency?: number
+    expansion?: ExpandAccessItemsOptions
 }
 
 export interface PreventiveSodEvaluation {
@@ -76,16 +81,18 @@ async function resolveAccessItemsForGrantRequests(
     offline: boolean,
     options: ResolvePendingGrantEntitlementsOptions
 ): Promise<AccessItemRef[]> {
-    const accessItems: AccessItemRef[] = []
-    const seenItems = new Set<string>()
-
-    for (const request of requests) {
+    const concurrency = options.concurrency ?? DEFAULT_ISC_CONCURRENCY
+    const perRequestItems = await mapWithConcurrency(requests, concurrency, async (request) => {
         const trackingNumber = resolveAccessRequestTrackingNumber(request)
         if (!trackingNumber) {
-            continue
+            return [] as AccessItemRef[]
         }
+        return resolveAccessItemsForTrackingNumber(sdk, trackingNumber, offline, options)
+    })
 
-        const items = await resolveAccessItemsForTrackingNumber(sdk, trackingNumber, offline, options)
+    const accessItems: AccessItemRef[] = []
+    const seenItems = new Set<string>()
+    for (const items of perRequestItems) {
         for (const item of items) {
             const key = `${item.type}:${item.id}`
             if (seenItems.has(key)) {
@@ -107,18 +114,52 @@ function unionAccessItems(left: AccessItemRef[], right: AccessItemRef[]): Access
     return [...items.values()]
 }
 
+function resolveExpansionOptions(
+    sdk: SailPointClients,
+    offline: boolean,
+    options: ResolvePendingGrantEntitlementsOptions
+): ExpandAccessItemsOptions {
+    if (options.expansion) {
+        return { concurrency: options.concurrency, ...options.expansion }
+    }
+    if (offline) {
+        return { concurrency: options.concurrency }
+    }
+    return {
+        concurrency: options.concurrency,
+        ...createEntitlementExpansionCache(sdk),
+    }
+}
+
 async function predictViolatedPoliciesForAccessItems(
     sdk: SailPointClients,
     identityId: string,
     accessItems: AccessItemRef[],
-    offline: boolean
+    offline: boolean,
+    options: ResolvePendingGrantEntitlementsOptions = {}
 ): Promise<PolicyNameRef[]> {
+    const expansion = resolveExpansionOptions(sdk, offline, options)
     const entitlementIds = offline
         ? accessItems.length > 0
             ? OFFLINE_ROLE_ENTITLEMENT_IDS
             : []
-        : await expandAccessItemsToEntitlementIds(sdk, accessItems)
+        : await expandAccessItemsToEntitlementIds(sdk, accessItems, expansion)
 
+    const prediction = offline
+        ? entitlementIds.length > 0
+            ? predictSodViolationsForIdentityOffline(identityId)
+            : { violationContexts: [] }
+        : await predictSodViolationsForIdentity(sdk.sodViolations, identityId, entitlementIds)
+
+    return parseViolatedPolicies(prediction)
+}
+
+async function predictViolatedPoliciesForEntitlementIds(
+    sdk: SailPointClients,
+    identityId: string,
+    entitlementIds: string[],
+    offline: boolean
+): Promise<PolicyNameRef[]> {
     const prediction = offline
         ? entitlementIds.length > 0
             ? predictSodViolationsForIdentityOffline(identityId)
@@ -136,7 +177,7 @@ async function predictViolatedPoliciesForGrantRequests(
     options: ResolvePendingGrantEntitlementsOptions
 ): Promise<PolicyNameRef[]> {
     const accessItems = await resolveAccessItemsForGrantRequests(sdk, requests, offline, options)
-    return predictViolatedPoliciesForAccessItems(sdk, identityId, accessItems, offline)
+    return predictViolatedPoliciesForAccessItems(sdk, identityId, accessItems, offline, options)
 }
 
 function toEvaluation(violatedPolicies: PolicyNameRef[]): PreventiveSodEvaluation {
@@ -157,16 +198,19 @@ export async function evaluatePreventiveSod(
     options: ResolvePendingGrantEntitlementsOptions & { inflightOnly?: boolean } = {}
 ): Promise<PreventiveSodEvaluation> {
     const inflightOnly = options.inflightOnly === true
-    const executingGrants = await listExecutingGrantRequests(sdk, identityId, offline)
+    const expansion = resolveExpansionOptions(sdk, offline, options)
+    const optionsWithExpansion: ResolvePendingGrantEntitlementsOptions = { ...options, expansion }
 
-    const existingPolicies =
+    const [executingGrants, existingPolicies] = await Promise.all([
+        listExecutingGrantRequests(sdk, identityId, offline),
         inflightOnly
-            ? []
+            ? Promise.resolve([] as PolicyNameRef[])
             : offline
-              ? listActiveViolationPoliciesForIdentityOffline(identityId)
+              ? Promise.resolve(listActiveViolationPoliciesForIdentityOffline(identityId))
               : clientConfig
-                ? await listActiveViolationPoliciesForIdentity(clientConfig, identityId)
-                : []
+                ? listActiveViolationPoliciesForIdentity(clientConfig, identityId)
+                : Promise.resolve([] as PolicyNameRef[]),
+    ])
 
     let violatedPolicies: PolicyNameRef[]
 
@@ -176,29 +220,45 @@ export async function evaluatePreventiveSod(
         let baselinePolicies: PolicyNameRef[]
         let fullPolicies: PolicyNameRef[]
         if (suppliedRequestItems.length > 0) {
-            const baselineItems = await resolveAccessItemsForGrantRequests(sdk, otherGrants, offline, options)
-            baselinePolicies = await predictViolatedPoliciesForAccessItems(sdk, identityId, baselineItems, offline)
-            fullPolicies = await predictViolatedPoliciesForAccessItems(
+            const baselineItems = await resolveAccessItemsForGrantRequests(
                 sdk,
-                identityId,
-                unionAccessItems(baselineItems, suppliedRequestItems),
-                offline
-            )
-        } else {
-            baselinePolicies = await predictViolatedPoliciesForGrantRequests(
-                sdk,
-                identityId,
                 otherGrants,
                 offline,
-                options
+                optionsWithExpansion
             )
-            fullPolicies = await predictViolatedPoliciesForGrantRequests(
-                sdk,
-                identityId,
-                executingGrants,
-                offline,
-                options
-            )
+            const baselineEntitlementIds = offline
+                ? baselineItems.length > 0
+                    ? OFFLINE_ROLE_ENTITLEMENT_IDS
+                    : []
+                : await expandAccessItemsToEntitlementIds(sdk, baselineItems, expansion)
+            const fullItems = unionAccessItems(baselineItems, suppliedRequestItems)
+            const fullEntitlementIds = offline
+                ? fullItems.length > 0
+                    ? OFFLINE_ROLE_ENTITLEMENT_IDS
+                    : []
+                : await expandAccessItemsToEntitlementIds(sdk, fullItems, expansion)
+
+            ;[baselinePolicies, fullPolicies] = await Promise.all([
+                predictViolatedPoliciesForEntitlementIds(sdk, identityId, baselineEntitlementIds, offline),
+                predictViolatedPoliciesForEntitlementIds(sdk, identityId, fullEntitlementIds, offline),
+            ])
+        } else {
+            ;[baselinePolicies, fullPolicies] = await Promise.all([
+                predictViolatedPoliciesForGrantRequests(
+                    sdk,
+                    identityId,
+                    otherGrants,
+                    offline,
+                    optionsWithExpansion
+                ),
+                predictViolatedPoliciesForGrantRequests(
+                    sdk,
+                    identityId,
+                    executingGrants,
+                    offline,
+                    optionsWithExpansion
+                ),
+            ])
         }
         const requestDelta = deltaPolicies(fullPolicies, baselinePolicies)
         violatedPolicies = inflightOnly ? requestDelta : unionPolicies(existingPolicies, requestDelta)
@@ -208,10 +268,12 @@ export async function evaluatePreventiveSod(
             identityId,
             executingGrants,
             offline,
-            options
+            optionsWithExpansion
         )
         violatedPolicies = unionPolicies(existingPolicies, predictivePolicies)
     }
 
-    return toEvaluation(await attachSodPolicyLevels(sdk, violatedPolicies, offline))
+    return toEvaluation(
+        await attachSodPolicyLevels(sdk, violatedPolicies, offline, { concurrency: options.concurrency })
+    )
 }

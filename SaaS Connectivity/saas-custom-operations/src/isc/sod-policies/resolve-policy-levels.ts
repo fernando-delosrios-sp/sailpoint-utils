@@ -2,6 +2,7 @@ import { getSodPolicy } from './get-policy'
 import { listSodPolicies } from './list-policies'
 import { OFFLINE_SOD_POLICY_LEVELS } from './offline-data'
 import { type PolicyNameRef } from '../violations/policy-name-sets'
+import { DEFAULT_ISC_CONCURRENCY, mapWithConcurrency } from '../../framework/concurrency'
 import { SailPointClients } from '../../framework/types'
 
 function quoteFilterValue(value: string): string {
@@ -33,7 +34,8 @@ async function lookupPolicyLevel(sdk: SailPointClients, policy: PolicyNameRef): 
 export async function attachSodPolicyLevels(
     sdk: SailPointClients,
     policies: PolicyNameRef[],
-    offline: boolean
+    offline: boolean,
+    options: { concurrency?: number } = {}
 ): Promise<PolicyNameRef[]> {
     if (policies.length === 0) {
         return policies
@@ -43,13 +45,11 @@ export async function attachSodPolicyLevels(
         return policies.map((policy) => applyKnownLevel(policy, OFFLINE_SOD_POLICY_LEVELS[policy.name]))
     }
 
-    const resolved: PolicyNameRef[] = []
-    for (const policy of policies) {
+    const concurrency = options.concurrency ?? DEFAULT_ISC_CONCURRENCY
+    return mapWithConcurrency(policies, concurrency, async (policy) => {
         if (policy.level) {
-            resolved.push(policy)
-            continue
+            return policy
         }
-        resolved.push(applyKnownLevel(policy, await lookupPolicyLevel(sdk, policy)))
-    }
-    return resolved
+        return applyKnownLevel(policy, await lookupPolicyLevel(sdk, policy))
+    })
 }

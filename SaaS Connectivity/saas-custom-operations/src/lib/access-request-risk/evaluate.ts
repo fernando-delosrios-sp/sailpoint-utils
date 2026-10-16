@@ -1,4 +1,5 @@
 import { truncateForIscStorage, ISC_STRING_ATTRIBUTE_MAX_LENGTH } from '../../framework/attribute-limits'
+import { DEFAULT_ISC_CONCURRENCY, mapWithConcurrency } from '../../framework/concurrency'
 import { DecidingRule, maxTier, RiskTier, tierFromEntitlement, tierFromRiskMetadata } from './tiers'
 
 export type RequestedItemType = 'ROLE' | 'ACCESS_PROFILE' | 'ENTITLEMENT'
@@ -109,14 +110,7 @@ function summarize(
     const tally = formatTally(distinct)
     const winning = tier === 'Low' ? [] : distinct.filter((driver) => driver.tier === tier)
     const contributingIds =
-        tier === 'Low'
-            ? ''
-            : fit(
-                  drivers
-                      .filter((driver) => driver.tier === tier)
-                      .map((driver) => driver.id)
-                      .join(',')
-              )
+        tier === 'Low' ? '' : fit(winning.map((driver) => driver.id).join(','))
 
     if (tier === 'Low') {
         return {
@@ -149,6 +143,23 @@ function summarize(
 export interface EvaluateAccessRiskOptions {
     /** When false, entitlement scoring ignores privilegeLevel.effective. Defaults to true. */
     considerPrivilege?: boolean
+    /** Max concurrent nested catalog reads. Defaults to {@link DEFAULT_ISC_CONCURRENCY}. */
+    concurrency?: number
+}
+
+interface ScoredEntitlement {
+    tier: RiskTier
+    driver: RiskDriver
+}
+
+interface ScoredAccessProfile {
+    tier: RiskTier
+    drivers: RiskDriver[]
+}
+
+interface ScoredItem {
+    tier: RiskTier
+    drivers: RiskDriver[]
 }
 
 /** Highest tier across requested items, their access profiles, and their entitlements. */
@@ -158,72 +169,111 @@ export async function evaluateAccessRisk(
     options: EvaluateAccessRiskOptions = {}
 ): Promise<AccessRiskResult> {
     const considerPrivilege = options.considerPrivilege !== false
-    const drivers: RiskDriver[] = []
-    const entitlementTiers = new Map<string, RiskTier>()
-    const profileTiers = new Map<string, RiskTier>()
+    const concurrency = options.concurrency ?? DEFAULT_ISC_CONCURRENCY
+    const entitlementScores = new Map<string, Promise<ScoredEntitlement>>()
+    const profileScores = new Map<string, Promise<ScoredAccessProfile>>()
 
-    const scoreEntitlement = async (id: string): Promise<RiskTier> => {
-        const cached = entitlementTiers.get(id)
+    const scoreEntitlement = (id: string): Promise<ScoredEntitlement> => {
+        const cached = entitlementScores.get(id)
         if (cached) {
             return cached
         }
-        const entitlement = await catalog.getEntitlement(id)
-        const result = tierFromEntitlement({
-            effectivePrivilege: entitlement.effectivePrivilege,
-            metadata: entitlement.metadata,
-            considerPrivilege,
+        const pending = (async (): Promise<ScoredEntitlement> => {
+            const entitlement = await catalog.getEntitlement(id)
+            const result = tierFromEntitlement({
+                effectivePrivilege: entitlement.effectivePrivilege,
+                metadata: entitlement.metadata,
+                considerPrivilege,
+            })
+            return {
+                tier: result.tier,
+                driver: { id, type: 'ENTITLEMENT', tier: result.tier, rule: result.rule },
+            }
+        })().catch((error) => {
+            entitlementScores.delete(id)
+            throw error
         })
-        entitlementTiers.set(id, result.tier)
-        drivers.push({ id, type: 'ENTITLEMENT', tier: result.tier, rule: result.rule })
-        return result.tier
+        entitlementScores.set(id, pending)
+        return pending
     }
 
-    const scoreAccessProfile = async (id: string): Promise<RiskTier> => {
-        const cached = profileTiers.get(id)
+    const scoreAccessProfile = (id: string): Promise<ScoredAccessProfile> => {
+        const cached = profileScores.get(id)
         if (cached) {
             return cached
         }
-        const profile = await catalog.getAccessProfile(id)
-        let tier = tierFromRiskMetadata(profile.metadata)
-        drivers.push({
-            id,
-            type: 'ACCESS_PROFILE',
-            tier,
-            rule: tier === 'Low' ? undefined : 'Risk metadata',
+        const pending = (async (): Promise<ScoredAccessProfile> => {
+            const profile = await catalog.getAccessProfile(id)
+            const metadataTier = tierFromRiskMetadata(profile.metadata)
+            const profileDriver: RiskDriver = {
+                id,
+                type: 'ACCESS_PROFILE',
+                tier: metadataTier,
+                rule: metadataTier === 'Low' ? undefined : 'Risk metadata',
+            }
+            const entitlementResults = await mapWithConcurrency(
+                profile.entitlementIds,
+                concurrency,
+                (entitlementId) => scoreEntitlement(entitlementId)
+            )
+            let tier = metadataTier
+            const drivers: RiskDriver[] = [profileDriver]
+            for (const entitlement of entitlementResults) {
+                tier = maxTier(tier, entitlement.tier)
+                drivers.push(entitlement.driver)
+            }
+            return { tier, drivers }
+        })().catch((error) => {
+            profileScores.delete(id)
+            throw error
         })
-        for (const entitlementId of profile.entitlementIds) {
-            tier = maxTier(tier, await scoreEntitlement(entitlementId))
-        }
-        profileTiers.set(id, tier)
-        return tier
+        profileScores.set(id, pending)
+        return pending
     }
 
-    let tier: RiskTier = 'Low'
-    for (const item of items) {
+    const scoreItem = async (item: RequestedAccessItem): Promise<ScoredItem> => {
         if (item.type === 'ENTITLEMENT') {
-            tier = maxTier(tier, await scoreEntitlement(item.id))
-            continue
+            const scored = await scoreEntitlement(item.id)
+            return { tier: scored.tier, drivers: [scored.driver] }
         }
         if (item.type === 'ACCESS_PROFILE') {
-            tier = maxTier(tier, await scoreAccessProfile(item.id))
-            continue
+            return scoreAccessProfile(item.id)
         }
 
         const role = await catalog.getRole(item.id)
-        let roleTier = tierFromRiskMetadata(role.metadata)
-        drivers.push({
+        const roleMetadataTier = tierFromRiskMetadata(role.metadata)
+        const roleDriver: RiskDriver = {
             id: item.id,
             type: 'ROLE',
-            tier: roleTier,
-            rule: roleTier === 'Low' ? undefined : 'Risk metadata',
-        })
-        for (const accessProfileId of role.accessProfileIds) {
-            roleTier = maxTier(roleTier, await scoreAccessProfile(accessProfileId))
+            tier: roleMetadataTier,
+            rule: roleMetadataTier === 'Low' ? undefined : 'Risk metadata',
         }
-        for (const entitlementId of role.entitlementIds) {
-            roleTier = maxTier(roleTier, await scoreEntitlement(entitlementId))
+        const [profileResults, entitlementResults] = await Promise.all([
+            mapWithConcurrency(role.accessProfileIds, concurrency, (accessProfileId) =>
+                scoreAccessProfile(accessProfileId)
+            ),
+            mapWithConcurrency(role.entitlementIds, concurrency, (entitlementId) => scoreEntitlement(entitlementId)),
+        ])
+
+        let roleTier = roleMetadataTier
+        const drivers: RiskDriver[] = [roleDriver]
+        for (const profile of profileResults) {
+            roleTier = maxTier(roleTier, profile.tier)
+            drivers.push(...profile.drivers)
         }
-        tier = maxTier(tier, roleTier)
+        for (const entitlement of entitlementResults) {
+            roleTier = maxTier(roleTier, entitlement.tier)
+            drivers.push(entitlement.driver)
+        }
+        return { tier: roleTier, drivers }
+    }
+
+    const scoredItems = await mapWithConcurrency(items, concurrency, (item) => scoreItem(item))
+    let tier: RiskTier = 'Low'
+    const drivers: RiskDriver[] = []
+    for (const scored of scoredItems) {
+        tier = maxTier(tier, scored.tier)
+        drivers.push(...scored.drivers)
     }
 
     const summary = summarize(tier, drivers)

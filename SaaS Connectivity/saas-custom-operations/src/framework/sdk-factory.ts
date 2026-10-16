@@ -18,6 +18,7 @@ import {
     TagsApi,
     TaskManagementApi,
 } from 'sailpoint-api-client'
+import { DEFAULT_ISC_CONCURRENCY, installConcurrencyLimit, ConcurrentAxiosInstance } from './concurrency'
 import { getActiveFrameworkLogger } from './logger'
 import { installThrottleRetry, RetryingAxiosInstance } from './throttle-retry'
 import { SailPointClients } from './types'
@@ -30,11 +31,15 @@ export function createSailPointClients(apiUrl: string, token: string): SailPoint
     })
     configuration.experimental = true
 
-    installThrottleRetry(configuration.axiosInstance as unknown as RetryingAxiosInstance, {
+    const axiosInstance = configuration.axiosInstance as unknown as RetryingAxiosInstance & ConcurrentAxiosInstance
+
+    // Throttle first, concurrency second: on 429 the concurrency slot releases before retry.
+    installThrottleRetry(axiosInstance, {
         onRetry: ({ attempt, delayMs, url }) => {
             getActiveFrameworkLogger()?.warn('ISC request throttled, retrying', { attempt, delayMs, url })
         },
     })
+    installConcurrencyLimit(axiosInstance, { limit: DEFAULT_ISC_CONCURRENCY })
 
     return {
         accounts: new AccountsApi(configuration),

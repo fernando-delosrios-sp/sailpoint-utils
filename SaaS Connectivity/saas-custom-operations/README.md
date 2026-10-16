@@ -55,7 +55,7 @@ The `workflows/` directory contains ISC workflow snapshots you can import as tem
 | [`workflows/SOD Violation - Remediation.json`](workflows/SOD%20Violation%20-%20Remediation.json)           | — (post-submit)                             | `sp:form-submitted`                | Revoke access or apply compensating control        |
 | [`workflows/Access Model SOD - Analysis.json`](workflows/Access%20Model%20SOD%20-%20Analysis.json)                     | `custom:access-model-sod-remediation`        | `idn:interactive-process-launched` | Catalog scan with intro and summary panels         |
 | [`workflows/Access Model SOD - Notification.json`](workflows/Access%20Model%20SOD%20-%20Notification.json)             | — (event read-back)                          | `idn:account-created`              | Email access item owner from child persist account |
-| [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json)               | `custom:access-model-sod-remediation-apply`  | `sp:form-submitted`                | Apply catalog correction after form submit         |
+| [`workflows/Access Model SOD - Remediation.json`](workflows/Access%20Model%20SOD%20-%20Remediation.json)               | `custom:access-model-sod-remediation`        | `sp:form-submitted`                | Apply catalog correction after form submit         |
 | [`workflows/Machine Identity Entitlements.json`](workflows/Machine%20Identity%20Entitlements.json)                     | `custom:machine-identity-entitlements`       | `idn:interactive-process-launched` | Apply matched entitlements and present the summary |
 
 Shared invoke pattern (all connector-call workflows):
@@ -63,7 +63,7 @@ Shared invoke pattern (all connector-call workflows):
 -   **Configuration** variables → **Get Access Token** (OAuth) → HTTP POST `/beta/platform-connectors/{connectorId}/invoke` with `config.sourceName` (auto-provisions the DelimitedFile result source on first use)
 -   Persisted outputs are read via **Get Accounts** or, for access-model notifications, from the **account-created** event payload
 
-`custom:preventive-sod-check` and `custom:governance-group-emails` have no bundled exports — see their READMEs for invoke and branching contracts.
+`custom:governance-group-emails` has no bundled export — see its README for invoke and branching contracts. Access Request Pre-Check and Dynamic Approver workflows use `custom:evaluate-access-request` (see that operation README).
 
 ### Importing workflows
 
@@ -141,10 +141,10 @@ Each registered command documents its invoke contract, payloads, and workflow in
 | Command                                     | Documentation                                                                                                              |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `custom:example`                            | [src/operations/example/README.md](src/operations/example/README.md)                                                       |
+| `custom:evaluate-access-request`            | [src/operations/evaluate-access-request/README.md](src/operations/evaluate-access-request/README.md)                       |
 | `custom:governance-group-emails`            | [src/operations/governance-group-emails/README.md](src/operations/governance-group-emails/README.md)                       |
 | `custom:machine-identity-entitlements`      | [src/operations/machine-identity-entitlements/README.md](src/operations/machine-identity-entitlements/README.md)           |
 | `custom:access-model-sod-remediation`       | [src/operations/access-model-sod-remediation/README.md](src/operations/access-model-sod-remediation/README.md)             |
-| `custom:access-model-sod-remediation-apply` | [src/operations/access-model-sod-remediation-apply/README.md](src/operations/access-model-sod-remediation-apply/README.md) |
 | `custom:preventive-sod-check`               | [src/operations/preventive-sod-check/README.md](src/operations/preventive-sod-check/README.md)                             |
 | `custom:sod-remediation`                    | [src/operations/sod-remediation/README.md](src/operations/sod-remediation/README.md)                                       |
 
@@ -269,7 +269,7 @@ The reference workflow export demonstrates this pattern in the **Read SaaS Custo
 
 Copy `src/operations/_template/` to `src/operations/<slug>/` and implement your handler in `index.ts`. Copy and fill in `README.md` for invoke payloads and workflow integration. Declare `input` and `output` on an `OperationSignature` interface — the build generates a matching schema sidecar at `index.schema.ts`.
 
-**Layout:** every custom operation lives in `src/operations/<slug>/index.ts` with a co-located `README.md`. Domain modules, seeds, and operation-specific tests stay in the same folder. See [Custom operations](#custom-operations) for links to each operation's README. Generic ISC helpers live under `src/isc/<api-grouping>/` — one subdirectory per ISC API surface (forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, public-identities, recommendations, governance-groups, access-requests, events-search, sod-prediction). Account **schemas** are managed via `sources/` (SourcesApi); account **instances** via `accounts/` (AccountsApi). Each API folder MUST include an `index.ts` that exports its public API; consumers import from the folder entry (e.g. `../../isc/violations`). Shared pre-SDK HTTP transport lives in `src/isc/http/`. Cross-API orchestration belongs in identity-access only. Framework orchestration stays in `src/framework/`.
+**Layout:** every custom operation lives in `src/operations/<slug>/index.ts` with a co-located `README.md`. Domain modules, seeds, and operation-specific tests stay in the same folder unless shared across commands — those go under `src/lib/<name>/` (for example access-request risk scoring). See [Custom operations](#custom-operations) for links to each operation's README. Generic ISC helpers live under `src/isc/<api-grouping>/` — one subdirectory per ISC API surface (forms, sources, accounts, violations, controls, identity-history, access-profiles, roles, identity-access, token-identity, public-identities, recommendations, governance-groups, access-requests, events-search, sod-prediction). Account **schemas** are managed via `sources/` (SourcesApi); account **instances** via `accounts/` (AccountsApi). Each API folder MUST include an `index.ts` that exports its public API; consumers import from the folder entry (e.g. `../../isc/violations`). Shared pre-SDK HTTP transport lives in `src/isc/http/`. Cross-API orchestration belongs in identity-access only. Framework orchestration stays in `src/framework/`.
 
 Persist output attribute names MUST use the `{slug}:` prefix where `slug` is the command without `custom:` (e.g. `custom:my-operation` → `my-operation:result`).
 
@@ -395,8 +395,8 @@ ctx.verifyPersisted(ids)
 -   **`options.verify`** — optional, defaults to `true`; set to `false` to skip inline read-back verification
 
 Use operation-specific terms for concrete identities: for example, the
-`custom:evaluate-access-request-risk` operation's invoke `requestId` is its
-**risk persist identity** (bundled workflows send `evaluate-access-request-risk:{accessRequestId}:{discriminator}`).
+`custom:evaluate-access-request` risk attributes use the invoke `requestId` as the
+**risk persist identity** (bundled workflows send `evaluate-access-request-risk:{accessRequestId}:{discriminator}` or `access-request-precheck:{accessRequestId}:submitted`).
 **Result identity** is the generic framework term for the seam exposed by
 `ctx.resultIdentity`.
 
@@ -524,7 +524,7 @@ workflows/
   SOD Violation - Remediation.json         # Post-submit revoke / mitigate
   Access Model SOD - Analysis.json         # custom:access-model-sod-remediation scan
   Access Model SOD - Notification.json     # Child-account email on persist
-  Access Model SOD - Remediation.json      # custom:access-model-sod-remediation-apply
+  Access Model SOD - Remediation.json      # custom:access-model-sod-remediation (formInstanceId)
   Machine Identity Entitlements.json         # custom:machine-identity-entitlements interactive
 templates/            # Generated operator artifacts (gitignored; output of npm run templates)
 ```

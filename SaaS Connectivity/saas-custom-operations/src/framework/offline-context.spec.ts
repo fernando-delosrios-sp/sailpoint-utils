@@ -7,8 +7,7 @@ import { isOfflineContext } from './offline-context'
 const OFFLINE_BRANCHING_OPERATIONS = [
     'access-classification',
     'access-model-sod-remediation',
-    'access-model-sod-remediation-apply',
-    'evaluate-access-request-risk',
+    'evaluate-access-request',
     'governance-group-emails',
     'machine-identity-entitlements',
     'preventive-sod-check',
@@ -67,8 +66,13 @@ describe('operations use shared offline helper', () => {
             .filter((entry) => entry.isDirectory() && !['_template', 'example'].includes(entry.name))
             .map((entry) => entry.name)
             .filter((slug) => {
-                const source = readFileSync(join(operationsDir, slug, 'index.ts'), 'utf8')
-                return /\boffline\b/.test(source)
+                const indexPath = join(operationsDir, slug, 'index.ts')
+                try {
+                    const source = readFileSync(indexPath, 'utf8')
+                    return /\bisOfflineContext\(ctx\)/.test(source)
+                } catch {
+                    return false
+                }
             })
 
         expect(offlineBranchingSlugs.sort()).toEqual([...OFFLINE_BRANCHING_OPERATIONS].sort())

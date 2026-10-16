@@ -1,10 +1,11 @@
 export {
+    createEntitlementExpansionCache,
     expandAccessItemsToEntitlementIds,
     parseViolatedPolicies,
     parseViolatedPolicyNames,
     predictSodViolationsForIdentity,
 } from './predict-violations'
-export type { EntitlementExpansionClients } from './predict-violations'
+export type { EntitlementExpansionClients, ExpandAccessItemsOptions } from './predict-violations'
 export type { SodViolationPrediction } from './types'
 export {
     OFFLINE_ROLE_ENTITLEMENT_IDS,

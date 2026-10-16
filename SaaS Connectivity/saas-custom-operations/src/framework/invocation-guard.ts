@@ -15,7 +15,7 @@ export function clearInFlightInvocationsForTests(): void {
     inFlightInvocations.clear()
 }
 
-const APPLY_COMMAND = 'custom:access-model-sod-remediation-apply'
+const ACCESS_MODEL_SOD_COMMAND = 'custom:access-model-sod-remediation'
 
 /** Builds a dedupe key from command type and workflow requestId (or formInstanceId for apply). */
 export function invocationDedupeKey(commandType: string | undefined, input: Record<string, unknown>): string | undefined {
@@ -23,12 +23,11 @@ export function invocationDedupeKey(commandType: string | undefined, input: Reco
         return undefined
     }
 
-    if (commandType === APPLY_COMMAND) {
+    if (commandType === ACCESS_MODEL_SOD_COMMAND) {
         const formInstanceId = input.formInstanceId
-        if (formInstanceId == null || String(formInstanceId).trim() === '') {
-            return undefined
+        if (formInstanceId != null && String(formInstanceId).trim() !== '') {
+            return `${commandType}:apply:${String(formInstanceId).trim()}`
         }
-        return `${commandType}:${String(formInstanceId).trim()}`
     }
 
     const requestId = input.requestId

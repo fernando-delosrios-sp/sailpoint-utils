@@ -72,8 +72,7 @@ Workflow-ready example:
         "accessRequestId": "{{$.trigger.accessRequestId}}",
         "identityId": "{{$.trigger.requestedFor.id}}",
         "inflightOnly": "{{$.defineVariable.inflightOnly}}",
-        "requestedItems.$": "$.trigger.requestedItems",
-        "waitForPersist": false
+        "requestedItems.$": "$.trigger.requestedItems"
     },
     "config": {
         "apiUrl": "{{$.defineVariable.aPIURL}}",
@@ -87,9 +86,9 @@ Workflow-ready example:
 
 | Workflow | Contract |
 |---|---|
-| [`workflows/Access Request Pre-Check - Risk analysis and in-flight SOD.json`](../../../workflows/Access%20Request%20Pre-Check%20-%20Risk%20analysis%20and%20in-flight%20SOD.json) | [Access Request Submitted](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-submitted) event trigger. Runs this operation in request mode alongside `custom:evaluate-access-request-risk`, and denies on a detected violation |
+| [`workflows/Access Request Pre-Check - Risk analysis and SOD.json`](../../../workflows/Access%20Request%20Pre-Check%20-%20Risk%20analysis%20and%20SOD.json) | [Access Request Submitted](https://developer.sailpoint.com/docs/extensibility/event-triggers/triggers/access-request-submitted) event trigger. Invokes [`custom:evaluate-access-request`](../evaluate-access-request/README.md) with `evaluateSod` true |
 
-That workflow invokes with `requestId` `preventive-sod-check:{{$.trigger.accessRequestId}}:submitted` and filters **Read SoD Result** on the same value. It passes the trigger identity and requested items directly, so evaluation does not fail if the request leaves `EXECUTING` or its events have not been indexed. It also sets `waitForPersist` to `false`; the existing one-minute result-read retry covers account indexing without holding the connector HTTP call open. **Inflight Only** defaults to `true` in Configuration and is passed as `inflightOnly`.
+That workflow no longer calls this command directly. It invokes `custom:evaluate-access-request` with `requestId` `access-request-precheck:{{$.trigger.accessRequestId}}:submitted` and reads the result account after verified persist. Standalone callers of this command still use the default verified persistence behavior unless they set `waitForPersist` to `false`.
 
 The access token must also allow SoD policy read (`listSodPoliciesV1` / `getSodPolicyV1`) so the situation summary can include each policy's level.
 

@@ -300,7 +300,7 @@ The glossary SHALL define **child persist identity** as the result-source native
 
 ### Requirement: Form name vocabulary
 
-The glossary SHALL define **form name** as the tenant-visible Custom Forms definition name (`formName`) shared by `custom:access-model-sod-remediation` (ensure-from-seed) and `custom:access-model-sod-remediation-apply` (lookup). The same string selects the same form definition.
+The glossary SHALL define **form name** as the tenant-visible Custom Forms definition name (`formName`) shared by the scan path of `custom:access-model-sod-remediation` (ensure-from-seed) and its apply path (lookup when `formInstanceId` is set). The same string selects the same form definition.
 
 #### Scenario: Form name term
 
@@ -312,7 +312,7 @@ The glossary SHALL define **form name** as the tenant-visible Custom Forms defin
 
 ### Requirement: Form definition id vocabulary
 
-The glossary SHALL define **form definition id** as the ISC Custom Forms identifier of the form definition that spawned a form instance (`formDefinitionId`). It is the only supported filter on the tenant form instance list. For `custom:access-model-sod-remediation-apply`, the handler SHALL obtain it by looking up **form name**; it SHALL NOT be a required apply invoke input.
+The glossary SHALL define **form definition id** as the ISC Custom Forms identifier of the form definition that spawned a form instance (`formDefinitionId`). It is the primary filter on the tenant form instance list (optionally combined with instance id). For the apply path of `custom:access-model-sod-remediation`, the handler SHALL obtain it by looking up **form name**; it SHALL NOT be a required apply invoke input.
 
 #### Scenario: Form definition id term
 
@@ -324,7 +324,7 @@ The glossary SHALL define **form definition id** as the ISC Custom Forms identif
 
 ### Requirement: Apply persist identity term
 
-The glossary SHALL define **apply persist identity** as the result-source account identity holding `custom:access-model-sod-remediation-apply` outputs, `{requestId}:{formInstanceId}`. Bundled workflows SHALL set `requestId` to `access-model-sod-remediation-apply`, producing `access-model-sod-remediation-apply:{formInstanceId}`. Normative text SHALL use the same term for the identity the prior-apply idempotency check reads. The glossary SHALL define **legacy apply persist identity** as a bare `{formInstanceId}` account written before the command name appeared in the identity, read-only input to that check.
+The glossary SHALL define **apply persist identity** as the result-source account identity holding apply-path outputs of `custom:access-model-sod-remediation` (attribute prefix `access-model-sod-remediation-apply:`), `{requestId}:{formInstanceId}`. Bundled workflows SHALL set `requestId` to `access-model-sod-remediation-apply`, producing `access-model-sod-remediation-apply:{formInstanceId}`. Normative text SHALL use the same term for the identity the prior-apply idempotency check reads. The glossary SHALL define **legacy apply persist identity** as a bare `{formInstanceId}` account written before the command name appeared in the identity, read-only input to that check.
 
 #### Scenario: Apply persist identity term
 
@@ -343,7 +343,7 @@ The glossary SHALL define **apply persist identity** as the result-source accoun
 
 ### Requirement: Risk persist identity term
 
-The glossary SHALL define **risk persist identity** as the result-source account identity holding `custom:evaluate-access-request-risk` outputs, equal to the invoke `requestId`. Bundled Risk Approval workflows SHALL spell that `requestId` `evaluate-access-request-risk:{accessRequestId}:{discriminator}`. Normative text SHALL use the same term for the identity the bundled workflows read back and for the identity the framework failure path writes.
+The glossary SHALL define **risk persist identity** as the result-source account identity holding `custom:evaluate-access-request` risk outputs, equal to the invoke `requestId`. Bundled Risk Approval workflows SHALL spell that `requestId` `evaluate-access-request-risk:{accessRequestId}:{discriminator}`. Normative text SHALL use the same term for the identity the bundled workflows read back and for the identity the framework failure path writes.
 
 #### Scenario: Risk persist identity term
 
@@ -452,7 +452,7 @@ The glossary SHALL define **deciding rule** as the named reason a **risk driver*
 
 ### Requirement: Description audit line term
 
-The glossary SHALL define **description audit line** as the single line `custom:access-model-sod-remediation-apply` appends to a corrected role or access profile description, opening with `[access-model-sod-remediation-apply {timestamp}]`.
+The glossary SHALL define **description audit line** as the single line the apply path of `custom:access-model-sod-remediation` appends to a corrected role or access profile description, opening with `[access-model-sod-remediation-apply {timestamp}]`.
 
 #### Scenario: Description audit line term
 
@@ -464,13 +464,13 @@ The glossary SHALL define **description audit line** as the single line `custom:
 
 ### Requirement: Access model SoD remediation apply term
 
-The glossary SHALL define **access model SoD remediation apply** as the custom operation `custom:access-model-sod-remediation-apply` that applies a completed access-model SoD remediation form decision to the ISC catalog access item under review.
+The glossary SHALL define **access model SoD remediation apply** as the apply path of `custom:access-model-sod-remediation` (when `formInstanceId` is set) that applies a completed access-model SoD remediation form decision to the ISC catalog access item under review.
 
 #### Scenario: Preferred command spelling
 
 - **GIVEN** specs or README describe applying a completed access-model SoD remediation form
 - **WHEN** normative text names the apply operation
-- **THEN** the preferred command SHALL be `custom:access-model-sod-remediation-apply`
+- **THEN** the preferred command SHALL be `custom:access-model-sod-remediation` with `formInstanceId` set
 - **AND** persist output keys SHALL use prefix `access-model-sod-remediation-apply:`
 
 #### Scenario: Distinct from identity sod remediation
@@ -478,13 +478,13 @@ The glossary SHALL define **access model SoD remediation apply** as the custom o
 - **GIVEN** documentation lists SoD remediation operations
 - **WHEN** access model catalog apply is described
 - **THEN** it SHALL distinguish **access model SoD remediation apply** from `custom:sod-remediation` identity violation response
-- **AND** the **description audit line** label SHALL name the apply command so catalog descriptions do not read as `custom:sod-remediation` output
+- **AND** the **description audit line** label SHALL open with `[access-model-sod-remediation-apply` so catalog descriptions do not read as `custom:sod-remediation` output
 
 #### Scenario: Apply inputs
 
 - **GIVEN** specs describe invoke input for access model SoD remediation apply
 - **WHEN** normative text names required fields
-- **THEN** it SHALL require `formInstanceId` and **form name** (`formName`)
+- **THEN** it SHALL require `formInstanceId` and **form name** (`formName`) on `custom:access-model-sod-remediation`
 - **AND** SHALL note the **apply persist identity** is `{requestId}:{formInstanceId}`
 - **AND** SHALL NOT require `formDefinitionId` as invoke input
 
@@ -614,32 +614,32 @@ The glossary SHALL define **underlying account** as an ISC account correlated to
 ## Term entries
 
 ### Term: Form name
-**Context**: connector-operations / access-model-sod-remediation / access-model-sod-remediation-apply
+**Context**: connector-operations / access-model-sod-remediation
 **Definition**: The tenant-visible Custom Forms definition name (`formName`) that identifies the shared access-model SoD remediation form.
 **Aliases**: formDefinitionId (rejected as apply invoke input)
-**Notes**: Scan ensures the definition from seed; apply looks up the existing definition by this name then lists instances by the resolved form definition id.
+**Notes**: Scan ensures the definition from seed; apply looks up the existing definition by this name then loads the instance by the resolved form definition id.
 
 ### Term: Form definition id
-**Context**: connector-operations / access-model-sod-remediation-apply / target-client/forms
+**Context**: connector-operations / access-model-sod-remediation / target-client/forms
 **Definition**: The ISC Custom Forms identifier of the form definition that spawned a form instance (`formDefinitionId`).
 **Aliases**: formId (rejected shorthand)
-**Notes**: Internal list filter for tenant form instances. Apply obtains it via form name lookup; it is not an apply invoke field. Distinct from `formInstanceId`.
+**Notes**: Internal list filter for tenant form instances (optionally combined with instance id). Apply obtains it via form name lookup; it is not an apply invoke field. Distinct from `formInstanceId`.
 
 ### Term: Apply persist identity
-**Context**: connector-operations / access-model-sod-remediation-apply
-**Definition**: The result-source account identity holding `custom:access-model-sod-remediation-apply` outputs: `{requestId}:{formInstanceId}`.
+**Context**: connector-operations / access-model-sod-remediation
+**Definition**: The result-source account identity holding apply-path outputs (`access-model-sod-remediation-apply:*`): `{requestId}:{formInstanceId}`.
 **Aliases**: bare `{formInstanceId}` identity (superseded)
-**Notes**: Callers put the command name in `requestId`. The bundled Remediation workflow uses `requestId` `access-model-sod-remediation-apply`, so the identity is `access-model-sod-remediation-apply:{formInstanceId}`. Same identity the prior-apply check reads first and the replay path writes.
+**Notes**: Bundled Remediation workflow uses `requestId` `access-model-sod-remediation-apply`, so the identity is `access-model-sod-remediation-apply:{formInstanceId}`. Same identity the prior-apply check reads first and the replay path writes.
 
 ### Term: Legacy apply persist identity
-**Context**: connector-operations / access-model-sod-remediation-apply
+**Context**: connector-operations / access-model-sod-remediation
 **Definition**: A bare `{formInstanceId}` result-source account written by apply before the **apply persist identity** included a `requestId` segment.
 **Aliases**: none
 **Notes**: Read-only fallback for the prior-apply idempotency check, after `{requestId}:{formInstanceId}` and `access-model-sod-remediation-apply:{formInstanceId}`. Never written, updated, or deleted.
 
 ### Term: Risk persist identity
 **Context**: connector-operations / evaluate-access-request-risk
-**Definition**: The result-source account identity holding `custom:evaluate-access-request-risk` outputs: the invoke `requestId`.
+**Definition**: The result-source account identity holding `custom:evaluate-access-request` risk outputs: the invoke `requestId`.
 **Aliases**: none
 **Notes**: The handler persists `requestId` verbatim. Bundled Risk Approval workflows set `requestId` to `evaluate-access-request-risk:{accessRequestId}:{discriminator}`. Same identity the workflows read back and the framework failure path writes.
 
@@ -674,14 +674,14 @@ The glossary SHALL define **underlying account** as an ISC account correlated to
 **Notes**: Only entitlements can be decided by effective privilege. Roles and access profiles are always decided by Risk metadata. A driver matching both is attributed to effective privilege only.
 
 ### Term: Description audit line
-**Context**: connector-operations / access-model-sod-remediation-apply / target-client/roles / target-client/access-profiles
+**Context**: connector-operations / access-model-sod-remediation / target-client/roles / target-client/access-profiles
 **Definition**: The single line appended to a corrected role or access profile description by apply, opening with `[access-model-sod-remediation-apply {timestamp}]`.
 **Aliases**: `[SOD remediation {timestamp}]` label (deprecated)
 **Notes**: Body carries policy name and id, remediation side, detached access profiles, removed entitlements, form instance id, and optional submitter and comments. Appended, never replacing prior description text, and persisted as `access-model-sod-remediation-apply:description-appended`.
 
 ### Term: Access model SoD remediation apply
-**Context**: connector-operations / access-model-sod-remediation-apply
-**Definition**: The custom operation that reads a completed access-model SoD remediation form instance and mutates the referenced role or access profile in the ISC catalog per `remediationSide`.
+**Context**: connector-operations / access-model-sod-remediation
+**Definition**: The apply path of `custom:access-model-sod-remediation` (when `formInstanceId` is set) that reads a completed form instance and mutates the referenced role or access profile in the ISC catalog per `remediationSide`.
 **Aliases**: none
 **Notes**: Required inputs are `formInstanceId` and `formName`; the **apply persist identity** is `{requestId}:{formInstanceId}`, with read-only fallbacks to `access-model-sod-remediation-apply:{formInstanceId}` and the **legacy apply persist identity**.
 

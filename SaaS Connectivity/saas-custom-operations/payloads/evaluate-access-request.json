@@ -1,0 +1,17 @@
+{
+    "type": "custom:evaluate-access-request",
+    "input": {
+        "requestId": "access-request-precheck:offline-precheck-001:submitted",
+        "accessRequestId": "offline-access-request",
+        "identityId": "offline-preventive-identity",
+        "inflightOnly": true,
+        "evaluateSod": true,
+        "requestedItems": [
+            {
+                "id": "offline-ent-high",
+                "type": "ENTITLEMENT",
+                "name": "Offline privileged entitlement"
+            }
+        ]
+    }
+}

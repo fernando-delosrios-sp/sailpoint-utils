@@ -303,9 +303,13 @@ describe('verifyAccountWrite', () => {
         expect(sleep).toHaveBeenCalledWith(500)
     })
 
-    it('reads by ISC account id when provided', async () => {
-        const readAccount = vi.fn()
+    it('waits for the nativeIdentity read the workflow uses when a direct account read is already available', async () => {
+        const readAccount = vi
+            .fn()
+            .mockResolvedValueOnce(undefined)
+            .mockResolvedValueOnce({ outcome: 'updated' })
         const readAccountByIscId = vi.fn().mockResolvedValue({ outcome: 'updated' })
+        const sleep = vi.fn().mockResolvedValue(undefined)
 
         await verifyAccountWrite(
             {
@@ -313,14 +317,16 @@ describe('verifyAccountWrite', () => {
                 upsertAccount: vi.fn(),
                 readAccount,
                 readAccountByIscId,
+                sleep,
             },
             'req-001',
             { outcome: 'updated' },
             'isc-account-1'
         )
 
-        expect(readAccountByIscId).toHaveBeenCalledWith('isc-account-1')
-        expect(readAccount).not.toHaveBeenCalled()
+        expect(readAccountByIscId).not.toHaveBeenCalled()
+        expect(readAccount).toHaveBeenCalledTimes(2)
+        expect(sleep).toHaveBeenCalledWith(500)
     })
 })
 

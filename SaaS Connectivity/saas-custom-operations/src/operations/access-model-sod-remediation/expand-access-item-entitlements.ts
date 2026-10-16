@@ -1,4 +1,5 @@
 import { AccessProfilesApi, RolesApi } from 'sailpoint-api-client'
+import { DEFAULT_ISC_CONCURRENCY, mapWithConcurrency } from '../../framework/concurrency'
 import { listAccessProfileEntitlements } from '../../isc/access-profiles/access-profile-entitlements'
 import { CatalogAccessItem } from '../../isc/roles/list-enabled-roles'
 import { listRoleEntitlements } from '../../isc/roles/role-entitlements'
@@ -65,27 +66,36 @@ export async function expandAccessItemEntitlements(
     }
 
     const roleResponse = await clients.roles.getRoleV1({ id: item.id })
-    const accessProfiles = roleResponse.data?.accessProfiles ?? []
+    const accessProfiles = (roleResponse.data?.accessProfiles ?? []).filter(
+        (profileRef): profileRef is { id: string; name?: string } => Boolean(profileRef.id)
+    )
 
-    for (const profileRef of accessProfiles) {
-        if (!profileRef.id) {
-            continue
-        }
-
+    const nestedBundles = await mapWithConcurrency(accessProfiles, DEFAULT_ISC_CONCURRENCY, async (profileRef) => {
         const profileEntitlements = await listAccessProfileEntitlements(clients.accessProfiles, profileRef.id)
         const nestedEntitlements: EntitlementRef[] = []
         for (const entitlement of profileEntitlements) {
-            addEntitlement(entitlementIds, entitlements, entitlement.id, entitlement.name)
             nestedEntitlements.push({ id: entitlement.id, name: entitlement.name })
         }
 
-        if (nestedEntitlements.length > 0) {
-            nestedProfiles.push({
-                id: profileRef.id,
-                name: profileRef.name ?? profileRef.id,
-                entitlements: nestedEntitlements,
-            })
+        if (nestedEntitlements.length === 0) {
+            return undefined
         }
+
+        return {
+            id: profileRef.id,
+            name: profileRef.name ?? profileRef.id,
+            entitlements: nestedEntitlements,
+        } satisfies NestedAccessProfileBundle
+    })
+
+    for (const bundle of nestedBundles) {
+        if (!bundle) {
+            continue
+        }
+        for (const entitlement of bundle.entitlements) {
+            addEntitlement(entitlementIds, entitlements, entitlement.id, entitlement.name)
+        }
+        nestedProfiles.push(bundle)
     }
 
     return { entitlementIds, entitlements, nestedProfiles }

@@ -11,3 +11,13 @@ export const VALID_SEARCH_INDICES = new Set<string>(DEFAULT_SEARCH_INDICES)
 export function childPersistIdentity(requestId: string, accessItemId: string, policyId: string): string {
     return `${requestId}:${accessItemId}:${policyId}`
 }
+
+/** Builds the apply persist identity: invoke `requestId` plus form instance id. */
+export function applyPersistIdentity(requestId: string, formInstanceId: string): string {
+    return `${requestId}:${formInstanceId}`
+}
+
+/** Result-source identity written before persist used `{requestId}:{formInstanceId}`. */
+export function legacyPrefixedApplyPersistIdentity(formInstanceId: string): string {
+    return `access-model-sod-remediation-apply:${formInstanceId}`
+}

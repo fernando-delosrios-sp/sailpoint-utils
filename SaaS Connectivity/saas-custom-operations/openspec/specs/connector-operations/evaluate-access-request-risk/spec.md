@@ -59,11 +59,11 @@ The evaluate-access-request-risk operation SHALL persist failed accounts on the 
 
 ### Requirement: Bundled risk workflows send and read the same request id
 
-Each bundled Risk Approval workflow SHALL set `Call Evaluate Risk` `input.requestId` to the **risk persist identity** and SHALL filter `Read Risk Result` on that same value, for `Access Request Pre-Check - Risk analysis and in-flight SOD`, `Dynamic Approver - Risk analysis`, and `Dynamic Approval Workflow - Risk analysis`. A test SHALL assert this pairing against the shipped workflow JSON so the invoke and read-back sides cannot drift independently.
+Each bundled Risk Approval workflow SHALL set `Call Evaluate Risk` `input.requestId` to the **risk persist identity** and SHALL filter `Read Risk Result` on that same value, for `Access Request Pre-Check - Risk analysis and SOD`, `Dynamic Approver - Risk analysis`, and `Dynamic Approval Workflow - Risk analysis`. A test SHALL assert this pairing against the shipped workflow JSON so the invoke and read-back sides cannot drift independently.
 
-#### Scenario: Access Request Pre-Check - Risk analysis and in-flight SOD reads the prefixed identity
+#### Scenario: Access Request Pre-Check - Risk analysis and SOD reads the prefixed identity
 
-- **GIVEN** the shipped `Access Request Pre-Check - Risk analysis and in-flight SOD.json`
+- **GIVEN** the shipped `Access Request Pre-Check - Risk analysis and SOD.json`
 - **WHEN** its `Call Evaluate Risk` `requestId` and `Read Risk Result` filter value are read
 - **THEN** both SHALL be `evaluate-access-request-risk:{{$.trigger.accessRequestId}}:submitted`
 

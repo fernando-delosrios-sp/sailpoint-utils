@@ -14,7 +14,8 @@ Distinct from `custom:sod-remediation`, which remediates existing **identity vio
 
 | Field           | Required | Default                                        | Description                                                                                                                                                     |
 | --------------- | -------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `formName`      | Yes      | —                                              | Shared tenant form definition name (ensure-from-seed on first use)                                                                                              |
+| `formName`      | Yes      | —                                              | Shared tenant form definition name (ensure-from-seed on scan; lookup-only on apply)                                                                              |
+| `formInstanceId` | No     | —                                              | When set, apply the completed form decision to the catalog instead of scanning                                                                                  |
 | `scope`         | No       | `"*"`                                          | ISC search filter; `"*"` lists all enabled items in each selected index                                                                                         |
 | `searchIndices` | No       | `["accessprofiles","roles"]`                   | Catalogs to scan; only `accessprofiles` and `roles` allowed                                                                                                     |
 | `policyScope`   | No       | `state eq "ENFORCED"`                          | Filter for SoD policies to evaluate                                                                                                                             |
@@ -96,13 +97,13 @@ Offline: [`payloads/access-model-sod-remediation-offline.json`](../../../payload
 
 ## Bundled workflows
 
-Three ISC workflow exports under [`workflows/`](../../../workflows/) implement proactive access-model SoD remediation. Import all three and re-point **Configuration** variables to your tenant. Pair with [`custom:access-model-sod-remediation-apply`](../access-model-sod-remediation-apply/README.md) for the post-submit catalog correction step.
+Three ISC workflow exports under [`workflows/`](../../../workflows/) implement proactive access-model SoD remediation. Import all three and re-point **Configuration** variables to your tenant. After form submit, invoke the same command with `formInstanceId` to apply the catalog correction.
 
 | Export                                                                                                              | Trigger                                                          | Role                                                             |
 | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
 | [`workflows/Access Model SOD - Analysis.json`](../../../workflows/Access%20Model%20SOD%20-%20Analysis.json)         | `idn:interactive-process-launched`                               | Explain the scan, invoke this operation, then report the outcome |
 | [`workflows/Access Model SOD - Notification.json`](../../../workflows/Access%20Model%20SOD%20-%20Notification.json) | `idn:account-created` (filtered by `operationName`)              | Email access item owner when a child persist account is created  |
-| [`workflows/Access Model SOD - Remediation.json`](../../../workflows/Access%20Model%20SOD%20-%20Remediation.json)   | `sp:form-submitted` (filtered by remediation form definition ID) | Invoke `custom:access-model-sod-remediation-apply`               |
+| [`workflows/Access Model SOD - Remediation.json`](../../../workflows/Access%20Model%20SOD%20-%20Remediation.json)   | `sp:form-submitted` (filtered by remediation form definition ID) | Invoke `custom:access-model-sod-remediation` with `formInstanceId` |
 
 End-to-end flow:
 
@@ -128,7 +129,7 @@ Access item owner submits form (remediationSide)
         │
         ▼
 Access Model SOD - Remediation
-  OAuth → invoke custom:access-model-sod-remediation-apply
+  OAuth → invoke custom:access-model-sod-remediation (formInstanceId)
 ```
 
 **Analysis workflow integration**
@@ -158,7 +159,7 @@ Each child account creation fires one notification. Skipped violations (existing
 
 **Remediation workflow integration**
 
-Handled by [`custom:access-model-sod-remediation-apply`](../access-model-sod-remediation-apply/README.md) — see that README for apply semantics. The export invokes apply with `formInstanceId` from `$.trigger.formInstanceId` and the same `formName` (`Access Model SOD Remediation`) used by Analysis.
+The export invokes the same command with `formInstanceId` from `$.trigger.formInstanceId` and the same `formName` (`Access Model SOD Remediation`) used by Analysis. See **Apply path** below.
 
 > **Import note:** Re-point the Analysis trigger filter and workflow `id` to the id ISC assigns after import, then bind an interactive process. Re-point form-submitted trigger `formDefinitionId` on Remediation to your tenant's **Access Model SOD Remediation** form definition (created or patched on first scan invoke). Connector IDs and OAuth refs are tenant-specific.
 
@@ -170,7 +171,16 @@ Manual or custom orchestration follows the same contract as the bundled exports:
 2. For each violation, read **child** account at native identity `{requestId}:{accessItemId}:{policyId}` for `form-url` and `form-email-*` fields — or rely on an account-created event as the Notification export does.
 3. Notify access item owner via Send Email using `form-email-header`, `form-email-body`, and `form-email-recipients` (bind to `recipientEmailList`).
 4. On form submit, read `formData.remediationSide` (`groupA` | `groupB`) and entitlement id lists from **`formInput`** (`groupAIds`, `groupBIds` — JSON-stringified arrays, e.g. `JSON.parse(formInput.groupAIds)`).
-5. Invoke `custom:access-model-sod-remediation-apply` with `formInstanceId` from the form trigger and the same `formName` used by the scan to apply the catalog correction (detach nested APs from roles or remove direct entitlements; remove entitlements from AP definitions when the access item is an AP). Re-invokes for the same form instance are idempotent — expect `skipped-already-applied` when a prior apply persist exists, or `skipped-already-clean` when the catalog already matches the decision. Manual Get Accounts read-back of apply output uses native identity `access-model-sod-remediation-apply:{formInstanceId}`.
+5. Invoke `custom:access-model-sod-remediation` again with `formInstanceId` from the form trigger and the same `formName` used by the scan to apply the catalog correction (detach nested APs from roles or remove direct entitlements; remove entitlements from AP definitions when the access item is an AP). Re-invokes for the same form instance are idempotent — expect `skipped-already-applied` when a prior apply persist exists, or `skipped-already-clean` when the catalog already matches the decision. Manual Get Accounts read-back of apply output uses native identity `access-model-sod-remediation-apply:{formInstanceId}`.
+
+
+## Apply path
+
+When `formInstanceId` is set, the same command applies a completed remediation form to the ISC catalog. Detaches nested access profiles from roles or removes direct role entitlements; removes entitlements from access profile definitions when the violated item is an AP. Appends an audit line opening with `[access-model-sod-remediation-apply {timestamp}]`. Persist attributes keep the `access-model-sod-remediation-apply:` prefix. Persist identity is `{requestId}:{formInstanceId}` (bundled workflow uses `requestId` `access-model-sod-remediation-apply`).
+
+The handler resolves `formName` to a definition id, then loads the instance with `searchFormInstancesByTenantV1` filtered to `formDefinitionId` and `id` (`limit` 1). It does not call `getFormInstanceByKeyV1`. Prior terminal apply accounts are checked with a single `nativeIdentity`+`sourceId` list (current identity, then `access-model-sod-remediation-apply:{formInstanceId}`, then bare `{formInstanceId}`).
+
+Offline: [`payloads/access-model-sod-remediation-apply-offline.json`](../../../payloads/access-model-sod-remediation-apply-offline.json)
 
 ## Form submit contract
 

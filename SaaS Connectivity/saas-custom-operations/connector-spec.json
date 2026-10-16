@@ -3,8 +3,7 @@
 	"commands": [
 		"custom:access-classification",
 		"custom:access-model-sod-remediation",
-		"custom:access-model-sod-remediation-apply",
-		"custom:evaluate-access-request-risk",
+		"custom:evaluate-access-request",
 		"custom:example",
 		"custom:governance-group-emails",
 		"custom:machine-identity-entitlements",

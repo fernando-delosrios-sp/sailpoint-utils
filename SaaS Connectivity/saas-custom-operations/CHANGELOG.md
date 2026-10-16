@@ -2,6 +2,18 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-10-15 · v0.8.2
+
+### 🔧 Improvements
+
+-   **Access-model SoD scan and apply share one command** — `custom:access-model-sod-remediation-apply` is removed. Invoke `custom:access-model-sod-remediation` with `formInstanceId` to apply a completed remediation form; omit it to scan. Persist attribute prefixes (`access-model-sod-remediation-apply:*`), description audit labels, and `{requestId}:{formInstanceId}` persist identities are unchanged. Re-import `Access Model SOD - Remediation` so its invoke `type` is `custom:access-model-sod-remediation`.
+
+-   **Cheaper existence and form-instance lookups** — scan and prior-apply checks use a single `nativeIdentity`+`sourceId` account list (no full-source scan on a miss). Apply loads the submitted form with `formDefinitionId` and `id` (`limit` 1), falling back to the definition-only page walk only when that filter returns HTTP 400.
+
+-   **Scan overlaps independent ISC reads** — catalog listing, policy load, and access-item entitlement expansion run with bounded concurrency; unchanged skipped child accounts skip a redundant persist.
+
+---
+
 ## 2026-09-25 · v0.7.0
 
 ### ✨ New Features
@@ -238,8 +250,15 @@ All notable changes to **saas-custom-operations** are documented here.
 
 ## Unreleased
 
+### ✨ New Features
+
+-   **`custom:evaluate-access-request` replaces the risk and pre-check commands** — one command scores risk and optionally preventive SoD. `evaluateRisk` defaults to true; `evaluateSod` defaults to false; both may be enabled for the Access Request Submitted pre-check. Enabled checks run concurrently with a shared entitlement expansion cache. `waitForPersist` defaults to true so workflows can read the indexed result account. Wrapper `requestId` values stay the same (`evaluate-access-request-risk:…:dynamic`, `…:dynamic-approval`, `access-request-precheck:…:submitted`). Removed `custom:evaluate-access-request-risk` and `custom:access-request-precheck`. `custom:preventive-sod-check` remains for non-request callers.
+-   **Invocation-wide ISC concurrency and safer 429 handling** — the shared Axios client caps in-flight tenant calls (default 5) across nested risk/SoD fan-out. Throttle retries honor `Retry-After` without shortening it, use jittered exponential backoff when the header is absent, pause sibling requests during a shared cooldown, and surface a 429 when the server asks to wait longer than the allowed retry budget.
+
 ### 🔧 Improvements
 
+-   **Access-request risk scoring lives under `src/lib/access-request-risk/`** — the former `src/operations/evaluate-access-request-risk/` folder is a library only (no connector command). `custom:evaluate-access-request` imports it from there; persist attribute keys stay `evaluate-access-request-risk:*`.
+-   **Risk and SoD evaluators overlap independent ISC reads** — roles, access profiles, entitlements, grant event searches, entitlement expansions, and SoD policy-level lookups use bounded concurrency with in-flight memoization. Request-mode SoD expands the baseline entitlement set once and runs baseline/full predict concurrently when both are needed. `custom:preventive-sod-check` scoring semantics are unchanged for standalone callers.
 -   **Optional `disableLinks` on SoD remediation launch commands** — `custom:access-model-sod-remediation` and `custom:sod-remediation` accept optional boolean input `disableLinks`. When `true`, form HTML entity names render as plain escaped text (no ISC admin UI anchors in `situationSummaryHtml` or group columns) even when `config.apiUrl` is present. Omitted or `false` preserves current linked behavior. Remediation form URL output and email **Remediate here** CTA are unchanged.
 -   **Bundled workflow integration docs** — Operation READMEs and the root README reference exports under `workflows/` (SOD Violation and Access Model SOD lifecycles), document triggers, JSONPaths, and end-to-end integration patterns, and replace stale `SOD Remediation - Violation Response` / `Action` filenames.
 -   **Unified SoD form context panels and ISC admin links** — Both `custom:sod-remediation` and `custom:access-model-sod-remediation` now assemble a single upper `situationSummaryHtml` context panel with **What we found** / **What we need from you** blocks, ⚠️ signposting, and ISC admin deep links on entity display names when `config.apiUrl` is present (`resolveUiOrigin` + `renderIscUiLink` in `src/lib/sod-form-html/`). sod-remediation links identity, policy, access-path lines, and grantor references; violation id stays plain text with a separate **View SOD violations** list link. access-model adds programmatic `situationSummaryHtml` at launch (replacing static seed metadata). Offline invoke omits links. Persisted email bodies stay compact without entity deep links. **Form definition migration:** re-invoke with the **same** `formName` after upgrade — stale seed fingerprints are patched in place on the existing definition; new instances pick up the layout. Already-assigned instances keep prior HTML until recreated.

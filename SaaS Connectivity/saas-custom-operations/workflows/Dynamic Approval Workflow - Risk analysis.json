@@ -1,7 +1,7 @@
 {
   "id": "YOUR_DYNAMIC_APPROVAL_WORKFLOW_ID",
   "name": "Dynamic Approval Workflow - Risk analysis",
-  "description": "Adaptive Approvals wrapper. Native Access Request Submitted trigger plus one Approval Policy per risk tier. Scores with custom:evaluate-access-request-risk, then opens the High, Medium, or Low policy. Bind each policy's reviewer in the builder. Enable this workflow, then set the access item Approval Type to this workflow. A failed evaluation, or a missing tier, opens the Evaluation Failed policy rather than the High one.",
+  "description": "Adaptive Approvals wrapper. Native Access Request Submitted trigger plus one Approval Policy per risk tier. Scores with custom:evaluate-access-request, then opens the High, Medium, or Low policy. Bind each policy's reviewer in the builder. Enable this workflow, then set the access item Approval Type to this workflow. A failed evaluation, or a missing tier, opens the Evaluation Failed policy rather than the High one.",
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -79,7 +79,7 @@
               "requestedItems.$": "$.trigger.requestedItems"
             },
             "tag": "latest",
-            "type": "custom:evaluate-access-request-risk"
+            "type": "custom:evaluate-access-request"
           },
           "method": "post",
           "param_authenticationRef": "none",

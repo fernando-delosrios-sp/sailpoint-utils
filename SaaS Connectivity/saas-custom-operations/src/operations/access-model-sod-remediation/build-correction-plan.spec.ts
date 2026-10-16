@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ExpandedAccessItemEntitlements } from '../access-model-sod-remediation/expand-access-item-entitlements'
+import { ExpandedAccessItemEntitlements } from './expand-access-item-entitlements'
 import { buildCorrectionPlan, isCorrectionPlanEmpty } from './build-correction-plan'
 import { ParsedFormInstance } from './parse-form-instance'
 
