@@ -23,7 +23,7 @@ export async function listActiveViolationPoliciesForIdentity(
     config: IscClientConfig,
     identityId: string
 ): Promise<PolicyNameRef[]> {
-    const filter = encodeURIComponent(`identityId eq "${identityId}"`)
+    const filter = encodeURIComponent(`targetId eq "${identityId}"`)
     const raw = await iscGet<ViolationListEntry[] | { items?: ViolationListEntry[] }>(
         config,
         `/violations/v1?filters=${filter}&limit=250`,

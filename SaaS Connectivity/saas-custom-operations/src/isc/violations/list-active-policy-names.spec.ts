@@ -3,7 +3,7 @@ import { EXPERIMENTAL_HEADER } from '../http'
 import { listActiveViolationPoliciesForIdentity, listActiveViolationPolicyNamesForIdentity } from './list-active-policy-names'
 
 describe('violations/list-active-policy-names', () => {
-    it('listActiveViolationPolicyNamesForIdentity calls GET /violations/v1 with identity filter', async () => {
+    it('listActiveViolationPolicyNamesForIdentity calls GET /violations/v1 with targetId filter', async () => {
         const fetchFn = vi.fn().mockResolvedValue({
             ok: true,
             json: async () => [
@@ -23,7 +23,7 @@ describe('violations/list-active-policy-names', () => {
         )
 
         expect(fetchFn).toHaveBeenCalledWith(
-            expect.stringContaining('/violations/v1?filters='),
+            expect.stringContaining(`/violations/v1?filters=${encodeURIComponent('targetId eq "identity-1"')}`),
             expect.objectContaining({
                 headers: expect.objectContaining({
                     Authorization: 'Bearer token',

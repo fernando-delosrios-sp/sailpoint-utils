@@ -2,6 +2,14 @@
 
 All notable changes to **saas-custom-operations** are documented here.
 
+## 2026-10-16 · v0.8.3
+
+### 🐛 Fixes
+
+-   **Access request pre-check can read existing SoD violations** — `GET /violations/v1` rejects `identityId` as a filter, so every pre-check that included existing violations failed with HTTP 400 and denied the request as "could not complete." The list now filters on `targetId`, which is the identity the violation is for.
+
+---
+
 ## 2026-10-15 · v0.8.2
 
 ### 🔧 Improvements
