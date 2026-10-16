@@ -1,5 +1,5 @@
 {
-  "name": "AD Account Cleanup",
+  "name": "Microsoft Active Directory Account Cleanup",
   "description": "Interactive process that removes owners from nhi.* accounts on Microsoft Active Directory @emea-tes-team (NHI), uncorrelates oam.* accounts on Microsoft Active Directory @emea-tes-team (Users), then starts a full account aggregation on that Users source.",
   "enabled": true,
   "owner": {
@@ -59,7 +59,7 @@
           "formDefinitionId": "bc87e97e-56d2-45e1-93af-9bef1b0c9616",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
           "ownerId.$": "$.trigger.launchedBy.id",
-          "title": "AD account cleanup"
+          "title": "Microsoft Active Directory Account Cleanup"
         },
         "description": "Operator confirms that both the owner removal and the uncorrelation should run.",
         "displayName": "Form: Confirm both actions",
@@ -77,6 +77,18 @@
               "name": "url",
               "transforms": [],
               "variableA": "https://company24509-poc.api.identitynow-demo.com"
+            },
+            {
+              "description": "Source id of Microsoft Active Directory @emea-tes-team (Users). Lists oam.* accounts and starts the full account aggregation.",
+              "name": "usersSourceId",
+              "transforms": [],
+              "variableA": "a67f790e42c04da3bdba05d7dd7ccdd9"
+            },
+            {
+              "description": "Source id of Microsoft Active Directory @emea-tes-team (NHI). Lists nhi.* machine accounts.",
+              "name": "nhiSourceId",
+              "transforms": [],
+              "variableA": "4327b3e911174ab5b5bb75f9c82764b8"
             },
             {
               "description": "Interactive process id, passed into the loops so a failure message can be posted.",
@@ -151,7 +163,7 @@
           "requestHeaders": {
             "X-SailPoint-Experimental": "true"
           },
-          "url": "{{$.defineVariable.url}}/v2025/machine-accounts?limit=250&filters=name%20sw%20%22nhi.%22%20and%20source.id%20eq%20%224327b3e911174ab5b5bb75f9c82764b8%22"
+          "url": "{{$.defineVariable.url}}/v2025/machine-accounts?limit=250&filters=name%20sw%20%22nhi.%22%20and%20source.id%20eq%20%22{{$.defineVariable.nhiSourceId}}%22"
         },
         "catch": [
           {
@@ -190,7 +202,7 @@
             "refID": "dd7413ed-abde-40f3-9a71-e623f8971d9a"
           },
           "requestContentType": "json",
-          "url": "{{$.defineVariable.url}}/v3/accounts?limit=250&filters=sourceId%20eq%20%22a67f790e42c04da3bdba05d7dd7ccdd9%22%20and%20name%20sw%20%22oam.%22"
+          "url": "{{$.defineVariable.url}}/v3/accounts?limit=250&filters=sourceId%20eq%20%22{{$.defineVariable.usersSourceId}}%22%20and%20name%20sw%20%22oam.%22"
         },
         "catch": [
           {
@@ -443,7 +455,7 @@
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
           "message": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Confirm on the next screen to run both actions. Nothing is changed in Active Directory.</p><p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\"><strong>Owners.</strong> Clear the account owner on <strong>nhi.*</strong> accounts in Microsoft Active Directory @emea-tes-team (NHI) when one is set.</p><p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\"><strong>Uncorrelate.</strong> Clear the identity link on <strong>oam.*</strong> accounts in Microsoft Active Directory @emea-tes-team (Users).</p><p style=\"margin: 0; line-height: 1.5; color: #475569;\"><strong>Then.</strong> Start a full account aggregation on Microsoft Active Directory @emea-tes-team (Users).</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
-          "title": "AD account cleanup"
+          "title": "Microsoft Active Directory Account Cleanup"
         },
         "displayName": "Message: Introduction",
         "nextStep": "Confirm Form",
@@ -535,7 +547,7 @@
             "refID": "dd7413ed-abde-40f3-9a71-e623f8971d9a"
           },
           "requestContentType": "json",
-          "url": "{{$.defineVariable.url}}/v2026/sources/a67f790e42c04da3bdba05d7dd7ccdd9/load-accounts"
+          "url": "{{$.defineVariable.url}}/v2026/sources/{{$.defineVariable.usersSourceId}}/load-accounts"
         },
         "catch": [
           {

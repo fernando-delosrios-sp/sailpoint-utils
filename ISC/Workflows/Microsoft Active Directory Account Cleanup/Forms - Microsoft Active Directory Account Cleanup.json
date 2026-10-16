@@ -3,12 +3,12 @@
     "version": 1,
     "self": {
       "id": "bc87e97e-56d2-45e1-93af-9bef1b0c9616",
-      "name": "AD Account Cleanup",
+      "name": "Microsoft Active Directory Account Cleanup",
       "type": "FORM_DEFINITION"
     },
     "object": {
       "id": "bc87e97e-56d2-45e1-93af-9bef1b0c9616",
-      "name": "AD Account Cleanup",
+      "name": "Microsoft Active Directory Account Cleanup",
       "description": "Confirm removal of nhi.* account owners and uncorrelation of oam.* accounts on the emea-tes-team Active Directory sources.",
       "owner": {
         "type": "IDENTITY",
@@ -56,7 +56,7 @@
                 "validations": []
               }
             ],
-            "label": "AD account cleanup",
+            "label": "Microsoft Active Directory Account Cleanup",
             "labelStyle": "h2",
             "showLabel": true
           },
