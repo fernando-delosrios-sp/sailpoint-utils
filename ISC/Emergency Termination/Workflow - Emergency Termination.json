@@ -64,7 +64,7 @@
         "choiceList": [
           {
             "comparator": "BooleanEquals",
-            "nextStep": "Form Select Person",
+            "nextStep": "Get Direct Reports",
             "variableA.$": "$.formAcknowledgement.formData.userAcknowledgement",
             "variableB": true
           }
@@ -72,6 +72,75 @@
         "defaultStep": "Message Opted Out",
         "displayName": "Acknowledged?",
         "type": "choice"
+      },
+      "Get Direct Reports": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "indices": [
+              "identities"
+            ],
+            "query": {
+              "query": "manager.id:{{$.getRequestor.id}} AND attributes.cloudLifecycleState:active"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "url": "{{$.defineVariable.url}}/search/v1",
+          "urlParams": {
+            "limit": "250"
+          }
+        },
+        "catch": [
+          {
+            "next": "Message Direct Report Lookup Failed"
+          }
+        ],
+        "description": "Lists the requestor's active direct reports with the workflow OAuth client so launchers do not need Search permissions.",
+        "displayName": "API: List direct reports",
+        "nextStep": "Form Select Person",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Message Direct Report Lookup Failed": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Your direct reports could not be listed.</p><p><strong>Status:</strong> {{ $.getDirectReports.error.workflowStatusCode }}</p><p><strong>Detail:</strong> {{ $.getDirectReports.error.workflowErrorMessage }}</p><p style=\"margin: 16px 0 0 0; color: #475569;\">No lifecycle change was made. Ask an administrator to verify the workflow OAuth client has identity search access.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "⚠️  Could not list direct reports"
+        },
+        "displayName": "Message: Direct report lookup failed",
+        "nextStep": "End Failure Direct Report Lookup",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "End Failure Direct Report Lookup": {
+        "actionId": "sp:operator-failure",
+        "description": "The workflow OAuth client could not list the requestor's active direct reports.",
+        "displayName": "Failure: Direct report lookup",
+        "failureName": "Direct Report Lookup Failed",
+        "type": "failure"
       },
       "Message Opted Out": {
         "actionId": "sp:interactive-message",
@@ -91,7 +160,9 @@
         "actionId": "sp:interactive-form",
         "attributes": {
           "formDefinitionId": "2c59c0f1-72af-4c84-a518-6e934b0d36e6",
-          "inputForForm_username.$": "$.getRequestor.attributes.displayName",
+          "inputForForm_array_directReports.$": "$.getDirectReports.body",
+          "inputForForm_array_directReports_label": "$.displayName",
+          "inputForForm_array_directReports_value": "$.id",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
           "message": "<p><span style=\"font-size: 18pt; color: #236fa1;\"><strong>Step 2 of 2</strong></span> — Select the person and provide a justification.</p>",
           "ownerId.$": "$.trigger.launchedBy.id",
@@ -112,7 +183,7 @@
             "next": "Message Identity Lookup Failed"
           }
         ],
-        "description": "Resolve the selected identity by exact ID returned from the SEARCH_V2 form field.",
+        "description": "Resolve the selected identity by exact ID returned from the workflow-provided direct-report list.",
         "displayName": "Get selected identity",
         "nextStep": "Check Approval Required",
         "type": "action",

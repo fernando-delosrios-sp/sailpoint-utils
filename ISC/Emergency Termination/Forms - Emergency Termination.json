@@ -86,10 +86,10 @@
       "usedBy": [],
       "formInput": [
         {
-          "id": "username",
-          "type": "STRING",
-          "label": "Operator name",
-          "description": "Display name of the person initiating the emergency termination. Used to list their direct reports."
+          "id": "directReports",
+          "type": "ARRAY",
+          "label": "Direct reports",
+          "description": "Active direct reports returned by the workflow's OAuth-authenticated identity search."
         }
       ],
       "formElements": [
@@ -115,21 +115,10 @@
                 "config": {
                   "dataSource": {
                     "config": {
-                      "filters": {
-                        "manager.displayName": {
-                          "exclude": false,
-                          "value": "{{$.form.input.username}}"
-                        }
-                      },
-                      "indices": [
-                        "identities"
-                      ],
-                      "label": "attributes.displayName",
-                      "query": "attributes.cloudLifecycleState:active",
-                      "sublabel": "attributes.email",
-                      "value": "id"
+                      "formInputId": "directReports",
+                      "sortBy": "ASC"
                     },
-                    "dataSourceType": "SEARCH_V2"
+                    "dataSourceType": "FORM_INPUT"
                   },
                   "forceSelect": true,
                   "helpText": "Choose exactly one active direct report. The value stored is their identity ID.",
