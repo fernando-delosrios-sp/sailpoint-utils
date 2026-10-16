@@ -195,13 +195,19 @@ def accent_border(color: str) -> str:
 
 
 def details(rows: list[tuple[str, ...]], title: str | None = None) -> str:
-    """Blue box with (label, value) rows; a third element is a Velocity condition for that row."""
+    """Blue box with (label, value) rows; a third element is a Velocity condition for that row.
+    When every row is conditional, the box itself is omitted if none of them match."""
     label = f"vertical-align:top;padding:$mailLabelPad;text-align:$mailAlign;font-family:{FONT};font-size:13px;line-height:20px;color:{MUTED};white-space:nowrap;"
     value = f"vertical-align:top;padding:4px 0;text-align:$mailAlign;unicode-bidi:plaintext;font-family:{FONT};font-size:15px;line-height:20px;font-weight:600;color:{NAVY};"
     body = []
+    conditions = []
     for row in rows:
         html = f'<tr><td style="{label}">{row[0]}</td><td style="{value}">{row[1]}</td></tr>'
-        body.append(f"#if({row[2]}){html}#end" if len(row) > 2 else html)
+        if len(row) > 2:
+            body.append(f"#if({row[2]}){html}#end")
+            conditions.append(row[2])
+        else:
+            body.append(html)
     heading = (
         f'<div style="margin:0 0 8px 0;font-family:{FONT};font-size:12px;line-height:16px;font-weight:700;'
         f'letter-spacing:1.5px;text-transform:uppercase;color:{BLUE};">{title}</div>'
@@ -209,13 +215,17 @@ def details(rows: list[tuple[str, ...]], title: str | None = None) -> str:
         else ""
     )
     rows_html = "\n".join(body)
-    return f"""<table style="{FULL_TABLE}margin:4px 0 18px 0;background-color:#F2F7FD;{accent_border(BLUE)}border-radius:6px;">
+    table = f"""<table style="{FULL_TABLE}margin:4px 0 18px 0;background-color:#F2F7FD;{accent_border(BLUE)}border-radius:6px;">
 <tr><td style="padding:16px 20px;text-align:$mailAlign;">
 {heading}<table style="{TABLE}">
 {rows_html}
 </table>
 </td></tr>
 </table>"""
+    if len(conditions) == len(rows):
+        guard = " || ".join(f"({condition})" for condition in conditions)
+        return f"#if({guard})\n{table}#end"
+    return table
 
 
 def code(value: str) -> str:
