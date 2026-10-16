@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AccessProfile",
+  "type": "object",
+  "required": ["name", "owner", "source"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": ["string", "null"] },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "enabled": { "type": "boolean" },
+    "requestable": { "type": "boolean" },
+    "owner": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string" },
+        "id": { "type": ["string", "null"] },
+        "name": { "type": ["string", "null"] }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "id": { "type": ["string", "null"] },
+        "name": { "type": "string" }
+      }
+    },
+    "entitlements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": ["string", "null"] },
+          "name": { "type": ["string", "null"] },
+          "type": { "type": "string" }
+        }
+      }
+    },
+    "accessRequestConfig": { "type": ["object", "null"] },
+    "revocationRequestConfig": { "type": ["object", "null"] },
+    "segments": { "type": "array" },
+    "provisioningCriteria": { "type": ["object", "null"] }
+  }
+}

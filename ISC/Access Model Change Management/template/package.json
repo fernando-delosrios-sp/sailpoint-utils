@@ -1,0 +1,25 @@
+{
+  "name": "access-model-change-management-repo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GitHub-centric governance of ISC entitlements, access profiles and roles",
+  "type": "module",
+  "scripts": {
+    "backup": "node scripts/cli.mjs backup",
+    "validate": "node scripts/cli.mjs validate",
+    "plan": "node scripts/cli.mjs plan",
+    "apply": "node scripts/cli.mjs apply",
+    "restore": "node scripts/cli.mjs restore",
+    "diff-hash": "node scripts/cli.mjs diff-hash",
+    "readme": "node scripts/cli.mjs readme",
+    "request-approval": "node scripts/cli.mjs request-approval",
+    "test": "node --test scripts/test/*.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "minimist": "^1.2.8"
+  }
+}

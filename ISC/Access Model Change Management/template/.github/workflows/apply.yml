@@ -1,0 +1,182 @@
+name: Apply to ISC
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "access/**"
+
+concurrency:
+  # Its own group: backup/readme/restore pushes share amcm-main-writers, and
+  # GitHub only keeps the most recently queued run per group — a real apply
+  # queued behind an in-progress writer was getting silently cancelled by the
+  # next backup/readme push instead of running. Apply still serializes with
+  # itself; its push steps rebase onto origin/main to reconcile with the
+  # other writers instead of racing them.
+  group: amcm-apply
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AMCM_APP_ID }}
+          private-key: ${{ secrets.AMCM_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app.outputs.token }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: node scripts/public-npm-ci.mjs
+
+      - name: Skip bot-only commits without access content change
+        id: gate
+        run: |
+          if git diff --name-only HEAD~1 HEAD | grep -q '^access/'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve PR for this push
+        if: steps.gate.outputs.run == 'true'
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          PR=$(gh pr list --search "${{ github.sha }}" --state merged --json number,title,url,author --jq '.[0] // empty')
+          if [ -z "$PR" ]; then
+            # Fallback: look at associated PRs for the commit
+            PR=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+              --jq '.[0] | {number,title,url,author:.user.login}' || echo '')
+          fi
+          echo "payload=$PR" >> "$GITHUB_OUTPUT"
+          echo "$PR" > /tmp/pr.json
+          NUMBER=$(echo "$PR" | jq -r '.number // empty')
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Build plan against previous commit
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          node --input-type=module <<'EOF'
+          import { writeFileSync } from 'node:fs';
+          import { loadItemsFromGitRef } from './scripts/git-items.mjs';
+          import { loadAllItems } from './scripts/common.mjs';
+          import { buildPlan } from './scripts/plan.mjs';
+
+          const plan = buildPlan({
+            baseItems: loadItemsFromGitRef('HEAD~1'),
+            headItems: loadAllItems(),
+          });
+          writeFileSync('plan.json', JSON.stringify(plan, null, 2));
+          console.log(JSON.stringify(plan.summary, null, 2));
+          EOF
+
+      - name: Apply to ISC
+        if: steps.gate.outputs.run == 'true'
+        id: apply
+        env:
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
+          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
+        run: |
+          set +e
+          node scripts/cli.mjs apply --plan plan.json > /tmp/apply.json
+          CODE=$?
+          set -e
+          cat /tmp/apply.json
+          OK=$(jq -r '.ok' /tmp/apply.json)
+          echo "ok=$OK" >> "$GITHUB_OUTPUT"
+          if [ "$OK" != "true" ]; then
+            exit 1
+          fi
+
+      - name: Commit id write-backs
+        if: steps.gate.outputs.run == 'true' && steps.apply.outputs.ok == 'true'
+        run: |
+          git config user.name "amcm-bot"
+          git config user.email "amcm-bot[bot]@users.noreply.github.com"
+          git add access/
+          git diff --cached --quiet || git commit -m "chore(apply): write back ISC ids"
+          # Apply now runs in its own concurrency group, so a backup/readme
+          # push to main can land mid-run. Rebase instead of racing it.
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "Push rejected (attempt $i), rebasing onto origin/main..."
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; exit 1; }
+          done
+
+      - name: Create applied-state tag
+        if: steps.gate.outputs.run == 'true' && steps.apply.outputs.ok == 'true'
+        id: tag
+        run: |
+          PR=${{ steps.pr.outputs.number }}
+          if [ -n "$PR" ]; then
+            TAG=$(node -e "import('./scripts/tags.mjs').then(m => console.log(m.buildAppliedTagName({ prNumber: $PR })))")
+          else
+            TAG=$(node -e "import('./scripts/tags.mjs').then(m => console.log(m.buildAppliedTagName()))")
+          fi
+          node scripts/cli.mjs tag-applied --tag "$TAG" --message "Applied PR #${PR:-manual} to ISC"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Ledger + README
+        if: steps.gate.outputs.run == 'true' && steps.apply.outputs.ok == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          PR_NUM=${{ steps.pr.outputs.number }}
+          TAG=${{ steps.tag.outputs.tag }}
+          jq -n \
+            --argjson pr "${PR_NUM:-0}" \
+            --arg author "$(jq -r '.author.login // .author // "unknown"' /tmp/pr.json 2>/dev/null || echo unknown)" \
+            --arg title "$(jq -r '.title // "apply"' /tmp/pr.json 2>/dev/null || echo apply)" \
+            --arg url "$(jq -r '.url // ""' /tmp/pr.json 2>/dev/null || echo "")" \
+            --arg tag "$TAG" \
+            --slurpfile apply /tmp/apply.json \
+            '{
+              prNumber: $pr,
+              author: $author,
+              title: $title,
+              url: $url,
+              diffHash: null,
+              approvers: [],
+              decisions: [{decision:"approved", source:"isc"}],
+              applyResult: $apply[0],
+              tag: $tag
+            }' | node scripts/cli.mjs ledger-change
+          node scripts/cli.mjs readme
+          git add changes/ README.md access/
+          git diff --cached --quiet || git commit -m "chore(apply): ledger and README for $TAG"
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "Push rejected (attempt $i), rebasing onto origin/main..."
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; exit 1; }
+          done
+
+      - name: Open apply failure issue
+        if: failure() && steps.gate.outputs.run == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          if [ -f /tmp/apply.json ]; then
+            BODY=$(jq -r '"Apply stopped.\n\n```json\n" + tostring + "\n```"' /tmp/apply.json)
+          else
+            BODY="Apply failed before producing a result. See workflow logs."
+          fi
+          gh issue create --title "Apply failed on ${{ github.sha }}" --body "$BODY" || true

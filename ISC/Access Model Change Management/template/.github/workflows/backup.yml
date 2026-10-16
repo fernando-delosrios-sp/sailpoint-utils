@@ -1,0 +1,51 @@
+name: Backup
+
+on:
+  schedule:
+    # Default; installer rewrites from config.yaml backup.schedule
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      # Drift detection and the approval request are read-only against this repo
+      # (no commits happen here anymore), so the default GITHUB_TOKEN is enough —
+      # no GitHub App token needed. approval-callback.yml's drift-decision job is
+      # what actually writes to main once the governance group approves.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: node scripts/public-npm-ci.mjs
+
+      - name: Detect drift
+        id: drift
+        env:
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
+          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
+        run: |
+          node scripts/cli.mjs drift > /tmp/drift.json
+          echo "has_drift=$(jq -r '.hasDrift' /tmp/drift.json)" >> "$GITHUB_OUTPUT"
+          cat /tmp/drift.json
+
+      - name: Request drift approval (kind=drift)
+        if: steps.drift.outputs.has_drift == 'true'
+        env:
+          ISC_EXTERNAL_TRIGGER_URL: ${{ secrets.ISC_TRIGGER_URL }}
+          ISC_EXTERNAL_TRIGGER_CLIENT_ID: ${{ secrets.ISC_TRIGGER_CLIENT_ID }}
+          ISC_EXTERNAL_TRIGGER_CLIENT_SECRET: ${{ secrets.ISC_TRIGGER_CLIENT_SECRET }}
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+        run: |
+          # Drift no longer auto-commits to main. It only asks the governance
+          # group (never item owners — nobody "owns" an out-of-band ISC edit)
+          # via the same AMCM Approval workflow used for changes/restores.
+          # approval-callback.yml does the actual sync once approved.
+          node scripts/cli.mjs request-approval --kind drift --drift /tmp/drift.json

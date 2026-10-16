@@ -1,0 +1,104 @@
+name: Request ISC Approval
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "access/**"
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  statuses: write
+  pull-requests: write
+
+jobs:
+  request:
+    if: >
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '/request-approval'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: node scripts/public-npm-ci.mjs
+
+      - name: Resolve PR metadata
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            NUMBER=${{ github.event.issue.number }}
+          else
+            NUMBER=${{ github.event.pull_request.number }}
+          fi
+          gh pr view "$NUMBER" --json number,title,body,url,author,baseRefName,headRefOid > pr.json
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+          echo "sha=$(jq -r .headRefOid pr.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Build plan and diff hash
+        run: |
+          BASE=$(jq -r .baseRefName pr.json)
+          node --input-type=module <<EOF
+          import { writeFileSync } from 'node:fs';
+          import { loadItemsFromGitRef, changedAccessFiles } from './scripts/git-items.mjs';
+          import { loadAllItems } from './scripts/common.mjs';
+          import { buildPlan } from './scripts/plan.mjs';
+          import { hashTouchedFiles } from './scripts/diff-hash.mjs';
+
+          const baseRef = 'origin/${BASE}';
+          const plan = buildPlan({
+            baseItems: loadItemsFromGitRef(baseRef),
+            headItems: loadAllItems(),
+          });
+          const files = changedAccessFiles(baseRef);
+          const diffHash = hashTouchedFiles(files);
+          writeFileSync('plan.json', JSON.stringify({ ...plan, diffHash, files }, null, 2));
+          EOF
+
+      - name: Clear previous approval status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHA=${{ steps.pr.outputs.sha }}
+          gh api "repos/${{ github.repository }}/statuses/$SHA" \
+            -f state=pending \
+            -f context=isc-approval \
+            -f description="Awaiting ISC approval"
+
+      - name: Trigger ISC approval workflow (kind=change)
+        env:
+          ISC_EXTERNAL_TRIGGER_URL: ${{ secrets.ISC_TRIGGER_URL }}
+          ISC_EXTERNAL_TRIGGER_CLIENT_ID: ${{ secrets.ISC_TRIGGER_CLIENT_ID }}
+          ISC_EXTERNAL_TRIGGER_CLIENT_SECRET: ${{ secrets.ISC_TRIGGER_CLIENT_SECRET }}
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+        run: |
+          DIFF_HASH=$(jq -r .diffHash plan.json)
+          # Enrich pr.json for the approval payload
+          jq --arg author "$(jq -r .author.login pr.json)" \
+            --arg headSha "$(jq -r .headRefOid pr.json)" \
+            '. + {author: $author, headSha: $headSha, number: .number}' pr.json > pr-payload.json
+          node scripts/cli.mjs request-approval \
+            --kind change \
+            --plan plan.json \
+            --pr pr-payload.json \
+            --diff-hash "$DIFF_HASH"
+
+      - name: Comment on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NUMBER=${{ steps.pr.outputs.number }}
+          HASH=$(jq -r .diffHash plan.json)
+          gh pr comment "$NUMBER" --body "ISC approval requested for diff hash \`$HASH\`. The governance group, then the owners of the changed items, will find it in their Identity Security Cloud approvals."

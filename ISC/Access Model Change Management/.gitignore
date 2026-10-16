@@ -1,0 +1,8 @@
+node_modules/
+template/node_modules/
+.env
+.env.*
+*.log
+.DS_Store
+.tmp/
+.cache/

@@ -1,0 +1,73 @@
+name: PR Validate
+
+on:
+  pull_request:
+    paths:
+      - "access/**"
+      - "schemas/**"
+      - "scripts/**"
+      - "config.yaml"
+
+permissions:
+  contents: read
+  statuses: write
+  pull-requests: read
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: node scripts/public-npm-ci.mjs
+
+      - name: Schema and name references
+        run: node scripts/cli.mjs validate
+
+      - name: Build plan vs base
+        id: plan
+        run: |
+          git show "origin/${{ github.base_ref }}:access" >/dev/null 2>&1 || true
+          node --input-type=module <<'EOF'
+          import { writeFileSync } from 'node:fs';
+          import { loadItemsFromGitRef, changedAccessFiles } from './scripts/git-items.mjs';
+          import { loadAllItems } from './scripts/common.mjs';
+          import { buildPlan } from './scripts/plan.mjs';
+          import { hashTouchedFiles } from './scripts/diff-hash.mjs';
+
+          const baseRef = `origin/${process.env.BASE_REF}`;
+          const baseItems = loadItemsFromGitRef(baseRef);
+          const headItems = loadAllItems();
+          const plan = buildPlan({ baseItems, headItems });
+          const files = changedAccessFiles(baseRef);
+          const diffHash = hashTouchedFiles(files);
+          writeFileSync('plan.json', JSON.stringify({ ...plan, diffHash, files }, null, 2));
+          console.log(JSON.stringify({ summary: plan.summary, diffHash, files }, null, 2));
+          EOF
+        env:
+          BASE_REF: ${{ github.base_ref }}
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plan-${{ github.event.pull_request.number }}
+          path: plan.json
+
+      - name: Publish validate status
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          STATE=success
+          if [ "${{ job.status }}" != "success" ]; then STATE=failure; fi
+          gh api "repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}" \
+            -f state="$STATE" \
+            -f context=validate \
+            -f description="Schema and plan validation"

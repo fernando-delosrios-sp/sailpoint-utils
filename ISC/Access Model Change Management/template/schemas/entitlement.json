@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Entitlement",
+  "type": "object",
+  "required": ["name", "source"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": ["string", "null"] },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "privileged": { "type": "boolean" },
+    "requestable": { "type": "boolean" },
+    "owner": {
+      "type": ["object", "null"],
+      "properties": {
+        "type": { "type": "string" },
+        "id": { "type": ["string", "null"] },
+        "name": { "type": ["string", "null"] }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "id": { "type": ["string", "null"] },
+        "name": { "type": "string" }
+      }
+    },
+    "sourceSlug": { "type": ["string", "null"] },
+    "_readonly": { "type": "object" }
+  }
+}

@@ -1,0 +1,45 @@
+name: Regenerate README
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "changes/**"
+
+concurrency:
+  group: amcm-main-writers
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  readme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AMCM_APP_ID }}
+          private-key: ${{ secrets.AMCM_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app.outputs.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: node scripts/public-npm-ci.mjs
+      - run: node scripts/cli.mjs readme
+
+      - name: Commit
+        run: |
+          git config user.name "amcm-bot"
+          git config user.email "amcm-bot[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --cached --quiet || git commit -m "chore: regenerate README from ledger"
+          git push || true

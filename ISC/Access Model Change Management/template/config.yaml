@@ -1,0 +1,33 @@
+# Access Model Change Management — tenant configuration
+# Rendered by the installer. Edit via PR after install.
+
+tenant:
+  name: "{{TENANT_NAME}}"
+  apiUrl: "{{TENANT_API_URL}}"
+  uiUrl: "{{TENANT_UI_URL}}"
+
+# Entitlements are snapshot and update-only for these sources.
+entitlementSources:
+  # - name: "Active Directory"
+  #   id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+backup:
+  # Cron expression used by .github/workflows/backup.yml (UTC).
+  schedule: "0 2 * * *"
+
+approval:
+  # Governance group that signs off every change (first level) and is the sole
+  # approver for restores and drift sync. Admins can also change this in the
+  # ISC workflow Configuration section.
+  governanceGroupId: "{{GOVERNANCE_GROUP_ID}}"
+  governanceGroupName: "{{GOVERNANCE_GROUP_NAME}}"
+  # When true, each changed item's owner is asked in parallel after the governance
+  # group approves a change. Never applies to restores or drift — there's no
+  # single "requester" to ask owners after for either of those.
+  ownerApproval: true
+  # Days before an unanswered approval expires.
+  timeoutDays: 3
+
+github:
+  owner: "{{GITHUB_OWNER}}"
+  repo: "{{GITHUB_REPO}}"

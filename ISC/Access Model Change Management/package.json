@@ -1,0 +1,21 @@
+{
+  "name": "access-model-change-management",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Installer and template for GitHub-centric ISC access item governance",
+  "type": "module",
+  "bin": {
+    "amcm-install": "./installer/cli.mjs"
+  },
+  "scripts": {
+    "install-tenant": "node installer/cli.mjs",
+    "test": "node --test installer/test/*.mjs template/scripts/test/*.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "minimist": "^1.2.8"
+  }
+}
