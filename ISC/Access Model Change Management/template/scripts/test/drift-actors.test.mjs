@@ -1,0 +1,167 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  ACTOR_LOOKBACK_MS,
+  accessItemQueries,
+  actorApprovalLines,
+  attributeActors,
+  attributeDriftActors,
+  alignmentTimestamp,
+  driftWindowStart,
+} from '../drift-actors.mjs';
+
+const role = {
+  path: 'access/roles/analyst.json',
+  id: 'role-1',
+  name: 'Analyst',
+  type: 'role',
+};
+
+describe('alignmentTimestamp', () => {
+  it('uses the latest moment git and ISC were aligned', () => {
+    const ts = alignmentTimestamp([
+      { entry: { kind: 'init', timestamp: '2026-10-01T00:00:00.000Z' } },
+      { entry: { kind: 'change', timestamp: '2026-10-10T00:00:00.000Z' } },
+      { entry: { kind: 'drift', decision: 'expired', timestamp: '2026-10-12T00:00:00.000Z' } },
+      { entry: { kind: 'drift', decision: 'rejected', restored: false, timestamp: '2026-10-13T00:00:00.000Z' } },
+      { entry: { kind: 'drift', decision: 'approved', timestamp: '2026-10-11T00:00:00.000Z' } },
+    ]);
+    assert.equal(ts, '2026-10-11T00:00:00.000Z');
+  });
+
+  it('treats a rejected drift that was restored as alignment', () => {
+    const ts = alignmentTimestamp([
+      { kind: 'drift', decision: 'rejected', restored: true, timestamp: '2026-10-14T00:00:00.000Z' },
+    ]);
+    assert.equal(ts, '2026-10-14T00:00:00.000Z');
+  });
+
+  it('falls back to 14 days when nothing has aligned', () => {
+    const now = new Date('2026-10-16T00:00:00.000Z');
+    const start = driftWindowStart({ entries: [], now });
+    assert.equal(Date.parse(start), now.getTime() - ACTOR_LOOKBACK_MS);
+  });
+});
+
+describe('attributeActors', () => {
+  it('matches the actor on target id and ignores a failed event', () => {
+    const result = attributeActors({
+      subjects: [role],
+      events: [
+        {
+          created: '2026-10-15T08:00:00.000Z',
+          technicalName: 'ROLE_UPDATE_FAILED',
+          status: 'FAILED',
+          actor: { displayName: 'Nobody' },
+          target: { id: 'role-1', name: 'Analyst', type: 'ROLE' },
+        },
+        {
+          created: '2026-10-15T09:00:00.000Z',
+          technicalName: 'ROLE_UPDATE_PASSED',
+          actor: { displayName: 'Jane Doe', name: 'jane.doe', id: 'id-jane' },
+          target: { id: 'role-1', name: 'Analyst', type: 'ROLE' },
+        },
+        {
+          created: '2026-10-15T10:00:00.000Z',
+          technicalName: 'ROLE_UPDATE_PASSED',
+          actor: { displayName: 'Bob Smith' },
+          target: { id: 'role-1', type: 'ROLE' },
+        },
+      ],
+    });
+    assert.deepEqual(result.modifiers, ['Bob Smith', 'Jane Doe']);
+    assert.match(result.lines[0], /Bob Smith, Jane Doe — access\/roles\/analyst.json \(ROLE_UPDATE_PASSED, 2026-10-15T10:00:00.000Z\)/);
+  });
+
+  it('falls back to name and type when the event has no target id', () => {
+    const result = attributeActors({
+      subjects: [{
+        path: 'access/entitlements/ad/admins.json',
+        id: null,
+        name: 'Admins',
+        type: 'entitlement',
+      }],
+      events: [{
+        created: '2026-10-15T09:00:00.000Z',
+        name: 'Update Entitlement Passed',
+        actor: { name: 'System' },
+        target: { name: 'Admins', type: 'ENTITLEMENT' },
+      }],
+    });
+    assert.deepEqual(result.modifiers, ['System']);
+  });
+
+  it('does not borrow an actor from a different object with the same name', () => {
+    const result = attributeActors({
+      subjects: [role],
+      events: [{
+        created: '2026-10-15T09:00:00.000Z',
+        technicalName: 'ACCESS_PROFILE_UPDATE_PASSED',
+        actor: { displayName: 'Jane Doe' },
+        target: { id: 'ap-1', name: 'Analyst', type: 'ACCESS_PROFILE' },
+      }],
+    });
+    assert.deepEqual(result.modifiers, []);
+    assert.match(result.lines[0], /no matching audit event/);
+  });
+});
+
+describe('attributeDriftActors', () => {
+  it('queries access-item events since the alignment and keeps the actor list', async () => {
+    const seen = [];
+    const client = {
+      async searchAll(body) {
+        seen.push(body);
+        return {
+          truncated: false,
+          items: [{
+            created: '2026-10-15T09:00:00.000Z',
+            technicalName: 'ROLE_UPDATE_PASSED',
+            actor: { displayName: 'Jane Doe' },
+            target: { id: 'role-1', type: 'ROLE' },
+          }],
+        };
+      },
+    };
+    const actors = await attributeDriftActors({
+      client,
+      subjects: [role],
+      entries: [{ kind: 'change', timestamp: '2026-10-01T00:00:00.000Z' }],
+    });
+    assert.equal(actors.status, 'ok');
+    assert.equal(actors.since, '2026-10-01T00:00:00.000Z');
+    assert.deepEqual(actors.modifiers, ['Jane Doe']);
+    assert.deepEqual(seen, accessItemQueries('2026-10-01T00:00:00.000Z', [role]));
+  });
+
+  it('scopes the query to the drifted targets', () => {
+    const [query] = accessItemQueries('2026-10-01T00:00:00.000Z', [role]);
+    assert.match(query.query.query, /target\.id:\("role-1"\)/);
+  });
+
+  it('looks up deleted items by name because they have no live id', () => {
+    const deleted = { path: 'access/roles/gone.json', id: null, name: 'Gone', type: 'role' };
+    const queries = accessItemQueries('2026-10-01T00:00:00.000Z', [deleted]);
+    assert.equal(queries.length, 1);
+    assert.match(queries[0].query.query, /target\.name:\("Gone"\)/);
+  });
+
+  it('falls back to the whole window when no target is identifiable', () => {
+    const [query] = accessItemQueries('2026-10-01T00:00:00.000Z', []);
+    assert.doesNotMatch(query.query.query, /target\./);
+  });
+
+  it('stays available for the approval when audit search fails', async () => {
+    const client = {
+      async searchAll() {
+        throw new Error('POST /search/v1 failed: 403');
+      },
+    };
+    const actors = await attributeDriftActors({ client, subjects: [role], entries: [] });
+    assert.equal(actors.status, 'unavailable');
+    assert.deepEqual(actors.modifiers, []);
+    const text = actorApprovalLines(actors).join('\n');
+    assert.match(text, /unknown/);
+    assert.match(text, /403/);
+  });
+});

@@ -23,6 +23,9 @@ permissions:
 
 jobs:
   apply:
+    # Init's root commit is already a snapshot of live ISC. Applying it would
+    # try to create every object that already exists.
+    if: ${{ !contains(github.event.head_commit.message, 'chore(init):') }}
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub App token
@@ -46,7 +49,12 @@ jobs:
       - name: Skip bot-only commits without access content change
         id: gate
         run: |
-          if git diff --name-only HEAD~1 HEAD | grep -q '^access/'; then
+          # The Init baseline is already the live ISC snapshot. It has no parent,
+          # and applying it would try to recreate every item.
+          if ! git rev-parse --verify --quiet HEAD~1 >/dev/null; then
+            echo "Root commit; skip apply."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          elif git diff --name-only HEAD~1 HEAD | grep -q '^access/'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -121,17 +129,17 @@ jobs:
             git rebase origin/main || { git rebase --abort; exit 1; }
           done
 
-      - name: Create applied-state tag
+      - name: Create known-good tag
         if: steps.gate.outputs.run == 'true' && steps.apply.outputs.ok == 'true'
         id: tag
         run: |
           PR=${{ steps.pr.outputs.number }}
           if [ -n "$PR" ]; then
-            TAG=$(node -e "import('./scripts/tags.mjs').then(m => console.log(m.buildAppliedTagName({ prNumber: $PR })))")
+            TAG=$(node -e "import('./scripts/tags.mjs').then(m => console.log(m.buildKnownGoodTagName({ prNumber: $PR })))")
           else
-            TAG=$(node -e "import('./scripts/tags.mjs').then(m => console.log(m.buildAppliedTagName()))")
+            TAG=$(node -e "import('./scripts/tags.mjs').then(m => console.log(m.buildKnownGoodTagName()))")
           fi
-          node scripts/cli.mjs tag-applied --tag "$TAG" --message "Applied PR #${PR:-manual} to ISC"
+          node scripts/cli.mjs tag-known-good --tag "$TAG" --message "Known-good snapshot for PR #${PR:-manual}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - name: Ledger + README

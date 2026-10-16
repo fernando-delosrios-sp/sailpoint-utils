@@ -25,7 +25,8 @@ describe('buildDriftApprovalPayload', () => {
     // loop on this branch, but a stray `owners` field would be a sign some
     // other code path is conflating drift with a change approval.
     assert.equal(payload.owners, undefined);
-    assert.match(payload.approvalText, /governance group only|Approving syncs/);
+    assert.match(payload.approvalText, /Approving copies these items from ISC into git/);
+    assert.match(payload.approvalText, /Rejecting puts ISC back to match git/);
   });
 
   it('caps the approval text preview instead of inlining thousands of paths', () => {
@@ -49,6 +50,26 @@ describe('buildDriftApprovalPayload', () => {
     assert.equal(payload.changed, undefined);
     assert.equal(payload.deleted, undefined);
     assert.deepEqual(payload.summary, { added: 1, changed: 1, deleted: 1 });
+  });
+
+  it('names the audit actor in the approval text and keeps the actor list out of the trigger payload', () => {
+    const actors = {
+      status: 'ok',
+      since: '2026-10-01T00:00:00.000Z',
+      modifiers: ['Jane Doe'],
+      lines: ['- Jane Doe — access/roles/analyst.json (ROLE_UPDATE_PASSED, 2026-10-15T09:00:00.000Z)'],
+    };
+    const drift = {
+      added: [],
+      changed: ['access/roles/analyst.json'],
+      deleted: [],
+      driftHash: 'irrelevant',
+      actors,
+    };
+    const payload = buildDriftApprovalPayload({ drift, config });
+    assert.equal(payload.actors, undefined);
+    assert.match(payload.approvalText, /Jane Doe — access\/roles\/analyst.json/);
+    assert.match(payload.approvalText, /since 2026-10-01T00:00:00.000Z/);
   });
 });
 

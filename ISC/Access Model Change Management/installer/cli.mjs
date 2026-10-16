@@ -364,7 +364,7 @@ GitHub App (not another PAT)
 ----------------------------
 The fine-grained PAT you just provided is only for ISC → GitHub callbacks.
 This next step is a different credential: a GitHub App used by Actions to
-commit applied-state / drift to main and as the sole ruleset bypass actor.
+commit known-good tags / drift to main and as the sole ruleset bypass actor.
 
 Opening in your browser:
   ${createUrl}
@@ -389,6 +389,7 @@ Fill the "Register new GitHub App" form as follows:
                         (if Active stays on, Webhook URL becomes required)
 
   Repository permissions (top to bottom, as on the form)
+    Actions            → Read and write
     Checks             → Read and write
     Commit statuses    → Read and write
     Contents           → Read and write

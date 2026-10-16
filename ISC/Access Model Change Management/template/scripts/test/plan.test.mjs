@@ -74,6 +74,64 @@ describe('buildPlan', () => {
     assert.equal(plan.operations[0].op, 'skip');
   });
 
+  it('allows two entitlements with the same name inside one source', () => {
+    // Regression for the restore crash: ISC lets one source expose several
+    // entitlements named "LambdaIAMPolicy" (AWS policy entitlements do this
+    // routinely). Keying identity by name alone made indexByName throw
+    // 'Duplicate entitlement named "LambdaIAMPolicy"' and abort the restore,
+    // and made the backup silently drop all but one of them.
+    const ents = ['arn:policy/one', 'arn:policy/two', 'arn:policy/three'].map((value, i) => {
+      const e = item(ITEM_TYPES.entitlement, {
+        id: `e-${i}`,
+        name: 'LambdaIAMPolicy',
+        source: { id: 's-a', name: 'AWS NHI' },
+        privileged: false,
+        requestable: true,
+        _readonly: { value },
+      }, `access/entitlements/aws-nhi/lambdaiampolicy__${i}.json`);
+      e.sourceSlug = 'aws-nhi';
+      return e;
+    });
+
+    assert.doesNotThrow(() => indexByName(ents));
+    assert.equal(buildPlan({ baseItems: ents, headItems: ents }).summary.update, 0);
+  });
+
+  it('reads an entitlement rename as an update, not a create plus delete', () => {
+    const base = item(ITEM_TYPES.entitlement, {
+      id: 'e-1',
+      name: 'Old Name',
+      source: { id: 's-a', name: 'AWS NHI' },
+      privileged: false,
+      requestable: true,
+      _readonly: { value: 'arn:policy/one' },
+    }, 'access/entitlements/aws-nhi/old-name.json');
+    base.sourceSlug = 'aws-nhi';
+
+    const head = structuredClone(base);
+    head.data.name = 'New Name';
+    head.name = 'New Name';
+    head.relPath = 'access/entitlements/aws-nhi/new-name.json';
+
+    const plan = buildPlan({ baseItems: [base], headItems: [head] });
+    assert.equal(plan.summary.update, 1);
+    assert.equal(plan.summary.skip, 0);
+  });
+
+  it('still reports two entitlements that share a source and a value', () => {
+    const dup = () => {
+      const e = item(ITEM_TYPES.entitlement, {
+        id: 'e-1',
+        name: 'Same',
+        source: { id: 's-a', name: 'AWS NHI' },
+        _readonly: { value: 'arn:same' },
+      }, 'access/entitlements/aws-nhi/same.json');
+      e.sourceSlug = 'aws-nhi';
+      return e;
+    };
+    assert.throws(() => indexByName([dup(), dup()]), /Duplicate entitlement named "Same"/);
+  });
+
   it('allows two entitlements with the same name from different sources', () => {
     // Regression: two connectors (e.g. two Google Workspace sources) can both
     // expose an entitlement named "_DIRECTORY_SYNC_ADMIN_ROLE". Prior to

@@ -198,7 +198,9 @@ jobs:
           # Re-detect against live ISC rather than trusting a stashed snapshot —
           # ISC may have changed again between the approval request and this
           # decision landing (same staleness guard restore.yml uses for planHash).
-          node scripts/cli.mjs drift > /tmp/drift-now.json
+          # --snapshot keeps that ISC read on disk so the sync/restore step below
+          # does not enumerate the whole access model a second time.
+          node scripts/cli.mjs drift --snapshot /tmp/isc-snapshot.json > /tmp/drift-now.json
           ACTUAL_HASH=$(jq -r .driftHash /tmp/drift-now.json)
           echo "stale=$([ "$ACTUAL_HASH" != "$EXPECTED_HASH" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
@@ -210,13 +212,13 @@ jobs:
           ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
           ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
         run: |
-          node scripts/cli.mjs backup
+          node scripts/cli.mjs backup --snapshot /tmp/isc-snapshot.json
           git config user.name "amcm-bot"
           git config user.email "amcm-bot[bot]@users.noreply.github.com"
           git add access/
           git commit -m "chore(backup): sync drift from ISC (governance approved)" || true
           jq -n --slurpfile d /tmp/drift-now.json \
-            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", modifiers:[]}' \
+            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
           node scripts/cli.mjs readme
           git add changes/ README.md
@@ -237,40 +239,106 @@ jobs:
             --title "Drift approval stale $(date -u +%Y-%m-%d)" \
             --body "Governance approved syncing drift hash \`$(jq -r .driftHash /tmp/drift-decision.json)\`, but ISC changed again before this ran (now \`$(jq -r .driftHash /tmp/drift-now.json)\`). Nothing was synced to \`main\`. The next scheduled backup will detect the current drift and request approval again."
 
-      - name: Rejected or expired — record decision, nothing synced
-        if: steps.verify.outputs.decision != 'approved'
+      - name: Rejected — put ISC back to match git
+        if: steps.verify.outputs.decision == 'rejected'
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
+          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
         run: |
-          DECISION=$(jq -r '.decision' /tmp/drift-decision.json)
+          set +e
+          node scripts/cli.mjs restore --execute --snapshot /tmp/isc-snapshot.json > /tmp/restore.json
+          STATUS=$?
+          set -e
+          cat /tmp/restore.json
+          OK=false
+          if [ "$STATUS" = "0" ] && [ "$(jq -r '.ok // false' /tmp/restore.json 2>/dev/null)" = "true" ]; then
+            OK=true
+          fi
+
+          COMMENT=$(jq -r '.comment // empty' /tmp/drift-decision.json)
+          if [ "$OK" = "true" ]; then
+            jq -n --arg comment "$COMMENT" --slurpfile r /tmp/restore.json '
+              def names:
+                if length == 0 then "_none_"
+                else
+                  (.[0:40] | map("- `" + (.type // "?") + "` " + (.name // "?")) | join("\n"))
+                  + (if length > 40 then "\n\n_and " + ((length - 40) | tostring) + " more" else "" end)
+                end;
+              "## Drift rejected — ISC restored to match git\n\n"
+              + (if $comment != "" then "Comment: " + $comment + "\n\n" else "" end)
+              + "Applied (" + ([$r[0].results[]? | select(.status=="applied")] | length | tostring) + ")\n"
+              + ([$r[0].results[]? | select(.status=="applied")] | names) + "\n\n"
+              + "Skipped (" + ([$r[0].results[]? | select(.status=="skipped")] | length | tostring) + ")\n"
+              + ([$r[0].results[]? | select(.status=="skipped")] | names) + "\n\n"
+              + "Skipped operations are entitlements this repo cannot create or delete. If any remain, the next backup will ask again."
+            ' > /tmp/drift-issue.md
+            TITLE="Drift rejected — ISC restored $(date -u +%Y-%m-%d)"
+          else
+            jq -n --arg comment "$COMMENT" --slurpfile r /tmp/restore.json '
+              "## Drift rejected — restore of ISC failed\n\n"
+              + (if $comment != "" then "Comment: " + $comment + "\n\n" else "" end)
+              + "Governance rejected the drift, but putting ISC back to match git stopped before it finished. ISC may be only partly restored.\n\n"
+              + "```json\n" + (($r[0].failed // {error:"restore produced no result"}) | tostring) + "\n```"
+            ' > /tmp/drift-issue.md
+            TITLE="Drift rejected — ISC restore failed $(date -u +%Y-%m-%d)"
+          fi
+          ISSUE_URL=$(gh issue create --title "$TITLE" --body-file /tmp/drift-issue.md)
+
           git config user.name "amcm-bot"
           git config user.email "amcm-bot[bot]@users.noreply.github.com"
-          jq -n --slurpfile d /tmp/drift-now.json --arg decision "$DECISION" \
-            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:$decision, modifiers:[]}' \
+          jq -n --slurpfile d /tmp/drift-now.json --arg issue "$ISSUE_URL" --argjson restored "$OK" \
+            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"rejected", restored:$restored, issueUrl:$issue, modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
           node scripts/cli.mjs readme
-          git add changes/ README.md
-          git commit -m "chore(backup): record drift decision ($DECISION)" || true
+          git add access/ changes/ README.md
+          if [ "$OK" = "true" ]; then
+            git diff --cached --quiet || git commit -m "chore(backup): rejected drift — restored ISC to match git"
+          else
+            git diff --cached --quiet || git commit -m "chore(backup): rejected drift — ISC restore failed"
+          fi
           for i in 1 2 3 4 5; do
             git push && break
+            echo "Push rejected (attempt $i), rebasing onto origin/main..."
             git fetch origin main
             git rebase origin/main || { git rebase --abort; exit 1; }
           done
+          test "$OK" = "true"
 
+      - name: Expired — record decision, ISC unchanged
+        if: steps.verify.outputs.decision == 'expired'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
           COMMENT=$(jq -r '.comment // empty' /tmp/drift-decision.json)
-          jq -r --arg decision "$DECISION" --arg comment "$COMMENT" '
+          jq -r --arg comment "$COMMENT" '
             def preview:
               if length == 0 then "_none_"
               else
                 (.[0:40] | map("- `" + . + "`") | join("\n"))
                 + (if length > 40 then "\n\n_and " + ((length - 40) | tostring) + " more" else "" end)
               end;
-            "## Drift " + $decision + " by governance\n\n"
-            + "ISC still has items outside the PR flow; this was **not** synced to `main`.\n\n"
+            "## Drift expired\n\n"
+            + "Nobody acted before the timeout. ISC was left unchanged and nothing was copied into git.\n\n"
             + (if $comment != "" then "Comment: " + $comment + "\n\n" else "" end)
             + "### Added (" + (.added | length | tostring) + ")\n" + (.added | preview) + "\n\n"
             + "### Changed (" + (.changed | length | tostring) + ")\n" + (.changed | preview) + "\n\n"
             + "### Deleted (" + (.deleted | length | tostring) + ")\n" + (.deleted | preview) + "\n\n"
             + "The next scheduled backup will detect this drift again and request approval."
           ' /tmp/drift-now.json > /tmp/drift-issue.md
-          gh issue create --title "Drift $DECISION by governance $(date -u +%Y-%m-%d)" --body-file /tmp/drift-issue.md
+          ISSUE_URL=$(gh issue create --title "Drift expired $(date -u +%Y-%m-%d)" --body-file /tmp/drift-issue.md)
+
+          git config user.name "amcm-bot"
+          git config user.email "amcm-bot[bot]@users.noreply.github.com"
+          jq -n --slurpfile d /tmp/drift-now.json --arg issue "$ISSUE_URL" \
+            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"expired", restored:false, issueUrl:$issue, modifiers:($d[0].actors.modifiers // [])}' \
+            | node scripts/cli.mjs ledger-drift
+          node scripts/cli.mjs readme
+          git add changes/ README.md
+          git diff --cached --quiet || git commit -m "chore(backup): record drift decision (expired)"
+          for i in 1 2 3 4 5; do
+            git push && break
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; exit 1; }
+          done

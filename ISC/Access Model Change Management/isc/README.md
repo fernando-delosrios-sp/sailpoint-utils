@@ -78,7 +78,7 @@ can route each decision to the right job:
 |--------------|------|
 | `isc-change-decision` | Change approval finished (`approved` / `rejected` / `expired`) |
 | `isc-restore-decision` | Restore approval finished |
-| `isc-drift-decision` | Drift approval finished |
+| `isc-drift-decision` | Drift approval finished (`approved` copies ISC into git, `rejected` restores ISC to match git, `expired` changes nothing) |
 
 Payloads include `decision`, content/plan/drift hash, PR or tag metadata,
 optional `comment`, and `executionId` for GitHub-side verification. The drift

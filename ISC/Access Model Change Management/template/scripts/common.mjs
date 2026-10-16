@@ -85,8 +85,17 @@ export function contentHash(value) {
   return createHash('sha256').update(stableStringify(value)).digest('hex');
 }
 
-export function itemPath(type, name, sourceSlug = null) {
-  const file = `${slugify(name)}.json`;
+/**
+ * File path for an item.
+ *
+ * `discriminator` disambiguates entitlements that share a name inside one
+ * source — ISC allows that, a single file name does not. Callers pass it only
+ * for the colliding names (see `entitlementDiscriminator`), so the common case
+ * keeps the bare `<name-slug>.json`.
+ */
+export function itemPath(type, name, sourceSlug = null, discriminator = null) {
+  const base = slugify(name);
+  const file = discriminator ? `${base}__${slugify(discriminator)}.json` : `${base}.json`;
   if (type === ITEM_TYPES.entitlement) {
     if (!sourceSlug) throw new Error('Entitlement paths require a source slug');
     return join(ENTITLEMENTS_DIR, sourceSlug, file);
@@ -144,14 +153,42 @@ export function loadAllItems(root = ACCESS_ROOT) {
 }
 
 /**
- * Uniqueness key for an item. Entitlement names are only unique within their
- * source (e.g. two Google Workspace connectors can both have a
- * "Directory Sync Admin Role"), so entitlements are keyed by source + name;
- * access profiles and roles are tenant-wide and keyed by name alone.
+ * Native value of an entitlement — its identifier inside the source. Name is
+ * patchable metadata, value is not, so value is what identifies the same
+ * entitlement across a backup/apply round trip.
+ */
+export function entitlementValue(item) {
+  const value = item?.data?._readonly?.value ?? null;
+  return value === null || value === undefined ? null : String(value);
+}
+
+/**
+ * Suffix that makes two same-named entitlements in one source distinguishable.
+ * Value first (stable in the source), id second (stable in ISC).
+ */
+export function entitlementDiscriminator(item) {
+  return entitlementValue(item) ?? (item?.id ?? item?.data?.id ?? null);
+}
+
+/**
+ * Uniqueness key for an item.
+ *
+ * Entitlements are keyed by source + native value: names are only unique within
+ * a source (two Google Workspace connectors can both have a "Directory Sync
+ * Admin Role"), and even inside one source ISC allows repeats — AWS policy
+ * entitlements routinely do. Keying on value also means renaming an
+ * entitlement in ISC reads as an update instead of an unsupported
+ * create-plus-delete. Entitlements with no value fall back to name.
+ *
+ * Access profiles and roles are tenant-wide and keyed by name alone.
  */
 export function nameKey(item) {
   if (item.type === ITEM_TYPES.entitlement) {
-    return `${item.type}:${item.sourceSlug ?? ''}:${item.name}`;
+    const value = entitlementValue(item);
+    const scope = item.sourceSlug ?? '';
+    return value === null
+      ? `${item.type}:${scope}:name:${item.name}`
+      : `${item.type}:${scope}:value:${value}`;
   }
   return `${item.type}:${item.name}`;
 }
@@ -169,13 +206,24 @@ export function entitlementNames(items) {
   return names;
 }
 
+/**
+ * Index items by identity. Entitlements are keyed by source and native value,
+ * so repeated names inside a source are fine; a throw here means two items
+ * genuinely share an identity and the plan could not tell them apart.
+ */
 export function indexByName(items) {
   const map = new Map();
   for (const item of items) {
     const key = nameKey(item);
-    if (map.has(key)) {
-      const scope = item.type === ITEM_TYPES.entitlement ? ` in source "${item.sourceSlug}"` : '';
-      throw new Error(`Duplicate ${item.type} named "${item.name}"${scope}`);
+    const existing = map.get(key);
+    if (existing) {
+      const where = item.type === ITEM_TYPES.entitlement
+        ? ` in source "${item.sourceSlug}" (value ${entitlementValue(item) ?? 'unset'})`
+        : '';
+      throw new Error(
+        `Duplicate ${item.type} named "${item.name}"${where}: `
+        + `${existing.relPath} and ${item.relPath}`,
+      );
     }
     map.set(key, item);
   }

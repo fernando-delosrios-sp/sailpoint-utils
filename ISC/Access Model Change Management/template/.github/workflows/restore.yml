@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "isc-applied/* tag to restore"
+        description: "known-good/* tag to restore (isc-applied/* still accepted)"
         required: true
         type: string
       plan_hash:
@@ -54,9 +54,9 @@ jobs:
       - name: Validate tag name
         run: |
           node -e "
-            import { isAppliedTag } from './scripts/tags.mjs';
-            if (!isAppliedTag(process.env.TAG)) {
-              console.error('Tag must start with isc-applied/');
+            import { isKnownGoodTag } from './scripts/tags.mjs';
+            if (!isKnownGoodTag(process.env.TAG)) {
+              console.error('Tag must start with known-good/ (isc-applied/ is still accepted)');
               process.exit(1);
             }
           "

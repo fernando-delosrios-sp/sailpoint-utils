@@ -10,7 +10,6 @@ export class InstallerIsc {
     this.clientSecret = clientSecret;
     this.accessToken = accessToken ?? null;
     this.fetchImpl = fetchImpl;
-    this.apiVersion = 'v2025';
   }
 
   static fromAnswers(answers) {
@@ -40,7 +39,9 @@ export class InstallerIsc {
 
   async request(method, path, body, { contentType = 'application/json' } = {}) {
     await this.ensureToken();
-    const url = path.startsWith('http') ? path : `${this.baseUrl}/${this.apiVersion}${path}`;
+    // Each service carries its own version in the path; the yearly
+    // generations (/v2024, /v2025) are legacy.
+    const url = path.startsWith('http') ? path : `${this.baseUrl}${path}`;
     const res = await this.fetchImpl(url, {
       method,
       headers: {
@@ -97,11 +98,11 @@ export class InstallerIsc {
   }
 
   listSources() {
-    return this.listAll('/sources');
+    return this.listAll('/sources/v1');
   }
 
   listGovernanceGroups() {
-    return this.listAll('/workgroups');
+    return this.listAll('/workgroups/v1');
   }
 
   /**
@@ -143,7 +144,7 @@ export class InstallerIsc {
 
     let name = claims.user_name || claims.username || claims.strong_id || claims.preferred_username || null;
     try {
-      const identity = await this.get(`/identities/${id}`);
+      const identity = await this.get(`/identities/v1/${id}`);
       name = identity?.name ?? identity?.alias ?? name ?? id;
       // Workflow owner.name is validated against the identity's alias — not its
       // display name and not attributes.uid, which can differ from the alias.
@@ -157,13 +158,13 @@ export class InstallerIsc {
   async validateCredentials() {
     await this.ensureToken();
     // lightweight call
-    await this.get('/public-identities-config');
+    await this.get('/public-identities-config/v1');
     return true;
   }
 
   async findWorkflowByName(name) {
     try {
-      const all = await this.listAll('/workflows');
+      const all = await this.listAll('/workflows/v1');
       return all.find((w) => w.name === name) ?? null;
     } catch {
       return null;
@@ -182,12 +183,12 @@ export class InstallerIsc {
     const existing = await this.findWorkflowByName(body.name);
     if (existing) {
       const updated = await this.put(
-        `/workflows/${existing.id}`,
+        `/workflows/v1/${existing.id}`,
         toWorkflowWriteBody(body, { id: existing.id }),
       );
       return { name: body.name, id: existing.id, action: 'updated', body: updated ?? body };
     }
-    const created = await this.post('/workflows', toWorkflowWriteBody(body));
+    const created = await this.post('/workflows/v1', toWorkflowWriteBody(body));
     return { name: body.name, id: created.id, action: 'created', body: created };
   }
 
@@ -202,7 +203,7 @@ export class InstallerIsc {
    */
   async createExternalTriggerClient(workflowId) {
     try {
-      const created = await this.post(`/workflows/${workflowId}/external/oauth-clients`, {});
+      const created = await this.post(`/workflows/v1/${workflowId}/external/oauth-clients`, {});
       const url = created?.url ?? '';
       return {
         clientId: created?.id,
@@ -221,7 +222,7 @@ export class InstallerIsc {
   async enableWorkflow(workflowId) {
     return this.request(
       'PATCH',
-      `/workflows/${workflowId}`,
+      `/workflows/v1/${workflowId}`,
       [{ op: 'replace', path: '/enabled', value: true }],
       { contentType: 'application/json-patch+json' },
     );

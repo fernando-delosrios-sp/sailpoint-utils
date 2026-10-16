@@ -138,6 +138,7 @@ export function githubAppManifest({ name, description, url, callbackUrl }) {
       checks: 'write',
       statuses: 'write',
       workflows: 'write',
+      actions: 'write',
       metadata: 'read',
     },
     default_events: [],

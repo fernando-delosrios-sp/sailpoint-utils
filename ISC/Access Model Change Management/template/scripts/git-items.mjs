@@ -56,7 +56,7 @@ function batchCatFile(hashes, { cwd }) {
 }
 
 /**
- * Load access items from a git ref (e.g. origin/main or an isc-applied tag).
+ * Load access items from a git ref (e.g. origin/main or a known-good tag).
  *
  * Returns [] only when the ref genuinely has no history yet (e.g. HEAD~1 on
  * the very first commit) — any other git failure (notably ENOBUFS on large

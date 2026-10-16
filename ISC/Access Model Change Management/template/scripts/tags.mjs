@@ -1,29 +1,34 @@
 import { execFileSync } from 'node:child_process';
 import { utcStamp } from './common.mjs';
 
-const TAG_PREFIX = 'isc-applied/';
+const TAG_PREFIX = 'known-good/';
+/** Earlier installs tagged the same snapshot as isc-applied/. Still restorable. */
+const LEGACY_PREFIX = 'isc-applied/';
 
-export function isAppliedTag(name) {
-  return typeof name === 'string' && name.startsWith(TAG_PREFIX);
+export function isKnownGoodTag(name) {
+  return (
+    typeof name === 'string' &&
+    (name.startsWith(TAG_PREFIX) || name.startsWith(LEGACY_PREFIX))
+  );
 }
 
 /**
  * Build an annotated tag name for a successful apply.
- * Example: isc-applied/20261016T101530Z-pr-123
+ * Example: known-good/20261016T101530Z-pr-123
  */
-export function buildAppliedTagName({ prNumber = null, date = new Date() } = {}) {
+export function buildKnownGoodTagName({ prNumber = null, date = new Date() } = {}) {
   const stamp = utcStamp(date);
   const suffix = prNumber != null ? `-pr-${prNumber}` : '';
   return `${TAG_PREFIX}${stamp}${suffix}`;
 }
 
-export function createAppliedTag({
+export function createKnownGoodTag({
   name,
   message,
   cwd = process.cwd(),
   dryRun = false,
 } = {}) {
-  if (!isAppliedTag(name)) {
+  if (!isKnownGoodTag(name) || !name.startsWith(TAG_PREFIX)) {
     throw new Error(`Tag name must start with ${TAG_PREFIX}`);
   }
   if (dryRun) {
@@ -34,11 +39,17 @@ export function createAppliedTag({
   return { name, dryRun: false };
 }
 
-export function listAppliedTags({ cwd = process.cwd(), limit = 50 } = {}) {
+export function listKnownGoodTags({ cwd = process.cwd(), limit = 50 } = {}) {
   try {
     const out = execFileSync(
       'git',
-      ['tag', '-l', `${TAG_PREFIX}*`, '--sort=-creatordate'],
+      [
+        'for-each-ref',
+        '--sort=-creatordate',
+        '--format=%(refname:short)',
+        'refs/tags/known-good/*',
+        'refs/tags/isc-applied/*',
+      ],
       { cwd, encoding: 'utf8' },
     );
     return out

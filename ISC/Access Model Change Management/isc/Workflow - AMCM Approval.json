@@ -436,6 +436,12 @@
             "variableA.$": "$.governanceApprovalDrift.status",
             "variableB": "APPROVED",
             "nextStep": "Dispatch Approved Drift"
+          },
+          {
+            "comparator": "StringEquals",
+            "variableA.$": "$.governanceApprovalDrift.status",
+            "variableB": "EXPIRED",
+            "nextStep": "Dispatch Expired Drift"
           }
         ],
         "defaultStep": "Dispatch Rejected Drift",
@@ -489,7 +495,33 @@
             "X-GitHub-Api-Version": "2022-11-28"
           }
         },
-        "displayName": "GitHub: drift rejected or expired",
+        "displayName": "GitHub: drift rejected",
+        "nextStep": "End Rejected",
+        "type": "action",
+        "versionNumber": 2
+      },
+      "Dispatch Expired Drift": {
+        "actionId": "sp:http",
+        "attributes": {
+          "method": "post",
+          "url.$": "$.configuration.githubDispatchUrl",
+          "requestContentType": "json",
+          "jsonRequestBody": {
+            "event_type": "isc-drift-decision",
+            "client_payload": {
+              "decision": "expired",
+              "driftHash.$": "$.trigger.driftHash",
+              "comment.$": "$.governanceApprovalDrift.comments",
+              "executionId.$": "$.trigger.executionId"
+            }
+          },
+          "requestHeaders": {
+            "Authorization.$": "$.configuration.githubDispatchToken",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28"
+          }
+        },
+        "displayName": "GitHub: drift expired",
         "nextStep": "End Rejected",
         "type": "action",
         "versionNumber": 2

@@ -25,6 +25,21 @@ function sourceRef(source) {
 }
 
 /**
+ * ISC returns membership arrays (accessProfiles, entitlements, dimensionRefs)
+ * in whatever order the backend last touched them — not necessarily the order
+ * the caller set them in, and not necessarily stable across calls when
+ * nothing changed. Sorting by id (falling back to name) before comparing
+ * snapshots keeps drift detection from flagging a reorder as an edit.
+ */
+function sortRefs(refs) {
+  return [...refs].sort((a, b) => {
+    const ka = String(a?.id ?? a?.name ?? '');
+    const kb = String(b?.id ?? b?.name ?? '');
+    return ka < kb ? -1 : ka > kb ? 1 : 0;
+  });
+}
+
+/**
  * Normalize a live ISC entitlement into the repo file shape.
  * Only metadata the Entitlements API can update is kept for apply.
  */
@@ -51,14 +66,16 @@ export function normalizeEntitlement(raw, { sourceSlug } = {}) {
  * Access profile shape stored in git. Entitlement membership is by name within source.
  */
 export function normalizeAccessProfile(raw, { entitlementNameById = new Map() } = {}) {
-  const entitlements = (raw.entitlements ?? []).map((e) => {
-    const name = e.name ?? entitlementNameById.get(e.id) ?? null;
-    return {
-      id: e.id ?? null,
-      name,
-      type: e.type ?? 'ENTITLEMENT',
-    };
-  });
+  const entitlements = sortRefs(
+    (raw.entitlements ?? []).map((e) => {
+      const name = e.name ?? entitlementNameById.get(e.id) ?? null;
+      return {
+        id: e.id ?? null,
+        name,
+        type: e.type ?? 'ENTITLEMENT',
+      };
+    }),
+  );
 
   return omit(
     {
@@ -72,7 +89,7 @@ export function normalizeAccessProfile(raw, { entitlementNameById = new Map() } 
       entitlements,
       accessRequestConfig: raw.accessRequestConfig ?? null,
       revocationRequestConfig: raw.revocationRequestConfig ?? null,
-      segments: raw.segments ?? [],
+      segments: [...(raw.segments ?? [])].sort(),
       provisioningCriteria: raw.provisioningCriteria ?? null,
     },
     VOLATILE_FIELDS,
@@ -86,16 +103,20 @@ export function normalizeRole(raw, {
   accessProfileNameById = new Map(),
   entitlementNameById = new Map(),
 } = {}) {
-  const accessProfiles = (raw.accessProfiles ?? []).map((ap) => ({
-    id: ap.id ?? null,
-    name: ap.name ?? accessProfileNameById.get(ap.id) ?? null,
-  }));
+  const accessProfiles = sortRefs(
+    (raw.accessProfiles ?? []).map((ap) => ({
+      id: ap.id ?? null,
+      name: ap.name ?? accessProfileNameById.get(ap.id) ?? null,
+    })),
+  );
 
-  const entitlements = (raw.entitlements ?? []).map((e) => ({
-    id: e.id ?? null,
-    name: e.name ?? entitlementNameById.get(e.id) ?? null,
-    type: e.type ?? 'ENTITLEMENT',
-  }));
+  const entitlements = sortRefs(
+    (raw.entitlements ?? []).map((e) => ({
+      id: e.id ?? null,
+      name: e.name ?? entitlementNameById.get(e.id) ?? null,
+      type: e.type ?? 'ENTITLEMENT',
+    })),
+  );
 
   return omit(
     {
@@ -110,9 +131,9 @@ export function normalizeRole(raw, {
       membership: raw.membership ?? null,
       accessRequestConfig: raw.accessRequestConfig ?? null,
       revocationRequestConfig: raw.revocationRequestConfig ?? null,
-      segments: raw.segments ?? [],
+      segments: [...(raw.segments ?? [])].sort(),
       dimensional: Boolean(raw.dimensional),
-      dimensionRefs: raw.dimensionRefs ?? [],
+      dimensionRefs: sortRefs(raw.dimensionRefs ?? []),
     },
     VOLATILE_FIELDS,
   );

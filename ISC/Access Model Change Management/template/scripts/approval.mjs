@@ -1,4 +1,5 @@
 import { loadConfig } from './common.mjs';
+import { actorApprovalLines } from './drift-actors.mjs';
 import { ownersFromPlan } from './plan.mjs';
 
 /** ISC approvals show one description string; keep it short and scannable. */
@@ -132,6 +133,8 @@ export function buildDriftApprovalPayload({ drift, config = loadConfig() }) {
     approvalText: renderApprovalText([
       'ISC no longer matches the access model in git — items were changed outside the PR flow.',
       '',
+      ...actorApprovalLines(drift.actors),
+      ...(drift.actors ? [''] : []),
       `Added (${drift.added.length})`,
       ...previewPaths(drift.added),
       '',
@@ -141,7 +144,9 @@ export function buildDriftApprovalPayload({ drift, config = loadConfig() }) {
       `Deleted (${drift.deleted.length})`,
       ...previewPaths(drift.deleted),
       '',
-      'Approving syncs these items from ISC into git as the new source of truth.',
+      'Approving copies these items from ISC into git.',
+      'Rejecting puts ISC back to match git. Entitlements this repo cannot create or delete stay as they are.',
+      'If nobody acts before the timeout, ISC is left unchanged and the next backup asks again.',
       `Drift hash: ${drift.driftHash}`,
     ]),
     governanceGroupId: config.approval?.governanceGroupId,

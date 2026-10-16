@@ -1,0 +1,234 @@
+name: Init
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type RESET to wipe history, issues, and tags, then take a new baseline backup"
+        required: true
+        type: string
+
+concurrency:
+  group: amcm-init
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  init:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require RESET confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "RESET" ]; then
+            echo "Refusing to init. Re-run and set confirm to RESET. Nothing was changed."
+            exit 1
+          fi
+
+      - name: Stop if another workflow is running
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          busy=0
+          for status in in_progress queued waiting requested pending; do
+            n=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?status=${status}&per_page=100" \
+              --jq "[.workflow_runs[] | select(.id != ${GITHUB_RUN_ID} and .name != \"Init\")] | length")
+            busy=$((busy + n))
+          done
+          if [ "$busy" != "0" ]; then
+            echo "Other workflows are still queued or running. Wait for them to finish, then run Init again. Nothing was changed."
+            exit 1
+          fi
+
+      - name: Generate GitHub App token
+        id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AMCM_APP_ID }}
+          private-key: ${{ secrets.AMCM_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app.outputs.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: node scripts/public-npm-ci.mjs
+
+      - name: Snapshot ISC over a clean access tree and ledger
+        env:
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
+          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          node scripts/cli.mjs clear-content
+          node scripts/cli.mjs backup > /tmp/backup.json
+          cat /tmp/backup.json
+          TAG=$(node --input-type=module -e "import { buildKnownGoodTagName } from './scripts/tags.mjs'; console.log(buildKnownGoodTagName())")
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          jq -n \
+            --arg requester "$ACTOR" \
+            --arg tag "$TAG" \
+            --slurpfile backup /tmp/backup.json \
+            '{requester:$requester, tag:$tag, counts:$backup[0].counts}' \
+            | node scripts/cli.mjs ledger-init
+
+      - name: Replace main with the baseline commit
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "amcm-bot"
+          git config user.email "amcm-bot[bot]@users.noreply.github.com"
+          git checkout --orphan amcm-init
+          git add -A
+          git commit -m "chore(init): baseline backup from ISC"
+          # Tag locally so the README lists this baseline, then amend the
+          # still-unpushed commit if the README changed and retag that commit.
+          git tag -a "$TAG" -m "Known-good baseline after init"
+          node scripts/cli.mjs readme
+          git add README.md
+          if ! git diff --cached --quiet; then
+            git commit --amend --no-edit
+            git tag -d "$TAG"
+            git tag -a "$TAG" -m "Known-good baseline after init"
+          fi
+          git branch -M main
+          if ! git push --force origin main; then
+            echo "::error::Force-push was rejected. The GitHub App must remain a ruleset bypass actor."
+            exit 1
+          fi
+          echo "PUBLISHED=true" >> "$GITHUB_ENV"
+          git push origin "refs/tags/$TAG"
+
+      - name: Delete issues, pull requests, releases, tags, and other branches
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+
+          # Releases first, while their tags still exist. Tag deletion below
+          # keeps the new baseline tag.
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" --jq '.[].tag_name' > /tmp/releases.txt
+          while read -r tag; do
+            [ -z "$tag" ] && continue
+            echo "Deleting release $tag"
+            gh release delete "$tag" --yes
+          done < /tmp/releases.txt
+
+          git ls-remote --tags origin > /tmp/remote-tags.txt
+          while read -r _ ref; do
+            [ -z "${ref:-}" ] && continue
+            case "$ref" in
+              *'^{}') continue ;;
+            esac
+            tag=${ref#refs/tags/}
+            if [ "$tag" = "$TAG" ]; then
+              continue
+            fi
+            echo "Deleting $ref"
+            git push origin ":${ref}"
+          done < /tmp/remote-tags.txt
+
+          git ls-remote --heads origin > /tmp/remote-heads.txt
+          while read -r _ ref; do
+            name=${ref#refs/heads/}
+            if [ -z "$name" ] || [ "$name" = "main" ]; then
+              continue
+            fi
+            echo "Deleting branch $name"
+            git push origin ":${ref}"
+          done < /tmp/remote-heads.txt
+
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" --jq '.[].number' > /tmp/prs.txt
+          while read -r number; do
+            [ -z "$number" ] && continue
+            echo "Closing pull request #$number"
+            gh pr close "$number" --comment "Closed by Init. This repository was reset to a fresh backup."
+          done < /tmp/prs.txt
+
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/issues?state=all&per_page=100" \
+            --jq '.[] | select(.pull_request | not) | [.number, .state, .node_id] | @tsv' > /tmp/issues.tsv
+          MODE=delete
+          DELETED=0
+          CLOSED=0
+          LEFT_CLOSED=0
+          while IFS=$'\t' read -r number state node_id; do
+            [ -z "${number:-}" ] && continue
+            if [ "$MODE" = "delete" ]; then
+              if gh api graphql \
+                -f query='mutation($id: ID!) { deleteIssue(input: {issueId: $id}) { clientMutationId } }' \
+                -f id="$node_id" >/dev/null 2>/tmp/issue-err; then
+                DELETED=$((DELETED + 1))
+                continue
+              fi
+              if grep -Eqi 'admin|403|authorized|Resource not accessible|not accessible|forbidden' /tmp/issue-err; then
+                echo "Cannot delete issues with this token. Closing open issues instead."
+                cat /tmp/issue-err
+                MODE=close
+              else
+                echo "Failed to delete issue #$number"
+                cat /tmp/issue-err
+                exit 1
+              fi
+            fi
+            if [ "$state" = "open" ]; then
+              gh issue close "$number" --reason "not planned" \
+                --comment "Closed by Init. The GitHub App cannot delete issues, so this one was closed instead."
+              CLOSED=$((CLOSED + 1))
+            else
+              LEFT_CLOSED=$((LEFT_CLOSED + 1))
+            fi
+          done < /tmp/issues.tsv
+          {
+            echo "Issues deleted: $DELETED"
+            echo "Issues closed: $CLOSED"
+            echo "Closed issues left in place: $LEFT_CLOSED"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Delete previous workflow runs
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs?status=completed&per_page=100" \
+            --jq '.workflow_runs[].id' > /tmp/runs.txt
+          while read -r id; do
+            [ -z "$id" ] && continue
+            if [ "$id" = "$GITHUB_RUN_ID" ]; then
+              continue
+            fi
+            echo "Deleting workflow run $id"
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/actions/runs/${id}" >/dev/null \
+              || echo "Could not delete workflow run $id"
+          done < /tmp/runs.txt
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            if [ "${PUBLISHED:-}" = "true" ]; then
+              echo "### Init"
+              echo "\`main\` is now a single commit: a fresh backup from ISC."
+              echo "Baseline tag: \`$TAG\`"
+              echo "ISC was not modified."
+              echo ""
+              echo '```json'
+              jq '.counts' /tmp/backup.json
+              echo '```'
+            else
+              echo "### Init stopped"
+              echo "\`main\` was not replaced."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

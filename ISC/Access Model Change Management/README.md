@@ -2,7 +2,7 @@
 
 GitHub-centric governance of SailPoint Identity Security Cloud (ISC) **entitlements** (metadata), **access profiles** and **roles**.
 
-This folder is the **installer and template**. Running the installer creates (or updates) a dedicated GitHub repository wired to one ISC tenant: daily REST backups, pull-request-only changes, ISC Workflow approvals, auto-apply on merge, applied-state tags, and governance-group-approved full restore.
+This folder is the **installer and template**. Running the installer creates (or updates) a dedicated GitHub repository wired to one ISC tenant: daily REST backups, pull-request-only changes, ISC Workflow approvals, auto-apply on merge, known-good tags, and governance-group-approved full restore.
 
 ## Why not SP-Config?
 
@@ -19,7 +19,7 @@ This folder is the **installer and template**. Running the installer creates (or
 ## Prerequisites
 
 1. **PowerShell is not required.** Node.js 20+, `gh` (authenticated), and network access to the ISC tenant and GitHub.
-2. A **dedicated service identity** in ISC with rights to manage access profiles, roles and entitlement metadata. Create an API client (client credentials) for that identity — the installer stores it as GitHub Actions secrets so audit events attribute applies to the service identity.
+2. A **dedicated service identity** in ISC with rights to manage access profiles, roles and entitlement metadata, plus the **Search** user level (`sp:search:read`). Create an API client (client credentials) for that identity — the installer stores it as GitHub Actions secrets so audit events attribute applies to the service identity. Search read lets drift approvals name the actor on the out-of-band edit. Without it, drift detection still runs and the actor is left unknown.
 3. At least one **governance group** in ISC (first-level approver for changes; sole approver for restores).
 4. A logged-in `gh` session, plus a **fine-grained GitHub PAT** for ISC→GitHub `repository_dispatch` (see [Dispatch PAT](#dispatch-pat-isc--github) below). The installer asks for this **after** the target repo exists.
 5. Permission to create a **GitHub App** (user or org) that the installer configures as the only ruleset bypass actor on `main`.
@@ -127,7 +127,7 @@ flowchart LR
   Approvals -->|repository_dispatch| Callback
   Callback -->|isc-approval + auto-merge<br/>or drift sync to main| Repo
   Repo -->|apply REST| ISC
-  Apply -->|isc-applied tag + ledger| Repo
+  Apply -->|known-good tag + ledger| Repo
 ```
 
 ### Changing an access item
@@ -136,18 +136,18 @@ flowchart LR
 2. Open a PR. CI validates schemas and name references.  
 3. GitHub calls the **AMCM Approval** workflow with `kind: "change"`. The **governance group** decides first; if `approval.ownerApproval` is enabled, every changed item's **owner** is then asked in parallel and any single rejection fails the change. Approvers see the GitHub author, PR title, link and change summary in their ISC **Approvals** inbox.  
 4. On approve, GitHub sets the `isc-approval` status (bound to a **diff content hash**, not the commit SHA) and enables auto-merge.  
-5. On merge, Actions apply create/update/delete via REST, write new ids back, create an `isc-applied/…` tag, and append the ledger.  
+5. On merge, Actions apply create/update/delete via REST, write new ids back, create a `known-good/…` tag, and append the ledger.  
 6. Reject closes the PR. Approvals nobody acts on expire after `approval.timeoutDays` and get the `approval-expired` label; comment `/request-approval` to retry.
 
 Entitlements are **update-only** (name, description, privileged, requestable, owner). Creates/deletes of entitlements are skipped.
 
 ### Daily backup and drift
 
-The Backup Action snapshots allowlisted entitlements, all access profiles and all roles. If ISC was edited outside git, nothing is committed automatically: GitHub calls the **AMCM Approval** workflow with `kind: "drift"`, which routes straight to the **governance group only** (item owners are never contacted — nobody "owns" an out-of-band ISC edit). On approve, the decision callback re-detects drift against live ISC (to make sure it hasn't moved again), syncs it to `main`, and records a drift ledger entry. On reject or expiry, nothing is synced and an issue explains why; the next scheduled backup detects the same drift and asks again.
+The Backup Action snapshots allowlisted entitlements, all access profiles and all roles. If ISC was edited outside git, nothing is committed automatically: GitHub calls the **AMCM Approval** workflow with `kind: "drift"`, which routes straight to the **governance group only** (item owners are never contacted — nobody "owns" an out-of-band ISC edit). The approval text names the ISC audit actor associated with each drifted item, searched from the events index since the last time git and ISC matched (or the last 14 days when the ledger has no such point). On approve, the decision callback re-detects drift against live ISC (to make sure it hasn't moved again), syncs it to `main`, and records a drift ledger entry whose Who column is those actors. On reject, the callback restores ISC to match git and records that. On expiry, ISC is left unchanged and the next scheduled backup asks again. Entitlements this repo cannot create or delete are skipped, so a rejected entitlement-only drift can remain and will be asked about again. Audit search is best-effort: a missing Search user level, or no matching event, leaves the actor unknown and does not block the approval.
 
 ### Full restore
 
-1. Actions → **Restore** → pick an `isc-applied/*` tag.  
+1. Actions → **Restore** → pick a `known-good/*` tag. Tags created before this rename (`isc-applied/*`) are still accepted.  
 2. A full reconciliation plan is built against live ISC.  
 3. GitHub calls the same **AMCM Approval** workflow with `kind: "restore"`, which routes straight to the governance group (item owners are never contacted for restores).  
 4. On approve, the plan is applied; `main` is reconciled from ISC; a restore ledger entry is written.
@@ -155,6 +155,16 @@ The Backup Action snapshots allowlisted entitlements, all access profiles and al
 ### History
 
 `changes/YYYY-MM/*.json` is the append-only ledger. `README.md` in the target repo is generated from it and lists recent changes, approvals, tags and drift.
+
+### Init
+
+**Actions → Init** starts the repository over. Type `RESET` to confirm. The run stops if any other workflow is still queued or running.
+
+It replaces `main` with one commit: a fresh backup of the current ISC access model (allowlisted entitlements, all access profiles, all roles), a baseline ledger entry, and a new `known-good/…` tag. Scripts, workflows, `config.yaml`, and secrets stay. ISC is not modified. The snapshot is the new baseline, so the next backup should report no drift.
+
+After that commit is on `main`, Init deletes tags, releases, other branches, and previous workflow runs, and closes open pull requests. Issues are deleted when the GitHub App is allowed to; otherwise open issues are closed. GitHub keeps closed and merged pull requests. Git history from before the new commit is gone and cannot be restored from this repository.
+
+Deleting previous workflow runs needs the GitHub App repository permission **Actions: Read and write**. The installer asks for that on a new App. An App created before this permission was listed must get it under the App's **Permissions & events**, then the installation must accept the updated permissions. Without it, Init still replaces `main` and the run fails only on that cleanup step.
 
 ## Target repo layout
 
@@ -170,7 +180,9 @@ schemas/
 .github/workflows/
 ```
 
-Files are keyed by **name slug**; the ISC `id` lives inside the JSON. Cross-references use **names**; apply resolves them to ids in dependency order (entitlements → access profiles → roles).
+Files are keyed by **name slug**; the ISC `id` lives inside the JSON. Cross-references use **names**; apply resolves them to ids in dependency order (entitlements → access profiles → roles). An entitlement name that a caller cannot resolve to exactly one entitlement fails the apply rather than being guessed.
+
+ISC allows several entitlements in one source to share a name (AWS policy entitlements commonly do). Those files get a suffix from the entitlement's native value — `<name-slug>__<value-slug>.json` — so each one is backed up instead of overwriting the others. Names that are unique in their source keep the plain `<name-slug>.json`. Entitlement identity itself is source plus native value, not the file name, so renaming an entitlement in ISC reads as an update.
 
 ## Local commands (inside the target repo)
 

@@ -84,6 +84,9 @@ export function writeRestoreEntry({
  * `decision` is 'approved' | 'rejected' | 'expired' once drift goes through
  * governance approval. Entries written before that change omit it (treat
  * missing as 'approved' — they were auto-committed).
+ *
+ * `modifiers` is the ISC audit actors associated with the drifted items.
+ * An empty list means the actor was unknown or audit search was unavailable.
  */
 export function writeDriftEntry({
   added,
@@ -91,6 +94,7 @@ export function writeDriftEntry({
   deleted,
   driftHash = null,
   decision = null,
+  restored = false,
   modifiers = [],
   issueUrl = null,
   timestamp = nowIso(),
@@ -106,8 +110,44 @@ export function writeDriftEntry({
     deleted,
     driftHash,
     decision,
+    restored,
     modifiers,
     issueUrl,
+    timestamp,
+  };
+  writeJson(path, entry);
+  return { path, entry };
+}
+
+/**
+ * Record the baseline created by the Init workflow.
+ * History before this entry was discarded.
+ */
+export function writeInitEntry({
+  requester,
+  counts = null,
+  backup = null,
+  tag = null,
+  timestamp = nowIso(),
+  changesDir = CHANGES_DIR,
+}) {
+  const date = new Date(timestamp);
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dir = join(changesDir, `${y}-${m}`);
+  ensureDir(dir);
+  const stamp = timestamp.replace(/[:.]/g, '-');
+  const path = join(dir, `init-${stamp}.json`);
+  const source = counts ?? backup?.counts ?? {};
+  const entry = {
+    kind: 'init',
+    requester,
+    counts: {
+      entitlements: source.entitlements ?? 0,
+      accessProfiles: source.accessProfiles ?? 0,
+      roles: source.roles ?? 0,
+    },
+    tag,
     timestamp,
   };
   writeJson(path, entry);

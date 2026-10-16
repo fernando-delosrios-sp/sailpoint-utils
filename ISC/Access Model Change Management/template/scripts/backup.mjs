@@ -7,73 +7,57 @@ import {
   ROOT,
   ROLES_DIR,
   contentHash,
-  ensureDir,
-  itemPath,
   loadAllItems,
   loadConfig,
   removeEmptyDirs,
   slugify,
+  stableStringify,
   walkJsonFiles,
   writeJson,
 } from './common.mjs';
 import { IscClient } from './isc-client.mjs';
-import {
-  normalizeAccessProfile,
-  normalizeEntitlement,
-  normalizeRole,
-} from './normalize.mjs';
+import { attributeDriftActors } from './drift-actors.mjs';
+import { listLedgerEntries } from './ledger.mjs';
+import { snapshotLive } from './live-snapshot.mjs';
+
+/** Directories this repo owns, so stale files can be pruned after a backup. */
+function trackedRoots(config) {
+  const roots = [ACCESS_PROFILES_DIR, ROLES_DIR];
+  for (const source of config.entitlementSources ?? []) {
+    roots.push(`${ENTITLEMENTS_DIR}/${slugify(source.name)}`);
+  }
+  return roots;
+}
 
 /**
  * Snapshot entitlements (allowlisted sources), access profiles and roles into access/.
+ *
+ * `snapshot` lets a caller that already read ISC (drift detection) hand the
+ * result over instead of paying for a second full enumeration.
  */
 export async function runBackup({
   client = IscClient.fromEnv(),
   config = loadConfig(),
   dryRun = false,
+  snapshot = null,
 } = {}) {
-  const allowlist = config.entitlementSources ?? [];
-  const entitlementNameById = new Map();
-  const accessProfileNameById = new Map();
+  const live = snapshot ?? await snapshotLive({ client, config });
   const written = [];
   const keptPaths = new Set();
 
-  for (const source of allowlist) {
-    const raws = await client.listEntitlements(`source.id eq "${source.id}"`);
-    const sourceSlug = slugify(source.name);
-    ensureDir(`${ENTITLEMENTS_DIR}/${sourceSlug}`);
-    for (const raw of raws) {
-      entitlementNameById.set(raw.id, raw.name);
-      const normalized = normalizeEntitlement(raw, { sourceSlug });
-      const path = itemPath(ITEM_TYPES.entitlement, raw.name, sourceSlug);
-      keptPaths.add(path);
-      if (!dryRun) writeJson(path, normalized);
-      written.push({ type: ITEM_TYPES.entitlement, path, name: raw.name, id: raw.id });
-    }
-  }
-
-  for (const raw of await client.listAccessProfiles()) {
-    accessProfileNameById.set(raw.id, raw.name);
-    const normalized = normalizeAccessProfile(raw, { entitlementNameById });
-    const path = itemPath(ITEM_TYPES.accessProfile, raw.name);
-    keptPaths.add(path);
-    if (!dryRun) writeJson(path, normalized);
-    written.push({ type: ITEM_TYPES.accessProfile, path, name: raw.name, id: raw.id });
-  }
-
-  for (const raw of await client.listRoles()) {
-    const normalized = normalizeRole(raw, { accessProfileNameById, entitlementNameById });
-    const path = itemPath(ITEM_TYPES.role, raw.name);
-    keptPaths.add(path);
-    if (!dryRun) writeJson(path, normalized);
-    written.push({ type: ITEM_TYPES.role, path, name: raw.name, id: raw.id });
+  for (const item of live.entries) {
+    keptPaths.add(item.path);
+    if (!dryRun) writeJson(item.path, item.data);
+    written.push({
+      type: item.type,
+      path: item.path,
+      name: item.name,
+      id: item.id,
+    });
   }
 
   const removed = [];
-  const trackedRoots = [ACCESS_PROFILES_DIR, ROLES_DIR];
-  for (const source of allowlist) {
-    trackedRoots.push(`${ENTITLEMENTS_DIR}/${slugify(source.name)}`);
-  }
-  for (const root of trackedRoots) {
+  for (const root of trackedRoots(config)) {
     for (const file of walkJsonFiles(root)) {
       if (!keptPaths.has(file)) {
         removed.push(file);
@@ -97,67 +81,77 @@ export async function runBackup({
 
 /**
  * Compare current access/ files to a fresh ISC snapshot without writing.
+ *
+ * Returns the snapshot alongside the drift so the caller can write it without
+ * reading ISC again.
  */
 export async function detectDrift({
   client = IscClient.fromEnv(),
   config = loadConfig(),
+  snapshot = null,
 } = {}) {
   const before = loadAllItems();
-  const beforeMap = new Map(before.map((i) => [i.relPath, JSON.stringify(i.data)]));
-  const allowlist = config.entitlementSources ?? [];
-  const after = new Map();
-  const entitlementNameById = new Map();
-  const accessProfileNameById = new Map();
-
-  for (const source of allowlist) {
-    const raws = await client.listEntitlements(`source.id eq "${source.id}"`);
-    const sourceSlug = slugify(source.name);
-    for (const raw of raws) {
-      entitlementNameById.set(raw.id, raw.name);
-      const normalized = normalizeEntitlement(raw, { sourceSlug });
-      after.set(
-        relative(ROOT, itemPath(ITEM_TYPES.entitlement, raw.name, sourceSlug)),
-        JSON.stringify(normalized),
-      );
-    }
-  }
-
-  for (const raw of await client.listAccessProfiles()) {
-    accessProfileNameById.set(raw.id, raw.name);
-    const normalized = normalizeAccessProfile(raw, { entitlementNameById });
-    after.set(
-      relative(ROOT, itemPath(ITEM_TYPES.accessProfile, raw.name)),
-      JSON.stringify(normalized),
-    );
-  }
-
-  for (const raw of await client.listRoles()) {
-    const normalized = normalizeRole(raw, { accessProfileNameById, entitlementNameById });
-    after.set(relative(ROOT, itemPath(ITEM_TYPES.role, raw.name)), JSON.stringify(normalized));
-  }
+  const beforeByPath = new Map(before.map((i) => [i.relPath, i]));
+  const live = snapshot ?? await snapshotLive({ client, config });
 
   const changed = [];
   const added = [];
   const deleted = [];
-  for (const [path, content] of after) {
-    if (!beforeMap.has(path)) added.push(path);
-    else if (beforeMap.get(path) !== content) changed.push(path);
+  const liveByPath = new Map();
+
+  for (const item of live.entries) {
+    liveByPath.set(item.relPath, item);
+    const prior = beforeByPath.get(item.relPath);
+    if (!prior) added.push(item.relPath);
+    // stableStringify, not JSON.stringify: ISC key order is not guaranteed and
+    // a reordered-but-identical object is not drift.
+    else if (stableStringify(prior.data) !== stableStringify(item.data)) {
+      changed.push(item.relPath);
+    }
   }
-  for (const path of beforeMap.keys()) {
-    if (!after.has(path)) deleted.push(path);
+  for (const relPath of beforeByPath.keys()) {
+    if (!liveByPath.has(relPath)) deleted.push(relPath);
   }
 
   // Sorted so the hash (and the request/execute comparison across the
-  // approval round trip) is stable regardless of Map iteration order.
+  // approval round trip) is stable regardless of iteration order.
   added.sort();
   changed.sort();
   deleted.sort();
+
+  const hasDrift = added.length + changed.length + deleted.length > 0;
+  const subjects = [];
+  const pushSubject = (relPath, change) => {
+    const item = liveByPath.get(relPath) ?? beforeByPath.get(relPath);
+    subjects.push({
+      path: relPath,
+      change,
+      id: item?.id ?? item?.data?.id ?? null,
+      name: item?.name ?? item?.data?.name ?? null,
+      type: item?.type ?? null,
+    });
+  };
+  for (const relPath of added) pushSubject(relPath, 'added');
+  for (const relPath of changed) pushSubject(relPath, 'changed');
+  for (const relPath of deleted) pushSubject(relPath, 'deleted');
+
+  const actors = hasDrift
+    ? await attributeDriftActors({
+      client,
+      subjects,
+      entries: listLedgerEntries(),
+    })
+    : null;
 
   return {
     added,
     changed,
     deleted,
-    hasDrift: added.length + changed.length + deleted.length > 0,
+    hasDrift,
     driftHash: contentHash({ added, changed, deleted }),
+    // Actors are not part of the hash. The approval callback re-detects drift
+    // and compares hashes, then reads actors.modifiers into the ledger.
+    actors,
+    snapshot: live,
   };
 }

@@ -3,6 +3,7 @@ import minimist from 'minimist';
 import { loadAllItems, loadConfig, writeJson } from './common.mjs';
 import { IscClient } from './isc-client.mjs';
 import { runBackup, detectDrift } from './backup.mjs';
+import { fromSnapshotFile, toSnapshotFile } from './live-snapshot.mjs';
 import { validateRepo } from './validate.mjs';
 import { planFromTrees, buildPlan } from './plan.mjs';
 import { applyPlan } from './apply.mjs';
@@ -19,8 +20,10 @@ import {
   writeChangeEntry,
   writeRestoreEntry,
   writeDriftEntry,
+  writeInitEntry,
 } from './ledger.mjs';
-import { buildAppliedTagName, createAppliedTag, isAppliedTag } from './tags.mjs';
+import { clearAccessAndLedger } from './reset.mjs';
+import { buildKnownGoodTagName, createKnownGoodTag, isKnownGoodTag } from './tags.mjs';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROOT } from './common.mjs';
@@ -43,7 +46,7 @@ async function loadItemsFromManifest(path) {
 async function main() {
   const argv = minimist(process.argv.slice(2), {
     boolean: ['dry-run', 'json', 'help'],
-    string: ['base', 'head', 'tag', 'pr', 'author', 'files', 'out', 'plan', 'drift', 'kind', 'diff-hash', 'message'],
+    string: ['base', 'head', 'tag', 'pr', 'author', 'files', 'out', 'plan', 'drift', 'kind', 'diff-hash', 'message', 'tags', 'snapshot'],
   });
   const [cmd] = argv._;
 
@@ -51,8 +54,9 @@ async function main() {
     process.stdout.write(`Usage: node scripts/cli.mjs <command> [options]
 
 Commands:
-  backup              Snapshot ISC into access/
-  drift               Detect drift without writing
+  backup              Snapshot ISC into access/ (--snapshot file reuses a drift read)
+  clear-content       Delete access JSON and the ledger, keeping .gitkeep
+  drift               Detect drift without writing (--snapshot file saves the ISC read)
   validate            Schema + name-reference checks
   plan                Diff base items vs head (default: empty base vs working tree)
   diff-hash           Hash touched files (--files a,b,c)
@@ -62,8 +66,9 @@ Commands:
   ledger-change       Write a change ledger entry (JSON on stdin or --plan)
   ledger-restore      Write a restore ledger entry
   ledger-drift        Write a drift ledger entry
-  tag-applied         Create isc-applied/* tag after successful apply
-  readme              Regenerate README.md from ledger
+  ledger-init         Write the baseline ledger entry created by Init
+  tag-known-good      Create known-good/* tag after successful apply
+  readme              Regenerate README.md (--tags a,b replaces the git tag list)
 `);
     process.exit(cmd ? 0 : 1);
   }
@@ -71,15 +76,24 @@ Commands:
   const config = existsSync(join(ROOT, 'config.yaml')) ? loadConfig() : null;
 
   if (cmd === 'backup') {
-    const client = IscClient.fromEnv();
-    const result = await runBackup({ client, config, dryRun: argv['dry-run'] });
+    // --snapshot reuses the ISC read a prior `drift` already paid for.
+    const snapshot = argv.snapshot && existsSync(argv.snapshot)
+      ? fromSnapshotFile(JSON.parse(readFileSync(argv.snapshot, 'utf8')))
+      : null;
+    const client = snapshot ? null : IscClient.fromEnv();
+    const result = await runBackup({ client, config, dryRun: argv['dry-run'], snapshot });
     print(result);
     return;
   }
 
   if (cmd === 'drift') {
     const client = IscClient.fromEnv();
-    print(await detectDrift({ client, config }));
+    const drift = await detectDrift({ client, config });
+    const { snapshot, ...rest } = drift;
+    // The snapshot is large; it goes to a file so the next command can reuse it
+    // instead of reading ISC again, and stays out of the printed result.
+    if (argv.snapshot) writeJson(argv.snapshot, toSnapshotFile(snapshot));
+    print(rest);
     return;
   }
 
@@ -131,13 +145,18 @@ Commands:
 
   if (cmd === 'restore') {
     const client = IscClient.fromEnv();
-    const plan = await buildRestorePlan({ client, config });
+    const snapshot = argv.snapshot && existsSync(argv.snapshot)
+      ? fromSnapshotFile(JSON.parse(readFileSync(argv.snapshot, 'utf8')))
+      : null;
+    // Load the repo tree once and pass it to both the plan and the apply.
+    const items = loadAllItems();
+    const plan = await buildRestorePlan({ client, config, headItems: items, snapshot });
     if (argv.out) writeJson(argv.out, plan);
     if (argv['dry-run'] || !argv.execute) {
       print({ ...plan, note: 'Pass --execute to apply after approval' });
       return;
     }
-    const result = await executeRestore({ plan, client });
+    const result = await executeRestore({ plan, client, items });
     print(result);
     if (!result.ok) die('Restore stopped on failure', 3);
     return;
@@ -205,13 +224,26 @@ Commands:
     return;
   }
 
-  if (cmd === 'tag-applied') {
-    const name = argv.tag ?? buildAppliedTagName({ prNumber: argv.pr });
-    if (!isAppliedTag(name)) die(`Invalid tag ${name}`);
+  if (cmd === 'ledger-init') {
+    const input = JSON.parse(readFileSync(0, 'utf8'));
+    print(writeInitEntry(input));
+    return;
+  }
+
+  if (cmd === 'clear-content') {
+    print(clearAccessAndLedger());
+    return;
+  }
+
+  if (cmd === 'tag-known-good' || cmd === 'tag-applied') {
+    const name = argv.tag ?? buildKnownGoodTagName({ prNumber: argv.pr });
+    if (!isKnownGoodTag(name) || !name.startsWith('known-good/')) {
+      die(`Invalid tag ${name}; new tags must start with known-good/`);
+    }
     print(
-      createAppliedTag({
+      createKnownGoodTag({
         name,
-        message: argv.message ?? `Applied to ISC (${name})`,
+        message: argv.message ?? `Known-good snapshot (${name})`,
         dryRun: argv['dry-run'],
       }),
     );
@@ -219,7 +251,14 @@ Commands:
   }
 
   if (cmd === 'readme') {
-    print(generateReadme({ config }));
+    const readmeOpts = { config };
+    if (argv.tags) {
+      readmeOpts.tags = String(argv.tags)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+    print(generateReadme(readmeOpts));
     return;
   }
 
