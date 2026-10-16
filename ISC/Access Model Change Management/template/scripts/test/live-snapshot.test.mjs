@@ -46,6 +46,22 @@ describe('snapshotLive', () => {
     ]);
   });
 
+  it('keeps long values apart even when they share a long prefix', async () => {
+    // AWS ARNs differ at the tail, and slugify truncates at the front, so a
+    // plain slug would map both of these to the same file.
+    const prefix = `arn:aws:iam::123456789012:policy/${'segment/'.repeat(20)}`;
+    const client = fakeClient([
+      { id: 'e1', name: 'Policy', value: `${prefix}one` },
+      { id: 'e2', name: 'Policy', value: `${prefix}two` },
+    ]);
+    const { entries } = await snapshotLive({ client, config });
+    const names = entries.map((e) => e.relPath);
+    assert.equal(new Set(names).size, 2);
+    for (const name of names) {
+      assert.ok(name.split('/').pop().length <= 128, `file name too long: ${name}`);
+    }
+  });
+
   it('leaves same-named entitlements in different sources unsuffixed', async () => {
     const client = {
       async listEntitlements(filter) {

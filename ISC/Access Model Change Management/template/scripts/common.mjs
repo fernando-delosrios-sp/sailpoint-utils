@@ -85,6 +85,25 @@ export function contentHash(value) {
   return createHash('sha256').update(stableStringify(value)).digest('hex');
 }
 
+/** Longest discriminator kept verbatim; beyond this it is hashed. */
+const DISCRIMINATOR_BUDGET = 48;
+
+/**
+ * Readable, collision-free file-name fragment for a discriminator.
+ *
+ * Plain `slugify` truncates from the front, which is the wrong end for values
+ * like AWS ARNs: they share a long account-and-type prefix and differ only at
+ * the tail, so two distinct policies would slug to the same 120 characters.
+ * Anything over budget therefore keeps a readable prefix and a hash of the
+ * whole value, which stays unique however long the values are.
+ */
+export function discriminatorSlug(discriminator) {
+  const slug = slugify(discriminator);
+  if (slug.length <= DISCRIMINATOR_BUDGET) return slug;
+  const digest = createHash('sha256').update(String(discriminator)).digest('hex').slice(0, 8);
+  return `${slug.slice(0, DISCRIMINATOR_BUDGET - digest.length - 1)}-${digest}`;
+}
+
 /**
  * File path for an item.
  *
@@ -95,7 +114,9 @@ export function contentHash(value) {
  */
 export function itemPath(type, name, sourceSlug = null, discriminator = null) {
   const base = slugify(name);
-  const file = discriminator ? `${base}__${slugify(discriminator)}.json` : `${base}.json`;
+  const file = discriminator
+    ? `${base}__${discriminatorSlug(discriminator)}.json`
+    : `${base}.json`;
   if (type === ITEM_TYPES.entitlement) {
     if (!sourceSlug) throw new Error('Entitlement paths require a source slug');
     return join(ENTITLEMENTS_DIR, sourceSlug, file);
