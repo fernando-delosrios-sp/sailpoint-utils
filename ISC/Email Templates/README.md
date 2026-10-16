@@ -20,15 +20,15 @@ Rewritten templates cover what end users receive: password and account notices, 
 Every template body starts with a settings block. The install script fills it in, and the values can be edited later in the ISC template editor:
 
 ```velocity
-## Email settings: edit the values between quotes. Import-EmailTemplates.ps1 sets them on import.
-#set($mailDefaultLanguage = 'en') ## language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar)
-#set($mailOrgName = 'EMEA TES Team') ## tenant owner or team name in the banner, sign-off and footer
-#set($mailBannerTagline = 'Identity & Access') ## small text above the tenant owner name in the banner
-#set($mailColorPrimary = '#0033A1') ## banner, headings and buttons
-#set($mailColorDark = '#011E69') ## start of the banner gradient
-#set($mailColorAccent = '#0071CE') ## links, section titles and information boxes
-#set($mailColorHighlight = '#CC27B0') ## banner stripe and warning boxes
-#set($mailSupportEmail = '') ## support address shown in the footer; empty hides it
+#* Email settings: edit the values between quotes. Import-EmailTemplates.ps1 sets them on import. *#
+#set($mailDefaultLanguage = 'en') #* language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar) *#
+#set($mailOrgName = 'EMEA TES Team') #* tenant owner or team name in the banner, sign-off and footer *#
+#set($mailBannerTagline = 'Identity & Access') #* small text above the tenant owner name in the banner *#
+#set($mailColorPrimary = '#0033A1') #* banner, headings and buttons *#
+#set($mailColorDark = '#011E69') #* start of the banner gradient *#
+#set($mailColorAccent = '#0071CE') #* links, section titles and information boxes *#
+#set($mailColorHighlight = '#CC27B0') #* banner stripe and warning boxes *#
+#set($mailSupportEmail = '') #* support address shown in the footer; empty hides it *#
 ```
 
 The tenant owner name also replaces "The SailPoint Team" sign-off in the wrapped templates. A single quote inside a value is written twice (`'O''Neill'`). Subjects are evaluated apart from the body, so a subject that uses a setting (the User Invitation's) carries its own copy of that line.
@@ -65,6 +65,8 @@ The My Apps invitation is a one-off for EMEA TES Team, kept aside and not offere
 | `defaults.snapshot.json` | SailPoint's default email templates, the source of the wrapped bodies |
 | `push_templates.py` | Development push: imports from `templates/` with `sail` and re-renders the stored copies |
 | `tools/Render.java` | Velocity renderer with mock ISC context, used by the build |
+
+The `.py` files are build tools. An import never runs them: `Import-EmailTemplates.ps1` reads the JSON already in `templates/`. How the Python files produce that JSON is described in [Development](#development).
 
 ## PowerShell 7+
 
@@ -252,6 +254,21 @@ Notes:
 
 ## Development
 
+Importing a tenant does not run Python. `Import-EmailTemplates.ps1` reads `templates/*.json`, and those files are committed so an import works without Python or Java.
+
+The Python files are how `templates/` is produced when the wording, translations or layout change:
+
+| File | Role |
+|---|---|
+| `catalog_common.py` | Greeting, sign-off, footer and the other strings shared by every rewritten email, plus the User Invitation |
+| `catalog_identity.py` | Password, sign-in and account notices |
+| `catalog_access.py` | Access requests and access removals |
+| `catalog_work.py` | Approvals, certifications, work items, Just-In-Time access, account requests and separation of duties |
+| `build_templates.py` | Reads the catalogs and `defaults.snapshot.json`, writes `templates/` and `templates/manifest.json`, and renders every template with Velocity through `tools/Render.java` |
+| `push_templates.py` | Development push. Sends `templates/` to a tenant with `sail`, using the template defaults and skipping the install script's questions, then renders the copies ISC stored |
+
+Edit the catalog that owns the email, then run the build. Commit the regenerated `templates/` with that change, so the next import picks it up. `push_templates.py` is only for checking a tenant while developing; the install script is what configures and imports templates.
+
 The build needs Python 3.10+ and Java 11+ with these jars in `~/.m2`: `velocity-engine-core-2.0`, `slf4j-api-1.7.36`, `commons-lang3-3.5`.
 
 ```bash
@@ -266,5 +283,6 @@ python3 push_templates.py --env my-tenant --verify-only --batch all
 - ISC strips HTML attributes such as `width`, `align` and `cellpadding`, and some CSS on non-table tags, so all layout is inline CSS on tables and cells.
 - ISC re-quotes tag attributes even inside Velocity strings, so double-quoted `#set` strings may only contain bare tags such as `<strong>`.
 - Velocity double-quoted `#set` strings cannot contain `"` or `#`. Settings use single-quoted strings, which are not interpolated.
+- ISC strips every line break when it updates a custom template created before the import, so a `##` line comment would hide the rest of the body and send a blank email. Comments are `#* … *#` blocks, and the build renders every body without line breaks and fails if the output changes.
 
-To change wording, edit the matching `catalog_*.py`; every string is a tuple in the order `en, es, fr, it, de, pt, ar`. To add a language, append it to `LANGUAGES` in `build_templates.py` (and to `RTL_LANGUAGES` if it is written right to left), then add a translation to every tuple; the build fails until all are present. To add a setting, append it to `SETTINGS` in `build_templates.py` and map its parameter in `$Settings` in `Import-EmailTemplates.ps1`.
+Every translated string in a catalog is a tuple in the order `en, es, fr, it, de, pt, ar`. To add a language, append it to `LANGUAGES` in `build_templates.py` (and to `RTL_LANGUAGES` if it is written right to left), then add a translation to every tuple; the build fails until all are present. To add a setting, append it to `SETTINGS` in `build_templates.py` and map its parameter in `$Settings` in `Import-EmailTemplates.ps1`.

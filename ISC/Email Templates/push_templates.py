@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -40,11 +41,16 @@ def sail(env: str, *args: str) -> tuple[int, object]:
     for line in out.splitlines():
         if line.startswith("Status:"):
             status = int(line.split()[1])
-        elif not (line[:4].isdigit() and line[4:5] == "/"):
+        elif line[:4].isdigit() and line[4:5] == "/":
+            continue
+        elif re.match(r"(GET|POST|PUT|PATCH|DELETE|HEAD) |HTTP/|[A-Za-z0-9-]+: ", line):
+            continue
+        else:
             body_lines.append(line)
     text = "\n".join(body_lines).strip()
     try:
-        return status, json.loads(text) if text else None
+        # With debug logging on, sail prints the response body twice.
+        return status, json.JSONDecoder().raw_decode(text)[0] if text else None
     except json.JSONDecodeError:
         return status, text
 
@@ -119,7 +125,7 @@ def main() -> None:
     subject_drift = [n for n in names if live[tenant_key[n]]["subject"] != built[n]["subject"]]
     samples = build_templates.build()[1]
     build_templates.render_all(stored, samples, preview=True)
-    print(f"verified stored copies of {len(keys)} templates" + (f"; subject changed by ISC: {subject_drift}" if subject_drift else ""))
+    print(f"verified stored copies of {len(names)} templates" + (f"; subject changed by ISC: {subject_drift}" if subject_drift else ""))
 
 
 if __name__ == "__main__":

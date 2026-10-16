@@ -88,14 +88,16 @@ Tr = tuple  # one string per language, in LANGUAGES order
 # Velocity building blocks
 # ---------------------------------------------------------------------------
 
+# ISC strips every line break when it updates a custom template created before the import (older
+# records), so a `##` line comment would swallow the rest of the body. Comments are block comments.
 def setting_line(setting: Setting, comment: bool = True) -> str:
     value = setting.default.replace("'", "''")
-    return f"#set(${setting.variable} = '{value}')" + (f" ## {setting.description}" if comment else "")
+    return f"#set(${setting.variable} = '{value}')" + (f" #* {setting.description} *#" if comment else "")
 
 
 def settings_block(extra: tuple[Setting, ...] = ()) -> str:
     """First lines of every template body."""
-    lines = ["## Email settings: edit the values between quotes. Import-EmailTemplates.ps1 sets them on import."]
+    lines = ["#* Email settings: edit the values between quotes. Import-EmailTemplates.ps1 sets them on import. *#"]
     lines += [setting_line(s) for s in (*SETTINGS, *extra)]
     return "\n".join(lines)
 
@@ -473,6 +475,7 @@ def render_all(items: dict[str, dict], samples: dict[str, dict], preview: bool) 
         v2 = _version2(item["body"] + item["subject"])
         for part in ("subject", "body"):
             (work / f"{key}.{part}.vm").write_text(item[part], encoding="utf-8")
+        (work / f"{key}.flat.vm").write_text(item["body"].replace("\r", "").replace("\n", ""), encoding="utf-8")
         for lang in langs:
             ctx = dict(SAMPLE)
             ctx.update(samples.get(key, {}))
@@ -485,6 +488,7 @@ def render_all(items: dict[str, dict], samples: dict[str, dict], preview: bool) 
             ctx_file.write_text("".join(f"{k}\t{v}\n" for k, v in ctx.items()), encoding="utf-8")
             for part in ("subject", "body"):
                 jobs.append(f"{work / f'{key}.{part}.vm'}\t{ctx_file}\t{work / f'{key}.{lang}.{part}.out'}")
+            jobs.append(f"{work / f'{key}.flat.vm'}\t{ctx_file}\t{work / f'{key}.{lang}.flat.out'}")
     jobs_file = work / "jobs.tsv"
     jobs_file.write_text("\n".join(jobs) + "\n", encoding="utf-8")
     result = subprocess.run(
@@ -506,6 +510,9 @@ def render_all(items: dict[str, dict], samples: dict[str, dict], preview: bool) 
             leftovers = re.findall(r"[$]!?\{?(?:tx_|mail)[A-Za-z0-9]+|[$]\{\{", subj + body)
             if leftovers:
                 raise SystemExit(f"{key} [{lang}] has unresolved variables: {leftovers[:5]}")
+            flat = (work / f"{key}.{lang}.flat.out").read_text(encoding="utf-8")
+            if re.sub(r"\s", "", flat) != re.sub(r"\s", "", body):
+                raise SystemExit(f"{key} [{lang}] renders differently once ISC strips its line breaks")
 
     if not preview:
         return
