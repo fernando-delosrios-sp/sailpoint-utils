@@ -204,6 +204,22 @@ jobs:
           ACTUAL_HASH=$(jq -r .driftHash /tmp/drift-now.json)
           echo "stale=$([ "$ACTUAL_HASH" != "$EXPECTED_HASH" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
+      - name: Find the drift issue this decision answers
+        id: issue
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          # Matched on the hash the approval was raised for, not the hash
+          # detected now — a stale decision still answers its original issue.
+          HASH=$(jq -r '.driftHash // empty' /tmp/drift-decision.json)
+          if [ -n "$HASH" ]; then
+            gh issue list --state open --label amcm-drift --limit 100 \
+              --json number,url,body \
+              --jq "[.[] | select(.body | contains(\"$HASH\"))][0] // {}" > /tmp/drift-issue-ref.json
+            echo "number=$(jq -r '.number // empty' /tmp/drift-issue-ref.json)" >> "$GITHUB_OUTPUT"
+            echo "url=$(jq -r '.url // empty' /tmp/drift-issue-ref.json)" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Approved and current — sync drift to main
         if: steps.verify.outputs.decision == 'approved' && steps.verify.outputs.stale == 'false'
         env:
@@ -217,8 +233,8 @@ jobs:
           git config user.email "amcm-bot[bot]@users.noreply.github.com"
           git add access/
           git commit -m "chore(backup): sync drift from ISC (governance approved)" || true
-          jq -n --slurpfile d /tmp/drift-now.json \
-            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", modifiers:($d[0].actors.modifiers // [])}' \
+          jq -n --slurpfile d /tmp/drift-now.json --arg issue "${{ steps.issue.outputs.url }}" \
+            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", issueUrl:$issue, modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
           node scripts/cli.mjs readme
           git add changes/ README.md
@@ -342,3 +358,23 @@ jobs:
             git fetch origin main
             git rebase origin/main || { git rebase --abort; exit 1; }
           done
+
+      - name: Close the drift issue this decision answers
+        if: always() && steps.issue.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          NUMBER: ${{ steps.issue.outputs.number }}
+        run: |
+          OUTCOME="${{ steps.verify.outputs.decision }}"
+          if [ "$OUTCOME" = "approved" ] && [ "${{ steps.verify.outputs.stale }}" = "true" ]; then
+            OUTCOME=stale
+          fi
+          node scripts/cli.mjs drift-comment \
+            --decision "$OUTCOME" \
+            --message "$(jq -r '.comment // empty' /tmp/drift-decision.json)" \
+            --run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            > /tmp/drift-close.md
+          gh issue comment "$NUMBER" --body-file /tmp/drift-close.md
+          # Closed even when stale: ISC has moved on, so the drift this issue
+          # describes no longer exists and the next backup files a fresh one.
+          gh issue close "$NUMBER"

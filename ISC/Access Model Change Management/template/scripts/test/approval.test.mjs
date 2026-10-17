@@ -53,6 +53,17 @@ describe('buildDriftApprovalPayload', () => {
     assert.match(payload.approvalText, /and 2066 more/);
   });
 
+  it('points the approver at the issue holding the full detail', () => {
+    const drift = { added: [], changed: ['a.json'], deleted: [], driftHash: 'h' };
+    const payload = buildDriftApprovalPayload({
+      drift,
+      issueUrl: 'https://github.com/acme/amcm/issues/12',
+      config,
+    });
+    assert.match(payload.approvalText, /Full detail: https:\/\/github.com\/acme\/amcm\/issues\/12/);
+    assert.equal(payload.issueUrl, 'https://github.com/acme/amcm/issues/12');
+  });
+
   it('does not inline the full path lists in the trigger payload', () => {
     const drift = {
       added: ['a.json'],

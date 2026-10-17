@@ -4,6 +4,7 @@ import { loadAllItems, loadConfig, writeJson } from './common.mjs';
 import { IscClient } from './isc-client.mjs';
 import { runBackup, detectDrift } from './backup.mjs';
 import { fromSnapshotFile, toSnapshotFile } from './live-snapshot.mjs';
+import { driftDecisionComment, renderDriftIssue } from './drift-issue.mjs';
 import { validateRepo } from './validate.mjs';
 import { planFromTrees, buildPlan } from './plan.mjs';
 import { applyPlan } from './apply.mjs';
@@ -46,7 +47,7 @@ async function loadItemsFromManifest(path) {
 async function main() {
   const argv = minimist(process.argv.slice(2), {
     boolean: ['dry-run', 'json', 'help'],
-    string: ['base', 'head', 'tag', 'pr', 'author', 'files', 'out', 'plan', 'drift', 'kind', 'diff-hash', 'message', 'tags', 'snapshot'],
+    string: ['base', 'head', 'tag', 'pr', 'author', 'files', 'out', 'plan', 'drift', 'kind', 'diff-hash', 'message', 'tags', 'snapshot', 'issue-url', 'decision', 'run', 'detail'],
   });
   const [cmd] = argv._;
 
@@ -57,6 +58,8 @@ Commands:
   backup              Snapshot ISC into access/ (--snapshot file reuses a drift read)
   clear-content       Delete access JSON and the ledger, keeping .gitkeep
   drift               Detect drift without writing (--snapshot file saves the ISC read)
+  drift-issue         Render the drift issue title and body from --drift
+  drift-comment       Render the decision comment for the drift issue
   validate            Schema + name-reference checks
   plan                Diff base items vs head (default: empty base vs working tree)
   diff-hash           Hash touched files (--files a,b,c)
@@ -94,6 +97,24 @@ Commands:
     // instead of reading ISC again, and stays out of the printed result.
     if (argv.snapshot) writeJson(argv.snapshot, toSnapshotFile(snapshot));
     print(rest);
+    return;
+  }
+
+  if (cmd === 'drift-issue') {
+    // Renders only; the workflow does the gh calls so the issue exists before
+    // the approval that links to it.
+    const drift = JSON.parse(readFileSync(argv.drift, 'utf8'));
+    print(renderDriftIssue(drift));
+    return;
+  }
+
+  if (cmd === 'drift-comment') {
+    process.stdout.write(`${driftDecisionComment({
+      decision: argv.decision,
+      comment: argv.message,
+      runUrl: argv.run,
+      detail: argv.detail,
+    })}\n`);
     return;
   }
 
@@ -175,7 +196,7 @@ Commands:
     let payload;
     if (kind === 'drift') {
       const drift = JSON.parse(readFileSync(argv.drift, 'utf8'));
-      payload = buildDriftApprovalPayload({ drift, config });
+      payload = buildDriftApprovalPayload({ drift, issueUrl: argv['issue-url'], config });
     } else if (kind === 'restore') {
       const plan = JSON.parse(readFileSync(argv.plan, 'utf8'));
       payload = buildRestoreApprovalPayload({

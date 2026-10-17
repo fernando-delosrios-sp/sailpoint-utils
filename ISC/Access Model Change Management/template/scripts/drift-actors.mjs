@@ -79,16 +79,12 @@ export function accessItemQueries(since, subjects = []) {
     sort: ['-created'],
   }];
 
-  const ids = [...new Set(subjects.map((s) => s.id).filter(Boolean))];
-  // Deleted items have no live id to match on, so their names carry the lookup.
-  const names = subjects.some((s) => !s.id)
-    ? [...new Set(subjects.filter((s) => !s.id).map((s) => s.name).filter(Boolean))]
-    : [];
-
-  const clauses = [
-    ...chunk(ids, MAX_QUERY_TERMS).map((g) => `target.id:(${g.map(quote).join(' OR ')})`),
-    ...chunk(names, MAX_QUERY_TERMS).map((g) => `target.name:(${g.map(quote).join(' OR ')})`),
-  ];
+  // Scoped on target.name, because an ACCESS_ITEM event has no target id —
+  // its target is `{ name }` and the object kind lives in `objects` and
+  // `technicalName`. A target.id clause matches nothing at all.
+  const names = [...new Set(subjects.map((s) => s.name).filter(Boolean))];
+  const clauses = chunk(names, MAX_QUERY_TERMS)
+    .map((g) => `target.name:(${g.map(quote).join(' OR ')})`);
 
   if (clauses.length === 0 || clauses.length > MAX_SCOPED_QUERIES) return wholeWindow;
   return clauses.map((clause) => ({
@@ -119,7 +115,9 @@ function targetName(event) {
 }
 
 function targetType(event) {
-  const raw = `${event?.target?.type ?? ''} ${event?.technicalName ?? ''} ${event?.name ?? ''}`;
+  const objects = Array.isArray(event?.objects) ? event.objects.join(' ') : '';
+  const raw = `${event?.target?.type ?? ''} ${objects} `
+    + `${event?.technicalName ?? ''} ${event?.name ?? ''}`;
   const s = raw.toUpperCase();
   if (s.includes('ACCESS_PROFILE') || s.includes('ACCESS PROFILE')) return 'accessProfile';
   if (s.includes('ENTITLEMENT')) return 'entitlement';
@@ -167,12 +165,17 @@ export function attributeActors({ subjects = [], events = [] } = {}) {
     byNameType.get(key).push(event);
   }
 
-  const grouped = subjects.map((subject) => ({
-    ...subject,
-    matches: subject.id
-      ? (byId.get(String(subject.id)) ?? [])
-      : (byNameType.get(`${subject.type}:${subject.name}`) ?? []),
-  }));
+  // An event that carries a target id is matched on that id, but ACCESS_ITEM
+  // events carry only a name, so a subject has to be looked up both ways —
+  // checking the id alone finds nothing at all.
+  const grouped = subjects.map((subject) => {
+    const matches = [
+      ...(subject.id ? byId.get(String(subject.id)) ?? [] : []),
+      ...(byNameType.get(`${subject.type}:${subject.name}`) ?? []),
+    ];
+    matches.sort((a, b) => String(b?.created ?? '').localeCompare(String(a?.created ?? '')));
+    return { ...subject, matches };
+  });
 
   const described = [];
   const actorRecency = new Map();
@@ -248,13 +251,28 @@ export async function attributeDriftActors({
   max = 5000,
 } = {}) {
   const since = driftWindowStart({ entries, now });
-  try {
+  const run = async (queries) => {
     const events = [];
     let truncated = false;
-    for (const query of accessItemQueries(since, subjects)) {
+    for (const query of queries) {
       const page = await client.searchAll(query, { max });
       events.push(...page.items);
       truncated = truncated || page.truncated;
+    }
+    return { events, truncated };
+  };
+
+  try {
+    const wholeWindow = accessItemQueries(since, []);
+    const scoped = accessItemQueries(since, subjects);
+    const narrowed = scoped[0].query.query !== wholeWindow[0].query.query;
+
+    let { events, truncated } = await run(scoped);
+    // A scoped query that matches nothing looks exactly like a quiet window,
+    // and getting the scoping wrong is how attribution silently stopped
+    // working before. Re-read unfiltered before concluding nobody touched it.
+    if (narrowed && events.length === 0) {
+      ({ events, truncated } = await run(wholeWindow));
     }
     const attributed = attributeActors({ subjects, events });
     return {

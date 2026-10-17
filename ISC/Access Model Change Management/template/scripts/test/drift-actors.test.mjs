@@ -106,6 +106,64 @@ describe('attributeActors', () => {
   });
 });
 
+describe('real ISC ACCESS_ITEM events', () => {
+  // Captured verbatim from the tenant's events index. Note what is absent:
+  // there is no target.id, so scoping a query on one matches nothing and
+  // looking a subject up by id alone finds nothing.
+  const event = {
+    created: '2026-10-17T07:51:59.229Z',
+    action: 'update',
+    type: 'ACCESS_ITEM',
+    actor: { name: 'fernando.delosrios' },
+    target: { name: 'Business Process Users' },
+    objects: ['ROLE'],
+    operation: 'UPDATE',
+    status: 'PASSED',
+    technicalName: 'ROLE_UPDATE_PASSED',
+    name: 'Update Role Passed',
+  };
+  const subject = {
+    path: 'access/roles/business-process-users.json',
+    id: 'c3a8634c230b9d34b89ef8e152ef4e8e',
+    name: 'Business Process Users',
+    type: 'role',
+  };
+
+  it('scopes on target.name, since events carry no target id', () => {
+    const [query] = accessItemQueries('2026-10-17T07:36:29.998Z', [subject]);
+    assert.match(query.query.query, /target\.name:\("Business Process Users"\)/);
+    assert.doesNotMatch(query.query.query, /target\.id/);
+  });
+
+  it('attributes the event to a subject that has an id the event lacks', () => {
+    const { modifiers, lines } = attributeActors({ subjects: [subject], events: [event] });
+    assert.deepEqual(modifiers, ['fernando.delosrios']);
+    assert.match(lines[0], /fernando\.delosrios — access\/roles\/business-process-users\.json/);
+    assert.match(lines[0], /ROLE_UPDATE_PASSED, 2026-10-17T07:51:59\.229Z/);
+  });
+
+  it('reads the object kind from the objects array', () => {
+    const asProfile = { ...event, objects: ['ACCESS_PROFILE'], technicalName: 'AP_UPDATE_PASSED' };
+    const profileSubject = { ...subject, id: null, type: 'accessProfile' };
+    const { modifiers } = attributeActors({ subjects: [profileSubject], events: [asProfile] });
+    assert.deepEqual(modifiers, ['fernando.delosrios']);
+  });
+
+  it('re-reads the window unscoped when the scoped query comes back empty', async () => {
+    const seen = [];
+    const client = {
+      async searchAll(body) {
+        seen.push(body.query.query);
+        // Mimics a scoping mistake: narrow query matches nothing, window does.
+        return { truncated: false, items: /target\./.test(body.query.query) ? [] : [event] };
+      },
+    };
+    const actors = await attributeDriftActors({ client, subjects: [subject], entries: [] });
+    assert.equal(seen.length, 2);
+    assert.deepEqual(actors.modifiers, ['fernando.delosrios']);
+  });
+});
+
 describe('actor line ordering', () => {
   it('puts attributed items and roles ahead of unattributed entitlements', () => {
     const entitlements = Array.from({ length: 50 }, (_, i) => ({
@@ -170,10 +228,10 @@ describe('attributeDriftActors', () => {
 
   it('scopes the query to the drifted targets', () => {
     const [query] = accessItemQueries('2026-10-01T00:00:00.000Z', [role]);
-    assert.match(query.query.query, /target\.id:\("role-1"\)/);
+    assert.match(query.query.query, /target\.name:\("Analyst"\)/);
   });
 
-  it('looks up deleted items by name because they have no live id', () => {
+  it('looks up deleted items by name, same as everything else', () => {
     const deleted = { path: 'access/roles/gone.json', id: null, name: 'Gone', type: 'role' };
     const queries = accessItemQueries('2026-10-01T00:00:00.000Z', [deleted]);
     assert.equal(queries.length, 1);

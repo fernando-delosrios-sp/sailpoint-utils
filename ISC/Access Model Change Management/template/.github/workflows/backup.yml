@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   backup:
@@ -36,6 +37,36 @@ jobs:
           echo "has_drift=$(jq -r '.hasDrift' /tmp/drift.json)" >> "$GITHUB_OUTPUT"
           cat /tmp/drift.json
 
+      - name: Open the drift issue
+        id: issue
+        if: steps.drift.outputs.has_drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The issue is the readable record of this drift: the ISC approval
+          # shows one truncated string, so it links here for the full lists.
+          # It must exist before the approval is requested.
+          node scripts/cli.mjs drift-issue --drift /tmp/drift.json > /tmp/issue.json
+          HASH=$(jq -r '.driftHash' /tmp/issue.json)
+          jq -r '.body' /tmp/issue.json > /tmp/issue-body.md
+
+          gh label create amcm-drift --color FBCA04 \
+            --description "Drift between ISC and git awaiting a governance decision" \
+            2>/dev/null || true
+
+          # A backup that runs again before anyone decides must reuse the open
+          # issue rather than filing a duplicate every night.
+          URL=$(gh issue list --state open --label amcm-drift --limit 100 \
+                  --json number,url,body \
+                  --jq "[.[] | select(.body | contains(\"$HASH\"))][0].url // empty")
+          if [ -z "$URL" ]; then
+            URL=$(gh issue create --label amcm-drift \
+                    --title "$(jq -r '.title' /tmp/issue.json)" \
+                    --body-file /tmp/issue-body.md)
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Drift issue: $URL" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Request drift approval (kind=drift)
         if: steps.drift.outputs.has_drift == 'true'
         env:
@@ -43,9 +74,11 @@ jobs:
           ISC_EXTERNAL_TRIGGER_CLIENT_ID: ${{ secrets.ISC_TRIGGER_CLIENT_ID }}
           ISC_EXTERNAL_TRIGGER_CLIENT_SECRET: ${{ secrets.ISC_TRIGGER_CLIENT_SECRET }}
           ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+          ISSUE_URL: ${{ steps.issue.outputs.url }}
         run: |
           # Drift no longer auto-commits to main. It only asks the governance
           # group (never item owners — nobody "owns" an out-of-band ISC edit)
           # via the same AMCM Approval workflow used for changes/restores.
           # approval-callback.yml does the actual sync once approved.
-          node scripts/cli.mjs request-approval --kind drift --drift /tmp/drift.json
+          node scripts/cli.mjs request-approval --kind drift --drift /tmp/drift.json \
+            --issue-url "$ISSUE_URL"
