@@ -60,7 +60,24 @@ jobs:
           if ! git rev-parse --verify --quiet HEAD~1 >/dev/null; then
             echo "Root commit; skip apply."
             echo "run=false" >> "$GITHUB_OUTPUT"
-          elif git diff --name-only HEAD~1 HEAD | grep -q '^access/'; then
+            exit 0
+          fi
+          # A normal push only ever carries one access/** commit (that's what
+          # triggered this run), so diffing against its immediate parent is
+          # correct and keeps applies small. A manual workflow_dispatch has no
+          # such guarantee — it's the recovery path for when a push-triggered
+          # run never happened at all (e.g. GitHub failed to register this
+          # workflow), so one or more access/** commits may already be
+          # sitting unapplied on main. Diff from the last known-good snapshot
+          # instead so a manual run catches everything since the last real
+          # apply, not just the tip commit.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BASE=$(git describe --tags --match 'known-good/*' --abbrev=0 2>/dev/null || echo HEAD~1)
+          else
+            BASE=HEAD~1
+          fi
+          echo "base=$BASE" >> "$GITHUB_OUTPUT"
+          if git diff --name-only "$BASE" HEAD | grep -q '^access/'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
           else
             echo "run=false" >> "$GITHUB_OUTPUT"
@@ -78,6 +95,17 @@ jobs:
             PR=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
               --jq '.[0] | {number,title,url,author:.user.login}' || echo '')
           fi
+          if [ -z "$PR" ]; then
+            # A manual dispatch recovery run can apply several commits at
+            # once (see the gate step) — the tip commit may not itself be a
+            # PR merge (e.g. we're on top of an unrelated follow-up commit),
+            # so walk every commit since the base looking for its PR.
+            for sha in $(git log --format=%H "${{ steps.gate.outputs.base }}..HEAD"); do
+              PR=$(gh api "repos/${{ github.repository }}/commits/$sha/pulls" \
+                --jq '.[0] | {number,title,url,author:.user.login}' 2>/dev/null || echo '')
+              [ -n "$PR" ] && break
+            done
+          fi
           echo "payload=$PR" >> "$GITHUB_OUTPUT"
           echo "$PR" > /tmp/pr.json
           NUMBER=$(echo "$PR" | jq -r '.number // empty')
@@ -93,7 +121,7 @@ jobs:
           import { buildPlan } from './scripts/plan.mjs';
 
           const plan = buildPlan({
-            baseItems: loadItemsFromGitRef('HEAD~1'),
+            baseItems: loadItemsFromGitRef('${{ steps.gate.outputs.base }}'),
             headItems: loadAllItems(),
           });
           writeFileSync('plan.json', JSON.stringify(plan, null, 2));
