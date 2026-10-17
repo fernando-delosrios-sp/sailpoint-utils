@@ -89,11 +89,14 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
+          # `.[0]` on an empty array is `null`, and `null | {a,b}` still
+          # builds an object of nulls rather than nothing — pipe through
+          # `// empty` first so a commit with no PR truly yields "".
           PR=$(gh pr list --search "${{ github.sha }}" --state merged --json number,title,url,author --jq '.[0] // empty')
           if [ -z "$PR" ]; then
             # Fallback: look at associated PRs for the commit
             PR=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
-              --jq '.[0] | {number,title,url,author:.user.login}' || echo '')
+              --jq '.[0] // empty | {number,title,url,author:.user.login}' || echo '')
           fi
           if [ -z "$PR" ]; then
             # A manual dispatch recovery run can apply several commits at
@@ -102,7 +105,7 @@ jobs:
             # so walk every commit since the base looking for its PR.
             for sha in $(git log --format=%H "${{ steps.gate.outputs.base }}..HEAD"); do
               PR=$(gh api "repos/${{ github.repository }}/commits/$sha/pulls" \
-                --jq '.[0] | {number,title,url,author:.user.login}' 2>/dev/null || echo '')
+                --jq '.[0] // empty | {number,title,url,author:.user.login}' 2>/dev/null || echo '')
               [ -n "$PR" ] && break
             done
           fi
