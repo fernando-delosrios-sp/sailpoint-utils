@@ -377,4 +377,12 @@ jobs:
           gh issue comment "$NUMBER" --body-file /tmp/drift-close.md
           # Closed even when stale: ISC has moved on, so the drift this issue
           # describes no longer exists and the next backup files a fresh one.
-          gh issue close "$NUMBER"
+          # Accepted drift is a deliberate "leave it as-is" call, not work that
+          # got done, so it closes as not planned; every other outcome
+          # (rejected/expired/stale) means the issue's job — getting a
+          # decision recorded — is done, so it closes as completed.
+          if [ "$OUTCOME" = "approved" ]; then
+            gh issue close "$NUMBER" --reason "not planned"
+          else
+            gh issue close "$NUMBER" --reason completed
+          fi

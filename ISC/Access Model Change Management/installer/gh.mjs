@@ -1,4 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import { appendFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 export function gh(args, { input, json = false, cwd } = {}) {
   const result = spawnSync('gh', args, {
@@ -292,4 +294,63 @@ export function pushDirectory({ repo, branch = 'main', sourceDir, message }) {
   } finally {
     execFileSync('rm', ['-rf', tmp]);
   }
+}
+
+/**
+ * GitHub's Actions workflow indexer has been observed to silently drop one
+ * file out of a large bulk push of new workflows (seen live: the repo's
+ * first-ever push added 7 workflow files in one commit, and GitHub only
+ * registered 6 of them — the missing one never showed up in `gh workflow
+ * list` or the Actions tab, and pushes that matched its `paths:` filter
+ * never triggered a run, even though the file was present and schema-valid
+ * on the default branch the whole time).
+ *
+ * After pushing the template, compare the workflow files that should exist
+ * against what GitHub actually registered, and nudge any gaps with a
+ * trivial, harmless re-commit + push so GitHub re-scans them. Re-checks a
+ * few times since registration can lag the push by a few seconds.
+ */
+export function ensureWorkflowsRegistered({ repo, sourceDir, log = () => {} }) {
+  const dir = join(sourceDir, '.github', 'workflows');
+  let expected;
+  try {
+    expected = readdirSync(dir).filter((f) => /\.ya?ml$/i.test(f));
+  } catch {
+    return; // no workflows directory in this template
+  }
+  if (expected.length === 0) return;
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const registered = new Set(
+      gh(['api', `repos/${repo}/actions/workflows`, '--paginate', '--jq', '.workflows[].path'])
+        .split('\n')
+        .filter(Boolean)
+        .map((p) => p.split('/').pop()),
+    );
+    const missing = expected.filter((f) => !registered.has(f));
+    if (missing.length === 0) return;
+
+    log(`GitHub has not registered these workflow files yet: ${missing.join(', ')}. Nudging with a re-push (attempt ${attempt}/3)...`);
+    const tmp = execFileSync('mktemp', ['-d'], { encoding: 'utf8' }).trim();
+    try {
+      gh(['repo', 'clone', repo, tmp, '--', '--depth', '1']);
+      for (const file of missing) {
+        appendFileSync(join(tmp, '.github', 'workflows', file), '\n');
+      }
+      execFileSync('bash', ['-lc', `
+        set -euo pipefail
+        cd ${JSON.stringify(tmp)}
+        git config user.name "amcm-installer"
+        git config user.email "amcm-installer@local"
+        git add -A
+        git commit -m "chore: nudge GitHub into registering workflow files"
+        git push
+      `], { stdio: 'inherit' });
+    } finally {
+      execFileSync('rm', ['-rf', tmp]);
+    }
+    // Give GitHub's indexer a moment before re-checking.
+    execFileSync('sleep', ['5']);
+  }
+  log('Warning: some workflow files may still be unregistered after 3 attempts. Check `gh workflow list` manually.');
 }

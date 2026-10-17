@@ -19,6 +19,7 @@ import {
   currentUser,
   enableAutoMerge,
   ensureGhAuth,
+  ensureWorkflowsRegistered,
   gh,
   ghOk,
   pushDirectory,
@@ -586,6 +587,7 @@ Options:
         sourceDir: staging,
         message: 'chore: refresh access model change management template',
       });
+      ensureWorkflowsRegistered({ repo: repoFull, sourceDir: staging, log });
     } finally {
       rmSync(staging, { recursive: true, force: true });
     }

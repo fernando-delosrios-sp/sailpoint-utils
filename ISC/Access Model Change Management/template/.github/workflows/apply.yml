@@ -5,6 +5,12 @@ on:
     branches: [main]
     paths:
       - "access/**"
+  # Lets an operator re-run apply against the current HEAD commit when a push
+  # that should have triggered it did not — e.g. this workflow file was added
+  # to the repo but GitHub never indexed it as a registered workflow, which
+  # has happened on a live install despite the file being present on main
+  # since day one. `gh workflow list` is the way to confirm that happened.
+  workflow_dispatch: {}
 
 concurrency:
   # Its own group: backup/readme/restore pushes share amcm-main-writers, and
