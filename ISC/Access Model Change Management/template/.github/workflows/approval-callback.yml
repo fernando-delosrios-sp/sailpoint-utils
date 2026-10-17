@@ -97,8 +97,23 @@ jobs:
             -f state=success \
             -f context=isc-approval \
             -f description="Approved (diff $HASH)"
-          gh pr merge "$PR" --auto --squash || gh pr merge "$PR" --auto --merge || true
-          gh pr comment "$PR" --body "ISC approved (diff hash \`$HASH\`). Auto-merge enabled."
+          # --auto only works if the repo (or org) has "Allow auto-merge"
+          # turned on — seen live to be off and not overridable via the repos
+          # API (likely an org policy), where gh's merge call fails outright
+          # with "Auto merge is not allowed for this repository" instead of
+          # merging. There's no branch ruleset gating merge without that
+          # feature either (installer skips rulesets the same way on this
+          # plan), so a plain merge right now is just as safe as waiting for
+          # auto-merge, and it does not leave an ISC-approved PR stuck open.
+          set +e
+          gh pr merge "$PR" --auto --squash 2>/tmp/merge.err
+          STATUS=$?
+          set -e
+          if [ "$STATUS" != "0" ]; then
+            cat /tmp/merge.err >&2
+            gh pr merge "$PR" --squash || gh pr merge "$PR" --merge
+          fi
+          gh pr comment "$PR" --body "ISC approved (diff hash \`$HASH\`)."
 
       - name: Rejected — close PR
         if: steps.verify.outputs.decision == 'rejected'
