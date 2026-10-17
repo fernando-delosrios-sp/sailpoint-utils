@@ -39,8 +39,18 @@ export function driftWindowStart({ entries = [], now = new Date() } = {}) {
     ?? new Date(now.getTime() - ACTOR_LOOKBACK_MS).toISOString();
 }
 
-/** Search queries cap out around 800 values in a terms-style clause. */
-const MAX_QUERY_TERMS = 500;
+/**
+ * Terms per query, and how many scoped queries are worth sending. A long OR
+ * clause is both slow and fragile — at a few hundred terms the query string
+ * runs to tens of kilobytes and the Search API quietly returns nothing — so
+ * past `MAX_SCOPED_QUERIES` it is cheaper and more reliable to read the window
+ * once and match locally.
+ */
+const MAX_QUERY_TERMS = 50;
+const MAX_SCOPED_QUERIES = 8;
+
+/** Roles and access profiles are the governance-relevant end of a drift list. */
+const SUBJECT_RANK = { role: 0, accessProfile: 1, entitlement: 2 };
 
 function quote(value) {
   return `"${String(value).replace(/(["\\])/g, '\\$1')}"`;
@@ -55,29 +65,32 @@ function chunk(values, size) {
 /**
  * Queries for the access-item events that could explain this drift.
  *
- * Scoped to the drifted objects rather than every access-item event in the
- * window — attributing a handful of files should not pull thousands of events.
- * With no usable ids or names it falls back to the whole window.
+ * Scoped to the drifted objects where that is a small enough question to ask
+ * directly — attributing a handful of files should not pull thousands of
+ * events. For wide drift, or when nothing is identifiable, it reads the window
+ * once instead and lets `attributeActors` do the matching.
  */
 export function accessItemQueries(since, subjects = []) {
   const window = `created:[${since} TO now]`;
   const type = '(type:ACCESS_ITEM OR type:access_item)';
+  const wholeWindow = [{
+    indices: ['events'],
+    query: { query: `${type} AND ${window}` },
+    sort: ['-created'],
+  }];
+
   const ids = [...new Set(subjects.map((s) => s.id).filter(Boolean))];
-  const names = [...new Set(subjects.map((s) => s.name).filter(Boolean))];
+  // Deleted items have no live id to match on, so their names carry the lookup.
+  const names = subjects.some((s) => !s.id)
+    ? [...new Set(subjects.filter((s) => !s.id).map((s) => s.name).filter(Boolean))]
+    : [];
 
-  const clauses = [];
-  for (const group of chunk(ids, MAX_QUERY_TERMS)) {
-    clauses.push(`target.id:(${group.map(quote).join(' OR ')})`);
-  }
-  // Deleted items have no live id to match, so their names carry the lookup.
-  const namesWithoutId = subjects.some((s) => !s.id) ? names : [];
-  for (const group of chunk(namesWithoutId, MAX_QUERY_TERMS)) {
-    clauses.push(`target.name:(${group.map(quote).join(' OR ')})`);
-  }
+  const clauses = [
+    ...chunk(ids, MAX_QUERY_TERMS).map((g) => `target.id:(${g.map(quote).join(' OR ')})`),
+    ...chunk(names, MAX_QUERY_TERMS).map((g) => `target.name:(${g.map(quote).join(' OR ')})`),
+  ];
 
-  if (clauses.length === 0) {
-    return [{ indices: ['events'], query: { query: `${type} AND ${window}` }, sort: ['-created'] }];
-  }
+  if (clauses.length === 0 || clauses.length > MAX_SCOPED_QUERIES) return wholeWindow;
   return clauses.map((clause) => ({
     indices: ['events'],
     query: { query: `${type} AND ${window} AND ${clause}` },
@@ -161,7 +174,7 @@ export function attributeActors({ subjects = [], events = [] } = {}) {
       : (byNameType.get(`${subject.type}:${subject.name}`) ?? []),
   }));
 
-  const lines = [];
+  const described = [];
   const actorRecency = new Map();
   for (const subject of grouped) {
     const labels = [];
@@ -175,20 +188,31 @@ export function attributeActors({ subjects = [], events = [] } = {}) {
       }
     }
     if (labels.length === 0) {
-      lines.push(`- no matching audit event — ${subject.path}`);
+      described.push({ subject, attributed: false, line: `- no matching audit event — ${subject.path}` });
       continue;
     }
     const newest = subject.matches.find((event) => actorLabel(event.actor)) ?? subject.matches[0];
     const eventName = newest?.technicalName || newest?.name || newest?.action || 'event';
     const when = newest?.created ? `, ${newest.created}` : '';
-    lines.push(`- ${labels.join(', ')} — ${subject.path} (${eventName}${when})`);
+    described.push({
+      subject,
+      attributed: true,
+      line: `- ${labels.join(', ')} — ${subject.path} (${eventName}${when})`,
+    });
   }
+
+  // The approval shows only the first handful of lines, and drift is usually
+  // mostly entitlements, so put what someone can act on at the top: items with
+  // a known actor, then roles and access profiles.
+  described.sort((a, b) => (Number(b.attributed) - Number(a.attributed))
+    || (SUBJECT_RANK[a.subject.type] ?? 9) - (SUBJECT_RANK[b.subject.type] ?? 9)
+    || String(a.subject.path).localeCompare(String(b.subject.path)));
 
   const modifiers = [...actorRecency.entries()]
     .sort((a, b) => b[1].localeCompare(a[1]))
     .map(([label]) => label);
 
-  return { modifiers, lines };
+  return { modifiers, lines: described.map((d) => d.line) };
 }
 
 export function actorApprovalLines(actors, { limit = 20 } = {}) {

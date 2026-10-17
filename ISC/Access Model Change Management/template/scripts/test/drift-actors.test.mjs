@@ -106,6 +106,40 @@ describe('attributeActors', () => {
   });
 });
 
+describe('actor line ordering', () => {
+  it('puts attributed items and roles ahead of unattributed entitlements', () => {
+    const entitlements = Array.from({ length: 50 }, (_, i) => ({
+      path: `access/entitlements/s/e${i}.json`,
+      id: `e-${i}`,
+      name: `E${i}`,
+      type: 'entitlement',
+    }));
+    const changedRole = {
+      path: 'access/roles/business-process-users.json',
+      id: 'role-9',
+      name: 'Business Process Users',
+      type: 'role',
+    };
+    const quietRole = {
+      path: 'access/roles/quiet.json', id: 'role-8', name: 'Quiet', type: 'role',
+    };
+
+    const { lines } = attributeActors({
+      // Entitlements first, exactly how detectDrift orders its subjects.
+      subjects: [...entitlements, changedRole, quietRole],
+      events: [{
+        created: '2026-10-17T07:15:00.000Z',
+        technicalName: 'ROLE_UPDATE_PASSED',
+        actor: { displayName: 'fernando.delosrios' },
+        target: { id: 'role-9', type: 'ROLE' },
+      }],
+    });
+
+    assert.match(lines[0], /fernando\.delosrios — access\/roles\/business-process-users\.json/);
+    assert.match(lines[1], /access\/roles\/quiet\.json/);
+  });
+});
+
 describe('attributeDriftActors', () => {
   it('queries access-item events since the alignment and keeps the actor list', async () => {
     const seen = [];
@@ -149,6 +183,20 @@ describe('attributeDriftActors', () => {
   it('falls back to the whole window when no target is identifiable', () => {
     const [query] = accessItemQueries('2026-10-01T00:00:00.000Z', []);
     assert.doesNotMatch(query.query.query, /target\./);
+  });
+
+  it('reads the window once rather than sending hundreds of scoped queries', () => {
+    // Wide drift used to build OR clauses tens of kilobytes long, which the
+    // Search API answered with nothing at all, so no actor was ever found.
+    const many = Array.from({ length: 2085 }, (_, i) => ({
+      path: `access/entitlements/s/e${i}.json`,
+      id: `e-${i}`,
+      name: `E${i}`,
+      type: 'entitlement',
+    }));
+    const queries = accessItemQueries('2026-10-01T00:00:00.000Z', many);
+    assert.equal(queries.length, 1);
+    assert.doesNotMatch(queries[0].query.query, /target\./);
   });
 
   it('stays available for the approval when audit search fails', async () => {

@@ -46,6 +46,62 @@ describe('snapshotLive', () => {
     ]);
   });
 
+  it('separates one object exposed under several schema object types', async () => {
+    // The real failure: an Entra group is aggregated as three entitlements
+    // with the same name and the same object GUID, differing only in type.
+    // Keyed on value alone they all landed on one file, two of the three were
+    // dropped, and every backup afterwards reported them as drift forever.
+    const guid = '9435f3f5-d96f-4abc-886f-196a3a543e98';
+    const client = fakeClient([
+      { id: 'e1', name: 'Accounting', value: guid, sourceSchemaObjectType: 'group' },
+      { id: 'e2', name: 'Accounting', value: guid, sourceSchemaObjectType: 'azureADActiveGroup' },
+      { id: 'e3', name: 'Accounting', value: guid, sourceSchemaObjectType: 'azureADEligibleGroup' },
+    ]);
+    const { entries, counts } = await snapshotLive({ client, config });
+    assert.equal(counts.entitlements, 3);
+    assert.deepEqual(entries.map((e) => e.relPath).sort(), [
+      'access/entitlements/aws-emea/accounting__azureadactivegroup.json',
+      'access/entitlements/aws-emea/accounting__azureadeligiblegroup.json',
+      'access/entitlements/aws-emea/accounting__group.json',
+    ]);
+  });
+
+  it('combines type and value when neither alone separates the group', async () => {
+    const client = fakeClient([
+      { id: 'e1', name: 'Role', value: 'v1', sourceSchemaObjectType: 'active' },
+      { id: 'e2', name: 'Role', value: 'v1', sourceSchemaObjectType: 'eligible' },
+      { id: 'e3', name: 'Role', value: 'v2', sourceSchemaObjectType: 'active' },
+      { id: 'e4', name: 'Role', value: 'v2', sourceSchemaObjectType: 'eligible' },
+    ]);
+    const { entries } = await snapshotLive({ client, config });
+    assert.deepEqual(entries.map((e) => e.relPath).sort(), [
+      'access/entitlements/aws-emea/role__active-v1.json',
+      'access/entitlements/aws-emea/role__active-v2.json',
+      'access/entitlements/aws-emea/role__eligible-v1.json',
+      'access/entitlements/aws-emea/role__eligible-v2.json',
+    ]);
+  });
+
+  it('falls back to the id when name, value and type are all shared', async () => {
+    const client = fakeClient([
+      { id: 'e1', name: 'Same', value: 'v', sourceSchemaObjectType: 't' },
+      { id: 'e2', name: 'Same', value: 'v', sourceSchemaObjectType: 't' },
+    ]);
+    const { entries } = await snapshotLive({ client, config });
+    assert.deepEqual(entries.map((e) => e.relPath).sort(), [
+      'access/entitlements/aws-emea/same__e1.json',
+      'access/entitlements/aws-emea/same__e2.json',
+    ]);
+  });
+
+  it('never lets two entries land on one path', async () => {
+    const client = fakeClient([
+      { id: 'dup', name: 'A', value: 'v', sourceSchemaObjectType: 't' },
+      { id: 'dup', name: 'A', value: 'v', sourceSchemaObjectType: 't' },
+    ]);
+    await assert.rejects(() => snapshotLive({ client, config }), /share an id|share the path/);
+  });
+
   it('keeps long values apart even when they share a long prefix', async () => {
     // AWS ARNs differ at the tail, and slugify truncates at the front, so a
     // plain slug would map both of these to the same file.

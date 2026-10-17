@@ -184,29 +184,41 @@ export function entitlementValue(item) {
 }
 
 /**
- * Suffix that makes two same-named entitlements in one source distinguishable.
- * Value first (stable in the source), id second (stable in ISC).
+ * Schema object type of an entitlement, e.g. `azureADActiveGroup`. One object
+ * in the source can surface under several of these, which is what makes name
+ * and value non-unique on their own.
  */
-export function entitlementDiscriminator(item) {
-  return entitlementValue(item) ?? (item?.id ?? item?.data?.id ?? null);
+export function entitlementObjectType(item) {
+  const type = item?.data?._readonly?.sourceSchemaObjectType ?? null;
+  return type === null || type === undefined ? null : String(type);
+}
+
+export function entitlementId(item) {
+  const id = item?.id ?? item?.data?.id ?? null;
+  return id === null || id === undefined ? null : String(id);
 }
 
 /**
  * Uniqueness key for an item.
  *
- * Entitlements are keyed by source + native value: names are only unique within
- * a source (two Google Workspace connectors can both have a "Directory Sync
- * Admin Role"), and even inside one source ISC allows repeats — AWS policy
- * entitlements routinely do. Keying on value also means renaming an
- * entitlement in ISC reads as an update instead of an unsupported
- * create-plus-delete. Entitlements with no value fall back to name.
+ * Entitlements are keyed by ISC id, because nothing else about an entitlement
+ * is unique. Names repeat across sources and inside a source, and so do native
+ * values: an Entra group surfaces as `group`, `azureADActiveGroup` and
+ * `azureADEligibleGroup` entitlements that all carry the same name and the
+ * same object GUID, and a PIM role surfaces as both an active and an eligible
+ * entitlement. The id is also what apply patches against, and it survives
+ * aggregation, so renaming an entitlement in ISC reads as an update rather
+ * than an unsupported create-plus-delete.
  *
- * Access profiles and roles are tenant-wide and keyed by name alone.
+ * Hand-written entitlement files with no id fall back to source + value, then
+ * source + name. Access profiles and roles are tenant-wide, keyed by name.
  */
 export function nameKey(item) {
   if (item.type === ITEM_TYPES.entitlement) {
-    const value = entitlementValue(item);
+    const id = entitlementId(item);
+    if (id !== null) return `${item.type}:id:${id}`;
     const scope = item.sourceSlug ?? '';
+    const value = entitlementValue(item);
     return value === null
       ? `${item.type}:${scope}:name:${item.name}`
       : `${item.type}:${scope}:value:${value}`;
@@ -239,7 +251,8 @@ export function indexByName(items) {
     const existing = map.get(key);
     if (existing) {
       const where = item.type === ITEM_TYPES.entitlement
-        ? ` in source "${item.sourceSlug}" (value ${entitlementValue(item) ?? 'unset'})`
+        ? ` in source "${item.sourceSlug}" (id ${entitlementId(item) ?? 'unset'},`
+          + ` value ${entitlementValue(item) ?? 'unset'})`
         : '';
       throw new Error(
         `Duplicate ${item.type} named "${item.name}"${where}: `

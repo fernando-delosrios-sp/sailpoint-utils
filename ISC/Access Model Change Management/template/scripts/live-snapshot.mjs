@@ -9,7 +9,9 @@ import { join, relative } from 'node:path';
 import {
   ITEM_TYPES,
   ROOT,
-  entitlementDiscriminator,
+  entitlementId,
+  entitlementObjectType,
+  entitlementValue,
   itemPath,
   slugify,
 } from './common.mjs';
@@ -37,10 +39,32 @@ function entry({ type, data, sourceSlug = null, discriminator = null }) {
 }
 
 /**
+ * Suffixes to try for entitlements that share a name inside one source, from
+ * most readable to most certain. The last one is the ISC id, which is unique
+ * by definition, so a group can always be separated.
+ *
+ * Name alone is not enough (AWS exposes many same-named policy entitlements),
+ * and neither is the native value: an Entra group surfaces as `group`,
+ * `azureADActiveGroup` and `azureADEligibleGroup` entitlements carrying the
+ * same name and the same object GUID, and a PIM role surfaces as both an
+ * active and an eligible entitlement.
+ */
+function discriminatorTiers(item) {
+  const value = entitlementValue(item);
+  const objectType = entitlementObjectType(item);
+  const id = entitlementId(item);
+  return [
+    value,
+    objectType,
+    objectType && value ? `${objectType}-${value}` : null,
+    id,
+  ].filter((tier) => tier !== null);
+}
+
+/**
  * Entitlements of one source, with same-named ones given a disambiguating file
- * name. ISC permits repeats of a name inside a source (AWS policy entitlements
- * do it routinely); without this they would all collapse onto one path and all
- * but the last would silently vanish from the backup.
+ * name. Without this they collapse onto one path and all but the last silently
+ * vanish from the backup, which is how 18% of a tenant went missing.
  */
 function entitlementEntries(raws, sourceSlug) {
   const normalized = raws.map((raw) => ({
@@ -48,25 +72,64 @@ function entitlementEntries(raws, sourceSlug) {
     id: raw.id ?? null,
   }));
 
-  const countBySlug = new Map();
+  const byNameSlug = new Map();
   for (const item of normalized) {
     const slug = slugify(item.data.name);
-    countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1);
+    if (!byNameSlug.has(slug)) byNameSlug.set(slug, []);
+    byNameSlug.get(slug).push(item);
   }
 
-  return normalized.map((item) => {
-    const collides = countBySlug.get(slugify(item.data.name)) > 1;
-    return entry({
+  const entries = [];
+  for (const group of byNameSlug.values()) {
+    // A name used once keeps a clean <name-slug>.json, so the ordinary case
+    // reads well and existing repositories do not churn.
+    if (group.length === 1) {
+      entries.push(entry({ type: ITEM_TYPES.entitlement, data: group[0].data, sourceSlug }));
+      continue;
+    }
+    const tiers = group.map(discriminatorTiers);
+    const depth = Math.max(...tiers.map((t) => t.length));
+    let chosen = null;
+    for (let tier = 0; tier < depth; tier++) {
+      const candidates = tiers.map((t) => t[Math.min(tier, t.length - 1)]);
+      if (new Set(candidates).size === candidates.length) {
+        chosen = candidates;
+        break;
+      }
+    }
+    if (!chosen) {
+      throw new Error(
+        `Cannot tell apart ${group.length} entitlements named "${group[0].data.name}" `
+        + `in source "${sourceSlug}" — they share an id`,
+      );
+    }
+    group.forEach((item, i) => entries.push(entry({
       type: ITEM_TYPES.entitlement,
       data: item.data,
       sourceSlug,
-      // Only the colliding names carry a suffix, so the ordinary case keeps a
-      // clean <name-slug>.json and existing repositories do not churn.
-      discriminator: collides
-        ? entitlementDiscriminator({ data: item.data, id: item.id })
-        : null,
-    });
-  });
+      discriminator: chosen[i],
+    })));
+  }
+  return entries;
+}
+
+/**
+ * Two entries on one path means a backup writes one over the other and the
+ * loser disappears without a trace, which is the failure this module exists to
+ * prevent. Fail loudly instead.
+ */
+function assertDistinctPaths(entries) {
+  const seen = new Map();
+  for (const item of entries) {
+    const first = seen.get(item.relPath);
+    if (first) {
+      throw new Error(
+        `Two items share the path ${item.relPath}: `
+        + `${first.type} id ${first.id ?? 'none'} and ${item.type} id ${item.id ?? 'none'}`,
+      );
+    }
+    seen.set(item.relPath, item);
+  }
 }
 
 /**
@@ -108,8 +171,11 @@ export async function snapshotLive({ client, config }) {
     data: normalizeRole(raw, { accessProfileNameById, entitlementNameById }),
   }));
 
+  const entries = [...entitlements, ...accessProfiles, ...roles];
+  assertDistinctPaths(entries);
+
   return {
-    entries: [...entitlements, ...accessProfiles, ...roles],
+    entries,
     counts: {
       entitlements: entitlements.length,
       accessProfiles: accessProfiles.length,

@@ -95,9 +95,11 @@ Direct pushes to \`main\` are blocked when a ruleset is in place. Only the autom
 
 ${sources}
 
-Entitlements are identified by source plus native value, so a source may contain
-several entitlements with the same name. Where that happens the files carry a
-\`__<value>\` suffix to keep them apart; unique names use the plain name slug.
+Entitlements are identified by their ISC id, so a source may contain several
+entitlements sharing a name and even a native value — one Entra group surfaces
+as \`group\`, \`azureADActiveGroup\` and \`azureADEligibleGroup\`. Where that
+happens the file names carry the smallest suffix that tells them apart; unique
+names use the plain name slug.
 
 ## Recent history
 

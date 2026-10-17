@@ -38,6 +38,21 @@ describe('buildDriftApprovalPayload', () => {
     assert.ok(!payload.approvalText.includes('role-49'));
   });
 
+  it('shows the changed role even when thousands of entitlements sort ahead of it', () => {
+    // The preview is capped at 20 lines and paths sort alphabetically, so
+    // `access/entitlements/...` used to fill it completely and the one role
+    // somebody actually edited never appeared in the approval.
+    const changed = [
+      ...Array.from({ length: 2085 }, (_, i) => `access/entitlements/entra/e-${i}.json`),
+      'access/roles/business-process-users.json',
+    ].sort();
+    const drift = { added: [], changed, deleted: [], driftHash: 'irrelevant' };
+    const payload = buildDriftApprovalPayload({ drift, config });
+
+    assert.match(payload.approvalText, /- access\/roles\/business-process-users\.json/);
+    assert.match(payload.approvalText, /and 2066 more/);
+  });
+
   it('does not inline the full path lists in the trigger payload', () => {
     const drift = {
       added: ['a.json'],

@@ -97,6 +97,27 @@ describe('buildPlan', () => {
     assert.equal(buildPlan({ baseItems: ents, headItems: ents }).summary.update, 0);
   });
 
+  it('treats one source object exposed under several types as several entitlements', () => {
+    // Regression: an Entra group aggregates as `group`, `azureADActiveGroup`
+    // and `azureADEligibleGroup` entitlements that share a name and an object
+    // GUID. Keyed on value they collapsed into one, so every backup reported
+    // the other two as changed and the drift never cleared.
+    const guid = '9435f3f5-d96f-4abc-886f-196a3a543e98';
+    const ents = ['group', 'azureADActiveGroup', 'azureADEligibleGroup'].map((objectType, i) => {
+      const e = item(ITEM_TYPES.entitlement, {
+        id: `e-${i}`,
+        name: 'Accounting',
+        source: { id: 's-a', name: 'Entra' },
+        _readonly: { value: guid, sourceSchemaObjectType: objectType },
+      }, `access/entitlements/entra/accounting__${objectType.toLowerCase()}.json`);
+      e.sourceSlug = 'entra';
+      return e;
+    });
+
+    assert.equal(indexByName(ents).size, 3);
+    assert.equal(buildPlan({ baseItems: ents, headItems: ents }).summary.update, 0);
+  });
+
   it('reads an entitlement rename as an update, not a create plus delete', () => {
     const base = item(ITEM_TYPES.entitlement, {
       id: 'e-1',
@@ -118,7 +139,7 @@ describe('buildPlan', () => {
     assert.equal(plan.summary.skip, 0);
   });
 
-  it('still reports two entitlements that share a source and a value', () => {
+  it('still reports two entitlement files that claim the same ISC id', () => {
     const dup = () => {
       const e = item(ITEM_TYPES.entitlement, {
         id: 'e-1',

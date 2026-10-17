@@ -7,10 +7,23 @@ function renderApprovalText(lines) {
   return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-/** Cap long path lists so the approval description stays readable (and small). */
+/** Roles and access profiles first; entitlement drift is usually the bulk. */
+const PATH_RANK = ['access/roles/', 'access/access-profiles/'];
+
+function pathRank(path) {
+  const index = PATH_RANK.findIndex((prefix) => path.startsWith(prefix));
+  return index === -1 ? PATH_RANK.length : index;
+}
+
+/**
+ * Cap long path lists so the approval description stays readable (and small).
+ * A thousand entitlements must not push the one changed role out of view, so
+ * the preview is ordered by kind rather than alphabetically.
+ */
 function previewPaths(paths, limit = 20) {
   if (paths.length === 0) return ['_none_'];
-  const shown = paths.slice(0, limit).map((p) => `- ${p}`);
+  const ordered = [...paths].sort((a, b) => pathRank(a) - pathRank(b) || a.localeCompare(b));
+  const shown = ordered.slice(0, limit).map((p) => `- ${p}`);
   if (paths.length > limit) shown.push(`...and ${paths.length - limit} more`);
   return shown;
 }

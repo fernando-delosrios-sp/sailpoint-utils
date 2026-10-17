@@ -182,7 +182,17 @@ schemas/
 
 Files are keyed by **name slug**; the ISC `id` lives inside the JSON. Cross-references use **names**; apply resolves them to ids in dependency order (entitlements → access profiles → roles). An entitlement name that a caller cannot resolve to exactly one entitlement fails the apply rather than being guessed.
 
-ISC allows several entitlements in one source to share a name (AWS policy entitlements commonly do). Those files get a suffix from the entitlement's native value — `<name-slug>__<value-slug>.json` — so each one is backed up instead of overwriting the others. Names that are unique in their source keep the plain `<name-slug>.json`. Entitlement identity itself is source plus native value, not the file name, so renaming an entitlement in ISC reads as an update.
+An entitlement is identified by its **ISC id**, which is the only thing about an entitlement that is unique. Names repeat across sources and inside a source, and so do native values: an Entra group aggregates as `group`, `azureADActiveGroup` and `azureADEligibleGroup` entitlements that all carry the same name and the same object GUID, and a PIM role aggregates as both an active and an eligible entitlement. Because identity is the id and not the file name, renaming an entitlement in ISC reads as an update.
+
+Where several entitlements in one source share a name, the file names carry the smallest suffix that tells them apart — native value, else schema object type, else both, else the id:
+
+```
+access/entitlements/<source>/accounting__group.json
+access/entitlements/<source>/accounting__azureadactivegroup.json
+access/entitlements/<source>/accounting__azureadeligiblegroup.json
+```
+
+Names that are unique in their source keep the plain `<name-slug>.json`. A backup that cannot give two entitlements distinct paths fails rather than letting one overwrite the other.
 
 ## Local commands (inside the target repo)
 
