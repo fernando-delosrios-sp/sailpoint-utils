@@ -174,6 +174,55 @@ export function buildDriftApprovalPayload({ drift, issueUrl = null, config = loa
 }
 
 /**
+ * Drop owners that can never act on an approval addressed to them.
+ *
+ * A role's owner can be a protected/system identity (ISC's built-in
+ * "SailPoint Services" is a common example: `isProtected: true`,
+ * `identityStatus: "UNREGISTERED"`). ISC still accepts it as a
+ * `singleApproverIdentityId` and routes the approval there, but nobody can
+ * naturally receive or action it — it has to be manually reassigned to a
+ * real person every time, which happened live and looked like a routing bug
+ * (the approval's requester/requestee metadata shows the workflow owner,
+ * which is a separate, unrelated field, and easy to mistake for the actual
+ * assignee).
+ *
+ * Governance-group approval always runs first regardless of owners, so
+ * dropping an ineligible owner here just means the per-owner step is skipped
+ * for that item — the change still requires a real decision, just not one
+ * that depends on a system account someone has to rescue by hand.
+ *
+ * A lookup failure (network blip, deleted identity, etc.) keeps the owner
+ * rather than dropping it — silently skipping an owner approval because a
+ * read failed would be a worse outcome than asking and having someone
+ * reassign it if it turns out to be ineligible after all.
+ */
+export async function eligibleOwners(owners, client) {
+  const eligible = [];
+  const skipped = [];
+  for (const owner of owners) {
+    if (owner.type && owner.type !== 'IDENTITY') {
+      eligible.push(owner);
+      continue;
+    }
+    try {
+      const identity = await client.getIdentity(owner.id);
+      if (identity?.isProtected) {
+        skipped.push({ ...owner, reason: 'protected system identity' });
+        continue;
+      }
+      if (identity?.identityStatus === 'UNREGISTERED') {
+        skipped.push({ ...owner, reason: 'unregistered identity' });
+        continue;
+      }
+    } catch {
+      // Unknown beats silently dropped — fall through and keep the owner.
+    }
+    eligible.push(owner);
+  }
+  return { eligible, skipped };
+}
+
+/**
  * Call an ISC external trigger URL with the trigger's OAuth client credentials.
  * `tokenUrl` is the tenant API host + /oauth/token.
  */

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDriftApprovalPayload } from '../approval.mjs';
+import { buildDriftApprovalPayload, eligibleOwners } from '../approval.mjs';
 import { contentHash } from '../common.mjs';
 
 const config = {
@@ -96,6 +96,75 @@ describe('buildDriftApprovalPayload', () => {
     assert.equal(payload.actors, undefined);
     assert.match(payload.approvalText, /Jane Doe — access\/roles\/analyst.json/);
     assert.match(payload.approvalText, /since 2026-10-01T00:00:00.000Z/);
+  });
+});
+
+describe('eligibleOwners', () => {
+  function clientOf(identities) {
+    return {
+      getIdentity: async (id) => {
+        if (!(id in identities)) throw new Error(`no such identity: ${id}`);
+        return identities[id];
+      },
+    };
+  }
+
+  it('drops a protected owner — e.g. ISC\'s built-in "SailPoint Services"', async () => {
+    const owners = [{ type: 'IDENTITY', id: 'svc-1', name: 'SailPoint Services' }];
+    const client = clientOf({ 'svc-1': { isProtected: true, identityStatus: 'UNREGISTERED' } });
+    const { eligible, skipped } = await eligibleOwners(owners, client);
+    assert.deepEqual(eligible, []);
+    assert.equal(skipped.length, 1);
+    assert.equal(skipped[0].name, 'SailPoint Services');
+    assert.equal(skipped[0].reason, 'protected system identity');
+  });
+
+  it('drops an unregistered owner even if not flagged protected', async () => {
+    const owners = [{ type: 'IDENTITY', id: 'u-1', name: 'Pending Hire' }];
+    const client = clientOf({ 'u-1': { isProtected: false, identityStatus: 'UNREGISTERED' } });
+    const { eligible, skipped } = await eligibleOwners(owners, client);
+    assert.deepEqual(eligible, []);
+    assert.equal(skipped[0].reason, 'unregistered identity');
+  });
+
+  it('keeps a normal, active owner', async () => {
+    const owners = [{ type: 'IDENTITY', id: 'a-1', name: 'Mr Robot' }];
+    const client = clientOf({ 'a-1': { isProtected: false, identityStatus: 'ACTIVE' } });
+    const { eligible, skipped } = await eligibleOwners(owners, client);
+    assert.deepEqual(eligible, owners);
+    assert.deepEqual(skipped, []);
+  });
+
+  it('keeps a non-IDENTITY owner without looking it up', async () => {
+    const owners = [{ type: 'GOVERNANCE_GROUP', id: 'g-1', name: 'EMEA TES Team' }];
+    const client = { getIdentity: async () => { throw new Error('should not be called'); } };
+    const { eligible, skipped } = await eligibleOwners(owners, client);
+    assert.deepEqual(eligible, owners);
+    assert.deepEqual(skipped, []);
+  });
+
+  it('keeps an owner when the identity lookup fails — unknown beats silently dropped', async () => {
+    const owners = [{ type: 'IDENTITY', id: 'missing-1', name: 'Gone' }];
+    const client = clientOf({});
+    const { eligible, skipped } = await eligibleOwners(owners, client);
+    assert.deepEqual(eligible, owners);
+    assert.deepEqual(skipped, []);
+  });
+
+  it('filters a mixed list, preserving the eligible owners in order', async () => {
+    const owners = [
+      { type: 'IDENTITY', id: 'svc-1', name: 'SailPoint Services' },
+      { type: 'IDENTITY', id: 'a-1', name: 'Mr Robot' },
+      { type: 'IDENTITY', id: 'a-2', name: 'Jane Doe' },
+    ];
+    const client = clientOf({
+      'svc-1': { isProtected: true, identityStatus: 'UNREGISTERED' },
+      'a-1': { isProtected: false, identityStatus: 'ACTIVE' },
+      'a-2': { isProtected: false, identityStatus: 'ACTIVE' },
+    });
+    const { eligible, skipped } = await eligibleOwners(owners, client);
+    assert.deepEqual(eligible.map((o) => o.name), ['Mr Robot', 'Jane Doe']);
+    assert.deepEqual(skipped.map((o) => o.name), ['SailPoint Services']);
   });
 });
 

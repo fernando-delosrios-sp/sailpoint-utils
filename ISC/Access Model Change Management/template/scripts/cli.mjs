@@ -16,6 +16,7 @@ import {
   buildRestoreApprovalPayload,
   buildDriftApprovalPayload,
   invokeExternalTrigger,
+  eligibleOwners,
 } from './approval.mjs';
 import {
   writeChangeEntry,
@@ -215,6 +216,16 @@ Commands:
         pr,
         config,
       });
+      // Drop owners who are protected/unregistered system identities before
+      // this goes anywhere near ISC — see eligibleOwners() for why.
+      const { eligible, skipped } = await eligibleOwners(payload.owners, IscClient.fromEnv());
+      payload.owners = eligible;
+      if (skipped.length > 0) {
+        payload.skippedOwners = skipped;
+        for (const owner of skipped) {
+          console.error(`::warning::Skipping owner approval for "${owner.name}" (${owner.reason}) — governance-group approval still applies.`);
+        }
+      }
     }
     const result = await invokeExternalTrigger({
       triggerUrl,
