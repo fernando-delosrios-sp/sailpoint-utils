@@ -139,5 +139,6 @@ describe('init workflow contract', () => {
     assert.doesNotMatch(apply, /\$\{PR_NUM:-0\}/);
     assert.match(readme, /chore\(init\):/);
     assert.match(readme, /fetch-tags: true/);
+    assert.match(readme, /refs\/tags\/known-good\/\*/);
   });
 });

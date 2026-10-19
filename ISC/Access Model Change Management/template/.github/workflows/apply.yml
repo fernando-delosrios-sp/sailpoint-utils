@@ -212,6 +212,7 @@ jobs:
               applyResult: $apply[0],
               tag: $tag
             }' | node scripts/cli.mjs ledger-change
+          git fetch origin '+refs/tags/known-good/*:refs/tags/known-good/*' '+refs/tags/isc-applied/*:refs/tags/isc-applied/*'
           node scripts/cli.mjs readme
           git add changes/ README.md access/
           git diff --cached --quiet || git commit -m "chore(apply): ledger and README for $TAG"

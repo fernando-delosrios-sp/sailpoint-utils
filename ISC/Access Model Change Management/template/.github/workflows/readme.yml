@@ -38,6 +38,9 @@ jobs:
           node-version: "20"
 
       - run: node scripts/public-npm-ci.mjs
+      # checkout's fetch-tags uses refs/tags/*, and * does not match a slash,
+      # so known-good/… never arrives and the README lists no tags.
+      - run: git fetch origin '+refs/tags/known-good/*:refs/tags/known-good/*' '+refs/tags/isc-applied/*:refs/tags/isc-applied/*'
       - run: node scripts/cli.mjs readme
 
       - name: Commit

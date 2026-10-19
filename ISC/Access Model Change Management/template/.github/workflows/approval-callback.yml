@@ -232,6 +232,7 @@ jobs:
               decision: $decision[0],
               applyResult: $apply[0]
             }' | node scripts/cli.mjs ledger-restore
+          git fetch origin '+refs/tags/known-good/*:refs/tags/known-good/*' '+refs/tags/isc-applied/*:refs/tags/isc-applied/*'
           node scripts/cli.mjs readme
           git config user.name "amcm-bot"
           git config user.email "amcm-bot[bot]@users.noreply.github.com"
@@ -347,6 +348,7 @@ jobs:
           jq -n --slurpfile d /tmp/drift-now.json --arg issue "${{ steps.issue.outputs.url }}" \
             '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", issueUrl:$issue, modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
+          git fetch origin '+refs/tags/known-good/*:refs/tags/known-good/*' '+refs/tags/isc-applied/*:refs/tags/isc-applied/*'
           node scripts/cli.mjs readme
           git add changes/ README.md
           git commit -m "chore(backup): record drift ledger" || true
@@ -418,6 +420,7 @@ jobs:
           jq -n --slurpfile d /tmp/drift-now.json --arg issue "$ISSUE_URL" --argjson restored "$OK" \
             '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"rejected", restored:$restored, issueUrl:$issue, modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
+          git fetch origin '+refs/tags/known-good/*:refs/tags/known-good/*' '+refs/tags/isc-applied/*:refs/tags/isc-applied/*'
           node scripts/cli.mjs readme
           git add access/ changes/ README.md
           if [ "$OK" = "true" ]; then
@@ -461,6 +464,7 @@ jobs:
           jq -n --slurpfile d /tmp/drift-now.json --arg issue "$ISSUE_URL" \
             '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"expired", restored:false, issueUrl:$issue, modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
+          git fetch origin '+refs/tags/known-good/*:refs/tags/known-good/*' '+refs/tags/isc-applied/*:refs/tags/isc-applied/*'
           node scripts/cli.mjs readme
           git add changes/ README.md
           git diff --cached --quiet || git commit -m "chore(backup): record drift decision (expired)"
