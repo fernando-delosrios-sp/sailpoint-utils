@@ -22,6 +22,7 @@ JIT_NOTE = (
     "<strong>Diese Berechtigung muss vor jeder Nutzung aktiviert werden.</strong> Öffnen Sie MySailPoint &gt; Launchpad &gt; Just-In-Time Access.",
     "<strong>Este direito de acesso tem de ser ativado antes de cada utilização.</strong> Aceda a MySailPoint &gt; Launchpad &gt; Just-In-Time Access.",
     "<strong>يجب تفعيل هذا الاستحقاق قبل كل استخدام.</strong> انتقل إلى MySailPoint &gt; Launchpad &gt; Just-In-Time Access.",
+    "<strong>Dit recht moet voor elk gebruik worden geactiveerd.</strong> Ga naar MySailPoint &gt; Launchpad &gt; Just-In-Time Access.",
 )
 
 COMMENT_FROM = (
@@ -32,6 +33,7 @@ COMMENT_FROM = (
     "$rejecterName hat diesen Kommentar hinterlassen:",
     "$rejecterName deixou este comentário:",
     "ترك $rejecterName هذا التعليق:",
+    "$rejecterName heeft deze opmerking achtergelaten:",
 )
 
 CONTACT_REJECTER = (
@@ -42,6 +44,7 @@ CONTACT_REJECTER = (
     "Bei Fragen wenden Sie sich an $rejecterName.",
     "Se tiver alguma dúvida, contacte $rejecterName.",
     "إذا كانت لديك أي أسئلة، فتواصل مع $rejecterName.",
+    "Als u vragen hebt, neem dan contact op met $rejecterName.",
 )
 
 CONTACT_REQUESTER = (
@@ -52,6 +55,7 @@ CONTACT_REQUESTER = (
     "Weitere Informationen erhalten Sie von $requesterName.",
     "Se precisar de mais informações, contacte $requesterName.",
     "إذا احتجت إلى مزيد من المعلومات، فتواصل مع $requesterName.",
+    "Als u meer informatie nodig hebt, neem dan contact op met $requesterName.",
 )
 
 DECISION_PENDING = (
@@ -62,6 +66,7 @@ DECISION_PENDING = (
     "Falls eine Genehmigung erforderlich ist, werden Sie über die Entscheidung informiert.",
     "Se for necessária aprovação, será notificado quando for tomada uma decisão.",
     "إذا كانت الموافقة مطلوبة، فسنُعلمك عند اتخاذ القرار.",
+    "Als goedkeuring nodig is, ontvangt u een melding wanneer er een beslissing is genomen.",
 )
 
 DATE_ROWS = [("$tx_startsOn", "${startDate}", "$startDate"), ("$tx_endsOn", "${removeDate}", "$removeDate")]
@@ -94,6 +99,7 @@ TEMPLATES = [
             "#if($approved)Genehmigt#{else}Abgelehnt#end: Ihre Zugriffsanfrage für ${requestedObjectName}",
             "#if($approved)Aprovado#{else}Recusado#end: o seu pedido de acesso a ${requestedObjectName}",
             "#if($approved)تمت الموافقة#{else}تم الرفض#end: طلب الوصول الخاص بك إلى ${requestedObjectName}",
+            "#if($approved)Goedgekeurd#{else}Afgewezen#end: uw toegangsaanvraag voor ${requestedObjectName}",
         ),
         prelude=OBJECT_TYPE
         + STATUS
@@ -110,6 +116,7 @@ TEMPLATES = [
                 "Ihre Anfrage für <strong>$mailItem</strong> ($mailType) wurde $mailStatusHtml.",
                 "O seu pedido de <strong>$mailItem</strong> ($mailType) foi $mailStatusHtml.",
                 "طلبك للحصول على <strong>$mailItem</strong> ($mailType) $mailStatusHtml.",
+                "Uw aanvraag voor <strong>$mailItem</strong> ($mailType) is $mailStatusHtml.",
             ),
             "decisionOther": (
                 "Your request for <strong>$mailItem</strong> ($mailType) for <strong>${requestedForIdentityName}</strong> has been $mailStatusHtml.",
@@ -119,6 +126,7 @@ TEMPLATES = [
                 "Ihre Anfrage für <strong>$mailItem</strong> ($mailType) für <strong>${requestedForIdentityName}</strong> wurde $mailStatusHtml.",
                 "O seu pedido de <strong>$mailItem</strong> ($mailType) para <strong>${requestedForIdentityName}</strong> foi $mailStatusHtml.",
                 "طلبك للحصول على <strong>$mailItem</strong> ($mailType) لـ <strong>${requestedForIdentityName}</strong> $mailStatusHtml.",
+                "Uw aanvraag voor <strong>$mailItem</strong> ($mailType) voor <strong>${requestedForIdentityName}</strong> is $mailStatusHtml.",
             ),
             "includesSelf": (
                 "You now have access to:",
@@ -128,6 +136,7 @@ TEMPLATES = [
                 "Sie haben jetzt Zugriff auf:",
                 "Passou a ter acesso a:",
                 "أصبح لديك الآن وصول إلى:",
+                "U hebt nu toegang tot:",
             ),
             "includesOther": (
                 "${requestedForIdentityName} now has access to:",
@@ -137,6 +146,7 @@ TEMPLATES = [
                 "${requestedForIdentityName} hat jetzt Zugriff auf:",
                 "${requestedForIdentityName} passou a ter acesso a:",
                 "أصبح لدى ${requestedForIdentityName} الآن وصول إلى:",
+                "${requestedForIdentityName} heeft nu toegang tot:",
             ),
             "jit": JIT_NOTE,
             "commentFrom": COMMENT_FROM,
@@ -179,6 +189,7 @@ TEMPLATES = [
             "#if($approved)Genehmigt#{else}Abgelehnt#end: Zugriffsanfrage von ${requesterName} für Sie",
             "#if($approved)Aprovado#{else}Recusado#end: o pedido de acesso de ${requesterName} para si",
             "#if($approved)تمت الموافقة#{else}تم الرفض#end: الوصول الذي طلبه ${requesterName} لك",
+            "#if($approved)Goedgekeurd#{else}Afgewezen#end: toegang die ${requesterName} voor u heeft aangevraagd",
         ),
         prelude=STATUS,
         strings={
@@ -190,6 +201,7 @@ TEMPLATES = [
                 "Am ${dateRequested} hat ${requesterName} <strong>${requestedObjectName}</strong> für Sie angefordert. Die Anfrage wurde $mailStatusHtml.",
                 "Em ${dateRequested}, ${requesterName} pediu <strong>${requestedObjectName}</strong> para si. O pedido foi $mailStatusHtml.",
                 "في ${dateRequested}، طلب ${requesterName} <strong>${requestedObjectName}</strong> لك. الطلب $mailStatusHtml.",
+                "Op ${dateRequested} heeft ${requesterName} <strong>${requestedObjectName}</strong> voor u aangevraagd. De aanvraag is $mailStatusHtml.",
             ),
             "processing": (
                 "Your access is now being set up.",
@@ -199,6 +211,7 @@ TEMPLATES = [
                 "Ihr Zugriff wird jetzt eingerichtet.",
                 "O seu acesso está a ser configurado.",
                 "يجري الآن إعداد وصولك.",
+                "Uw toegang wordt nu ingericht.",
             ),
             "jit": JIT_NOTE,
             "commentFrom": COMMENT_FROM,
@@ -235,6 +248,7 @@ TEMPLATES = [
             "Prüfung erforderlich: Zugriffsanfrage für ${requestedForIdentityName}",
             "Revisão necessária: pedido de acesso para ${requestedForIdentityName}",
             "مراجعة مطلوبة: طلب وصول لـ ${requestedForIdentityName}",
+            "Beoordeling nodig: toegangsaanvraag voor ${requestedForIdentityName}",
         ),
         prelude=OBJECT_TYPE + FOR_OTHER,
         strings={
@@ -246,6 +260,7 @@ TEMPLATES = [
                 "${requesterName} hat <strong>${requestedObjectName}</strong> ($mailType) angefordert. Bitte prüfen Sie die Anfrage.",
                 "${requesterName} pediu <strong>${requestedObjectName}</strong> ($mailType). Reveja o pedido.",
                 "طلب ${requesterName} <strong>${requestedObjectName}</strong> ($mailType). يُرجى مراجعة الطلب.",
+                "${requesterName} heeft <strong>${requestedObjectName}</strong> ($mailType) aangevraagd. Beoordeel de aanvraag.",
             ),
             "reason": (
                 "Reason given by ${requesterName}:",
@@ -255,6 +270,7 @@ TEMPLATES = [
                 "Begründung von ${requesterName}:",
                 "Motivo indicado por ${requesterName}:",
                 "السبب الذي قدّمه ${requesterName}:",
+                "Reden van ${requesterName}:",
             ),
             "includes": (
                 "If approved, ${requestedForIdentityName} will get access to:",
@@ -264,6 +280,7 @@ TEMPLATES = [
                 "Bei Genehmigung erhält ${requestedForIdentityName} Zugriff auf:",
                 "Se for aprovado, ${requestedForIdentityName} terá acesso a:",
                 "في حال الموافقة، سيحصل ${requestedForIdentityName} على وصول إلى:",
+                "Bij goedkeuring krijgt ${requestedForIdentityName} toegang tot:",
             ),
             "includesProfile": (
                 "If approved, ${requestedForIdentityName} will get every entitlement in ${accessProfileName}.",
@@ -273,6 +290,7 @@ TEMPLATES = [
                 "Bei Genehmigung erhält ${requestedForIdentityName} alle Berechtigungen aus ${accessProfileName}.",
                 "Se for aprovado, ${requestedForIdentityName} terá todos os direitos de acesso de ${accessProfileName}.",
                 "في حال الموافقة، سيحصل ${requestedForIdentityName} على جميع الاستحقاقات في ${accessProfileName}.",
+                "Bij goedkeuring krijgt ${requestedForIdentityName} elk recht in ${accessProfileName}.",
             ),
         },
         content=f"""
@@ -303,6 +321,7 @@ TEMPLATES = [
             "Prüfung erforderlich: Zugriffsanfrage von ${requesterName} wurde Ihnen zugewiesen",
             "Revisão necessária: o pedido de acesso de ${requesterName} foi-lhe reatribuído",
             "مراجعة مطلوبة: أُعيد إليك إسناد طلب وصول من ${requesterName}",
+            "Beoordeling nodig: toegangsaanvraag van ${requesterName} aan u toegewezen",
         ),
         prelude=OBJECT_TYPE,
         strings={
@@ -314,6 +333,7 @@ TEMPLATES = [
                 "${previousOwnerName} hat Ihnen die Anfrage von ${requesterName} für <strong>${requestedObjectName}</strong> ($mailType) zur Prüfung zugewiesen.",
                 "${previousOwnerName} reatribuiu-lhe o pedido de ${requesterName} de <strong>${requestedObjectName}</strong> ($mailType) para revisão.",
                 "أعاد ${previousOwnerName} إليك إسناد طلب ${requesterName} للحصول على <strong>${requestedObjectName}</strong> ($mailType) لمراجعته.",
+                "${previousOwnerName} heeft de aanvraag van ${requesterName} voor <strong>${requestedObjectName}</strong> ($mailType) aan u toegewezen ter beoordeling.",
             ),
             "reason": (
                 "Reason for reassignment:",
@@ -323,6 +343,7 @@ TEMPLATES = [
                 "Grund für die Neuzuweisung:",
                 "Motivo da reatribuição:",
                 "سبب إعادة الإسناد:",
+                "Reden van de hertoewijzing:",
             ),
             "includes": (
                 "If you approve, the user will get access to:",
@@ -332,6 +353,7 @@ TEMPLATES = [
                 "Wenn Sie genehmigen, erhält der Benutzer Zugriff auf:",
                 "Se aprovar, o utilizador terá acesso a:",
                 "إذا وافقت، فسيحصل المستخدم على وصول إلى:",
+                "Als u goedkeurt, krijgt de gebruiker toegang tot:",
             ),
             "includesProfile": (
                 "If you approve, ${requesterName} will get every entitlement in ${accessProfileName}.",
@@ -341,6 +363,7 @@ TEMPLATES = [
                 "Wenn Sie genehmigen, erhält ${requesterName} alle Berechtigungen aus ${accessProfileName}.",
                 "Se aprovar, ${requesterName} terá todos os direitos de acesso de ${accessProfileName}.",
                 "إذا وافقت، فسيحصل ${requesterName} على جميع الاستحقاقات في ${accessProfileName}.",
+                "Als u goedkeurt, krijgt ${requesterName} elk recht in ${accessProfileName}.",
             ),
         },
         content=f"""
@@ -372,6 +395,7 @@ TEMPLATES = [
             "${requesterName} hat Zugriff für Sie angefordert",
             "${requesterName} pediu acesso para si",
             "طلب ${requesterName} وصولًا لك",
+            "${requesterName} heeft toegang voor u aangevraagd",
         ),
         strings={
             "intro": (
@@ -382,6 +406,7 @@ TEMPLATES = [
                 "${requesterName} hat folgenden Zugriff für Sie angefordert:",
                 "${requesterName} pediu o seguinte acesso para si:",
                 "طلب ${requesterName} الوصول التالي لك:",
+                "${requesterName} heeft de volgende toegang voor u aangevraagd:",
             ),
             "pending": DECISION_PENDING,
         },
@@ -403,6 +428,7 @@ TEMPLATES = [
             "Ihre Zugriffsanfrage #if($requestDetails && $requestDetails.size() == 1)für $requestDetails.get(0).identityName #elseif($requestDetails.size() > 1)für $requestDetails.size() Personen #{end}wurde gesendet",
             "O seu pedido de acesso #if($requestDetails && $requestDetails.size() == 1)para $requestDetails.get(0).identityName #elseif($requestDetails.size() > 1)para $requestDetails.size() pessoas #{end}foi enviado",
             "تم إرسال طلب الوصول الخاص بك#if($requestDetails && $requestDetails.size() == 1) لـ $requestDetails.get(0).identityName#elseif($requestDetails.size() > 1) لـ $requestDetails.size() أشخاص#end",
+            "Uw toegangsaanvraag #if($requestDetails && $requestDetails.size() == 1)voor $requestDetails.get(0).identityName #elseif($requestDetails.size() > 1)voor $requestDetails.size() personen #{end}is ingediend",
         ),
         strings={
             "intro": (
@@ -413,9 +439,10 @@ TEMPLATES = [
                 "Hier ist eine Übersicht über den von Ihnen angeforderten Zugriff:",
                 "Este é o resumo do acesso que pediu:",
                 "إليك ملخص الوصول الذي طلبته:",
+                "Dit is een overzicht van de toegang die u hebt aangevraagd:",
             ),
-            "submitted": ("Submitted", "Enviado", "Envoyé", "Inviato", "Gesendet", "Enviado", "تم الإرسال"),
-            "failed": ("Could not be submitted", "No se ha podido enviar", "N’a pas pu être envoyé", "Non è stato possibile inviarlo", "Konnte nicht gesendet werden", "Não foi possível enviar", "تعذّر الإرسال"),
+            "submitted": ("Submitted", "Enviado", "Envoyé", "Inviato", "Gesendet", "Enviado", "تم الإرسال", "Ingediend"),
+            "failed": ("Could not be submitted", "No se ha podido enviar", "N’a pas pu être envoyé", "Non è stato possibile inviarlo", "Konnte nicht gesendet werden", "Não foi possível enviar", "تعذّر الإرسال", "Kon niet worden ingediend"),
             "pending": DECISION_PENDING,
         },
         content=f"""
@@ -448,6 +475,7 @@ TEMPLATES = [
             "Eine Zugriffsanfrage wurde storniert",
             "Um pedido de acesso foi cancelado",
             "تم إلغاء طلب وصول",
+            "Een toegangsaanvraag is geannuleerd",
         ),
         prelude="""
 #set($mailMine = false)#if($emailRecipientName == $requesterName)#set($mailMine = true)#end
@@ -462,6 +490,7 @@ TEMPLATES = [
                 "Ihre ausstehende Zugriffsanfrage wurde storniert.",
                 "O seu pedido de acesso pendente foi cancelado.",
                 "تم إلغاء طلب الوصول المعلّق الخاص بك.",
+                "Uw openstaande toegangsaanvraag is geannuleerd.",
             ),
             "introOther": (
                 "A pending access request has been cancelled.",
@@ -471,9 +500,10 @@ TEMPLATES = [
                 "Eine ausstehende Zugriffsanfrage wurde storniert.",
                 "Um pedido de acesso pendente foi cancelado.",
                 "تم إلغاء طلب وصول معلّق.",
+                "Een openstaande toegangsaanvraag is geannuleerd.",
             ),
-            "cancelledBy": ("Cancelled by", "Cancelada por", "Annulée par", "Annullata da", "Storniert von", "Cancelado por", "ألغاه"),
-            "reason": ("Reason for cancelling:", "Motivo de la cancelación:", "Motif de l’annulation :", "Motivo dell’annullamento:", "Grund für die Stornierung:", "Motivo do cancelamento:", "سبب الإلغاء:"),
+            "cancelledBy": ("Cancelled by", "Cancelada por", "Annulée par", "Annullata da", "Storniert von", "Cancelado por", "ألغاه", "Geannuleerd door"),
+            "reason": ("Reason for cancelling:", "Motivo de la cancelación:", "Motif de l’annulation :", "Motivo dell’annullamento:", "Grund für die Stornierung:", "Motivo do cancelamento:", "سبب الإلغاء:", "Reden van de annulering:"),
             "contactCanceler": (
                 "If you have any questions, contact ${cancelerName}.",
                 "Si tienes alguna pregunta, ponte en contacto con ${cancelerName}.",
@@ -482,6 +512,7 @@ TEMPLATES = [
                 "Bei Fragen wenden Sie sich an ${cancelerName}.",
                 "Se tiver alguma dúvida, contacte ${cancelerName}.",
                 "إذا كانت لديك أي أسئلة، فتواصل مع ${cancelerName}.",
+                "Als u vragen hebt, neem dan contact op met ${cancelerName}.",
             ),
         },
         content=f"""
@@ -513,6 +544,7 @@ TEMPLATES = [
             "Ihre Anfrage für ${requestItemName} konnte nicht abgeschlossen werden",
             "Não foi possível concluir o seu pedido de ${requestItemName}",
             "تعذّر إكمال طلبك لـ ${requestItemName}",
+            "Uw aanvraag voor ${requestItemName} kon niet worden voltooid",
         ),
         strings={
             "intro": (
@@ -523,6 +555,7 @@ TEMPLATES = [
                 "Ihre Anfrage für <strong>${requestItemName}</strong> konnte nicht abgeschlossen werden, da Sie mehr als ein Konto in <strong>${sourceName}</strong> haben.",
                 "Não foi possível concluir o seu pedido de <strong>${requestItemName}</strong> porque tem mais do que uma conta em <strong>${sourceName}</strong>.",
                 "تعذّر إكمال طلبك لـ <strong>${requestItemName}</strong> لأن لديك أكثر من حساب واحد على <strong>${sourceName}</strong>.",
+                "Uw aanvraag voor <strong>${requestItemName}</strong> kon niet worden voltooid omdat u meer dan één account hebt op <strong>${sourceName}</strong>.",
             ),
         },
         content=f"""
@@ -542,6 +575,7 @@ TEMPLATES = [
             "Erinnerung: Ihr Zugriff auf ${accessItemName} endet am ${scheduledSunsetDate}",
             "Lembrete: o seu acesso a ${accessItemName} termina em ${scheduledSunsetDate}",
             "تذكير: ينتهي وصولك إلى ${accessItemName} في ${scheduledSunsetDate}",
+            "Herinnering: uw toegang tot ${accessItemName} eindigt op ${scheduledSunsetDate}",
         ),
         strings={
             "intro": (
@@ -552,6 +586,7 @@ TEMPLATES = [
                 "Ihr Zugriff auf <strong>${accessItemName}</strong> (${accessItemType}) endet am <strong>${scheduledSunsetDate}</strong>.",
                 "O seu acesso a <strong>${accessItemName}</strong> (${accessItemType}) termina em <strong>${scheduledSunsetDate}</strong>.",
                 "من المقرر أن ينتهي وصولك إلى <strong>${accessItemName}</strong> (${accessItemType}) في <strong>${scheduledSunsetDate}</strong>.",
+                "Uw toegang tot <strong>${accessItemName}</strong> (${accessItemType}) staat gepland om te eindigen op <strong>${scheduledSunsetDate}</strong>.",
             ),
             "extend": (
                 "If you still need it, extend the access by changing its end date before then.",
@@ -561,6 +596,7 @@ TEMPLATES = [
                 "Wenn Sie den Zugriff weiterhin benötigen, verlängern Sie ihn vorher, indem Sie das Enddatum ändern.",
                 "Se ainda precisar, prolongue o acesso alterando a data de fim antes desse dia.",
                 "إذا كنت لا تزال بحاجة إليه، فمدّد الوصول بتغيير تاريخ انتهائه قبل ذلك الموعد.",
+                "Als u de toegang nog nodig hebt, verleng deze dan door de einddatum daarvóór te wijzigen.",
             ),
         },
         content=f"""
@@ -581,6 +617,7 @@ TEMPLATES = [
             "Prüfung erforderlich: Zugriffsentzug für ${requestedForIdentityName}",
             "Revisão necessária: remoção de acesso de ${requestedForIdentityName}",
             "مراجعة مطلوبة: إزالة وصول لـ ${requestedForIdentityName}",
+            "Beoordeling nodig: verwijdering van toegang voor ${requestedForIdentityName}",
         ),
         prelude=OBJECT_TYPE
         + """
@@ -595,8 +632,9 @@ TEMPLATES = [
                 "${previousOwnerName} hat Ihnen eine Anfrage zugewiesen, <strong>${requestedObjectName}</strong> ($mailType) von <strong>${requestedForIdentityName}</strong> zu entfernen.",
                 "${previousOwnerName} reatribuiu-lhe um pedido para remover <strong>${requestedObjectName}</strong> ($mailType) a <strong>${requestedForIdentityName}</strong>.",
                 "أعاد ${previousOwnerName} إليك إسناد طلب لإزالة <strong>${requestedObjectName}</strong> ($mailType) من <strong>${requestedForIdentityName}</strong>.",
+                "${previousOwnerName} heeft een aanvraag om <strong>${requestedObjectName}</strong> ($mailType) te verwijderen bij <strong>${requestedForIdentityName}</strong> aan u toegewezen.",
             ),
-            "reason": ("Reason for reassignment:", "Motivo de la reasignación:", "Motif de la réattribution :", "Motivo della riassegnazione:", "Grund für die Neuzuweisung:", "Motivo da reatribuição:", "سبب إعادة الإسناد:"),
+            "reason": ("Reason for reassignment:", "Motivo de la reasignación:", "Motif de la réattribution :", "Motivo della riassegnazione:", "Grund für die Neuzuweisung:", "Motivo da reatribuição:", "سبب إعادة الإسناد:", "Reden van de hertoewijzing:"),
             "lose": (
                 "If you approve, ${requestedForIdentityName} will lose this access.",
                 "Si la apruebas, ${requestedForIdentityName} perderá este acceso.",
@@ -605,6 +643,7 @@ TEMPLATES = [
                 "Wenn Sie genehmigen, verliert ${requestedForIdentityName} diesen Zugriff.",
                 "Se aprovar, ${requestedForIdentityName} perderá este acesso.",
                 "إذا وافقت، فسيفقد ${requestedForIdentityName} هذا الوصول.",
+                "Als u goedkeurt, verliest ${requestedForIdentityName} deze toegang.",
             ),
             "loseAll": (
                 "If you approve, ${requestedForIdentityName} will lose this access and all its entitlements.",
@@ -614,6 +653,7 @@ TEMPLATES = [
                 "Wenn Sie genehmigen, verliert ${requestedForIdentityName} diesen Zugriff und alle zugehörigen Berechtigungen.",
                 "Se aprovar, ${requestedForIdentityName} perderá este acesso e todos os direitos associados.",
                 "إذا وافقت، فسيفقد ${requestedForIdentityName} هذا الوصول وجميع استحقاقاته.",
+                "Als u goedkeurt, verliest ${requestedForIdentityName} deze toegang en alle bijbehorende rechten.",
             ),
         },
         content=f"""
@@ -641,6 +681,7 @@ TEMPLATES = [
             "#if($approved)Genehmigt#{else}Abgelehnt#end: Anfrage zum Entzug Ihres Zugriffs",
             "#if($approved)Aprovado#{else}Recusado#end: pedido de remoção do seu acesso",
             "#if($approved)تمت الموافقة#{else}تم الرفض#end: طلب إزالة وصولك",
+            "#if($approved)Goedgekeurd#{else}Afgewezen#end: aanvraag om uw toegang te verwijderen",
         ),
         prelude=OBJECT_TYPE + STATUS,
         strings={
@@ -652,6 +693,7 @@ TEMPLATES = [
                 "Die Anfrage von ${requesterName}, Ihren Zugriff auf <strong>${requestedObjectName}</strong> ($mailType) zu entziehen, wurde $mailStatusHtml.",
                 "O pedido de ${requesterName} para remover o seu acesso a <strong>${requestedObjectName}</strong> ($mailType) foi $mailStatusHtml.",
                 "طلب ${requesterName} لإزالة وصولك إلى <strong>${requestedObjectName}</strong> ($mailType) $mailStatusHtml.",
+                "De aanvraag van ${requesterName} om uw toegang tot <strong>${requestedObjectName}</strong> ($mailType) te verwijderen is $mailStatusHtml.",
             ),
             "contactRequester": CONTACT_REQUESTER,
         },
@@ -674,6 +716,7 @@ TEMPLATES = [
             "#if($approved)Genehmigt#{else}Abgelehnt#end: Ihre Anfrage zum Entzug von ${requestedObjectName}",
             "#if($approved)Aprovado#{else}Recusado#end: o seu pedido de remoção de ${requestedObjectName}",
             "#if($approved)تمت الموافقة#{else}تم الرفض#end: طلبك لإزالة ${requestedObjectName}",
+            "#if($approved)Goedgekeurd#{else}Afgewezen#end: uw aanvraag om ${requestedObjectName} te verwijderen",
         ),
         prelude=OBJECT_TYPE + STATUS,
         strings={
@@ -685,6 +728,7 @@ TEMPLATES = [
                 "Ihre Anfrage, <strong>${requestedObjectName}</strong> ($mailType) von <strong>${requestedForIdentityName}</strong> zu entfernen, wurde $mailStatusHtml.",
                 "O seu pedido para remover <strong>${requestedObjectName}</strong> ($mailType) a <strong>${requestedForIdentityName}</strong> foi $mailStatusHtml.",
                 "طلبك لإزالة <strong>${requestedObjectName}</strong> ($mailType) من <strong>${requestedForIdentityName}</strong> $mailStatusHtml.",
+                "Uw aanvraag om <strong>${requestedObjectName}</strong> ($mailType) te verwijderen bij <strong>${requestedForIdentityName}</strong> is $mailStatusHtml.",
             ),
             "removedOn": (
                 "The access will be removed on ${removeDate}.",
@@ -694,6 +738,7 @@ TEMPLATES = [
                 "Der Zugriff wird am ${removeDate} entzogen.",
                 "O acesso será removido em ${removeDate}.",
                 "ستتم إزالة الوصول في ${removeDate}.",
+                "De toegang wordt verwijderd op ${removeDate}.",
             ),
             "removedSoon": (
                 "The access will be removed shortly, after additional processing.",
@@ -703,6 +748,7 @@ TEMPLATES = [
                 "Der Zugriff wird nach weiterer Verarbeitung in Kürze entzogen.",
                 "O acesso será removido em breve, após processamento adicional.",
                 "ستتم إزالة الوصول قريبًا، بعد معالجة إضافية.",
+                "De toegang wordt binnenkort verwijderd, na aanvullende verwerking.",
             ),
             "commentFrom": COMMENT_FROM,
             "contactRejecter": CONTACT_REJECTER,
@@ -731,6 +777,7 @@ TEMPLATES = [
             "Prüfung erforderlich: Zugriffsentzug für ${requestedForIdentityName}",
             "Revisão necessária: remoção de acesso de ${requestedForIdentityName}",
             "مراجعة مطلوبة: إزالة وصول لـ ${requestedForIdentityName}",
+            "Beoordeling nodig: verwijdering van toegang voor ${requestedForIdentityName}",
         ),
         prelude=OBJECT_TYPE
         + """
@@ -745,6 +792,7 @@ TEMPLATES = [
                 "$requesterName hat beantragt, <strong>$requestedObjectName</strong> ($mailType) von <strong>$requestedForIdentityName</strong> zu entfernen. Bitte prüfen Sie die Anfrage.",
                 "$requesterName pediu para remover <strong>$requestedObjectName</strong> ($mailType) a <strong>$requestedForIdentityName</strong>. Reveja o pedido.",
                 "طلب $requesterName إزالة <strong>$requestedObjectName</strong> ($mailType) من <strong>$requestedForIdentityName</strong>. يُرجى مراجعة الطلب.",
+                "$requesterName heeft gevraagd om <strong>$requestedObjectName</strong> ($mailType) te verwijderen bij <strong>$requestedForIdentityName</strong>. Beoordeel de aanvraag.",
             ),
             "reason": (
                 "Reason given by $requesterName:",
@@ -754,6 +802,7 @@ TEMPLATES = [
                 "Begründung von $requesterName:",
                 "Motivo indicado por $requesterName:",
                 "السبب الذي قدّمه $requesterName:",
+                "Reden van $requesterName:",
             ),
             "lose": (
                 "If approved, $requestedForIdentityName will lose this access.",
@@ -763,6 +812,7 @@ TEMPLATES = [
                 "Bei Genehmigung verliert $requestedForIdentityName diesen Zugriff.",
                 "Se for aprovado, $requestedForIdentityName perderá este acesso.",
                 "في حال الموافقة، سيفقد $requestedForIdentityName هذا الوصول.",
+                "Bij goedkeuring verliest $requestedForIdentityName deze toegang.",
             ),
             "loseAll": (
                 "If approved, $requestedForIdentityName will lose this access and all its entitlements.",
@@ -772,6 +822,7 @@ TEMPLATES = [
                 "Bei Genehmigung verliert $requestedForIdentityName diesen Zugriff und alle zugehörigen Berechtigungen.",
                 "Se for aprovado, $requestedForIdentityName perderá este acesso e todos os direitos associados.",
                 "في حال الموافقة، سيفقد $requestedForIdentityName هذا الوصول وجميع استحقاقاته.",
+                "Bij goedkeuring verliest $requestedForIdentityName deze toegang en alle bijbehorende rechten.",
             ),
         },
         content=f"""
@@ -799,6 +850,7 @@ TEMPLATES = [
             "$requesterName hat den Entzug Ihres Zugriffs beantragt",
             "$requesterName pediu a remoção do seu acesso",
             "طلب $requesterName إزالة وصولك",
+            "$requesterName heeft gevraagd om uw toegang te verwijderen",
         ),
         strings={
             "intro": (
@@ -809,6 +861,7 @@ TEMPLATES = [
                 "$requesterName hat beantragt, Ihren Zugriff auf die folgenden Elemente zu entziehen.",
                 "$requesterName pediu para remover o seu acesso aos itens abaixo.",
                 "طلب $requesterName إزالة وصولك إلى العناصر أدناه.",
+                "$requesterName heeft gevraagd om uw toegang tot de onderstaande items te verwijderen.",
             ),
             "pending": DECISION_PENDING,
             "contactRequester": CONTACT_REQUESTER,
@@ -832,6 +885,7 @@ TEMPLATES = [
             "Ihre Anfrage zum Zugriffsentzug wurde gesendet",
             "O seu pedido de remoção de acesso foi enviado",
             "تم إرسال طلبك لإزالة الوصول",
+            "Uw aanvraag om toegang te verwijderen is ingediend",
         ),
         strings={
             "intro": (
@@ -842,8 +896,9 @@ TEMPLATES = [
                 "Ihre Anfrage zum Entzug des folgenden Zugriffs wurde erfolgreich gesendet.",
                 "O seu pedido para remover o acesso abaixo foi enviado com êxito.",
                 "تم إرسال طلبك لإزالة الوصول أدناه بنجاح.",
+                "Uw aanvraag om de onderstaande toegang te verwijderen is ingediend.",
             ),
-            "people": ("Requested for:", "Solicitado para:", "Demandé pour :", "Richiesto per:", "Angefordert für:", "Pedido para:", "مطلوب لـ:"),
+            "people": ("Requested for:", "Solicitado para:", "Demandé pour :", "Richiesto per:", "Angefordert für:", "Pedido para:", "مطلوب لـ:", "Aangevraagd voor:"),
             "notified": (
                 "The people concerned have also been notified.",
                 "También se ha notificado a las personas afectadas.",
@@ -852,6 +907,7 @@ TEMPLATES = [
                 "Die betroffenen Personen wurden ebenfalls benachrichtigt.",
                 "As pessoas abrangidas também foram notificadas.",
                 "تم إعلام الأشخاص المعنيين أيضًا.",
+                "De betrokken personen zijn ook op de hoogte gebracht.",
             ),
             "pending": DECISION_PENDING,
         },

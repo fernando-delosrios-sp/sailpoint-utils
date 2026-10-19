@@ -1,7 +1,7 @@
 """Strings shared by every template, and the User Invitation (standard and My Apps versions).
 
-Translations are tuples in LANGUAGES order: en, es, fr, it, de, pt, ar.
-Spanish and Italian use the informal register (tú/tu); French, German and Portuguese the formal one.
+Translations are tuples in LANGUAGES order: en, es, fr, it, de, pt, ar, nl.
+Spanish and Italian use the informal register (tú/tu); French, German, Portuguese and Dutch the formal one.
 Portuguese is European Portuguese; Arabic is Modern Standard Arabic.
 """
 
@@ -17,6 +17,7 @@ COMMON = {
         "Hallo $mailName,",
         "Olá $mailName,",
         "مرحبًا $mailName،",
+        "Hallo $mailName,",
     ),
     "closing": (
         "Kind regards,",
@@ -26,6 +27,7 @@ COMMON = {
         "Freundliche Grüße",
         "Com os melhores cumprimentos,",
         "مع أطيب التحيات،",
+        "Met vriendelijke groet,",
     ),
     "footer": (
         "This is an automated message from the ${mailOrgName} identity platform.",
@@ -35,6 +37,7 @@ COMMON = {
         "Diese Nachricht wurde automatisch von der Identitätsplattform von ${mailOrgName} versendet.",
         "Mensagem automática enviada pela plataforma de identidades de ${mailOrgName}.",
         "هذه رسالة آلية من منصة الهوية لدى ${mailOrgName}.",
+        "Dit is een automatisch bericht van het identiteitsplatform van ${mailOrgName}.",
     ),
     "needHelp": (
         "Need help? Contact",
@@ -44,6 +47,7 @@ COMMON = {
         "Brauchen Sie Hilfe? Kontaktieren Sie",
         "Precisa de ajuda? Contacte",
         "هل تحتاج إلى مساعدة؟ تواصل مع",
+        "Hulp nodig? Neem contact op met",
     ),
     "notYouChange": (
         "If you did not make this change, contact your IT administrator immediately.",
@@ -53,6 +57,7 @@ COMMON = {
         "Wenn Sie diese Änderung nicht vorgenommen haben, wenden Sie sich umgehend an Ihre IT-Administration.",
         "Se não efetuou esta alteração, contacte imediatamente o seu administrador de TI.",
         "إذا لم تُجرِ هذا التغيير، فتواصل مع مسؤول تقنية المعلومات فورًا.",
+        "Als u deze wijziging niet hebt aangebracht, neem dan onmiddellijk contact op met uw IT-beheerder.",
     ),
     "notYouRequest": (
         "If you did not make this request, contact your IT administrator immediately.",
@@ -62,6 +67,7 @@ COMMON = {
         "Wenn Sie diese Anfrage nicht gestellt haben, wenden Sie sich umgehend an Ihre IT-Administration.",
         "Se não efetuou este pedido, contacte imediatamente o seu administrador de TI.",
         "إذا لم تقدّم هذا الطلب، فتواصل مع مسؤول تقنية المعلومات فورًا.",
+        "Als u deze aanvraag niet hebt gedaan, neem dan onmiddellijk contact op met uw IT-beheerder.",
     ),
     "contactAdmin": (
         "If you need help, contact your administrator.",
@@ -71,6 +77,7 @@ COMMON = {
         "Wenn Sie Hilfe benötigen, wenden Sie sich an Ihre Administration.",
         "Se precisar de ajuda, contacte o seu administrador.",
         "إذا احتجت إلى مساعدة، فتواصل مع المسؤول.",
+        "Als u hulp nodig hebt, neem dan contact op met uw beheerder.",
     ),
     "copyLink": (
         "If the button does not work, copy and paste this link into your browser:",
@@ -80,23 +87,24 @@ COMMON = {
         "Falls die Schaltfläche nicht funktioniert, kopieren Sie diesen Link in Ihren Browser:",
         "Se o botão não funcionar, copie e cole esta ligação no seu navegador:",
         "إذا لم يعمل الزر، فانسخ هذا الرابط والصقه في المتصفح:",
+        "Als de knop niet werkt, kopieer en plak deze koppeling in uw browser:",
     ),
-    "typeRole": ("role", "rol", "rôle", "ruolo", "Rolle", "função", "دور"),
-    "typeEntitlement": ("entitlement", "derecho", "droit d’accès", "autorizzazione", "Berechtigung", "direito de acesso", "استحقاق"),
-    "typeAccessProfile": ("access profile", "perfil de acceso", "profil d’accès", "profilo di accesso", "Zugriffsprofil", "perfil de acesso", "ملف وصول"),
-    "startsOn": ("Starts", "Inicio", "Début", "Inizio", "Beginn", "Início", "يبدأ"),
-    "endsOn": ("Ends", "Fin", "Fin", "Fine", "Ende", "Fim", "ينتهي"),
-    "requestedBy": ("Requested by", "Solicitado por", "Demandé par", "Richiesto da", "Angefordert von", "Pedido por", "مقدّم الطلب"),
-    "requestedFor": ("Requested for", "Solicitado para", "Demandé pour", "Richiesto per", "Angefordert für", "Pedido para", "المستفيد"),
-    "access": ("Access", "Acceso", "Accès", "Accesso", "Zugriff", "Acesso", "الوصول"),
-    "comment": ("Comment", "Comentario", "Commentaire", "Commento", "Kommentar", "Comentário", "تعليق"),
-    "date": ("Date", "Fecha", "Date", "Data", "Datum", "Data", "التاريخ"),
-    "statusApproved": ("approved", "aprobada", "approuvée", "approvata", "genehmigt", "aprovado", "تمت الموافقة عليه"),
-    "statusDenied": ("denied", "denegada", "refusée", "rifiutata", "abgelehnt", "recusado", "تم رفضه"),
-    "statusCancelled": ("cancelled", "cancelada", "annulée", "annullata", "storniert", "cancelado", "تم إلغاؤه"),
-    "openSailPoint": ("Open SailPoint", "Abrir SailPoint", "Ouvrir SailPoint", "Apri SailPoint", "SailPoint öffnen", "Abrir o SailPoint", "فتح SailPoint"),
-    "reviewNow": ("Review now", "Revisar ahora", "Examiner maintenant", "Esamina ora", "Jetzt prüfen", "Rever agora", "راجِع الآن"),
-    "viewRequests": ("View my requests", "Ver mis solicitudes", "Voir mes demandes", "Visualizza le mie richieste", "Meine Anfragen anzeigen", "Ver os meus pedidos", "عرض طلباتي"),
+    "typeRole": ("role", "rol", "rôle", "ruolo", "Rolle", "função", "دور", "rol"),
+    "typeEntitlement": ("entitlement", "derecho", "droit d’accès", "autorizzazione", "Berechtigung", "direito de acesso", "استحقاق", "recht"),
+    "typeAccessProfile": ("access profile", "perfil de acceso", "profil d’accès", "profilo di accesso", "Zugriffsprofil", "perfil de acesso", "ملف وصول", "toegangsprofiel"),
+    "startsOn": ("Starts", "Inicio", "Début", "Inizio", "Beginn", "Início", "يبدأ", "Begint"),
+    "endsOn": ("Ends", "Fin", "Fin", "Fine", "Ende", "Fim", "ينتهي", "Eindigt"),
+    "requestedBy": ("Requested by", "Solicitado por", "Demandé par", "Richiesto da", "Angefordert von", "Pedido por", "مقدّم الطلب", "Aangevraagd door"),
+    "requestedFor": ("Requested for", "Solicitado para", "Demandé pour", "Richiesto per", "Angefordert für", "Pedido para", "المستفيد", "Aangevraagd voor"),
+    "access": ("Access", "Acceso", "Accès", "Accesso", "Zugriff", "Acesso", "الوصول", "Toegang"),
+    "comment": ("Comment", "Comentario", "Commentaire", "Commento", "Kommentar", "Comentário", "تعليق", "Opmerking"),
+    "date": ("Date", "Fecha", "Date", "Data", "Datum", "Data", "التاريخ", "Datum"),
+    "statusApproved": ("approved", "aprobada", "approuvée", "approvata", "genehmigt", "aprovado", "تمت الموافقة عليه", "goedgekeurd"),
+    "statusDenied": ("denied", "denegada", "refusée", "rifiutata", "abgelehnt", "recusado", "تم رفضه", "afgewezen"),
+    "statusCancelled": ("cancelled", "cancelada", "annulée", "annullata", "storniert", "cancelado", "تم إلغاؤه", "geannuleerd"),
+    "openSailPoint": ("Open SailPoint", "Abrir SailPoint", "Ouvrir SailPoint", "Apri SailPoint", "SailPoint öffnen", "Abrir o SailPoint", "فتح SailPoint", "SailPoint openen"),
+    "reviewNow": ("Review now", "Revisar ahora", "Examiner maintenant", "Esamina ora", "Jetzt prüfen", "Rever agora", "راجِع الآن", "Nu beoordelen"),
+    "viewRequests": ("View my requests", "Ver mis solicitudes", "Voir mes demandes", "Visualizza le mie richieste", "Meine Anfragen anzeigen", "Ver os meus pedidos", "عرض طلباتي", "Mijn aanvragen bekijken"),
 }
 
 # Wrapped default templates keep their own wording and sign-off; only the footer is translated.
@@ -129,6 +137,7 @@ USER_INVITATION = Rewrite(
         "Willkommen bei $__global.productName",
         "Boas-vindas ao $__global.productName",
         "مرحبًا بك في $__global.productName",
+        "Welkom bij $__global.productName",
     ),
     strings={
         "intro": (
@@ -139,9 +148,10 @@ USER_INVITATION = Rewrite(
             "Sie wurden eingeladen, $__global.productName zu nutzen, um die Sicherheit Ihrer Organisation zu unterstützen und zu stärken.",
             "Foi convidado(a) a utilizar o $__global.productName para apoiar e reforçar a segurança da sua organização.",
             "تمت دعوتك لاستخدام $__global.productName لدعم أمن مؤسستك وتعزيزه.",
+            "U bent uitgenodigd om $__global.productName te gebruiken om de beveiliging van uw organisatie te ondersteunen en te versterken.",
         ),
-        "userLabel": ("Your username", "Tu nombre de usuario", "Votre nom d’utilisateur", "Il tuo nome utente", "Ihr Benutzername", "O seu nome de utilizador", "اسم المستخدم الخاص بك"),
-        "cta": ("Register now", "Regístrate ahora", "S’inscrire", "Registrati ora", "Jetzt registrieren", "Registar agora", "سجّل الآن"),
+        "userLabel": ("Your username", "Tu nombre de usuario", "Votre nom d’utilisateur", "Il tuo nome utente", "Ihr Benutzername", "O seu nome de utilizador", "اسم المستخدم الخاص بك", "Uw gebruikersnaam"),
+        "cta": ("Register now", "Regístrate ahora", "S’inscrire", "Registrati ora", "Jetzt registrieren", "Registar agora", "سجّل الآن", "Nu registreren"),
         "signInLater": (
             "Once you have registered, you can use this link to access $__global.productName:",
             "Cuando te hayas registrado, podrás acceder a $__global.productName con este enlace:",
@@ -150,6 +160,7 @@ USER_INVITATION = Rewrite(
             "Nach der Registrierung erreichen Sie $__global.productName über diesen Link:",
             "Depois de se registar, pode aceder ao $__global.productName através desta ligação:",
             "بعد التسجيل، يمكنك الوصول إلى $__global.productName عبر هذا الرابط:",
+            "Nadat u zich hebt geregistreerd, kunt u via deze koppeling naar $__global.productName:",
         ),
     },
     content=f"""
@@ -192,6 +203,7 @@ USER_INVITATION_MY_APPS = Rewrite(
         "Willkommen bei ${mailOrgName} – Ihre Zugangsdaten",
         "Boas-vindas a ${mailOrgName}: os seus dados de acesso",
         "مرحبًا بك في ${mailOrgName} – بيانات الوصول الخاصة بك",
+        "Welkom bij ${mailOrgName} – uw toegangsgegevens",
     ),
     strings={
         "intro": (
@@ -202,11 +214,12 @@ USER_INVITATION_MY_APPS = Rewrite(
             "Ihr ${mailOrgName}-Konto ist eingerichtet. Folgen Sie den Schritten unten, um sich zum ersten Mal anzumelden – das dauert nur wenige Minuten.",
             "A sua conta ${mailOrgName} está pronta. Siga os passos abaixo para iniciar sessão pela primeira vez; demora apenas alguns minutos.",
             "حسابك في ${mailOrgName} جاهز. اتبع الخطوات أدناه لتسجيل الدخول لأول مرة – لن يستغرق ذلك سوى دقيقتين.",
+            "Uw account bij ${mailOrgName} is klaar. Volg de onderstaande stappen om u voor het eerst aan te melden. Het duurt slechts een paar minuten.",
         ),
-        "detailsTitle": ("Your account details", "Datos de tu cuenta", "Vos informations de compte", "I dati del tuo account", "Ihre Kontodaten", "Dados da sua conta", "تفاصيل حسابك"),
-        "emailLabel": ("Sign-in email", "Correo de inicio de sesión", "E-mail de connexion", "E-mail di accesso", "Anmelde-E-Mail", "E-mail de início de sessão", "البريد الإلكتروني لتسجيل الدخول"),
-        "userLabel": ("Username", "Nombre de usuario", "Nom d’utilisateur", "Nome utente", "Benutzername", "Nome de utilizador", "اسم المستخدم"),
-        "stepsTitle": ("First-time sign-in", "Primer inicio de sesión", "Première connexion", "Primo accesso", "Erstanmeldung", "Primeiro início de sessão", "تسجيل الدخول لأول مرة"),
+        "detailsTitle": ("Your account details", "Datos de tu cuenta", "Vos informations de compte", "I dati del tuo account", "Ihre Kontodaten", "Dados da sua conta", "تفاصيل حسابك", "Uw accountgegevens"),
+        "emailLabel": ("Sign-in email", "Correo de inicio de sesión", "E-mail de connexion", "E-mail di accesso", "Anmelde-E-Mail", "E-mail de início de sessão", "البريد الإلكتروني لتسجيل الدخول", "E-mailadres voor aanmelding"),
+        "userLabel": ("Username", "Nombre de usuario", "Nom d’utilisateur", "Nome utente", "Benutzername", "Nome de utilizador", "اسم المستخدم", "Gebruikersnaam"),
+        "stepsTitle": ("First-time sign-in", "Primer inicio de sesión", "Première connexion", "Primo accesso", "Erstanmeldung", "Primeiro início de sessão", "تسجيل الدخول لأول مرة", "Eerste aanmelding"),
         "step1": (
             "Go to $mailMyAppsLink and enter your sign-in email.",
             "Ve a $mailMyAppsLink e introduce tu correo de inicio de sesión.",
@@ -215,6 +228,7 @@ USER_INVITATION_MY_APPS = Rewrite(
             "Öffnen Sie $mailMyAppsLink und geben Sie Ihre Anmelde-E-Mail ein.",
             "Aceda a $mailMyAppsLink e introduza o seu e-mail de início de sessão.",
             "انتقل إلى $mailMyAppsLink وأدخل البريد الإلكتروني لتسجيل الدخول.",
+            "Ga naar $mailMyAppsLink en voer uw e-mailadres voor aanmelding in.",
         ),
         "step2": (
             "Select <strong>Forgot my password</strong>. You will be taken to SailPoint self-service password reset.",
@@ -224,6 +238,7 @@ USER_INVITATION_MY_APPS = Rewrite(
             "Wählen Sie <strong>Kennwort vergessen?</strong> Sie werden zur Self-Service-Kennwortzurücksetzung von SailPoint weitergeleitet.",
             "Selecione <strong>Esqueceu-se da palavra-passe?</strong> Será redirecionado para a reposição de palavra-passe self-service da SailPoint.",
             "اختر <strong>Forgot my password</strong>. سيتم نقلك إلى خدمة إعادة تعيين كلمة المرور الذاتية في SailPoint.",
+            "Selecteer <strong>Wachtwoord vergeten</strong>. U gaat naar het selfservice-wachtwoordherstel van SailPoint.",
         ),
         "step3": (
             "Choose <strong>Reset password</strong> and enter your username.",
@@ -233,6 +248,7 @@ USER_INVITATION_MY_APPS = Rewrite(
             "Wählen Sie <strong>Kennwort zurücksetzen</strong> und geben Sie Ihren Benutzernamen ein.",
             "Escolha <strong>Repor palavra-passe</strong> e introduza o seu nome de utilizador.",
             "اختر <strong>Reset password</strong> وأدخل اسم المستخدم.",
+            "Kies <strong>Wachtwoord opnieuw instellen</strong> en voer uw gebruikersnaam in.",
         ),
         "step4": (
             "Verify your identity with your alternate email address (or your phone, if available) and set a new password.",
@@ -242,6 +258,7 @@ USER_INVITATION_MY_APPS = Rewrite(
             "Bestätigen Sie Ihre Identität über Ihre alternative E-Mail-Adresse (oder Ihr Telefon, falls verfügbar) und legen Sie ein neues Kennwort fest.",
             "Confirme a sua identidade com o seu endereço de e-mail alternativo (ou com o telemóvel, se disponível) e defina uma nova palavra-passe.",
             "تحقّق من هويتك باستخدام بريدك الإلكتروني البديل (أو هاتفك، إن توفّر) ثم عيّن كلمة مرور جديدة.",
+            "Bevestig uw identiteit met uw alternatieve e-mailadres (of uw telefoon, indien beschikbaar) en stel een nieuw wachtwoord in.",
         ),
         "step5": (
             "Sign in to My Apps with your new password. Your dashboard has shortcuts to every ${mailOrgName} system you have access to.",
@@ -251,9 +268,10 @@ USER_INVITATION_MY_APPS = Rewrite(
             "Melden Sie sich mit Ihrem neuen Kennwort bei My Apps an. Ihr Dashboard enthält Verknüpfungen zu allen ${mailOrgName}-Systemen, auf die Sie Zugriff haben.",
             "Inicie sessão no My Apps com a nova palavra-passe. O seu painel contém atalhos para todos os sistemas ${mailOrgName} a que tem acesso.",
             "سجّل الدخول إلى My Apps بكلمة المرور الجديدة. تحتوي لوحتك على اختصارات لكل أنظمة ${mailOrgName} التي يمكنك الوصول إليها.",
+            "Meld u aan bij My Apps met uw nieuwe wachtwoord. Uw dashboard bevat snelkoppelingen naar alle systemen van ${mailOrgName} waartoe u toegang hebt.",
         ),
-        "cta": ("Open My Apps", "Abrir My Apps", "Ouvrir My Apps", "Apri My Apps", "My Apps öffnen", "Abrir My Apps", "فتح My Apps"),
-        "importantTitle": ("Important", "Importante", "Important", "Importante", "Wichtig", "Importante", "مهم"),
+        "cta": ("Open My Apps", "Abrir My Apps", "Ouvrir My Apps", "Apri My Apps", "My Apps öffnen", "Abrir My Apps", "فتح My Apps", "My Apps openen"),
+        "importantTitle": ("Important", "Importante", "Important", "Importante", "Wichtig", "Importante", "مهم", "Belangrijk"),
         "important": (
             "Always sign in through Microsoft My Apps. Do not use the SailPoint login page.",
             "Inicia sesión siempre a través de Microsoft My Apps. No utilices la página de inicio de sesión de SailPoint.",
@@ -262,8 +280,9 @@ USER_INVITATION_MY_APPS = Rewrite(
             "Melden Sie sich immer über Microsoft My Apps an. Verwenden Sie nicht die SailPoint-Anmeldeseite.",
             "Inicie sessão sempre através do Microsoft My Apps. Não utilize a página de início de sessão da SailPoint.",
             "سجّل الدخول دائمًا عبر Microsoft My Apps. لا تستخدم صفحة تسجيل الدخول إلى SailPoint.",
+            "Meld u altijd aan via Microsoft My Apps. Gebruik niet de aanmeldingspagina van SailPoint.",
         ),
-        "closing": ("Welcome aboard,", "Te damos la bienvenida,", "Bienvenue parmi nous,", "Ti diamo il benvenuto,", "Herzlich willkommen und viele Grüße", "Seja bem-vindo(a),", "مرحبًا بك معنا،"),
+        "closing": ("Welcome aboard,", "Te damos la bienvenida,", "Bienvenue parmi nous,", "Ti diamo il benvenuto,", "Herzlich willkommen und viele Grüße", "Seja bem-vindo(a),", "مرحبًا بك معنا،", "Welkom aan boord,"),
     },
     content=f"""
 {p("$tx_intro")}

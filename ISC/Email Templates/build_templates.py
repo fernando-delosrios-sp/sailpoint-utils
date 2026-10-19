@@ -32,7 +32,7 @@ TEMPLATES = HERE / "templates"  # API payloads, committed so they can be importe
 MANIFEST = TEMPLATES / "manifest.json"
 OUT = HERE / "out"  # renders and previews
 
-LANGUAGES = ["en", "es", "fr", "it", "de", "pt", "ar"]
+LANGUAGES = ["en", "es", "fr", "it", "de", "pt", "ar", "nl"]
 RTL_LANGUAGES = ["ar"]
 DEFAULT_LANGUAGE = "en"
 
@@ -375,7 +375,7 @@ def english_subject(t: Rewrite) -> str:
 
 def rewrite_subject(t: Rewrite) -> str:
     """New custom versions of SailPoint default templates store at most 255 subject characters, which
-    cannot hold language detection plus seven translations, so most templates get the English subject.
+    cannot hold language detection plus a translation for every language, so most templates get the English subject.
     `multilingual_subject` templates (User Invitation) translate it: that fits an existing record,
     and Import-EmailTemplates.ps1 falls back to english_subject when it must create one."""
     if not t.multilingual_subject:

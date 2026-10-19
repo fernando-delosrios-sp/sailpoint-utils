@@ -69,6 +69,7 @@ _STATUS_WORDS = {
     "de": ("genehmigt", "abgelehnt", "storniert", ""),
     "pt": ("aprovado", "rejeitado", "cancelado", ""),
     "ar": ("تمت الموافقة عليه", "تم رفضه", "تم إلغاؤه", ""),
+    "nl": ("goedgekeurd", "afgewezen", "geannuleerd", ""),
 }
 
 APPROVAL_STATUS_PRELUDE = f"""
@@ -87,9 +88,10 @@ CONTACT_OWNER = (
     "Bei Fragen wenden Sie sich an ${ownerName}.",
     "Se tiver alguma dúvida, contacte ${ownerName}.",
     "إذا كانت لديك أي أسئلة، فتواصل مع ${ownerName}.",
+    "Als u vragen hebt, neem dan contact op met ${ownerName}.",
 )
 
-MANAGE_ACCESS = ("Manage access", "Gestionar acceso", "Gérer l’accès", "Gestisci accesso", "Zugriff verwalten", "Gerir acesso", "إدارة الوصول")
+MANAGE_ACCESS = ("Manage access", "Gestionar acceso", "Gérer l’accès", "Gestisci accesso", "Zugriff verwalten", "Gerir acesso", "إدارة الوصول", "Toegang beheren")
 
 JIT_NOTE = (
     "<strong>This entitlement must be activated before each use.</strong> Go to MySailPoint &gt; Launchpad &gt; Just-In-Time Access.",
@@ -99,10 +101,11 @@ JIT_NOTE = (
     "<strong>Diese Berechtigung muss vor jeder Nutzung aktiviert werden.</strong> Öffnen Sie MySailPoint &gt; Launchpad &gt; Just-In-Time Access.",
     "<strong>Este direito de acesso tem de ser ativado antes de cada utilização.</strong> Aceda a MySailPoint &gt; Launchpad &gt; Just-In-Time Access.",
     "<strong>يجب تفعيل هذا الاستحقاق قبل كل استخدام.</strong> انتقل إلى MySailPoint &gt; Launchpad &gt; Just-In-Time Access.",
+    "<strong>Dit recht moet voor elk gebruik worden geactiveerd.</strong> Ga naar MySailPoint &gt; Launchpad &gt; Just-In-Time Access.",
 )
 
-APPLICATION = ("Application", "Aplicación", "Application", "Applicazione", "Anwendung", "Aplicação", "التطبيق")
-ENTITLEMENT = ("Entitlement", "Derecho", "Droit d’accès", "Autorizzazione", "Berechtigung", "Direito de acesso", "الاستحقاق")
+APPLICATION = ("Application", "Aplicación", "Application", "Applicazione", "Anwendung", "Aplicação", "التطبيق", "Applicatie")
+ENTITLEMENT = ("Entitlement", "Derecho", "Droit d’accès", "Autorizzazione", "Berechtigung", "Direito de acesso", "الاستحقاق", "Recht")
 
 # --- certifications (version 1) ---------------------------------------------
 
@@ -112,16 +115,16 @@ CERT_PRELUDE = """
 #set($mailCertUrl = "$identityNowUrl/ui/d/certifications-review/certification/${certification.id}")
 """
 
-DUE_BY = ("Due by", "Fecha límite", "À terminer avant le", "Scadenza", "Fällig bis", "Prazo", "الموعد النهائي")
-CERTIFICATION = ("Certification", "Certificación", "Certification", "Certificazione", "Zertifizierung", "Certificação", "الاعتماد")
-REVIEW_CERT = ("Review certification", "Revisar certificación", "Examiner la certification", "Esamina certificazione", "Zertifizierung prüfen", "Rever certificação", "مراجعة الاعتماد")
+DUE_BY = ("Due by", "Fecha límite", "À terminer avant le", "Scadenza", "Fällig bis", "Prazo", "الموعد النهائي", "Uiterste datum")
+CERTIFICATION = ("Certification", "Certificación", "Certification", "Certificazione", "Zertifizierung", "Certificação", "الاعتماد", "Certificering")
+REVIEW_CERT = ("Review certification", "Revisar certificación", "Examiner la certification", "Esamina certificazione", "Zertifizierung prüfen", "Rever certificação", "مراجعة الاعتماد", "Certificering beoordelen")
 
 # --- work reassignment (version 2) ------------------------------------------
 
 
 def reassignment_prelude(prefix: str) -> str:
     return f"""
-#if($mailLang == "en")#set($mailDatePattern = "EEEE, MMMM d, yyyy")#elseif($mailLang == "de")#set($mailDatePattern = "dd.MM.yyyy")#else#set($mailDatePattern = "dd/MM/yyyy")#end
+#if($mailLang == "en")#set($mailDatePattern = "EEEE, MMMM d, yyyy")#elseif($mailLang == "de")#set($mailDatePattern = "dd.MM.yyyy")#elseif($mailLang == "nl")#set($mailDatePattern = "dd-MM-yyyy")#else#set($mailDatePattern = "dd/MM/yyyy")#end
 #set($_startDate = $__dateTool.toDate("yyyy-MM-dd'T'HH:mm:ss", ${{{prefix}startDate}}))
 #set($mailStart = $__dateTool.format($mailDatePattern, $_startDate))
 #set($mailHasEnd = false)
@@ -140,8 +143,9 @@ def reassignment_strings(prefix: str) -> dict:
             f"{v('modifiedByName')} hat die automatische Neuzuweisung von <strong>{v('configType')}</strong> von <strong>{v('reassignedFromName')}</strong> an <strong>{v('reassignedToName')}</strong> eingerichtet.",
             f"{v('modifiedByName')} configurou a reatribuição automática de <strong>{v('configType')}</strong> de <strong>{v('reassignedFromName')}</strong> para <strong>{v('reassignedToName')}</strong>.",
             f"أعدّ {v('modifiedByName')} إعادة إسناد تلقائية لـ <strong>{v('configType')}</strong> من <strong>{v('reassignedFromName')}</strong> إلى <strong>{v('reassignedToName')}</strong>.",
+            f"{v('modifiedByName')} heeft automatische hertoewijzing ingesteld van <strong>{v('configType')}</strong> van <strong>{v('reassignedFromName')}</strong> naar <strong>{v('reassignedToName')}</strong>.",
         ),
-        "noEnd": ("No end date", "Sin fecha de finalización", "Aucune date de fin", "Nessuna data di fine", "Kein Enddatum", "Sem data de fim", "بدون تاريخ انتهاء"),
+        "noEnd": ("No end date", "Sin fecha de finalización", "Aucune date de fin", "Nessuna data di fine", "Kein Enddatum", "Sem data de fim", "بدون تاريخ انتهاء", "Geen einddatum"),
     }
 
 
@@ -163,9 +167,9 @@ ACCOUNT_ROWS = [
 ]
 
 ACCOUNT_LABELS = {
-    "operation": ("Operation", "Operación", "Opération", "Operazione", "Vorgang", "Operação", "العملية"),
-    "account": ("Account", "Cuenta", "Compte", "Account", "Konto", "Conta", "الحساب"),
-    "source": ("Source", "Origen", "Source", "Origine", "Quelle", "Origem", "المصدر"),
+    "operation": ("Operation", "Operación", "Opération", "Operazione", "Vorgang", "Operação", "العملية", "Bewerking"),
+    "account": ("Account", "Cuenta", "Compte", "Account", "Konto", "Conta", "الحساب", "Account"),
+    "source": ("Source", "Origen", "Source", "Origine", "Quelle", "Origem", "المصدر", "Bron"),
 }
 
 ACCOUNT_SAMPLE = {
@@ -190,6 +194,7 @@ TEMPLATES = [
             "Neuer Kommentar zur Genehmigungsanfrage für $approvalName",
             "Novo comentário no pedido de aprovação de $approvalName",
             "تعليق جديد على طلب الموافقة الخاص بـ $approvalName",
+            "Nieuwe opmerking bij de goedkeuringsaanvraag voor $approvalName",
         ),
         prelude=WHO,
         strings={
@@ -201,6 +206,7 @@ TEMPLATES = [
                 "Zur Genehmigungsanfrage für <strong>$approvalName</strong>, die $requester.name in Ihrem Namen gestellt hat, gibt es einen neuen Kommentar.",
                 "Há um novo comentário no pedido de aprovação de <strong>$approvalName</strong>, enviado em seu nome por $requester.name.",
                 "يوجد تعليق جديد على طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $requester.name نيابةً عنك.",
+                "Er is een nieuwe opmerking bij de goedkeuringsaanvraag voor <strong>$approvalName</strong>, namens u ingediend door $requester.name.",
             ),
             "introYou": (
                 "There is a new comment on your approval request for <strong>$approvalName</strong>.",
@@ -210,6 +216,7 @@ TEMPLATES = [
                 "Zu Ihrer Genehmigungsanfrage für <strong>$approvalName</strong> gibt es einen neuen Kommentar.",
                 "Há um novo comentário no seu pedido de aprovação de <strong>$approvalName</strong>.",
                 "يوجد تعليق جديد على طلب الموافقة الخاص بك لـ <strong>$approvalName</strong>.",
+                "Er is een nieuwe opmerking bij uw goedkeuringsaanvraag voor <strong>$approvalName</strong>.",
             ),
             "introOther": (
                 "There is a new comment on the approval request for <strong>$approvalName</strong>, submitted by $mailBy.",
@@ -219,6 +226,7 @@ TEMPLATES = [
                 "Zur Genehmigungsanfrage für <strong>$approvalName</strong> von $mailBy gibt es einen neuen Kommentar.",
                 "Há um novo comentário no pedido de aprovação de <strong>$approvalName</strong>, enviado por $mailBy.",
                 "يوجد تعليق جديد على طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $mailBy.",
+                "Er is een nieuwe opmerking bij de goedkeuringsaanvraag voor <strong>$approvalName</strong>, ingediend door $mailBy.",
             ),
         },
         content=who_content("intro") + mine_button(),
@@ -236,6 +244,7 @@ TEMPLATES = [
                 "de": "Ihre Genehmigungsanfrage für $approvalName wurde ",
                 "pt": "O seu pedido de aprovação de $approvalName foi ",
                 "ar": "طلب الموافقة الخاص بك لـ $approvalName ",
+                "nl": "Uw goedkeuringsaanvraag voor $approvalName is ",
             }[lang]
             + status_inline(_STATUS_WORDS[lang])
             for lang in LANGUAGES
@@ -252,6 +261,7 @@ TEMPLATES = [
                 "Die Genehmigungsanfrage für <strong>$approvalName</strong>, die $requester.name in Ihrem Namen gestellt hat, wurde $mailStatusHtml.",
                 "O pedido de aprovação de <strong>$approvalName</strong>, enviado em seu nome por $requester.name, foi $mailStatusHtml.",
                 "طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $requester.name نيابةً عنك، $mailStatusHtml.",
+                "De goedkeuringsaanvraag voor <strong>$approvalName</strong>, namens u ingediend door $requester.name, is $mailStatusHtml.",
             ),
             "introYou": (
                 "Your approval request for <strong>$approvalName</strong> has been $mailStatusHtml.",
@@ -261,6 +271,7 @@ TEMPLATES = [
                 "Ihre Genehmigungsanfrage für <strong>$approvalName</strong> wurde $mailStatusHtml.",
                 "O seu pedido de aprovação de <strong>$approvalName</strong> foi $mailStatusHtml.",
                 "طلب الموافقة الخاص بك لـ <strong>$approvalName</strong> $mailStatusHtml.",
+                "Uw goedkeuringsaanvraag voor <strong>$approvalName</strong> is $mailStatusHtml.",
             ),
         },
         content=f"""
@@ -284,6 +295,7 @@ TEMPLATES = [
             "#if($previousApprover.identityID == $__recipient.id)Eine Ihnen zugewiesene Genehmigungsanfrage wurde eskaliert#{else}Eine Genehmigungsanfrage wurde zur Prüfung an Sie eskaliert#end",
             "#if($previousApprover.identityID == $__recipient.id)Um pedido de aprovação que lhe estava atribuído foi escalado#{else}Um pedido de aprovação foi-lhe escalado para revisão#end",
             "#if($previousApprover.identityID == $__recipient.id)تم تصعيد طلب موافقة منك#{else}تم تصعيد طلب موافقة إليك لمراجعته#end",
+            "#if($previousApprover.identityID == $__recipient.id)Een goedkeuringsaanvraag is vanaf u geëscaleerd#{else}Een goedkeuringsaanvraag is naar u geëscaleerd ter beoordeling#end",
         ),
         strings={
             "fromYou": (
@@ -294,6 +306,7 @@ TEMPLATES = [
                 "Die Genehmigungsanfrage für <strong>$approvalName</strong> wurde an $escalatedApprover.name eskaliert, da $escalationDelay lang keine Aktion erfolgt ist.",
                 "O pedido de aprovação de <strong>$approvalName</strong> foi escalado para $escalatedApprover.name porque não foi tomada nenhuma ação durante $escalationDelay.",
                 "تم تصعيد طلب الموافقة الخاص بـ <strong>$approvalName</strong> منك إلى $escalatedApprover.name، لعدم اتخاذ أي إجراء خلال $escalationDelay.",
+                "De goedkeuringsaanvraag voor <strong>$approvalName</strong> is van u geëscaleerd naar $escalatedApprover.name, omdat er gedurende $escalationDelay geen actie is ondernomen.",
             ),
             "toYou": (
                 "The approval request for <strong>$approvalName</strong> has been escalated to you, because the previous approver did not act on it for $escalationDelay.",
@@ -303,8 +316,9 @@ TEMPLATES = [
                 "Die Genehmigungsanfrage für <strong>$approvalName</strong> wurde an Sie eskaliert, da die vorherige genehmigende Person $escalationDelay lang nicht reagiert hat.",
                 "O pedido de aprovação de <strong>$approvalName</strong> foi-lhe escalado porque o aprovador anterior não tomou nenhuma ação durante $escalationDelay.",
                 "تم تصعيد طلب الموافقة الخاص بـ <strong>$approvalName</strong> إليك، لأن الموافِق السابق لم يتخذ أي إجراء خلال $escalationDelay.",
+                "De goedkeuringsaanvraag voor <strong>$approvalName</strong> is naar u geëscaleerd, omdat de vorige goedkeurder deze gedurende $escalationDelay niet heeft behandeld.",
             ),
-            "previous": ("Previous approver", "Aprobador anterior", "Approbateur précédent", "Approvatore precedente", "Vorherige genehmigende Person", "Aprovador anterior", "الموافِق السابق"),
+            "previous": ("Previous approver", "Aprobador anterior", "Approbateur précédent", "Approvatore precedente", "Vorherige genehmigende Person", "Aprovador anterior", "الموافِق السابق", "Vorige goedkeurder"),
         },
         content=f"""
 #if($previousApprover.identityID == $__recipient.id)
@@ -329,6 +343,7 @@ TEMPLATES = [
             "#if($requestee.name && $requestee.name != '' && $requester.identityID != $__recipient.id)Eine in Ihrem Namen gestellte Genehmigungsanfrage wurde eskaliert#{else}Ihre Genehmigungsanfrage wurde eskaliert#end",
             "#if($requestee.name && $requestee.name != '' && $requester.identityID != $__recipient.id)Um pedido de aprovação enviado em seu nome foi escalado#{else}O seu pedido de aprovação foi escalado#end",
             "#if($requestee.name && $requestee.name != '' && $requester.identityID != $__recipient.id)تم تصعيد طلب موافقة مقدَّم نيابةً عنك#{else}تم تصعيد طلب الموافقة الخاص بك#end",
+            "#if($requestee.name && $requestee.name != '' && $requester.identityID != $__recipient.id)Een goedkeuringsaanvraag die namens u is ingediend, is geëscaleerd#{else}Uw goedkeuringsaanvraag is geëscaleerd#end",
         ),
         prelude="""
 #set($mailOnBehalf = false)#if($requestee.name && $requestee.name != '' && $requester.identityID != $__recipient.id)#set($mailOnBehalf = true)#end
@@ -343,6 +358,7 @@ TEMPLATES = [
                 "Für die Genehmigungsanfrage für <strong>$approvalName</strong>, die $requester.name in Ihrem Namen gestellt hat, ist $escalationDelay lang keine Aktion erfolgt.",
                 "O pedido de aprovação de <strong>$approvalName</strong>, enviado em seu nome por $requester.name, não teve nenhuma ação durante $escalationDelay.",
                 "لم يُتخذ أي إجراء بشأن طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $requester.name نيابةً عنك، خلال $escalationDelay.",
+                "Op de goedkeuringsaanvraag voor <strong>$approvalName</strong>, namens u ingediend door $requester.name, is gedurende $escalationDelay geen actie ondernomen.",
             ),
             "introYou": (
                 "Your approval request for <strong>$approvalName</strong> had no action for $escalationDelay.",
@@ -352,6 +368,7 @@ TEMPLATES = [
                 "Für Ihre Genehmigungsanfrage für <strong>$approvalName</strong> ist $escalationDelay lang keine Aktion erfolgt.",
                 "O seu pedido de aprovação de <strong>$approvalName</strong> não teve nenhuma ação durante $escalationDelay.",
                 "لم يُتخذ أي إجراء بشأن طلب الموافقة الخاص بك لـ <strong>$approvalName</strong> خلال $escalationDelay.",
+                "Op uw goedkeuringsaanvraag voor <strong>$approvalName</strong> is gedurende $escalationDelay geen actie ondernomen.",
             ),
             "escalatedFrom": (
                 "It has been escalated from $previousApprover.name to <strong>$escalatedApprover.name</strong>.",
@@ -361,6 +378,7 @@ TEMPLATES = [
                 "Sie wurde von $previousApprover.name an <strong>$escalatedApprover.name</strong> eskaliert.",
                 "Foi escalado de $previousApprover.name para <strong>$escalatedApprover.name</strong>.",
                 "تم تصعيده من $previousApprover.name إلى <strong>$escalatedApprover.name</strong>.",
+                "Deze is geëscaleerd van $previousApprover.name naar <strong>$escalatedApprover.name</strong>.",
             ),
             "escalated": (
                 "It has been escalated to <strong>$escalatedApprover.name</strong>.",
@@ -370,6 +388,7 @@ TEMPLATES = [
                 "Sie wurde an <strong>$escalatedApprover.name</strong> eskaliert.",
                 "Foi escalado para <strong>$escalatedApprover.name</strong>.",
                 "تم تصعيده إلى <strong>$escalatedApprover.name</strong>.",
+                "Deze is geëscaleerd naar <strong>$escalatedApprover.name</strong>.",
             ),
         },
         content=f"""
@@ -394,6 +413,7 @@ TEMPLATES = [
             "#if($__contentJson.batchSize == 1)Eine Genehmigungsanfrage wartet auf Ihre Prüfung#{else}$__contentJson.batchSize Genehmigungsanfragen warten auf Ihre Prüfung#end",
             "#if($__contentJson.batchSize == 1)Um pedido de aprovação aguarda a sua revisão#{else}$__contentJson.batchSize pedidos de aprovação aguardam a sua revisão#end",
             "#if($__contentJson.batchSize == 1)طلب موافقة بانتظار مراجعتك#{else}$__contentJson.batchSize طلبات موافقة بانتظار مراجعتك#end",
+            "#if($__contentJson.batchSize == 1)Er wacht een goedkeuringsaanvraag op uw beoordeling#{else}Er wachten $__contentJson.batchSize goedkeuringsaanvragen op uw beoordeling#end",
         ),
         strings={
             "one": (
@@ -404,6 +424,7 @@ TEMPLATES = [
                 "<strong>1 Genehmigungsanfrage</strong> wartet auf Ihre Prüfung.",
                 "Tem <strong>1 pedido de aprovação</strong> a aguardar a sua revisão.",
                 "لديك <strong>طلب موافقة واحد</strong> بانتظار مراجعتك.",
+                "Er wacht <strong>1 goedkeuringsaanvraag</strong> op uw beoordeling.",
             ),
             "many": (
                 "You have <strong>$__contentJson.batchSize approval requests</strong> waiting for your review.",
@@ -413,6 +434,7 @@ TEMPLATES = [
                 "<strong>$__contentJson.batchSize Genehmigungsanfragen</strong> warten auf Ihre Prüfung.",
                 "Tem <strong>$__contentJson.batchSize pedidos de aprovação</strong> a aguardar a sua revisão.",
                 "لديك <strong>$__contentJson.batchSize طلبات موافقة</strong> بانتظار مراجعتك.",
+                "Er wachten <strong>$__contentJson.batchSize goedkeuringsaanvragen</strong> op uw beoordeling.",
             ),
         },
         content=f"""
@@ -432,6 +454,7 @@ TEMPLATES = [
             "Erinnerung: Eine Genehmigungsanfrage wartet auf Ihre Prüfung",
             "Lembrete: um pedido de aprovação aguarda a sua revisão",
             "تذكير: طلب موافقة بانتظار مراجعتك",
+            "Herinnering: er wacht een goedkeuringsaanvraag op uw beoordeling",
         ),
         strings={
             "intro": (
@@ -442,6 +465,7 @@ TEMPLATES = [
                 "Zur Erinnerung: Die Genehmigungsanfrage für <strong>$approvalName</strong> wartet noch auf Ihre Prüfung.",
                 "Lembramos que o pedido de aprovação de <strong>$approvalName</strong> continua a aguardar a sua revisão.",
                 "نذكّرك بأن طلب الموافقة الخاص بـ <strong>$approvalName</strong> لا يزال بانتظار مراجعتك.",
+                "Dit is een herinnering dat de goedkeuringsaanvraag voor <strong>$approvalName</strong> nog op uw beoordeling wacht.",
             ),
         },
         content=f"""
@@ -462,6 +486,7 @@ TEMPLATES = [
             "Eine Genehmigungsanfrage ist abgelaufen",
             "Um pedido de aprovação expirou",
             "انتهت مهلة طلب موافقة",
+            "Een goedkeuringsaanvraag is verlopen",
         ),
         prelude=WHO,
         strings={
@@ -473,6 +498,7 @@ TEMPLATES = [
                 "Die Genehmigungsanfrage für <strong>$approvalName</strong>, die $requester.name in Ihrem Namen gestellt hat, wurde nicht innerhalb von $timeoutDays Tagen bearbeitet und ist jetzt geschlossen.",
                 "O pedido de aprovação de <strong>$approvalName</strong>, enviado em seu nome por $requester.name, não foi resolvido em $timeoutDays dias e foi encerrado.",
                 "لم تتم معالجة طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $requester.name نيابةً عنك، خلال $timeoutDays أيام، وقد تم إغلاقه.",
+                "De goedkeuringsaanvraag voor <strong>$approvalName</strong>, namens u ingediend door $requester.name, is niet binnen $timeoutDays dagen afgehandeld en is nu gesloten.",
             ),
             "introYou": (
                 "Your approval request for <strong>$approvalName</strong> was not resolved within $timeoutDays days and is now closed.",
@@ -482,6 +508,7 @@ TEMPLATES = [
                 "Ihre Genehmigungsanfrage für <strong>$approvalName</strong> wurde nicht innerhalb von $timeoutDays Tagen bearbeitet und ist jetzt geschlossen.",
                 "O seu pedido de aprovação de <strong>$approvalName</strong> não foi resolvido em $timeoutDays dias e foi encerrado.",
                 "لم تتم معالجة طلب الموافقة الخاص بك لـ <strong>$approvalName</strong> خلال $timeoutDays أيام، وقد تم إغلاقه.",
+                "Uw goedkeuringsaanvraag voor <strong>$approvalName</strong> is niet binnen $timeoutDays dagen afgehandeld en is nu gesloten.",
             ),
             "introOther": (
                 "The approval request for <strong>$approvalName</strong>, submitted by $mailBy, was not resolved within $timeoutDays days and is now closed.",
@@ -491,6 +518,7 @@ TEMPLATES = [
                 "Die Genehmigungsanfrage für <strong>$approvalName</strong> von $mailBy wurde nicht innerhalb von $timeoutDays Tagen bearbeitet und ist jetzt geschlossen.",
                 "O pedido de aprovação de <strong>$approvalName</strong>, enviado por $mailBy, não foi resolvido em $timeoutDays dias e foi encerrado.",
                 "لم تتم معالجة طلب الموافقة الخاص بـ <strong>$approvalName</strong>، الذي قدّمه $mailBy، خلال $timeoutDays أيام، وقد تم إغلاقه.",
+                "De goedkeuringsaanvraag voor <strong>$approvalName</strong>, ingediend door $mailBy, is niet binnen $timeoutDays dagen afgehandeld en is nu gesloten.",
             ),
             "newRequest": (
                 "You can submit a new request if you still need it.",
@@ -500,6 +528,7 @@ TEMPLATES = [
                 "Sie können eine neue Anfrage stellen, wenn Sie den Zugriff weiterhin benötigen.",
                 "Pode enviar um novo pedido se ainda precisar.",
                 "يمكنك تقديم طلب جديد إذا كنت لا تزال بحاجة إليه.",
+                "U kunt een nieuwe aanvraag indienen als u deze nog nodig hebt.",
             ),
         },
         content=who_content("intro")
@@ -522,6 +551,7 @@ TEMPLATES = [
             "Handlungsbedarf: Prüfen Sie die Zugriffe Ihres Teams",
             "Ação necessária: reveja os acessos da sua equipa",
             "إجراء مطلوب: راجِع وصول فريقك",
+            "Actie vereist: beoordeel de toegang van uw team",
         ),
         prelude=CERT_PRELUDE,
         strings={
@@ -533,6 +563,7 @@ TEMPLATES = [
                 "Die Zertifizierungskampagne <strong>$mailCampaign</strong> hat begonnen. Bitte bestätigen Sie, dass jede von Ihnen geprüfte Person die richtigen Zugriffe hat.",
                 "A campanha de certificação <strong>$mailCampaign</strong> começou. Confirme que cada pessoa que revê tem os acessos adequados.",
                 "بدأت حملة الاعتماد <strong>$mailCampaign</strong>. يُرجى التأكد من أن كل شخص تراجعه لديه الوصول المناسب.",
+                "De certificeringscampagne <strong>$mailCampaign</strong> is gestart. Bevestig dat elke persoon die u beoordeelt de juiste toegang heeft.",
             ),
             "how": (
                 "For each person you will see their entitlements and, where available, the sources and applications they come from. You can approve, change or revoke each item.",
@@ -542,6 +573,7 @@ TEMPLATES = [
                 "Für jede Person sehen Sie die Berechtigungen und, sofern verfügbar, die Quellen und Anwendungen, aus denen sie stammen. Sie können jedes Element genehmigen, ändern oder entziehen.",
                 "Para cada pessoa, verá os direitos de acesso e, quando disponíveis, as origens e aplicações de onde provêm. Pode aprovar, alterar ou revogar cada item.",
                 "ستظهر لك لكل شخص استحقاقاته، والمصادر والتطبيقات التي تأتي منها حيثما توفّرت. يمكنك الموافقة على كل عنصر أو تغييره أو إلغاؤه.",
+                "Voor elke persoon ziet u de rechten en, indien beschikbaar, de bronnen en applicaties waaruit ze komen. U kunt elk item goedkeuren, wijzigen of intrekken.",
             ),
         },
         content=f"""
@@ -562,6 +594,7 @@ TEMPLATES = [
             "Erinnerung: Ihre Zertifizierung erfordert Ihre Aufmerksamkeit",
             "Lembrete: a sua certificação requer atenção",
             "تذكير: الاعتماد الخاص بك يحتاج إلى متابعة",
+            "Herinnering: uw certificering vraagt aandacht",
         ),
         prelude=CERT_PRELUDE,
         strings={
@@ -573,6 +606,7 @@ TEMPLATES = [
                 "Die Zertifizierung <strong>$mailCampaign</strong> ist noch offen und muss abgeschlossen werden.",
                 "A certificação <strong>$mailCampaign</strong> continua aberta e tem de ser concluída.",
                 "لا يزال الاعتماد <strong>$mailCampaign</strong> مفتوحًا ويجب إكماله.",
+                "De certificering <strong>$mailCampaign</strong> is nog open en moet worden afgerond.",
             ),
         },
         content=f"""
@@ -593,6 +627,7 @@ TEMPLATES = [
             "Ihnen wurden Zertifizierungsprüfungen zugewiesen",
             "Foram-lhe reatribuídas revisões de certificação",
             "أُعيد إليك إسناد مراجعات الاعتماد",
+            "Certificeringsbeoordelingen zijn aan u toegewezen",
         ),
         prelude=CERT_PRELUDE,
         strings={
@@ -604,6 +639,7 @@ TEMPLATES = [
                 "${requesterName} hat Ihnen <strong>1 Person</strong> zur Prüfung in einer Zertifizierung zugewiesen.",
                 "${requesterName} atribuiu-lhe <strong>1 pessoa</strong> para rever numa certificação.",
                 "أسند إليك ${requesterName} <strong>شخصًا واحدًا</strong> لمراجعته في أحد الاعتمادات.",
+                "${requesterName} heeft <strong>1 persoon</strong> aan u toegewezen ter beoordeling in een certificering.",
             ),
             "many": (
                 "${requesterName} has assigned <strong>${numNewIdentities} people</strong> to you for review in a certification.",
@@ -613,8 +649,9 @@ TEMPLATES = [
                 "${requesterName} hat Ihnen <strong>${numNewIdentities} Personen</strong> zur Prüfung in einer Zertifizierung zugewiesen.",
                 "${requesterName} atribuiu-lhe <strong>${numNewIdentities} pessoas</strong> para rever numa certificação.",
                 "أسند إليك ${requesterName} <strong>${numNewIdentities} أشخاص</strong> لمراجعتهم في أحد الاعتمادات.",
+                "${requesterName} heeft <strong>${numNewIdentities} personen</strong> aan u toegewezen ter beoordeling in een certificering.",
             ),
-            "reason": ("Reason for reassignment:", "Motivo de la reasignación:", "Motif de la réattribution :", "Motivo della riassegnazione:", "Grund für die Neuzuweisung:", "Motivo da reatribuição:", "سبب إعادة الإسناد:"),
+            "reason": ("Reason for reassignment:", "Motivo de la reasignación:", "Motif de la réattribution :", "Motivo della riassegnazione:", "Grund für die Neuzuweisung:", "Motivo da reatribuição:", "سبب إعادة الإسناد:", "Reden van de hertoewijzing:"),
             "task": (
                 "Approve, change or revoke the access of each person before the due date.",
                 "Aprueba, cambia o revoca el acceso de cada persona antes de la fecha límite.",
@@ -623,6 +660,7 @@ TEMPLATES = [
                 "Genehmigen, ändern oder entziehen Sie die Zugriffe jeder Person vor dem Fälligkeitsdatum.",
                 "Aprove, altere ou revogue os acessos de cada pessoa antes do prazo.",
                 "وافق على وصول كل شخص أو غيّره أو ألغِه قبل الموعد النهائي.",
+                "Keur de toegang van elke persoon goed, wijzig of trek deze in vóór de uiterste datum.",
             ),
         },
         content=f"""
@@ -648,6 +686,7 @@ TEMPLATES = [
             "Das Enddatum Ihres Zugriffs auf $accessItemName wurde geändert",
             "A data de fim do seu acesso a $accessItemName foi alterada",
             "تغيّر تاريخ انتهاء وصولك إلى $accessItemName",
+            "De einddatum van uw toegang tot $accessItemName is gewijzigd",
         ),
         strings={
             "intro": (
@@ -658,6 +697,7 @@ TEMPLATES = [
                 "Ihr Zugriff auf <strong>$accessItemName</strong> ($accessItemType) endet jetzt am <strong>$scheduledSunsetDate</strong>.",
                 "O seu acesso a <strong>$accessItemName</strong> ($accessItemType) termina agora em <strong>$scheduledSunsetDate</strong>.",
                 "أصبح من المقرر أن ينتهي وصولك إلى <strong>$accessItemName</strong> ($accessItemType) في <strong>$scheduledSunsetDate</strong>.",
+                "Uw toegang tot <strong>$accessItemName</strong> ($accessItemType) staat nu gepland om te eindigen op <strong>$scheduledSunsetDate</strong>.",
             ),
             "extend": (
                 "If you still need it after this date, request it again to extend it.",
@@ -667,6 +707,7 @@ TEMPLATES = [
                 "Wenn Sie den Zugriff nach diesem Datum noch benötigen, beantragen Sie ihn erneut, um ihn zu verlängern.",
                 "Se ainda precisar depois desta data, peça-o novamente para o prolongar.",
                 "إذا كنت لا تزال بحاجة إليه بعد هذا التاريخ، فاطلبه مرة أخرى لتمديده.",
+                "Als u de toegang na deze datum nog nodig hebt, vraag deze dan opnieuw aan om ze te verlengen.",
             ),
         },
         content=f"""
@@ -686,6 +727,7 @@ TEMPLATES = [
             "Neue Korrekturanfrage: $!workItemName",
             "Novo pedido de correção: $!workItemName",
             "طلب معالجة جديد: $!workItemName",
+            "Nieuwe herstelactie: $!workItemName",
         ),
         strings={
             "intro": (
@@ -696,8 +738,9 @@ TEMPLATES = [
                 "$!requesterName hat Ihnen eine neue Korrekturaufgabe zugewiesen: <strong>$!workItemName</strong>.",
                 "$!requesterName atribuiu-lhe uma nova tarefa de correção: <strong>$!workItemName</strong>.",
                 "أسند إليك $!requesterName عنصر عمل جديدًا للمعالجة: <strong>$!workItemName</strong>.",
+                "$!requesterName heeft u een nieuw herstelwerkitem toegewezen: <strong>$!workItemName</strong>.",
             ),
-            "comments": ("Comments from $!requesterName:", "Comentarios de $!requesterName:", "Commentaires de $!requesterName :", "Commenti di $!requesterName:", "Kommentare von $!requesterName:", "Comentários de $!requesterName:", "تعليقات $!requesterName:"),
+            "comments": ("Comments from $!requesterName:", "Comentarios de $!requesterName:", "Commentaires de $!requesterName :", "Commenti di $!requesterName:", "Kommentare von $!requesterName:", "Comentários de $!requesterName:", "تعليقات $!requesterName:", "Opmerkingen van $!requesterName:"),
             "next": (
                 "Sign in and open your work item inbox to complete it.",
                 "Inicia sesión y abre tu bandeja de tareas para completarla.",
@@ -706,6 +749,7 @@ TEMPLATES = [
                 "Melden Sie sich an und öffnen Sie Ihren Aufgabeneingang, um sie zu erledigen.",
                 "Inicie sessão e abra a sua caixa de tarefas para a concluir.",
                 "سجّل الدخول وافتح صندوق عناصر العمل لإكماله.",
+                "Meld u aan en open uw postvak voor werkitems om het af te ronden.",
             ),
         },
         content=f"""
@@ -732,6 +776,7 @@ TEMPLATES = [
                 "#if($numberOfPendingTasks == 1)Sie haben 1 offene Aufgabe in " + PN2 + "#{else}Sie haben $numberOfPendingTasks offene Aufgaben in " + PN2 + "#end",
                 "#if($numberOfPendingTasks == 1)Tem 1 tarefa por concluir no " + PN2 + "#{else}Tem $numberOfPendingTasks tarefas por concluir no " + PN2 + "#end",
                 "#if($numberOfPendingTasks == 1)لديك مهمة واحدة لإكمالها في " + PN2 + "#{else}لديك $numberOfPendingTasks مهام لإكمالها في " + PN2 + "#end",
+                "#if($numberOfPendingTasks == 1)U hebt 1 taak te voltooien in " + PN2 + "#{else}U hebt $numberOfPendingTasks taken te voltooien in " + PN2 + "#end",
             )
         ),
         prelude="""
@@ -747,6 +792,7 @@ TEMPLATES = [
                 "In Ihrem Aufgabenmanager wartet <strong>1 Aufgabe</strong>.",
                 "Tem <strong>1 tarefa</strong> pendente no seu Gestor de tarefas.",
                 "لديك <strong>مهمة واحدة</strong> بانتظارك في Task Manager.",
+                "Er wacht <strong>1 taak</strong> in uw Task Manager.",
             ),
             "many": (
                 "You have <strong>$numberOfPendingTasks tasks</strong> waiting in your Task Manager.",
@@ -756,6 +802,7 @@ TEMPLATES = [
                 "In Ihrem Aufgabenmanager warten <strong>$numberOfPendingTasks Aufgaben</strong>.",
                 "Tem <strong>$numberOfPendingTasks tarefas</strong> pendentes no seu Gestor de tarefas.",
                 "لديك <strong>$numberOfPendingTasks مهام</strong> بانتظارك في Task Manager.",
+                "Er wachten <strong>$numberOfPendingTasks taken</strong> in uw Task Manager.",
             ),
             "how": (
                 "For each task, use its details to make the change on the source, then mark it as complete in " + PN2 + ".",
@@ -765,8 +812,9 @@ TEMPLATES = [
                 "Nehmen Sie für jede Aufgabe anhand der Details die Änderung in der Quelle vor und markieren Sie sie anschließend in " + PN2 + " als erledigt.",
                 "Para cada tarefa, utilize os detalhes para efetuar a alteração na origem e, depois, marque-a como concluída no " + PN2 + ".",
                 "لكل مهمة، استخدم تفاصيلها لإجراء التغيير على المصدر، ثم ضع عليها علامة مكتملة في " + PN2 + ".",
+                "Gebruik voor elke taak de details om de wijziging op de bron door te voeren en markeer de taak daarna als voltooid in " + PN2 + ".",
             ),
-            "open": ("Open Task Manager", "Abrir Administrador de tareas", "Ouvrir le gestionnaire de tâches", "Apri Task Manager", "Aufgabenmanager öffnen", "Abrir Gestor de tarefas", "فتح Task Manager"),
+            "open": ("Open Task Manager", "Abrir Administrador de tareas", "Ouvrir le gestionnaire de tâches", "Apri Task Manager", "Aufgabenmanager öffnen", "Abrir Gestor de tarefas", "فتح Task Manager", "Task Manager openen"),
         },
         content=f"""
 #if($numberOfPendingTasks == 1){p("$tx_one")}#else{p("$tx_many")}#end
@@ -785,6 +833,7 @@ TEMPLATES = [
             "Eine Aufgabe wurde neu zugewiesen",
             "Uma tarefa foi reatribuída",
             "تمت إعادة إسناد مهمة",
+            "Een taak is opnieuw toegewezen",
         ),
         strings={
             "intro": (
@@ -795,6 +844,7 @@ TEMPLATES = [
                 "${requester} hat eine Aufgabe für das ${source}-Konto von ${userName} von ${previousOwner} an <strong>${newOwner}</strong> neu zugewiesen.",
                 "${requester} reatribuiu uma tarefa da conta ${source} de ${userName} de ${previousOwner} para <strong>${newOwner}</strong>.",
                 "أعاد ${requester} إسناد مهمة تخص حساب ${userName} على ${source} من ${previousOwner} إلى <strong>${newOwner}</strong>.",
+                "${requester} heeft een taak voor het ${source}-account van ${userName} opnieuw toegewezen van ${previousOwner} aan <strong>${newOwner}</strong>.",
             ),
             "where": (
                 "${newOwner} can find it in the Task Manager.",
@@ -804,8 +854,9 @@ TEMPLATES = [
                 "${newOwner} findet sie im Aufgabenmanager.",
                 "${newOwner} pode encontrá-la no Gestor de tarefas.",
                 "يمكن لـ ${newOwner} العثور عليها في Task Manager.",
+                "${newOwner} vindt de taak in de Task Manager.",
             ),
-            "open": ("Open Task Manager", "Abrir Administrador de tareas", "Ouvrir le gestionnaire de tâches", "Apri Task Manager", "Aufgabenmanager öffnen", "Abrir Gestor de tarefas", "فتح Task Manager"),
+            "open": ("Open Task Manager", "Abrir Administrador de tareas", "Ouvrir le gestionnaire de tâches", "Apri Task Manager", "Aufgabenmanager öffnen", "Abrir Gestor de tarefas", "فتح Task Manager", "Task Manager openen"),
         },
         content=f"""
 {p("$tx_intro")}
@@ -824,6 +875,7 @@ TEMPLATES = [
             "Aufgabe weitergeleitet: $workItemName",
             "Tarefa reencaminhada: $workItemName",
             "تمت إعادة توجيه عنصر العمل: $workItemName",
+            "Werkitem doorgestuurd: $workItemName",
         ),
         prelude="""
 #set($mailForwardDate = "$spTools.formatDate($forwardDate,3,1)")
@@ -837,6 +889,7 @@ TEMPLATES = [
                 "$requester hat die Aufgabe <strong>$workItemName</strong> am $mailForwardDate von $previousOwner an <strong>$newOwner</strong> weitergeleitet.",
                 "$requester reencaminhou a tarefa <strong>$workItemName</strong> de $previousOwner para <strong>$newOwner</strong> em $mailForwardDate.",
                 "أعاد $requester توجيه عنصر العمل <strong>$workItemName</strong> من $previousOwner إلى <strong>$newOwner</strong> في $mailForwardDate.",
+                "$requester heeft het werkitem <strong>$workItemName</strong> op $mailForwardDate doorgestuurd van $previousOwner naar <strong>$newOwner</strong>.",
             ),
         },
         content=f"""
@@ -859,6 +912,7 @@ TEMPLATES = [
             "Neue automatische Neuzuweisung für ${reassignedFromName}",
             "Nova reatribuição automática para ${reassignedFromName}",
             "إعادة إسناد تلقائي جديدة لـ ${reassignedFromName}",
+            "Nieuwe automatische hertoewijzing voor ${reassignedFromName}",
         ),
         prelude=reassignment_prelude(""),
         strings=reassignment_strings(""),
@@ -876,6 +930,7 @@ TEMPLATES = [
             "Automatische Neuzuweisung für ${newConfig.reassignedFromName} aktualisiert",
             "Reatribuição automática atualizada para ${newConfig.reassignedFromName}",
             "تم تحديث إعادة الإسناد التلقائي لـ ${newConfig.reassignedFromName}",
+            "Automatische hertoewijzing bijgewerkt voor ${newConfig.reassignedFromName}",
         ),
         prelude=reassignment_prelude("newConfig."),
         strings=reassignment_strings("newConfig."),
@@ -894,6 +949,7 @@ TEMPLATES = [
             "Ihre Zugriffsanfrage für ${requestedObjectName} wurde zugewiesen",
             "O seu pedido de acesso a ${requestedObjectName} foi atribuído",
             "تم إسناد طلب الوصول الخاص بك لـ ${requestedObjectName}",
+            "Uw toegangsaanvraag voor ${requestedObjectName} is toegewezen",
         ),
         strings={
             "intro": (
@@ -904,6 +960,7 @@ TEMPLATES = [
                 "Ihre Anfrage für die Berechtigung <strong>${requestedObjectName}</strong> wurde zugewiesen.",
                 "O seu pedido do direito de acesso <strong>${requestedObjectName}</strong> foi atribuído.",
                 "تم إسناد طلبك للحصول على الاستحقاق <strong>${requestedObjectName}</strong>.",
+                "Uw aanvraag voor het recht <strong>${requestedObjectName}</strong> is toegewezen.",
             ),
             "jit": JIT_NOTE,
         },
@@ -926,6 +983,7 @@ TEMPLATES = [
             "Ihr Just-In-Time-Zugriff auf ${entitlementName} wurde verlängert",
             "O seu acesso Just-In-Time a ${entitlementName} foi prolongado",
             "تم تمديد وصول Just-In-Time الخاص بك إلى ${entitlementName}",
+            "Uw Just-In-Time-toegang tot ${entitlementName} is verlengd",
         ),
         strings={
             "intro": (
@@ -936,6 +994,7 @@ TEMPLATES = [
                 "Ihr Just-In-Time-Zugriff auf <strong>${entitlementName}</strong> wurde um <strong>${extensionDuration}</strong> verlängert.",
                 "O seu acesso Just-In-Time a <strong>${entitlementName}</strong> foi prolongado por mais <strong>${extensionDuration}</strong>.",
                 "تم تمديد وصول Just-In-Time الخاص بك إلى <strong>${entitlementName}</strong> بمقدار <strong>${extensionDuration}</strong>.",
+                "Uw Just-In-Time-toegang tot <strong>${entitlementName}</strong> is verlengd met <strong>${extensionDuration}</strong>.",
             ),
             "manageHint": (
                 "You can extend it again or deactivate it early at any time.",
@@ -945,6 +1004,7 @@ TEMPLATES = [
                 "Sie können ihn jederzeit erneut verlängern oder vorzeitig deaktivieren.",
                 "Pode prolongá-lo novamente ou desativá-lo mais cedo em qualquer altura.",
                 "يمكنك تمديده مرة أخرى أو إلغاء تفعيله مبكرًا في أي وقت.",
+                "U kunt de toegang op elk moment opnieuw verlengen of eerder deactiveren.",
             ),
             "manage": MANAGE_ACCESS,
             "contactOwner": CONTACT_OWNER,
@@ -970,6 +1030,7 @@ TEMPLATES = [
             "Ihr Just-In-Time-Zugriff auf ${entitlementName} konnte nicht aktiviert werden",
             "Não foi possível ativar o seu acesso Just-In-Time a ${entitlementName}",
             "تعذّر تفعيل وصول Just-In-Time الخاص بك إلى ${entitlementName}",
+            "Uw Just-In-Time-toegang tot ${entitlementName} kon niet worden geactiveerd",
         ),
         strings={
             "intro": (
@@ -980,8 +1041,9 @@ TEMPLATES = [
                 "Ihr Just-In-Time-Zugriff auf <strong>${entitlementName}</strong> konnte nicht aktiviert werden.",
                 "Não foi possível ativar o seu acesso Just-In-Time a <strong>${entitlementName}</strong>.",
                 "تعذّر علينا تفعيل وصول Just-In-Time الخاص بك إلى <strong>${entitlementName}</strong>.",
+                "We konden uw Just-In-Time-toegang tot <strong>${entitlementName}</strong> niet activeren.",
             ),
-            "retry": ("Try again", "Volver a intentarlo", "Réessayer", "Riprova", "Erneut versuchen", "Tentar novamente", "حاول مرة أخرى"),
+            "retry": ("Try again", "Volver a intentarlo", "Réessayer", "Riprova", "Erneut versuchen", "Tentar novamente", "حاول مرة أخرى", "Opnieuw proberen"),
             "contactOwner": CONTACT_OWNER,
         },
         content=f"""
@@ -1003,6 +1065,7 @@ TEMPLATES = [
             "Ihr Just-In-Time-Zugriff auf ${entitlementName} läuft in 15 Minuten ab",
             "O seu acesso Just-In-Time a ${entitlementName} expira dentro de 15 minutos",
             "ينتهي وصول Just-In-Time الخاص بك إلى ${entitlementName} خلال 15 دقيقة",
+            "Uw Just-In-Time-toegang tot ${entitlementName} verloopt over 15 minuten",
         ),
         strings={
             "intro": (
@@ -1013,9 +1076,10 @@ TEMPLATES = [
                 "Ihr Just-In-Time-Zugriff auf <strong>${entitlementName}</strong> läuft in <strong>15 Minuten</strong> ab.",
                 "O seu acesso Just-In-Time a <strong>${entitlementName}</strong> expira dentro de <strong>15 minutos</strong>.",
                 "ينتهي وصول Just-In-Time الخاص بك إلى <strong>${entitlementName}</strong> خلال <strong>15 دقيقة</strong>.",
+                "Uw Just-In-Time-toegang tot <strong>${entitlementName}</strong> verloopt over <strong>15 minuten</strong>.",
             ),
             "application": APPLICATION,
-            "manage": ("Extend or manage access", "Ampliar o gestionar acceso", "Prolonger ou gérer l’accès", "Estendi o gestisci accesso", "Zugriff verlängern oder verwalten", "Prolongar ou gerir acesso", "تمديد الوصول أو إدارته"),
+            "manage": ("Extend or manage access", "Ampliar o gestionar acceso", "Prolonger ou gérer l’accès", "Estendi o gestisci accesso", "Zugriff verlängern oder verwalten", "Prolongar ou gerir acesso", "تمديد الوصول أو إدارته", "Toegang verlengen of beheren"),
         },
         content=f"""
 {note("$tx_intro")}
@@ -1039,6 +1103,7 @@ TEMPLATES = [
             "Just-In-Time-Zugriff von ${requestedForIdentityName} läuft in 15 Minuten ab",
             "O acesso Just-In-Time de ${requestedForIdentityName} expira dentro de 15 minutos",
             "ينتهي وصول Just-In-Time لـ ${requestedForIdentityName} خلال 15 دقيقة",
+            "Just-In-Time-toegang voor ${requestedForIdentityName} verloopt over 15 minuten",
         ),
         strings={
             "intro": (
@@ -1049,6 +1114,7 @@ TEMPLATES = [
                 "Der von ${requestedForIdentityName} aktivierte Just-In-Time-Zugriff auf <strong>${entitlementName}</strong> läuft in <strong>15 Minuten</strong> ab.",
                 "O acesso Just-In-Time que ${requestedForIdentityName} ativou para <strong>${entitlementName}</strong> expira dentro de <strong>15 minutos</strong>.",
                 "ينتهي وصول Just-In-Time الذي فعّله ${requestedForIdentityName} لـ <strong>${entitlementName}</strong> خلال <strong>15 دقيقة</strong>.",
+                "De Just-In-Time-toegang die ${requestedForIdentityName} heeft geactiveerd voor <strong>${entitlementName}</strong> verloopt over <strong>15 minuten</strong>.",
             ),
             "application": APPLICATION,
         },
@@ -1071,6 +1137,7 @@ TEMPLATES = [
             "Ihr Just-In-Time-Zugriff auf ${entitlementName} ist bereit",
             "O seu acesso Just-In-Time a ${entitlementName} está pronto",
             "وصول Just-In-Time الخاص بك إلى ${entitlementName} جاهز",
+            "Uw Just-In-Time-toegang tot ${entitlementName} is gereed",
         ),
         strings={
             "intro": (
@@ -1081,6 +1148,7 @@ TEMPLATES = [
                 "Ihr Just-In-Time-Zugriff auf <strong>${entitlementName}</strong> ist jetzt für <strong>${activationDuration}</strong> aktiv.",
                 "O seu acesso Just-In-Time a <strong>${entitlementName}</strong> está ativo durante <strong>${activationDuration}</strong>.",
                 "أصبح وصول Just-In-Time الخاص بك إلى <strong>${entitlementName}</strong> نشطًا لمدة <strong>${activationDuration}</strong>.",
+                "Uw Just-In-Time-toegang tot <strong>${entitlementName}</strong> is nu actief gedurende <strong>${activationDuration}</strong>.",
             ),
             "manageHint": (
                 "You can extend it or deactivate it early at any time.",
@@ -1090,6 +1158,7 @@ TEMPLATES = [
                 "Sie können ihn jederzeit verlängern oder vorzeitig deaktivieren.",
                 "Pode prolongá-lo ou desativá-lo mais cedo em qualquer altura.",
                 "يمكنك تمديده أو إلغاء تفعيله مبكرًا في أي وقت.",
+                "U kunt de toegang op elk moment verlengen of eerder deactiveren.",
             ),
             "manage": MANAGE_ACCESS,
             "contactOwner": CONTACT_OWNER,
@@ -1115,6 +1184,7 @@ TEMPLATES = [
             "Just-In-Time-Zugriff von ${requestedForIdentityName} ist bereit",
             "O acesso Just-In-Time de ${requestedForIdentityName} está pronto",
             "وصول Just-In-Time لـ ${requestedForIdentityName} جاهز",
+            "Just-In-Time-toegang voor ${requestedForIdentityName} is gereed",
         ),
         strings={
             "intro": (
@@ -1125,6 +1195,7 @@ TEMPLATES = [
                 "Der von ${requestedForIdentityName} gestartete Just-In-Time-Zugriff auf <strong>${entitlementName}</strong> ist jetzt für <strong>${activationDuration}</strong> aktiv.",
                 "O acesso Just-In-Time que ${requestedForIdentityName} iniciou para <strong>${entitlementName}</strong> está ativo durante <strong>${activationDuration}</strong>.",
                 "أصبح وصول Just-In-Time الذي بدأه ${requestedForIdentityName} لـ <strong>${entitlementName}</strong> نشطًا لمدة <strong>${activationDuration}</strong>.",
+                "De Just-In-Time-toegang die ${requestedForIdentityName} heeft gestart voor <strong>${entitlementName}</strong> is nu actief gedurende <strong>${activationDuration}</strong>.",
             ),
             "contactOwner": CONTACT_OWNER,
         },
@@ -1145,6 +1216,7 @@ TEMPLATES = [
             "${requestedObjectName} ist jetzt ein Just-In-Time-Zugriff",
             "${requestedObjectName} é agora um acesso Just-In-Time",
             "أصبح ${requestedObjectName} وصول Just-In-Time",
+            "${requestedObjectName} is nu Just-In-Time-toegang",
         ),
         strings={
             "intro": (
@@ -1155,6 +1227,7 @@ TEMPLATES = [
                 "Die Berechtigung <strong>${requestedObjectName}</strong> wurde Ihnen als Just-In-Time-Zugriff zugewiesen.",
                 "O direito de acesso <strong>${requestedObjectName}</strong> foi-lhe atribuído como acesso Just-In-Time.",
                 "تم إسناد الاستحقاق <strong>${requestedObjectName}</strong> إليك كوصول Just-In-Time.",
+                "Het recht <strong>${requestedObjectName}</strong> is aan u toegewezen als Just-In-Time-toegang.",
             ),
             "jit": JIT_NOTE,
         },
@@ -1177,6 +1250,7 @@ TEMPLATES = [
             "Ihr Just-In-Time-Zugriff auf ${entitlementName} wurde deaktiviert",
             "O seu acesso Just-In-Time a ${entitlementName} foi desativado",
             "تم إلغاء تفعيل وصول Just-In-Time الخاص بك إلى ${entitlementName}",
+            "Uw Just-In-Time-toegang tot ${entitlementName} is gedeactiveerd",
         ),
         strings={
             "intro": (
@@ -1187,8 +1261,9 @@ TEMPLATES = [
                 "Ihr Just-In-Time-Zugriff auf <strong>${entitlementName}</strong> wurde deaktiviert und entzogen.",
                 "O seu acesso Just-In-Time a <strong>${entitlementName}</strong> foi desativado e o acesso removido.",
                 "تم إلغاء تفعيل وصول Just-In-Time الخاص بك إلى <strong>${entitlementName}</strong> وإزالة الوصول.",
+                "Uw Just-In-Time-toegang tot <strong>${entitlementName}</strong> is gedeactiveerd en de toegang is verwijderd.",
             ),
-            "manage": ("View details", "Ver detalles", "Voir les détails", "Visualizza dettagli", "Details anzeigen", "Ver detalhes", "عرض التفاصيل"),
+            "manage": ("View details", "Ver detalles", "Voir les détails", "Visualizza dettagli", "Details anzeigen", "Ver detalhes", "عرض التفاصيل", "Details bekijken"),
             "contactOwner": CONTACT_OWNER,
         },
         content=f"""
@@ -1211,6 +1286,7 @@ TEMPLATES = [
             "$data.sourceName: Anfrage ($data.operationType) für $data.accountName gesendet",
             "$data.sourceName: pedido de $data.operationType enviado para $data.accountName",
             "$data.sourceName: تم إرسال طلب $data.operationType لـ $data.accountName",
+            "$data.sourceName: aanvraag $data.operationType ingediend voor $data.accountName",
         ),
         strings={
             **ACCOUNT_LABELS,
@@ -1222,6 +1298,7 @@ TEMPLATES = [
                 "Ihre Kontoanfrage wurde erfolgreich gesendet.",
                 "O seu pedido de conta foi enviado com êxito.",
                 "تم إرسال طلب الحساب الخاص بك بنجاح.",
+                "Uw accountaanvraag is ingediend.",
             ),
             "next": (
                 "You will receive another email when the request is complete.",
@@ -1231,6 +1308,7 @@ TEMPLATES = [
                 "Sie erhalten eine weitere E-Mail, sobald die Anfrage abgeschlossen ist.",
                 "Receberá outro e-mail quando o pedido estiver concluído.",
                 "ستتلقى رسالة أخرى عند اكتمال الطلب.",
+                "U ontvangt nog een e-mail wanneer de aanvraag is voltooid.",
             ),
         },
         content=f"""
@@ -1252,6 +1330,7 @@ TEMPLATES = [
             "$data.sourceName: Anfrage ($data.operationType) für $data.accountName fehlgeschlagen",
             "$data.sourceName: falha no pedido de $data.operationType para $data.accountName",
             "$data.sourceName: فشل طلب $data.operationType لـ $data.accountName",
+            "$data.sourceName: aanvraag $data.operationType mislukt voor $data.accountName",
         ),
         strings={
             **ACCOUNT_LABELS,
@@ -1263,8 +1342,9 @@ TEMPLATES = [
                 "Ihre Kontoanfrage konnte nicht abgeschlossen werden.",
                 "Não foi possível concluir o seu pedido de conta.",
                 "تعذّر إكمال طلب الحساب الخاص بك.",
+                "Uw accountaanvraag kon niet worden voltooid.",
             ),
-            "error": ("Error:", "Error:", "Erreur :", "Errore:", "Fehler:", "Erro:", "الخطأ:"),
+            "error": ("Error:", "Error:", "Erreur :", "Errore:", "Fehler:", "Erro:", "الخطأ:", "Fout:"),
         },
         content=f"""
 {note("$tx_intro")}
@@ -1286,6 +1366,7 @@ TEMPLATES = [
             "$data.sourceName: Anfrage ($data.operationType) für $data.accountName abgeschlossen",
             "$data.sourceName: pedido de $data.operationType concluído para $data.accountName",
             "$data.sourceName: اكتمل طلب $data.operationType لـ $data.accountName",
+            "$data.sourceName: aanvraag $data.operationType voltooid voor $data.accountName",
         ),
         strings={
             **ACCOUNT_LABELS,
@@ -1297,6 +1378,7 @@ TEMPLATES = [
                 "Ihre Kontoanfrage wurde erfolgreich abgeschlossen. Das Konto wurde aus der Quelle entfernt.",
                 "O seu pedido de conta foi concluído com êxito. A conta foi removida da origem.",
                 "اكتمل طلب الحساب الخاص بك بنجاح. تمت إزالة الحساب من المصدر.",
+                "Uw accountaanvraag is voltooid. Het account is van de bron verwijderd.",
             ),
         },
         content=f"""
@@ -1317,6 +1399,7 @@ TEMPLATES = [
             "Ihre Zugriffsanfrage erfordert Ihre Aufmerksamkeit",
             "O seu pedido de acesso requer atenção",
             "طلب الوصول الخاص بك يحتاج إلى متابعة",
+            "Uw toegangsaanvraag vraagt aandacht",
         ),
         prelude="""
 #set($mailItems = "")#set($sep = "")#foreach($item in $accessRequestItems.split(","))#set($mailItems = "$mailItems$sep<strong>$item.trim()</strong>")#set($sep = ", ")#end
@@ -1330,6 +1413,7 @@ TEMPLATES = [
                 "Sie haben kürzlich Zugriff auf $mailItems angefordert. Wegen eines <strong>Konflikts bei der Funktionstrennung (SoD)</strong> konnten wir die Anfrage noch nicht an Ihre genehmigende Person senden.",
                 "Pediu recentemente acesso a $mailItems. Ainda não foi possível enviar o pedido ao seu aprovador devido a um <strong>conflito de segregação de funções (SoD)</strong>.",
                 "طلبت مؤخرًا الوصول إلى $mailItems. لم نتمكن من إرساله إلى الموافِق بعد بسبب <strong>تعارض في الفصل بين المهام (SoD)</strong>.",
+                "U hebt onlangs toegang tot $mailItems aangevraagd. We konden de aanvraag nog niet naar uw goedkeurder sturen vanwege een <strong>conflict met functiescheiding (SoD)</strong>.",
             ),
             "why": (
                 "Some combinations of access are not allowed under the company’s security policy. These SoD rules prevent one person from having too much control over a sensitive process.",
@@ -1339,8 +1423,9 @@ TEMPLATES = [
                 "Bestimmte Kombinationen von Zugriffen sind nach der Sicherheitsrichtlinie des Unternehmens nicht zulässig. Diese SoD-Regeln verhindern, dass eine einzelne Person zu viel Kontrolle über einen sensiblen Prozess hat.",
                 "Algumas combinações de acessos não são permitidas pela política de segurança da empresa. Estas regras SoD evitam que uma única pessoa tenha demasiado controlo sobre um processo sensível.",
                 "لا تسمح سياسة الأمان في الشركة ببعض مجموعات الوصول. تمنع قواعد SoD هذه أي شخص من امتلاك قدر مفرط من السيطرة على عملية حساسة.",
+                "Sommige combinaties van toegang zijn niet toegestaan volgens het beveiligingsbeleid van het bedrijf. Deze SoD-regels voorkomen dat één persoon te veel controle heeft over een gevoelig proces.",
             ),
-            "review": ("Review your request", "Revisar tu solicitud", "Examiner votre demande", "Esamina la tua richiesta", "Anfrage prüfen", "Rever o seu pedido", "مراجعة طلبك"),
+            "review": ("Review your request", "Revisar tu solicitud", "Examiner votre demande", "Esamina la tua richiesta", "Anfrage prüfen", "Rever o seu pedido", "مراجعة طلبك", "Uw aanvraag beoordelen"),
         },
         content=f"""
 {note("$tx_intro")}

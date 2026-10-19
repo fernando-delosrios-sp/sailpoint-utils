@@ -12,6 +12,7 @@ _ATTEMPT_LINE = tr((
     "$attempt.count Versuche von $attempt.location",
     "$attempt.count tentativas a partir de $attempt.location",
     "$attempt.count محاولات من $attempt.location",
+    "$attempt.count pogingen vanaf $attempt.location",
 ))
 
 # --- shared by both password-change templates ------------------------------
@@ -25,6 +26,7 @@ _PASSWORD_CHANGE_STRINGS = {
         "Ihr Kennwort wurde für diese Apps aktualisiert, die dasselbe Kennwort verwenden:",
         "A sua palavra-passe foi atualizada nestas aplicações, que partilham a mesma palavra-passe:",
         "تم تحديث كلمة المرور للتطبيقات التالية التي تشترك في كلمة المرور نفسها:",
+        "Uw wachtwoord is bijgewerkt voor deze apps, die hetzelfde wachtwoord delen:",
     ),
     "changed": (
         "Your $mailProduct password has been changed.",
@@ -34,6 +36,7 @@ _PASSWORD_CHANGE_STRINGS = {
         "Ihr $mailProduct-Kennwort wurde geändert.",
         "A sua palavra-passe do $mailProduct foi alterada.",
         "تم تغيير كلمة مرور $mailProduct الخاصة بك.",
+        "Uw wachtwoord voor $mailProduct is gewijzigd.",
     ),
     "appsFailed": (
         "However, your password could not be updated for these apps, which also share it:",
@@ -43,6 +46,7 @@ _PASSWORD_CHANGE_STRINGS = {
         "Für diese Apps, die das Kennwort ebenfalls verwenden, konnte es jedoch nicht aktualisiert werden:",
         "No entanto, não foi possível atualizar a palavra-passe nestas aplicações, que também a partilham:",
         "لكن تعذّر تحديث كلمة المرور للتطبيقات التالية التي تشترك فيها أيضًا:",
+        "Uw wachtwoord kon echter niet worden bijgewerkt voor deze apps, die het ook delen:",
     ),
     "systemsFailed": (
         "Your password could not be updated on the systems that share it.",
@@ -52,6 +56,7 @@ _PASSWORD_CHANGE_STRINGS = {
         "Ihr Kennwort konnte auf den Systemen, die es verwenden, nicht aktualisiert werden.",
         "Não foi possível atualizar a palavra-passe nos sistemas que a partilham.",
         "تعذّر تحديث كلمة المرور على الأنظمة التي تشترك فيها.",
+        "Uw wachtwoord kon niet worden bijgewerkt op de systemen die het delen.",
     ),
     "notAttemptedApps": (
         "Because your primary authentication source could not be updated, these apps were not attempted:",
@@ -61,6 +66,7 @@ _PASSWORD_CHANGE_STRINGS = {
         "Da Ihre primäre Authentifizierungsquelle nicht aktualisiert werden konnte, wurden diese Apps nicht bearbeitet:",
         "Como não foi possível atualizar a sua origem de autenticação principal, estas aplicações não foram processadas:",
         "نظرًا لتعذّر تحديث مصدر المصادقة الأساسي، لم تتم محاولة تحديث هذه التطبيقات:",
+        "Omdat uw primaire authenticatiebron niet kon worden bijgewerkt, zijn deze apps niet verwerkt:",
     ),
     "notAttemptedSystems": (
         "Because your primary authentication source could not be updated, the other systems that share your password were not attempted.",
@@ -70,6 +76,7 @@ _PASSWORD_CHANGE_STRINGS = {
         "Da Ihre primäre Authentifizierungsquelle nicht aktualisiert werden konnte, wurden die anderen Systeme mit diesem Kennwort nicht bearbeitet.",
         "Como não foi possível atualizar a sua origem de autenticação principal, os outros sistemas que partilham a palavra-passe não foram processados.",
         "نظرًا لتعذّر تحديث مصدر المصادقة الأساسي، لم تتم محاولة تحديث الأنظمة الأخرى التي تشترك في كلمة المرور.",
+        "Omdat uw primaire authenticatiebron niet kon worden bijgewerkt, zijn de andere systemen die uw wachtwoord delen niet verwerkt.",
     ),
     "tryAgain": (
         "<strong>Please try changing your password again.</strong> The change applies to every app and system that shares this password.",
@@ -79,6 +86,7 @@ _PASSWORD_CHANGE_STRINGS = {
         "<strong>Bitte ändern Sie Ihr Kennwort erneut.</strong> Die Änderung gilt für alle Apps und Systeme, die dieses Kennwort verwenden.",
         "<strong>Tente alterar a palavra-passe novamente.</strong> A alteração aplica-se a todas as aplicações e sistemas que a partilham.",
         "<strong>يُرجى محاولة تغيير كلمة المرور مرة أخرى.</strong> ينطبق التغيير على كل تطبيق ونظام يشترك في كلمة المرور هذه.",
+        "<strong>Probeer uw wachtwoord opnieuw te wijzigen.</strong> De wijziging geldt voor elke app en elk systeem dat dit wachtwoord deelt.",
     ),
 }
 
@@ -90,6 +98,7 @@ _PASSWORD_CHANGE_SUBJECT = (
     "#if($sourceFailedCount && $sourceFailedCount > 0)Kennwortänderung fehlgeschlagen#{else}Ihr Kennwort wurde aktualisiert#end",
     "#if($sourceFailedCount && $sourceFailedCount > 0)Falha na atualização da palavra-passe#{else}A sua palavra-passe foi atualizada#end",
     "#if($sourceFailedCount && $sourceFailedCount > 0)فشل تحديث كلمة المرور#{else}تم تحديث كلمة المرور#end",
+    "#if($sourceFailedCount && $sourceFailedCount > 0)Het bijwerken van uw wachtwoord is mislukt#{else}Uw wachtwoord is bijgewerkt#end",
 )
 
 _PASSWORD_CHANGE_PRELUDE = """
@@ -176,6 +185,7 @@ TEMPLATES = [
             "Eine Sicherheitseinstellung Ihres " + PN + "-Kontos wurde geändert",
             "Uma definição de segurança da sua conta " + PN + " foi alterada",
             "تم تغيير أحد إعدادات الأمان في حسابك على " + PN,
+            "Een beveiligingsinstelling van uw " + PN + "-account is gewijzigd",
         ),
         strings={
             "intro": (
@@ -186,9 +196,10 @@ TEMPLATES = [
                 "Eine Sicherheitseinstellung Ihres " + PN + "-Kontos wurde aktualisiert.",
                 "Uma definição de segurança da sua conta " + PN + " foi atualizada.",
                 "تم تحديث أحد إعدادات الأمان في حسابك على " + PN + ".",
+                "Een beveiligingsinstelling van uw " + PN + "-account is bijgewerkt.",
             ),
-            "setting": ("Setting", "Ajuste", "Paramètre", "Impostazione", "Einstellung", "Definição", "الإعداد"),
-            "changedOn": ("Changed on", "Fecha del cambio", "Modifié le", "Modificata il", "Geändert am", "Alterada em", "تاريخ التغيير"),
+            "setting": ("Setting", "Ajuste", "Paramètre", "Impostazione", "Einstellung", "Definição", "الإعداد", "Instelling"),
+            "changedOn": ("Changed on", "Fecha del cambio", "Modifié le", "Modificata il", "Geändert am", "Alterada em", "تاريخ التغيير", "Gewijzigd op"),
             "applies": (
                 "The change takes effect the next time you sign in.",
                 "El cambio se aplicará la próxima vez que inicies sesión.",
@@ -197,6 +208,7 @@ TEMPLATES = [
                 "Die Änderung wird bei Ihrer nächsten Anmeldung wirksam.",
                 "A alteração entra em vigor no próximo início de sessão.",
                 "يسري التغيير في المرة القادمة التي تسجّل فيها الدخول.",
+                "De wijziging gaat in zodra u zich de volgende keer aanmeldt.",
             ),
         },
         content=f"""
@@ -218,6 +230,7 @@ TEMPLATES = [
             "Ihr " + PN + "-Benutzername",
             "O seu nome de utilizador do " + PN,
             "اسم المستخدم الخاص بك في " + PN,
+            "Uw gebruikersnaam voor " + PN,
         ),
         strings={
             "intro": (
@@ -228,8 +241,9 @@ TEMPLATES = [
                 "Wie angefordert, hier ist Ihr " + PN + "-Benutzername:",
                 "Conforme pedido, este é o seu nome de utilizador do " + PN + ":",
                 "بناءً على طلبك، إليك اسم المستخدم الخاص بك في " + PN + ":",
+                "Zoals aangevraagd, dit is uw gebruikersnaam voor " + PN + ":",
             ),
-            "signIn": ("Sign in", "Iniciar sesión", "Se connecter", "Accedi", "Anmelden", "Iniciar sessão", "تسجيل الدخول"),
+            "signIn": ("Sign in", "Iniciar sesión", "Se connecter", "Accedi", "Anmelden", "Iniciar sessão", "تسجيل الدخول", "Aanmelden"),
         },
         content=f"""
 {p("$tx_intro")}
@@ -249,6 +263,7 @@ TEMPLATES = [
             "Ihr " + PN + "-Konto wurde gesperrt",
             "A sua conta " + PN + " foi bloqueada",
             "تم قفل حسابك على " + PN,
+            "Uw " + PN + "-account is vergrendeld",
         ),
         strings={
             "intro": (
@@ -259,10 +274,11 @@ TEMPLATES = [
                 "Ihr " + PN + "-Konto wurde nach mehreren fehlgeschlagenen Anmeldeversuchen gesperrt.",
                 "A sua conta " + PN + " foi bloqueada após várias tentativas de início de sessão falhadas.",
                 "تم قفل حسابك على " + PN + " بعد عدة محاولات فاشلة لتسجيل الدخول.",
+                "Uw " + PN + "-account is vergrendeld na meerdere mislukte aanmeldpogingen.",
             ),
-            "attempts": ("Failed attempts:", "Intentos fallidos:", "Tentatives infructueuses :", "Tentativi non riusciti:", "Fehlgeschlagene Versuche:", "Tentativas falhadas:", "المحاولات الفاشلة:"),
-            "lockedOn": ("Locked on", "Bloqueada el", "Verrouillé le", "Bloccato il", "Gesperrt am", "Bloqueada em", "تاريخ القفل"),
-            "lockedUntil": ("Locked until", "Bloqueada hasta", "Verrouillé jusqu’au", "Bloccato fino al", "Gesperrt bis", "Bloqueada até", "مقفل حتى"),
+            "attempts": ("Failed attempts:", "Intentos fallidos:", "Tentatives infructueuses :", "Tentativi non riusciti:", "Fehlgeschlagene Versuche:", "Tentativas falhadas:", "المحاولات الفاشلة:", "Mislukte pogingen:"),
+            "lockedOn": ("Locked on", "Bloqueada el", "Verrouillé le", "Bloccato il", "Gesperrt am", "Bloqueada em", "تاريخ القفل", "Vergrendeld op"),
+            "lockedUntil": ("Locked until", "Bloqueada hasta", "Verrouillé jusqu’au", "Bloccato fino al", "Gesperrt bis", "Bloqueada até", "مقفل حتى", "Vergrendeld tot"),
             "forgot": (
                 "Forgot your password? You can reset it now.",
                 "¿Has olvidado tu contraseña? Puedes restablecerla ahora.",
@@ -271,8 +287,9 @@ TEMPLATES = [
                 "Kennwort vergessen? Sie können es jetzt zurücksetzen.",
                 "Esqueceu-se da palavra-passe? Pode repô-la agora.",
                 "هل نسيت كلمة المرور؟ يمكنك إعادة تعيينها الآن.",
+                "Wachtwoord vergeten? U kunt het nu opnieuw instellen.",
             ),
-            "resetPassword": ("Reset password", "Restablecer contraseña", "Réinitialiser le mot de passe", "Reimposta password", "Kennwort zurücksetzen", "Repor palavra-passe", "إعادة تعيين كلمة المرور"),
+            "resetPassword": ("Reset password", "Restablecer contraseña", "Réinitialiser le mot de passe", "Reimposta password", "Kennwort zurücksetzen", "Repor palavra-passe", "إعادة تعيين كلمة المرور", "Wachtwoord opnieuw instellen"),
             "someoneElse": (
                 "If you think someone else tried to use your account, contact your administrator immediately.",
                 "Si crees que otra persona ha intentado usar tu cuenta, ponte en contacto con tu administrador de inmediato.",
@@ -281,6 +298,7 @@ TEMPLATES = [
                 "Wenn Sie vermuten, dass jemand anderes versucht hat, Ihr Konto zu verwenden, wenden Sie sich umgehend an Ihre Administration.",
                 "Se acha que outra pessoa tentou utilizar a sua conta, contacte imediatamente o seu administrador.",
                 "إذا كنت تعتقد أن شخصًا آخر حاول استخدام حسابك، فتواصل مع المسؤول فورًا.",
+                "Als u denkt dat iemand anders heeft geprobeerd uw account te gebruiken, neem dan onmiddellijk contact op met uw beheerder.",
             ),
         },
         content=f"""
@@ -308,6 +326,7 @@ TEMPLATES = [
             "${source}: Konto für ${username} erstellt",
             "${source}: conta criada para ${username}",
             "${source}: تم إنشاء حساب لـ ${username}",
+            "${source}: account aangemaakt voor ${username}",
         ),
         strings={
             "intro": (
@@ -318,10 +337,11 @@ TEMPLATES = [
                 "Für <strong>${username}</strong> wurde ein neues Konto in <strong>${source}</strong> erstellt.",
                 "Foi criada uma nova conta para <strong>${username}</strong> em <strong>${source}</strong>.",
                 "تم إنشاء حساب جديد لـ <strong>${username}</strong> على <strong>${source}</strong>.",
+                "Er is een nieuw account aangemaakt voor <strong>${username}</strong> op <strong>${source}</strong>.",
             ),
-            "system": ("System", "Sistema", "Système", "Sistema", "System", "Sistema", "النظام"),
-            "username": ("Username", "Nombre de usuario", "Nom d’utilisateur", "Nome utente", "Benutzername", "Nome de utilizador", "اسم المستخدم"),
-            "accessTitle": ("Access granted:", "Acceso concedido:", "Accès accordé :", "Accesso concesso:", "Gewährter Zugriff:", "Acesso concedido:", "الوصول الممنوح:"),
+            "system": ("System", "Sistema", "Système", "Sistema", "System", "Sistema", "النظام", "Systeem"),
+            "username": ("Username", "Nombre de usuario", "Nom d’utilisateur", "Nome utente", "Benutzername", "Nome de utilizador", "اسم المستخدم", "Gebruikersnaam"),
+            "accessTitle": ("Access granted:", "Acceso concedido:", "Accès accordé :", "Accesso concesso:", "Gewährter Zugriff:", "Acesso concedido:", "الوصول الممنوح:", "Verleende toegang:"),
         },
         content=f"""
 {p("$tx_intro")}
@@ -345,6 +365,7 @@ TEMPLATES = [
             "#if($dayToExpire <= 0)Ihr ${acctName}-Kennwort ist abgelaufen#elseif($dayToExpire == 1)Ihr ${acctName}-Kennwort läuft morgen ab#{else}Ihr ${acctName}-Kennwort läuft in ${dayToExpire} Tagen ab#end",
             "#if($dayToExpire <= 0)A sua palavra-passe de ${acctName} expirou#elseif($dayToExpire == 1)A sua palavra-passe de ${acctName} expira amanhã#{else}A sua palavra-passe de ${acctName} expira dentro de ${dayToExpire} dias#end",
             "#if($dayToExpire <= 0)انتهت صلاحية كلمة مرور ${acctName}#elseif($dayToExpire == 1)تنتهي صلاحية كلمة مرور ${acctName} غدًا#{else}تنتهي صلاحية كلمة مرور ${acctName} خلال ${dayToExpire} أيام#end",
+            "#if($dayToExpire <= 0)Uw wachtwoord voor ${acctName} is verlopen#elseif($dayToExpire == 1)Uw wachtwoord voor ${acctName} verloopt morgen#{else}Uw wachtwoord voor ${acctName} verloopt over ${dayToExpire} dagen#end",
         ),
         strings={
             "expired": (
@@ -355,6 +376,7 @@ TEMPLATES = [
                 "Ihr <strong>${acctName}</strong>-Kennwort ist abgelaufen. Ändern Sie es jetzt, um weiterhin auf Ihre Anwendungen zugreifen zu können.",
                 "A sua palavra-passe de <strong>${acctName}</strong> expirou. Altere-a agora para manter o acesso às suas aplicações.",
                 "انتهت صلاحية كلمة مرور <strong>${acctName}</strong>. غيّرها الآن للحفاظ على وصولك إلى تطبيقاتك.",
+                "Uw wachtwoord voor <strong>${acctName}</strong> is verlopen. Wijzig het nu om toegang tot uw applicaties te behouden.",
             ),
             "tomorrow": (
                 "Your <strong>${acctName}</strong> password expires <strong>tomorrow</strong>. Change it now to avoid losing access.",
@@ -364,6 +386,7 @@ TEMPLATES = [
                 "Ihr <strong>${acctName}</strong>-Kennwort läuft <strong>morgen</strong> ab. Ändern Sie es jetzt, um den Zugriff nicht zu verlieren.",
                 "A sua palavra-passe de <strong>${acctName}</strong> expira <strong>amanhã</strong>. Altere-a agora para não perder o acesso.",
                 "تنتهي صلاحية كلمة مرور <strong>${acctName}</strong> <strong>غدًا</strong>. غيّرها الآن لتجنّب فقدان الوصول.",
+                "Uw wachtwoord voor <strong>${acctName}</strong> verloopt <strong>morgen</strong>. Wijzig het nu om te voorkomen dat u de toegang verliest.",
             ),
             "days": (
                 "Your <strong>${acctName}</strong> password expires in <strong>${dayToExpire} days</strong>. Change it now to avoid losing access.",
@@ -373,8 +396,9 @@ TEMPLATES = [
                 "Ihr <strong>${acctName}</strong>-Kennwort läuft in <strong>${dayToExpire} Tagen</strong> ab. Ändern Sie es jetzt, um den Zugriff nicht zu verlieren.",
                 "A sua palavra-passe de <strong>${acctName}</strong> expira dentro de <strong>${dayToExpire} dias</strong>. Altere-a agora para não perder o acesso.",
                 "تنتهي صلاحية كلمة مرور <strong>${acctName}</strong> خلال <strong>${dayToExpire} أيام</strong>. غيّرها الآن لتجنّب فقدان الوصول.",
+                "Uw wachtwoord voor <strong>${acctName}</strong> verloopt over <strong>${dayToExpire} dagen</strong>. Wijzig het nu om te voorkomen dat u de toegang verliest.",
             ),
-            "changePassword": ("Change password", "Cambiar contraseña", "Modifier le mot de passe", "Modifica password", "Kennwort ändern", "Alterar palavra-passe", "تغيير كلمة المرور"),
+            "changePassword": ("Change password", "Cambiar contraseña", "Modifier le mot de passe", "Modifica password", "Kennwort ändern", "Alterar palavra-passe", "تغيير كلمة المرور", "Wachtwoord wijzigen"),
             "ssoApps": (
                 "These applications use your ${acctName} password for single sign-on:",
                 "Estas aplicaciones usan tu contraseña de ${acctName} para el inicio de sesión único:",
@@ -383,6 +407,7 @@ TEMPLATES = [
                 "Diese Anwendungen verwenden Ihr ${acctName}-Kennwort für Single Sign-On:",
                 "Estas aplicações utilizam a palavra-passe de ${acctName} para início de sessão único:",
                 "تستخدم هذه التطبيقات كلمة مرور ${acctName} لتسجيل الدخول الموحّد:",
+                "Deze applicaties gebruiken uw wachtwoord voor ${acctName} voor eenmalige aanmelding:",
             ),
         },
         content=f"""
@@ -413,6 +438,7 @@ TEMPLATES = [
             "Ihr Code zum Zurücksetzen des Kennworts: ${token}",
             "O seu código de reposição da palavra-passe: ${token}",
             "رمز إعادة تعيين كلمة المرور: ${token}",
+            "Uw code om het wachtwoord opnieuw in te stellen: ${token}",
         ),
         strings={
             "introSource": (
@@ -423,6 +449,7 @@ TEMPLATES = [
                 "Wir haben eine Anfrage zum Zurücksetzen des Kennworts Ihres <strong>${sourcename}</strong>-Kontos erhalten.",
                 "Recebemos um pedido para repor a palavra-passe da sua conta <strong>${sourcename}</strong>.",
                 "تلقّينا طلبًا لإعادة تعيين كلمة مرور حسابك في <strong>${sourcename}</strong>.",
+                "We hebben een aanvraag ontvangen om het wachtwoord van uw account bij <strong>${sourcename}</strong> opnieuw in te stellen.",
             ),
             "introProduct": (
                 "We received a request to reset your " + PN + " password.",
@@ -432,6 +459,7 @@ TEMPLATES = [
                 "Wir haben eine Anfrage zum Zurücksetzen Ihres " + PN + "-Kennworts erhalten.",
                 "Recebemos um pedido para repor a sua palavra-passe do " + PN + ".",
                 "تلقّينا طلبًا لإعادة تعيين كلمة مرورك في " + PN + ".",
+                "We hebben een aanvraag ontvangen om uw wachtwoord voor " + PN + " opnieuw in te stellen.",
             ),
             "enterCode": (
                 "If this was you, enter this code in " + PN + " to verify your identity:",
@@ -441,6 +469,7 @@ TEMPLATES = [
                 "Wenn Sie das waren, geben Sie diesen Code in " + PN + " ein, um Ihre Identität zu bestätigen:",
                 "Se foi o próprio, introduza este código no " + PN + " para confirmar a sua identidade:",
                 "إذا كنت أنت من قدّم الطلب، فأدخل هذا الرمز في " + PN + " للتحقق من هويتك:",
+                "Als u dit was, voer deze code dan in " + PN + " in om uw identiteit te bevestigen:",
             ),
             "expires": (
                 "The code works once and expires on ${expires}.",
@@ -450,6 +479,7 @@ TEMPLATES = [
                 "Der Code ist nur einmal gültig und läuft am ${expires} ab.",
                 "O código só pode ser utilizado uma vez e expira em ${expires}.",
                 "يعمل الرمز مرة واحدة فقط وتنتهي صلاحيته في ${expires}.",
+                "De code werkt eenmalig en verloopt op ${expires}.",
             ),
         },
         content=f"""
@@ -475,6 +505,7 @@ TEMPLATES = [
             "Ihr Code zum Entsperren des Kontos: ${token}",
             "O seu código de desbloqueio da conta: ${token}",
             "رمز إلغاء قفل الحساب: ${token}",
+            "Uw code om het account te ontgrendelen: ${token}",
         ),
         strings={
             "intro": (
@@ -485,6 +516,7 @@ TEMPLATES = [
                 "Wir haben eine Anfrage zum Entsperren Ihres " + PN + "-Kontos erhalten. Wenn Sie das waren, geben Sie diesen Code in " + PN + " ein, um Ihre Identität zu bestätigen:",
                 "Recebemos um pedido para desbloquear a sua conta " + PN + ". Se foi o próprio, introduza este código no " + PN + " para confirmar a sua identidade:",
                 "تلقّينا طلبًا لإلغاء قفل حسابك على " + PN + ". إذا كنت أنت من قدّم الطلب، فأدخل هذا الرمز في " + PN + " للتحقق من هويتك:",
+                "We hebben een aanvraag ontvangen om uw " + PN + "-account te ontgrendelen. Als u dit was, voer deze code dan in " + PN + " in om uw identiteit te bevestigen:",
             ),
             "expires": (
                 "The code works once and expires on ${expires}.",
@@ -494,6 +526,7 @@ TEMPLATES = [
                 "Der Code ist nur einmal gültig und läuft am ${expires} ab.",
                 "O código só pode ser utilizado uma vez e expira em ${expires}.",
                 "يعمل الرمز مرة واحدة فقط وتنتهي صلاحيته في ${expires}.",
+                "De code werkt eenmalig en verloopt op ${expires}.",
             ),
         },
         content=f"""
@@ -514,6 +547,7 @@ TEMPLATES = [
             "Ihr " + PN + "-Konto wurde entsperrt",
             "A sua conta " + PN + " foi desbloqueada",
             "تم إلغاء قفل حسابك على " + PN,
+            "Uw " + PN + "-account is ontgrendeld",
         ),
         strings={
             "intro": (
@@ -524,6 +558,7 @@ TEMPLATES = [
                 "Ihr " + PN + "-Konto wurde entsperrt. Sie können sich wieder anmelden.",
                 "A sua conta " + PN + " foi desbloqueada. Já pode voltar a iniciar sessão.",
                 "تم إلغاء قفل حسابك على " + PN + ". يمكنك تسجيل الدخول مرة أخرى.",
+                "Uw " + PN + "-account is ontgrendeld. U kunt zich weer aanmelden.",
             ),
             "someoneElse": (
                 "If you think someone else tried to use your account, contact your administrator immediately.",
@@ -533,6 +568,7 @@ TEMPLATES = [
                 "Wenn Sie vermuten, dass jemand anderes versucht hat, Ihr Konto zu verwenden, wenden Sie sich umgehend an Ihre Administration.",
                 "Se acha que outra pessoa tentou utilizar a sua conta, contacte imediatamente o seu administrador.",
                 "إذا كنت تعتقد أن شخصًا آخر حاول استخدام حسابك، فتواصل مع المسؤول فورًا.",
+                "Als u denkt dat iemand anders heeft geprobeerd uw account te gebruiken, neem dan onmiddellijk contact op met uw beheerder.",
             ),
         },
         content=f"""
@@ -551,6 +587,7 @@ TEMPLATES = [
             "#if($sourcename)${sourcename}: Kennwort zurücksetzen#{else}" + PN + ": Kennwort zurücksetzen#end",
             "#if($sourcename)${sourcename}: reponha a palavra-passe#{else}" + PN + ": reponha a palavra-passe#end",
             "#if($sourcename)${sourcename}: أعِد تعيين كلمة المرور#{else}" + PN + ": أعِد تعيين كلمة المرور#end",
+            "#if($sourcename)${sourcename}: stel uw wachtwoord opnieuw in#{else}" + PN + ": stel uw wachtwoord opnieuw in#end",
         ),
         strings={
             "introSource": (
@@ -561,6 +598,7 @@ TEMPLATES = [
                 "Wir haben eine Anfrage zum Zurücksetzen des Kennworts Ihres <strong>${sourcename}</strong>-Kontos erhalten.",
                 "Recebemos um pedido para repor a palavra-passe da sua conta <strong>${sourcename}</strong>.",
                 "تلقّينا طلبًا لإعادة تعيين كلمة مرور حسابك في <strong>${sourcename}</strong>.",
+                "We hebben een aanvraag ontvangen om het wachtwoord van uw account bij <strong>${sourcename}</strong> opnieuw in te stellen.",
             ),
             "introProduct": (
                 "We received a request to reset your " + PN + " password.",
@@ -570,6 +608,7 @@ TEMPLATES = [
                 "Wir haben eine Anfrage zum Zurücksetzen Ihres " + PN + "-Kennworts erhalten.",
                 "Recebemos um pedido para repor a sua palavra-passe do " + PN + ".",
                 "تلقّينا طلبًا لإعادة تعيين كلمة مرورك في " + PN + ".",
+                "We hebben een aanvraag ontvangen om uw wachtwoord voor " + PN + " opnieuw in te stellen.",
             ),
             "next": (
                 "If this was you, verify your identity and choose a new password:",
@@ -579,8 +618,9 @@ TEMPLATES = [
                 "Wenn Sie das waren, bestätigen Sie Ihre Identität und wählen Sie ein neues Kennwort:",
                 "Se foi o próprio, confirme a sua identidade e escolha uma nova palavra-passe:",
                 "إذا كنت أنت من قدّم الطلب، فتحقّق من هويتك واختر كلمة مرور جديدة:",
+                "Als u dit was, bevestig dan uw identiteit en kies een nieuw wachtwoord:",
             ),
-            "resetPassword": ("Reset password", "Restablecer contraseña", "Réinitialiser le mot de passe", "Reimposta password", "Kennwort zurücksetzen", "Repor palavra-passe", "إعادة تعيين كلمة المرور"),
+            "resetPassword": ("Reset password", "Restablecer contraseña", "Réinitialiser le mot de passe", "Reimposta password", "Kennwort zurücksetzen", "Repor palavra-passe", "إعادة تعيين كلمة المرور", "Wachtwoord opnieuw instellen"),
         },
         content=f"""
 #if($sourcename)
@@ -606,6 +646,7 @@ TEMPLATES = [
             "Legen Sie Ihr erstes " + PN + "-Kennwort fest",
             "Defina a sua primeira palavra-passe do " + PN,
             "عيّن أول كلمة مرور لك في " + PN,
+            "Stel uw eerste wachtwoord voor " + PN + " in",
         ),
         strings={
             "intro": (
@@ -616,9 +657,10 @@ TEMPLATES = [
                 "Willkommen bei " + PN + "! Legen Sie zunächst Ihr Kennwort fest.",
                 "Boas-vindas ao " + PN + "! Para começar, defina a sua palavra-passe.",
                 "مرحبًا بك في " + PN + "! للبدء، عيّن كلمة المرور.",
+                "Welkom bij " + PN + "! Stel om te beginnen uw wachtwoord in.",
             ),
-            "username": ("Username", "Nombre de usuario", "Nom d’utilisateur", "Nome utente", "Benutzername", "Nome de utilizador", "اسم المستخدم"),
-            "setPassword": ("Set my password", "Establecer mi contraseña", "Définir mon mot de passe", "Imposta la mia password", "Kennwort festlegen", "Definir a minha palavra-passe", "تعيين كلمة المرور"),
+            "username": ("Username", "Nombre de usuario", "Nom d’utilisateur", "Nome utente", "Benutzername", "Nome de utilizador", "اسم المستخدم", "Gebruikersnaam"),
+            "setPassword": ("Set my password", "Establecer mi contraseña", "Définir mon mot de passe", "Imposta la mia password", "Kennwort festlegen", "Definir a minha palavra-passe", "تعيين كلمة المرور", "Mijn wachtwoord instellen"),
             "expires": (
                 "This link expires after ${expirationTime} hours.",
                 "Este enlace caduca a las ${expirationTime} horas.",
@@ -627,8 +669,9 @@ TEMPLATES = [
                 "Dieser Link läuft nach ${expirationTime} Stunden ab.",
                 "Esta ligação expira ao fim de ${expirationTime} horas.",
                 "تنتهي صلاحية هذا الرابط بعد ${expirationTime} ساعة.",
+                "Deze koppeling verloopt na ${expirationTime} uur.",
             ),
-            "closing": ("Welcome aboard,", "Te damos la bienvenida,", "Bienvenue parmi nous,", "Ti diamo il benvenuto,", "Herzlich willkommen und viele Grüße", "Seja bem-vindo(a),", "مرحبًا بك معنا،"),
+            "closing": ("Welcome aboard,", "Te damos la bienvenida,", "Bienvenue parmi nous,", "Ti diamo il benvenuto,", "Herzlich willkommen und viele Grüße", "Seja bem-vindo(a),", "مرحبًا بك معنا،", "Welkom aan boord,"),
         },
         content=f"""
 {p("$tx_intro")}
@@ -649,6 +692,7 @@ TEMPLATES = [
             "Lebenszyklusstatus von ${identityName} geändert",
             "Alteração do estado do ciclo de vida de ${identityName}",
             "تغيير حالة دورة الحياة لـ ${identityName}",
+            "Wijziging van de levenscyclusstatus van ${identityName}",
         ),
         strings={
             "intro": (
@@ -659,9 +703,10 @@ TEMPLATES = [
                 "Der Lebenszyklusstatus von <strong>${identityName}</strong> hat sich geändert.",
                 "O estado do ciclo de vida de <strong>${identityName}</strong> foi alterado.",
                 "تغيّرت حالة دورة الحياة لـ <strong>${identityName}</strong>.",
+                "De levenscyclusstatus van <strong>${identityName}</strong> is gewijzigd.",
             ),
-            "identity": ("Identity", "Identidad", "Identité", "Identità", "Identität", "Identidade", "الهوية"),
-            "newState": ("New state", "Nuevo estado", "Nouvel état", "Nuovo stato", "Neuer Status", "Novo estado", "الحالة الجديدة"),
+            "identity": ("Identity", "Identidad", "Identité", "Identità", "Identität", "Identidade", "الهوية", "Identiteit"),
+            "newState": ("New state", "Nuevo estado", "Nouvel état", "Nuovo stato", "Neuer Status", "Novo estado", "الحالة الجديدة", "Nieuwe status"),
         },
         content=f"""
 {p("$tx_intro")}

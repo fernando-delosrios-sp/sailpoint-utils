@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Branded, language-aware replacements for all 116 Identity Security Cloud (ISC) email templates. Every email gets a banner with the tenant owner's name in SailPoint colours (or your own) and a footer in the recipient's language. End-user emails are also rewritten and translated into English, Spanish, French, Italian, German, Portuguese and Arabic.
+Branded, language-aware replacements for all 116 Identity Security Cloud (ISC) email templates. Every email gets a banner with the tenant owner's name in SailPoint colours (or your own) and a footer in the recipient's language. End-user emails are also rewritten and translated into English, Spanish, French, Italian, German, Portuguese, Arabic and Dutch.
 
 The default tenant owner is **EMEA TES Team**; the install script sets your own.
 
@@ -10,7 +10,7 @@ The default tenant owner is **EMEA TES Team**; the install script sets your own.
 
 | Kind | Count | Body | Subject |
 |---|---|---|---|
-| Rewritten | 59 | New wording in 7 languages | Improved English (User Invitation: 7 languages) |
+| Rewritten | 59 | New wording in 8 languages | Improved English (User Invitation: 8 languages) |
 | Wrapped | 57 | SailPoint's original English wording inside the branded layout | SailPoint's original |
 
 Rewritten templates cover what end users receive: password and account notices, access requests and removals, approvals, certifications, work items, Just-In-Time access, account requests and separation-of-duties conflicts. Wrapped templates are admin and operations alerts, such as virtual appliance health and source errors.
@@ -21,7 +21,7 @@ Every template body starts with a settings block. The install script fills it in
 
 ```velocity
 #* Email settings: edit the values between quotes. Import-EmailTemplates.ps1 sets them on import. *#
-#set($mailDefaultLanguage = 'en') #* language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar) *#
+#set($mailDefaultLanguage = 'en') #* language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar, nl) *#
 #set($mailOrgName = 'EMEA TES Team') #* tenant owner or team name in the banner, sign-off and footer *#
 #set($mailBannerTagline = 'Identity & Access') #* small text above the tenant owner name in the banner *#
 #set($mailColorPrimary = '#0033A1') #* banner, headings and buttons *#
@@ -38,7 +38,7 @@ The tenant owner name also replaces "The SailPoint Team" sign-off in the wrapped
 Each email picks its language when it is sent:
 
 1. It reads the recipient's `preferredLanguage` identity attribute and uses the first two letters, so `es`, `es-ES` and `es_ES` all mean Spanish.
-2. If the attribute is missing, or the language is not one of `en`, `es`, `fr`, `it`, `de`, `pt`, `ar`, the email uses `$mailDefaultLanguage`. An unsupported value or a deleted line falls back to English.
+2. If the attribute is missing, or the language is not one of `en`, `es`, `fr`, `it`, `de`, `pt`, `ar`, `nl`, the email uses `$mailDefaultLanguage`. An unsupported value or a deleted line falls back to English.
 
 Arabic emails are laid out right to left: text, labels and bullets align right, accent bars move to the right edge and button arrows point left. Wrapped templates keep their English body left to right; only their footer follows the recipient's language.
 
@@ -240,7 +240,7 @@ Notes:
 
 - **The input must be a country name** as written in the table (`Spain`, `United Kingdom`). Other values return the default `en`. If the source holds an office or city, chain a location-to-country lookup first: in `emea-tes-team`, the Identity Fusion NG profile uses `Location to Country Map` as the input of this transform. If the source holds ISO country codes, add those codes as keys.
 - **Countries map to their main language.** Multilingual countries get one language: Belgium `nl`, Switzerland `de`, Canada `en`. Edit the table if your users there should get another.
-- **Languages without a translation** (for example `nl`, `zh`, `ja`) are kept as the identity's preference; the emails use `$mailDefaultLanguage` for them.
+- **Languages without a translation** (for example `zh` and `ja`) are kept as the identity's preference; the emails use `$mailDefaultLanguage` for them. Dutch (`nl`) is translated, so Belgium and the Netherlands receive Dutch emails.
 - In `emea-tes-team`, the OrangeHRM profile maps `preferredLanguage` with this transform from the account's `location`.
 
 ## Limitations
@@ -285,4 +285,4 @@ python3 push_templates.py --env my-tenant --verify-only --batch all
 - Velocity double-quoted `#set` strings cannot contain `"` or `#`. Settings use single-quoted strings, which are not interpolated.
 - ISC strips every line break when it updates a custom template created before the import, so a `##` line comment would hide the rest of the body and send a blank email. Comments are `#* … *#` blocks, and the build renders every body without line breaks and fails if the output changes.
 
-Every translated string in a catalog is a tuple in the order `en, es, fr, it, de, pt, ar`. To add a language, append it to `LANGUAGES` in `build_templates.py` (and to `RTL_LANGUAGES` if it is written right to left), then add a translation to every tuple; the build fails until all are present. To add a setting, append it to `SETTINGS` in `build_templates.py` and map its parameter in `$Settings` in `Import-EmailTemplates.ps1`.
+Every translated string in a catalog is a tuple in the order `en, es, fr, it, de, pt, ar, nl`. To add a language, append it to `LANGUAGES` in `build_templates.py` (and to `RTL_LANGUAGES` if it is written right to left), then add a translation to every tuple; the build fails until all are present. To add a setting, append it to `SETTINGS` in `build_templates.py` and map its parameter in `$Settings` in `Import-EmailTemplates.ps1`.

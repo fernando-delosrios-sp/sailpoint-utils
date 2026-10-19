@@ -6,13 +6,14 @@
     "it",
     "de",
     "pt",
-    "ar"
+    "ar",
+    "nl"
   ],
   "settings": [
     {
       "variable": "mailDefaultLanguage",
       "default": "en",
-      "description": "language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar)"
+      "description": "language when preferredLanguage is missing or unsupported (en, es, fr, it, de, pt, ar, nl)"
     },
     {
       "variable": "mailOrgName",
