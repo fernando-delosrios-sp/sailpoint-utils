@@ -14,7 +14,11 @@ function changeRow(entry) {
   if (e.kind === 'change') {
     const decision = (e.decisions ?? []).map((d) => d.decision).join(', ') || '—';
     const tag = e.tag ? `\`${e.tag}\`` : '—';
-    return `| change | [#${e.pr}](${e.url ?? '#'}) | @${e.author ?? '—'} | ${decision} | ${tag} | ${fmtTs(e.timestamp)} |`;
+    const pr = Number(e.pr);
+    const ref = pr > 0 ? (e.url ? `[#${pr}](${e.url})` : `#${pr}`) : '—';
+    const author = String(e.author ?? '').trim();
+    const who = author && author !== '—' ? `@${author}` : '—';
+    return `| change | ${ref} | ${who} | ${decision} | ${tag} | ${fmtTs(e.timestamp)} |`;
   }
   if (e.kind === 'restore') {
     const decision = e.decision?.decision ?? '—';

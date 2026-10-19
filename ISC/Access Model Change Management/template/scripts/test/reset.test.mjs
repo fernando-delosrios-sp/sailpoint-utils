@@ -85,6 +85,35 @@ describe('readme init row', () => {
     assert.match(text, /Actions → Init/);
     assert.match(text, /Type `RESET`/);
   });
+
+  it('does not render a missing pull request as #0 or a blank author as @', () => {
+    const out = join(mkdtempSync(join(tmpdir(), 'amcm-readme-')), 'README.md');
+    generateReadme({
+      config: {
+        tenant: { name: 'demo', apiUrl: 'https://example.test', uiUrl: '' },
+        entitlementSources: [],
+        approval: { governanceGroupName: 'Gov' },
+        backup: { schedule: '0 2 * * *' },
+      },
+      entries: [{
+        entry: {
+          kind: 'change',
+          pr: 0,
+          author: '',
+          url: '',
+          decisions: [{ decision: 'approved' }],
+          tag: 'known-good/20261019T115222Z',
+          timestamp: '2026-10-19T11:52:24.203Z',
+        },
+      }],
+      tags: [],
+      outPath: out,
+    });
+    const text = readFileSync(out, 'utf8');
+    assert.match(text, /\| change \| — \| — \| approved \|/);
+    assert.doesNotMatch(text, /#0/);
+    assert.doesNotMatch(text, /\| @ \|/);
+  });
 });
 
 describe('init workflow contract', () => {
@@ -103,7 +132,11 @@ describe('init workflow contract', () => {
     const apply = readFileSync(join(templateRoot, '.github/workflows/apply.yml'), 'utf8');
     const readme = readFileSync(join(templateRoot, '.github/workflows/readme.yml'), 'utf8');
     assert.match(apply, /chore\(init\):/);
+    assert.match(apply, /chore\(restore\):/);
+    assert.match(apply, /chore\(backup\):/);
+    assert.match(apply, /chore\(apply\):/);
     assert.match(apply, /HEAD~1/);
+    assert.doesNotMatch(apply, /\$\{PR_NUM:-0\}/);
     assert.match(readme, /chore\(init\):/);
     assert.match(readme, /fetch-tags: true/);
   });

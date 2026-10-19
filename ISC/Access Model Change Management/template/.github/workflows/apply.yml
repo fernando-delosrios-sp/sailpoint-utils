@@ -29,9 +29,10 @@ permissions:
 
 jobs:
   apply:
-    # Init's root commit is already a snapshot of live ISC. Applying it would
-    # try to create every object that already exists.
-    if: ${{ !contains(github.event.head_commit.message, 'chore(init):') }}
+    # These commits already reflect ISC, or are this workflow's own follow-up.
+    # Applying them again records a change that has no pull request: the
+    # history row comes out as ref #0 and a blank author.
+    if: ${{ !contains(github.event.head_commit.message, 'chore(init):') && !contains(github.event.head_commit.message, 'chore(restore):') && !contains(github.event.head_commit.message, 'chore(backup):') && !contains(github.event.head_commit.message, 'chore(apply):') }}
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub App token
@@ -186,11 +187,18 @@ jobs:
         run: |
           PR_NUM=${{ steps.pr.outputs.number }}
           TAG=${{ steps.tag.outputs.tag }}
+          # An empty /tmp/pr.json makes jq exit 0 with no output, so `|| echo`
+          # never runs and the ledger is stored with a blank author and title.
+          AUTHOR=$(jq -r '.author.login // .author // empty' /tmp/pr.json 2>/dev/null || true)
+          TITLE=$(jq -r '.title // empty' /tmp/pr.json 2>/dev/null || true)
+          URL=$(jq -r '.url // empty' /tmp/pr.json 2>/dev/null || true)
+          [ -n "$AUTHOR" ] || AUTHOR=unknown
+          [ -n "$TITLE" ] || TITLE=apply
           jq -n \
-            --argjson pr "${PR_NUM:-0}" \
-            --arg author "$(jq -r '.author.login // .author // "unknown"' /tmp/pr.json 2>/dev/null || echo unknown)" \
-            --arg title "$(jq -r '.title // "apply"' /tmp/pr.json 2>/dev/null || echo apply)" \
-            --arg url "$(jq -r '.url // ""' /tmp/pr.json 2>/dev/null || echo "")" \
+            --argjson pr "${PR_NUM:-null}" \
+            --arg author "$AUTHOR" \
+            --arg title "$TITLE" \
+            --arg url "$URL" \
             --arg tag "$TAG" \
             --slurpfile apply /tmp/apply.json \
             '{
