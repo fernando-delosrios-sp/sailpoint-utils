@@ -364,9 +364,13 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
-          gh issue create \
+          # This is a final report, not an open question — nothing further
+          # happens on it, so close it immediately instead of leaving it for
+          # someone to notice and close by hand.
+          STALE_URL=$(gh issue create \
             --title "Drift approval stale $(date -u +%Y-%m-%d)" \
-            --body "Governance approved syncing drift hash \`$(jq -r .driftHash /tmp/drift-decision.json)\`, but ISC changed again before this ran (now \`$(jq -r .driftHash /tmp/drift-now.json)\`). Nothing was synced to \`main\`. The next scheduled backup will detect the current drift and request approval again."
+            --body "Governance approved syncing drift hash \`$(jq -r .driftHash /tmp/drift-decision.json)\`, but ISC changed again before this ran (now \`$(jq -r .driftHash /tmp/drift-now.json)\`). Nothing was synced to \`main\`. The next scheduled backup will detect the current drift and request approval again.")
+          gh issue close "$STALE_URL" --reason "not planned"
 
       - name: Rejected — put ISC back to match git
         if: steps.verify.outputs.decision == 'rejected'
@@ -388,7 +392,9 @@ jobs:
 
           COMMENT=$(jq -r '.comment // empty' /tmp/drift-decision.json)
           if [ "$OK" = "true" ]; then
-            jq -n --arg comment "$COMMENT" --slurpfile r /tmp/restore.json '
+            # -r: without it jq prints the JSON-quoted string itself (literal
+            # \n and surrounding quotes) instead of the markdown it holds.
+            jq -rn --arg comment "$COMMENT" --slurpfile r /tmp/restore.json '
               def names:
                 if length == 0 then "_none_"
                 else
@@ -405,7 +411,7 @@ jobs:
             ' > /tmp/drift-issue.md
             TITLE="Drift rejected — ISC restored $(date -u +%Y-%m-%d)"
           else
-            jq -n --arg comment "$COMMENT" --slurpfile r /tmp/restore.json '
+            jq -rn --arg comment "$COMMENT" --slurpfile r /tmp/restore.json '
               "## Drift rejected — restore of ISC failed\n\n"
               + (if $comment != "" then "Comment: " + $comment + "\n\n" else "" end)
               + "Governance rejected the drift, but putting ISC back to match git stopped before it finished. ISC may be only partly restored.\n\n"
@@ -414,6 +420,12 @@ jobs:
             TITLE="Drift rejected — ISC restore failed $(date -u +%Y-%m-%d)"
           fi
           ISSUE_URL=$(gh issue create --title "$TITLE" --body-file /tmp/drift-issue.md)
+          # A successful restore is a final report — nothing further happens
+          # on it. A failed one needs a human to look at a partly-restored
+          # ISC, so leave that case open like the other failure issues.
+          if [ "$OK" = "true" ]; then
+            gh issue close "$ISSUE_URL" --reason completed
+          fi
 
           git config user.name "amcm-bot"
           git config user.email "amcm-bot[bot]@users.noreply.github.com"
@@ -458,6 +470,9 @@ jobs:
             + "The next scheduled backup will detect this drift again and request approval."
           ' /tmp/drift-now.json > /tmp/drift-issue.md
           ISSUE_URL=$(gh issue create --title "Drift expired $(date -u +%Y-%m-%d)" --body-file /tmp/drift-issue.md)
+          # Final report, nothing further happens on it — the next backup
+          # files a fresh issue if the drift is still there.
+          gh issue close "$ISSUE_URL" --reason "not planned"
 
           git config user.name "amcm-bot"
           git config user.email "amcm-bot[bot]@users.noreply.github.com"

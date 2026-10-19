@@ -85,3 +85,43 @@ describe('backup workflow contract', () => {
     assert.match(yaml, /gh issue list --state open --label amcm-drift/);
   });
 });
+
+describe('drift-decision report issues', () => {
+  const yaml = readFileSync(
+    new URL('../../.github/workflows/approval-callback.yml', import.meta.url),
+    'utf8',
+  );
+
+  it('closes every final drift report immediately instead of leaving it for a human', () => {
+    // Stale, expired, and a successful rejected-restore are final reports —
+    // nothing further happens on them. A failed restore still needs someone
+    // to look at a partly-restored ISC, so that one stays open.
+    const rejectedStart = yaml.indexOf('Rejected — put ISC back to match git');
+    const expiredStart = yaml.indexOf('Expired — record decision');
+    const closeStart = yaml.indexOf('Close the drift issue this decision answers');
+    assert.ok(rejectedStart > -1 && expiredStart > -1 && closeStart > -1);
+    assert.match(
+      yaml.slice(yaml.indexOf('Approved but stale'), rejectedStart),
+      /gh issue close "\$STALE_URL"/,
+    );
+    assert.match(
+      yaml.slice(rejectedStart, expiredStart),
+      /gh issue close "\$ISSUE_URL" --reason completed/,
+    );
+    assert.match(
+      yaml.slice(expiredStart, closeStart),
+      /gh issue close "\$ISSUE_URL" --reason "not planned"/,
+    );
+  });
+
+  it('renders the rejected-restore report as markdown, not a JSON-quoted string', () => {
+    // jq -n without -r prints the JSON string literal (quotes and \n kept
+    // escaped) instead of the markdown it holds.
+    const section = yaml.slice(
+      yaml.indexOf('Rejected — put ISC back to match git'),
+      yaml.indexOf('Expired — record decision'),
+    );
+    assert.doesNotMatch(section, /\bjq -n --arg comment/);
+    assert.match(section, /jq -rn --arg comment/g);
+  });
+});
