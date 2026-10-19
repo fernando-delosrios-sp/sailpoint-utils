@@ -269,6 +269,103 @@ export function applyMainRuleset(repo, { appSlug, requiredChecks }) {
   }
 }
 
+/**
+ * Read one file's contents from a repo via the Contents API, without a
+ * clone. `update` mode uses this to recover the deployed repo's own
+ * `config.yaml` (tenant URLs, governance group, owner/repo) so it can
+ * refill the same `{{PLACEHOLDER}}` tokens in `.github/workflows/*.yml`
+ * that `materializeTemplate` filled in at install time, without asking the
+ * operator to retype anything already sitting in the target repo.
+ */
+export function fetchRepoFile(repo, path) {
+  const body = gh(['api', `repos/${repo}/contents/${path}`], { json: true });
+  if (body.encoding !== 'base64') {
+    throw new Error(`Unexpected encoding "${body.encoding}" for ${repo}/${path}`);
+  }
+  return Buffer.from(body.content, 'base64').toString('utf8');
+}
+
+/** Like `fetchRepoFile`, but returns null instead of throwing when the file (or repo) doesn't exist. */
+export function fetchRepoFileMaybe(repo, path) {
+  try {
+    return fetchRepoFile(repo, path);
+  } catch (err) {
+    if (/HTTP 404|Not Found/i.test(err.message || '')) return null;
+    throw err;
+  }
+}
+
+/**
+ * Overlay only `managedPaths` from `sourceDir` onto a fresh clone of `repo`
+ * and push that single commit to `branch`, authenticated as `token` rather
+ * than the operator's own `gh` session.
+ *
+ * This is `update`'s push, not fresh install's: a deployed repo's data —
+ * `access/`, `changes/`, the generated `README.md`, `config.yaml` — lives
+ * outside `managedPaths` and is never cloned over, let alone deleted. Each
+ * managed path is still rsync'd with `--delete`, so a file a fix removes
+ * from the template (e.g. a renamed script) is removed from the repo too,
+ * just without touching anything the operator or the bot wrote at runtime.
+ *
+ * `token` must be a GitHub App installation token when `amcm-main-protection`
+ * is active on `repo` — that ruleset's only bypass actor is the App, so a
+ * push authenticated as the operator's own `gh` login is rejected the same
+ * way a direct human push to `main` always is on an installed repo.
+ */
+export function pushManagedSubset({
+  repo,
+  branch = 'main',
+  sourceDir,
+  managedPaths,
+  message,
+  token,
+  // Overridable only so tests can point this at a local bare repo instead
+  // of github.com; real callers never pass this.
+  cloneUrl = `https://x-access-token:${token}@github.com/${repo}.git`,
+}) {
+  const tmp = execFileSync('mktemp', ['-d'], { encoding: 'utf8' }).trim();
+  try {
+    // The token goes in the URL, not argv or an env var dumped to a log, so
+    // it never shows up in a `ps` listing or an inherited-stdio transcript.
+    execFileSync('git', ['clone', '--depth', '1', '--branch', branch, cloneUrl, tmp], {
+      stdio: ['ignore', 'ignore', 'pipe'],
+    });
+    const copySteps = managedPaths.map((rel) => `
+      REL=${JSON.stringify(rel)}
+      SRC="$SRC_ROOT/$REL"
+      DST="$DST_ROOT/$REL"
+      rm -rf "$DST"
+      if [ -e "$SRC" ]; then
+        mkdir -p "$(dirname "$DST")"
+        if [ -d "$SRC" ]; then
+          mkdir -p "$DST"
+          rsync -a --delete "$SRC"/ "$DST"/
+        else
+          cp "$SRC" "$DST"
+        fi
+      fi
+    `).join('\n');
+    execFileSync('bash', ['-lc', `
+      set -euo pipefail
+      export SRC_ROOT=${JSON.stringify(sourceDir)}
+      export DST_ROOT=${JSON.stringify(tmp)}
+      ${copySteps}
+      cd "$DST_ROOT"
+      git config user.name "amcm-installer"
+      git config user.email "amcm-installer@local"
+      git add -A -- ${managedPaths.map((p) => JSON.stringify(p)).join(' ')}
+      if git diff --cached --quiet; then
+        echo "No managed-path changes to push"
+      else
+        git commit -m ${JSON.stringify(message)}
+        git push origin ${branch}
+      fi
+    `], { stdio: 'inherit' });
+  } finally {
+    execFileSync('rm', ['-rf', tmp]);
+  }
+}
+
 export function pushDirectory({ repo, branch = 'main', sourceDir, message }) {
   // Use a temp clone approach via gh and git
   const tmp = execFileSync('mktemp', ['-d'], { encoding: 'utf8' }).trim();

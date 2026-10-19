@@ -45,7 +45,24 @@ The CLI will:
 7. Apply a `main` ruleset (PR-only + required `validate` and `isc-approval` checks). On a free GitHub plan this is skipped for private repositories, and the install continues.  
 8. Dispatch the first backup  
 
-Re-running is safe: the existing repo and workflow are updated in place.
+Re-running `install-tenant` is safe against a repo that doesn't have a provisioned `config.yaml` yet (e.g. you created an empty repo by hand and pointed install at it) — the ISC workflow and secrets are updated in place. It refuses to run against a repo that is **already provisioned** (real `config.yaml` present), because its template push is a wholesale overwrite that would replace that repo's live `access/`, `changes/`, and generated `README.md` with empty placeholders. For that case, see **Updating a deployed repo** below.
+
+### Updating a deployed repo
+
+To push a `template/` fix (a workflow, a script, a schema) into a repo that's already deployed and has live access data, use `update` instead of re-running install:
+
+```bash
+node installer/cli.mjs update --repo YOUR_GITHUB_OWNER/YOUR_GITHUB_REPO
+```
+
+It asks only for the GitHub App ID and the path to its private key — not the full tenant/governance Q&A — reads the deployed repo's own `config.yaml` to refill the `{{PLACEHOLDER}}` values baked into the workflow files, mints a short-lived installation token for that App (so the push lands even with the `main` ruleset active, the same way the repo's own workflows push), and overwrites only:
+
+- `.github/workflows/`
+- `scripts/`
+- `schemas/`
+- `package.json`, `package-lock.json`
+
+It never touches `access/`, `changes/`, `README.md`, `config.yaml`, or `.env.example` — the repo's live data and already-correct deployment config. Run `node installer/cli.mjs update --help` for all options.
 
 ### Dispatch PAT (ISC → GitHub)
 

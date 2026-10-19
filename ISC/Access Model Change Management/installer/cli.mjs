@@ -20,12 +20,30 @@ import {
   enableAutoMerge,
   ensureGhAuth,
   ensureWorkflowsRegistered,
+  fetchRepoFile,
+  fetchRepoFileMaybe,
   gh,
   ghOk,
   pushDirectory,
+  pushManagedSubset,
   setSecret,
 } from './gh.mjs';
+import { mintInstallationToken } from './github-app.mjs';
 import { buildConfig, materializeTemplate } from './render.mjs';
+import yaml from 'js-yaml';
+
+// Paths `update` is allowed to touch in an already-deployed repo. Everything
+// else — access/, changes/, README.md, config.yaml, .env.example — is the
+// repo's own runtime data or already-correct deployment config and must
+// never be clobbered by a code update. Keep this in sync with what
+// materializeTemplate actually writes under template/.
+const UPDATE_MANAGED_PATHS = [
+  '.github/workflows',
+  'scripts',
+  'schemas',
+  'package.json',
+  'package-lock.json',
+];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -484,14 +502,128 @@ async function provisionIsc(answers) {
   return { approvalWf, approvalTrigger };
 }
 
+/**
+ * Push code fixes (workflows, scripts, schemas, package files) from
+ * template/ into an already-deployed repo, authenticated as the GitHub
+ * App rather than the operator — the only credential the repo's own
+ * `amcm-main-protection` ruleset lets write straight to `main`.
+ *
+ * Deliberately does none of install's tenant/governance/source Q&A: the
+ * deployed repo's `config.yaml` already has that, and `update` must not
+ * require — or risk — re-answering it. It only reads config.yaml back to
+ * refill the same `{{PLACEHOLDER}}` tokens install baked into the
+ * workflow files, so the pushed workflows still point at the right
+ * tenant and repo.
+ */
+async function cmdUpdate(prompt, argv) {
+  const ghOwner = argv['gh-owner'] || (argv.repo || '').split('/')[0];
+  const ghRepo = argv['gh-repo'] || (argv.repo || '').split('/')[1];
+  if (!ghOwner || !ghRepo) {
+    throw new Error('update requires --repo OWNER/REPO (or --gh-owner and --gh-repo)');
+  }
+  const repoFull = `${ghOwner}/${ghRepo}`;
+
+  log(`Checking ${repoFull}…`);
+  if (!ghOk(['repo', 'view', repoFull])) {
+    throw new Error(`${repoFull} was not found, or this login cannot see it. Run \`gh auth status\` and check the name.`);
+  }
+
+  log('Reading the deployed config.yaml (tenant, governance group, owner/repo)…');
+  const existingConfig = yaml.load(fetchRepoFile(repoFull, 'config.yaml'));
+  if (!existingConfig?.tenant?.apiUrl) {
+    throw new Error(`${repoFull}/config.yaml did not parse into the expected shape. Is this an AMCM repo installed by this tool?`);
+  }
+
+  const appId = argv['app-id'] || await prompt.ask('GitHub App ID (the one already installed on this repo)');
+  const keyPath = normalizeFsPath(
+    argv['app-private-key'] || await prompt.ask('Path to the App private key .pem file'),
+  );
+  if (!existsSync(keyPath)) {
+    throw new Error(`Private key not found: ${keyPath}`);
+  }
+  const privateKeyPem = readFileSync(keyPath, 'utf8');
+
+  const staging = mkdtempSync(join(tmpdir(), 'amcm-update-'));
+  try {
+    materializeTemplate({
+      templateDir: TEMPLATE,
+      destDir: staging,
+      config: existingConfig,
+      replacements: {
+        '{{TENANT_NAME}}': existingConfig.tenant.name,
+        '{{TENANT_API_URL}}': existingConfig.tenant.apiUrl,
+        '{{TENANT_UI_URL}}': existingConfig.tenant.uiUrl,
+        '{{GOVERNANCE_GROUP_ID}}': existingConfig.approval.governanceGroupId,
+        '{{GOVERNANCE_GROUP_NAME}}': existingConfig.approval.governanceGroupName,
+        '{{GITHUB_OWNER}}': existingConfig.github.owner,
+        '{{GITHUB_REPO}}': existingConfig.github.repo,
+      },
+    });
+
+    log(`
+About to push the managed subset of template/ to ${repoFull}@main:
+${UPDATE_MANAGED_PATHS.map((p) => `  - ${p}`).join('\n')}
+
+Not touched: access/, changes/, README.md, config.yaml, .env.example.
+`);
+    if (!argv.yes) {
+      const choice = await prompt.choose('Proceed?', [
+        { id: 'yes', label: 'Yes, push the update' },
+        { id: 'no', label: 'No, abort' },
+      ]);
+      if (choice.id !== 'yes') {
+        log('Aborted — nothing was pushed.');
+        return;
+      }
+    }
+
+    log('Minting a GitHub App installation token…');
+    const { token } = await mintInstallationToken({
+      appId, privateKeyPem, owner: ghOwner, repo: ghRepo,
+    });
+
+    log('Pushing update…');
+    pushManagedSubset({
+      repo: repoFull,
+      sourceDir: staging,
+      managedPaths: UPDATE_MANAGED_PATHS,
+      message: argv.message || 'fix(amcm): update deployed template',
+      token,
+    });
+
+    log(`\nDone. https://github.com/${repoFull}/commits/main`);
+  } finally {
+    rmSync(staging, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   const argv = minimist(process.argv.slice(2), {
-    boolean: ['yes', 'help', 'skip-app', 'skip-backup'],
+    boolean: ['yes', 'help', 'skip-app', 'skip-backup', 'force-reinstall-data'],
   });
-  if (argv.help) {
-    log(`Usage: node installer/cli.mjs [options]
+  const command = argv._[0] || 'install';
+
+  if (argv.help && command === 'update') {
+    log(`Usage: node installer/cli.mjs update --repo OWNER/REPO [options]
+
+Pushes template/ fixes (workflows, scripts, schemas, package files) into an
+already-deployed repo, without touching access/, changes/, README.md, or
+config.yaml. Leaves the ISC tenant and secrets exactly as they are.
 
 Options:
+  --repo OWNER/REPO     Target repo (or --gh-owner / --gh-repo separately)
+  --app-id ID           GitHub App ID already installed on the repo
+  --app-private-key PEM Path to that App's private key
+  --message MSG         Commit message (default: "fix(amcm): update deployed template")
+  --yes                 Skip the confirmation prompt
+`);
+    process.exit(0);
+  }
+  if (argv.help) {
+    log(`Usage: node installer/cli.mjs [install] [options]
+       node installer/cli.mjs update --repo OWNER/REPO [options]
+
+install options:
   --tenant-url URL     ISC tenant (UI) URL
   --api-url URL        ISC API base (default: derived from tenant URL)
   --tenant-name NAME
@@ -503,8 +635,27 @@ Options:
   --schedule CRON
   --skip-app
   --skip-backup
+  --force-reinstall-data  Allow overwriting an already-provisioned repo's
+                           access/, changes/, and README.md (destructive)
+
+Run \`node installer/cli.mjs update --help\` for the update command.
 `);
     process.exit(0);
+  }
+
+  if (command === 'update') {
+    banner();
+    ensureGhAuth();
+    const prompt = await createPrompter();
+    try {
+      await cmdUpdate(prompt, argv);
+    } finally {
+      prompt.close();
+    }
+    return;
+  }
+  if (command !== 'install') {
+    throw new Error(`Unknown command "${command}". Expected "install" or "update".`);
   }
 
   banner();
@@ -524,6 +675,31 @@ Options:
     answers.ghOwner = ensured.ghOwner;
     answers.ghRepo = ensured.ghRepo;
     const repoFull = ensured.full;
+
+    if (!ensured.created && !argv['force-reinstall-data']) {
+      // ensureRepository found this repo already existing. If it is already
+      // a provisioned AMCM repo (has a real config.yaml), the push below —
+      // a wholesale rsync --delete of a freshly materialized template, whose
+      // access/, changes/, and README.md are empty placeholders — would
+      // destroy its live access data and change ledger. Re-running install
+      // against a repo that was merely created-but-empty (the "existing
+      // repository" recovery path in ensureRepository) is still fine.
+      const existing = fetchRepoFileMaybe(repoFull, 'config.yaml');
+      let alreadyProvisioned = false;
+      try {
+        alreadyProvisioned = !!yaml.load(existing || '')?.tenant?.apiUrl;
+      } catch {
+        alreadyProvisioned = false;
+      }
+      if (alreadyProvisioned) {
+        throw new Error(
+          `${repoFull} is already a provisioned Access Model Change Management repo.\n`
+          + 'Install does not touch it to avoid overwriting access/, changes/, and README.md with empty placeholders.\n'
+          + `To push code fixes to it instead, run:\n  node installer/cli.mjs update --repo ${repoFull}\n`
+          + 'To force a full data-destroying reinstall anyway, re-run with --force-reinstall-data.',
+        );
+      }
+    }
 
     const config = buildConfig({
       tenantName: answers.tenantName,

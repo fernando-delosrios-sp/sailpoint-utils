@@ -4,6 +4,24 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-10-19
+
+### ✨ New Features
+
+- **Access Model Change Management — installer `update` command** — `node installer/cli.mjs update --repo OWNER/REPO` pushes `.github/workflows`, `scripts`, `schemas`, and the package files from `template/` into an already-deployed repo, authenticated as the repo's own GitHub App installation token (minted locally via `installer/github-app.mjs`, no new dependency) so the push lands even with the `amcm-main-protection` ruleset active. It never touches `access/`, `changes/`, `README.md`, or `config.yaml` — the previous path (`pushDirectory`, a wholesale `rsync --delete` of a freshly materialized template) would have wiped a deployed repo's live access data and ledger. `update` re-derives the `{{PLACEHOLDER}}` values baked into the workflow files from the deployed repo's own `config.yaml`, so it needs only the GitHub App ID and private key, not a repeat of the full tenant/governance Q&A.
+
+### 🐛 Fixes
+
+End-to-end testing of a deployed Access Model Change Management repo (every change/drift/restore × approve/reject/expire combination) surfaced six defects, all fixed in `template/`:
+
+- **fix(amcm): mint a GitHub App token to merge approved change PRs** — `approval-callback.yml`'s `change-decision` job merged with the default `GITHUB_TOKEN`, whose commits never fire `push`-triggered workflows (a GitHub platform restriction, not a bug in this repo's workflow logic) — so `apply.yml` never ran after a merge and the item never reached ISC. Mints the same App token `restore-decision`/`drift-decision` already use before merging.
+- **fix(amcm): stop interpolating the rejection comment into the shell script** — the rejection comment was spliced into the `run:` script source via `${{ }}` before bash ever saw it; a comment containing spaces or shell metacharacters broke the step. Moved it into `env:` and referenced it as `"$COMMENT"`.
+- **fix(amcm): create the `approval-expired` label before using it** — the expired-approval step called `gh pr edit --add-label approval-expired` against a label that was never created, failing the step before it could comment on the PR. Creates the label (idempotently) first.
+- **fix(amcm): check out the PR's head commit, not `main`, when re-requesting approval** — `request-approval.yml`'s manual re-trigger checked out the default branch instead of the PR's own ref, so the diff/plan it built was always empty. Resolves the PR's head SHA before checkout, writing it to `/tmp/pr.json` so `actions/checkout`'s default `git clean -ffdx` doesn't delete it.
+- **fix(amcm): bind the drift approval hash to content, not just the file list** — `driftHash` hashed the set of changed paths, not what changed. Approving a drifted item and then editing it again before the decision landed left the hash — and therefore the staleness guard — unchanged, so the second, unapproved edit would have been copied into git as if it were the first. `driftContentHash` now hashes each path's `semanticBody`, matching how change-plan hashing already works.
+- **fix(amcm): render restore plan summaries as text, not `[object Object]`** — the restore approval request string-concatenated the `{ create, update, delete, skip }` summary object directly, so every restore approval showed the literal text `[object Object]` instead of counts. Renders `"N create, N update, N delete, N skip"`.
+- **fix(amcm): retry a network-level fetch failure, not just an HTTP error status** — `IscClient`'s retry loop only retried responses that reached an HTTP status code; a thrown `fetch` rejection (seen live as `TypeError: fetch failed` mid-restore) skipped the retry loop and failed the step outright. Now retries thrown fetch errors the same way as 429/5xx responses, up to `maxAttempts`.
+
 ## 2026-10-14
 
 ### 🔧 Improvements
