@@ -30,7 +30,7 @@ jobs:
 
       - name: Install from main package lock
         run: |
-          git checkout main -- package.json package-lock.json scripts schemas config.yaml || true
+          git checkout origin/main -- package.json package-lock.json scripts schemas config.yaml
           node scripts/public-npm-ci.mjs
 
       - name: Build full restore plan vs live ISC
