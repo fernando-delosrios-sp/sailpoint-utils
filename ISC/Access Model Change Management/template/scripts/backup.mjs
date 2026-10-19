@@ -19,6 +19,7 @@ import { IscClient } from './isc-client.mjs';
 import { attributeDriftActors } from './drift-actors.mjs';
 import { listLedgerEntries } from './ledger.mjs';
 import { snapshotLive } from './live-snapshot.mjs';
+import { semanticBody } from './plan.mjs';
 
 /** Directories this repo owns, so stale files can be pruned after a backup. */
 function trackedRoots(config) {
@@ -148,10 +149,42 @@ export async function detectDrift({
     changed,
     deleted,
     hasDrift,
-    driftHash: contentHash({ added, changed, deleted }),
+    driftHash: driftContentHash({ added, changed, deleted, liveByPath, beforeByPath }),
     // Actors are not part of the hash. The approval callback re-detects drift
     // and compares hashes, then reads actors.modifiers into the ledger.
     actors,
     snapshot: live,
   };
+}
+
+/**
+ * Hash the drift's content, not just which paths drifted.
+ *
+ * Hashing only `{ added, changed, deleted }` paths let the same item drift
+ * twice between request and decision without moving the hash: approve the
+ * first edit, then edit it again before the decision lands, and the paths
+ * are unchanged (still exactly one "changed" file) even though the content
+ * governance is about to copy into git is not what they approved. Seen
+ * live: approve a drift showing value A, the hash stays stable after ISC is
+ * edited to value B, and the decision callback's staleness guard — which
+ * only compares this hash — syncs B into git as if it were the approved A.
+ *
+ * `added`/`changed` include the live (post-drift) semantic body, so a
+ * second edit before the decision changes the hash even though the file
+ * list doesn't. `deleted` carries no body — nothing survives for a deleted
+ * item to version — but a deletion that gets undone before the decision
+ * already moves the path out of `deleted` into `added` or `changed`, which
+ * changes the hash on its own.
+ */
+export function driftContentHash({ added, changed, deleted, liveByPath, beforeByPath }) {
+  const payload = (relPath, change) => {
+    const item = liveByPath.get(relPath) ?? beforeByPath.get(relPath);
+    const body = change === 'deleted' || !item ? null : semanticBody(item.data, item.type);
+    return { path: relPath, change, body };
+  };
+  return contentHash([
+    ...added.map((p) => payload(p, 'added')),
+    ...changed.map((p) => payload(p, 'changed')),
+    ...deleted.map((p) => payload(p, 'deleted')),
+  ]);
 }
