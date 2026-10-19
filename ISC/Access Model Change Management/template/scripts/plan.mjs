@@ -190,17 +190,3 @@ export function buildPlan({ baseItems, headItems }) {
 export function planFromTrees({ baseItems = [], headItems = loadAllItems() } = {}) {
   return buildPlan({ baseItems, headItems });
 }
-
-/**
- * Collect unique owners from actionable operations for ISC approval routing.
- */
-export function ownersFromPlan(plan) {
-  const owners = new Map();
-  for (const op of plan.operations) {
-    if (op.op === 'skip') continue;
-    const owner = op.owner;
-    if (!owner?.id) continue;
-    owners.set(owner.id, owner);
-  }
-  return [...owners.values()];
-}

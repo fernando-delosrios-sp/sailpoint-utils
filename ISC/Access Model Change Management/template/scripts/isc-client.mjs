@@ -247,10 +247,6 @@ export class IscClient {
     return this.listAll('/sources/v1');
   }
 
-  getIdentity(id) {
-    return this.get(`/identities/v1/${id}`).then((r) => r.body);
-  }
-
   listGovernanceGroups() {
     return this.listAll('/workgroups/v1');
   }

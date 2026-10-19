@@ -1,46 +1,28 @@
 name: Restore
 
+# No inputs: the restore source is whatever ref is picked in "Use workflow
+# from" — any branch or tag. The access/ tree at that ref becomes the desired
+# state for ISC; scripts, schemas and config.yaml always come from main.
+#
+# Running this from a tag created before this workflow lost its `tag` input
+# uses that tag's older definition, which still asks for the tag name.
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "known-good/* tag to restore (isc-applied/* still accepted)"
-        required: true
-        type: string
-      plan_hash:
-        description: "Expected plan hash (set by callback; leave empty on first request)"
-        required: false
-        type: string
-        default: ""
-      execute:
-        description: "Execute after approval (set by callback)"
-        required: false
-        type: boolean
-        default: false
-      decision_payload:
-        description: "JSON decision payload from ISC callback"
-        required: false
-        type: string
-        default: ""
+  workflow_dispatch: {}
 
 concurrency:
-  group: amcm-main-writers
+  group: amcm-restore-request
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  issues: write
-  actions: write
+  contents: read
 
 jobs:
   request:
-    if: ${{ inputs.execute != true && inputs.execute != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ inputs.tag }}
 
       - uses: actions/setup-node@v4
         with:
@@ -51,25 +33,13 @@ jobs:
           git checkout main -- package.json package-lock.json scripts schemas config.yaml || true
           node scripts/public-npm-ci.mjs
 
-      - name: Validate tag name
-        run: |
-          node -e "
-            import { isKnownGoodTag } from './scripts/tags.mjs';
-            if (!isKnownGoodTag(process.env.TAG)) {
-              console.error('Tag must start with known-good/ (isc-applied/ is still accepted)');
-              process.exit(1);
-            }
-          "
-        env:
-          TAG: ${{ inputs.tag }}
-
       - name: Build full restore plan vs live ISC
         env:
           ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
           ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
           ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
         run: |
-          # Working tree is the tag content under access/
+          # Working tree is the selected ref's content under access/
           node scripts/cli.mjs restore --out plan.json
           cat plan.json
           echo "PLAN_HASH=$(jq -r .planHash plan.json)" >> "$GITHUB_ENV"
@@ -84,128 +54,12 @@ jobs:
           node scripts/cli.mjs request-approval \
             --kind restore \
             --plan plan.json \
-            --tag "${{ inputs.tag }}" \
+            --ref "${{ github.ref_name }}" \
             --author "${{ github.actor }}"
 
       - name: Summary
         run: |
           echo "### Restore approval requested" >> "$GITHUB_STEP_SUMMARY"
-          echo "Tag: \`${{ inputs.tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Source: \`${{ github.ref_name }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Plan hash: \`$PLAN_HASH\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "The governance group will find this in their ISC approvals. On approval, execute starts automatically." >> "$GITHUB_STEP_SUMMARY"
-
-  execute:
-    if: ${{ inputs.execute == true || inputs.execute == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate GitHub App token
-        id: app
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.AMCM_APP_ID }}
-          private-key: ${{ secrets.AMCM_APP_PRIVATE_KEY }}
-
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ steps.app.outputs.token }}
-          fetch-depth: 0
-          ref: ${{ inputs.tag }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - run: |
-          git checkout main -- package.json package-lock.json scripts schemas config.yaml || true
-          node scripts/public-npm-ci.mjs
-
-      - name: Verify decision payload
-        env:
-          DECISION_PAYLOAD: ${{ inputs.decision_payload }}
-          EXPECTED_HASH: ${{ inputs.plan_hash }}
-          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
-          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
-          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
-        run: |
-          echo "$DECISION_PAYLOAD" > /tmp/decision.json
-          DECISION=$(jq -r '.decision' /tmp/decision.json)
-          test "$DECISION" = "approved"
-          HASH=$(jq -r '.planHash' /tmp/decision.json)
-          if [ -n "$EXPECTED_HASH" ] && [ "$HASH" != "$EXPECTED_HASH" ]; then
-            echo "Plan hash mismatch: $HASH vs $EXPECTED_HASH"
-            exit 1
-          fi
-          if EXEC=$(jq -r '.executionId // empty' /tmp/decision.json); then
-            if [ -n "$EXEC" ]; then
-              node --input-type=module -e "
-                import { IscClient } from './scripts/isc-client.mjs';
-                const c = IscClient.fromEnv();
-                const e = await c.getWorkflowExecution('$EXEC');
-                console.log(JSON.stringify({status: e.status ?? e.executionStatus}));
-              "
-            fi
-          fi
-
-      - name: Rebuild and execute restore plan
-        id: apply
-        env:
-          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
-          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
-          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
-        run: |
-          node scripts/cli.mjs restore --out plan.json
-          ACTUAL=$(jq -r .planHash plan.json)
-          EXPECTED=$(jq -r '.planHash' /tmp/decision.json)
-          if [ -n "$EXPECTED" ] && [ "$ACTUAL" != "$EXPECTED" ]; then
-            echo "Live plan hash changed since approval ($ACTUAL vs $EXPECTED). Aborting."
-            exit 1
-          fi
-          set +e
-          node scripts/cli.mjs apply --plan plan.json > /tmp/apply.json
-          set -e
-          cat /tmp/apply.json
-          OK=$(jq -r .ok /tmp/apply.json)
-          echo "ok=$OK" >> "$GITHUB_OUTPUT"
-          test "$OK" = "true"
-
-      - name: Reconcile main from ISC and ledger
-        if: steps.apply.outputs.ok == 'true'
-        env:
-          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
-          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
-          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
-          GH_TOKEN: ${{ steps.app.outputs.token }}
-        run: |
-          git fetch origin main
-          git checkout main
-          node scripts/cli.mjs backup
-          jq -n \
-            --arg requester "${{ github.actor }}" \
-            --arg tag "${{ inputs.tag }}" \
-            --arg planHash "${{ inputs.plan_hash }}" \
-            --slurpfile apply /tmp/apply.json \
-            --slurpfile decision /tmp/decision.json \
-            '{
-              requester: $requester,
-              sourceTag: $tag,
-              planHash: $planHash,
-              decision: $decision[0],
-              applyResult: $apply[0]
-            }' | node scripts/cli.mjs ledger-restore
-          node scripts/cli.mjs readme
-          git config user.name "amcm-bot"
-          git config user.email "amcm-bot[bot]@users.noreply.github.com"
-          git add access/ changes/ README.md
-          git commit -m "chore(restore): applied ${{ inputs.tag }}" || true
-          git push || true
-
-      - name: Failure issue
-        if: failure()
-        env:
-          GH_TOKEN: ${{ steps.app.outputs.token }}
-        run: |
-          BODY="Restore of \`${{ inputs.tag }}\` failed. See workflow logs."
-          if [ -f /tmp/apply.json ]; then
-            BODY=$(jq -r '"Restore stopped.\n\n```json\n" + tostring + "\n```"' /tmp/apply.json)
-          fi
-          gh issue create --title "Restore failed: ${{ inputs.tag }}" --body "$BODY" || true
+          echo "The governance group will find this in their ISC approvals. On approval, the decision callback applies it." >> "$GITHUB_STEP_SUMMARY"

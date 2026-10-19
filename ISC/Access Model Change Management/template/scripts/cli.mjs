@@ -16,7 +16,6 @@ import {
   buildRestoreApprovalPayload,
   buildDriftApprovalPayload,
   invokeExternalTrigger,
-  eligibleOwners,
 } from './approval.mjs';
 import {
   writeChangeEntry,
@@ -48,7 +47,7 @@ async function loadItemsFromManifest(path) {
 async function main() {
   const argv = minimist(process.argv.slice(2), {
     boolean: ['dry-run', 'json', 'help'],
-    string: ['base', 'head', 'tag', 'pr', 'author', 'files', 'out', 'plan', 'drift', 'kind', 'diff-hash', 'message', 'tags', 'snapshot', 'issue-url', 'decision', 'run', 'detail'],
+    string: ['base', 'head', 'tag', 'ref', 'pr', 'author', 'files', 'out', 'plan', 'drift', 'kind', 'diff-hash', 'message', 'tags', 'snapshot', 'issue-url', 'decision', 'run', 'detail'],
   });
   const [cmd] = argv._;
 
@@ -203,7 +202,7 @@ Commands:
       payload = buildRestoreApprovalPayload({
         plan,
         planHash: plan.planHash,
-        sourceTag: argv.tag,
+        sourceRef: argv.ref ?? argv.tag,
         requester: argv.author ?? process.env.GITHUB_ACTOR,
         config,
       });
@@ -216,16 +215,6 @@ Commands:
         pr,
         config,
       });
-      // Drop owners who are protected/unregistered system identities before
-      // this goes anywhere near ISC — see eligibleOwners() for why.
-      const { eligible, skipped } = await eligibleOwners(payload.owners, IscClient.fromEnv());
-      payload.owners = eligible;
-      if (skipped.length > 0) {
-        payload.skippedOwners = skipped;
-        for (const owner of skipped) {
-          console.error(`::warning::Skipping owner approval for "${owner.name}" (${owner.reason}) — governance-group approval still applies.`);
-        }
-      }
     }
     const result = await invokeExternalTrigger({
       triggerUrl,

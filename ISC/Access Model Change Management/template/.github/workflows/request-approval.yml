@@ -83,8 +83,6 @@ jobs:
           ISC_EXTERNAL_TRIGGER_CLIENT_ID: ${{ secrets.ISC_TRIGGER_CLIENT_ID }}
           ISC_EXTERNAL_TRIGGER_CLIENT_SECRET: ${{ secrets.ISC_TRIGGER_CLIENT_SECRET }}
           ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
-          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
-          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
         run: |
           DIFF_HASH=$(jq -r .diffHash plan.json)
           # Enrich pr.json for the approval payload
@@ -104,10 +102,5 @@ jobs:
         run: |
           NUMBER=${{ steps.pr.outputs.number }}
           HASH=$(jq -r .diffHash plan.json)
-          BODY="ISC approval requested for diff hash \`$HASH\`. The governance group, then the owners of the changed items, will find it in their Identity Security Cloud approvals."
-          SKIPPED=$(jq -r '.payload.skippedOwners // [] | map("- " + .name + " (" + .reason + ")") | join("\n")' /tmp/request-approval.json)
-          if [ -n "$SKIPPED" ]; then
-            NOTE=$(printf 'Skipped item-owner approval for:\n%s\n\nGovernance-group approval still covers these — they are system identities that cannot act on an approval themselves.' "$SKIPPED")
-            BODY=$(printf '%s\n\n%s' "$BODY" "$NOTE")
-          fi
+          BODY="ISC approval requested for diff hash \`$HASH\`. The governance group will find it in their Identity Security Cloud approvals."
           gh pr comment "$NUMBER" --body "$BODY"

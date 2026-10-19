@@ -87,7 +87,6 @@ export function buildConfig({
   githubOwner,
   githubRepo,
   backupSchedule = '0 2 * * *',
-  ownerApproval = 'true',
   approvalTimeoutDays = 3,
 }) {
   return {
@@ -106,7 +105,6 @@ export function buildConfig({
     approval: {
       governanceGroupId,
       governanceGroupName,
-      ownerApproval: String(ownerApproval) === 'true',
       timeoutDays: Number(approvalTimeoutDays) || 3,
     },
     github: {

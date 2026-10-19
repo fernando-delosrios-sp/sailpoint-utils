@@ -86,7 +86,7 @@ async function gatherAnswers(prompt, argv) {
     throw new Error('No governance groups found in the tenant. Create one, then re-run.');
   }
   const gov = await prompt.choose(
-    'Governance group (second-level change approval; sole approver for restore and drift sync):',
+    'Governance group (approves changes, restores, and drift sync):',
     groups.map((g) => ({ id: g.id, name: g.name, label: `${g.name} (${g.id})` })),
   );
 
@@ -99,14 +99,6 @@ async function gatherAnswers(prompt, argv) {
 
   const backupSchedule = argv.schedule
     || await prompt.ask('Daily backup cron (UTC)', { defaultValue: '0 2 * * *' });
-
-  const ownerApproval = argv['owner-approval'] ?? (await prompt.choose(
-    'After the governance group approves a change, should each changed item\'s owner approve too?',
-    [
-      { id: 'true', label: 'Yes — ask every item owner in parallel' },
-      { id: 'false', label: 'No — the governance group is the only approver' },
-    ],
-  )).id;
 
   const approvalTimeoutDays = argv['approval-timeout']
     || await prompt.ask('Approval timeout in days (expires the request when nobody acts)', {
@@ -127,7 +119,6 @@ async function gatherAnswers(prompt, argv) {
     ghOwner,
     ghRepo,
     backupSchedule,
-    ownerApproval,
     approvalTimeoutDays,
     // Asked after the repo exists — fine-grained PATs must target a real repository.
     dispatchToken: argv['dispatch-token'] || null,
@@ -478,7 +469,6 @@ async function provisionIsc(answers) {
     YOUR_GITHUB_DISPATCH_TOKEN: `Bearer ${answers.dispatchToken}`,
     YOUR_OWNER_IDENTITY_ID: answers.ownerId,
     YOUR_OWNER_IDENTITY_NAME: answers.ownerAlias,
-    YOUR_OWNER_APPROVAL_ENABLED: answers.ownerApproval,
     // Quoted so the template stays valid JSON; ISC wants a number here.
     '"YOUR_APPROVAL_TIMEOUT_DAYS"': String(Number(answers.approvalTimeoutDays) || 3),
   };
@@ -545,7 +535,6 @@ Options:
       githubOwner: answers.ghOwner,
       githubRepo: answers.ghRepo,
       backupSchedule: answers.backupSchedule,
-      ownerApproval: answers.ownerApproval,
       approvalTimeoutDays: answers.approvalTimeoutDays,
     });
 

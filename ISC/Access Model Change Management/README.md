@@ -20,7 +20,7 @@ This folder is the **installer and template**. Running the installer creates (or
 
 1. **PowerShell is not required.** Node.js 20+, `gh` (authenticated), and network access to the ISC tenant and GitHub.
 2. A **dedicated service identity** in ISC with rights to manage access profiles, roles and entitlement metadata, plus the **Search** user level (`sp:search:read`). Create an API client (client credentials) for that identity — the installer stores it as GitHub Actions secrets so audit events attribute applies to the service identity. Search read lets drift approvals name the actor on the out-of-band edit. Without it, drift detection still runs and the actor is left unknown.
-3. At least one **governance group** in ISC (first-level approver for changes; sole approver for restores).
+3. At least one **governance group** in ISC. It approves changes, restores, and drift sync.
 4. A logged-in `gh` session, plus a **fine-grained GitHub PAT** for ISC→GitHub `repository_dispatch` (see [Dispatch PAT](#dispatch-pat-isc--github) below). The installer asks for this **after** the target repo exists.
 5. Permission to create a **GitHub App** (user or org) that the installer configures as the only ruleset bypass actor on `main`.
 
@@ -121,11 +121,11 @@ flowchart LR
   Author -->|PR| Repo
   Repo -->|validate| CI
   CI -->|external trigger, kind=change| ApprovalWF
-  Restore -->|external trigger, kind=restore| ApprovalWF
+  Restore -->|external trigger, kind=restore<br/>source = branch or tag| ApprovalWF
   Backup -->|external trigger, kind=drift| ApprovalWF
-  ApprovalWF -->|change: gov group then item owners<br/>restore/drift: gov group only| Approvals
+  ApprovalWF -->|governance group| Approvals
   Approvals -->|repository_dispatch| Callback
-  Callback -->|isc-approval + auto-merge<br/>or drift sync to main| Repo
+  Callback -->|isc-approval + auto-merge<br/>restore apply / drift sync to main| Repo
   Repo -->|apply REST| ISC
   Apply -->|known-good tag + ledger| Repo
 ```
@@ -134,7 +134,7 @@ flowchart LR
 
 1. Branch from `main`, edit JSON under `access/`.  
 2. Open a PR. CI validates schemas and name references.  
-3. GitHub calls the **AMCM Approval** workflow with `kind: "change"`. The **governance group** decides first; if `approval.ownerApproval` is enabled, every changed item's **owner** is then asked in parallel and any single rejection fails the change. Approvers see the GitHub author, PR title, link and change summary in their ISC **Approvals** inbox.  
+3. GitHub calls the **AMCM Approval** workflow with `kind: "change"`. The **governance group** is the only approver. Approvers see the GitHub author, PR title, link and change summary in their ISC **Approvals** inbox.  
 4. On approve, GitHub sets the `isc-approval` status (bound to a **diff content hash**, not the commit SHA) and enables auto-merge.  
 5. On merge, Actions apply create/update/delete via REST, write new ids back, create a `known-good/…` tag, and append the ledger.  
 6. Reject closes the PR. Approvals nobody acts on expire after `approval.timeoutDays` and get the `approval-expired` label; comment `/request-approval` to retry.
@@ -143,16 +143,18 @@ Entitlements are **update-only** (name, description, privileged, requestable, ow
 
 ### Daily backup and drift
 
-The Backup Action snapshots allowlisted entitlements, all access profiles and all roles. If ISC was edited outside git, nothing is committed automatically: GitHub opens an issue labelled `amcm-drift` holding the full picture — every drifted path and the actor behind each one — and then calls the **AMCM Approval** workflow with `kind: "drift"`, which routes straight to the **governance group only** (item owners are never contacted — nobody "owns" an out-of-band ISC edit). The approval description is a single truncated string, so it links to that issue. A backup that runs again before anyone decides reuses the open issue instead of filing a duplicate, and the decision callback comments the outcome and closes it.
+The Backup Action snapshots allowlisted entitlements, all access profiles and all roles. If ISC was edited outside git, nothing is committed automatically: GitHub opens an issue labelled `amcm-drift` holding the full picture — every drifted path and the actor behind each one — and then calls the **AMCM Approval** workflow with `kind: "drift"`, which routes to the **governance group**. The approval description is a single truncated string, so it links to that issue. A backup that runs again before anyone decides reuses the open issue instead of filing a duplicate, and the decision callback comments the outcome and closes it.
 
 Actors come from the events index, searched since the last time git and ISC matched (or the last 14 days when the ledger has no such point). An `ACCESS_ITEM` event identifies its subject by **name only** — there is no target id on these events — so the search and the matching both work by name and object kind. On approve, the decision callback re-detects drift against live ISC (to make sure it hasn't moved again), syncs it to `main`, and records a drift ledger entry whose Who column is those actors. On reject, the callback restores ISC to match git and records that. On expiry, ISC is left unchanged and the next scheduled backup asks again. Entitlements this repo cannot create or delete are skipped, so a rejected entitlement-only drift can remain and will be asked about again. Audit search is best-effort: a missing Search user level, or no matching event, leaves the actor unknown and does not block the approval.
 
 ### Full restore
 
-1. Actions → **Restore** → pick a `known-good/*` tag. Tags created before this rename (`isc-applied/*`) are still accepted.  
-2. A full reconciliation plan is built against live ISC.  
-3. GitHub calls the same **AMCM Approval** workflow with `kind: "restore"`, which routes straight to the governance group (item owners are never contacted for restores).  
-4. On approve, the plan is applied; `main` is reconciled from ISC; a restore ledger entry is written.
+1. Actions → **Restore** → **Run workflow** → pick the branch or tag to restore from. The workflow takes no inputs: whatever `access/` holds at that ref is the desired state. `known-good/*` tags are the usual choice, but any ref works — the governance approval is the gate, not the ref name.  
+2. A full reconciliation plan is built against live ISC, using the scripts and `config.yaml` from `main` rather than the selected ref.  
+3. GitHub calls the same **AMCM Approval** workflow with `kind: "restore"`, which asks the governance group.  
+4. On approve, the decision callback re-checks the plan hash against live ISC, applies the plan, reconciles `main` from ISC, and writes a restore ledger entry. A hash that moved since the approval aborts the restore.
+
+Running Restore from a tag created before the workflow dropped its inputs uses that tag's older definition, which still asks for a tag name and still works.
 
 ### History
 

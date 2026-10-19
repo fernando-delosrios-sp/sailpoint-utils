@@ -55,7 +55,7 @@ export function writeChangeEntry({
  */
 export function writeRestoreEntry({
   requester,
-  sourceTag,
+  sourceRef,
   planHash,
   decision,
   applyResult,
@@ -68,7 +68,7 @@ export function writeRestoreEntry({
   const entry = {
     kind: 'restore',
     requester,
-    sourceTag,
+    sourceRef,
     planHash,
     decision,
     applyResult,

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildDriftApprovalPayload, eligibleOwners } from '../approval.mjs';
+import { buildChangeApprovalPayload, buildDriftApprovalPayload } from '../approval.mjs';
 import { contentHash } from '../common.mjs';
 
 const config = {
@@ -21,9 +21,6 @@ describe('buildDriftApprovalPayload', () => {
     assert.equal(payload.kind, 'drift');
     assert.equal(payload.governanceGroupId, 'gov-1');
     assert.equal(payload.driftHash, drift.driftHash);
-    // Drift must never carry an owners list — the ISC workflow has no owner
-    // loop on this branch, but a stray `owners` field would be a sign some
-    // other code path is conflating drift with a change approval.
     assert.equal(payload.owners, undefined);
     assert.match(payload.approvalText, /Approving copies these items from ISC into git/);
     assert.match(payload.approvalText, /Rejecting puts ISC back to match git/);
@@ -99,72 +96,25 @@ describe('buildDriftApprovalPayload', () => {
   });
 });
 
-describe('eligibleOwners', () => {
-  function clientOf(identities) {
-    return {
-      getIdentity: async (id) => {
-        if (!(id in identities)) throw new Error(`no such identity: ${id}`);
-        return identities[id];
+describe('buildChangeApprovalPayload', () => {
+  it('asks the governance group and does not carry an owners list', () => {
+    const payload = buildChangeApprovalPayload({
+      plan: {
+        summary: '1 update',
+        operations: [
+          { op: 'update', type: 'role', name: 'Analyst', owner: { type: 'IDENTITY', id: 'a-1', name: 'Mr Robot' } },
+          { op: 'skip', type: 'role', name: 'Untouched' },
+        ],
       },
-    };
-  }
-
-  it('drops a protected owner — e.g. ISC\'s built-in "SailPoint Services"', async () => {
-    const owners = [{ type: 'IDENTITY', id: 'svc-1', name: 'SailPoint Services' }];
-    const client = clientOf({ 'svc-1': { isProtected: true, identityStatus: 'UNREGISTERED' } });
-    const { eligible, skipped } = await eligibleOwners(owners, client);
-    assert.deepEqual(eligible, []);
-    assert.equal(skipped.length, 1);
-    assert.equal(skipped[0].name, 'SailPoint Services');
-    assert.equal(skipped[0].reason, 'protected system identity');
-  });
-
-  it('drops an unregistered owner even if not flagged protected', async () => {
-    const owners = [{ type: 'IDENTITY', id: 'u-1', name: 'Pending Hire' }];
-    const client = clientOf({ 'u-1': { isProtected: false, identityStatus: 'UNREGISTERED' } });
-    const { eligible, skipped } = await eligibleOwners(owners, client);
-    assert.deepEqual(eligible, []);
-    assert.equal(skipped[0].reason, 'unregistered identity');
-  });
-
-  it('keeps a normal, active owner', async () => {
-    const owners = [{ type: 'IDENTITY', id: 'a-1', name: 'Mr Robot' }];
-    const client = clientOf({ 'a-1': { isProtected: false, identityStatus: 'ACTIVE' } });
-    const { eligible, skipped } = await eligibleOwners(owners, client);
-    assert.deepEqual(eligible, owners);
-    assert.deepEqual(skipped, []);
-  });
-
-  it('keeps a non-IDENTITY owner without looking it up', async () => {
-    const owners = [{ type: 'GOVERNANCE_GROUP', id: 'g-1', name: 'EMEA TES Team' }];
-    const client = { getIdentity: async () => { throw new Error('should not be called'); } };
-    const { eligible, skipped } = await eligibleOwners(owners, client);
-    assert.deepEqual(eligible, owners);
-    assert.deepEqual(skipped, []);
-  });
-
-  it('keeps an owner when the identity lookup fails — unknown beats silently dropped', async () => {
-    const owners = [{ type: 'IDENTITY', id: 'missing-1', name: 'Gone' }];
-    const client = clientOf({});
-    const { eligible, skipped } = await eligibleOwners(owners, client);
-    assert.deepEqual(eligible, owners);
-    assert.deepEqual(skipped, []);
-  });
-
-  it('filters a mixed list, preserving the eligible owners in order', async () => {
-    const owners = [
-      { type: 'IDENTITY', id: 'svc-1', name: 'SailPoint Services' },
-      { type: 'IDENTITY', id: 'a-1', name: 'Mr Robot' },
-      { type: 'IDENTITY', id: 'a-2', name: 'Jane Doe' },
-    ];
-    const client = clientOf({
-      'svc-1': { isProtected: true, identityStatus: 'UNREGISTERED' },
-      'a-1': { isProtected: false, identityStatus: 'ACTIVE' },
-      'a-2': { isProtected: false, identityStatus: 'ACTIVE' },
+      diffHash: 'abc',
+      pr: { number: 12, title: 'Rename analyst', url: 'https://github.com/acme/amcm/pull/12', author: 'octocat' },
+      config,
     });
-    const { eligible, skipped } = await eligibleOwners(owners, client);
-    assert.deepEqual(eligible.map((o) => o.name), ['Mr Robot', 'Jane Doe']);
-    assert.deepEqual(skipped.map((o) => o.name), ['SailPoint Services']);
+    assert.equal(payload.kind, 'change');
+    assert.equal(payload.governanceGroupId, 'gov-1');
+    assert.equal(payload.owners, undefined);
+    assert.deepEqual(payload.items, [{ op: 'update', type: 'role', name: 'Analyst' }]);
+    assert.match(payload.approvalText, /Pull request #12: Rename analyst/);
   });
 });
 

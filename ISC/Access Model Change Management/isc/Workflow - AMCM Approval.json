@@ -1,6 +1,6 @@
 {
   "name": "AMCM Approval",
-  "description": "Single external-trigger workflow for access-item changes, full restores, and drift sync. Branches on $.trigger.kind: 'change' asks the configured governance group first and, when owner approval is enabled, every changed item's owner in parallel afterwards; 'restore' and 'drift' ask only the governance group. Posts the decision back to GitHub via repository_dispatch.",
+  "description": "Single external-trigger workflow for access-item changes, full restores, and drift sync. Branches on $.trigger.kind. Every kind asks only the configured governance group, then posts the decision back to GitHub via repository_dispatch.",
   "definition": {
     "start": "Configuration",
     "steps": {
@@ -16,16 +16,10 @@
               "variableA": "https://api.github.com/repos/YOUR_GITHUB_OWNER/YOUR_GITHUB_REPO/dispatches"
             },
             {
-            "description": "Full Authorization header value, e.g. 'Bearer ghp_xxx' (fine-grained PAT or GitHub App installation token with contents:write). Sent as a literal Authorization header, not basicAuthPassword — ISC only accepts a $.secrets.<id> reference there, which can't be set via the workflow write API.",
-            "name": "githubDispatchToken",
-            "transforms": [],
-            "variableA": "YOUR_GITHUB_DISPATCH_TOKEN"
-            },
-            {
-              "description": "Ask each changed item's owner to approve after the governance group approves. Set to 'false' to make the governance group the only approver. Admins may change this value later.",
-              "name": "ownerApprovalEnabled",
+              "description": "Full Authorization header value, e.g. 'Bearer ghp_xxx' (fine-grained PAT or GitHub App installation token with contents:write). Sent as a literal Authorization header, not basicAuthPassword — ISC only accepts a $.secrets.<id> reference there, which can't be set via the workflow write API.",
+              "name": "githubDispatchToken",
               "transforms": [],
-              "variableA": "YOUR_OWNER_APPROVAL_ENABLED"
+              "variableA": "YOUR_GITHUB_DISPATCH_TOKEN"
             }
           ]
         },
@@ -79,7 +73,7 @@
             "comparator": "StringEquals",
             "variableA.$": "$.governanceApprovalChange.status",
             "variableB": "APPROVED",
-            "nextStep": "Owner Approval Required"
+            "nextStep": "Dispatch Approved Change"
           },
           {
             "comparator": "StringEquals",
@@ -90,101 +84,6 @@
         ],
         "defaultStep": "Dispatch Rejected Change",
         "displayName": "Governance approved?",
-        "type": "choice"
-      },
-      "Owner Approval Required": {
-        "choiceList": [
-          {
-            "comparator": "StringEquals",
-            "variableA.$": "$.configuration.ownerApprovalEnabled",
-            "variableB": "true",
-            "nextStep": "Any Owners"
-          }
-        ],
-        "defaultStep": "Dispatch Approved Change",
-        "displayName": "Is item owner approval configured?",
-        "type": "choice"
-      },
-      "Any Owners": {
-        "choiceList": [
-          {
-            "comparator": "IsPresent",
-            "variableA.$": "$.trigger.owners[0].id",
-            "nextStep": "Loop Owner Approvals"
-          }
-        ],
-        "defaultStep": "Dispatch Approved Change",
-        "displayName": "Any item owners to ask?",
-        "type": "choice"
-      },
-      "Loop Owner Approvals": {
-        "actionId": "sp:loop:iterator",
-        "attributes": {
-          "context.$": "$",
-          "input.$": "$.trigger.owners",
-          "start": "Owner Approval",
-          "steps": {
-            "Owner Approval": {
-              "actionId": "sp:generic-approval",
-              "attributes": {
-                "name": "Access model change approval (item owner)",
-                "description.$": "$.loop.context.trigger.approvalText",
-                "requestedBy": "WORKFLOW_OWNER",
-                "requestedFor": "WORKFLOW_OWNER",
-                "reAuthRequired": false,
-                "approvalType": "SINGLE",
-                "singleApproverCategory": "IDENTITY",
-                "singleApproverIdentityId.$": "$.loop.loopInput.id",
-                "priority": "MEDIUM",
-                "approvalReminder": "false",
-                "approvalTimeout": "YOUR_APPROVAL_TIMEOUT_DAYS",
-                "approvalActionAtTimeout": "EXPIRED"
-              },
-              "displayName": "Item owner approval",
-              "nextStep": "Owner Decision",
-              "type": "action",
-              "versionNumber": 1
-            },
-            "Owner Decision": {
-              "choiceList": [
-                {
-                  "comparator": "StringEquals",
-                  "variableA.$": "$.ownerApproval.status",
-                  "variableB": "APPROVED",
-                  "nextStep": "Owner Approved"
-                }
-              ],
-              "defaultStep": "Owner Rejected",
-              "displayName": "Owner approved?",
-              "type": "choice"
-            },
-            "Owner Approved": {
-              "displayName": "Owner approved",
-              "type": "success"
-            },
-            "Owner Rejected": {
-              "actionId": "sp:operator-failure",
-              "failureName": "Owner Rejected",
-              "displayName": "Owner rejected",
-              "type": "failure"
-            }
-          }
-        },
-        "displayName": "Ask every item owner in parallel",
-        "nextStep": "Any Owner Rejected",
-        "type": "action",
-        "versionNumber": 1
-      },
-      "Any Owner Rejected": {
-        "choiceList": [
-          {
-            "comparator": "IsPresent",
-            "variableA.$": "$.loopOwnerApprovals.loopOutput.failureItems[0]",
-            "nextStep": "Dispatch Owner Rejected"
-          }
-        ],
-        "defaultStep": "Dispatch Approved Change",
-        "displayName": "Did any owner reject?",
         "type": "choice"
       },
       "Dispatch Approved Change": {
@@ -249,39 +148,6 @@
           }
         },
         "displayName": "GitHub: change rejected by governance group",
-        "nextStep": "End Rejected",
-        "type": "action",
-        "versionNumber": 2
-      },
-      "Dispatch Owner Rejected": {
-        "actionId": "sp:http",
-        "attributes": {
-          "method": "post",
-          "url.$": "$.configuration.githubDispatchUrl",
-          "requestContentType": "json",
-          "jsonRequestBody": {
-            "event_type": "isc-change-decision",
-            "client_payload": {
-              "decision": "rejected",
-              "diffHash.$": "$.trigger.diffHash",
-              "pr": {
-                "number.$": "$.trigger.pr.number",
-                "title.$": "$.trigger.pr.title",
-                "url.$": "$.trigger.pr.url",
-                "author.$": "$.trigger.pr.author"
-              },
-              "headSha.$": "$.trigger.pr.headSha",
-              "comment": "Rejected by an access item owner.",
-              "executionId.$": "$.trigger.executionId"
-            }
-          },
-          "requestHeaders": {
-            "Authorization.$": "$.configuration.githubDispatchToken",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28"
-          }
-        },
-        "displayName": "GitHub: change rejected by item owner",
         "nextStep": "End Rejected",
         "type": "action",
         "versionNumber": 2
@@ -363,7 +229,7 @@
             "client_payload": {
               "decision": "approved",
               "planHash.$": "$.trigger.planHash",
-              "sourceTag.$": "$.trigger.sourceTag",
+              "sourceRef.$": "$.trigger.sourceRef",
               "requester.$": "$.trigger.requester",
               "comment.$": "$.governanceApprovalRestore.comments",
               "executionId.$": "$.trigger.executionId"
@@ -391,7 +257,7 @@
             "client_payload": {
               "decision": "rejected",
               "planHash.$": "$.trigger.planHash",
-              "sourceTag.$": "$.trigger.sourceTag",
+              "sourceRef.$": "$.trigger.sourceRef",
               "requester.$": "$.trigger.requester",
               "comment.$": "$.governanceApprovalRestore.comments",
               "executionId.$": "$.trigger.executionId"
@@ -548,7 +414,7 @@
     "type": "EXTERNAL",
     "attributes": {
       "id": "idn:external-http",
-      "description": "GitHub Actions posts a change payload (kind=\"change\": approvalText, owners, pr, diffHash), a restore payload (kind=\"restore\": approvalText, sourceTag, planHash, requester), or a drift payload (kind=\"drift\": approvalText, driftHash) when the daily backup finds ISC edited outside the PR flow."
+      "description": "GitHub Actions posts a change payload (kind=\"change\": approvalText, pr, diffHash), a restore payload (kind=\"restore\": approvalText, sourceRef, planHash, requester), or a drift payload (kind=\"drift\": approvalText, driftHash) when the daily backup finds ISC edited outside the PR flow."
     }
   },
   "enabled": false,

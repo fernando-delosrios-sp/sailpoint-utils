@@ -76,9 +76,8 @@ jobs:
           ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
           ISSUE_URL: ${{ steps.issue.outputs.url }}
         run: |
-          # Drift no longer auto-commits to main. It only asks the governance
-          # group (never item owners — nobody "owns" an out-of-band ISC edit)
-          # via the same AMCM Approval workflow used for changes/restores.
+          # Drift no longer auto-commits to main. It asks the governance
+          # group via the same AMCM Approval workflow used for changes/restores.
           # approval-callback.yml does the actual sync once approved.
           node scripts/cli.mjs request-approval --kind drift --drift /tmp/drift.json \
             --issue-url "$ISSUE_URL"

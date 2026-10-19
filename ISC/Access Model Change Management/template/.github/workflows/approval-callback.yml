@@ -8,7 +8,6 @@ permissions:
   contents: write
   statuses: write
   pull-requests: write
-  actions: write
   issues: write
 
 jobs:
@@ -41,11 +40,10 @@ jobs:
 
           const payload = JSON.parse(process.env.CLIENT_PAYLOAD);
           // ISC's dispatch step templates this from the governance approval's
-          // comment, and what it resolves to depends on which path the ISC
-          // workflow took to get here (whether the item-owner loop ran) — seen
-          // live as a plain string on one path and the raw {author,comment,...}
-          // comment record (or an array of those) on another. Normalize to a
-          // string so a non-string value here can't corrupt $GITHUB_OUTPUT below.
+          // comment. Seen live as a plain string on one path and the raw
+          // {author,comment,...} comment record (or an array of those) on
+          // another. Normalize to a string so a non-string value here can't
+          // corrupt $GITHUB_OUTPUT below.
           const commentText = (raw) => {
             if (raw == null) return '';
             if (typeof raw === 'string') return raw;
@@ -147,6 +145,11 @@ jobs:
   restore-decision:
     if: github.event.action == 'isc-restore-decision'
     runs-on: ubuntu-latest
+    # Applying the restore reconciles main from ISC, same as drift sync, so it
+    # shares that concurrency group.
+    concurrency:
+      group: amcm-main-writers
+      cancel-in-progress: false
     steps:
       - name: Generate GitHub App token
         id: app
@@ -155,35 +158,103 @@ jobs:
           app-id: ${{ secrets.AMCM_APP_ID }}
           private-key: ${{ secrets.AMCM_APP_PRIVATE_KEY }}
 
+      # The approved source branch or tag; scripts come from main below, the
+      # same split the Restore workflow uses when it builds the plan.
       - uses: actions/checkout@v4
         with:
           token: ${{ steps.app.outputs.token }}
           fetch-depth: 0
+          ref: ${{ github.event.client_payload.sourceRef }}
 
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
-      - run: node scripts/public-npm-ci.mjs
+      - run: |
+          git checkout main -- package.json package-lock.json scripts schemas config.yaml || true
+          node scripts/public-npm-ci.mjs
 
-      - name: Persist restore decision
+      - name: Read the decision
+        id: decision
         env:
           CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
-          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           echo "$CLIENT_PAYLOAD" > /tmp/restore-decision.json
-          DECISION=$(jq -r '.decision' /tmp/restore-decision.json)
-          TAG=$(jq -r '.sourceTag' /tmp/restore-decision.json)
-          PLAN_HASH=$(jq -r '.planHash' /tmp/restore-decision.json)
-          if [ "$DECISION" = "approved" ]; then
-            gh workflow run restore.yml \
-              -f tag="$TAG" \
-              -f plan_hash="$PLAN_HASH" \
-              -f execute=true \
-              -f decision_payload="$(cat /tmp/restore-decision.json)"
-          else
-            echo "Restore $DECISION — no execute"
+          REF=$(jq -r '.sourceRef // empty' /tmp/restore-decision.json)
+          # An empty ref would have checked out the default branch above and
+          # then applied main to ISC as if it were the approved source.
+          if [ -z "$REF" ]; then
+            echo "::error::Restore decision carries no sourceRef; refusing to apply."
+            exit 1
           fi
+          echo "value=$(jq -r '.decision' /tmp/restore-decision.json)" >> "$GITHUB_OUTPUT"
+          echo "Restore of $REF: $(jq -r '.decision' /tmp/restore-decision.json)"
+
+      - name: Rebuild and execute the approved restore plan
+        if: steps.decision.outputs.value == 'approved'
+        id: apply
+        env:
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
+          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
+        run: |
+          node scripts/cli.mjs restore --out plan.json
+          ACTUAL=$(jq -r .planHash plan.json)
+          EXPECTED=$(jq -r '.planHash // empty' /tmp/restore-decision.json)
+          if [ -n "$EXPECTED" ] && [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "Live plan hash changed since approval ($ACTUAL vs $EXPECTED). Aborting."
+            exit 1
+          fi
+          set +e
+          node scripts/cli.mjs apply --plan plan.json > /tmp/apply.json
+          set -e
+          cat /tmp/apply.json
+          OK=$(jq -r .ok /tmp/apply.json)
+          echo "ok=$OK" >> "$GITHUB_OUTPUT"
+          test "$OK" = "true"
+
+      - name: Reconcile main from ISC and ledger
+        if: steps.apply.outputs.ok == 'true'
+        env:
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
+          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          git fetch origin main
+          git checkout main
+          node scripts/cli.mjs backup
+          jq -n --slurpfile decision /tmp/restore-decision.json --slurpfile apply /tmp/apply.json \
+            '{
+              requester: $decision[0].requester,
+              sourceRef: $decision[0].sourceRef,
+              planHash: $decision[0].planHash,
+              decision: $decision[0],
+              applyResult: $apply[0]
+            }' | node scripts/cli.mjs ledger-restore
+          node scripts/cli.mjs readme
+          git config user.name "amcm-bot"
+          git config user.email "amcm-bot[bot]@users.noreply.github.com"
+          git add access/ changes/ README.md
+          git diff --cached --quiet || git commit -m "chore(restore): applied $(jq -r '.sourceRef' /tmp/restore-decision.json)"
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "Push rejected (attempt $i), rebasing onto origin/main..."
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; exit 1; }
+          done
+
+      - name: Failure issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          REF=$(jq -r '.sourceRef // "unknown"' /tmp/restore-decision.json 2>/dev/null || echo unknown)
+          BODY="Restore of \`$REF\` failed. See workflow logs."
+          if [ -f /tmp/apply.json ]; then
+            BODY=$(jq -r '"Restore stopped.\n\n```json\n" + tostring + "\n```"' /tmp/apply.json)
+          fi
+          gh issue create --title "Restore failed: $REF" --body "$BODY" || true
 
   drift-decision:
     if: github.event.action == 'isc-drift-decision'

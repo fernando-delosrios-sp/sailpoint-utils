@@ -16,15 +16,10 @@ backup:
   schedule: "0 2 * * *"
 
 approval:
-  # Governance group that signs off every change (first level) and is the sole
-  # approver for restores and drift sync. Admins can also change this in the
-  # ISC workflow Configuration section.
+  # Governance group that approves changes, restores, and drift sync.
+  # Admins can also change this on the AMCM Approval workflow in ISC.
   governanceGroupId: "{{GOVERNANCE_GROUP_ID}}"
   governanceGroupName: "{{GOVERNANCE_GROUP_NAME}}"
-  # When true, each changed item's owner is asked in parallel after the governance
-  # group approves a change. Never applies to restores or drift — there's no
-  # single "requester" to ask owners after for either of those.
-  ownerApproval: true
   # Days before an unanswered approval expires.
   timeoutDays: 3
 

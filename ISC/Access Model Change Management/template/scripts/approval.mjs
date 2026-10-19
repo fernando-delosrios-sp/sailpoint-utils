@@ -1,6 +1,5 @@
 import { loadConfig } from './common.mjs';
 import { actorApprovalLines } from './drift-actors.mjs';
-import { ownersFromPlan } from './plan.mjs';
 
 /** ISC approvals show one description string; keep it short and scannable. */
 function renderApprovalText(lines) {
@@ -37,15 +36,12 @@ export function buildChangeApprovalPayload({
   pr,
   config = loadConfig(),
 }) {
-  const owners = ownersFromPlan(plan);
   const items = plan.operations
     .filter((o) => o.op !== 'skip')
     .map((o) => ({
       op: o.op,
       type: o.type,
       name: o.name,
-      ownerId: o.owner?.id ?? null,
-      ownerName: o.owner?.name ?? null,
     }));
 
   return {
@@ -71,7 +67,6 @@ export function buildChangeApprovalPayload({
       `Diff hash: ${diffHash}`,
     ]),
     items,
-    owners,
     governanceGroupId: config.approval?.governanceGroupId,
     github: {
       owner: config.github?.owner,
@@ -86,7 +81,7 @@ export function buildChangeApprovalPayload({
 export function buildRestoreApprovalPayload({
   plan,
   planHash,
-  sourceTag,
+  sourceRef,
   requester,
   config = loadConfig(),
 }) {
@@ -101,11 +96,11 @@ export function buildRestoreApprovalPayload({
   return {
     kind: 'restore',
     planHash,
-    sourceTag,
+    sourceRef,
     requester,
     summary: plan.summary,
     approvalText: renderApprovalText([
-      `Full restore of the access model from tag ${sourceTag}`,
+      `Full restore of the access model from ${sourceRef}`,
       `Requested by ${requester}`,
       '',
       plan.summary ?? '',
@@ -124,10 +119,8 @@ export function buildRestoreApprovalPayload({
 }
 
 /**
- * Build the payload for a drift-sync approval (governance group only — item
- * owners are never asked, regardless of config.approval.ownerApproval, since
- * drift wasn't requested by anyone and there's no single "owner of the PR" to
- * loop over).
+ * Build the payload for a drift-sync approval. The governance group is the
+ * only approver, same as a change or a restore.
  *
  * Only driftHash (not the full added/changed/deleted lists) travels through
  * the ISC trigger round trip: the execute side re-detects drift from live
@@ -171,55 +164,6 @@ export function buildDriftApprovalPayload({ drift, issueUrl = null, config = loa
       repo: config.github?.repo,
     },
   };
-}
-
-/**
- * Drop owners that can never act on an approval addressed to them.
- *
- * A role's owner can be a protected/system identity (ISC's built-in
- * "SailPoint Services" is a common example: `isProtected: true`,
- * `identityStatus: "UNREGISTERED"`). ISC still accepts it as a
- * `singleApproverIdentityId` and routes the approval there, but nobody can
- * naturally receive or action it — it has to be manually reassigned to a
- * real person every time, which happened live and looked like a routing bug
- * (the approval's requester/requestee metadata shows the workflow owner,
- * which is a separate, unrelated field, and easy to mistake for the actual
- * assignee).
- *
- * Governance-group approval always runs first regardless of owners, so
- * dropping an ineligible owner here just means the per-owner step is skipped
- * for that item — the change still requires a real decision, just not one
- * that depends on a system account someone has to rescue by hand.
- *
- * A lookup failure (network blip, deleted identity, etc.) keeps the owner
- * rather than dropping it — silently skipping an owner approval because a
- * read failed would be a worse outcome than asking and having someone
- * reassign it if it turns out to be ineligible after all.
- */
-export async function eligibleOwners(owners, client) {
-  const eligible = [];
-  const skipped = [];
-  for (const owner of owners) {
-    if (owner.type && owner.type !== 'IDENTITY') {
-      eligible.push(owner);
-      continue;
-    }
-    try {
-      const identity = await client.getIdentity(owner.id);
-      if (identity?.isProtected) {
-        skipped.push({ ...owner, reason: 'protected system identity' });
-        continue;
-      }
-      if (identity?.identityStatus === 'UNREGISTERED') {
-        skipped.push({ ...owner, reason: 'unregistered identity' });
-        continue;
-      }
-    } catch {
-      // Unknown beats silently dropped — fall through and keep the owner.
-    }
-    eligible.push(owner);
-  }
-  return { eligible, skipped };
 }
 
 /**

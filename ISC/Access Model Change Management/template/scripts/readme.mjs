@@ -18,7 +18,9 @@ function changeRow(entry) {
   }
   if (e.kind === 'restore') {
     const decision = e.decision?.decision ?? '—';
-    return `| restore | \`${e.sourceTag}\` | @${e.requester ?? '—'} | ${decision} | — | ${fmtTs(e.timestamp)} |`;
+    // Entries written when restore only accepted tags carry `sourceTag`.
+    const ref = e.sourceRef ?? e.sourceTag ?? '—';
+    return `| restore | \`${ref}\` | @${e.requester ?? '—'} | ${decision} | — | ${fmtTs(e.timestamp)} |`;
   }
   if (e.kind === 'init') {
     const counts = e.counts
@@ -79,11 +81,11 @@ GitHub-centric governance of ISC **entitlements** (metadata), **access profiles*
 
 1. Open a PR that edits files under \`access/\`.
 2. CI validates schemas and name references.
-3. An ISC workflow asks the **governance group**, then each changed item's **owner** when that is enabled.
+3. An ISC workflow asks the **governance group**.
 4. On approval, the PR auto-merges and GitHub Actions push the change to ISC.
 5. A successful apply creates an immutable \`known-good/…\` tag.
 
-Drift (ISC edited outside a PR) asks only the governance group. Approving copies ISC into git. Rejecting puts ISC back to match git. A timeout changes nothing, and the next backup asks again. The Who column names the ISC audit actor associated with that drift since git and ISC last matched.
+Drift (ISC edited outside a PR) asks the governance group. Approving copies ISC into git. Rejecting puts ISC back to match git. A timeout changes nothing, and the next backup asks again. The Who column names the ISC audit actor associated with that drift since git and ISC last matched.
 
 Direct pushes to \`main\` are blocked when a ruleset is in place. Only the automation GitHub App is meant to write backups, id write-back, the ledger, and this README.
 
@@ -109,7 +111,7 @@ ${history}
 
 ## Known-good tags
 
-Use **Actions → Restore** with one of these tags. Restore approval goes only to the governance group.
+**Actions → Restore** has no inputs: pick the branch or tag to restore from in **Use workflow from**, usually one of these. Restore approval goes only to the governance group.
 
 ${tagList}
 
@@ -120,7 +122,7 @@ npm install
 npm run validate
 npm run plan
 npm run backup          # requires ISC_* env
-npm run restore -- --tag known-good/… --dry-run
+npm run restore -- --dry-run   # plans the checked-out tree against live ISC
 \`\`\`
 
 ---
