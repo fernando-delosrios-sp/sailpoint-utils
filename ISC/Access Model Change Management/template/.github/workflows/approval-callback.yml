@@ -15,6 +15,18 @@ jobs:
     if: github.event.action == 'isc-change-decision'
     runs-on: ubuntu-latest
     steps:
+      # The merge below must land as the App, not the default GITHUB_TOKEN —
+      # GitHub does not fire push-triggered workflows (apply.yml) for commits
+      # made with the latter, so an ISC-approved change would merge cleanly
+      # and never reach ISC. restore-decision and drift-decision already mint
+      # this; change-decision is the one job that didn't.
+      - name: Generate GitHub App token
+        id: app
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AMCM_APP_ID }}
+          private-key: ${{ secrets.AMCM_APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -83,7 +95,7 @@ jobs:
       - name: Approved — set status and enable auto-merge
         if: steps.verify.outputs.decision == 'approved'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           PR=${{ steps.verify.outputs.pr }}
           SHA=${{ steps.verify.outputs.sha }}
@@ -116,10 +128,18 @@ jobs:
       - name: Rejected — close PR
         if: steps.verify.outputs.decision == 'rejected'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          # Via env:, not inline ${{ }} — the expression is substituted into
+          # the script source before bash ever sees it, so an approver's
+          # comment with a space (or shell metacharacters) was parsed as a
+          # second command instead of a value, and the step died before
+          # posting anything (seen live: "e2e-B: rejecting on purpose" aborted
+          # here with "rejecting: command not found", leaving the PR open
+          # with isc-approval still pending). env: + "$COMMENT" is one shell
+          # word regardless of content.
+          COMMENT: ${{ steps.verify.outputs.comment }}
         run: |
           PR=${{ steps.verify.outputs.pr }}
-          COMMENT=${{ steps.verify.outputs.comment }}
           SHA=$(gh pr view "$PR" --json headRefOid -q .headRefOid)
           gh api "repos/${{ github.repository }}/statuses/$SHA" \
             -f state=failure \
@@ -131,7 +151,7 @@ jobs:
       - name: Expired — label PR
         if: steps.verify.outputs.decision == 'expired'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
           PR=${{ steps.verify.outputs.pr }}
           SHA=$(gh pr view "$PR" --json headRefOid -q .headRefOid)
@@ -139,6 +159,15 @@ jobs:
             -f state=failure \
             -f context=isc-approval \
             -f description="ISC approval expired"
+          # Unlike amcm-drift (created by backup.yml before it's ever
+          # applied), nothing creates approval-expired ahead of time. Without
+          # it `gh pr edit --add-label` exits 1 on "label not found" and the
+          # step dies before the comment below runs — seen live: the status
+          # went to failure with no comment and no label, so the only clue
+          # left for the PR author was a red check.
+          gh label create "approval-expired" --color D93F0B \
+            --description "ISC governance approval timed out before anyone decided" \
+            2>/dev/null || true
           gh pr edit "$PR" --add-label "approval-expired"
           gh pr comment "$PR" --body "ISC approval expired. Comment \`/request-approval\` to try again."
 
