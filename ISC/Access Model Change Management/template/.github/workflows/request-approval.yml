@@ -22,17 +22,15 @@ jobs:
        contains(github.event.comment.body, '/request-approval'))
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - run: node scripts/public-npm-ci.mjs
-
+      # Resolved before checkout, and with --repo rather than relying on a
+      # git remote, so it works with no checkout yet. On issue_comment there
+      # is no github.event.pull_request — the old checkout's
+      # `github.event.pull_request.head.sha || github.sha` fell through to
+      # github.sha, the default branch tip, not the PR. /request-approval
+      # then built and approved an empty main-vs-main plan while the PR
+      # comment still quoted the real (unapproved) diff hash — seen live:
+      # governance would have approved a no-op. Resolving the PR first and
+      # checking out its real head below fixes both event types the same way.
       - name: Resolve PR metadata
         id: pr
         env:
@@ -43,13 +41,28 @@ jobs:
           else
             NUMBER=${{ github.event.pull_request.number }}
           fi
-          gh pr view "$NUMBER" --json number,title,body,url,author,baseRefName,headRefOid > pr.json
+          # /tmp, not the workspace: checkout below runs `git clean -ffdx` on
+          # the workspace directory, which would delete a file written here
+          # before anything is checked out into it.
+          gh pr view "$NUMBER" --repo "${{ github.repository }}" \
+            --json number,title,body,url,author,baseRefName,headRefOid > /tmp/pr.json
           echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
-          echo "sha=$(jq -r .headRefOid pr.json)" >> "$GITHUB_OUTPUT"
+          echo "sha=$(jq -r .headRefOid /tmp/pr.json)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.pr.outputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: node scripts/public-npm-ci.mjs
 
       - name: Build plan and diff hash
         run: |
-          BASE=$(jq -r .baseRefName pr.json)
+          BASE=$(jq -r .baseRefName /tmp/pr.json)
           node --input-type=module <<EOF
           import { writeFileSync } from 'node:fs';
           import { loadItemsFromGitRef, changedAccessFiles } from './scripts/git-items.mjs';
@@ -86,9 +99,9 @@ jobs:
         run: |
           DIFF_HASH=$(jq -r .diffHash plan.json)
           # Enrich pr.json for the approval payload
-          jq --arg author "$(jq -r .author.login pr.json)" \
-            --arg headSha "$(jq -r .headRefOid pr.json)" \
-            '. + {author: $author, headSha: $headSha, number: .number}' pr.json > pr-payload.json
+          jq --arg author "$(jq -r .author.login /tmp/pr.json)" \
+            --arg headSha "$(jq -r .headRefOid /tmp/pr.json)" \
+            '. + {author: $author, headSha: $headSha, number: .number}' /tmp/pr.json > pr-payload.json
           node scripts/cli.mjs request-approval \
             --kind change \
             --plan plan.json \
