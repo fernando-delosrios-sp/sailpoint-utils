@@ -94,16 +94,30 @@ export class IscClient {
     }
 
     for (let attempt = 1; ; attempt++) {
-      const res = await this.gate.run(() => this.fetchImpl(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          Accept: 'application/json',
-          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-          ...headers,
-        },
-        body: body === undefined ? undefined : JSON.stringify(body),
-      }));
+      let res;
+      try {
+        res = await this.gate.run(() => this.fetchImpl(url, {
+          method,
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            Accept: 'application/json',
+            ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+            ...headers,
+          },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        }));
+      } catch (err) {
+        // fetch() itself rejects on a network-level failure (DNS, reset,
+        // timeout) — there is no res.status to check, so the retry below
+        // never saw these. Seen live: a bare `TypeError: fetch failed` out
+        // of listAll aborted a restore's post-apply reconcile step outright,
+        // even though the restore it was reconciling had just succeeded.
+        if (attempt < this.maxAttempts) {
+          await this.sleepImpl(this.retryDelayMs(null, attempt));
+          continue;
+        }
+        throw err;
+      }
 
       // Rate limits and transient gateway errors are expected once requests
       // overlap, so they wait and retry rather than failing a whole backup.

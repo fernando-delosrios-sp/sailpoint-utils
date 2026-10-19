@@ -60,6 +60,41 @@ describe('IscClient retry', () => {
     await assert.rejects(() => client.get('/search/v1'), (err) => err.status === 403);
     assert.equal(calls.length, 1);
   });
+
+  it('retries a network-level fetch rejection, not just an HTTP error status', async () => {
+    // fetch() rejects outright on DNS/connection failures — there is no
+    // res.status for the status-based retry above to see. Seen live: a bare
+    // `TypeError: fetch failed` propagated straight out of listAll and
+    // aborted a restore's post-apply reconcile step with no retry at all,
+    // even though the restore it was reconciling had already succeeded.
+    let calls = 0;
+    const sleeps = [];
+    const client = new IscClient({
+      baseUrl: 'https://tenant.api.identitynow.com',
+      accessToken: 'token',
+      fetchImpl: async () => {
+        calls += 1;
+        if (calls < 3) throw new TypeError('fetch failed');
+        return response(200, { ok: true });
+      },
+      sleepImpl: async (ms) => { sleeps.push(ms); },
+    });
+    const { body } = await client.get('/roles/v1');
+    assert.deepEqual(body, { ok: true });
+    assert.equal(calls, 3);
+    assert.equal(sleeps.length, 2);
+  });
+
+  it('gives up after maxAttempts of network-level failures and rethrows', async () => {
+    const client = new IscClient({
+      baseUrl: 'https://tenant.api.identitynow.com',
+      accessToken: 'token',
+      fetchImpl: async () => { throw new TypeError('fetch failed'); },
+      sleepImpl: async () => {},
+      maxAttempts: 3,
+    });
+    await assert.rejects(() => client.get('/roles/v1'), /fetch failed/);
+  });
 });
 
 describe('IscClient paging', () => {
