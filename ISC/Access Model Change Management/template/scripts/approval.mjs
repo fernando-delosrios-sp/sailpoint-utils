@@ -15,6 +15,18 @@ function pathRank(path) {
 }
 
 /**
+ * `plan.summary` is `{ create, update, delete, skip }` counts, not text.
+ * String-concatenating the object directly rendered the approval governance
+ * reads as the literal text "[object Object]" — seen live on every restore
+ * approval.
+ */
+function summaryLine(summary) {
+  if (!summary) return '';
+  const { create = 0, update = 0, delete: del = 0, skip = 0 } = summary;
+  return `${create} create, ${update} update, ${del} delete, ${skip} skip`;
+}
+
+/**
  * Cap long path lists so the approval description stays readable (and small).
  * A thousand entitlements must not push the one changed role out of view, so
  * the preview is ordered by kind rather than alphabetically.
@@ -103,7 +115,7 @@ export function buildRestoreApprovalPayload({
       `Full restore of the access model from ${sourceRef}`,
       `Requested by ${requester}`,
       '',
-      plan.summary ?? '',
+      summaryLine(plan.summary),
       '',
       ...items.map((i) => `${i.op} ${i.type}: ${i.name}`),
       '',

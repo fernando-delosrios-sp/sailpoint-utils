@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildChangeApprovalPayload, buildDriftApprovalPayload } from '../approval.mjs';
+import { buildChangeApprovalPayload, buildDriftApprovalPayload, buildRestoreApprovalPayload } from '../approval.mjs';
 import { contentHash } from '../common.mjs';
 
 const config = {
@@ -115,6 +115,30 @@ describe('buildChangeApprovalPayload', () => {
     assert.equal(payload.owners, undefined);
     assert.deepEqual(payload.items, [{ op: 'update', type: 'role', name: 'Analyst' }]);
     assert.match(payload.approvalText, /Pull request #12: Rename analyst/);
+  });
+});
+
+describe('buildRestoreApprovalPayload', () => {
+  it('renders plan.summary as readable counts, not a stringified object', () => {
+    // plan.summary is { create, update, delete, skip } counts, not text.
+    // String-concatenating it directly rendered as the literal text
+    // "[object Object]" in every restore approval governance saw.
+    const payload = buildRestoreApprovalPayload({
+      plan: {
+        summary: { create: 1, update: 2, delete: 0, skip: 3 },
+        operations: [
+          { op: 'update', type: 'role', name: 'Analyst' },
+          { op: 'skip', type: 'role', name: 'Untouched' },
+        ],
+      },
+      planHash: 'hash-1',
+      sourceRef: 'main',
+      requester: 'octocat',
+      config,
+    });
+    assert.doesNotMatch(payload.approvalText, /\[object Object\]/);
+    assert.match(payload.approvalText, /1 create, 2 update, 0 delete, 3 skip/);
+    assert.match(payload.approvalText, /Full restore of the access model from main/);
   });
 });
 
