@@ -80,7 +80,7 @@ describe('readme init row', () => {
       outPath: out,
     });
     const text = readFileSync(out, 'utf8');
-    assert.match(text, /\| init \| 1 entitlements, 2 access profiles, 3 roles \|/);
+    assert.match(text, /\| init \| 1 ent, 2 ap, 3 roles \|/);
     assert.match(text, /known-good\/20261016T120000Z/);
     assert.match(text, /Actions → Init/);
     assert.match(text, /Type `RESET`/);

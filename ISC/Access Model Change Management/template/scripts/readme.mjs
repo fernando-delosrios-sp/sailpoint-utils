@@ -6,14 +6,27 @@ import { recentEntries } from './ledger.mjs';
 
 function fmtTs(ts) {
   if (!ts) return '—';
-  return String(ts).replace('T', ' ').replace(/\.\d{3}Z$/, ' UTC').replace(/Z$/, ' UTC');
+  // Minutes are enough to place an entry, and the column header carries the
+  // zone, so neither seconds nor a " UTC" suffix has to widen the table.
+  const m = String(ts).match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})/);
+  return m ? `${m[1]} ${m[2]}` : String(ts);
+}
+
+/** Every known-good tag repeats the same prefix, so it earns no column width. */
+function shortRef(ref) {
+  return String(ref).replace(/^(?:known-good|isc-applied)\//, '');
+}
+
+function tagCell(tag) {
+  if (!tag) return '—';
+  return `[\`${shortRef(tag)}\`](../../releases/tag/${encodeURIComponent(tag)})`;
 }
 
 function changeRow(entry) {
   const e = entry.entry;
   if (e.kind === 'change') {
     const decision = (e.decisions ?? []).map((d) => d.decision).join(', ') || '—';
-    const tag = e.tag ? `\`${e.tag}\`` : '—';
+    const tag = tagCell(e.tag);
     const pr = Number(e.pr);
     const ref = pr > 0 ? (e.url ? `[#${pr}](${e.url})` : `#${pr}`) : '—';
     const author = String(e.author ?? '').trim();
@@ -24,13 +37,13 @@ function changeRow(entry) {
     const decision = e.decision?.decision ?? '—';
     // Entries written when restore only accepted tags carry `sourceTag`.
     const ref = e.sourceRef ?? e.sourceTag ?? '—';
-    return `| restore | \`${ref}\` | @${e.requester ?? '—'} | ${decision} | — | ${fmtTs(e.timestamp)} |`;
+    return `| restore | \`${shortRef(ref)}\` | @${e.requester ?? '—'} | ${decision} | — | ${fmtTs(e.timestamp)} |`;
   }
   if (e.kind === 'init') {
     const counts = e.counts
-      ? `${e.counts.entitlements ?? 0} entitlements, ${e.counts.accessProfiles ?? 0} access profiles, ${e.counts.roles ?? 0} roles`
+      ? `${e.counts.entitlements ?? 0} ent, ${e.counts.accessProfiles ?? 0} ap, ${e.counts.roles ?? 0} roles`
       : 'baseline';
-    const tag = e.tag ? `\`${e.tag}\`` : '—';
+    const tag = tagCell(e.tag);
     return `| init | ${counts} | @${e.requester ?? '—'} | fresh backup | ${tag} | ${fmtTs(e.timestamp)} |`;
   }
   if (e.kind === 'drift') {
@@ -38,7 +51,7 @@ function changeRow(entry) {
     const issue = e.issueUrl ? `[issue](${e.issueUrl})` : '—';
     // Entries written before drift went through governance approval have no
     // `decision` and were auto-committed; keep showing that for history.
-    const decision = e.restored ? `${e.decision ?? 'rejected'}, ISC restored` : (e.decision ?? 'committed');
+    const decision = e.restored ? `${e.decision ?? 'rejected'}, restored` : (e.decision ?? 'committed');
     const who = (e.modifiers ?? [])
       .map((name) => String(name).replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim())
       .filter(Boolean)
@@ -109,8 +122,8 @@ names use the plain name slug.
 
 ## Recent history
 
-| Kind | Ref | Who | Decision | Tag / issue | When |
-|------|-----|-----|----------|-------------|------|
+| Kind | Ref | Who | Decision | Tag / issue | When (UTC) |
+|------|-----|-----|----------|-------------|------------|
 ${history}
 
 ## Known-good tags
