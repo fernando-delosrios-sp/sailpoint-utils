@@ -8,8 +8,8 @@ Reusable bootstrap for a small ISC access model seeded from the **emea-tes-team*
 
 | Domain | Source / application | Roles |
 | --- | --- | --- |
-| Departments | **Department Services** | `<department> Department` (13) |
-| Job titles | **Workforce Access** | `<title>` (81) |
+| Departments | **Department Services** | `<department> Department` (37) |
+| Job titles | **Workforce Access** | `<title>` (157) |
 | Offices | **Workplace Access** | Dimensional **Workplace User** + one city dimension each |
 | Customer relationship management | **Customer 360** | 10 requestable access profiles |
 | SoD demo | **Workforce Access** entitlements | 5 requestable **SoD Demo** roles (each violates one policy) |
@@ -50,9 +50,9 @@ flowchart TD
 
 Seeded from identity search on `emea-tes-team` (250 identities):
 
-- **Departments:** Accounting, Engineering, Human Resources, Information Technology, Finance, Inventory, Asset Management, Sales, Call Center, Nursing, Regional Operations, Doctors, Executive Management
-- **Titles:** 81 distinct values from `titleHistory` (for example Call Center Representative, Accounts Payable Analyst, Information Security Analyst)
-- **Cities:** Austin, San Jose, Brussels, London, Sao Paulo, Singapore, Tokyo, Taipei, Munich, New York
+- **Departments:** Accounting, Engineering, Human Resources, Information Technology, Finance, Inventory, Asset Management, Sales, Call Center, Nursing, Regional Operations, Doctors, Executive Management, plus 24 live SuccessFactors departments (for example Finance AU, Engineering AU, Talent Acquisition AU)
+- **Titles:** 81 OrangeHRM values from `titleHistory` (for example Call Center Representative, Accounts Payable Analyst, Information Security Analyst), plus 76 live titles used by active SuccessFactors identities and NERM-only people (for example HR systems specialist, Software Engineer)
+- **Cities:** Austin, San Jose, Brussels, London, Sao Paulo, Singapore, Tokyo, Taipei, Munich, New York. These match the active NERM location profiles. Active SuccessFactors identities have no city, so no new workplace dimensions were added.
 - **userType:** Employee, Contractor, Internal (Workplace User uses Employee or Contractor)
 - **Lifecycle:** `cloudLifecycleState == active`
 
@@ -239,7 +239,7 @@ Seven Active SOD Controls (experimental `/controls/v1`) are available for violat
 - Title and department roles list the expected capability entitlements (no intermediate access profiles)
 - Title and department roles show STANDARD membership with `active` plus department `EQUALS` / titleHistory `CONTAINS [value]`
 - Five requestable **SoD Demo** roles exist; each description names the policy it violates
-- Workplace User is dimensional, carries the **Workplace User** entitlement, and has ten city dimensions
+- Workplace User is dimensional, carries the **Workplace User** entitlement, and has ten city dimensions (NERM locations; SuccessFactors active identities have no city)
 - Set dimension criteria to **city** on Workplace User in the UI (the roles API accepts `dimensionSchema` but does not persist it on this tenant)
 - SoD policies from `demo-sod-policies.json` exist and are **ENFORCED**
 - Mitigating controls exist and each policy lists the expected **allowed controls**

@@ -30,8 +30,8 @@ Assert-True ($sourceNames -contains 'Workplace Access') 'Workplace Access source
 Assert-True ($sourceNames -contains 'Customer 360') 'Customer 360 source present'
 Assert-True ($sourceNames -notcontains 'Title Toolkit') 'Title Toolkit is not used'
 
-Assert-Equal 13 @($model['departmentRoles']).Count '13 department roles'
-Assert-equal 81 @($model['titleRoles']).Count '81 title roles'
+Assert-Equal 37 @($model['departmentRoles']).Count '37 department roles'
+Assert-equal 157 @($model['titleRoles']).Count '157 title roles'
 Assert-equal 10 @($model['workplaceRole']['dimensions']).Count '10 city dimensions'
 Assert-equal 10 @($model['entitlements']['customer360']).Count '10 Customer 360 entitlements'
 Assert-equal 10 @($model['requestableAccessProfiles']).Count '10 Customer 360 requestable access profiles'
