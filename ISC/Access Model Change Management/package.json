@@ -9,7 +9,10 @@
   },
   "scripts": {
     "install-tenant": "node installer/cli.mjs",
-    "test": "node --test installer/test/*.mjs template/scripts/test/*.mjs"
+    "update-tenant": "node installer/cli.mjs update",
+    "test": "node --test installer/test/*.mjs template/scripts/test/*.mjs",
+    "test:installer": "node --test installer/test/*.mjs",
+    "test:template": "node --test template/scripts/test/*.mjs"
   },
   "engines": {
     "node": ">=20"

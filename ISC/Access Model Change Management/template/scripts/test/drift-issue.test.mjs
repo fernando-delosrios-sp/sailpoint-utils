@@ -33,11 +33,36 @@ describe('renderDriftIssue', () => {
     assert.ok(issue.body.includes(drift.driftHash));
   });
 
-  it('lists the full set rather than a preview', () => {
+  it('lists the full set rather than a preview when the body fits', () => {
     const changed = Array.from({ length: 300 }, (_, i) => `access/entitlements/s/e-${i}.json`);
     const issue = renderDriftIssue({ ...drift, changed });
     assert.ok(issue.body.includes('e-299.json'));
     assert.match(issue.body, /### Changed \(300\)/);
+  });
+
+  it('drops paths that would overflow GitHub’s body limit and keeps the drift hash', () => {
+    const changed = Array.from({ length: 400 }, (_, i) => `access/entitlements/source/entitlement-${i}.json`);
+    const issue = renderDriftIssue(
+      { ...drift, changed, driftHash: 'abc123hash' },
+      new Date('2026-10-17T07:52:00Z'),
+      { maxLength: 2500, prUrl: 'https://github.com/example/repo/pull/9' },
+    );
+    assert.ok(issue.body.length <= 2500);
+    assert.match(issue.body, /### Changed \(400\)/);
+    assert.match(issue.body, /more not listed/);
+    assert.match(issue.body, /entitlement-0\.json/);
+    assert.doesNotMatch(issue.body, /entitlement-399\.json/);
+    assert.ok(issue.body.includes('abc123hash'));
+    assert.match(issue.body, /^Drift-PR: https:\/\/github.com\/example\/repo\/pull\/9$/m);
+  });
+
+  it('caps the title at GitHub’s 256-character limit', () => {
+    const issue = renderDriftIssue({
+      ...drift,
+      actors: { ...drift.actors, modifiers: ['a'.repeat(400)] },
+    });
+    assert.ok(issue.title.length <= 256);
+    assert.match(issue.title, /…$/);
   });
 
   it('says plainly when the audit search could not answer', () => {
@@ -83,6 +108,16 @@ describe('backup workflow contract', () => {
 
   it('reuses an open issue instead of filing one per run', () => {
     assert.match(yaml, /gh issue list --state open --label amcm-drift/);
+  });
+
+  it('takes a baseline instead of a drift issue when the repository has none', () => {
+    assert.match(yaml, /baseline-status/);
+    assert.match(yaml, /Take the initial baseline/);
+    assert.match(yaml, /ledger-init/);
+    const beforeDrift = yaml.slice(0, yaml.indexOf('- name: Detect drift'));
+    assert.match(beforeDrift, /steps\.baseline\.outputs\.initialized != 'true'/);
+    const drift = yaml.slice(yaml.indexOf('- name: Detect drift'));
+    assert.match(drift, /if: steps\.baseline\.outputs\.initialized == 'true'/);
   });
 
   it('opens a pull request for the drift diff and can push that branch', () => {

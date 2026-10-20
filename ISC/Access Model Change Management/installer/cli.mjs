@@ -827,7 +827,7 @@ Run \`node installer/cli.mjs update --help\` for the update command.
     }
 
     if (!argv['skip-backup']) {
-      log('Dispatching initial backup…');
+      log('Dispatching initial backup (takes a baseline when the repository has none)…');
       try {
         gh(['workflow', 'run', 'backup.yml', '--repo', repoFull]);
       } catch (err) {

@@ -81,6 +81,18 @@ export async function runBackup({
 }
 
 /**
+ * A repository with no access items and no ledger has nothing to diff against.
+ * The first backup must take a baseline (the Init snapshot) instead of
+ * reporting every live ISC item as drift.
+ */
+export function repoInitialized({
+  items = loadAllItems(),
+  entries = listLedgerEntries(),
+} = {}) {
+  return items.length > 0 || entries.length > 0;
+}
+
+/**
  * Compare current access/ files to a fresh ISC snapshot without writing.
  *
  * Returns the snapshot alongside the drift so the caller can write it without

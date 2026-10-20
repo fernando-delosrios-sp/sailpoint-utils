@@ -2,7 +2,7 @@
 import minimist from 'minimist';
 import { loadAllItems, loadConfig, writeJson } from './common.mjs';
 import { IscClient } from './isc-client.mjs';
-import { runBackup, detectDrift } from './backup.mjs';
+import { runBackup, detectDrift, repoInitialized } from './backup.mjs';
 import { fromSnapshotFile, toSnapshotFile } from './live-snapshot.mjs';
 import { driftDecisionComment, driftPullRequestUrl, renderDriftIssue } from './drift-issue.mjs';
 import { driftBranchName, driftContentHash, materializeDrift, renderDriftPullRequest } from './drift-pr.mjs';
@@ -57,6 +57,7 @@ async function main() {
 
 Commands:
   backup              Snapshot ISC into access/ (--snapshot file reuses a drift read)
+  baseline-status     Print whether access/ or the ledger already has a baseline
   clear-content       Delete access JSON and the ledger, keeping .gitkeep
   drift               Detect drift without writing (--snapshot file saves the ISC read)
   drift-issue         Render the drift issue title and body from --drift
@@ -81,6 +82,11 @@ Commands:
   }
 
   const config = existsSync(join(ROOT, 'config.yaml')) ? loadConfig() : null;
+
+  if (cmd === 'baseline-status') {
+    print({ initialized: repoInitialized() });
+    return;
+  }
 
   if (cmd === 'backup') {
     // --snapshot reuses the ISC read a prior `drift` already paid for.

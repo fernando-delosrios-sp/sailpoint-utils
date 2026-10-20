@@ -27,8 +27,75 @@ jobs:
 
       - run: node scripts/public-npm-ci.mjs
 
+      # An empty access tree and an empty ledger is not drift. There is nothing
+      # in git to compare, so the whole live model would become one issue and
+      # overflow GitHub's body limit. Take the baseline instead — the same
+      # snapshot Init writes — and leave the destructive reset to Init itself.
+      - name: Check for a baseline
+        id: baseline
+        run: |
+          node scripts/cli.mjs baseline-status > /tmp/baseline.json
+          echo "initialized=$(jq -r '.initialized' /tmp/baseline.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate GitHub App token for the baseline
+        id: init_app
+        if: steps.baseline.outputs.initialized != 'true'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AMCM_APP_ID }}
+          private-key: ${{ secrets.AMCM_APP_PRIVATE_KEY }}
+
+      - name: Take the initial baseline
+        if: steps.baseline.outputs.initialized != 'true'
+        env:
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
+          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
+          ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ steps.init_app.outputs.token }}
+        run: |
+          set -euo pipefail
+          node scripts/cli.mjs backup > /tmp/backup.json
+          cat /tmp/backup.json
+          TAG=$(node --input-type=module -e "import { buildKnownGoodTagName } from './scripts/tags.mjs'; console.log(buildKnownGoodTagName())")
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          jq -n \
+            --arg requester "$ACTOR" \
+            --arg tag "$TAG" \
+            --slurpfile backup /tmp/backup.json \
+            '{requester:$requester, tag:$tag, counts:$backup[0].counts}' \
+            | node scripts/cli.mjs ledger-init
+
+          git config user.name "amcm-bot"
+          git config user.email "amcm-bot[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(init): baseline backup from ISC"
+          git tag -a "$TAG" -m "Known-good baseline after the first backup"
+          node scripts/cli.mjs readme
+          git add README.md
+          if ! git diff --cached --quiet; then
+            git commit --amend --no-edit
+            git tag -d "$TAG"
+            git tag -a "$TAG" -m "Known-good baseline after the first backup"
+          fi
+
+          # The App token pushes even when a ruleset blocks the default token.
+          AUTH="AUTHORIZATION: bearer ${GH_TOKEN}"
+          git -c "http.extraheader=${AUTH}" push origin HEAD:main
+          git -c "http.extraheader=${AUTH}" push origin "refs/tags/$TAG"
+          {
+            echo "### First backup took the baseline"
+            echo "There was no access model in git and no ledger, so this run committed the live ISC snapshot instead of opening a drift issue."
+            echo "Baseline tag: \`$TAG\`"
+            echo ""
+            echo '```json'
+            jq '.counts' /tmp/backup.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Detect drift
         id: drift
+        if: steps.baseline.outputs.initialized == 'true'
         env:
           ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
           ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}

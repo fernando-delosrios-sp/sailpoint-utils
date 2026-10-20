@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { driftContentHash } from '../backup.mjs';
+import { driftContentHash, repoInitialized } from '../backup.mjs';
 
 const path = 'access/roles/doctor-chief.json';
 
@@ -11,6 +11,14 @@ function itemAt(description) {
     type: 'role',
   };
 }
+
+describe('repoInitialized', () => {
+  it('is false only when both the access tree and the ledger are empty', () => {
+    assert.equal(repoInitialized({ items: [], entries: [] }), false);
+    assert.equal(repoInitialized({ items: [{ relPath: 'access/roles/a.json' }], entries: [] }), true);
+    assert.equal(repoInitialized({ items: [], entries: [{ entry: { kind: 'init' } }] }), true);
+  });
+});
 
 describe('driftContentHash', () => {
   it('changes when a drifted item is edited again, even though the file set is unchanged', () => {
