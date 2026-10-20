@@ -102,7 +102,7 @@ GitHub-centric governance of ISC **entitlements** (metadata), **access profiles*
 4. On approval, the PR auto-merges and GitHub Actions push the change to ISC.
 5. A successful apply creates an immutable \`known-good/…\` tag.
 
-Drift (ISC edited outside a PR) asks the governance group. Approving copies ISC into git. Rejecting puts ISC back to match git. A timeout changes nothing, and the next backup asks again. The Who column names the ISC audit actor associated with that drift since git and ISC last matched.
+Drift (ISC edited outside a PR) opens a pull request whose diff is live ISC against git, and asks the governance group. Approving merges that pull request. Rejecting closes it and puts ISC back to match git. A timeout closes it and changes nothing, and the next backup asks again. The Who column names the ISC audit actor associated with that drift since git and ISC last matched.
 
 Direct pushes to \`main\` are blocked when a ruleset is in place. Only the automation GitHub App is meant to write backups, id write-back, the ledger, and this README.
 

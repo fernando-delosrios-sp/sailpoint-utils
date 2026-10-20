@@ -61,6 +61,18 @@ describe('buildDriftApprovalPayload', () => {
     assert.equal(payload.issueUrl, 'https://github.com/acme/amcm/issues/12');
   });
 
+  it('points the approver at the pull request that holds the diff', () => {
+    const drift = { added: [], changed: ['a.json'], deleted: [], driftHash: 'h' };
+    const payload = buildDriftApprovalPayload({
+      drift,
+      issueUrl: 'https://github.com/acme/amcm/issues/12',
+      prUrl: 'https://github.com/acme/amcm/pull/13',
+      config,
+    });
+    assert.match(payload.approvalText, /Diff: https:\/\/github.com\/acme\/amcm\/pull\/13/);
+    assert.equal(payload.prUrl, 'https://github.com/acme/amcm/pull/13');
+  });
+
   it('does not inline the full path lists in the trigger payload', () => {
     const drift = {
       added: ['a.json'],

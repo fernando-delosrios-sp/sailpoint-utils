@@ -16,7 +16,7 @@ permissions:
 jobs:
   request:
     if: >
-      (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false && !startsWith(github.head_ref, 'drift/')) ||
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request &&
        contains(github.event.comment.body, '/request-approval'))
@@ -45,9 +45,16 @@ jobs:
           # the workspace directory, which would delete a file written here
           # before anything is checked out into it.
           gh pr view "$NUMBER" --repo "${{ github.repository }}" \
-            --json number,title,body,url,author,baseRefName,headRefOid > /tmp/pr.json
+            --json number,title,body,url,author,baseRefName,headRefName,headRefOid > /tmp/pr.json
           echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
           echo "sha=$(jq -r .headRefOid /tmp/pr.json)" >> "$GITHUB_OUTPUT"
+          echo "head=$(jq -r .headRefName /tmp/pr.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse change approval on a drift pull request
+        if: startsWith(steps.pr.outputs.head, 'drift/')
+        run: |
+          echo "::error::This pull request records drift. Approve it in ISC; merging is the drift decision, not a change."
+          exit 1
 
       - uses: actions/checkout@v4
         with:

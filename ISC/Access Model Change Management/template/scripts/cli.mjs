@@ -4,7 +4,8 @@ import { loadAllItems, loadConfig, writeJson } from './common.mjs';
 import { IscClient } from './isc-client.mjs';
 import { runBackup, detectDrift } from './backup.mjs';
 import { fromSnapshotFile, toSnapshotFile } from './live-snapshot.mjs';
-import { driftDecisionComment, renderDriftIssue } from './drift-issue.mjs';
+import { driftDecisionComment, driftPullRequestUrl, renderDriftIssue } from './drift-issue.mjs';
+import { driftBranchName, driftContentHash, materializeDrift, renderDriftPullRequest } from './drift-pr.mjs';
 import { validateRepo } from './validate.mjs';
 import { planFromTrees, buildPlan } from './plan.mjs';
 import { applyPlan } from './apply.mjs';
@@ -47,7 +48,7 @@ async function loadItemsFromManifest(path) {
 async function main() {
   const argv = minimist(process.argv.slice(2), {
     boolean: ['dry-run', 'json', 'help'],
-    string: ['base', 'head', 'tag', 'ref', 'pr', 'author', 'files', 'out', 'plan', 'drift', 'kind', 'diff-hash', 'message', 'tags', 'snapshot', 'issue-url', 'decision', 'run', 'detail'],
+    string: ['base', 'head', 'tag', 'ref', 'pr', 'author', 'files', 'out', 'plan', 'drift', 'kind', 'diff-hash', 'message', 'tags', 'snapshot', 'issue-url', 'pr-url', 'issue', 'body', 'decision', 'run', 'detail'],
   });
   const [cmd] = argv._;
 
@@ -59,6 +60,9 @@ Commands:
   clear-content       Delete access JSON and the ledger, keeping .gitkeep
   drift               Detect drift without writing (--snapshot file saves the ISC read)
   drift-issue         Render the drift issue title and body from --drift
+  drift-pr            Render the drift pull request (branch, title, body) for --issue
+  drift-pr-url        Print the Drift-PR url recorded in an issue body (--body file)
+  drift-materialize   Write drifted snapshot bodies into the working tree
   drift-comment       Render the decision comment for the drift issue
   validate            Schema + name-reference checks
   plan                Diff base items vs head (default: empty base vs working tree)
@@ -104,7 +108,28 @@ Commands:
     // Renders only; the workflow does the gh calls so the issue exists before
     // the approval that links to it.
     const drift = JSON.parse(readFileSync(argv.drift, 'utf8'));
-    print(renderDriftIssue(drift));
+    print(renderDriftIssue(drift, undefined, { prUrl: argv['pr-url'] || null }));
+    return;
+  }
+
+  if (cmd === 'drift-pr') {
+    const drift = JSON.parse(readFileSync(argv.drift, 'utf8'));
+    const snapshot = fromSnapshotFile(JSON.parse(readFileSync(argv.snapshot, 'utf8')));
+    const hash = driftContentHash(drift, snapshot);
+    const pr = renderDriftPullRequest({ drift, issueNumber: argv.issue });
+    print({ ...pr, contentHash: hash, branch: driftBranchName(hash) });
+    return;
+  }
+
+  if (cmd === 'drift-pr-url') {
+    process.stdout.write(driftPullRequestUrl(readFileSync(argv.body, 'utf8')) ?? '');
+    return;
+  }
+
+  if (cmd === 'drift-materialize') {
+    const drift = JSON.parse(readFileSync(argv.drift, 'utf8'));
+    const snapshot = fromSnapshotFile(JSON.parse(readFileSync(argv.snapshot, 'utf8')));
+    print(materializeDrift({ drift, snapshot, root: ROOT }));
     return;
   }
 
@@ -196,7 +221,12 @@ Commands:
     let payload;
     if (kind === 'drift') {
       const drift = JSON.parse(readFileSync(argv.drift, 'utf8'));
-      payload = buildDriftApprovalPayload({ drift, issueUrl: argv['issue-url'], config });
+      payload = buildDriftApprovalPayload({
+        drift,
+        issueUrl: argv['issue-url'],
+        prUrl: argv['pr-url'],
+        config,
+      });
     } else if (kind === 'restore') {
       const plan = JSON.parse(readFileSync(argv.plan, 'utf8'));
       payload = buildRestoreApprovalPayload({

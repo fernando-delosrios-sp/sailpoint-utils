@@ -139,11 +139,12 @@ export function buildRestoreApprovalPayload({
  * ISC and compares hashes, so there's no need to carry potentially large
  * path lists through the workflow payload.
  */
-export function buildDriftApprovalPayload({ drift, issueUrl = null, config = loadConfig() }) {
+export function buildDriftApprovalPayload({ drift, issueUrl = null, prUrl = null, config = loadConfig() }) {
   return {
     kind: 'drift',
     driftHash: drift.driftHash,
     issueUrl,
+    prUrl,
     summary: {
       added: drift.added.length,
       changed: drift.changed.length,
@@ -151,7 +152,9 @@ export function buildDriftApprovalPayload({ drift, issueUrl = null, config = loa
     },
     approvalText: renderApprovalText([
       'ISC no longer matches the access model in git — items were changed outside the PR flow.',
-      // This description is truncated; the issue carries the full lists.
+      // This description is truncated. The pull request is the diff; the issue
+      // carries the full lists and who changed each item.
+      ...(prUrl ? [`Diff: ${prUrl}`] : []),
       ...(issueUrl ? [`Full detail: ${issueUrl}`] : []),
       '',
       ...actorApprovalLines(drift.actors),

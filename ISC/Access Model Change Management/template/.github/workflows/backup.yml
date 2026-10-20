@@ -7,17 +7,18 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
+  pull-requests: write
+  statuses: write
 
 jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      # Drift detection and the approval request are read-only against this repo
-      # (no commits happen here anymore), so the default GITHUB_TOKEN is enough —
-      # no GitHub App token needed. approval-callback.yml's drift-decision job is
-      # what actually writes to main once the governance group approves.
+      # The drift branch and its pull request are written here. main is not:
+      # approval-callback.yml merges that pull request once the governance
+      # group approves, and that merge is what copies ISC into git.
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -33,7 +34,7 @@ jobs:
           ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
           ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
         run: |
-          node scripts/cli.mjs drift > /tmp/drift.json
+          node scripts/cli.mjs drift --snapshot /tmp/isc-snapshot.json > /tmp/drift.json
           echo "has_drift=$(jq -r '.hasDrift' /tmp/drift.json)" >> "$GITHUB_OUTPUT"
           cat /tmp/drift.json
 
@@ -43,9 +44,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # The issue is the readable record of this drift: the ISC approval
-          # shows one truncated string, so it links here for the full lists.
-          # It must exist before the approval is requested.
+          # The issue is the readable record of this drift: who changed it,
+          # every path, and the hash the decision is checked against. The
+          # pull request opened next is the diff, and says Fixes #<this>.
           node scripts/cli.mjs drift-issue --drift /tmp/drift.json > /tmp/issue.json
           HASH=$(jq -r '.driftHash' /tmp/issue.json)
           jq -r '.body' /tmp/issue.json > /tmp/issue-body.md
@@ -65,7 +66,80 @@ jobs:
                     --body-file /tmp/issue-body.md)
           fi
           echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "number=${URL##*/}" >> "$GITHUB_OUTPUT"
           echo "Drift issue: $URL" >> "$GITHUB_STEP_SUMMARY"
+
+      # The default GITHUB_TOKEN can push the branch, but this org does not let
+      # GitHub Actions create pull requests. The app token is the one that can.
+      - name: Generate GitHub App token
+        id: app
+        if: steps.drift.outputs.has_drift == 'true'
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AMCM_APP_ID }}
+          private-key: ${{ secrets.AMCM_APP_PRIVATE_KEY }}
+
+      - name: Open the drift pull request
+        id: pull_request
+        if: steps.drift.outputs.has_drift == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          # Branch contents are the live ISC bodies. The pull request against
+          # main is the same diff a change would show, and Fixes #<issue>
+          # lists it as that issue's resolution. kind=change does not run for
+          # drift/* heads; the drift approval below is the only decision.
+          NUMBER="${{ steps.issue.outputs.number }}"
+          node scripts/cli.mjs drift-pr --drift /tmp/drift.json \
+            --snapshot /tmp/isc-snapshot.json --issue "$NUMBER" > /tmp/pr.json
+          BRANCH=$(jq -r '.branch' /tmp/pr.json)
+          jq -r '.body' /tmp/pr.json > /tmp/pr-body.md
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          node scripts/cli.mjs drift-materialize --drift /tmp/drift.json \
+            --snapshot /tmp/isc-snapshot.json
+          git add -A access
+          git diff --cached --quiet && { echo "::error::Drift produced no file changes"; exit 1; }
+          git commit -m "chore(backup): drift snapshot"
+          # The bot owns this branch. A later backup of the same bodies rebases
+          # the snapshot onto current main so the pull request stays mergeable.
+          if git fetch origin "refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"; then
+            git push --force-with-lease origin "HEAD:refs/heads/$BRANCH"
+          else
+            git push -u origin "HEAD:refs/heads/$BRANCH"
+          fi
+
+          PR_URL=$(gh pr list --head "$BRANCH" --base main --state open \
+                    --json url --jq '.[0].url // empty')
+          if [ -z "$PR_URL" ]; then
+            PR_URL=$(gh pr create --base main --head "$BRANCH" --label amcm-drift \
+                      --title "$(jq -r '.title' /tmp/pr.json)" \
+                      --body-file /tmp/pr-body.md)
+          fi
+
+          # An older snapshot of this same issue is no longer the resolution.
+          OLD=$(gh pr list --state open --label amcm-drift --limit 100 \
+                  --json number,headRefName,body \
+                  --jq ".[] | select(.body | contains(\"Fixes #$NUMBER\")) | select(.headRefName != \"$BRANCH\") | .number")
+          for n in $OLD; do
+            gh pr close "$n" --delete-branch \
+              --comment "Superseded by a newer drift snapshot on \`$BRANCH\`."
+          done
+
+          node scripts/cli.mjs drift-issue --drift /tmp/drift.json --pr-url "$PR_URL" > /tmp/issue.json
+          jq -r '.body' /tmp/issue.json > /tmp/issue-body.md
+          gh issue edit "$NUMBER" --body-file /tmp/issue-body.md
+
+          SHA=$(git rev-parse HEAD)
+          gh api "repos/${{ github.repository }}/statuses/$SHA" \
+            -f state=pending \
+            -f context=isc-approval \
+            -f description="Awaiting ISC drift approval"
+
+          echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
+          echo "Drift pull request: $PR_URL" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Request drift approval (kind=drift)
         if: steps.drift.outputs.has_drift == 'true'
@@ -75,9 +149,9 @@ jobs:
           ISC_EXTERNAL_TRIGGER_CLIENT_SECRET: ${{ secrets.ISC_TRIGGER_CLIENT_SECRET }}
           ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
           ISSUE_URL: ${{ steps.issue.outputs.url }}
+          PR_URL: ${{ steps.pull_request.outputs.url }}
         run: |
-          # Drift no longer auto-commits to main. It asks the governance
-          # group via the same AMCM Approval workflow used for changes/restores.
-          # approval-callback.yml does the actual sync once approved.
+          # Drift does not auto-commit to main. The governance group decides
+          # in ISC. Approving merges the pull request; that merge is the sync.
           node scripts/cli.mjs request-approval --kind drift --drift /tmp/drift.json \
-            --issue-url "$ISSUE_URL"
+            --issue-url "$ISSUE_URL" --pr-url "$PR_URL"

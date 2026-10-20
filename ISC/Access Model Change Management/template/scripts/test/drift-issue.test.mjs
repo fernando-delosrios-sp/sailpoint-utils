@@ -84,6 +84,24 @@ describe('backup workflow contract', () => {
   it('reuses an open issue instead of filing one per run', () => {
     assert.match(yaml, /gh issue list --state open --label amcm-drift/);
   });
+
+  it('opens a pull request for the drift diff and can push that branch', () => {
+    assert.match(yaml, /contents: write/);
+    assert.match(yaml, /pull-requests: write/);
+    assert.match(yaml, /drift-pr/);
+    assert.match(yaml, /drift-materialize/);
+    assert.ok(yaml.indexOf('drift-issue') < yaml.indexOf('drift-pr'));
+    assert.ok(yaml.indexOf('drift-pr') < yaml.indexOf('request-approval'));
+  });
+});
+
+describe('change approval skips drift pull requests', () => {
+  const yaml = readFileSync(new URL('../../.github/workflows/request-approval.yml', import.meta.url), 'utf8');
+
+  it('does not send kind=change for a drift head', () => {
+    assert.match(yaml, /!startsWith\(github\.head_ref, 'drift\/'\)/);
+    assert.match(yaml, /Refuse change approval on a drift pull request/);
+  });
 });
 
 describe('drift-decision report issues', () => {
@@ -112,6 +130,21 @@ describe('drift-decision report issues', () => {
       yaml.slice(expiredStart, closeStart),
       /gh issue close "\$ISSUE_URL" --reason "not planned"/,
     );
+  });
+
+  it('merges the drift pull request on approval and closes it otherwise', () => {
+    const approved = yaml.slice(
+      yaml.indexOf('Approved and current'),
+      yaml.indexOf('Approved but stale'),
+    );
+    assert.match(approved, /gh pr merge "\$PR_URL" --squash --delete-branch/);
+    assert.match(approved, /chore\(backup\): sync drift from ISC/);
+    const stale = yaml.slice(yaml.indexOf('Approved but stale'), yaml.indexOf('Rejected — put ISC back'));
+    assert.match(stale, /gh pr close "\$PR_URL" --delete-branch/);
+    const rejected = yaml.slice(yaml.indexOf('Rejected — put ISC back'), yaml.indexOf('Expired — record decision'));
+    assert.match(rejected, /gh pr close "\$PR_URL" --delete-branch/);
+    const expired = yaml.slice(yaml.indexOf('Expired — record decision'), yaml.indexOf('Close the drift issue'));
+    assert.match(expired, /gh pr close "\$PR_URL" --delete-branch/);
   });
 
   it('renders the rejected-restore report as markdown, not a JSON-quoted string', () => {

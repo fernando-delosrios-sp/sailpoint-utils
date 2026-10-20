@@ -361,6 +361,16 @@ jobs:
             echo "url=$(jq -r '.url // empty' /tmp/drift-issue-ref.json)" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Read the drift pull request from the issue
+        id: driftpr
+        if: steps.issue.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          gh issue view "${{ steps.issue.outputs.number }}" --json body -q .body > /tmp/drift-issue-body.md
+          PR_URL=$(node scripts/cli.mjs drift-pr-url --body /tmp/drift-issue-body.md)
+          echo "url=$PR_URL" >> "$GITHUB_OUTPUT"
+
       - name: Approved and current — sync drift to main
         if: steps.verify.outputs.decision == 'approved' && steps.verify.outputs.stale == 'false'
         env:
@@ -369,11 +379,40 @@ jobs:
           ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
           ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
         run: |
-          node scripts/cli.mjs backup --snapshot /tmp/isc-snapshot.json
           git config user.name "amcm-bot"
           git config user.email "amcm-bot[bot]@users.noreply.github.com"
-          git add access/
-          git commit -m "chore(backup): sync drift from ISC (governance approved)" || true
+          PR_URL="${{ steps.driftpr.outputs.url }}"
+          if [ -n "$PR_URL" ]; then
+            # Refresh the branch from the snapshot just re-detected, then merge
+            # it. The squash subject keeps Apply to ISC from pushing these
+            # files back: they already are the live tenant.
+            BRANCH=$(gh pr view "$PR_URL" --json headRefName -q .headRefName)
+            git fetch origin main
+            git checkout -B "$BRANCH" origin/main
+            node scripts/cli.mjs drift-materialize --drift /tmp/drift-now.json --snapshot /tmp/isc-snapshot.json
+            git add -A access
+            git diff --cached --quiet || git commit -m "chore(backup): drift snapshot"
+            if git fetch origin "refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"; then
+              git push --force-with-lease origin "HEAD:refs/heads/$BRANCH"
+            else
+              git push -u origin "HEAD:refs/heads/$BRANCH"
+            fi
+            SHA=$(git rev-parse HEAD)
+            gh api "repos/${{ github.repository }}/statuses/$SHA" \
+              -f state=success \
+              -f context=isc-approval \
+              -f description="Approved drift"
+            gh pr merge "$PR_URL" --squash --delete-branch \
+              --subject "chore(backup): sync drift from ISC (governance approved)"
+            git checkout main
+            git fetch origin main
+            git merge --ff-only origin/main
+          else
+            # In-flight approvals opened before drift had a pull request.
+            node scripts/cli.mjs backup --snapshot /tmp/isc-snapshot.json
+            git add access/
+            git diff --cached --quiet || git commit -m "chore(backup): sync drift from ISC (governance approved)"
+          fi
           jq -n --slurpfile d /tmp/drift-now.json --arg issue "${{ steps.issue.outputs.url }}" \
             '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", issueUrl:$issue, modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
@@ -396,6 +435,11 @@ jobs:
           # This is a final report, not an open question — nothing further
           # happens on it, so close it immediately instead of leaving it for
           # someone to notice and close by hand.
+          PR_URL="${{ steps.driftpr.outputs.url }}"
+          if [ -n "$PR_URL" ]; then
+            gh pr close "$PR_URL" --delete-branch \
+              --comment "ISC changed again before the decision landed, so this diff was not merged."
+          fi
           STALE_URL=$(gh issue create \
             --title "Drift approval stale $(date -u +%Y-%m-%d)" \
             --body "Governance approved syncing drift hash \`$(jq -r .driftHash /tmp/drift-decision.json)\`, but ISC changed again before this ran (now \`$(jq -r .driftHash /tmp/drift-now.json)\`). Nothing was synced to \`main\`. The next scheduled backup will detect the current drift and request approval again.")
@@ -409,6 +453,11 @@ jobs:
           ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
           ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
         run: |
+          PR_URL="${{ steps.driftpr.outputs.url }}"
+          if [ -n "$PR_URL" ]; then
+            gh pr close "$PR_URL" --delete-branch \
+              --comment "Rejected. ISC is being put back to match git. This diff was not merged."
+          fi
           set +e
           node scripts/cli.mjs restore --execute --snapshot /tmp/isc-snapshot.json > /tmp/restore.json
           STATUS=$?
@@ -482,6 +531,11 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
+          PR_URL="${{ steps.driftpr.outputs.url }}"
+          if [ -n "$PR_URL" ]; then
+            gh pr close "$PR_URL" --delete-branch \
+              --comment "The approval expired. This diff was not merged. ISC is unchanged."
+          fi
           COMMENT=$(jq -r '.comment // empty' /tmp/drift-decision.json)
           jq -r --arg comment "$COMMENT" '
             def preview:
@@ -534,14 +588,18 @@ jobs:
             --run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             > /tmp/drift-close.md
           gh issue comment "$NUMBER" --body-file /tmp/drift-close.md
+          # Merging the drift pull request already closes the issue via Fixes.
           # Closed even when stale: ISC has moved on, so the drift this issue
           # describes no longer exists and the next backup files a fresh one.
           # Accepted drift is a deliberate "leave it as-is" call, not work that
           # got done, so it closes as not planned; every other outcome
           # (rejected/expired/stale) means the issue's job — getting a
           # decision recorded — is done, so it closes as completed.
-          if [ "$OUTCOME" = "approved" ]; then
-            gh issue close "$NUMBER" --reason "not planned"
-          else
-            gh issue close "$NUMBER" --reason completed
+          STATE=$(gh issue view "$NUMBER" --json state -q .state)
+          if [ "$STATE" = "OPEN" ]; then
+            if [ "$OUTCOME" = "approved" ]; then
+              gh issue close "$NUMBER" --reason "not planned"
+            else
+              gh issue close "$NUMBER" --reason completed
+            fi
           fi

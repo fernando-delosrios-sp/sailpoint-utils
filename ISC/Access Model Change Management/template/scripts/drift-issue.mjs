@@ -23,7 +23,13 @@ export function driftIssueTitle(drift, now = new Date()) {
   return `Drift detected — ${total} item${total === 1 ? '' : 's'} changed in ISC${who} (${day})`;
 }
 
-export function driftIssueBody(drift) {
+/** Line the decision callback reads to find the pull request for this issue. */
+export function driftPullRequestUrl(body) {
+  const match = String(body ?? '').match(/^Drift-PR: (\S+)\s*$/m);
+  return match ? match[1] : null;
+}
+
+export function driftIssueBody(drift, { prUrl = null } = {}) {
   const actors = drift.actors ?? null;
   const who = [];
   if (actors?.status === 'unavailable') {
@@ -38,9 +44,20 @@ export function driftIssueBody(drift) {
     }
   }
 
+  const resolution = prUrl
+    ? [
+      `Drift-PR: ${prUrl}`,
+      '',
+      'The pull request diff is the proposed resolution. Approving in ISC merges it.',
+      'Rejecting closes it and puts ISC back to match git.',
+      '',
+    ]
+    : [];
+
   return [
     'ISC no longer matches the access model in git — items were changed outside the PR flow.',
     '',
+    ...resolution,
     'An approval has been sent to the governance group in ISC. Approving copies',
     'these items from ISC into git; rejecting puts ISC back to match git.',
     '',
@@ -59,10 +76,10 @@ export function driftIssueBody(drift) {
   ].join('\n');
 }
 
-export function renderDriftIssue(drift, now = new Date()) {
+export function renderDriftIssue(drift, now = new Date(), { prUrl = null } = {}) {
   return {
     title: driftIssueTitle(drift, now),
-    body: driftIssueBody(drift),
+    body: driftIssueBody(drift, { prUrl }),
     label: DRIFT_ISSUE_LABEL,
     driftHash: drift.driftHash,
   };
