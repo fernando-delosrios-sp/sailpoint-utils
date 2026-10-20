@@ -1,5 +1,7 @@
 # Email Templates
 
+![Email Templates](promo.png)
+
 ## Purpose
 
 Branded, language-aware replacements for all 116 Identity Security Cloud (ISC) email templates. Every email gets a banner with the tenant owner's name in SailPoint colours (or your own) and a footer in the recipient's language. End-user emails are also rewritten and translated into English, Spanish, French, Italian, German, Portuguese, Arabic and Dutch.
