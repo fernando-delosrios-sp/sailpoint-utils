@@ -27,7 +27,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | [Email Templates](ISC/Email%20Templates/) | Branded replacements for all ISC email templates: end-user wording translated into seven languages, and admin alerts kept in SailPoint's English inside the branded layout |
 | [Emergency Termination](ISC/Emergency%20Termination/) | Interactive workflow that sets an active direct report to an Emergency Termination lifecycle state, with optional second-level manager approval |
 | [Generic Manager Correlation](ISC/Generic%20Manager%20Correlation/) | Reusable pattern for correlating managers across heterogeneous sources |
-| [Identity Match & Onboard](ISC/Identity%20Match%20%26%20Onboard/) | Interactive onboarding with a duplicate check and optional manager approval before creating a source account |
+| [Identity Match & Onboard](ISC/Identity%20Match%20%26%20Onboard/) | Interactive onboarding with a duplicate check, collision-safe usernames, optional manager approval, and a confirmed update when the person already has a source account |
 | [JDBC SaaS Driver Downloader](ISC/JDBC%20SaaS%20Driver%20Downloader/) | Download and package JDBC drivers from Maven Central for SaaS upload |
 | [LCS Operations](ISC/LCS%20Operations/) | BeforeProvisioning rule that maps lifecycle-state dummy attributes to native connector operations |
 | [Machine Identity Security](ISC/Machine%20Identity%20Security/) | AD and Entra ID NHI package: subtypes, classification, mapping transforms, create forms, and machine-account provisioning policies |

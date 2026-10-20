@@ -297,7 +297,7 @@
           ]
         },
         "displayName": "Load matched identity",
-        "nextStep": "Show Matched Identity",
+        "nextStep": "Get Matched Account",
         "type": "action",
         "versionNumber": 2
       },
@@ -311,42 +311,6 @@
         "nextStep": "Check Duplicate Count",
         "type": "action",
         "versionNumber": 2
-      },
-      "Create Account": {
-        "actionId": "sp:http",
-        "attributes": {
-          "authenticationType": "OAuth",
-          "jsonRequestBody": {
-            "attributes": {
-              "sourceId": "{{$.setConfiguration.accountsSource}}",
-              "id": "{{$.setConfiguration.accountName}}",
-              "name": "{{$.setConfiguration.accountName}}",
-              "givenName": "{{$.collectDetails.formData.firstName}}",
-              "familyName": "{{$.collectDetails.formData.lastName}}",
-              "e-mail": "{{$.collectDetails.formData.email}}",
-              "location": "{{$.collectDetails.formData.location}}",
-              "manager": "{{$.collectDetails.formData.manager}}"
-            }
-          },
-          "method": "post",
-          "param_authenticationRef": "oauth",
-          "param_oauth": {
-            "mapping": {
-              "auth_client_id": "clientId",
-              "auth_client_secret": "clientSecret",
-              "auth_credential_location": "credentialLocation",
-              "auth_token_url": "tokenURL"
-            },
-            "paramID": "",
-            "paramType": "1.4"
-          },
-          "requestContentType": "json",
-          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
-        },
-        "displayName": "Create account on source",
-        "nextStep": "Wait For Identity",
-        "type": "action",
-        "versionNumber": 3
       },
       "Wait For Identity": {
         "actionId": "sp:sleep",
@@ -363,7 +327,7 @@
       "Find Created Identity": {
         "actionId": "sp:get-identities",
         "attributes": {
-          "inputQuery": "attributes.email:\"{{$.collectDetails.formData.email}}\" OR attributes.uid:\"{{$.setConfiguration.accountName}}\"",
+          "inputQuery": "attributes.email:\"{{$.collectDetails.formData.email}}\"",
           "searchBy": "searchQuery"
         },
         "description": "Resolves the identity created from the new account so a single identity refresh can run.",
@@ -457,26 +421,12 @@
         "type": "action",
         "versionNumber": 1
       },
-      "Show Matched Identity": {
-        "actionId": "sp:interactive-message",
-        "attributes": {
-          "category": "INFO",
-          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">No new record was created. The person you selected already has a profile.</p>\n<table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\">\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 120px; color: #64748b;\">Name</td>\n<td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.loadMatchedIdentity.attributes.displayName}}</strong></td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">First name</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.loadMatchedIdentity.attributes.firstname}}</td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Last name</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.loadMatchedIdentity.attributes.lastname}}</td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Email</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.loadMatchedIdentity.attributes.email}}</td>\n</tr>\n</table>\n<p style=\"margin: 0;\"><a href=\"{{$.setConfiguration.iSCUIURL}}/ui/a/admin/identities/{{$.loadMatchedIdentity.id}}/details/attributes\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color: #236fa1; font-weight: 600;\">View full profile</a></p>",
-          "ownerId.$": "$.trigger.launchedBy.id",
-          "title": "Already in the directory"
-        },
-        "displayName": "Confirm existing person",
-        "nextStep": "End Success",
-        "type": "action",
-        "versionNumber": 1
-      },
       "Show Account Created": {
         "actionId": "sp:interactive-message",
         "attributes": {
           "category": "INFO",
           "interactiveProcessId.$": "$.trigger.interactiveProcessId",
-          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Thank you. A record has been created for your new hire. Access and applications will be assigned according to your organisation's standard process.</p>\n<table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\">\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 120px; color: #64748b;\">Name</td>\n<td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.setConfiguration.displayName}}</strong></td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Email</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.collectDetails.formData.email}}</td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Sign-in name</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.setConfiguration.accountName}}</td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Location</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.collectDetails.formData.location}}</td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Manager</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.collectDetails.formData.manager}}</td>\n</tr>\n</table>\n<p style=\"margin: 0; color: #64748b;\"><em>Please allow a short time for the new record to appear across all systems.</em></p>",
+          "message": "<p style=\"margin: 0 0 16px 0; line-height: 1.5;\">Thank you. A record has been created for your new hire. The sign-in name is the generated name, or the first free numeric suffix when that name is already taken. Access and applications will be assigned according to your organisation's standard process.</p>\n<table style=\"border-collapse: collapse; margin: 0 0 20px 0; width: 100%; max-width: 480px;\">\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; width: 120px; color: #64748b;\">Name</td>\n<td style=\"padding: 8px 0; vertical-align: top;\"><strong>{{$.setConfiguration.displayName}}</strong></td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Email</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.collectDetails.formData.email}}</td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Sign-in name</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.findCreatedIdentity.identities[0].attributes.uid}}</td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Location</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.collectDetails.formData.location}}</td>\n</tr>\n<tr>\n<td style=\"padding: 8px 24px 8px 0; vertical-align: top; color: #64748b;\">Manager</td>\n<td style=\"padding: 8px 0; vertical-align: top;\">{{$.collectDetails.formData.manager}}</td>\n</tr>\n</table>\n<p style=\"margin: 0; color: #64748b;\"><em>Please allow a short time for the new record to appear across all systems.</em></p>",
           "ownerId.$": "$.trigger.launchedBy.id",
           "title": "Onboarding request submitted"
         },
@@ -516,46 +466,9 @@
           "title": "Waiting for manager approval"
         },
         "displayName": "Waiting for manager approval",
-        "nextStep": "Manager Approval",
+        "nextStep": "Check Username 0",
         "type": "action",
         "versionNumber": 1
-      },
-      "Manager Approval": {
-        "actionId": "sp:forms",
-        "attributes": {
-          "deadline": "2d",
-          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
-          "inputForForm_accountName.$": "$.setConfiguration.accountName",
-          "inputForForm_displayName.$": "$.setConfiguration.displayName",
-          "inputForForm_email.$": "$.collectDetails.formData.email",
-          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
-          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
-          "inputForForm_location.$": "$.collectDetails.formData.location",
-          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
-          "notificationBody": "Please review and approve a new hire directory record.",
-          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
-          "recipient.$": "$.getManager.identities[0].id",
-          "reminder": "1h",
-          "reminderBody": "A new hire approval is still waiting for your decision."
-        },
-        "displayName": "Manager approval",
-        "nextStep": "Check Approved",
-        "type": "action",
-        "versionNumber": 1
-      },
-      "Check Approved": {
-        "actionId": "sp:compare-boolean",
-        "choiceList": [
-          {
-            "comparator": "BooleanEquals",
-            "nextStep": "Create Account",
-            "variableA.$": "$.managerApproval.formData.approvalDecision",
-            "variableB": true
-          }
-        ],
-        "defaultStep": "Show Approval Rejected",
-        "displayName": "Approved?",
-        "type": "choice"
       },
       "Show Approval Rejected": {
         "actionId": "sp:interactive-message",
@@ -581,10 +494,2914 @@
             "variableB": "true"
           }
         ],
-        "defaultStep": "Create Account",
+        "defaultStep": "Check Username 0",
         "description": "Check the Set configuration variable Manager Approval Required. true sends the standalone approval form to the selected manager; any other value creates the account immediately.",
         "displayName": "Manager approval required?",
         "type": "choice"
+      },
+      "Get Matched Account": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=2&detailLevel=FULL&filters=identityId%20eq%20%22{{$.loadMatchedIdentity.id}}%22%20and%20sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22"
+        },
+        "description": "Loads the selected identity's account on the configured source for the before-and-after preview.",
+        "displayName": "Get selected identity account",
+        "nextStep": "Check Multiple Matched Accounts",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Multiple Matched Accounts": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Show Multiple Matched Accounts",
+            "variableA.$": "$.getMatchedAccount.body.length()",
+            "variableB": 1
+          }
+        ],
+        "defaultStep": "Check Matched Account Found",
+        "displayName": "More than one target account?",
+        "type": "choice"
+      },
+      "Check Matched Account Found": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Confirm Account Update",
+            "variableA.$": "$.getMatchedAccount.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Show Matched Account Missing",
+        "displayName": "Target account found?",
+        "type": "choice"
+      },
+      "Confirm Account Update": {
+        "actionId": "sp:interactive-form",
+        "attributes": {
+          "formDefinitionId": "f3a91c74-8e26-4b5d-9a17-0d6c2e58b441",
+          "inputForForm_beforeUsername.$": "$.getMatchedAccount.body[0].attributes.name",
+          "inputForForm_beforeFirstName.$": "$.getMatchedAccount.body[0].attributes.givenName",
+          "inputForForm_afterFirstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_beforeLastName.$": "$.getMatchedAccount.body[0].attributes.familyName",
+          "inputForForm_afterLastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_beforeEmail.$": "$.getMatchedAccount.body[0].attributes['e-mail']",
+          "inputForForm_afterEmail.$": "$.collectDetails.formData.email",
+          "inputForForm_beforeLocation.$": "$.getMatchedAccount.body[0].attributes.location",
+          "inputForForm_afterLocation.$": "$.collectDetails.formData.location",
+          "inputForForm_beforeManager.$": "$.getMatchedAccount.body[0].attributes.manager",
+          "inputForForm_afterManager.$": "$.collectDetails.formData.manager",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p><span style=\"font-size:18pt;color:#236fa1;\"><strong>Confirm update</strong></span> \u2014 Review the selected account before applying any changes.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Confirm account update"
+        },
+        "displayName": "Review account changes",
+        "nextStep": "Check Account Update Confirmed",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Account Update Confirmed": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Update Matched Account",
+            "variableA.$": "$.confirmAccountUpdate.formData.confirmUpdate",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Account Update Cancelled",
+        "displayName": "Update confirmed?",
+        "type": "choice"
+      },
+      "Update Matched Account": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.getMatchedAccount.body[0].attributes.id}}",
+              "name": "{{$.getMatchedAccount.body[0].attributes.name}}",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          }
+        },
+        "description": "Updates the selected flat-file account. The existing id and name are sent again so the sign-in name stays unchanged.",
+        "displayName": "Update selected account",
+        "nextStep": "Refresh Updated Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Refresh Updated Identity": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/v2025/identities/process",
+          "jsonRequestBody": {
+            "identityIds": [
+              "{{$.loadMatchedIdentity.id}}"
+            ]
+          },
+          "requestHeaders": {
+            "X-SailPoint-Experimental": "true"
+          }
+        },
+        "catch": [
+          {
+            "next": "Show Account Updated"
+          }
+        ],
+        "description": "Refreshes the selected identity after its source account changes.",
+        "displayName": "Refresh updated identity",
+        "nextStep": "Show Account Updated",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Show Account Updated": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p style=\"margin:0 0 16px 0;line-height:1.5;\">The selected account was updated. Its sign-in name was preserved.</p><table><tr><td><strong>Sign-in name</strong></td><td>{{$.getMatchedAccount.body[0].attributes.name}}</td></tr><tr><td><strong>Name</strong></td><td>{{$.setConfiguration.displayName}}</td></tr><tr><td><strong>Email</strong></td><td>{{$.collectDetails.formData.email}}</td></tr><tr><td><strong>Location</strong></td><td>{{$.collectDetails.formData.location}}</td></tr><tr><td><strong>Manager</strong></td><td>{{$.collectDetails.formData.manager}}</td></tr></table>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Account updated"
+        },
+        "displayName": "Confirm account updated",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Show Account Update Cancelled": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "INFO",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>No changes were made to <strong>{{$.getMatchedAccount.body[0].attributes.name}}</strong>.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Update cancelled"
+        },
+        "displayName": "Confirm update cancelled",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Show Matched Account Missing": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The selected identity has no account on the configured onboarding source. No changes were made.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "No account found"
+        },
+        "displayName": "Report missing account",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Show Multiple Matched Accounts": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The selected identity has more than one account on the configured onboarding source. No update was attempted because the target account is ambiguous.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "Multiple accounts found"
+        },
+        "displayName": "Report ambiguous account",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Username 0": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 0",
+        "nextStep": "Username 0 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 0 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 1",
+            "variableA.$": "$.checkUsername0.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 0",
+        "displayName": "Username candidate 0 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 0": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 0",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 0",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 0?",
+        "type": "choice"
+      },
+      "Manager Approval 0": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}"
+        },
+        "displayName": "Manager approval for username 0",
+        "nextStep": "Check Approved 0",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 0": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 0",
+            "variableA.$": "$.managerApproval0.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 0 approved?",
+        "type": "choice"
+      },
+      "Create Account 0": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}",
+              "name": "{{$.setConfiguration.accountName}}",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 0",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 1": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}1%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 1",
+        "nextStep": "Username 1 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 1 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 2",
+            "variableA.$": "$.checkUsername1.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 1",
+        "displayName": "Username candidate 1 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 1": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 1",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 1",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 1?",
+        "type": "choice"
+      },
+      "Manager Approval 1": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}1"
+        },
+        "displayName": "Manager approval for username 1",
+        "nextStep": "Check Approved 1",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 1": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 1",
+            "variableA.$": "$.managerApproval1.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 1 approved?",
+        "type": "choice"
+      },
+      "Create Account 1": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}1",
+              "name": "{{$.setConfiguration.accountName}}1",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 1",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 2": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}2%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 2",
+        "nextStep": "Username 2 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 2 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 3",
+            "variableA.$": "$.checkUsername2.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 2",
+        "displayName": "Username candidate 2 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 2": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 2",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 2",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 2?",
+        "type": "choice"
+      },
+      "Manager Approval 2": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}2"
+        },
+        "displayName": "Manager approval for username 2",
+        "nextStep": "Check Approved 2",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 2": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 2",
+            "variableA.$": "$.managerApproval2.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 2 approved?",
+        "type": "choice"
+      },
+      "Create Account 2": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}2",
+              "name": "{{$.setConfiguration.accountName}}2",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 2",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 3": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}3%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 3",
+        "nextStep": "Username 3 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 3 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 4",
+            "variableA.$": "$.checkUsername3.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 3",
+        "displayName": "Username candidate 3 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 3": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 3",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 3",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 3?",
+        "type": "choice"
+      },
+      "Manager Approval 3": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}3"
+        },
+        "displayName": "Manager approval for username 3",
+        "nextStep": "Check Approved 3",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 3": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 3",
+            "variableA.$": "$.managerApproval3.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 3 approved?",
+        "type": "choice"
+      },
+      "Create Account 3": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}3",
+              "name": "{{$.setConfiguration.accountName}}3",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 3",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 4": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}4%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 4",
+        "nextStep": "Username 4 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 4 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 5",
+            "variableA.$": "$.checkUsername4.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 4",
+        "displayName": "Username candidate 4 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 4": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 4",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 4",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 4?",
+        "type": "choice"
+      },
+      "Manager Approval 4": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}4"
+        },
+        "displayName": "Manager approval for username 4",
+        "nextStep": "Check Approved 4",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 4": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 4",
+            "variableA.$": "$.managerApproval4.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 4 approved?",
+        "type": "choice"
+      },
+      "Create Account 4": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}4",
+              "name": "{{$.setConfiguration.accountName}}4",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 4",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 5": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}5%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 5",
+        "nextStep": "Username 5 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 5 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 6",
+            "variableA.$": "$.checkUsername5.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 5",
+        "displayName": "Username candidate 5 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 5": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 5",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 5",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 5?",
+        "type": "choice"
+      },
+      "Manager Approval 5": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}5"
+        },
+        "displayName": "Manager approval for username 5",
+        "nextStep": "Check Approved 5",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 5": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 5",
+            "variableA.$": "$.managerApproval5.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 5 approved?",
+        "type": "choice"
+      },
+      "Create Account 5": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}5",
+              "name": "{{$.setConfiguration.accountName}}5",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 5",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 6": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}6%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 6",
+        "nextStep": "Username 6 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 6 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 7",
+            "variableA.$": "$.checkUsername6.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 6",
+        "displayName": "Username candidate 6 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 6": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 6",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 6",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 6?",
+        "type": "choice"
+      },
+      "Manager Approval 6": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}6"
+        },
+        "displayName": "Manager approval for username 6",
+        "nextStep": "Check Approved 6",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 6": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 6",
+            "variableA.$": "$.managerApproval6.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 6 approved?",
+        "type": "choice"
+      },
+      "Create Account 6": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}6",
+              "name": "{{$.setConfiguration.accountName}}6",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 6",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 7": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}7%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 7",
+        "nextStep": "Username 7 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 7 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 8",
+            "variableA.$": "$.checkUsername7.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 7",
+        "displayName": "Username candidate 7 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 7": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 7",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 7",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 7?",
+        "type": "choice"
+      },
+      "Manager Approval 7": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}7"
+        },
+        "displayName": "Manager approval for username 7",
+        "nextStep": "Check Approved 7",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 7": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 7",
+            "variableA.$": "$.managerApproval7.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 7 approved?",
+        "type": "choice"
+      },
+      "Create Account 7": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}7",
+              "name": "{{$.setConfiguration.accountName}}7",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 7",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 8": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}8%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 8",
+        "nextStep": "Username 8 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 8 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 9",
+            "variableA.$": "$.checkUsername8.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 8",
+        "displayName": "Username candidate 8 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 8": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 8",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 8",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 8?",
+        "type": "choice"
+      },
+      "Manager Approval 8": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}8"
+        },
+        "displayName": "Manager approval for username 8",
+        "nextStep": "Check Approved 8",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 8": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 8",
+            "variableA.$": "$.managerApproval8.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 8 approved?",
+        "type": "choice"
+      },
+      "Create Account 8": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}8",
+              "name": "{{$.setConfiguration.accountName}}8",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 8",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 9": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}9%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 9",
+        "nextStep": "Username 9 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 9 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 10",
+            "variableA.$": "$.checkUsername9.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 9",
+        "displayName": "Username candidate 9 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 9": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 9",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 9",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 9?",
+        "type": "choice"
+      },
+      "Manager Approval 9": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}9"
+        },
+        "displayName": "Manager approval for username 9",
+        "nextStep": "Check Approved 9",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 9": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 9",
+            "variableA.$": "$.managerApproval9.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 9 approved?",
+        "type": "choice"
+      },
+      "Create Account 9": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}9",
+              "name": "{{$.setConfiguration.accountName}}9",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 9",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 10": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}10%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 10",
+        "nextStep": "Username 10 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 10 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 11",
+            "variableA.$": "$.checkUsername10.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 10",
+        "displayName": "Username candidate 10 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 10": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 10",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 10",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 10?",
+        "type": "choice"
+      },
+      "Manager Approval 10": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}10"
+        },
+        "displayName": "Manager approval for username 10",
+        "nextStep": "Check Approved 10",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 10": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 10",
+            "variableA.$": "$.managerApproval10.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 10 approved?",
+        "type": "choice"
+      },
+      "Create Account 10": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}10",
+              "name": "{{$.setConfiguration.accountName}}10",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 10",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 11": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}11%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 11",
+        "nextStep": "Username 11 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 11 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 12",
+            "variableA.$": "$.checkUsername11.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 11",
+        "displayName": "Username candidate 11 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 11": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 11",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 11",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 11?",
+        "type": "choice"
+      },
+      "Manager Approval 11": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}11"
+        },
+        "displayName": "Manager approval for username 11",
+        "nextStep": "Check Approved 11",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 11": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 11",
+            "variableA.$": "$.managerApproval11.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 11 approved?",
+        "type": "choice"
+      },
+      "Create Account 11": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}11",
+              "name": "{{$.setConfiguration.accountName}}11",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 11",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 12": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}12%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 12",
+        "nextStep": "Username 12 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 12 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 13",
+            "variableA.$": "$.checkUsername12.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 12",
+        "displayName": "Username candidate 12 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 12": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 12",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 12",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 12?",
+        "type": "choice"
+      },
+      "Manager Approval 12": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}12"
+        },
+        "displayName": "Manager approval for username 12",
+        "nextStep": "Check Approved 12",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 12": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 12",
+            "variableA.$": "$.managerApproval12.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 12 approved?",
+        "type": "choice"
+      },
+      "Create Account 12": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}12",
+              "name": "{{$.setConfiguration.accountName}}12",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 12",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 13": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}13%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 13",
+        "nextStep": "Username 13 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 13 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 14",
+            "variableA.$": "$.checkUsername13.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 13",
+        "displayName": "Username candidate 13 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 13": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 13",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 13",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 13?",
+        "type": "choice"
+      },
+      "Manager Approval 13": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}13"
+        },
+        "displayName": "Manager approval for username 13",
+        "nextStep": "Check Approved 13",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 13": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 13",
+            "variableA.$": "$.managerApproval13.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 13 approved?",
+        "type": "choice"
+      },
+      "Create Account 13": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}13",
+              "name": "{{$.setConfiguration.accountName}}13",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 13",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 14": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}14%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 14",
+        "nextStep": "Username 14 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 14 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 15",
+            "variableA.$": "$.checkUsername14.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 14",
+        "displayName": "Username candidate 14 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 14": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 14",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 14",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 14?",
+        "type": "choice"
+      },
+      "Manager Approval 14": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}14"
+        },
+        "displayName": "Manager approval for username 14",
+        "nextStep": "Check Approved 14",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 14": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 14",
+            "variableA.$": "$.managerApproval14.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 14 approved?",
+        "type": "choice"
+      },
+      "Create Account 14": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}14",
+              "name": "{{$.setConfiguration.accountName}}14",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 14",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 15": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}15%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 15",
+        "nextStep": "Username 15 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 15 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 16",
+            "variableA.$": "$.checkUsername15.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 15",
+        "displayName": "Username candidate 15 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 15": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 15",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 15",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 15?",
+        "type": "choice"
+      },
+      "Manager Approval 15": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}15"
+        },
+        "displayName": "Manager approval for username 15",
+        "nextStep": "Check Approved 15",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 15": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 15",
+            "variableA.$": "$.managerApproval15.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 15 approved?",
+        "type": "choice"
+      },
+      "Create Account 15": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}15",
+              "name": "{{$.setConfiguration.accountName}}15",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 15",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 16": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}16%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 16",
+        "nextStep": "Username 16 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 16 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 17",
+            "variableA.$": "$.checkUsername16.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 16",
+        "displayName": "Username candidate 16 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 16": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 16",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 16",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 16?",
+        "type": "choice"
+      },
+      "Manager Approval 16": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}16"
+        },
+        "displayName": "Manager approval for username 16",
+        "nextStep": "Check Approved 16",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 16": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 16",
+            "variableA.$": "$.managerApproval16.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 16 approved?",
+        "type": "choice"
+      },
+      "Create Account 16": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}16",
+              "name": "{{$.setConfiguration.accountName}}16",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 16",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 17": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}17%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 17",
+        "nextStep": "Username 17 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 17 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 18",
+            "variableA.$": "$.checkUsername17.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 17",
+        "displayName": "Username candidate 17 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 17": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 17",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 17",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 17?",
+        "type": "choice"
+      },
+      "Manager Approval 17": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}17"
+        },
+        "displayName": "Manager approval for username 17",
+        "nextStep": "Check Approved 17",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 17": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 17",
+            "variableA.$": "$.managerApproval17.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 17 approved?",
+        "type": "choice"
+      },
+      "Create Account 17": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}17",
+              "name": "{{$.setConfiguration.accountName}}17",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 17",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 18": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}18%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 18",
+        "nextStep": "Username 18 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 18 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 19",
+            "variableA.$": "$.checkUsername18.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 18",
+        "displayName": "Username candidate 18 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 18": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 18",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 18",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 18?",
+        "type": "choice"
+      },
+      "Manager Approval 18": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}18"
+        },
+        "displayName": "Manager approval for username 18",
+        "nextStep": "Check Approved 18",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 18": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 18",
+            "variableA.$": "$.managerApproval18.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 18 approved?",
+        "type": "choice"
+      },
+      "Create Account 18": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}18",
+              "name": "{{$.setConfiguration.accountName}}18",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 18",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 19": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}19%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 19",
+        "nextStep": "Username 19 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 19 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Username 20",
+            "variableA.$": "$.checkUsername19.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 19",
+        "displayName": "Username candidate 19 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 19": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 19",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 19",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 19?",
+        "type": "choice"
+      },
+      "Manager Approval 19": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}19"
+        },
+        "displayName": "Manager approval for username 19",
+        "nextStep": "Check Approved 19",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 19": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 19",
+            "variableA.$": "$.managerApproval19.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 19 approved?",
+        "type": "choice"
+      },
+      "Create Account 19": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}19",
+              "name": "{{$.setConfiguration.accountName}}19",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 19",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Username 20": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "method": "get",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1?limit=1&filters=sourceId%20eq%20%22{{$.setConfiguration.accountsSource}}%22%20and%20name%20eq%20%22{{$.setConfiguration.accountName}}20%22"
+        },
+        "description": "Checks whether this generated sign-in name is already used on the onboarding source.",
+        "displayName": "Check username candidate 20",
+        "nextStep": "Username 20 Available",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Username 20 Available": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Show Username Limit Reached",
+            "variableA.$": "$.checkUsername20.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Approval For Username 20",
+        "displayName": "Username candidate 20 occupied?",
+        "type": "choice"
+      },
+      "Check Approval For Username 20": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Manager Approval 20",
+            "variableA.$": "$.setConfiguration.managerApprovalRequired",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "Create Account 20",
+        "description": "The selected username is free. Approval still follows the Set Configuration flag.",
+        "displayName": "Approval required for username 20?",
+        "type": "choice"
+      },
+      "Manager Approval 20": {
+        "actionId": "sp:forms",
+        "attributes": {
+          "deadline": "2d",
+          "formDefinitionId": "8d0bf25e-d40a-4ac4-97cf-0c50c243d6e3",
+          "inputForForm_displayName.$": "$.setConfiguration.displayName",
+          "inputForForm_email.$": "$.collectDetails.formData.email",
+          "inputForForm_firstName.$": "$.collectDetails.formData.firstName",
+          "inputForForm_lastName.$": "$.collectDetails.formData.lastName",
+          "inputForForm_location.$": "$.collectDetails.formData.location",
+          "inputForForm_requestorName.$": "$.getOperator.attributes.displayName",
+          "notificationBody": "Please review and approve a new hire directory record.",
+          "notificationSubject": "Approve new hire: {{$.setConfiguration.displayName}}",
+          "recipient.$": "$.getManager.identities[0].id",
+          "reminder": "1h",
+          "reminderBody": "A new hire approval is still waiting for your decision.",
+          "inputForForm_accountName": "{{$.setConfiguration.accountName}}20"
+        },
+        "displayName": "Manager approval for username 20",
+        "nextStep": "Check Approved 20",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Approved 20": {
+        "actionId": "sp:compare-boolean",
+        "choiceList": [
+          {
+            "comparator": "BooleanEquals",
+            "nextStep": "Create Account 20",
+            "variableA.$": "$.managerApproval20.formData.approvalDecision",
+            "variableB": true
+          }
+        ],
+        "defaultStep": "Show Approval Rejected",
+        "displayName": "Username 20 approved?",
+        "type": "choice"
+      },
+      "Create Account 20": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "jsonRequestBody": {
+            "attributes": {
+              "sourceId": "{{$.setConfiguration.accountsSource}}",
+              "id": "{{$.setConfiguration.accountName}}20",
+              "name": "{{$.setConfiguration.accountName}}20",
+              "givenName": "{{$.collectDetails.formData.firstName}}",
+              "familyName": "{{$.collectDetails.formData.lastName}}",
+              "e-mail": "{{$.collectDetails.formData.email}}",
+              "location": "{{$.collectDetails.formData.location}}",
+              "manager": "{{$.collectDetails.formData.manager}}"
+            }
+          },
+          "method": "post",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "",
+            "paramType": "1.4"
+          },
+          "requestContentType": "json",
+          "url": "{{$.setConfiguration.iSCAPIURL}}/accounts/v1"
+        },
+        "displayName": "Create account with username 20",
+        "nextStep": "Wait For Identity",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Show Username Limit Reached": {
+        "actionId": "sp:interactive-message",
+        "attributes": {
+          "category": "ERROR",
+          "interactiveProcessId.$": "$.trigger.interactiveProcessId",
+          "message": "<p>The generated sign-in name and suffixes 1 through 20 are already in use. No account was created.</p>",
+          "ownerId.$": "$.trigger.launchedBy.id",
+          "title": "No username available"
+        },
+        "displayName": "Report username collision limit",
+        "nextStep": "End Success",
+        "type": "action",
+        "versionNumber": 1
       }
     }
   },
@@ -598,7 +3415,7 @@
   },
   "id": "5633af6d-7f3c-4e31-b7aa-76132327d60f",
   "name": "Identity Match & Onboard",
-  "description": "Onboard new hires with a directory match check and manager approval before creating a record.",
+  "description": "Onboard new hires with a directory match check, collision-safe usernames, and confirmed updates to an existing source account.",
   "executionCount": 3,
   "failureCount": 0,
   "enabled": false

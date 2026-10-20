@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-10-20
+
+### 🔧 Improvements
+
+- **Identity Match & Onboard** — Selecting an existing person now shows the current source account beside the details already collected. Confirming the comparison updates that account and preserves its sign-in name. A new account uses the generated name, or the first free `name1` … `name20` suffix when that name is already on the source. The manager approval form receives the name that will actually be created.
+
 ## 2026-10-19
 
 ### ✨ New Features

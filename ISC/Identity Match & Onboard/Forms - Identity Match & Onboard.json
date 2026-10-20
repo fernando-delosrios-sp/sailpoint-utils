@@ -13,7 +13,7 @@
       "owner": {
         "type": "IDENTITY",
         "id": "b41994df5dcf447483c8446436f29c79",
-        "name": "Fernando de los Ríos"
+        "name": "Fernando de los R\u00edos"
       },
       "usedBy": [],
       "formInput": [],
@@ -27,7 +27,7 @@
             "formElements": [
               {
                 "config": {
-                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Enter the new hire's details. We will check the directory for existing records before creating anything new.</p>",
+                  "description": "<p style=\"margin: 0 0 8px 0; line-height: 1.5; color: #475569;\">Enter the new hire's details. We will check the directory before creating a record or updating an existing account.</p>",
                   "label": "Introduction",
                   "showLabel": false
                 },
@@ -169,7 +169,7 @@
       "owner": {
         "type": "IDENTITY",
         "id": "b41994df5dcf447483c8446436f29c79",
-        "name": "Fernando de los Ríos"
+        "name": "Fernando de los R\u00edos"
       },
       "usedBy": [],
       "formInput": [
@@ -236,7 +236,7 @@
               },
               {
                 "config": {
-                  "description": "<p style=\"margin: 12px 0 0 0; line-height: 1.5;\">Select the person who matches your new hire.</p>",
+                  "description": "<p style=\"margin: 12px 0 0 0; line-height: 1.5;\">Select the person who matches your new hire. You will compare their current account with these details before anything is saved.</p>",
                   "label": "Match helper",
                   "showLabel": false
                 },
@@ -354,7 +354,7 @@
       "owner": {
         "type": "IDENTITY",
         "id": "b41994df5dcf447483c8446436f29c79",
-        "name": "Fernando de los Ríos"
+        "name": "Fernando de los R\u00edos"
       },
       "usedBy": [],
       "formInput": [
@@ -475,6 +475,134 @@
             "label": "Review request",
             "labelStyle": "h2",
             "showLabel": true
+          },
+          "validations": []
+        }
+      ],
+      "formConditions": []
+    }
+  },
+  {
+    "version": 1,
+    "self": {
+      "id": "f3a91c74-8e26-4b5d-9a17-0d6c2e58b441",
+      "name": "Identity Match & Onboard - Account update confirmation",
+      "type": "FORM_DEFINITION"
+    },
+    "object": {
+      "id": "f3a91c74-8e26-4b5d-9a17-0d6c2e58b441",
+      "name": "Identity Match & Onboard - Account update confirmation",
+      "description": "Confirm an update to the selected person's existing source account.",
+      "owner": {
+        "type": "IDENTITY",
+        "id": "b41994df5dcf447483c8446436f29c79",
+        "name": "Fernando de los R\u00edos"
+      },
+      "usedBy": [],
+      "formInput": [
+        {
+          "id": "beforeUsername",
+          "type": "STRING",
+          "label": "Current username",
+          "description": "Sign-in name preserved from the selected account."
+        },
+        {
+          "id": "beforeFirstName",
+          "type": "STRING",
+          "label": "Current first name",
+          "description": "Current account value."
+        },
+        {
+          "id": "afterFirstName",
+          "type": "STRING",
+          "label": "New first name",
+          "description": "Value collected earlier."
+        },
+        {
+          "id": "beforeLastName",
+          "type": "STRING",
+          "label": "Current last name",
+          "description": "Current account value."
+        },
+        {
+          "id": "afterLastName",
+          "type": "STRING",
+          "label": "New last name",
+          "description": "Value collected earlier."
+        },
+        {
+          "id": "beforeEmail",
+          "type": "STRING",
+          "label": "Current email",
+          "description": "Current account value."
+        },
+        {
+          "id": "afterEmail",
+          "type": "STRING",
+          "label": "New email",
+          "description": "Value collected earlier."
+        },
+        {
+          "id": "beforeLocation",
+          "type": "STRING",
+          "label": "Current location",
+          "description": "Current account value."
+        },
+        {
+          "id": "afterLocation",
+          "type": "STRING",
+          "label": "New location",
+          "description": "Value collected earlier."
+        },
+        {
+          "id": "beforeManager",
+          "type": "STRING",
+          "label": "Current manager",
+          "description": "Current account value."
+        },
+        {
+          "id": "afterManager",
+          "type": "STRING",
+          "label": "New manager",
+          "description": "Manager selected on the first form."
+        }
+      ],
+      "formElements": [
+        {
+          "id": "6842910375100",
+          "elementType": "SECTION",
+          "config": {
+            "alignment": "LEFT",
+            "description": "",
+            "label": "Confirm account update",
+            "labelStyle": "h2",
+            "showLabel": false,
+            "formElements": [
+              {
+                "id": "6842910375101",
+                "key": "",
+                "elementType": "DESCRIPTION",
+                "config": {
+                  "label": "Change preview",
+                  "showLabel": false,
+                  "description": "<p style='margin:0 0 18px; line-height:1.6; color:#475569;'>The sign-in name stays with the selected account. Every other value comes from the details entered earlier.</p><table width='100%'><tr><td width='50%' valign='top'><p style='width:calc(100% - 16px); box-sizing:border-box; margin:0 16px 14px 0; padding:8px 12px; background-color:#334155; color:#ffffff; border-radius:8px; font-size:12px; font-weight:700; letter-spacing:0.08em;'>BEFORE</p><p style='width:calc(100% - 16px); box-sizing:border-box; margin:0 16px 12px 0; padding:12px 14px; background-color:#f8fafc; border:1px solid #dbe3ee; border-left:4px solid #64748b; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#64748b;'>Sign-in name</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.beforeUsername}}</span></p><p style='width:calc(100% - 16px); box-sizing:border-box; margin:0 16px 12px 0; padding:12px 14px; background-color:#f8fafc; border:1px solid #dbe3ee; border-left:4px solid #64748b; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#64748b;'>First name</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.beforeFirstName}}</span></p><p style='width:calc(100% - 16px); box-sizing:border-box; margin:0 16px 12px 0; padding:12px 14px; background-color:#f8fafc; border:1px solid #dbe3ee; border-left:4px solid #64748b; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#64748b;'>Last name</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.beforeLastName}}</span></p><p style='width:calc(100% - 16px); box-sizing:border-box; margin:0 16px 12px 0; padding:12px 14px; background-color:#f8fafc; border:1px solid #dbe3ee; border-left:4px solid #64748b; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#64748b;'>Email</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.beforeEmail}}</span></p><p style='width:calc(100% - 16px); box-sizing:border-box; margin:0 16px 12px 0; padding:12px 14px; background-color:#f8fafc; border:1px solid #dbe3ee; border-left:4px solid #64748b; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#64748b;'>Location</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.beforeLocation}}</span></p><p style='width:calc(100% - 16px); box-sizing:border-box; margin:0 16px 12px 0; padding:12px 14px; background-color:#f8fafc; border:1px solid #dbe3ee; border-left:4px solid #64748b; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#64748b;'>Manager</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.beforeManager}}</span></p></td><td width='50%' valign='top'><p style='width:100%; box-sizing:border-box; margin:0 0 14px; padding:8px 12px; background-color:#166534; color:#ffffff; border-radius:8px; font-size:12px; font-weight:700; letter-spacing:0.08em;'>AFTER</p><p style='width:100%; box-sizing:border-box; margin:0 0 12px; padding:12px 14px; background-color:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #16a34a; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#15803d;'>Sign-in name</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.beforeUsername}} <span style='display:inline-block; margin-top:6px; padding:2px 8px; border-radius:999px; background-color:#e2e8f0; color:#334155; font-size:11px; font-weight:700; letter-spacing:0.04em;'>UNCHANGED</span></span></p><p style='width:100%; box-sizing:border-box; margin:0 0 12px; padding:12px 14px; background-color:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #16a34a; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#15803d;'>First name</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.afterFirstName}}</span></p><p style='width:100%; box-sizing:border-box; margin:0 0 12px; padding:12px 14px; background-color:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #16a34a; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#15803d;'>Last name</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.afterLastName}}</span></p><p style='width:100%; box-sizing:border-box; margin:0 0 12px; padding:12px 14px; background-color:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #16a34a; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#15803d;'>Email</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.afterEmail}}</span></p><p style='width:100%; box-sizing:border-box; margin:0 0 12px; padding:12px 14px; background-color:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #16a34a; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#15803d;'>Location</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.afterLocation}}</span></p><p style='width:100%; box-sizing:border-box; margin:0 0 12px; padding:12px 14px; background-color:#f0fdf4; border:1px solid #bbf7d0; border-left:4px solid #16a34a; border-radius:8px;'><span style='display:block; margin:0 0 5px; font-size:11px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#15803d;'>Manager</span><span style='display:block; font-size:15px; line-height:1.45; font-weight:700; color:#0f172a;'>{{$.form.input.afterManager}}</span></p></td></tr></table>"
+                },
+                "validations": []
+              },
+              {
+                "id": "6842910375102",
+                "key": "confirmUpdate",
+                "elementType": "TOGGLE",
+                "config": {
+                  "default": false,
+                  "falseLabel": "No",
+                  "helpText": "Select Yes to update the selected account. Select No to leave it unchanged.",
+                  "label": "Apply these changes",
+                  "trueLabel": "Yes"
+                },
+                "validations": []
+              }
+            ]
           },
           "validations": []
         }

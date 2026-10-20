@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Reference implementation for ISC **interactive identity onboarding** with a **duplicate check** and **manager approval** before account creation. An operator collects personal details, ISC searches for similar identities, and the flow either asks the selected manager to approve a new source account or confirms an existing match — all using native workflows, forms, and the Accounts API.
+Reference implementation for ISC **interactive identity onboarding** with a **duplicate check**, **collision-safe usernames**, and **manager approval** before account creation. An operator collects personal details and ISC searches for similar identities. A new person can require manager approval before the source account is created. An existing person is shown a before-and-after comparison, and the selected source account is updated only after the operator confirms.
 
 ## Overview
 
@@ -11,18 +11,19 @@ The **Identity Match & Onboard** workflow is launched from an interactive proces
 1. Collects first name, last name, work email, location, and manager.
 2. Searches ISC for identities with a fuzzy name match or exact email.
 3. If matches exist, presents a review form to pick an existing identity or mark the person as new.
-4. If the person is new, optionally sends a standalone approval form to the selected manager (`Manager Approval Required` in Set Configuration). On approve — or when the flag is not `true` — creates a source account via `POST /accounts/v1`. On reject, tells the operator that nothing was created. Existing matches skip approval and show a deep link to the identity attributes page.
+4. If the person is new, finds the first free sign-in name (`jane.smith`, then `jane.smith1`, through `jane.smith20`). When `Manager Approval Required` is `true`, the selected manager approves that exact name before `POST /accounts/v1`. On reject, nothing is created.
+5. If the operator selects an existing person, the workflow loads that identity's account on the configured source and shows the current values beside the details already collected. The sign-in name stays as it is. **Yes** updates the account; **No** leaves it unchanged.
 
-Forms use HTML **DESCRIPTION** widgets for operator guidance. The duplicate-review form lists name and email only; the full profile link appears after a match is confirmed.
+Forms use HTML **DESCRIPTION** widgets for operator guidance. The duplicate-review form lists name and email only. The update confirmation uses one full-width before/after comparison.
 
-A demo recording of the end-to-end flow is included as [`Identity Match & Onboard.mov`](Identity%20Match%20%26%20Onboard.mov).
+A demo recording of the earlier end-to-end flow is included as [`Identity Match & Onboard.mov`](Identity%20Match%20%26%20Onboard.mov). It predates the account-update confirmation and username suffix probe.
 
 ## Artifacts
 
 | File | Type | Purpose |
 |---|---|---|
 | `Workflow - Identity Match & Onboard.json` | Workflow export | Interactive onboarding workflow |
-| `Forms - Identity Match & Onboard.json` | Form export (array) | All three forms — use for VS Code form import |
+| `Forms - Identity Match & Onboard.json` | Form export (array) | All four forms — use for VS Code form import |
 | `Identity Match & Onboard.mov` | Demo video | Walkthrough of the interactive experience |
 
 > **Form import format:** The SailPoint VS Code extension expects form exports as a **JSON array** (`[{ version, self, object }, …]`), not a single object. Import `Forms - Identity Match & Onboard.json` to load all forms at once. All fields (including DESCRIPTION widgets) must be nested inside a **SECTION** element. HTML ampersands must be escaped as `&amp;`.
@@ -30,7 +31,7 @@ A demo recording of the end-to-end flow is included as [`Identity Match & Onboar
 ### Exported objects
 
 - **Workflow:** `Identity Match & Onboard`
-- **Form definitions:** `Identity Match & Onboard - Onboarding`, `Identity Match & Onboard - Identity deduplication`, `Identity Match & Onboard - Manager approval`
+- **Form definitions:** `Identity Match & Onboard - Onboarding`, `Identity Match & Onboard - Identity deduplication`, `Identity Match & Onboard - Manager approval`, `Identity Match & Onboard - Account update confirmation`
 
 ## Architecture
 
@@ -44,24 +45,36 @@ flowchart TD
   review --> exists{Identity exists?}
   exists -->|no| needAppr
   exists -->|yes| loadMatch[Load matched identity]
+  loadMatch --> getAcct[Get source account]
+  getAcct --> acctState{Account on source?}
+  acctState -->|one| confirm[Confirm before and after]
+  acctState -->|none or several| stopNode[Explain and stop]
+  confirm --> apply{Apply update?}
+  apply -->|yes| updateAcct[Update account]
+  apply -->|no| cancelled[Confirm cancelled]
+  updateAcct --> refreshMatch[Refresh matched identity]
   needAppr -->|yes| getMgr[Get manager]
-  needAppr -->|no| createAcct[Create account]
+  needAppr -->|no| probe[Probe sign-in name]
   getMgr --> getOp[Get operator]
   getOp --> wait[Waiting for manager approval]
-  wait --> approveForm[Manager approval form]
-  approveForm --> approved{Approved?}
-  approved -->|yes| createAcct
+  wait --> probe
+  probe --> free{Name free?}
+  free -->|no| probe
+  free -->|limit| stopNode
+  free -->|yes| approved{Approved when required?}
+  approved -->|yes| createAcct[Create account]
   approved -->|no| showRejected[Confirm declined]
-  loadMatch --> showMatch[Show matched identity]
   createAcct --> waitId[Wait for identity]
   waitId --> findId[Find created identity]
   findId --> cubeReady{Identity cube ready?}
   cubeReady -->|yes| refreshId[Refresh created identity]
   cubeReady -->|no| showCreated[Confirm account created]
   refreshId --> showCreated
-  showMatch --> doneNode[Success]
+  refreshMatch --> doneNode[Success]
+  cancelled --> doneNode
   showCreated --> doneNode
   showRejected --> doneNode
+  stopNode --> doneNode
 ```
 
 ## Workflow steps
@@ -74,20 +87,25 @@ flowchart TD
 | Check Duplicate Count | — | Branches on match count |
 | Review Duplicates | Interactive form | Deduplication form (only when matches found) |
 | Check Identity Exists | — | Branches on the “This is a new hire” toggle — true when the toggle is No |
-| Check Manager Approval Required | — | Branches on `Manager Approval Required` (`true` → approval form) |
+| Check Manager Approval Required | — | For a new person, branches on `Manager Approval Required` before the username probe |
 | Get Manager | — | `sp:get-identities` by selected manager **uid** |
 | Get Operator | — | `sp:get-identity` for the interactive process launcher |
 | Notify Waiting For Approval | Interactive message | Tells the operator who will approve |
-| Manager Approval | Standalone form | `sp:forms` assigned to the manager identity |
-| Check Approved | — | Branches on the approval toggle |
-| Create Account | — | `POST /accounts/v1` with OAuth (after approval, or immediately when the flag is off) |
+| Check Username 0–20 | — | `GET /accounts/v1` for the base name, then `name1` … `name20` |
+| Manager Approval 0–20 | Standalone form | Approval for the first free name; one step per candidate |
+| Create Account 0–20 | — | `POST /accounts/v1` with that free name |
+| Show Username Limit Reached | Interactive message | Base name and suffixes 1–20 are all taken |
 | Wait For Identity | — | 1 minute pause so the identity cube can appear |
-| Find Created Identity | — | Search by work email or generated uid |
+| Find Created Identity | — | Search by the submitted work email |
 | Check Identity Created | — | Skips refresh when no identity is found yet |
 | Refresh Created Identity | — | `POST /v2025/identities/process` for that identity id (OAuth; experimental header). Failures still show the created confirmation |
 | Show Approval Rejected | Interactive message | Decline summary; no account created |
-| Load Matched Identity | — | `sp:get-identity` for selected duplicate |
-| Show Matched Identity | Interactive message | Summary + ISC admin link |
+| Load Matched Identity | — | `sp:get-identity` for the selected duplicate |
+| Get Matched Account | — | Account on the configured source for that identity |
+| Confirm Account Update | Interactive form | Full-width before/after comparison |
+| Update Matched Account | — | `POST /accounts/v1` with the existing `id` and `name`, and the other collected values |
+| Refresh Updated Identity | — | Processes the selected identity after the update |
+| Show Account Updated / Cancelled / Missing / Multiple | Interactive message | Result of the match path |
 | Show Account Created | Interactive message | Confirmation summary |
 | End Success | — | Workflow complete |
 
@@ -128,11 +146,16 @@ Path-specific DESCRIPTION widgets:
 - `newIdentity = true` → hide match helper + person picker; picker optional
 - `newIdentity = false` → hide new-hire confirmation; require person picker
 
-After a match is confirmed, the **Already in the directory** message includes a profile link:
+### Account update confirmation
 
-```
-{ISC UI URL}/ui/a/admin/identities/{identityId}/details/attributes
-```
+Shown after the operator selects an existing person who has exactly one account on the configured source. It does not collect the details again. A description widget renders two full-width columns:
+
+| Column | Source |
+|---|---|
+| Before | Current account: sign-in name, first name, last name, email, location, and manager |
+| After | Sign-in name unchanged; the other values come from the onboarding form |
+
+**Apply these changes** defaults to No. Yes sends the update. The sign-in name row is marked UNCHANGED.
 
 ### Manager approval
 
@@ -166,9 +189,11 @@ The `~2` operator allows approximate name matches. Email is matched exactly. Tun
 
 Accented characters are stripped rather than transliterated. Adjust transforms if your naming policy differs.
 
+Before creating an account, the workflow checks that name on the configured source. If it exists, it tries the same name with `1`, then `2`, and so on through `20`. The first free value is the one shown to the manager and sent as both `id` and `name`. If all 21 candidates are taken, the operator is told to stop and no account is created.
+
 ## Account creation
 
-The **Create Account** HTTP step runs after the manager approves, or immediately when **Manager Approval Required** is not `true`. After the account is created, the workflow waits one minute, looks up the new identity by email or uid, and calls `POST /v2025/identities/process` for that identity so lifecycle, roles, and manager correlation run without waiting for the next scheduled processing window. The match and reject paths do not refresh an identity. It posts to:
+The **Create Account** HTTP step runs after the manager approves the free sign-in name, or immediately when **Manager Approval Required** is not `true`. After the account is created, the workflow waits one minute, looks up the new identity by work email, and calls `POST /v2025/identities/process` for that identity so lifecycle, roles, and manager correlation run without waiting for the next scheduled processing window. A rejected approval does not refresh an identity. The update path refreshes the identity that was selected. Both writes post to:
 
 ```
 {ISC API URL}/accounts/v1
@@ -179,7 +204,7 @@ Request body attribute keys match this **Accounts Source** schema:
 | Form / variable | Account attribute | Notes |
 |---|---|---|
 | Configuration | `sourceId` | Target source UUID (API field, not a schema attribute) |
-| Account Name (derived) | `id`, `name` | Unique account id and username (same generated value) |
+| Account Name (derived) | `id`, `name` | On create, the first free generated username. On update, the selected account's current `id` and `name` |
 | First name | `givenName` | |
 | Last name | `familyName` | |
 | Work email | `e-mail` | Hyphenated schema name |
@@ -196,7 +221,7 @@ Request body attribute keys match this **Accounts Source** schema:
 
 Import order matters. The workflow references form definition IDs, so forms must exist in the tenant first.
 
-1. Import **`Forms - Identity Match & Onboard.json`** (all three form definitions).
+1. Import **`Forms - Identity Match & Onboard.json`** (all four form definitions).
 2. Import **`Workflow - Identity Match & Onboard.json`**.
 3. Complete the tenant configuration below (source id, API/UI URLs, OAuth).
 4. Enable the workflow and link it to your interactive process.
@@ -214,7 +239,7 @@ Import order matters. The workflow references form definition IDs, so forms must
 
 ### OAuth
 
-Configure OAuth credentials on the **Create Account** and **Refresh Created Identity** HTTP steps (`paramID`, client id/secret, token URL). The client needs permission to create accounts on the target source and to process identities.
+Configure OAuth credentials on every HTTP step (`paramID`, client id/secret, token URL): username probes, account read, create, update, and both identity refreshes. The client needs permission to list and write accounts on the target source and to process identities. The export leaves `paramID` empty. The repeated username and approval steps are copies, so bind OAuth on each one after import.
 
 ### Prerequisites
 
@@ -229,20 +254,22 @@ Configure OAuth credentials on the **Create Account** and **Refresh Created Iden
 - [ ] Forms imported before the workflow.
 - [ ] Replace `Accounts Source` placeholder (`xxx`) with your source UUID.
 - [ ] Set **ISC API URL** and **ISC UI URL** for your tenant.
-- [ ] Bind OAuth on the Create Account and Refresh Created Identity HTTP steps.
+- [ ] Bind OAuth on every HTTP step, including each username probe, create, update, and refresh copy.
 - [ ] Enable the workflow and link it to your interactive process.
 - [ ] Confirm account schema attribute names match the HTTP body (`id`, `name`, `givenName`, `familyName`, `e-mail`, `location`, `manager`).
 - [ ] Set **Manager Approval Required** (`true` or skip).
-- [ ] Test: with the flag on, no-match waits for manager then creates account and reject creates nothing; with it off, no-match creates immediately; match path shows review form and identity link.
+- [ ] Test a new person whose generated name is free, and one whose name is taken so the suffix changes.
+- [ ] Test a selected match: **No** leaves the account unchanged; **Yes** updates every field except the sign-in name.
 
 ## Limitations
 
-- **Match path is informational** — selecting an existing identity does not correlate accounts, request access, or update records.
+- **Match update needs one source account** — zero accounts stops with an explanation, and more than one account stops because the target is ambiguous. The update does not move the account between identities.
+- **Sign-in name is immutable on update** — `id` and `name` are written back from the selected account. The other mapped attributes are replaced from the original form.
+- **Username probe stops at 20** — `name21` and later are not tried. ISC workflows have no unbounded loop, so each candidate is an explicit step.
 - **Interactive process stays open** on the approval path until the manager submits the form (or the 2-day deadline expires). When **Manager Approval Required** is not `true`, the operator is not blocked.
-- **No HTTP error branch** — failed account creation is not handled in this sample. A failed identity refresh still shows the account-created confirmation.
+- **No HTTP error branch** — a failed account write is not handled in this sample. A failed identity refresh still shows the created or updated confirmation.
 - **Identity refresh can miss** — `POST /accounts/v1` is asynchronous. If the identity cube is not searchable after the one-minute wait, processing is skipped.
 - **Fuzzy name search** can over-match; there is no birthdate or employee-id tie-breaker.
-- **Match confirmation** includes a reliable profile link using the loaded identity id (`…/identities/{id}/details/attributes`).
 - **OAuth `paramID`** is tenant-specific and left empty in the export.
 
 ## Related patterns
