@@ -31,6 +31,8 @@ Read-only: nothing in the tenant is created, changed, or marked viewed.
 - At least one configured `sail` environment (`sail env list`), authenticated
 - A token that can read identities (search) and access request recommendations
 
+The script is self-contained: it imports nothing else from this repo, so the single `.ps1` can be copied anywhere and run from there.
+
 ## Usage
 
 ```powershell

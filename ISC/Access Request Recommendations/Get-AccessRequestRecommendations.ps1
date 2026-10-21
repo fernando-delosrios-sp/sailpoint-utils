@@ -113,11 +113,7 @@ $ErrorActionPreference = 'Stop'
 $script:SearchPageSize = 250
 $script:SearchOffsetCeiling = 10000
 $script:SailCommand = $null
-
-$sourceSetupModules = Join-Path (Split-Path -Parent $PSScriptRoot) 'Source Connection Setup/modules'
-Import-Module (Join-Path $sourceSetupModules 'ISC.OperatorConsole.psm1') -Force -WarningAction SilentlyContinue
-
-Initialize-OperatorConsole -NonInteractive:$NonInteractive
+$script:NonInteractiveMode = [bool]$NonInteractive
 
 class SailApiError : System.Exception {
     [int]$Status
@@ -125,6 +121,117 @@ class SailApiError : System.Exception {
     SailApiError([int]$status, [string]$message) : base($message) {
         $this.Status = $status
     }
+}
+
+# --- Interactive console -----------------------------------------------------
+# Self-contained on purpose: the script is meant to be copied out of the repo, so
+# it must not depend on a sibling module under ISC/Source Connection Setup.
+
+function Test-OperatorNonInteractive {
+    return [bool]$script:NonInteractiveMode
+}
+
+function Write-Step {
+    param([string]$Message)
+    Write-Host ''
+    Write-Host ">> $Message" -ForegroundColor Cyan
+}
+
+function Write-Ok {
+    param([string]$Message)
+    Write-Host "   $Message" -ForegroundColor Green
+}
+
+function Write-Info {
+    param([string]$Message)
+    Write-Host "   $Message" -ForegroundColor DarkGray
+}
+
+function Read-InputString {
+    param(
+        [Parameter(Mandatory)][string]$Prompt,
+        [string]$Default,
+        [switch]$Required,
+        [scriptblock]$Validate
+    )
+
+    if ($script:NonInteractiveMode) {
+        if ($Required -and [string]::IsNullOrWhiteSpace($Default)) {
+            throw "Non-interactive mode requires a value for: $Prompt"
+        }
+        return $Default
+    }
+
+    $suffix = if ($Default) { " [$Default]" } else { '' }
+    while ($true) {
+        $value = Read-Host "$Prompt$suffix"
+        if ([string]::IsNullOrWhiteSpace($value)) { $value = $Default }
+        $value = if ($null -eq $value) { '' } else { $value.Trim() }
+
+        if ($Required -and [string]::IsNullOrWhiteSpace($value)) {
+            Write-Host '   A value is required.' -ForegroundColor Yellow
+            continue
+        }
+        if ($Validate -and -not [string]::IsNullOrWhiteSpace($value)) {
+            $failure = & $Validate $value
+            if ($failure) {
+                Write-Host "   $failure" -ForegroundColor Yellow
+                continue
+            }
+        }
+        return $value
+    }
+}
+
+function Read-Choice {
+    param(
+        [Parameter(Mandatory)][string]$Prompt,
+        [Parameter(Mandatory)][string[]]$Options,
+        [string[]]$Labels,
+        [string]$Default
+    )
+
+    if (-not $Labels) { $Labels = $Options }
+    if ($Labels.Count -ne $Options.Count) {
+        throw 'Read-Choice requires Labels and Options to have the same length.'
+    }
+    if ($script:NonInteractiveMode) {
+        if ([string]::IsNullOrWhiteSpace($Default)) {
+            throw "Non-interactive mode requires a choice for: $Prompt"
+        }
+        return $Default
+    }
+
+    $defaultIndex = if ($Default) { [array]::IndexOf($Options, $Default) } else { 0 }
+    if ($defaultIndex -lt 0) { $defaultIndex = 0 }
+
+    Write-Host $Prompt -ForegroundColor White
+    for ($i = 0; $i -lt $Options.Count; $i++) {
+        $marker = if ($i -eq $defaultIndex) { '*' } else { ' ' }
+        Write-Host ("  {0} {1}) {2}" -f $marker, ($i + 1), $Labels[$i])
+    }
+
+    while ($true) {
+        $raw = Read-Host ("Select 1-{0} [{1}]" -f $Options.Count, ($defaultIndex + 1))
+        if ([string]::IsNullOrWhiteSpace($raw)) { return $Options[$defaultIndex] }
+        $number = 0
+        if ([int]::TryParse($raw, [ref]$number) -and $number -ge 1 -and $number -le $Options.Count) {
+            return $Options[$number - 1]
+        }
+        Write-Host '   Enter a number from the list.' -ForegroundColor Yellow
+    }
+}
+
+function Read-YesNo {
+    param(
+        [Parameter(Mandatory)][string]$Prompt,
+        [bool]$Default = $true
+    )
+
+    if ($script:NonInteractiveMode) { return $Default }
+
+    $defaultOption = if ($Default) { 'Yes' } else { 'No' }
+    return (Read-Choice -Prompt $Prompt -Options @('Yes', 'No') -Default $defaultOption) -eq 'Yes'
 }
 
 function Get-ObjectPropertySafe {
