@@ -19,6 +19,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 
 | Utility | Description |
 | --- | --- |
+| [Access Request Recommendations](ISC/Access%20Request%20Recommendations/) | PowerShell wrapper over the `sail` CLI that lists every identity with an AI access request recommendation by iterating identities and calling the recommender per identity, exported to CSV or HTML |
 | [Active Directory Home Folders](ISC/Active%20Directory%20Home%20Folders/) | ConnectorAfterCreate rule (built from PowerShell Rule Template) that creates home folders with NTFS ACLs from configurable base path and template |
 | [Active Directory OU Management](ISC/Active%20Directory%20OU%20Management/) | IQService BeforeScripts that create missing OUs—and optionally AD groups—during AD provisioning |
 | [Active Directory Privileged Tasks](ISC/Active%20Directory%20Privileged%20Tasks/) | Interactive workflows to create an AD security group (PAG) or a CIFS share (access request + template-based BeforeModify rule) |
