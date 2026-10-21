@@ -277,6 +277,59 @@ function Remove-SailChrome {
     return (($kept -join "`n").Trim())
 }
 
+function Invoke-SailProcess {
+    <#
+        Runs the sail CLI with the given argv and returns its streams and exit code.
+        `-StdinLine` answers a prompting command and closes stdin: `sail env list` asks
+        for Enter first. A hard timeout keeps a hung request from stalling the run.
+    #>
+    param(
+        [Parameter(Mandatory)][string[]]$Arguments,
+        [AllowNull()][string]$StdinLine,
+        [int]$TimeoutSeconds = 30
+    )
+
+    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $script:SailCommand
+    foreach ($argument in $Arguments) { $startInfo.ArgumentList.Add($argument) }
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+    $wantsStdin = $null -ne $StdinLine
+    $startInfo.RedirectStandardInput = $wantsStdin
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+
+    $process = [System.Diagnostics.Process]::Start($startInfo)
+    $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+    $stderrTask = $process.StandardError.ReadToEndAsync()
+    try {
+        if ($wantsStdin) {
+            $process.StandardInput.WriteLine($StdinLine)
+            $process.StandardInput.Close()
+        }
+
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            try { $process.Kill($true) } catch { }
+            throw [SailApiError]::new(0, "sail $($Arguments -join ' ') timed out after ${TimeoutSeconds}s.")
+        }
+
+        # ReadToEndAsync can hand back $null for a stream that stayed empty, and every
+        # downstream call assumes a string.
+        $stdoutText = [string]$stdoutTask.GetAwaiter().GetResult()
+        $stderrText = [string]$stderrTask.GetAwaiter().GetResult()
+        $exitCode = $process.ExitCode
+    }
+    finally {
+        $process.Dispose()
+    }
+
+    return [pscustomobject]@{
+        Stdout   = $stdoutText
+        Stderr   = $stderrText
+        ExitCode = $exitCode
+    }
+}
+
 function Invoke-SailApi {
     <#
         Runs `sail api <method> <path>` and returns the parsed JSON payload.
@@ -312,28 +365,9 @@ function Invoke-SailApi {
     $arguments.Add('--env')
     $arguments.Add($Environment)
 
-    $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = $script:SailCommand
-    foreach ($argument in $arguments) { $startInfo.ArgumentList.Add($argument) }
-    $startInfo.RedirectStandardOutput = $true
-    $startInfo.RedirectStandardError = $true
-    $startInfo.UseShellExecute = $false
-    $startInfo.CreateNoWindow = $true
-
-    $process = [System.Diagnostics.Process]::Start($startInfo)
-    $stdoutTask = $process.StandardOutput.ReadToEndAsync()
-    $stderrTask = $process.StandardError.ReadToEndAsync()
-    try {
-        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
-            try { $process.Kill($true) } catch { }
-            throw [SailApiError]::new(0, "sail api $Method $Path timed out after ${TimeoutSeconds}s.")
-        }
-        $stdoutText = $stdoutTask.GetAwaiter().GetResult()
-        $stderrText = $stderrTask.GetAwaiter().GetResult()
-    }
-    finally {
-        $process.Dispose()
-    }
+    $result = Invoke-SailProcess -Arguments $arguments.ToArray() -TimeoutSeconds $TimeoutSeconds
+    $stdoutText = $result.Stdout
+    $stderrText = $result.Stderr
 
     $statusMatch = [regex]::Match($stdoutText, 'Status:\s*(\d{3})')
     $status = if ($statusMatch.Success) { [int]$statusMatch.Groups[1].Value } else { 0 }
@@ -367,31 +401,21 @@ function Get-SailEnvironmentCatalog {
         Runs `sail env list`, which prints the catalog as JSON on stdout. The command
         warns and asks for Enter first, so an empty line is piped in.
     #>
-    $stdoutFile = [System.IO.Path]::GetTempFileName()
-    $stderrFile = [System.IO.Path]::GetTempFileName()
-    try {
-        $previous = $ErrorActionPreference
-        $ErrorActionPreference = 'Continue'
-        try {
-            '' | & $script:SailCommand env list 1> $stdoutFile 2> $stderrFile
-            $exitCode = $LASTEXITCODE
-        }
-        finally {
-            $ErrorActionPreference = $previous
-        }
-        $raw = Get-Content -LiteralPath $stdoutFile -Raw
-    }
-    finally {
-        Remove-Item -LiteralPath $stdoutFile, $stderrFile -Force -ErrorAction SilentlyContinue
+    $result = Invoke-SailProcess -Arguments @('env', 'list') -StdinLine '' -TimeoutSeconds 60
+
+    # The catalog has landed on stdout on some CLI builds and on stderr on others (the
+    # `api` subcommand puts its payload on stderr), so search both. Strip logger chrome
+    # first: those lines never contain braces.
+    $combined = (Remove-SailChrome -Text $result.Stdout) + "`n" + (Remove-SailChrome -Text $result.Stderr)
+    $start = $combined.IndexOf('{')
+    $end = $combined.LastIndexOf('}')
+    if ($start -lt 0 -or $end -le $start) {
+        $detail = ($combined -replace '\s+', ' ').Trim()
+        if ($detail.Length -gt 300) { $detail = $detail.Substring(0, 300) + '...' }
+        throw "sail env list returned no environment catalog (exit $($result.ExitCode)). Output: $detail"
     }
 
-    $start = $raw.IndexOf('{')
-    $end = $raw.LastIndexOf('}')
-    if ($start -lt 0 -or $end -lt $start) {
-        throw 'sail env list did not return an environment catalog. Run `sail env list` to check the CLI.'
-    }
-
-    $json = $raw.Substring($start, $end - $start + 1) | ConvertFrom-Json
+    $json = $combined.Substring($start, $end - $start + 1) | ConvertFrom-Json
     $names = @($json.PSObject.Properties.Name | Where-Object { $_ -notmatch '^_' })
 
     $environments = foreach ($name in $names) {
@@ -541,7 +565,7 @@ function ConvertTo-EscapedHtml {
 
 function New-RecommendationsHtml {
     param(
-        [Parameter(Mandatory)][object[]]$Rows,
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Rows,
         [Parameter(Mandatory)][string]$Title
     )
 
@@ -575,7 +599,7 @@ Write-Step 'Access request recommendations'
 $script:SailCommand = Resolve-SailCommand
 Write-Ok ("sail:         {0}" -f $script:SailCommand)
 
-$environments = Get-SailEnvironmentCatalog
+$environments = @(Get-SailEnvironmentCatalog)
 $activeEnvironment = Get-ActiveSailEnvironment -ConfigPath $SailpointConfigPath
 $selected = $null
 
@@ -606,6 +630,10 @@ elseif (-not (Test-OperatorNonInteractive)) {
 elseif ($activeEnvironment) {
     $Environment = $activeEnvironment
     $selected = @($environments | Where-Object { $_.Name -eq $Environment } | Select-Object -First 1)
+}
+
+if ([string]::IsNullOrWhiteSpace($Environment)) {
+    throw 'No environment selected. Pass -Environment, or configure one in the sail CLI (`sail env list`).'
 }
 
 Write-Ok ("Environment:  {0}{1}" -f $Environment, $(if ($selected -and $selected.BaseUrl) { " ($($selected.BaseUrl))" } else { '' }))
@@ -666,7 +694,7 @@ if ($HtmlPath) { Write-Ok ("HTML:         {0}" -f $HtmlPath) }
 
 # --- Iterate -----------------------------------------------------------------
 
-$identities = Get-IdentityScope -Query $SearchQuery -Environment $Environment -Max $MaxIdentities
+$identities = @(Get-IdentityScope -Query $SearchQuery -Environment $Environment -Max $MaxIdentities)
 Write-Ok ("Identities:   {0}" -f $identities.Count)
 
 if ($identities.Count -eq 0) {
