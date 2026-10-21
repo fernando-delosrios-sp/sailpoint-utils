@@ -297,4 +297,8 @@ export class IscClient {
   async getWorkflowExecution(id) {
     return this.get(`/workflow-executions/v1/${id}`).then((r) => r.body);
   }
+
+  async getIdentity(id) {
+    return this.get(`/beta/identities/${id}`).then((r) => r.body);
+  }
 }

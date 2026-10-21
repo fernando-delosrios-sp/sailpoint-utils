@@ -182,9 +182,17 @@ export class InstallerIsc {
     const body = JSON.parse(text);
     const existing = await this.findWorkflowByName(body.name);
     if (existing) {
+      if (existing.enabled) {
+        await this.request(
+          'PATCH',
+          `/workflows/v1/${existing.id}`,
+          [{ op: 'replace', path: '/enabled', value: false }],
+          { contentType: 'application/json-patch+json' },
+        );
+      }
       const updated = await this.put(
         `/workflows/v1/${existing.id}`,
-        toWorkflowWriteBody(body, { id: existing.id }),
+        toWorkflowWriteBody(body, { id: existing.id, existingTrigger: existing.trigger }),
       );
       return { name: body.name, id: existing.id, action: 'updated', body: updated ?? body };
     }
@@ -234,13 +242,14 @@ export class InstallerIsc {
  * Exports carry `creator`; the write API requires `owner` and rejects an owner
  * change that only sends `creator`.
  */
-export function toWorkflowWriteBody(body, { id } = {}) {
+export function toWorkflowWriteBody(body, { id, existingTrigger } = {}) {
   const payload = { ...body };
   if (!payload.owner && payload.creator) {
     payload.owner = payload.creator;
   }
   delete payload.creator;
   if (id) payload.id = id;
+  if (existingTrigger) payload.trigger = existingTrigger;
   return payload;
 }
 

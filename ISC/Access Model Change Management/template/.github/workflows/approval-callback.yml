@@ -65,28 +65,47 @@ jobs:
           };
           payload.comment = commentText(payload.comment);
           const client = IscClient.fromEnv();
+          let exec = null;
           if (payload.executionId) {
-            const exec = await client.getWorkflowExecution(payload.executionId);
-            const status = exec.status ?? exec.executionStatus;
-            writeFileSync('/tmp/verified.json', JSON.stringify({
-              ok: true,
-              status,
-              decision: payload.decision,
-              execution: exec,
-              payload,
-            }, null, 2));
-          } else {
-            // Soft verify when execution id is absent: trust payload shape, record warning
-            writeFileSync('/tmp/verified.json', JSON.stringify({
-              ok: true,
-              warning: 'No executionId in payload',
-              decision: payload.decision,
-              payload,
-            }, null, 2));
+            try {
+              exec = await client.getWorkflowExecution(payload.executionId);
+            } catch {}
           }
+          const identityId = payload.decidedById
+            || exec?.result?.governanceApprovalChange?.approvedBy?.[0]?.identityID
+            || exec?.result?.governanceApprovalChange?.rejectedBy?.[0]?.identityID;
+
+          let decidedBy = '';
+          if (identityId) {
+            try {
+              const res = typeof client.getIdentity === 'function'
+                ? await client.getIdentity(identityId)
+                : (await client.request('GET', `/beta/identities/${identityId}`))?.body;
+              const ident = res?.body || res;
+              decidedBy = ident?.alias || ident?.attributes?.uid || '';
+            } catch (err) {
+              console.warn(`Could not resolve identity ${identityId}:`, err.message);
+            }
+          }
+          if (!decidedBy) {
+            decidedBy = payload.decidedBy
+              || exec?.result?.governanceApprovalChange?.approvedBy?.[0]?.name
+              || exec?.result?.governanceApprovalChange?.rejectedBy?.[0]?.name
+              || '';
+          }
+          const status = exec?.status ?? exec?.executionStatus;
+          writeFileSync('/tmp/verified.json', JSON.stringify({
+            ok: true,
+            status,
+            decision: payload.decision,
+            decidedBy,
+            execution: exec,
+            payload,
+          }, null, 2));
           EOF
           DECISION=$(jq -r '.decision // .payload.decision' /tmp/verified.json)
           echo "decision=$DECISION" >> "$GITHUB_OUTPUT"
+          echo "decided_by=$(jq -r '.decidedBy // empty' /tmp/verified.json)" >> "$GITHUB_OUTPUT"
           echo "pr=$(jq -r '.payload.pr.number // .payload.prNumber' /tmp/verified.json)" >> "$GITHUB_OUTPUT"
           echo "sha=$(jq -r '.payload.headSha // empty' /tmp/verified.json)" >> "$GITHUB_OUTPUT"
           echo "diff_hash=$(jq -r '.payload.diffHash // empty' /tmp/verified.json)" >> "$GITHUB_OUTPUT"
@@ -103,10 +122,13 @@ jobs:
             SHA=$(gh pr view "$PR" --json headRefOid -q .headRefOid)
           fi
           HASH=${{ steps.verify.outputs.diff_hash }}
+          DECIDED_BY="${{ steps.verify.outputs.decided_by }}"
           gh api "repos/${{ github.repository }}/statuses/$SHA" \
             -f state=success \
             -f context=isc-approval \
-            -f description="Approved (diff $HASH)"
+            -f description="Approved${DECIDED_BY:+" by $DECIDED_BY"} (diff $HASH)"
+          PR_TITLE=$(gh pr view "$PR" --json title -q .title 2>/dev/null || echo "PR #$PR")
+          MERGE_SUBJECT="$PR_TITLE${DECIDED_BY:+" (approved by $DECIDED_BY)"}"
           # --auto only works if the repo (or org) has "Allow auto-merge"
           # turned on — seen live to be off and not overridable via the repos
           # API (likely an org policy), where gh's merge call fails outright
@@ -116,14 +138,14 @@ jobs:
           # plan), so a plain merge right now is just as safe as waiting for
           # auto-merge, and it does not leave an ISC-approved PR stuck open.
           set +e
-          gh pr merge "$PR" --auto --squash 2>/tmp/merge.err
+          gh pr merge "$PR" --auto --squash --subject "$MERGE_SUBJECT" 2>/tmp/merge.err
           STATUS=$?
           set -e
           if [ "$STATUS" != "0" ]; then
             cat /tmp/merge.err >&2
-            gh pr merge "$PR" --squash || gh pr merge "$PR" --merge
+            gh pr merge "$PR" --squash --subject "$MERGE_SUBJECT" || gh pr merge "$PR" --merge
           fi
-          gh pr comment "$PR" --body "ISC approved (diff hash \`$HASH\`)."
+          gh pr comment "$PR" --body "ISC approved${DECIDED_BY:+" by $DECIDED_BY"} (diff hash \`$HASH\`)."
 
       - name: Rejected — close PR
         if: steps.verify.outputs.decision == 'rejected'
@@ -141,11 +163,12 @@ jobs:
         run: |
           PR=${{ steps.verify.outputs.pr }}
           SHA=$(gh pr view "$PR" --json headRefOid -q .headRefOid)
+          DECIDED_BY="${{ steps.verify.outputs.decided_by }}"
           gh api "repos/${{ github.repository }}/statuses/$SHA" \
             -f state=failure \
             -f context=isc-approval \
-            -f description="Rejected by ISC approver"
-          gh pr comment "$PR" --body "ISC rejected this change.${COMMENT:+ Comment: $COMMENT}"
+            -f description="Rejected${DECIDED_BY:+" by $DECIDED_BY"}"
+          gh pr comment "$PR" --body "ISC rejected this change${DECIDED_BY:+" by $DECIDED_BY"}.${COMMENT:+ Comment: $COMMENT}"
           gh pr close "$PR"
 
       - name: Expired — label PR
@@ -207,8 +230,45 @@ jobs:
         id: decision
         env:
           CLIENT_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          ISC_TENANT_URL: ${{ secrets.ISC_TENANT_URL }}
+          ISC_CLIENT_ID: ${{ secrets.ISC_CLIENT_ID }}
+          ISC_CLIENT_SECRET: ${{ secrets.ISC_CLIENT_SECRET }}
         run: |
           echo "$CLIENT_PAYLOAD" > /tmp/restore-decision.json
+          node --input-type=module <<'EOF'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { IscClient } from './scripts/isc-client.mjs';
+
+          const raw = JSON.parse(readFileSync('/tmp/restore-decision.json', 'utf8'));
+          const client = IscClient.fromEnv();
+          let exec = null;
+          if (raw.executionId) {
+            try { exec = await client.getWorkflowExecution(raw.executionId); } catch {}
+          }
+          const identityId = raw.decidedById
+            || exec?.result?.governanceApprovalRestore?.approvedBy?.[0]?.identityID
+            || exec?.result?.governanceApprovalRestore?.rejectedBy?.[0]?.identityID;
+
+          let decidedBy = '';
+          if (identityId) {
+            try {
+              const res = typeof client.getIdentity === 'function'
+                ? await client.getIdentity(identityId)
+                : (await client.request('GET', `/beta/identities/${identityId}`))?.body;
+              const ident = res?.body || res;
+              decidedBy = ident?.alias || ident?.attributes?.uid || '';
+            } catch (err) {
+              console.warn(`Could not resolve identity ${identityId}:`, err.message);
+            }
+          }
+          if (!decidedBy) {
+            decidedBy = raw.decidedBy?.name || raw.decidedBy || '';
+          }
+          if (decidedBy) {
+            raw.decidedBy = decidedBy;
+          }
+          writeFileSync('/tmp/restore-decision.json', JSON.stringify(raw, null, 2));
+          EOF
           REF=$(jq -r '.sourceRef // empty' /tmp/restore-decision.json)
           # An empty ref would have checked out the default branch above and
           # then applied main to ISC as if it were the approved source.
@@ -334,6 +394,42 @@ jobs:
             /tmp/drift-decision.json > /tmp/drift-decision.normalized.json
           mv /tmp/drift-decision.normalized.json /tmp/drift-decision.json
           echo "decision=$(jq -r '.decision' /tmp/drift-decision.json)" >> "$GITHUB_OUTPUT"
+          node --input-type=module <<'EOF'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          import { IscClient } from './scripts/isc-client.mjs';
+
+          const raw = JSON.parse(readFileSync('/tmp/drift-decision.json', 'utf8'));
+          const client = IscClient.fromEnv();
+          let exec = null;
+          if (raw.executionId) {
+            try { exec = await client.getWorkflowExecution(raw.executionId); } catch {}
+          }
+          const identityId = raw.decidedById
+            || exec?.result?.governanceApprovalDrift?.approvedBy?.[0]?.identityID
+            || exec?.result?.governanceApprovalDrift?.rejectedBy?.[0]?.identityID;
+
+          let decidedBy = '';
+          if (identityId) {
+            try {
+              const res = typeof client.getIdentity === 'function'
+                ? await client.getIdentity(identityId)
+                : (await client.request('GET', `/beta/identities/${identityId}`))?.body;
+              const ident = res?.body || res;
+              decidedBy = ident?.alias || ident?.attributes?.uid || '';
+            } catch (err) {
+              console.warn(`Could not resolve identity ${identityId}:`, err.message);
+            }
+          }
+          if (!decidedBy) {
+            decidedBy = raw.decidedBy?.name || raw.decidedBy || '';
+          }
+          if (decidedBy) {
+            raw.decidedBy = decidedBy;
+          }
+          writeFileSync('/tmp/drift-decision.json', JSON.stringify(raw, null, 2));
+          EOF
+          DECIDED_BY=$(jq -r '.decidedBy // empty' /tmp/drift-decision.json)
+          echo "decided_by=$DECIDED_BY" >> "$GITHUB_OUTPUT"
           EXPECTED_HASH=$(jq -r '.driftHash' /tmp/drift-decision.json)
 
           # Re-detect against live ISC rather than trusting a stashed snapshot —
@@ -402,19 +498,21 @@ jobs:
               -f state=success \
               -f context=isc-approval \
               -f description="Approved drift"
+            DECIDED_BY="${{ steps.verify.outputs.decided_by }}"
             gh pr merge "$PR_URL" --squash --delete-branch \
-              --subject "chore(backup): sync drift from ISC (governance approved)"
+              --subject "chore(backup): sync drift from ISC (${DECIDED_BY:+"approved by $DECIDED_BY"}${DECIDED_BY:-"governance approved"})"
             git checkout main
             git fetch origin main
             git merge --ff-only origin/main
           else
             # In-flight approvals opened before drift had a pull request.
+            DECIDED_BY="${{ steps.verify.outputs.decided_by }}"
             node scripts/cli.mjs backup --snapshot /tmp/isc-snapshot.json
             git add access/
-            git diff --cached --quiet || git commit -m "chore(backup): sync drift from ISC (governance approved)"
+            git diff --cached --quiet || git commit -m "chore(backup): sync drift from ISC (${DECIDED_BY:+"approved by $DECIDED_BY"}${DECIDED_BY:-"governance approved"})"
           fi
-          jq -n --slurpfile d /tmp/drift-now.json --arg issue "${{ steps.issue.outputs.url }}" \
-            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", issueUrl:$issue, modifiers:($d[0].actors.modifiers // [])}' \
+          jq -n --slurpfile d /tmp/drift-now.json --arg issue "${{ steps.issue.outputs.url }}" --arg decidedBy "$DECIDED_BY" \
+            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", issueUrl:$issue, decidedBy:(if $decidedBy != "" then $decidedBy else null end), modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
           git fetch origin '+refs/tags/known-good/*:refs/tags/known-good/*' '+refs/tags/isc-applied/*:refs/tags/isc-applied/*'
           node scripts/cli.mjs readme
@@ -507,8 +605,9 @@ jobs:
 
           git config user.name "amcm-bot"
           git config user.email "amcm-bot[bot]@users.noreply.github.com"
-          jq -n --slurpfile d /tmp/drift-now.json --arg issue "$ISSUE_URL" --argjson restored "$OK" \
-            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"rejected", restored:$restored, issueUrl:$issue, modifiers:($d[0].actors.modifiers // [])}' \
+          DECIDED_BY="${{ steps.verify.outputs.decided_by }}"
+          jq -n --slurpfile d /tmp/drift-now.json --arg issue "$ISSUE_URL" --argjson restored "$OK" --arg decidedBy "$DECIDED_BY" \
+            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"rejected", restored:$restored, issueUrl:$issue, decidedBy:(if $decidedBy != "" then $decidedBy else null end), modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
           git fetch origin '+refs/tags/known-good/*:refs/tags/known-good/*' '+refs/tags/isc-applied/*:refs/tags/isc-applied/*'
           node scripts/cli.mjs readme
@@ -582,8 +681,10 @@ jobs:
           if [ "$OUTCOME" = "approved" ] && [ "${{ steps.verify.outputs.stale }}" = "true" ]; then
             OUTCOME=stale
           fi
+          DECIDED_BY="${{ steps.verify.outputs.decided_by }}"
           node scripts/cli.mjs drift-comment \
             --decision "$OUTCOME" \
+            ${DECIDED_BY:+--by "$DECIDED_BY"} \
             --message "$(jq -r '.comment // empty' /tmp/drift-decision.json)" \
             --run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             > /tmp/drift-close.md

@@ -25,7 +25,9 @@ function tagCell(tag) {
 function changeRow(entry) {
   const e = entry.entry;
   if (e.kind === 'change') {
-    const decision = (e.decisions ?? []).map((d) => d.decision).join(', ') || '—';
+    const decision = (e.decisions ?? [])
+      .map((d) => (d.decidedBy ? `${d.decision} by ${d.decidedBy}` : d.decision))
+      .join(', ') || '—';
     const tag = tagCell(e.tag);
     const pr = Number(e.pr);
     const ref = pr > 0 ? (e.url ? `[#${pr}](${e.url})` : `#${pr}`) : '—';
@@ -34,7 +36,9 @@ function changeRow(entry) {
     return `| change | ${ref} | ${who} | ${decision} | ${tag} | ${fmtTs(e.timestamp)} |`;
   }
   if (e.kind === 'restore') {
-    const decision = e.decision?.decision ?? '—';
+    const dec = e.decision?.decision ?? e.decision ?? '—';
+    const by = e.decision?.decidedBy ?? e.decidedBy;
+    const decision = by ? `${dec} by ${by}` : dec;
     // Entries written when restore only accepted tags carry `sourceTag`.
     const ref = e.sourceRef ?? e.sourceTag ?? '—';
     return `| restore | \`${shortRef(ref)}\` | @${e.requester ?? '—'} | ${decision} | — | ${fmtTs(e.timestamp)} |`;
@@ -51,7 +55,12 @@ function changeRow(entry) {
     const issue = e.issueUrl ? `[issue](${e.issueUrl})` : '—';
     // Entries written before drift went through governance approval have no
     // `decision` and were auto-committed; keep showing that for history.
-    const decision = e.restored ? `${e.decision ?? 'rejected'}, restored` : (e.decision ?? 'committed');
+    let decision = e.restored ? `${e.decision ?? 'rejected'}, restored` : (e.decision ?? 'committed');
+    if (e.decidedBy) {
+      decision = e.restored
+        ? `${e.decision ?? 'rejected'} by ${e.decidedBy}, restored`
+        : `${e.decision ?? 'approved'} by ${e.decidedBy}`;
+    }
     const who = (e.modifiers ?? [])
       .map((name) => String(name).replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim())
       .filter(Boolean)
@@ -102,7 +111,7 @@ GitHub-centric governance of ISC **entitlements** (metadata), **access profiles*
 4. On approval, the PR auto-merges and GitHub Actions push the change to ISC.
 5. A successful apply creates an immutable \`known-good/…\` tag.
 
-Drift (ISC edited outside a PR) opens a pull request whose diff is live ISC against git, and asks the governance group. Approving merges that pull request. Rejecting closes it and puts ISC back to match git. A timeout closes it and changes nothing, and the next backup asks again. The Who column names the ISC audit actor associated with that drift since git and ISC last matched.
+Drift (ISC edited outside a PR) opens a pull request whose diff is live ISC against git, and asks the governance group. Approving merges that pull request. Rejecting closes it and puts ISC back to match git. A timeout closes it and changes nothing, and the next backup asks again. The Changed by column names the ISC audit actor associated with that drift since git and ISC last matched.
 
 Direct pushes to \`main\` are blocked when a ruleset is in place. Only the automation GitHub App is meant to write backups, id write-back, the ledger, and this README.
 
@@ -122,8 +131,8 @@ names use the plain name slug.
 
 ## Recent history
 
-| Kind | Ref | Who | Decision | Tag / issue | When (UTC) |
-|------|-----|-----|----------|-------------|------------|
+| Kind | Ref | Changed by | Decision | Tag / issue | When (UTC) |
+|------|-----|------------|----------|-------------|------------|
 ${history}
 
 ## Known-good tags

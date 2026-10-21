@@ -24,4 +24,21 @@ describe('toWorkflowWriteBody', () => {
     assert.equal(body.creator, undefined);
     assert.equal(body.id, undefined);
   });
+
+  it('preserves existingTrigger if provided to avoid wiping external OAuth clients', () => {
+    const existingTrigger = {
+      type: 'EXTERNAL',
+      attributes: {
+        id: 'idn:external-http',
+        clientId: 'client-123',
+        url: '/v2024/workflows/execute/external/wf-1',
+      },
+    };
+    const body = toWorkflowWriteBody({
+      name: 'AMCM Approval',
+      trigger: { type: 'EXTERNAL', attributes: { id: 'idn:external-http' } },
+    }, { id: 'wf-1', existingTrigger });
+
+    assert.deepEqual(body.trigger, existingTrigger);
+  });
 });

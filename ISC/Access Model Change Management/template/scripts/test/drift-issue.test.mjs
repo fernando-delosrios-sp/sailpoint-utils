@@ -92,6 +92,13 @@ describe('driftDecisionComment', () => {
     const text = driftDecisionComment({ decision: 'rejected', comment: 'not sanctioned' });
     assert.match(text, /> not sanctioned/);
   });
+
+  it('names the decision actor when decidedBy is provided', () => {
+    const approved = driftDecisionComment({ decision: 'approved', decidedBy: 'fernando.delosrios' });
+    assert.match(approved, /^Approved by fernando\.delosrios — the drift was copied/);
+    const rejected = driftDecisionComment({ decision: 'rejected', decidedBy: 'fernando.delosrios' });
+    assert.match(rejected, /^Rejected by fernando\.delosrios — ISC was put back/);
+  });
 });
 
 describe('backup workflow contract', () => {

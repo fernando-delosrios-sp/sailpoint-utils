@@ -145,6 +145,7 @@ Commands:
       comment: argv.message,
       runUrl: argv.run,
       detail: argv.detail,
+      decidedBy: argv['decided-by'] ?? argv.by ?? null,
     })}\n`);
     return;
   }

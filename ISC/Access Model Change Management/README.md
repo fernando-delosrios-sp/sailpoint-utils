@@ -55,7 +55,7 @@ To push a `template/` fix (a workflow, a script, a schema) into a repo that's al
 node installer/cli.mjs update --repo YOUR_GITHUB_OWNER/YOUR_GITHUB_REPO
 ```
 
-It asks only for the GitHub App ID and the path to its private key — not the full tenant/governance Q&A — reads the deployed repo's own `config.yaml` to refill the `{{PLACEHOLDER}}` values baked into the workflow files, mints a short-lived installation token for that App (so the push lands even with the `main` ruleset active, the same way the repo's own workflows push), and overwrites only:
+It asks for the GitHub App credentials and ISC client credentials, reads the deployed repo's own `config.yaml` to refill the `{{PLACEHOLDER}}` values baked into the workflow files, mints a short-lived installation token for that App (so the push lands even with the `main` ruleset active, the same way the repo's own workflows push), updates the `AMCM Approval` workflow in the ISC tenant, and overwrites only the managed code paths:
 
 - `.github/workflows/`
 - `scripts/`

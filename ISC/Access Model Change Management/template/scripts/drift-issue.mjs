@@ -165,13 +165,14 @@ export function renderDriftIssue(drift, now = new Date(), { prUrl = null, maxLen
 /**
  * Comment posted when the governance decision lands, before the issue closes.
  */
-export function driftDecisionComment({ decision, comment, runUrl, detail }) {
+export function driftDecisionComment({ decision, comment, runUrl, detail, decidedBy = null }) {
+  const by = decidedBy ? ` by ${decidedBy}` : '';
   const headline = {
-    approved: 'Approved — the drift was copied from ISC into `main`.',
-    rejected: 'Rejected — ISC was put back to match git.',
+    approved: `Approved${by} — the drift was copied from ISC into \`main\`.`,
+    rejected: `Rejected${by} — ISC was put back to match git.`,
     expired: 'Expired — nobody decided in time. ISC is unchanged and the next backup will ask again.',
     stale: 'Not applied — ISC changed again between the approval and this run, so nothing was synced.',
-  }[decision] ?? `Decision: ${decision}`;
+  }[decision] ?? `Decision: ${decision}${by}`;
 
   return [
     headline,

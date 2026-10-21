@@ -165,3 +165,14 @@ describe('IscClient search paging', () => {
     assert.equal(truncated, false);
   });
 });
+
+describe('IscClient identity lookup', () => {
+  it('fetches an identity by id via /beta/identities/:id', async () => {
+    const expected = { id: 'ident-123', alias: 'alice', attributes: { uid: 'alice' } };
+    const { client, calls } = clientWith(() => response(200, expected));
+    const ident = await client.getIdentity('ident-123');
+    assert.deepEqual(ident, expected);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].url.pathname, '/beta/identities/ident-123');
+  });
+});

@@ -105,6 +105,8 @@
               },
               "headSha.$": "$.trigger.pr.headSha",
               "comment.$": "$.governanceApprovalChange.comments",
+              "decidedBy.$": "$.governanceApprovalChange.approvedBy[0].name",
+              "decidedById.$": "$.governanceApprovalChange.approvedBy[0].identityID",
               "executionId.$": "$.trigger.executionId"
             }
           },
@@ -138,6 +140,8 @@
               },
               "headSha.$": "$.trigger.pr.headSha",
               "comment.$": "$.governanceApprovalChange.comments",
+              "decidedBy.$": "$.governanceApprovalChange.rejectedBy[0].name",
+              "decidedById.$": "$.governanceApprovalChange.rejectedBy[0].identityID",
               "executionId.$": "$.trigger.executionId"
             }
           },
@@ -232,6 +236,8 @@
               "sourceRef.$": "$.trigger.sourceRef",
               "requester.$": "$.trigger.requester",
               "comment.$": "$.governanceApprovalRestore.comments",
+              "decidedBy.$": "$.governanceApprovalRestore.approvedBy[0].name",
+              "decidedById.$": "$.governanceApprovalRestore.approvedBy[0].identityID",
               "executionId.$": "$.trigger.executionId"
             }
           },
@@ -260,6 +266,8 @@
               "sourceRef.$": "$.trigger.sourceRef",
               "requester.$": "$.trigger.requester",
               "comment.$": "$.governanceApprovalRestore.comments",
+              "decidedBy.$": "$.governanceApprovalRestore.rejectedBy[0].name",
+              "decidedById.$": "$.governanceApprovalRestore.rejectedBy[0].identityID",
               "executionId.$": "$.trigger.executionId"
             }
           },
@@ -326,6 +334,8 @@
               "decision": "approved",
               "driftHash.$": "$.trigger.driftHash",
               "comment.$": "$.governanceApprovalDrift.comments",
+              "decidedBy.$": "$.governanceApprovalDrift.approvedBy[0].name",
+              "decidedById.$": "$.governanceApprovalDrift.approvedBy[0].identityID",
               "executionId.$": "$.trigger.executionId"
             }
           },
@@ -352,6 +362,8 @@
               "decision": "rejected",
               "driftHash.$": "$.trigger.driftHash",
               "comment.$": "$.governanceApprovalDrift.comments",
+              "decidedBy.$": "$.governanceApprovalDrift.rejectedBy[0].name",
+              "decidedById.$": "$.governanceApprovalDrift.rejectedBy[0].identityID",
               "executionId.$": "$.trigger.executionId"
             }
           },

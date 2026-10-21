@@ -194,12 +194,21 @@ jobs:
           URL=$(jq -r '.url // empty' /tmp/pr.json 2>/dev/null || true)
           [ -n "$AUTHOR" ] || AUTHOR=unknown
           [ -n "$TITLE" ] || TITLE=apply
+
+          COMMIT_MSG=$(git log -1 --format=%B)
+          DECIDED_BY=$(echo "$COMMIT_MSG" | sed -n 's/.*approved by \([^)]*\).*/\1/p' | head -1)
+          if [ -z "$DECIDED_BY" ] && [ -n "$PR_NUM" ]; then
+            DECIDED_BY=$(gh pr view "$PR_NUM" --json comments --jq '.comments[].body' 2>/dev/null \
+              | sed -n 's/.*ISC approved by \(.*\) (diff hash.*/\1/p' | tail -1 || true)
+          fi
+
           jq -n \
             --argjson pr "${PR_NUM:-null}" \
             --arg author "$AUTHOR" \
             --arg title "$TITLE" \
             --arg url "$URL" \
             --arg tag "$TAG" \
+            --arg decidedBy "$DECIDED_BY" \
             --slurpfile apply /tmp/apply.json \
             '{
               prNumber: $pr,
@@ -207,8 +216,12 @@ jobs:
               title: $title,
               url: $url,
               diffHash: null,
-              approvers: [],
-              decisions: [{decision:"approved", source:"isc"}],
+              approvers: (if $decidedBy != "" then [$decidedBy] else [] end),
+              decisions: [{
+                decision: "approved",
+                source: "isc",
+                decidedBy: (if $decidedBy != "" then $decidedBy else null end)
+              }],
               applyResult: $apply[0],
               tag: $tag
             }' | node scripts/cli.mjs ledger-change

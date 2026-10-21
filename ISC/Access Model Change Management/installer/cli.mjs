@@ -57,7 +57,7 @@ function log(msg) {
 function banner() {
   log(`
 ╔══════════════════════════════════════════════════════════╗
-║  Access Model Change Management — installer           ║
+║  Access Model Change Management — installer              ║
 ║  GitHub-centric governance of ISC access items           ║
 ╚══════════════════════════════════════════════════════════╝
 `);
@@ -591,7 +591,64 @@ Not touched: access/, changes/, README.md, config.yaml, .env.example.
       token,
     });
 
-    log(`\nDone. https://github.com/${repoFull}/commits/main`);
+    log(`\nGitHub update complete: https://github.com/${repoFull}/commits/main`);
+
+    if (!argv['skip-isc']) {
+      log('\nUpdating ISC approval workflow in tenant…');
+      const clientId = argv['client-id']
+        || process.env.ISC_CLIENT_ID
+        || await prompt.ask('ISC client id');
+      const clientSecret = argv['client-secret']
+        || process.env.ISC_CLIENT_SECRET
+        || await prompt.ask('ISC client secret', { secret: true });
+
+      const isc = InstallerIsc.fromAnswers({
+        tenantApiUrl: existingConfig.tenant.apiUrl,
+        clientId,
+        clientSecret,
+      });
+      log('Validating ISC credentials…');
+      await isc.validateCredentials();
+      const ownerIdentity = await isc.resolvePatOwner();
+
+      log('Updating ISC workflow "AMCM Approval"…');
+      const existingWf = await isc.findWorkflowByName('AMCM Approval');
+      if (!existingWf) {
+        throw new Error('Workflow "AMCM Approval" was not found in the ISC tenant.');
+      }
+      const fullWf = await isc.get(`/workflows/v1/${existingWf.id}`);
+      const configStep = fullWf?.definition?.steps?.Configuration || fullWf?.definition?.steps?.['Configuration'];
+      const tokenVar = configStep?.attributes?.variables?.find((v) => v.name === 'githubDispatchToken');
+      let dispatchToken = tokenVar?.variableA
+        || fullWf?.definition?.configuration?.githubDispatchToken
+        || fullWf?.configuration?.githubDispatchToken
+        || '';
+
+      if (!dispatchToken) {
+        dispatchToken = argv['dispatch-token']
+          || process.env.ISC_DISPATCH_TOKEN
+          || await prompt.ask('GitHub Dispatch Token for ISC workflow (Bearer PAT)');
+      }
+      const dispatchAuthHeader = dispatchToken.startsWith('Bearer ') ? dispatchToken : `Bearer ${dispatchToken}`;
+
+      const replacements = {
+        YOUR_GOVERNANCE_GROUP_ID: existingConfig.approval.governanceGroupId,
+        'YOUR_GITHUB_OWNER/YOUR_GITHUB_REPO': repoFull,
+        YOUR_GITHUB_DISPATCH_TOKEN: dispatchAuthHeader,
+        YOUR_OWNER_IDENTITY_ID: fullWf?.owner?.id || ownerIdentity.id,
+        YOUR_OWNER_IDENTITY_NAME: fullWf?.owner?.name || ownerIdentity.alias || ownerIdentity.name,
+        '"YOUR_APPROVAL_TIMEOUT_DAYS"': String(Number(existingConfig.approval.timeoutDays) || 3),
+      };
+
+      const approvalWf = await isc.upsertWorkflow(
+        join(ISC_DIR, 'Workflow - AMCM Approval.json'),
+        replacements,
+      );
+      await isc.enableWorkflow(approvalWf.id);
+      log(`ISC workflow "AMCM Approval" (${approvalWf.id}) updated and enabled.`);
+    }
+
+    log(`\nUpdate complete.`);
   } finally {
     rmSync(staging, { recursive: true, force: true });
   }
@@ -599,21 +656,26 @@ Not touched: access/, changes/, README.md, config.yaml, .env.example.
 
 async function main() {
   const argv = minimist(process.argv.slice(2), {
-    boolean: ['yes', 'help', 'skip-app', 'skip-backup', 'force-reinstall-data'],
+    boolean: ['yes', 'help', 'skip-app', 'skip-backup', 'force-reinstall-data', 'skip-isc'],
   });
   const command = argv._[0] || 'install';
 
   if (argv.help && command === 'update') {
     log(`Usage: node installer/cli.mjs update --repo OWNER/REPO [options]
 
-Pushes template/ fixes (workflows, scripts, schemas, package files) into an
-already-deployed repo, without touching access/, changes/, README.md, or
-config.yaml. Leaves the ISC tenant and secrets exactly as they are.
+Updates an already-deployed AMCM repo and its tenant workflow:
+1. Pushes template/ fixes (workflows, scripts, schemas, package files) to the repo.
+2. Updates and enables the AMCM Approval workflow in the ISC tenant.
+
+Does not touch access/, changes/, README.md, config.yaml, or .env.example.
 
 Options:
   --repo OWNER/REPO     Target repo (or --gh-owner / --gh-repo separately)
   --app-id ID           GitHub App ID already installed on the repo
   --app-private-key PEM Path to that App's private key
+  --client-id ID        ISC client ID (or env ISC_CLIENT_ID)
+  --client-secret SEC   ISC client secret (or env ISC_CLIENT_SECRET)
+  --skip-isc            Skip updating the ISC workflow
   --message MSG         Commit message (default: "fix(amcm): update deployed template")
   --yes                 Skip the confirmation prompt
 `);
