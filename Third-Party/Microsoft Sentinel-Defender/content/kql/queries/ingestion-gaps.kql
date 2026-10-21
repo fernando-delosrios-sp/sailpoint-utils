@@ -1,0 +1,17 @@
+// Hours in the last seven days with no rows. The latest 20 minutes are ignored because the pollers read a 5-minute window that ends 10 minutes ago.
+let Start = bin(ago(7d), 1h);
+let End = bin(now() - 20m, 1h);
+let Seen =
+    union isfuzzy=true
+        (SailPointISC_Events_CL | where TimeGenerated > ago(7d) | extend TableName = "SailPointISC_Events_CL"),
+        (SailPointISC_AccountActivities_CL | where TimeGenerated > ago(7d) | extend TableName = "SailPointISC_AccountActivities_CL"),
+        (SailPointISC_WorkflowHistory_CL | where TimeGenerated > ago(7d) | extend TableName = "SailPointISC_WorkflowHistory_CL")
+    | summarize Seen = count() by TableName, Hour = bin(TimeGenerated, 1h);
+let Hours = range Hour from Start to End step 1h;
+union
+    (Hours | extend TableName = "SailPointISC_Events_CL"),
+    (Hours | extend TableName = "SailPointISC_AccountActivities_CL"),
+    (Hours | extend TableName = "SailPointISC_WorkflowHistory_CL")
+| join kind=leftanti Seen on TableName, Hour
+| project TableName, MissingHour = Hour
+| order by MissingHour desc

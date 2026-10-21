@@ -1,0 +1,90 @@
+// Response flow for a failed or stalled SailPoint remediation.
+// FailureDetail names the workflow, or the account-activity source, target account, and connector error.
+let FailedWorkflows =
+    SailPointISC_WorkflowHistory
+    | where TimeGenerated > ago(2h)
+    | where IsFailure
+        or (IsRemediation and Outcome !in ("SUCCESS", "COMPLETED", "COMPLETE", "PASSED"))
+    | extend
+        StepName = coalesce(tostring(Attributes.displayName), tostring(Attributes.stepName), ""),
+        StepError = tostring(Attributes.error)
+    | summarize
+        TimeGenerated = max(TimeGenerated),
+        Outcome = any(Outcome),
+        Stage = anyif(HistType, HistType startswith "WORKFLOWEXECUTION" and HistType != "WORKFLOWEXECUTIONSTARTED"),
+        FailedSteps = strcat_array(make_set_if(StepName, isnotempty(StepName) and isnotempty(StepError), 5), ", "),
+        AllSteps = strcat_array(make_set_if(StepName, isnotempty(StepName), 5), ", "),
+        ErrorMsg = anyif(StepError, isnotempty(StepError))
+        by WorkflowExecutionId, FlowName, Owner, OwnerId, RequestId
+    | extend
+        Stage = coalesce(Stage, Outcome),
+        StepSummary = coalesce(FailedSteps, AllSteps, Stage)
+    | project
+        TimeGenerated,
+        Signal = "Workflow",
+        Subject = coalesce(Owner, FlowName, "unknown"),
+        IdentityId = coalesce(OwnerId, ""),
+        Operation = FlowName,
+        Outcome,
+        Stage,
+        Requester = Owner,
+        FailedSources = "SailPoint ISC Workflows",
+        TargetAccounts = coalesce(Owner, FlowName),
+        TrackingId = coalesce(RequestId, WorkflowExecutionId),
+        FailureDetail = substring(strcat("Workflow '", FlowName, "' ", Outcome, iff(isnotempty(StepSummary), strcat(" at step '", StepSummary, "'"), ""), iff(isnotempty(ErrorMsg), strcat(": ", ErrorMsg), "")), 0, 500);
+let ActivityBase =
+    SailPointISC_AccountActivities
+    | where TimeGenerated > ago(2h)
+    | where IsFailure or (StageName in ("PENDING", "QUEUED", "WAITING") and TimeGenerated < ago(1h));
+let ActivityErrors =
+    ActivityBase
+    | mv-expand req = AccountRequests
+    | where toupper(tostring(req.result.status)) in ("FAILED", "FAILURE", "ERROR", "FAIL")
+        or isnotempty(tostring(req.result.errors[0]))
+    | extend
+        ReqSource = coalesce(tostring(req.source.name), tostring(req.provisioningTarget.name), "Unknown Source"),
+        ReqAccount = coalesce(tostring(req.accountId), "default-account"),
+        ReqOp = coalesce(tostring(req.op), "Operation")
+    | extend
+        AcctOnSource = strcat(ReqAccount, " [", ReqSource, "]"),
+        line = strcat(
+            ReqOp,
+            " [acct: ", ReqAccount, "] on ",
+            ReqSource,
+            ": ",
+            coalesce(tostring(req.result.errors[0]), toupper(tostring(req.result.status))))
+    | summarize
+        FailureDetail = strcat_array(make_list(line, 5), " | "),
+        FailedSources = strcat_array(make_set(ReqSource, 5), ", "),
+        TargetAccounts = strcat_array(make_set(AcctOnSource, 5), ", ")
+        by Id;
+let FailedActivities =
+    ActivityBase
+    | join kind=leftouter ActivityErrors on Id
+    | project
+        TimeGenerated,
+        Signal = "AccountActivity",
+        Subject = coalesce(Recipient, Requester, "unknown"),
+        IdentityId = RecipientIdentityId,
+        Operation,
+        Outcome,
+        Stage = StageName,
+        Requester,
+        FailedSources = coalesce(FailedSources, Sources, "SailPoint ISC"),
+        TargetAccounts = coalesce(TargetAccounts, Recipient, "unknown"),
+        TrackingId = TrackingNumber,
+        FailureDetail = coalesce(FailureDetail, strcat(Operation, " ", Outcome, " on ", coalesce(Sources, "SailPoint ISC"), ", stage ", StageName));
+union isfuzzy=true FailedWorkflows, FailedActivities
+| extend
+    SubjectBracketSource = extract(@"\[([^\]]+)\]\s*$", 1, Subject),
+    CleanSubject = trim(" ", replace_regex(Subject, @"\s*\[[^\]]+\]\s*$", ""))
+| extend SubjectKey = tolower(CleanSubject)
+| join kind=leftouter (SailPointISC_Identities | project IdentityId, IdUpn = UserPrincipalName, IdDisplay = DisplayName, IdSource = IdentitySource) on IdentityId
+| join kind=leftouter (SailPointISC_IdentityKeys | project SubjectKey = JoinKey, NameUpn = UserPrincipalName, NameDisplay = DisplayName, NameSource = IdentitySource) on SubjectKey
+| extend
+    UserPrincipalName = coalesce(IdUpn, NameUpn),
+    EntraDisplayName = coalesce(IdDisplay, NameDisplay, CleanSubject),
+    IdentityAuthoritativeSource = coalesce(SubjectBracketSource, IdSource, NameSource, "SailPoint ISC"),
+    ResponseAction = "Open this UPN in Assets > Identities, on the Entra list. Disable the Entra user, then revoke sessions."
+| project TimeGenerated, Signal, TargetIdentity = EntraDisplayName, IdentityAuthoritativeSource, UserPrincipalName, FailedSources, TargetAccounts, Operation, Outcome, Stage, Requester, TrackingId, FailureDetail, ResponseAction
+| order by TimeGenerated desc

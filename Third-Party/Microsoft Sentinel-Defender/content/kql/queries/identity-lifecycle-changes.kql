@@ -1,0 +1,7 @@
+// Identity and account creation, modification, enablement, disablement, and deletion.
+SailPointISC_Events
+| where TimeGenerated > ago(24h)
+| where IsLifecycle
+| project TimeGenerated, Actor, Target, UserId, Category, ActionName, TechName, Outcome, SourceName, TrackingNumber
+| order by TimeGenerated desc
+| take 200

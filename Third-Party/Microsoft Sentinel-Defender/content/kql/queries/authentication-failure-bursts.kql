@@ -1,0 +1,14 @@
+// Actors or targets with five or more authentication failures in the last hour.
+let FailureThreshold = 5;
+SailPointISC_Events
+| where TimeGenerated > ago(1h)
+| where IsAuth and IsFailure
+| summarize
+    FailureCount = count(),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated),
+    Actions = make_set(ActionName, 10),
+    Hosts = make_set(HostName, 10)
+    by Actor, Target
+| where FailureCount >= FailureThreshold
+| order by FailureCount desc

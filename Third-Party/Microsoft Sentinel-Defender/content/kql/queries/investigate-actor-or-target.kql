@@ -1,0 +1,13 @@
+// Security investigation template. Edit Subject, then run.
+let Subject = "replace-me"; // Edit this value, then run.
+SailPointISC_Events
+| where TimeGenerated > ago(7d)
+| where IsSecurity
+| where Actor contains Subject
+    or Target contains Subject
+    or UserId contains Subject
+    or SourceName contains Subject
+    or TrackingNumber contains Subject
+| project TimeGenerated, Actor, Target, UserId, Category, ActionName, TechName, Outcome, IsFailure, SourceName, HostName, TrackingNumber
+| order by TimeGenerated desc
+| take 200

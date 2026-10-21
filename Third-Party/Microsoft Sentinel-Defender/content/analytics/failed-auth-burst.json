@@ -1,0 +1,75 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567002",
+  "kind": "Scheduled",
+  "displayName": "SailPoint ISC \u2014 Failed authentication or action burst",
+  "description": "Detects five or more failed SailPoint authentication events for the same actor, target, or account in one hour and includes the authentication source, target account, host IP, and Entra UPN.",
+  "severity": "Medium",
+  "enabled": true,
+  "queryFrequency": "PT1H",
+  "queryPeriod": "PT1H",
+  "triggerOperator": "GreaterThan",
+  "triggerThreshold": 0,
+  "suppressionEnabled": true,
+  "suppressionDuration": "PT2H",
+  "tactics": [
+    "CredentialAccess",
+    "InitialAccess"
+  ],
+  "techniques": [
+    "T1110",
+    "T1078"
+  ],
+  "query": "let FailureThreshold = 5;\nSailPointISC_Events\n| where TimeGenerated > ago(1h)\n| where IsAuth and IsFailure\n| extend SubjectName = coalesce(UserId, TargetIdentity, Actor, \"unknown\")\n| extend ActorKey = tolower(Actor), TargetKey = tolower(coalesce(TargetIdentity, Target)), UserKey = tolower(UserId)\n| summarize\n    FailureCount = count(),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated),\n    EventNames = strcat_array(make_set(EventName, 5), \", \"),\n    Actions = strcat_array(make_set(ActionName, 10), \", \"),\n    AccountSources = strcat_array(make_set(SourceName, 5), \", \"),\n    TargetAccounts = strcat_array(make_set_if(TargetAccount, isnotempty(TargetAccount) and TargetAccount != \"unknown\", 5), \", \"),\n    Hosts = strcat_array(make_set_if(HostName, isnotempty(HostName), 5), \", \"),\n    EventDetails = substring(strcat_array(make_set(EventSummary, 5), \" | \"), 0, 900),\n    TargetBracketSource = any(TargetBracketSource)\n    by Actor, Target, SubjectName, ActorKey, TargetKey, UserKey\n| where FailureCount >= FailureThreshold\n| join kind=leftouter (SailPointISC_IdentityKeys | project TargetKey = JoinKey, TargetUpn = UserPrincipalName, TargetDisplay = DisplayName, TargetIdSource = IdentitySource) on TargetKey\n| join kind=leftouter (SailPointISC_IdentityKeys | project UserKey = JoinKey, UserUpn = UserPrincipalName, UserDisplay = DisplayName, UserIdSource = IdentitySource) on UserKey\n| join kind=leftouter (SailPointISC_IdentityKeys | project ActorKey = JoinKey, ActorUpn = UserPrincipalName, ActorDisplay = DisplayName, ActorIdSource = IdentitySource) on ActorKey\n| extend\n    UserPrincipalName = coalesce(TargetUpn, UserUpn, ActorUpn),\n    DisplayName = coalesce(TargetDisplay, UserDisplay, ActorDisplay, SubjectName),\n    IdentityAuthoritativeSource = coalesce(TargetBracketSource, TargetIdSource, UserIdSource, ActorIdSource, \"SailPoint ISC\"),\n    ResponseSubject = iff(isnotempty(TargetUpn) or isnotempty(UserUpn), \"Target\", \"Actor\")\n| extend\n    ResponseAction = \"Open this UPN in Assets > Identities. Reset the password, then revoke sessions.\",\n    UpnSuffix = tostring(split(UserPrincipalName, \"@\")[1]),\n    AccountCustomEntity = iff(isnotempty(UserPrincipalName), UserPrincipalName, SubjectName),\n    Hosts = coalesce(Hosts, \"unknown\"),\n    AlertTarget = strcat(DisplayName, iff(isnotempty(TargetAccounts) and tolower(TargetAccounts) != tolower(DisplayName), strcat(\" [acct: \", TargetAccounts, \"]\"), \"\"), iff(isnotempty(IdentityAuthoritativeSource) and IdentityAuthoritativeSource != \"SailPoint ISC\", strcat(\" (HR: \", IdentityAuthoritativeSource, \")\"), \"\"))",
+  "entityMappings": [
+    {
+      "entityType": "Account",
+      "fieldMappings": [
+        {
+          "identifier": "Name",
+          "columnName": "AccountCustomEntity"
+        },
+        {
+          "identifier": "UPNSuffix",
+          "columnName": "UpnSuffix"
+        },
+        {
+          "identifier": "DisplayName",
+          "columnName": "DisplayName"
+        }
+      ]
+    }
+  ],
+  "customDetails": {
+    "EventNames": "EventNames",
+    "Actions": "Actions",
+    "Actor": "Actor",
+    "Target": "Target",
+    "TargetAccounts": "TargetAccounts",
+    "AccountSources": "AccountSources",
+    "IdentitySource": "IdentityAuthoritativeSource",
+    "Hosts": "Hosts",
+    "EventDetails": "EventDetails",
+    "UserPrincipalName": "UserPrincipalName",
+    "ResponseAction": "ResponseAction",
+    "FailureCount": "FailureCount"
+  },
+  "eventGroupingSettings": {
+    "aggregationKind": "AlertPerResult"
+  },
+  "incidentConfiguration": {
+    "createIncident": true,
+    "groupingConfiguration": {
+      "enabled": true,
+      "reopenClosedIncident": false,
+      "lookbackDuration": "PT4H",
+      "matchingMethod": "AllEntities",
+      "groupByEntities": [
+        "Account"
+      ]
+    }
+  },
+  "alertDetailsOverride": {
+    "alertDisplayNameFormat": "SailPoint ISC: {{FailureCount}} failed auth events ({{EventNames}}) \u2014 {{AlertTarget}}",
+    "alertDescriptionFormat": "{{EventDetails}} | Auth Source(s): {{AccountSources}} | Host(s): {{Hosts}}"
+  }
+}

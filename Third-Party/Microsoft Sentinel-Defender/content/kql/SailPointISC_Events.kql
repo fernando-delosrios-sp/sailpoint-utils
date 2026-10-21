@@ -1,0 +1,136 @@
+// Normalize SailPoint ISC audit events for hunting, saved searches, and Sentinel alerts.
+// Deployed as a Log Analytics function alias: SailPointISC_Events
+// Usage: SailPointISC_Events | where TimeGenerated > ago(24h) | where IsSecurity
+SailPointISC_Events_CL
+| extend
+    AttrBag = todynamic(column_ifexists("Attributes", dynamic(null))),
+    Actor = coalesce(ActorName, ""),
+    Target = coalesce(TargetName, ""),
+    UserId = coalesce(AttributesUserId, ""),
+    HostName = coalesce(AttributesHostName, ""),
+    Outcome = toupper(coalesce(Status, "")),
+    Category = toupper(coalesce(EventType, "")),
+    TechName = toupper(coalesce(TechnicalName, "")),
+    ActionName = toupper(coalesce(Action, "")),
+    EventName = coalesce(Name, Action, TechnicalName, "SailPoint Event"),
+    OperationName = toupper(coalesce(Operation, AttributesOperation, ""))
+| extend
+    TargetClean = trim(" ", replace_regex(Target, @"^Identity:", "")),
+    RawSource = coalesce(
+        iff(AttributesSourceName in ("", "null", "None"), "", AttributesSourceName),
+        iff(tostring(AttrBag.sourceName) in ("", "null", "None"), "", tostring(AttrBag.sourceName)),
+        iff(tostring(AttrBag.cloudAppName) in ("", "null", "None"), "", tostring(AttrBag.cloudAppName)),
+        iff(tostring(AttrBag.appRefs) in ("", "null", "None"), "", tostring(AttrBag.appRefs)),
+        "")
+| extend
+    TargetBracketSource = extract(@"\[([^\]]+)\]\s*$", 1, TargetClean),
+    TargetIdentity = trim(" ", replace_regex(TargetClean, @"\s*\[[^\]]+\]\s*$", "")),
+    ObjectType = iff(array_length(Objects) > 0, strcat_array(Objects, "/"), Category),
+    AccountNativeId = coalesce(
+        iff(tostring(AttrBag.accountNativeIdentity) in ("", "null", "None"), "", tostring(AttrBag.accountNativeIdentity)),
+        iff(tostring(AttrBag.accountName) in ("", "null", "None"), "", tostring(AttrBag.accountName)),
+        iff(tostring(AttrBag.nativeIdentity) in ("", "null", "None"), "", tostring(AttrBag.nativeIdentity)),
+        "")
+| extend
+    SourceName = case(
+        isnotempty(RawSource) and RawSource != "System", RawSource,
+        Category == "SOURCE_MANAGEMENT" and isnotempty(TargetClean), TargetClean,
+        Category == "AUTH", coalesce(RawSource, "SailPoint ISC Auth"),
+        TechName startswith "ROLE_" or TechName startswith "IDENTITY_" or RawSource == "System", "SailPoint ISC (Identity/Role)",
+        isnotempty(TargetBracketSource), strcat("SailPoint ISC (", TargetBracketSource, ")"),
+        "SailPoint ISC"),
+    TargetAccount = coalesce(
+        iff(tostring(AttrBag.accountDisplayName) in ("", "null", "None"), "", tostring(AttrBag.accountDisplayName)),
+        AccountNativeId,
+        UserId,
+        TargetIdentity,
+        "unknown"),
+    TriggerInterface = coalesce(
+        iff(tostring(AttrBag.interface) in ("", "null", "None"), "", tostring(AttrBag.interface)),
+        iff(tostring(AttrBag.originatedBy) in ("", "null", "None"), "", tostring(AttrBag.originatedBy)),
+        ""),
+    AttrField = coalesce(
+        iff(tostring(AttrBag.attributeName) in ("", "null", "None"), "", tostring(AttrBag.attributeName)),
+        iff(tostring(AttrBag.accessItemType) in ("", "null", "None"), "", tostring(AttrBag.accessItemType)),
+        ""),
+    AttrVal = coalesce(
+        iff(tostring(AttrBag.attributeValue) in ("", "null", "None"), "", tostring(AttrBag.attributeValue)),
+        iff(tostring(AttrBag.accessItemName) in ("", "null", "None"), "", tostring(AttrBag.accessItemName)),
+        iff(tostring(AttrBag.newState) in ("", "null", "None"), "", strcat(coalesce(iff(tostring(AttrBag.oldState) == "null", "", tostring(AttrBag.oldState)), "-"), " -> ", tostring(AttrBag.newState))),
+        ""),
+    DetailsClean = iff(tostring(Details) in ("", "None", "null") or tostring(Details) matches regex @"^[0-9a-f]{32}$", "", tostring(Details)),
+    ErrorParsed = todynamic(iff(tostring(AttrBag.errors) startswith "[", tostring(AttrBag.errors), ""))
+| extend
+    ChangedItem = case(
+        isnotempty(AttrField) and isnotempty(AttrVal), strcat(AttrField, "=", AttrVal),
+        isnotempty(AttrVal), AttrVal,
+        isnotempty(AttrField), AttrField,
+        DetailsClean),
+    EventInfo = coalesce(
+        iff(tostring(AttrBag.info) in ("", "null", "None", "NONE"), "", tostring(AttrBag.info)),
+        iff(tostring(AttrBag.comment) in ("", "null", "None"), "", tostring(AttrBag.comment)),
+        iff(tostring(AttrBag.comments) in ("", "null", "None"), "", tostring(AttrBag.comments)),
+        iff(tostring(AttrBag.taskType) in ("", "null", "None"), "", strcat("Task: ", tostring(AttrBag.taskType))),
+        DetailsClean,
+        ""),
+    ErrorText = coalesce(
+        tostring(ErrorParsed[0]),
+        iff(tostring(AttrBag.errors) in ("", "null", "None"), "", tostring(AttrBag.errors)),
+        iff(tostring(AttrBag.failureReason) in ("", "null", "None"), "", tostring(AttrBag.failureReason)),
+        "")
+| extend
+    EventSummary = strcat(
+        EventName,
+        iff(isnotempty(TargetIdentity), strcat(" for ", TargetIdentity, iff(isnotempty(TargetBracketSource), strcat(" [HR: ", TargetBracketSource, "]"), "")), ""),
+        iff(isnotempty(TargetAccount) and tolower(TargetAccount) != tolower(TargetIdentity) and TargetAccount != "unknown", strcat(" (account: ", TargetAccount, ")"), ""),
+        " on ", SourceName,
+        iff(isnotempty(TriggerInterface), strcat(" via ", TriggerInterface), ""),
+        iff(isnotempty(ChangedItem), strcat(" [", ChangedItem, "]"), ""),
+        iff(isnotempty(EventInfo) and EventInfo != ChangedItem, strcat(" — ", EventInfo), ""),
+        iff(isnotempty(ErrorText), strcat(" | Error: ", substring(ErrorText, 0, 220)), ""))
+| extend
+    IsFailure = Outcome in ("FAILED", "FAILURE", "ERROR", "FAIL") or TechName endswith "_FAILED",
+    IsAuth = Category == "AUTH"
+        or ActionName contains "AUTH" or ActionName contains "PASSWORD" or ActionName contains "MFA"
+        or ActionName contains "LOGIN" or ActionName contains "SAML" or ActionName contains "TOKEN"
+        or TechName contains "AUTH" or TechName contains "PASSWORD" or TechName contains "MFA"
+        or TechName contains "LOGIN" or TechName contains "SAML" or TechName contains "TOKEN",
+    IsAccessChange = Category in ("ACCESS_ITEM", "ACCESS_REQUEST", "ENTITLEMENT_CONNECTION", "ROLE_MANAGEMENT", "ENTITLEMENT_MANAGEMENT")
+        or TechName contains "ENTITLEMENT" or TechName contains "ROLE_"
+        or ActionName contains "ENTITLEMENT" or ActionName contains "ROLE",
+    IsLifecycle = Category != "IDENTITY_PROCESSING"
+        and (
+            Category in ("PROVISIONING", "MACHINE_IDENTITY", "USER_MANAGEMENT")
+            or TechName contains "IDENTITY_CREATE" or TechName contains "IDENTITY_MODIFY" or TechName contains "IDENTITY_DELETE"
+            or TechName contains "IDENTITY_DISABLE" or TechName contains "IDENTITY_ENABLE"
+            or TechName contains "ACCOUNT_CREATE" or TechName contains "ACCOUNT_MODIFY" or TechName contains "ACCOUNT_DELETE" or TechName contains "ACCOUNT_UPDATE"
+            or ActionName contains "CREATEACCOUNT" or ActionName contains "MODIFYACCOUNT"
+            or ActionName has_any ("DISABLE", "ENABLE", "DELETE")
+        ),
+    IsConfig = Category in ("SYSTEM_CONFIG", "SOURCE_MANAGEMENT")
+        or TechName contains "TASK_RESULT"
+        or ActionName contains "CONFIG",
+    IsPrivileged = Category != "IDENTITY_PROCESSING"
+        and not(TechName contains "TASK_RESULT")
+        and not(Category == "SYSTEM_CONFIG" and Actor in ("MantisTaskScheduler", "System"))
+        and not(TechName in ("ACCOUNT_MODIFY_PASSED", "ACCOUNT_MODIFY_FAILED", "MACHINE_ACCOUNT_UPDATE_PASSED") and Actor =~ "System")
+        and (
+            OperationName in ("DISABLE", "ENABLE", "DELETE")
+            or ActionName has_any ("DISABLE", "ENABLE", "DELETE")
+            or ActionName contains "DISABLE" or ActionName contains "ENABLE" or ActionName contains "DELETE"
+            or ActionName contains "PASSWORD" or ActionName contains "ADMIN"
+            or ActionName contains "CREATEACCOUNT"
+            or (ActionName contains "MODIFYACCOUNT" and Actor !~ "System")
+            or TechName contains "DISABLE" or TechName contains "ENABLE" or TechName contains "DELETE"
+            or TechName contains "PASSWORD" or TechName contains "ADMIN" or TechName contains "PRIVILEGED"
+            or TechName contains "ACCOUNT_CREATE" or TechName contains "ACCOUNT_DELETE"
+            or (TechName contains "ACCOUNT_MODIFY" and Actor !~ "System")
+            or TechName contains "IDENTITY_CREATE" or TechName contains "IDENTITY_DELETE"
+            or TechName contains "IDENTITY_DISABLE" or TechName contains "IDENTITY_ENABLE"
+            or ((TechName startswith "ROLE_ADD" or TechName startswith "ROLE_REMOVE") and Actor !~ "System")
+            or TechName startswith "SOURCE_UPDATE" or TechName startswith "SOURCE_DELETE"
+            or TechName startswith "PERSONAL_ACCESS_TOKEN_CREATE" or TechName startswith "PERSONAL_ACCESS_TOKEN_DELETE"
+        )
+| extend IsSecurity = IsAuth or IsAccessChange or IsLifecycle or IsConfig or IsPrivileged
+| project-away AttrBag, RawSource, AttrField, AttrVal, DetailsClean, ErrorParsed
+| project-reorder TimeGenerated, EventName, Actor, Target, TargetIdentity, TargetBracketSource, TargetAccount, AccountNativeId, SourceName, UserId, Category, OperationName, ObjectType, ActionName, TechName, Outcome, TriggerInterface, ChangedItem, EventInfo, ErrorText, EventSummary, IsFailure, IsSecurity, IsPrivileged, IsAuth, IsAccessChange, IsLifecycle, IsConfig, HostName, TrackingNumber, Id, Org, Objects, Details

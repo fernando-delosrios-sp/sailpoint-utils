@@ -1,0 +1,7 @@
+// Failed login, authentication, MFA, password, SAML, and token events.
+SailPointISC_Events
+| where TimeGenerated > ago(24h)
+| where IsAuth and IsFailure
+| project TimeGenerated, Actor, Target, UserId, ActionName, TechName, Outcome, HostName, TrackingNumber
+| order by TimeGenerated desc
+| take 200

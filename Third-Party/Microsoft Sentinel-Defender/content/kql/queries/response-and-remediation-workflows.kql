@@ -1,0 +1,13 @@
+// Operational state of disable, containment, response, and remediation workflows.
+SailPointISC_WorkflowHistory
+| where TimeGenerated > ago(7d)
+| where IsRemediation
+| summarize
+    Steps = count(),
+    FailedSteps = countif(IsFailure),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated),
+    RequestId = any(RequestId)
+    by FlowName, WorkflowExecutionId, Owner, Outcome
+| order by LastSeen desc
+| take 200

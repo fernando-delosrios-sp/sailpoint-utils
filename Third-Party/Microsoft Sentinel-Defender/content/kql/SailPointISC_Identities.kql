@@ -1,0 +1,25 @@
+// Current SailPoint identity assets. Each poll re-ingests every identity, so a later
+// userPrincipalName change arrives on the next poll and an identity removed in ISC drops out.
+// Deployed as function alias: SailPointISC_Identities
+let Watermark = toscalar(SailPointISC_Identities_CL | summarize max(TimeGenerated));
+SailPointISC_Identities_CL
+| where isnotempty(IdentityId)
+| where isempty(Watermark) or TimeGenerated >= Watermark - 10m
+| summarize arg_max(TimeGenerated, *) by IdentityId
+| extend
+    AttrBag = todynamic(column_ifexists("Attributes", dynamic(null))),
+    RawIdSource = tostring(column_ifexists("IdentitySource", "")),
+    BracketSource = extract(@"\[([^\]]+)\]\s*$", 1, Name)
+| extend
+    AttrSources = trim(" []\"", tostring(AttrBag.sources)),
+    IdNumPrefix = iff(tostring(AttrBag.identificationNumber) contains "-", tostring(split(tostring(AttrBag.identificationNumber), "-")[0]), ""),
+    LifecycleState = iff(tostring(AttrBag.cloudLifecycleState) == "-", "", tostring(AttrBag.cloudLifecycleState))
+| extend
+    AuthoritativeSource = coalesce(BracketSource, AttrSources, IdNumPrefix, RawIdSource, "SailPoint ISC"),
+    UserPrincipalName = tolower(UserPrincipalName)
+| extend
+    IdentitySource = case(
+        isnotempty(RawIdSource) and isnotempty(AuthoritativeSource) and RawIdSource != AuthoritativeSource, strcat(RawIdSource, " (", AuthoritativeSource, ")"),
+        isnotempty(AuthoritativeSource), AuthoritativeSource,
+        "SailPoint ISC")
+| project TimeGenerated, IdentityId, Name, DisplayName, Email, UserPrincipalName, Uid, IdentitySource, AuthoritativeSource, LifecycleState, Status, Inactive, Modified, Org

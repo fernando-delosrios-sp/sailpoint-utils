@@ -1,0 +1,16 @@
+// Normalize SailPoint ISC workflow history for operational saved searches.
+// Deployed as a Log Analytics function alias: SailPointISC_WorkflowHistory
+SailPointISC_WorkflowHistory_CL
+| extend
+    FlowName = coalesce(WorkflowName, ""),
+    Outcome = toupper(coalesce(Status, "")),
+    HistType = toupper(coalesce(HistoryType, "")),
+    Owner = coalesce(OwnerName, "")
+| extend
+    IsExecutionEvent = HistType startswith "WORKFLOWEXECUTION",
+    IsFailure = Outcome in ("FAILED", "FAILURE", "ERROR", "TIMEDOUT", "CANCELLED", "CANCELED")
+        or HistType has_any ("FAILED", "TIMEDOUT", "CANCELLED", "CANCELED"),
+    IsRemediation =
+        FlowName has_any ("Response", "Remediation", "Disable", "Contain", "Intel Response", "SecOps")
+        or tostring(Attributes) has_any ("DISABLE_IDENTITY", "DISABLE_ACCOUNT", "response-action")
+| project-reorder TimeGenerated, FlowName, Outcome, HistType, Owner, WorkflowExecutionId, RequestId, IsExecutionEvent, IsFailure, IsRemediation, WorkflowTest, Id, Org

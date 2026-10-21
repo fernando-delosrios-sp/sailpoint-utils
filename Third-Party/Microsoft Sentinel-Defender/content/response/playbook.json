@@ -1,0 +1,603 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "playbookName": {
+      "type": "string",
+      "defaultValue": "sailpoint-isc-response"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "metadata": {
+        "description": "Globally unique Key Vault name (3-24 chars, alphanumeric)."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "sailTenant": {
+      "type": "string"
+    },
+    "sailDomain": {
+      "type": "string",
+      "defaultValue": "identitynow-demo"
+    },
+    "defaultActionType": {
+      "type": "string",
+      "defaultValue": "DISABLE_ACCOUNT",
+      "allowedValues": [
+        "DISABLE_ACCOUNT",
+        "DISABLE_IDENTITY"
+      ]
+    },
+    "clientId": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SailPoint PAT/OAuth client id with sp:identity-sec-intel:read/write"
+      }
+    },
+    "clientSecret": {
+      "type": "securestring",
+      "metadata": {
+        "description": "SailPoint PAT/OAuth client secret"
+      }
+    },
+    "dryRun": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "When true, resolve identity and comment on the incident but do not POST a disable action."
+      }
+    }
+  },
+  "variables": {
+    "apiBase": "[concat('https://', parameters('sailTenant'), '.api.', parameters('sailDomain'), '.com')]",
+    "tokenUrl": "[concat(variables('apiBase'), '/oauth/token')]",
+    "identitiesUrl": "[concat(variables('apiBase'), '/intelligence/v1/identities')]",
+    "responseActionsUrl": "[concat(variables('apiBase'), '/intelligence/v1/response-actions')]",
+    "logicAppIdentityName": "[concat(parameters('playbookName'), '/systemAssignedIdentity')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2023-07-01",
+      "name": "[parameters('keyVaultName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "tenantId": "[subscription().tenantId]",
+        "enableRbacAuthorization": true,
+        "enableSoftDelete": true,
+        "softDeleteRetentionInDays": 7,
+        "enablePurgeProtection": false,
+        "accessPolicies": []
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[concat(parameters('keyVaultName'), '/sailpoint-client-id')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+      ],
+      "properties": {
+        "value": "[parameters('clientId')]"
+      }
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2023-07-01",
+      "name": "[concat(parameters('keyVaultName'), '/sailpoint-client-secret')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+      ],
+      "properties": {
+        "value": "[parameters('clientSecret')]"
+      }
+    },
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2019-05-01",
+      "name": "[parameters('playbookName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "tags": {
+        "purpose": "sentinel-sailpoint-response",
+        "sailTenant": "[parameters('sailTenant')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', parameters('keyVaultName'), 'sailpoint-client-id')]",
+        "[resourceId('Microsoft.KeyVault/vaults/secrets', parameters('keyVaultName'), 'sailpoint-client-secret')]"
+      ],
+      "properties": {
+        "state": "Enabled",
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {
+            "$connections": {
+              "defaultValue": {},
+              "type": "Object"
+            },
+            "keyVaultName": {
+              "defaultValue": "[parameters('keyVaultName')]",
+              "type": "String"
+            },
+            "tokenUrl": {
+              "defaultValue": "[variables('tokenUrl')]",
+              "type": "String"
+            },
+            "identitiesUrl": {
+              "defaultValue": "[variables('identitiesUrl')]",
+              "type": "String"
+            },
+            "responseActionsUrl": {
+              "defaultValue": "[variables('responseActionsUrl')]",
+              "type": "String"
+            },
+            "defaultActionType": {
+              "defaultValue": "[parameters('defaultActionType')]",
+              "type": "String"
+            },
+            "dryRun": {
+              "defaultValue": "[parameters('dryRun')]",
+              "type": "Bool"
+            }
+          },
+          "triggers": {
+            "manual": {
+              "type": "Request",
+              "kind": "Http",
+              "inputs": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "IncidentArmId": { "type": "string" },
+                    "IncidentNumber": { "type": "integer" },
+                    "Title": { "type": "string" },
+                    "Severity": { "type": "string" },
+                    "Status": { "type": "string" },
+                    "Owner": {
+                      "type": "object",
+                      "properties": {
+                        "email": { "type": "string" },
+                        "userPrincipalName": { "type": "string" },
+                        "name": { "type": "string" }
+                      }
+                    },
+                    "Labels": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "AccountEntities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "Name": { "type": "string" },
+                          "AadUserId": { "type": "string" },
+                          "UPNSuffix": { "type": "string" }
+                        }
+                      }
+                    },
+                    "CustomDetails": {
+                      "type": "object",
+                      "properties": {
+                        "Actor": { "type": "string" },
+                        "Target": { "type": "string" },
+                        "SampleUserId": { "type": "string" },
+                        "Subject": { "type": "string" }
+                      }
+                    },
+                    "ActionType": {
+                      "type": "string"
+                    },
+                    "IdentityId": {
+                      "type": "string"
+                    },
+                    "AccountIds": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    },
+                    "Reason": {
+                      "type": "string"
+                    },
+                    "Operator": {
+                      "type": "string"
+                    },
+                    "DryRun": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "actions": {
+            "Initialize_DedupKey": {
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "DedupKey",
+                    "type": "string",
+                    "value": "@{coalesce(triggerBody()?['IncidentArmId'], triggerBody()?['Title'], guid())}|@{coalesce(triggerBody()?['ActionType'], parameters('defaultActionType'))}"
+                  }
+                ]
+              },
+              "runAfter": {}
+            },
+            "Initialize_Outcome": {
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "OutcomeMessage",
+                    "type": "string",
+                    "value": ""
+                  }
+                ]
+              },
+              "runAfter": {
+                "Initialize_DedupKey": ["Succeeded"]
+              }
+            },
+            "Initialize_IdentityId": {
+              "type": "InitializeVariable",
+              "inputs": {
+                "variables": [
+                  {
+                    "name": "IdentityId",
+                    "type": "string",
+                    "value": ""
+                  }
+                ]
+              },
+              "runAfter": {
+                "Initialize_Outcome": ["Succeeded"]
+              }
+            },
+            "Resolve_LookupHint": {
+              "type": "Compose",
+              "inputs": "@coalesce(triggerBody()?['IdentityId'], triggerBody()?['CustomDetails']?['SampleUserId'], first(coalesce(triggerBody()?['AccountEntities'], createArray()))?['Name'], triggerBody()?['CustomDetails']?['Target'], triggerBody()?['CustomDetails']?['Actor'], triggerBody()?['CustomDetails']?['Subject'])",
+              "runAfter": {
+                "Initialize_IdentityId": ["Succeeded"]
+              }
+            },
+            "Get_ClientId": {
+              "type": "Http",
+              "inputs": {
+                "method": "GET",
+                "uri": "https://@{parameters('keyVaultName')}.vault.azure.net/secrets/sailpoint-client-id?api-version=7.4",
+                "authentication": {
+                  "type": "ManagedServiceIdentity",
+                  "audience": "https://vault.azure.net"
+                }
+              },
+              "runAfter": {
+                "Resolve_LookupHint": ["Succeeded"]
+              }
+            },
+            "Get_ClientSecret": {
+              "type": "Http",
+              "inputs": {
+                "method": "GET",
+                "uri": "https://@{parameters('keyVaultName')}.vault.azure.net/secrets/sailpoint-client-secret?api-version=7.4",
+                "authentication": {
+                  "type": "ManagedServiceIdentity",
+                  "audience": "https://vault.azure.net"
+                }
+              },
+              "runAfter": {
+                "Get_ClientId": ["Succeeded"]
+              }
+            },
+            "Get_SailPoint_Token": {
+              "type": "Http",
+              "inputs": {
+                "method": "POST",
+                "uri": "@parameters('tokenUrl')",
+                "headers": {
+                  "Content-Type": "application/x-www-form-urlencoded"
+                },
+                "body": "grant_type=client_credentials&client_id=@{body('Get_ClientId')?['value']}&client_secret=@{body('Get_ClientSecret')?['value']}&scope=sp:identity-sec-intel:read%20sp:identity-sec-intel:write"
+              },
+              "runAfter": {
+                "Get_ClientSecret": ["Succeeded"]
+              }
+            },
+            "Has_Explicit_IdentityId": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "not": {
+                      "equals": [
+                        "@coalesce(triggerBody()?['IdentityId'], '')",
+                        ""
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Set_IdentityId_From_Trigger": {
+                  "type": "SetVariable",
+                  "inputs": {
+                    "name": "IdentityId",
+                    "value": "@{triggerBody()?['IdentityId']}"
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Lookup_Identity_By_Filter": {
+                    "type": "Http",
+                    "inputs": {
+                      "method": "GET",
+                      "uri": "@{parameters('identitiesUrl')}?filters=@{encodeUriComponent(if(contains(string(outputs('Resolve_LookupHint')), '@'), concat('email eq \"', string(outputs('Resolve_LookupHint')), '\"'), concat('id eq \"', string(outputs('Resolve_LookupHint')), '\"')))}",
+                      "headers": {
+                        "Authorization": "Bearer @{body('Get_SailPoint_Token')?['access_token']}",
+                        "Accept": "application/json"
+                      }
+                    }
+                  },
+                  "Set_IdentityId_From_Lookup": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "IdentityId",
+                      "value": "@{coalesce(body('Lookup_Identity_By_Filter')?['id'], body('Lookup_Identity_By_Filter')?['identity']?['id'], body('Lookup_Identity_By_Filter')?['identities']?[0]?['id'], '')}"
+                    },
+                    "runAfter": {
+                      "Lookup_Identity_By_Filter": ["Succeeded"]
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Get_SailPoint_Token": ["Succeeded"]
+              }
+            },
+            "Guard_Identity_Resolved": {
+              "type": "If",
+              "expression": {
+                "and": [
+                  {
+                    "not": {
+                      "equals": [
+                        "@variables('IdentityId')",
+                        ""
+                      ]
+                    }
+                  }
+                ]
+              },
+              "actions": {
+                "Effective_DryRun": {
+                  "type": "Compose",
+                  "inputs": "@coalesce(triggerBody()?['DryRun'], parameters('dryRun'))"
+                },
+                "Branch_DryRun_Or_Submit": {
+                  "type": "If",
+                  "expression": {
+                    "equals": [
+                      "@outputs('Effective_DryRun')",
+                      true
+                    ]
+                  },
+                  "actions": {
+                    "Set_DryRun_Outcome": {
+                      "type": "SetVariable",
+                      "inputs": {
+                        "name": "OutcomeMessage",
+                        "value": "[SailPoint ISC] Dry-run OK. DedupKey=@{variables('DedupKey')}; resolved identityId=@{variables('IdentityId')}; would submit @{coalesce(triggerBody()?['ActionType'], parameters('defaultActionType'))} with source=SENTINEL. No disable was sent."
+                      }
+                    }
+                  },
+                  "else": {
+                    "actions": {
+                      "Build_Response_Body": {
+                        "type": "Compose",
+                        "inputs": {
+                          "actionType": "@coalesce(triggerBody()?['ActionType'], parameters('defaultActionType'))",
+                          "identityType": "HUMAN",
+                          "identityId": "@{variables('IdentityId')}",
+                          "accountIds": "@coalesce(triggerBody()?['AccountIds'], createArray())",
+                          "context": {
+                            "source": "SENTINEL",
+                            "externalAlertId": "@{coalesce(string(triggerBody()?['IncidentNumber']), triggerBody()?['IncidentArmId'], variables('DedupKey'))}",
+                            "reason": "@{coalesce(triggerBody()?['Reason'], concat('Microsoft Sentinel incident: ', coalesce(triggerBody()?['Title'], 'n/a')))}",
+                            "operator": "@{coalesce(triggerBody()?['Operator'], triggerBody()?['Owner']?['userPrincipalName'], triggerBody()?['Owner']?['email'], triggerBody()?['Owner']?['name'], 'sentinel-playbook')}"
+                          }
+                        }
+                      },
+                      "Submit_Response_Action": {
+                        "type": "Http",
+                        "inputs": {
+                          "method": "POST",
+                          "uri": "@parameters('responseActionsUrl')",
+                          "headers": {
+                            "Authorization": "Bearer @{body('Get_SailPoint_Token')?['access_token']}",
+                            "Content-Type": "application/json",
+                            "Accept": "application/json",
+                            "Idempotency-Key": "@{variables('DedupKey')}"
+                          },
+                          "body": "@outputs('Build_Response_Body')"
+                        },
+                        "runAfter": {
+                          "Build_Response_Body": ["Succeeded"]
+                        }
+                      },
+                      "Initialize_Status": {
+                        "type": "InitializeVariable",
+                        "inputs": {
+                          "variables": [
+                            {
+                              "name": "ActionStatus",
+                              "type": "string",
+                              "value": "@{coalesce(body('Submit_Response_Action')?['status'], 'SUBMITTED')}"
+                            }
+                          ]
+                        },
+                        "runAfter": {
+                          "Submit_Response_Action": ["Succeeded"]
+                        }
+                      },
+                      "Initialize_StatusUrl": {
+                        "type": "InitializeVariable",
+                        "inputs": {
+                          "variables": [
+                            {
+                              "name": "StatusUrl",
+                              "type": "string",
+                              "value": "@{coalesce(body('Submit_Response_Action')?['statusUrl'], concat(parameters('responseActionsUrl'), '/', body('Submit_Response_Action')?['requestId'], '/status'))}"
+                            }
+                          ]
+                        },
+                        "runAfter": {
+                          "Initialize_Status": ["Succeeded"]
+                        }
+                      },
+                      "Poll_Status": {
+                        "type": "Until",
+                        "expression": "@or(equals(variables('ActionStatus'), 'COMPLETED'), equals(variables('ActionStatus'), 'FAILED'), equals(variables('ActionStatus'), 'COMPLETED_WITH_ERRORS'))",
+                        "limit": {
+                          "count": 10,
+                          "timeout": "PT15M"
+                        },
+                        "actions": {
+                          "Delay_Poll": {
+                            "type": "Wait",
+                            "inputs": {
+                              "interval": {
+                                "count": 30,
+                                "unit": "Second"
+                              }
+                            }
+                          },
+                          "Get_Status": {
+                            "type": "Http",
+                            "inputs": {
+                              "method": "GET",
+                              "uri": "@variables('StatusUrl')",
+                              "headers": {
+                                "Authorization": "Bearer @{body('Get_SailPoint_Token')?['access_token']}",
+                                "Accept": "application/json"
+                              }
+                            },
+                            "runAfter": {
+                              "Delay_Poll": ["Succeeded"]
+                            }
+                          },
+                          "Update_Status": {
+                            "type": "SetVariable",
+                            "inputs": {
+                              "name": "ActionStatus",
+                              "value": "@{coalesce(body('Get_Status')?['status'], variables('ActionStatus'))}"
+                            },
+                            "runAfter": {
+                              "Get_Status": ["Succeeded"]
+                            }
+                          }
+                        },
+                        "runAfter": {
+                          "Initialize_StatusUrl": ["Succeeded"]
+                        }
+                      },
+                      "Set_Submit_Outcome": {
+                        "type": "SetVariable",
+                        "inputs": {
+                          "name": "OutcomeMessage",
+                          "value": "[SailPoint ISC] Response action @{coalesce(body('Submit_Response_Action')?['requestId'], 'n/a')} status=@{variables('ActionStatus')}. DedupKey=@{variables('DedupKey')}. identityId=@{variables('IdentityId')}. Routed through ISC Intel Response Actions workflow (approval required in ISC)."
+                        },
+                        "runAfter": {
+                          "Poll_Status": ["Succeeded", "TimedOut", "Failed"]
+                        }
+                      }
+                    }
+                  },
+                  "runAfter": {
+                    "Effective_DryRun": ["Succeeded"]
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Set_Unresolved_Outcome": {
+                    "type": "SetVariable",
+                    "inputs": {
+                      "name": "OutcomeMessage",
+                      "value": "[SailPoint ISC] Could not resolve identity from hint '@{outputs('Resolve_LookupHint')}'. Provide IdentityId or an AccountEntities/CustomDetails value that maps to email/id."
+                    }
+                  }
+                }
+              },
+              "runAfter": {
+                "Has_Explicit_IdentityId": ["Succeeded"]
+              }
+            },
+            "Response": {
+              "type": "Response",
+              "kind": "Http",
+              "inputs": {
+                "statusCode": 200,
+                "headers": {
+                  "Content-Type": "application/json"
+                },
+                "body": {
+                  "dedupKey": "@variables('DedupKey')",
+                  "identityId": "@variables('IdentityId')",
+                  "message": "@variables('OutcomeMessage')"
+                }
+              },
+              "runAfter": {
+                "Guard_Identity_Resolved": ["Succeeded", "Failed", "Skipped", "TimedOut"]
+              }
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), resourceId('Microsoft.Logic/workflows', parameters('playbookName')), 'Key Vault Secrets User')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+        "[resourceId('Microsoft.Logic/workflows', parameters('playbookName'))]"
+      ],
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+        "principalId": "[reference(resourceId('Microsoft.Logic/workflows', parameters('playbookName')), '2019-05-01', 'Full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      }
+    }
+  ],
+  "outputs": {
+    "playbookResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Logic/workflows', parameters('playbookName'))]"
+    },
+    "playbookPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Logic/workflows', parameters('playbookName')), '2019-05-01', 'Full').identity.principalId]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[parameters('keyVaultName')]"
+    },
+    "triggerHint": {
+      "type": "string",
+      "value": "Invoke via Logic App HTTP trigger URL (portal > Logic app > Trigger history / Run) with Sentinel incident JSON. Default dryRun=true until you redeploy with dryRun=false."
+    }
+  }
+}

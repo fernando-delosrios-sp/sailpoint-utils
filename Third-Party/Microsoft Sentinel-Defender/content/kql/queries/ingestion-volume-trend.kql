@@ -1,0 +1,6 @@
+// Daily ingested volume by SailPoint table over seven days.
+Usage
+| where TimeGenerated > ago(7d)
+| where DataType in ("SailPointISC_Events_CL", "SailPointISC_AccountActivities_CL", "SailPointISC_WorkflowHistory_CL")
+| summarize IngestedMB = sum(Quantity) by bin(TimeGenerated, 1d), DataType
+| order by TimeGenerated desc, DataType asc

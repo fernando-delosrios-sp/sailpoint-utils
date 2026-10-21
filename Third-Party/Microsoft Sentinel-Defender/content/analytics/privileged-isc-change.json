@@ -1,0 +1,80 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567001",
+  "kind": "Scheduled",
+  "displayName": "SailPoint ISC \u2014 Privileged or destructive identity change",
+  "description": "Detects privileged or destructive SailPoint ISC changes (account/identity disable, enable, delete, create, role/source/token mutations) with target account source, authoritative identity source, and full ISC event context.",
+  "severity": "Medium",
+  "enabled": true,
+  "queryFrequency": "PT1H",
+  "queryPeriod": "PT1H",
+  "triggerOperator": "GreaterThan",
+  "triggerThreshold": 0,
+  "suppressionEnabled": true,
+  "suppressionDuration": "PT4H",
+  "tactics": [
+    "Persistence",
+    "PrivilegeEscalation",
+    "Impact"
+  ],
+  "techniques": [
+    "T1098",
+    "T1078"
+  ],
+  "query": "let NonPersonActors = dynamic([\"system\", \"unknown\", \"all\", \"global\", \"webservice\", \"mantistaskscheduler\", \"\"]);\nSailPointISC_Events\n| where TimeGenerated > ago(1h)\n| where IsPrivileged\n| extend ActorKey = tolower(Actor), TargetKey = tolower(coalesce(TargetIdentity, Target))\n| join kind=leftouter (SailPointISC_IdentityKeys | project ActorKey = JoinKey, ActorUpn = UserPrincipalName, ActorDisplay = DisplayName, ActorIdSource = IdentitySource) on ActorKey\n| join kind=leftouter (SailPointISC_IdentityKeys | project TargetKey = JoinKey, TargetUpn = UserPrincipalName, TargetDisplay = DisplayName, TargetIdSource = IdentitySource, TargetAuthSource = AuthoritativeSource) on TargetKey\n| extend ResponseSubject = iff(isnotempty(ActorUpn) and ActorKey !in (NonPersonActors), \"Actor\", \"Target\")\n| extend\n    IdentityAuthoritativeSource = coalesce(TargetBracketSource, TargetIdSource, TargetAuthSource, \"SailPoint ISC\"),\n    CleanTargetIdentity = coalesce(TargetDisplay, TargetIdentity, Target, \"unknown\"),\n    UserPrincipalName = iff(ResponseSubject == \"Actor\", ActorUpn, TargetUpn),\n    DisplayName = iff(ResponseSubject == \"Actor\", ActorDisplay, coalesce(TargetDisplay, TargetIdentity))\n| extend\n    ResponseAction = iff(ResponseSubject == \"Actor\", \"Open this UPN in Assets > Identities. Revoke sessions. Confirm the user compromised only if the change was unauthorized.\", \"The actor is not a person. Open the target UPN in Assets > Identities and review the change before revoking sessions.\"),\n    UpnSuffix = tostring(split(UserPrincipalName, \"@\")[1]),\n    AccountCustomEntity = iff(isnotempty(UserPrincipalName), UserPrincipalName, iff(isnotempty(CleanTargetIdentity) and CleanTargetIdentity != \"unknown\", CleanTargetIdentity, Actor))\n| summarize\n    EventCount = count(),\n    FirstSeen = min(TimeGenerated),\n    LastSeen = max(TimeGenerated),\n    PrimaryEvent = any(EventName),\n    EventNames = strcat_array(make_set(EventName, 5), \", \"),\n    Operations = strcat_array(make_set(OperationName, 5), \", \"),\n    Outcomes = strcat_array(make_set(Outcome, 5), \", \"),\n    AccountSources = strcat_array(make_set(SourceName, 5), \", \"),\n    TargetAccounts = strcat_array(make_set_if(TargetAccount, isnotempty(TargetAccount) and TargetAccount != \"unknown\", 5), \", \"),\n    TriggerInterfaces = strcat_array(make_set_if(TriggerInterface, isnotempty(TriggerInterface), 5), \", \"),\n    ChangedItems = strcat_array(make_set_if(ChangedItem, isnotempty(ChangedItem), 5), \"; \"),\n    EventDetails = substring(strcat_array(make_set(EventSummary, 5), \" | \"), 0, 900),\n    TrackingIds = strcat_array(make_set_if(TrackingNumber, isnotempty(TrackingNumber), 5), \", \")\n    by Actor, TargetIdentity = CleanTargetIdentity, IdentityAuthoritativeSource, UserPrincipalName, DisplayName, ResponseSubject, ResponseAction, UpnSuffix, AccountCustomEntity\n| extend\n    TargetAccounts = coalesce(TargetAccounts, TargetIdentity),\n    TriggerInterfaces = coalesce(TriggerInterfaces, \"Direct / System\"),\n    TrackingIds = coalesce(TrackingIds, \"n/a\"),\n    AlertAction = iff(EventCount == 1, PrimaryEvent, strcat(EventNames, \" (\", EventCount, \" events)\")),\n    AlertTarget = strcat(\n        TargetIdentity,\n        iff(isnotempty(TargetAccounts) and tolower(TargetAccounts) != tolower(TargetIdentity), strcat(\" [acct: \", TargetAccounts, \"]\"), \"\"),\n        iff(isnotempty(IdentityAuthoritativeSource) and IdentityAuthoritativeSource != \"SailPoint ISC\" and IdentityAuthoritativeSource != AccountSources, strcat(\" (HR: \", IdentityAuthoritativeSource, \")\"), \"\"))\n| where EventCount >= 1",
+  "entityMappings": [
+    {
+      "entityType": "Account",
+      "fieldMappings": [
+        {
+          "identifier": "Name",
+          "columnName": "AccountCustomEntity"
+        },
+        {
+          "identifier": "UPNSuffix",
+          "columnName": "UpnSuffix"
+        },
+        {
+          "identifier": "DisplayName",
+          "columnName": "DisplayName"
+        }
+      ]
+    }
+  ],
+  "customDetails": {
+    "EventNames": "EventNames",
+    "Operations": "Operations",
+    "Outcomes": "Outcomes",
+    "Actor": "Actor",
+    "TargetIdentity": "TargetIdentity",
+    "IdentitySource": "IdentityAuthoritativeSource",
+    "TargetAccounts": "TargetAccounts",
+    "AccountSources": "AccountSources",
+    "TriggerInterfaces": "TriggerInterfaces",
+    "ChangedItems": "ChangedItems",
+    "EventDetails": "EventDetails",
+    "UserPrincipalName": "UserPrincipalName",
+    "ResponseSubject": "ResponseSubject",
+    "ResponseAction": "ResponseAction",
+    "EventCount": "EventCount",
+    "TrackingIds": "TrackingIds"
+  },
+  "eventGroupingSettings": {
+    "aggregationKind": "AlertPerResult"
+  },
+  "incidentConfiguration": {
+    "createIncident": true,
+    "groupingConfiguration": {
+      "enabled": true,
+      "reopenClosedIncident": false,
+      "lookbackDuration": "PT6H",
+      "matchingMethod": "AllEntities",
+      "groupByEntities": [
+        "Account"
+      ]
+    }
+  },
+  "alertDetailsOverride": {
+    "alertDisplayNameFormat": "SailPoint ISC: {{AlertAction}} on {{AccountSources}} \u2014 {{AlertTarget}}",
+    "alertDescriptionFormat": "{{EventDetails}} | Actor: {{Actor}} | Tracking: {{TrackingIds}}"
+  }
+}

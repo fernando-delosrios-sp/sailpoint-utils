@@ -1,0 +1,30 @@
+// Response flow for an authentication failure burst.
+// Open UserPrincipalName in Defender Assets > Identities.
+let FailureThreshold = 5;
+SailPointISC_Events
+| where TimeGenerated > ago(1h)
+| where IsAuth and IsFailure
+| extend SubjectName = coalesce(UserId, TargetIdentity, Actor, "unknown")
+| extend ActorKey = tolower(Actor), TargetKey = tolower(coalesce(TargetIdentity, Target)), UserKey = tolower(UserId)
+| summarize
+    FailureCount = count(),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated),
+    EventNames = make_set(EventName, 10),
+    Actions = make_set(ActionName, 10),
+    AccountSources = make_set(SourceName, 5),
+    TargetAccounts = make_set(TargetAccount, 5),
+    Hosts = make_set(HostName, 5),
+    EventDetails = make_set(EventSummary, 5)
+    by Actor, Target, SubjectName, ActorKey, TargetKey, UserKey
+| where FailureCount >= FailureThreshold
+| join kind=leftouter (SailPointISC_IdentityKeys | project TargetKey = JoinKey, TargetUpn = UserPrincipalName, TargetDisplay = DisplayName, TargetIdSource = IdentitySource) on TargetKey
+| join kind=leftouter (SailPointISC_IdentityKeys | project UserKey = JoinKey, UserUpn = UserPrincipalName, UserDisplay = DisplayName, UserIdSource = IdentitySource) on UserKey
+| join kind=leftouter (SailPointISC_IdentityKeys | project ActorKey = JoinKey, ActorUpn = UserPrincipalName, ActorDisplay = DisplayName, ActorIdSource = IdentitySource) on ActorKey
+| extend
+    UserPrincipalName = coalesce(TargetUpn, UserUpn, ActorUpn),
+    EntraDisplayName = coalesce(TargetDisplay, UserDisplay, ActorDisplay, SubjectName),
+    IdentityAuthoritativeSource = coalesce(TargetIdSource, UserIdSource, ActorIdSource, "SailPoint ISC"),
+    ResponseAction = "Open this UPN in Assets > Identities. Reset the password, then revoke sessions."
+| project FirstSeen, LastSeen, Actor, Target, TargetAccounts, AccountSources, IdentityAuthoritativeSource, UserPrincipalName, EntraDisplayName, FailureCount, EventNames, Actions, Hosts, EventDetails, ResponseAction
+| order by FailureCount desc

@@ -1,0 +1,11 @@
+// Operational investigation template. Edit Subject, then run.
+let Subject = "replace-me"; // Edit this value, then run.
+SailPointISC_WorkflowHistory
+| where TimeGenerated > ago(7d)
+| where FlowName contains Subject
+    or Owner contains Subject
+    or WorkflowExecutionId contains Subject
+    or RequestId contains Subject
+| project TimeGenerated, FlowName, HistType, Outcome, Owner, WorkflowExecutionId, RequestId, IsFailure, IsRemediation
+| order by TimeGenerated desc
+| take 200

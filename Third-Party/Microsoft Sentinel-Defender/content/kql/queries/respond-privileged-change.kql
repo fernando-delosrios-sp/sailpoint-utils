@@ -1,0 +1,20 @@
+// Response flow for a privileged or destructive identity change.
+// Open UserPrincipalName in Defender Assets > Identities.
+SailPointISC_Events
+| where TimeGenerated > ago(24h)
+| where IsPrivileged
+| extend ActorKey = tolower(Actor), TargetKey = tolower(coalesce(TargetIdentity, Target))
+| join kind=leftouter (SailPointISC_IdentityKeys | project ActorKey = JoinKey, ActorUpn = UserPrincipalName, ActorName = DisplayName, ActorIdSource = IdentitySource) on ActorKey
+| join kind=leftouter (SailPointISC_IdentityKeys | project TargetKey = JoinKey, TargetUpn = UserPrincipalName, TargetNameEntra = DisplayName, TargetIdSource = IdentitySource) on TargetKey
+| extend ResponseSubject = iff(isnotempty(ActorUpn) and ActorKey !in ("system", "unknown", "all", "global", "webservice", "mantistaskscheduler"), "Actor", "Target")
+| extend
+    IdentityAuthoritativeSource = coalesce(TargetBracketSource, TargetIdSource, "SailPoint ISC"),
+    UserPrincipalName = iff(ResponseSubject == "Actor", ActorUpn, TargetUpn),
+    EntraDisplayName = iff(ResponseSubject == "Actor", ActorName, coalesce(TargetNameEntra, TargetIdentity)),
+    ResponseAction = iff(
+        ResponseSubject == "Actor",
+        "Open this UPN in Assets > Identities. Revoke sessions. Confirm the user compromised only if the change was unauthorized.",
+        "The actor is not a person. Open the target UPN in Assets > Identities and review the change before revoking sessions.")
+| project TimeGenerated, EventName, ResponseSubject, UserPrincipalName, EntraDisplayName, Actor, TargetIdentity, IdentityAuthoritativeSource, TargetAccount, AccountSource = SourceName, TriggerInterface, ChangedItem, EventSummary, Category, ActionName, TechName, Outcome, ResponseAction, TrackingNumber
+| order by TimeGenerated desc
+| take 200

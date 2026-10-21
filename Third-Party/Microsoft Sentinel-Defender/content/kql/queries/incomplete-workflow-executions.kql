@@ -1,0 +1,19 @@
+// Runs that started and have no completed, failed, or cancelled execution event.
+SailPointISC_WorkflowHistory
+| where TimeGenerated > ago(7d)
+| summarize
+    Started = countif(HistType == "WORKFLOWEXECUTIONSTARTED"),
+    Finished = countif(HistType in (
+        "WORKFLOWEXECUTIONCOMPLETED",
+        "WORKFLOWEXECUTIONFAILED",
+        "WORKFLOWEXECUTIONTIMEDOUT",
+        "WORKFLOWEXECUTIONCANCELED",
+        "WORKFLOWEXECUTIONCANCELLED")),
+    FailedSteps = countif(IsFailure),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated),
+    RequestId = any(RequestId)
+    by FlowName, WorkflowExecutionId, Owner
+| where Started > 0 and Finished == 0
+| project FirstSeen, LastSeen, FlowName, Owner, WorkflowExecutionId, RequestId, FailedSteps
+| order by LastSeen desc

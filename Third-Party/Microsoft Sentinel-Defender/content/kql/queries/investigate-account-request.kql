@@ -1,0 +1,13 @@
+// Operational investigation template. Edit Subject, then run.
+let Subject = "replace-me"; // Edit this value, then run.
+SailPointISC_AccountActivities
+| where TimeGenerated > ago(7d)
+| where Operation contains Subject
+    or Requester contains Subject
+    or Recipient contains Subject
+    or RecipientIdentityId contains Subject
+    or Sources contains Subject
+    or TrackingNumber contains Subject
+| project TimeGenerated, Operation, Outcome, StageName, Requester, Recipient, RecipientIdentityId, Sources, TrackingNumber, IsFailure, IsStalled
+| order by TimeGenerated desc
+| take 200

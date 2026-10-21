@@ -1,0 +1,7 @@
+// Disable, enable, delete, admin, password, role, source, and account mutation events.
+SailPointISC_Events
+| where TimeGenerated > ago(24h)
+| where IsPrivileged
+| project TimeGenerated, EventName, Actor, TargetIdentity, TargetBracketSource, TargetAccount, SourceName, Category, OperationName, ActionName, TechName, Outcome, TriggerInterface, ChangedItem, EventSummary, HostName, TrackingNumber
+| order by TimeGenerated desc
+| take 200

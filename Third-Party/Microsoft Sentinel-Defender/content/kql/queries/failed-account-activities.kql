@@ -1,0 +1,7 @@
+// Failed provisioning and account operations.
+SailPointISC_AccountActivities
+| where TimeGenerated > ago(7d)
+| where IsFailure
+| project TimeGenerated, Operation, Outcome, StageName, Requester, Recipient, RecipientIdentityId, Sources, TrackingNumber
+| order by TimeGenerated desc
+| take 200

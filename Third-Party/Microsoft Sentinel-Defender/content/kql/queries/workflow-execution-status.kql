@@ -1,0 +1,23 @@
+// Workflow runs grouped by name and execution state.
+SailPointISC_WorkflowHistory
+| where TimeGenerated > ago(7d)
+| summarize
+    Started = countif(HistType == "WORKFLOWEXECUTIONSTARTED"),
+    Completed = countif(HistType == "WORKFLOWEXECUTIONCOMPLETED"),
+    FailedSteps = countif(IsFailure),
+    LastSeen = max(TimeGenerated)
+    by FlowName, WorkflowExecutionId, Owner
+| extend ExecutionState = case(
+    FailedSteps > 0, "Failed",
+    Completed > 0, "Completed",
+    Started > 0, "In progress",
+    "Activity only")
+| summarize
+    Executions = count(),
+    Failed = countif(ExecutionState == "Failed"),
+    InProgress = countif(ExecutionState == "In progress"),
+    Completed = countif(ExecutionState == "Completed"),
+    ActivityOnly = countif(ExecutionState == "Activity only"),
+    LastSeen = max(LastSeen)
+    by FlowName
+| order by Failed desc, InProgress desc, Executions desc

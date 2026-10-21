@@ -1,0 +1,20 @@
+// Actors and targets with the most security-relevant events over seven days.
+let Security =
+    SailPointISC_Events
+    | where TimeGenerated > ago(7d)
+    | where IsSecurity;
+union
+    (
+        Security
+        | where isnotempty(Actor)
+        | summarize EventCount = count(), Failures = countif(IsFailure) by Name = Actor
+        | extend Kind = "Actor"
+    ),
+    (
+        Security
+        | where isnotempty(Target)
+        | summarize EventCount = count(), Failures = countif(IsFailure) by Name = Target
+        | extend Kind = "Target"
+    )
+| top 30 by EventCount desc
+| project Kind, Name, EventCount, Failures

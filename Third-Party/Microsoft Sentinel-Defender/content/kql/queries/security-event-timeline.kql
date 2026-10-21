@@ -1,0 +1,7 @@
+// Security-relevant ISC events from the last 24 hours. Scheduled identity processing is excluded.
+SailPointISC_Events
+| where TimeGenerated > ago(24h)
+| where IsSecurity
+| project TimeGenerated, Actor, Target, UserId, Category, ActionName, TechName, Outcome, IsFailure, SourceName, HostName, TrackingNumber
+| order by TimeGenerated desc
+| take 200

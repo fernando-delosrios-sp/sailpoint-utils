@@ -1,0 +1,14 @@
+// Workflow executions with a failed, timed-out, or cancelled step.
+SailPointISC_WorkflowHistory
+| where TimeGenerated > ago(7d)
+| where IsFailure
+| summarize
+    FailedSteps = count(),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated),
+    HistoryTypes = make_set(HistType, 10),
+    Outcomes = make_set(Outcome, 5),
+    RequestId = any(RequestId)
+    by FlowName, WorkflowExecutionId, Owner
+| order by LastSeen desc
+| take 200

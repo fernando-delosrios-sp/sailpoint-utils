@@ -1,0 +1,7 @@
+// Role grants, entitlement grants, entitlement connections, and access-request events.
+SailPointISC_Events
+| where TimeGenerated > ago(24h)
+| where IsAccessChange
+| project TimeGenerated, Actor, Target, UserId, Category, ActionName, TechName, Outcome, SourceName, TrackingNumber
+| order by TimeGenerated desc
+| take 200

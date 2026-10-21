@@ -1,0 +1,7 @@
+// Pending, queued, or waiting account activities older than two hours.
+SailPointISC_AccountActivities
+| where TimeGenerated > ago(7d)
+| where IsStalled
+| project TimeGenerated, Operation, Outcome, StageName, Requester, Recipient, RecipientIdentityId, Sources, TrackingNumber
+| order by TimeGenerated asc
+| take 200

@@ -1,0 +1,240 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## SailPoint ISC Operations\n\nOperator view over SailPoint Identity Security Cloud telemetry in this Sentinel workspace. Use the time range below; account-activity and workflow panels stay empty until those pollers ingest rows."
+      },
+      "name": "title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "timeRange",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 604800000
+            },
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 3600000 },
+                { "durationMs": 14400000 },
+                { "durationMs": 86400000 },
+                { "durationMs": 604800000 },
+                { "durationMs": 2592000000 }
+              ]
+            }
+          }
+        ]
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Overview KPIs"
+      },
+      "name": "kpi-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "let events = SailPointISC_Events_CL | where TimeGenerated {TimeRange};\nlet aa = SailPointISC_AccountActivities_CL | where TimeGenerated {TimeRange};\nlet wf = SailPointISC_WorkflowHistory_CL | where TimeGenerated {TimeRange};\nprint\n  Events = toscalar(events | count),\n  FailedEvents = toscalar(events | where toupper(Status) in (\"FAILED\", \"FAILURE\", \"ERROR\") | count),\n  AccountActivities = toscalar(aa | count),\n  Workflows = toscalar(wf | count),\n  LastEvent = toscalar(events | summarize max(TimeGenerated))",
+        "size": 3,
+        "title": "Volume and failures",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "visualization": "tiles",
+        "tileSettings": {
+          "titleContent": {
+            "columnMatch": "Events",
+            "formatter": 12
+          },
+          "leftContent": {
+            "columnMatch": "FailedEvents",
+            "formatter": 12
+          },
+          "showBorder": true
+        }
+      },
+      "name": "kpi-tiles"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Activity and failure trends"
+      },
+      "name": "trends-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SailPointISC_Events_CL\n| where TimeGenerated {TimeRange}\n| extend Outcome = toupper(coalesce(Status, \"\"))\n| summarize\n    Total = count(),\n    Failures = countif(Outcome in (\"FAILED\",\"FAILURE\",\"ERROR\"))\n  by bin(TimeGenerated, 1h)\n| render timechart",
+        "size": 0,
+        "title": "Events vs failures (hourly)",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "event-trend"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Top actors and targets"
+      },
+      "name": "actors-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SailPointISC_Events_CL\n| where TimeGenerated {TimeRange}\n| where isnotempty(ActorName)\n| summarize EventCount=count(), Failures=countif(toupper(Status) in (\"FAILED\",\"FAILURE\",\"ERROR\")) by ActorName\n| top 15 by EventCount desc",
+        "size": 0,
+        "title": "Top actors",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "top-actors",
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SailPointISC_Events_CL\n| where TimeGenerated {TimeRange}\n| where isnotempty(TargetName)\n| summarize EventCount=count(), Failures=countif(toupper(Status) in (\"FAILED\",\"FAILURE\",\"ERROR\")) by TargetName\n| top 15 by EventCount desc",
+        "size": 0,
+        "title": "Top targets",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "top-targets",
+      "customWidth": "50"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Account activities and access requests"
+      },
+      "name": "aa-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SailPointISC_AccountActivities_CL\n| where TimeGenerated {TimeRange}\n| summarize Count=count() by Status=coalesce(Status, \"(none)\"), Stage=coalesce(Stage, \"(none)\")\n| order by Count desc",
+        "size": 0,
+        "title": "Account activity status / stage",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "noDataMessage": "No account activities ingested yet (poller may be quiet or still within the 15-minute delay)."
+      },
+      "name": "aa-status",
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SailPointISC_Events_CL\n| where TimeGenerated {TimeRange}\n| where isnotempty(TrackingNumber) or toupper(EventType) == \"ACCESS_REQUEST\"\n| summarize Count=count() by Status=coalesce(Status, \"(none)\"), EventType=coalesce(EventType, \"(none)\")\n| order by Count desc",
+        "size": 0,
+        "title": "Access-request related events",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "access-requests",
+      "customWidth": "50"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Workflow failures"
+      },
+      "name": "wf-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SailPointISC_WorkflowHistory_CL\n| where TimeGenerated {TimeRange}\n| extend Outcome = toupper(coalesce(Status, \"\"))\n| where Outcome in (\"FAILED\",\"FAILURE\",\"ERROR\")\n    or WorkflowName has_any (\"Response\",\"Remediation\",\"Disable\",\"Contain\",\"Intel Response\",\"SecOps\")\n| project TimeGenerated, WorkflowName, Status, HistoryType, OwnerName, WorkflowExecutionId, RequestId\n| order by TimeGenerated desc\n| take 50",
+        "size": 0,
+        "title": "Recent failed / remediation workflows",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces",
+        "noDataMessage": "No workflow history rows yet."
+      },
+      "name": "wf-failures"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Recent security-relevant events"
+      },
+      "name": "recent-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "SailPointISC_Events_CL\n| where TimeGenerated {TimeRange}\n| extend\n    Outcome = toupper(coalesce(Status, \"\")),\n    Category = toupper(coalesce(EventType, \"\")),\n    TechName = toupper(coalesce(TechnicalName, \"\")),\n    ActionName = toupper(coalesce(Action, \"\"))\n| where Outcome in (\"FAILED\",\"FAILURE\",\"ERROR\")\n    or Category in (\"USER_MANAGEMENT\",\"AUTH\",\"ACCESS_REQUEST\",\"SOURCE_MANAGEMENT\",\"SYSTEM_CONFIG\")\n    or TechName has_any (\"ADMIN\",\"PASSWORD\",\"DISABLE\",\"ENABLE\",\"DELETE\")\n| project TimeGenerated, ActorName, TargetName, EventType, Action, TechnicalName, Status, AttributesUserId, TrackingNumber\n| order by TimeGenerated desc\n| take 100",
+        "size": 0,
+        "title": "Security-relevant ISC events",
+        "timeContextFromParameter": "TimeRange",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "recent-detections"
+    },
+    {
+      "type": 1,
+      "content": {
+        "json": "### Ingestion health"
+      },
+      "name": "health-header"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "union isfuzzy=true\n  (SailPointISC_Events_CL | extend TableName=\"SailPointISC_Events_CL\"),\n  (SailPointISC_AccountActivities_CL | extend TableName=\"SailPointISC_AccountActivities_CL\"),\n  (SailPointISC_WorkflowHistory_CL | extend TableName=\"SailPointISC_WorkflowHistory_CL\")\n| summarize\n    RowCount = count(),\n    LastSeen = max(TimeGenerated),\n    AgeMinutes = datetime_diff('minute', now(), max(TimeGenerated))\n  by TableName\n| extend Health = case(\n    RowCount == 0, \"Empty\",\n    AgeMinutes > 180, \"Stale\",\n    \"OK\")",
+        "size": 0,
+        "title": "Table freshness",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "ingestion-health",
+      "customWidth": "50"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "Usage\n| where TimeGenerated > ago(7d)\n| where DataType startswith \"SailPointISC_\"\n| summarize IngestedMB = sum(Quantity) by bin(TimeGenerated, 1d), DataType\n| order by TimeGenerated desc",
+        "size": 0,
+        "title": "Ingested MB (7d)",
+        "queryType": 0,
+        "resourceType": "microsoft.operationalinsights/workspaces"
+      },
+      "name": "usage",
+      "customWidth": "50"
+    }
+  ],
+  "fallbackResourceIds": [],
+  "styleSettings": {},
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

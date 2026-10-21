@@ -1,0 +1,6 @@
+// Chronological account-operations queue for the last 24 hours.
+SailPointISC_AccountActivities
+| where TimeGenerated > ago(24h)
+| project TimeGenerated, Operation, Outcome, StageName, Requester, Recipient, RecipientIdentityId, Sources, TrackingNumber, IsFailure, IsStalled
+| order by TimeGenerated desc
+| take 200

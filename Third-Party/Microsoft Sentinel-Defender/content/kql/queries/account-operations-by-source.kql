@@ -1,0 +1,9 @@
+// Account-operation volume and failures grouped by connected source.
+SailPointISC_AccountActivities
+| where TimeGenerated > ago(7d)
+| extend Source = split(Sources, ",")
+| mv-expand Source to typeof(string)
+| extend Source = trim(" ", Source)
+| where isnotempty(Source)
+| summarize Operations = count(), Failures = countif(IsFailure), Stalled = countif(IsStalled) by Source
+| order by Failures desc, Operations desc

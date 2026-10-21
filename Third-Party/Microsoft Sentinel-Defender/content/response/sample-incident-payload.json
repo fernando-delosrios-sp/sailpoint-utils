@@ -1,0 +1,27 @@
+{
+  "IncidentArmId": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/providers/Microsoft.SecurityInsights/incidents/00000000-0000-0000-0000-000000000001",
+  "IncidentNumber": 1001,
+  "Title": "SailPoint ISC — Failed authentication or action burst",
+  "Severity": "Medium",
+  "Status": "New",
+  "Owner": {
+    "email": "soc.analyst@example.com",
+    "userPrincipalName": "soc.analyst@example.com",
+    "name": "SOC Analyst"
+  },
+  "Labels": ["sailpoint-isc", "containment-candidate"],
+  "AccountEntities": [
+    {
+      "Name": "jane.doe@example.com"
+    }
+  ],
+  "CustomDetails": {
+    "Actor": "unknown",
+    "Target": "jane.doe@example.com",
+    "SampleUserId": ""
+  },
+  "ActionType": "DISABLE_ACCOUNT",
+  "Reason": "Non-destructive validation of Sentinel → ISC response path",
+  "Operator": "soc.analyst@example.com",
+  "DryRun": true
+}

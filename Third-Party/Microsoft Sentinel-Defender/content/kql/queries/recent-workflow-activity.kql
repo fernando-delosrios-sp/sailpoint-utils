@@ -1,0 +1,7 @@
+// Execution-level workflow history for the last 24 hours, plus any failed steps.
+SailPointISC_WorkflowHistory
+| where TimeGenerated > ago(24h)
+| where IsExecutionEvent or IsFailure
+| project TimeGenerated, FlowName, HistType, Outcome, Owner, WorkflowExecutionId, RequestId, IsFailure
+| order by TimeGenerated desc
+| take 200

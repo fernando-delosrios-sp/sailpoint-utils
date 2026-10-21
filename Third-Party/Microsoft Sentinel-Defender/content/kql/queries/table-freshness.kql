@@ -1,0 +1,14 @@
+// Row count, newest record, and age for each SailPoint table.
+union isfuzzy=true
+    (SailPointISC_Events_CL | extend TableName = "SailPointISC_Events_CL"),
+    (SailPointISC_AccountActivities_CL | extend TableName = "SailPointISC_AccountActivities_CL"),
+    (SailPointISC_WorkflowHistory_CL | extend TableName = "SailPointISC_WorkflowHistory_CL"),
+    (SailPointISC_Identities_CL | extend TableName = "SailPointISC_Identities_CL")
+| summarize
+    RowCount = count(),
+    LastSeen = max(TimeGenerated),
+    AgeMinutes = datetime_diff("minute", now(), max(TimeGenerated))
+    by TableName
+| extend Health = case(RowCount == 0, "Empty", AgeMinutes > 180, "Stale", "OK")
+| project TableName, Health, RowCount, LastSeen, AgeMinutes
+| order by TableName asc

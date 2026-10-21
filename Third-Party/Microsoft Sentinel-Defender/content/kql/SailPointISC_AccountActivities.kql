@@ -1,0 +1,17 @@
+// Normalize SailPoint ISC account activities for operational saved searches.
+// Operation is the ISC action (for example Identity Refresh), not the generic activity type.
+// Deployed as a Log Analytics function alias: SailPointISC_AccountActivities
+SailPointISC_AccountActivities_CL
+| extend
+    Operation = coalesce(Action, ""),
+    Activity = toupper(coalesce(ActivityType, "")),
+    Outcome = toupper(coalesce(Status, "")),
+    StageName = toupper(coalesce(Stage, "")),
+    Requester = coalesce(RequesterName, ""),
+    Recipient = coalesce(RecipientName, ""),
+    RecipientIdentityId = coalesce(RecipientId, ""),
+    RecipientKind = coalesce(RecipientType, "")
+| extend
+    IsFailure = Outcome in ("FAILED", "FAILURE", "ERROR", "FAIL") or StageName in ("ERROR", "FAILED"),
+    IsStalled = StageName in ("PENDING", "QUEUED", "WAITING") and TimeGenerated < ago(2h)
+| project-reorder TimeGenerated, Operation, Outcome, StageName, Requester, Recipient, RecipientIdentityId, RecipientKind, TrackingNumber, Sources, IsFailure, IsStalled, Activity, Id, Org

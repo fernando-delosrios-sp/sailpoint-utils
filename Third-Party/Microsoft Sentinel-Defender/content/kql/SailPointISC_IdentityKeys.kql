@@ -1,0 +1,32 @@
+// Join keys for the current identity snapshot: name, displayName, uid, full Entra UPN, and UPN local part.
+// Deployed as function alias: SailPointISC_IdentityKeys
+let Watermark = toscalar(SailPointISC_Identities_CL | summarize max(TimeGenerated));
+SailPointISC_Identities_CL
+| where isnotempty(IdentityId)
+| where isempty(Watermark) or TimeGenerated >= Watermark - 10m
+| summarize arg_max(TimeGenerated, *) by IdentityId
+| extend
+    AttrBag = todynamic(column_ifexists("Attributes", dynamic(null))),
+    RawIdSource = tostring(column_ifexists("IdentitySource", "")),
+    BracketSource = extract(@"\[([^\]]+)\]\s*$", 1, Name),
+    CleanName = trim(" ", replace_regex(Name, @"\s*\[[^\]]+\]\s*$", ""))
+| extend
+    AttrSources = trim(" []\"", tostring(AttrBag.sources)),
+    IdNumPrefix = iff(tostring(AttrBag.identificationNumber) contains "-", tostring(split(tostring(AttrBag.identificationNumber), "-")[0]), "")
+| extend
+    AuthoritativeSource = coalesce(BracketSource, AttrSources, IdNumPrefix, RawIdSource, "SailPoint ISC"),
+    UserPrincipalName = tolower(UserPrincipalName),
+    DisplayName = coalesce(DisplayName, CleanName, Name)
+| extend
+    IdentitySource = case(
+        isnotempty(RawIdSource) and isnotempty(AuthoritativeSource) and RawIdSource != AuthoritativeSource, strcat(RawIdSource, " (", AuthoritativeSource, ")"),
+        isnotempty(AuthoritativeSource), AuthoritativeSource,
+        "SailPoint ISC"),
+    Alias = tolower(Name),
+    CleanAlias = tolower(CleanName),
+    DisplayAlias = tolower(DisplayName),
+    UidAlias = tolower(Uid),
+    UpnLocal = tolower(tostring(split(UserPrincipalName, "@")[0]))
+| mv-expand JoinKey = pack_array(Alias, CleanAlias, DisplayAlias, UidAlias, UserPrincipalName, UpnLocal) to typeof(string)
+| where isnotempty(JoinKey)
+| summarize arg_max(TimeGenerated, IdentityId, Name, DisplayName, Email, UserPrincipalName, IdentitySource, AuthoritativeSource, Status) by JoinKey

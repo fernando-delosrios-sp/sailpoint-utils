@@ -1,0 +1,104 @@
+# Cheap Sentinel + SailPoint IdentityNow RestApiPoller (codeless) automation.
+# Secrets never land in the repo. Only .out/pat-id.txt is persisted.
+
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+subscription_id := "180aa0bd-2861-4b9e-9593-eba6a027c2c5"
+subscription_name := "PAYG - Fernando"
+resource_group := "rg-sentinel-emea-tes-team"
+# West Europe currently rejects new LAW customers on this subscription
+# (RequestDisallowedByAzure / locationineligible). North Europe is the EU fallback.
+location := "northeurope"
+workspace_name := "law-emea-tes-sentinel"
+sail_env := "emea-tes-team"
+sail_tenant := "company24509-poc"
+sail_domain := "identitynow-demo"
+
+export SUBSCRIPTION_ID := subscription_id
+export SUBSCRIPTION_NAME := subscription_name
+export RESOURCE_GROUP := resource_group
+export LOCATION := location
+export WORKSPACE_NAME := workspace_name
+export SAIL_ENV := sail_env
+export SAIL_TENANT := sail_tenant
+export SAIL_DOMAIN := sail_domain
+
+# List recipes
+default:
+    @just --list
+
+# Full install: preflight → workspace → solution → connect → content → verify
+up:
+    ./deploy.sh up
+
+# Check az login, provider registration, location, sail env
+preflight:
+    ./deploy.sh preflight
+
+# Create RG + PerGB2018 Log Analytics workspace + enable Sentinel
+workspace:
+    ./deploy.sh workspace
+
+# Install SailPoint IdentityNow Content Hub package (>= 3.0.1)
+solution:
+    ./deploy.sh solution
+
+# Create scoped PAT, smoke-test OAuth, deploy DCE/tables/DCR/RestApiPollers
+# Pass 1 to rotate the PAT and redeploy even if connectors already exist: just connect 1
+connect force="":
+    #!/usr/bin/env bash
+    case "{{force}}" in
+      1|force=1) export FORCE_RECONNECT=1 ;;
+    esac
+    ./deploy.sh connect
+
+# Deploy KQL functions, shared saved searches, analytics rules, and the ISC operations workbook
+content:
+    ./deploy.sh content
+
+# Assert connector, pay-as-you-go sku, events/usage queries
+verify:
+    ./deploy.sh verify
+
+# Assert content pack (rules, functions) + KQL smoke query
+verify-content:
+    ./deploy.sh verify-content
+
+# Shared Signals vs Response Actions capability check (no secrets, no deploy)
+response-capability:
+    ./deploy.sh response-capability
+
+# Opt-in response playbook (Key Vault + Logic App). Requires env credentials.
+# dry_run defaults to true (resolve only; no disable). Pass dry_run=false to allow submit.
+# Example:
+#   RESPONSE_CLIENT_ID=... RESPONSE_CLIENT_SECRET=... just response
+response dry_run="true":
+    #!/usr/bin/env bash
+    export RESPONSE_DRY_RUN="{{dry_run}}"
+    if [[ -z "${RESPONSE_CLIENT_ID:-}" || -z "${RESPONSE_CLIENT_SECRET:-}" ]]; then
+      echo "Set RESPONSE_CLIENT_ID and RESPONSE_CLIENT_SECRET (sp:identity-sec-intel:read/write)." >&2
+      echo "Do not reuse the sp:search:read ingestion PAT." >&2
+      exit 1
+    fi
+    ./deploy.sh response
+
+# Show current Azure + connector state
+status:
+    ./deploy.sh status
+
+# Query SailPointISC_* tables (first rows can take ~15 minutes)
+events:
+    ./deploy.sh events
+
+# Show workspace sku and recent Usage
+cost:
+    ./deploy.sh cost
+
+# Revoke PAT and delete the resource group. Must pass confirm=yes.
+down confirm="":
+    #!/usr/bin/env bash
+    if [[ "{{confirm}}" != "yes" ]]; then
+      echo "Refusing to destroy. Re-run: just down confirm=yes" >&2
+      exit 1
+    fi
+    ./deploy.sh down yes

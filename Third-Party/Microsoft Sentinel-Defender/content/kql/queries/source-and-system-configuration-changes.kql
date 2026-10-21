@@ -1,0 +1,7 @@
+// Source, connector, and tenant configuration changes, including system task cleanup.
+SailPointISC_Events
+| where TimeGenerated > ago(24h)
+| where IsConfig
+| project TimeGenerated, Actor, Target, Category, ActionName, TechName, Outcome, SourceName, HostName
+| order by TimeGenerated desc
+| take 200

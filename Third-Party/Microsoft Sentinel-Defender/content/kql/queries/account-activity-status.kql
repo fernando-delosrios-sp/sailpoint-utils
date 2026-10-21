@@ -1,0 +1,10 @@
+// Operational counts by account action, stage, and outcome.
+SailPointISC_AccountActivities
+| where TimeGenerated > ago(7d)
+| summarize
+    Operations = count(),
+    Failures = countif(IsFailure),
+    Stalled = countif(IsStalled),
+    Recipients = dcount(Recipient)
+    by Operation, StageName, Outcome
+| order by Operations desc

@@ -1,0 +1,164 @@
+[
+  {
+    "id": "SailPointISC_Sec_EventTimeline",
+    "displayName": "Security Event Timeline",
+    "category": "SailPoint - Security Events",
+    "file": "security-event-timeline.kql"
+  },
+  {
+    "id": "SailPointISC_Sec_PrivilegedChanges",
+    "displayName": "Privileged or Destructive Changes",
+    "category": "SailPoint - Security Events",
+    "file": "privileged-or-destructive-changes.kql"
+  },
+  {
+    "id": "SailPointISC_Sec_AuthFailures",
+    "displayName": "Authentication Failures",
+    "category": "SailPoint - Security Events",
+    "file": "authentication-failures.kql"
+  },
+  {
+    "id": "SailPointISC_Sec_AuthFailureBursts",
+    "displayName": "Authentication Failure Bursts",
+    "category": "SailPoint - Security Events",
+    "file": "authentication-failure-bursts.kql"
+  },
+  {
+    "id": "SailPointISC_Sec_IdentityLifecycle",
+    "displayName": "Identity Lifecycle Changes",
+    "category": "SailPoint - Security Events",
+    "file": "identity-lifecycle-changes.kql"
+  },
+  {
+    "id": "SailPointISC_Sec_RoleEntitlement",
+    "displayName": "Role and Entitlement Changes",
+    "category": "SailPoint - Security Events",
+    "file": "role-and-entitlement-changes.kql"
+  },
+  {
+    "id": "SailPointISC_Sec_SourceConfig",
+    "displayName": "Source and System Configuration Changes",
+    "category": "SailPoint - Security Events",
+    "file": "source-and-system-configuration-changes.kql"
+  },
+  {
+    "id": "SailPointISC_Sec_TopActorsTargets",
+    "displayName": "Top Security Actors and Targets",
+    "category": "SailPoint - Security Events",
+    "file": "top-security-actors-and-targets.kql"
+  },
+  {
+    "id": "SailPointISC_Sec_InvestigateSubject",
+    "displayName": "Investigate Actor or Target",
+    "category": "SailPoint - Security Events",
+    "file": "investigate-actor-or-target.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_AccountStatus",
+    "displayName": "Account Activity Status Overview",
+    "category": "SailPoint - Account Operations",
+    "file": "account-activity-status.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_AccountFailures",
+    "displayName": "Failed Account Activities",
+    "category": "SailPoint - Account Operations",
+    "file": "failed-account-activities.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_AccountStalled",
+    "displayName": "Stalled Account Activities",
+    "category": "SailPoint - Account Operations",
+    "file": "stalled-account-activities.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_AccountRecent",
+    "displayName": "Recent Account Operations",
+    "category": "SailPoint - Account Operations",
+    "file": "recent-account-operations.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_AccountBySource",
+    "displayName": "Account Operations by Source",
+    "category": "SailPoint - Account Operations",
+    "file": "account-operations-by-source.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_AccountInvestigate",
+    "displayName": "Investigate Account Request",
+    "category": "SailPoint - Account Operations",
+    "file": "investigate-account-request.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_WorkflowStatus",
+    "displayName": "Workflow Execution Status Overview",
+    "category": "SailPoint - Workflow Operations",
+    "file": "workflow-execution-status.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_WorkflowFailures",
+    "displayName": "Failed Workflow Executions",
+    "category": "SailPoint - Workflow Operations",
+    "file": "failed-workflow-executions.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_WorkflowIncomplete",
+    "displayName": "Incomplete Workflow Executions",
+    "category": "SailPoint - Workflow Operations",
+    "file": "incomplete-workflow-executions.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_WorkflowRecent",
+    "displayName": "Recent Workflow Activity",
+    "category": "SailPoint - Workflow Operations",
+    "file": "recent-workflow-activity.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_WorkflowRemediation",
+    "displayName": "Response and Remediation Workflows",
+    "category": "SailPoint - Workflow Operations",
+    "file": "response-and-remediation-workflows.kql"
+  },
+  {
+    "id": "SailPointISC_Ops_WorkflowInvestigate",
+    "displayName": "Investigate Workflow Execution",
+    "category": "SailPoint - Workflow Operations",
+    "file": "investigate-workflow-execution.kql"
+  },
+  {
+    "id": "SailPointISC_Health_TableFreshness",
+    "displayName": "Table Freshness",
+    "category": "SailPoint - Ingestion Health",
+    "file": "table-freshness.kql"
+  },
+  {
+    "id": "SailPointISC_Health_IngestionTrend",
+    "displayName": "Ingestion Volume Trend",
+    "category": "SailPoint - Ingestion Health",
+    "file": "ingestion-volume-trend.kql"
+  },
+  {
+    "id": "SailPointISC_Health_IngestionGaps",
+    "displayName": "Ingestion Gaps",
+    "category": "SailPoint - Ingestion Health",
+    "file": "ingestion-gaps.kql"
+  },
+  {
+    "id": "SailPointISC_Resp_PrivilegedChange",
+    "displayName": "Respond: Privileged identity change",
+    "category": "SailPoint - Response",
+    "file": "respond-privileged-change.kql"
+  },
+  {
+    "id": "SailPointISC_Resp_AuthFailureBurst",
+    "displayName": "Respond: Authentication failure burst",
+    "category": "SailPoint - Response",
+    "file": "respond-auth-failure-burst.kql"
+  },
+  {
+    "id": "SailPointISC_Resp_FailedRemediation",
+    "displayName": "Respond: Failed or stalled remediation",
+    "category": "SailPoint - Response",
+    "file": "respond-failed-remediation.kql"
+  }
+]
