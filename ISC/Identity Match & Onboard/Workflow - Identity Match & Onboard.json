@@ -39,7 +39,7 @@
               "description": "Identity search query combining fuzzy name match and exact email.",
               "name": "Identity Query",
               "transforms": [],
-              "variableA": "(attributes.firstname:{{$.collectDetails.formData.firstName}}~2 AND attributes.lastname:{{$.collectDetails.formData.lastName}}~2) OR attributes.email:\"{{$.collectDetails.formData.email}}\""
+              "variableA": "(attributes.firstname:{{$.collectDetails.formData.firstName}}~2 AND attributes.lastname:{{$.collectDetails.formData.lastName}}~2) OR attributes.email:\"{{$.collectDetails.formData.email}}\" OR attributes.personalEmail:\"{{$.collectDetails.formData.email}}\""
             },
             {
               "description": "ISC API base URL for account creation.",
@@ -327,7 +327,7 @@
       "Find Created Identity": {
         "actionId": "sp:get-identities",
         "attributes": {
-          "inputQuery": "attributes.email:\"{{$.collectDetails.formData.email}}\"",
+          "inputQuery": "@accounts(source.id:\"{{$.setConfiguration.accountsSource}}\" AND accountId:{{$.setConfiguration.accountName}}*) AND (attributes.email:\"{{$.collectDetails.formData.email}}\" OR attributes.personalEmail:\"{{$.collectDetails.formData.email}}\")",
           "searchBy": "searchQuery"
         },
         "description": "Resolves the identity created from the new account so a single identity refresh can run.",

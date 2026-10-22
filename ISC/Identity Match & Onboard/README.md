@@ -96,7 +96,7 @@ flowchart TD
 | Create Account 0–20 | — | `POST /accounts/v1` with that free name |
 | Show Username Limit Reached | Interactive message | Base name and suffixes 1–20 are all taken |
 | Wait For Identity | — | 1 minute pause so the identity cube can appear |
-| Find Created Identity | — | Search by the submitted work email |
+| Find Created Identity | — | Search by the onboarding source account prefix and submitted email (`email` / `personalEmail`) |
 | Check Identity Created | — | Skips refresh when no identity is found yet |
 | Refresh Created Identity | — | `POST /v2025/identities/process` for that identity id (OAuth; experimental header). Failures still show the created confirmation |
 | Show Approval Rejected | Interactive message | Decline summary; no account created |
@@ -174,7 +174,7 @@ The operator sees **Waiting for manager approval** before this form is sent, and
 The **Identity Query** variable combines fuzzy name and exact email:
 
 ```
-(attributes.firstname:{firstName}~2 AND attributes.lastname:{lastName}~2) OR attributes.email:"{email}"
+(attributes.firstname:{firstName}~2 AND attributes.lastname:{lastName}~2) OR attributes.email:"{email}" OR attributes.personalEmail:"{email}"
 ```
 
 The `~2` operator allows approximate name matches. Email is matched exactly. Tune the query if your tenant indexes different attribute names.
