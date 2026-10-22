@@ -381,6 +381,14 @@ function Invoke-SailApi {
         $payload = if (-not [string]::IsNullOrWhiteSpace($stderrPayload)) { $stderrPayload } else { $stdoutPayload }
     }
 
+    if ($result.ExitCode -ne 0) {
+        $errorMsg = if (-not [string]::IsNullOrWhiteSpace($stderrPayload)) { $stderrPayload }
+                    elseif (-not [string]::IsNullOrWhiteSpace($stdoutPayload)) { $stdoutPayload }
+                    elseif (-not [string]::IsNullOrWhiteSpace($stderrText)) { $stderrText.Trim() }
+                    else { $stdoutText.Trim() }
+        throw "sail api $Method $Path failed with exit code $($result.ExitCode): $errorMsg"
+    }
+
     if ($status -ge 400) {
         throw [SailApiError]::new($status, "sail api $Method $Path returned HTTP $status. $payload")
     }
@@ -393,7 +401,7 @@ function Invoke-SailApi {
         return $payload | ConvertFrom-Json
     }
     catch {
-        throw "sail api $Method $Path returned an unreadable response: $($_.Exception.Message)"
+        throw "sail api $Method $Path returned an unreadable response: $($_.Exception.Message). Output was: $payload"
     }
 }
 function Get-SailEnvironmentCatalog {
