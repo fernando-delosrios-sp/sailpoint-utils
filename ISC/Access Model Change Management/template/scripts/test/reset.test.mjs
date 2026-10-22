@@ -169,8 +169,8 @@ describe('readme init row', () => {
       outPath: out,
     });
     const text = readFileSync(out, 'utf8');
-    assert.match(text, /\| drift \| 1 file\(s\) \| unknown \| approved by fernando\.delosrios \|/);
-    assert.match(text, /\| drift \| 1 file\(s\) \| fernando\.delosrios \| rejected by fernando\.delosrios, restored \|/);
+    assert.match(text, /\| drift \| 1 file\(s\) \| unknown \| approved by fernando\.delosrios \| \[issue-37\]\(https:\/\/github\.com\/org\/repo\/issues\/37\) \|/);
+    assert.match(text, /\| drift \| 1 file\(s\) \| fernando\.delosrios \| rejected by fernando\.delosrios, restored \| \[issue-36\]\(https:\/\/github\.com\/org\/repo\/issues\/36\) \|/);
     assert.match(text, /\| change \| \[#30\]\(https:\/\/github\.com\/org\/repo\/pull\/30\) \| @fernando-delosrios-sp \| approved by fernando\.delosrios \|/);
   });
 });

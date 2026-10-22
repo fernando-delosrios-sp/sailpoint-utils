@@ -52,7 +52,10 @@ function changeRow(entry) {
   }
   if (e.kind === 'drift') {
     const n = (e.added?.length ?? 0) + (e.changed?.length ?? 0) + (e.deleted?.length ?? 0);
-    const issue = e.issueUrl ? `[issue](${e.issueUrl})` : '—';
+    const m = e.issueUrl ? String(e.issueUrl).match(/\/issues\/(\d+)(?:[#/?]|$)/) : null;
+    const issueNum = m ? m[1] : (e.issueNumber != null ? String(e.issueNumber) : null);
+    const issueLabel = issueNum ? `issue-${issueNum}` : 'issue';
+    const issue = e.issueUrl ? `[${issueLabel}](${e.issueUrl})` : (issueNum ? `issue-${issueNum}` : '—');
     // Entries written before drift went through governance approval have no
     // `decision` and were auto-committed; keep showing that for history.
     let decision = e.restored ? `${e.decision ?? 'rejected'}, restored` : (e.decision ?? 'committed');
