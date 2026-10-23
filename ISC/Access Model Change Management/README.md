@@ -1,5 +1,7 @@
 # Access Model Change Management
 
+![Access Model Change Management](assets/promo.png)
+
 GitHub-centric governance of SailPoint Identity Security Cloud (ISC) **entitlements** (metadata), **access profiles** and **roles**.
 
 This folder is the **installer and template**. Running the installer creates (or updates) a dedicated GitHub repository wired to one ISC tenant: daily REST backups, pull-request-only changes, ISC Workflow approvals, auto-apply on merge, known-good tags, and governance-group-approved full restore.
@@ -15,6 +17,7 @@ This folder is the **installer and template**. Running the installer creates (or
 | [`installer/`](installer/) | Node CLI that creates the target GitHub repo and enables the ISC tenant |
 | [`template/`](template/) | Files copied into the target repo (scripts, workflows, schemas, `access/`) |
 | [`isc/`](isc/) | Workflow export imported into ISC |
+| [`assets/`](assets/) | Visuals and video demonstrations (`promo.png`, Change Control and Drift Control walkthroughs) |
 
 ## Prerequisites
 
@@ -149,6 +152,10 @@ flowchart LR
 
 ### Changing an access item
 
+<video src="assets/Access%20Change%20Management%20-%20Change%20control.mov" controls="controls" muted="muted" width="100%"></video>
+
+> 📹 **Walkthrough**: [Watch Change Control Demo](assets/Access%20Change%20Management%20-%20Change%20control.mov)
+
 1. Branch from `main`, edit JSON under `access/`.  
 2. Open a PR. CI validates schemas and name references.  
 3. GitHub calls the **AMCM Approval** workflow with `kind: "change"`. The **governance group** is the only approver. Approvers see the GitHub author, PR title, link and change summary in their ISC **Approvals** inbox.  
@@ -160,9 +167,13 @@ Entitlements are **update-only** (name, description, privileged, requestable, ow
 
 ### Daily backup and drift
 
+<video src="assets/Access%20Change%20Management%20-%20Drift%20control.mov" controls="controls" muted="muted" width="100%"></video>
+
+> 📹 **Walkthrough**: [Watch Drift Control Demo](assets/Access%20Change%20Management%20-%20Drift%20control.mov)
+
 The Backup Action snapshots allowlisted entitlements, all access profiles and all roles. The first run on a repository that has no access files and no ledger commits that snapshot to `main` as the baseline, writes the init ledger entry, and tags `known-good/…`. It does not open a drift issue and it does not wipe history; **Actions → Init** is still the reset. After that baseline, if ISC was edited outside git, nothing is committed to `main` automatically. A drift issue lists every path that fits in GitHub’s 65,536-character body. Paths that do not fit are counted and left to the pull request diff. The drift hash and the pull request link stay in the body. GitHub opens an issue labelled `amcm-drift` holding who changed each item, and a pull request from `drift/<content-hash>` whose Files changed tab is live ISC against git. The pull request body says `Fixes #<issue>`, so GitHub lists it as that issue's resolution. Backup then calls the **AMCM Approval** workflow with `kind: "drift"`, which routes to the **governance group**. The approval description is a single truncated string, so it links to the pull request for the diff and to the issue for the full lists. A `drift/*` head does not request a `kind: "change"` approval. A backup that runs again before anyone decides reuses the open issue. The same file contents reuse the pull request; new contents open a new one and close the previous. Approving merges the pull request (the squash message starts with `chore(backup):`, so Apply to ISC does not push those files back). Rejecting or expiry closes the pull request without merging. The decision callback comments the outcome and closes the issue.
 
-Actors come from the events index, searched since the last time git and ISC matched (or the last 14 days when the ledger has no such point). An `ACCESS_ITEM` event identifies its subject by **name only** — there is no target id on these events — so the search and the matching both work by name and object kind. On approve, the decision callback re-detects drift against live ISC (to make sure the drifted paths haven't moved), refreshes the pull request from that snapshot, merges it into `main`, and records a drift ledger entry whose Who column is those actors. On reject, the callback closes the pull request, restores ISC to match git, and records that. On expiry, the pull request is closed, ISC is left unchanged, and the next scheduled backup asks again. Entitlements this repo cannot create or delete are skipped, so a rejected entitlement-only drift can remain and will be asked about again. Audit search is best-effort: a missing Search user level, or no matching event, leaves the actor unknown and does not block the approval.
+Actors come from the events index, searched since the last time git and ISC matched (or the last 14 days when the ledger has no such point). An `ACCESS_ITEM` event identifies its subject by **name only** — there is no target id on these events — so the search and the matching both work by name and object kind. On approve, the decision callback re-detects drift against live ISC (to make sure the drifted paths haven't moved), refreshes the pull request from that snapshot, merges it into `main`, tags it `known-good/…`, and records a drift ledger entry whose Who column is those actors. On reject, the callback closes the pull request, restores ISC to match git, and records that. On expiry, the pull request is closed, ISC is left unchanged, and the next scheduled backup asks again. Entitlements this repo cannot create or delete are skipped, so a rejected entitlement-only drift can remain and will be asked about again. Audit search is best-effort: a missing Search user level, or no matching event, leaves the actor unknown and does not block the approval.
 
 ### Full restore
 
