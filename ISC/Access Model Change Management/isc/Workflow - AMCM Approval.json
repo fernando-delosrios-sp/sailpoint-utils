@@ -28,13 +28,22 @@
         "type": "Mutation"
       },
       "Change or Restore": {
+        "actionId": "sp:compare-strings",
         "choiceList": [
           {
             "comparator": "StringEquals",
             "variableA.$": "$.trigger.kind",
             "variableB": "restore",
             "nextStep": "Governance Approval Restore"
-          },
+          }
+        ],
+        "defaultStep": "Route Drift or Change",
+        "displayName": "Route on trigger payload kind (is restore?)",
+        "type": "choice"
+      },
+      "Route Drift or Change": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
           {
             "comparator": "StringEquals",
             "variableA.$": "$.trigger.kind",
@@ -43,7 +52,7 @@
           }
         ],
         "defaultStep": "Governance Approval Change",
-        "displayName": "Route on trigger payload kind (change vs restore vs drift)",
+        "displayName": "Route on trigger payload kind (is drift?)",
         "type": "choice"
       },
       "Governance Approval Change": {
@@ -68,13 +77,22 @@
         "versionNumber": 1
       },
       "Governance Decision Change": {
+        "actionId": "sp:compare-strings",
         "choiceList": [
           {
             "comparator": "StringEquals",
             "variableA.$": "$.governanceApprovalChange.status",
             "variableB": "APPROVED",
             "nextStep": "Dispatch Approved Change"
-          },
+          }
+        ],
+        "defaultStep": "Governance Expired Change",
+        "displayName": "Governance approved?",
+        "type": "choice"
+      },
+      "Governance Expired Change": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
           {
             "comparator": "StringEquals",
             "variableA.$": "$.governanceApprovalChange.status",
@@ -83,7 +101,7 @@
           }
         ],
         "defaultStep": "Dispatch Rejected Change",
-        "displayName": "Governance approved?",
+        "displayName": "Governance expired?",
         "type": "choice"
       },
       "Dispatch Approved Change": {
@@ -210,6 +228,7 @@
         "versionNumber": 1
       },
       "Decision Restore": {
+        "actionId": "sp:compare-strings",
         "choiceList": [
           {
             "comparator": "StringEquals",
@@ -304,13 +323,22 @@
         "versionNumber": 1
       },
       "Decision Drift": {
+        "actionId": "sp:compare-strings",
         "choiceList": [
           {
             "comparator": "StringEquals",
             "variableA.$": "$.governanceApprovalDrift.status",
             "variableB": "APPROVED",
             "nextStep": "Dispatch Approved Drift"
-          },
+          }
+        ],
+        "defaultStep": "Decision Drift Expired",
+        "displayName": "Approved?",
+        "type": "choice"
+      },
+      "Decision Drift Expired": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
           {
             "comparator": "StringEquals",
             "variableA.$": "$.governanceApprovalDrift.status",
@@ -319,7 +347,7 @@
           }
         ],
         "defaultStep": "Dispatch Rejected Drift",
-        "displayName": "Approved?",
+        "displayName": "Expired?",
         "type": "choice"
       },
       "Dispatch Approved Drift": {
