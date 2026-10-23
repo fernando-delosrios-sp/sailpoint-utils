@@ -98,6 +98,7 @@ export function writeDriftEntry({
   decidedBy = null,
   modifiers = [],
   issueUrl = null,
+  tag = null,
   timestamp = nowIso(),
 }) {
   const dir = monthDir(new Date(timestamp));
@@ -113,6 +114,7 @@ export function writeDriftEntry({
     decision,
     restored,
     ...(decidedBy ? { decidedBy } : {}),
+    ...(tag ? { tag } : {}),
     modifiers,
     issueUrl,
     timestamp,

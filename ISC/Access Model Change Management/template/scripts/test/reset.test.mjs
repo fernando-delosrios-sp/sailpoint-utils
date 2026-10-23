@@ -173,6 +173,40 @@ describe('readme init row', () => {
     assert.match(text, /\| drift \| 1 file\(s\) \| fernando\.delosrios \| rejected by fernando\.delosrios, restored \| \[issue-36\]\(https:\/\/github\.com\/org\/repo\/issues\/36\) \|/);
     assert.match(text, /\| change \| \[#30\]\(https:\/\/github\.com\/org\/repo\/pull\/30\) \| @fernando-delosrios-sp \| approved by fernando\.delosrios \|/);
   });
+
+  it('renders known-good tag alongside issue for accepted drift with a tag', () => {
+    const out = join(mkdtempSync(join(tmpdir(), 'amcm-readme-')), 'README.md');
+    generateReadme({
+      config: {
+        tenant: { name: 'demo', apiUrl: 'https://example.test', uiUrl: '' },
+        entitlementSources: [],
+        approval: { governanceGroupName: 'Gov' },
+        backup: { schedule: '0 2 * * *' },
+      },
+      entries: [
+        {
+          entry: {
+            kind: 'drift',
+            added: ['access/entitlements/source/a.json'],
+            changed: [],
+            deleted: [],
+            modifiers: ['fernando.delosrios'],
+            decision: 'approved',
+            decidedBy: 'fernando.delosrios',
+            tag: 'known-good/20261023T105800Z-pr-45',
+            issueUrl: 'https://github.com/org/repo/issues/44',
+            timestamp: '2026-10-23T10:58:00.000Z',
+          },
+        },
+      ],
+      tags: ['known-good/20261023T105800Z-pr-45'],
+      outPath: out,
+    });
+    const text = readFileSync(out, 'utf8');
+    assert.match(text, /\| drift \| 1 file\(s\) \| fernando\.delosrios \| approved by fernando\.delosrios \| \[`20261023T105800Z-pr-45`\]\(\.\.\/\.\.\/releases\/tag\/known-good%2F20261023T105800Z-pr-45\) \(\[issue-44\]\(https:\/\/github\.com\/org\/repo\/issues\/44\)\) \|/);
+    assert.match(text, /## Known-good tags/);
+    assert.match(text, /known-good\/20261023T105800Z-pr-45/);
+  });
 });
 
 describe('init workflow contract', () => {

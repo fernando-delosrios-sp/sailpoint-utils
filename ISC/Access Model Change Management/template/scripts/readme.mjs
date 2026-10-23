@@ -68,7 +68,9 @@ function changeRow(entry) {
       .map((name) => String(name).replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim())
       .filter(Boolean)
       .join(', ') || 'unknown';
-    return `| drift | ${n} file(s) | ${who} | ${decision} | ${issue} | ${fmtTs(e.timestamp)} |`;
+    const tag = tagCell(e.tag);
+    const tagOrIssue = e.tag ? (issue !== '—' ? `${tag} (${issue})` : tag) : issue;
+    return `| drift | ${n} file(s) | ${who} | ${decision} | ${tagOrIssue} | ${fmtTs(e.timestamp)} |`;
   }
   return `| ${e.kind} | — | — | — | — | ${fmtTs(e.timestamp)} |`;
 }

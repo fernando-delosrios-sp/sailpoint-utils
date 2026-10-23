@@ -510,9 +510,20 @@ jobs:
             node scripts/cli.mjs backup --snapshot /tmp/isc-snapshot.json
             git add access/
             git diff --cached --quiet || git commit -m "chore(backup): sync drift from ISC (${DECIDED_BY:+"approved by $DECIDED_BY"}${DECIDED_BY:-"governance approved"})"
+            git push origin main
           fi
-          jq -n --slurpfile d /tmp/drift-now.json --arg issue "${{ steps.issue.outputs.url }}" --arg decidedBy "$DECIDED_BY" \
-            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", issueUrl:$issue, decidedBy:(if $decidedBy != "" then $decidedBy else null end), modifiers:($d[0].actors.modifiers // [])}' \
+          DRIFT_PR_NUM=""
+          if [ -n "$PR_URL" ]; then
+            DRIFT_PR_NUM=$(echo "$PR_URL" | grep -oE '[0-9]+$' || true)
+          fi
+          if [ -n "$DRIFT_PR_NUM" ]; then
+            TAG=$(node --input-type=module -e "import { buildKnownGoodTagName } from './scripts/tags.mjs'; console.log(buildKnownGoodTagName({ prNumber: $DRIFT_PR_NUM }))")
+          else
+            TAG=$(node --input-type=module -e "import { buildKnownGoodTagName } from './scripts/tags.mjs'; console.log(buildKnownGoodTagName())")
+          fi
+          node scripts/cli.mjs tag-known-good --tag "$TAG" --message "Known-good snapshot for drift ${PR_URL:+"PR #$DRIFT_PR_NUM"}${PR_URL:-"sync"}"
+          jq -n --slurpfile d /tmp/drift-now.json --arg issue "${{ steps.issue.outputs.url }}" --arg decidedBy "$DECIDED_BY" --arg tag "$TAG" \
+            '{added:$d[0].added, changed:$d[0].changed, deleted:$d[0].deleted, driftHash:$d[0].driftHash, decision:"approved", issueUrl:$issue, tag:$tag, decidedBy:(if $decidedBy != "" then $decidedBy else null end), modifiers:($d[0].actors.modifiers // [])}' \
             | node scripts/cli.mjs ledger-drift
           git fetch origin '+refs/tags/known-good/*:refs/tags/known-good/*' '+refs/tags/isc-applied/*:refs/tags/isc-applied/*'
           node scripts/cli.mjs readme
