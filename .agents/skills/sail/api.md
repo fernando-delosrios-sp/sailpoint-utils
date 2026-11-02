@@ -1,47 +1,53 @@
 # sail api
 
-`sail api` calls the API host stored on the selected environment. The path, including its `/service/vN` prefix, comes from the group file. `/v2026` is the secondary current prefix in front of that; it is not legacy. Examples in `sail api --help` that show `/beta/...` are legacy; ignore them.
+`sail api` calls the API host stored on the selected environment. The path, including its `/service/vN` prefix, comes from the group file. `/v2026` is the secondary current prefix in front of that; it is not legacy. Ignore examples in `sail api --help` showing `/beta/...` as legacy.
 
-## Load
+## Discovery
 
-1. Open [`api/index.md`](api/index.md) and the one group file for the object.
-2. Open [`api/conventions.md`](api/conventions.md) when the call lists, filters, sorts, paginates, or searches.
+- Consult [`api/index.md`](api/index.md) and the matching group file to discover unknown paths, parameters, or schemas.
+- If the endpoint path and parameters are already known (e.g. `/v3/search`, `/v3/sources`, `/transforms/v1`, `/identities/v1`), execute directly without loading reference files.
+- Consult [`api/conventions.md`](api/conventions.md) when formatting filters, sorting, or pagination.
 
-**Done when:** the group file is loaded before the first request, and conventions are loaded when the call is a collection or a search.
+## Calling & Stream Output
 
-## Call
-
-Always `--env <name>`.
+Always pass `--env <name>`.
 
 | Method | Command | Body / query |
 | --- | --- | --- |
 | GET | `sail api get <path>` | repeated `-q key=value` |
-| POST | `sail api post <path>` | `-b` or `-f`. `--content-type` when the body is not JSON |
-| PUT | `sail api put <path>` | `-b` or `-f` |
-| PATCH | `sail api patch <path>` | `-b` or `-f`. Optional `-o` to write the response |
+| POST | `sail api post <path>` | `-b '{"..."}'` or `-f <file>`. `--content-type` if not JSON |
+| PUT | `sail api put <path>` | `-b '{"..."}'` or `-f <file>` |
+| PATCH | `sail api patch <path>` | `-b '{"..."}'` or `-f <file>`. Optional `-o <file>` to save response |
 | DELETE | `sail api delete <path>` | repeated `-q key=value` |
 
-Shared flags: repeated `-H "Key: Value"`, `-j` JSONPath, `-p` pretty. Take any other flag from `sail api <method> --help`.
+Shared flags: repeated `-H "Key: Value"`, `-j` JSONPath, `-p` pretty. Other flags from `sail api <method> --help`.
+Endpoints marked Experimental need `-H "X-SailPoint-Experimental: true"`.
 
-An endpoint marked Experimental in the group file needs `-H "X-SailPoint-Experimental: true"`.
+### Extracting Clean JSON
 
-`sail` attaches the bearer token. A 401 is an auth gap: return to [`env.md`](env.md). Leave `/oauth/token` alone.
+The `sail` CLI prints timestamped INFO logs and the HTTP response body to **STDERR**, and prints only the HTTP status (`Status: 200 OK`) to **STDOUT**. Piping raw `sail api` directly to `jq` fails because stdout contains only the status line.
 
-A trailing `Status:` line after the body is CLI chrome. Strip it before parsing JSON.
+To extract pure JSON in the shell:
+```bash
+sail api get <path> --env <name> 2>&1 | grep -v '^[0-9]\{4\}/' | grep -v '^Status:'
+```
+This merges streams, strips CLI log lines and the trailing `Status:` line, and yields valid JSON ready for `jq` or file redirection.
 
-Use the domain command (`workflow`, `transform`, `search`, `spconfig`, `conn`, `cluster`, `va`) when that command already does the job. Those commands may still call a legacy path; their `--help` prints the default endpoint.
+`sail` attaches the bearer token automatically. A 401 is an auth gap: return to [`env.md`](env.md).
+
+Use domain commands (`workflow`, `transform`, `search`, `spconfig`, `conn`, `cluster`, `va`) when they provide higher-level operations.
 
 ## Pagination
 
-`sail api` has no pager. For a collection GET:
+`sail api` has no automatic pager. For collection GET requests:
 
-1. `-q limit=250 -q offset=<n>` unless the group file states another page size.
-2. Append the page. Advance offset by the page size.
+1. Pass `-q limit=250 -q offset=<n>` (default collection limit is 250).
+2. Append each page and increment `offset` by page size.
 3. Stop when a page returns fewer items than `limit`.
-4. Cap a long loop and report how many rows were fetched.
+4. Cap long loops and report the count fetched.
 
-Search paging past 10,000 rows is `searchAfter` in [`api/conventions.md`](api/conventions.md). On 429, wait the `Retry-After` seconds and retry.
+Search paging past 10,000 rows uses `searchAfter` in [`api/conventions.md`](api/conventions.md). On 429, wait `Retry-After` seconds and retry.
 
 ## Done when
 
-The method and path finished, or pagination finished or capped with a count, and stdout or the error is summarized.
+The API request or pagination completed, and the resulting payload or clear error is reported.

@@ -4,18 +4,23 @@ Flags: `sail transform --help` (alias `tran`).
 
 ## Intent map
 
-| Intent | Start with |
-| --- | --- |
-| List / download | `sail transform list`, `sail transform download` |
-| Create / update / delete | `sail transform create`, `update`, `delete` |
-| Preview | `sail transform preview` with `--file` and `--identity` or `--profile`, plus `--result-only` |
+| Intent | Command | Notes |
+| --- | --- | --- |
+| List | `sail transform list` | Displays table of transform names & IDs |
+| Get single transform | `sail api get /v3/transforms/<id>` | Note: `sail transform get` does not exist |
+| Download all | `sail transform download` | Downloads all transforms as JSON files |
+| Create / update / delete | `sail transform create`, `update`, `delete` | Pass `-f <file>` |
+| Preview | `sail transform preview` | Pass `--file <f>`, `--identity <id>` or `--profile <p>`, plus `--result-only` |
 
-Always `--env <name>`. Mutating goals use the single goal confirm from `SKILL.md`.
+Always pass `--env <name>`. Mutating operations (create, update, delete) take the goal confirm from `SKILL.md`.
 
-The command's default endpoint is `/v3/transforms` (`--transforms-endpoint`). The collection path is `/transforms/v1` in the Transforms group. Keep the domain command on its default unless that call 404s, then override the flag or call the group-file path with [`api.md`](api.md).
+> [!IMPORTANT]
+> `sail transform` does NOT have a `get` subcommand. Fetch individual transforms via `sail api get /v3/transforms/<id> --env <name>` or query by name with `-q 'filters=name eq "<name>"'`.
+>
+> `sail transform preview` prompts interactively unless both `--file` and `--identity` (or `--profile`) along with `--result-only` are passed.
 
-Preview without those flags sits in an interactive prompt. Pass them so the run finishes.
+Default endpoint is `/v3/transforms` (`--transforms-endpoint`). If needed, use `/transforms/v1` via [`api.md`](api.md).
 
 ## Done when
 
-The transform create, read, update, delete, or download finished, or preview output is back with the operator.
+The transform create, read, update, delete, download, or preview output is complete.

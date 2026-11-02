@@ -4,17 +4,24 @@ Config lives in `~/.sailpoint/config.yaml`. PAT secrets live in the OS keyring. 
 
 Collect name, tenant, and auth choices with the host’s interactive question UI.
 
+## Inspection
+
+`~/.sailpoint/config.yaml` is the primary and safest inspection source. It contains all configured environments, base URLs, tenant URLs, and `activeenvironment`.
+
+> [!CAUTION]
+> Do NOT run bare `sail env list` or `sail env show`. Both prompt with `Press Enter to continue` and block non-interactive execution. Never redirect with `< /dev/null` (causes an infinite loop of EOF warnings). If invoking via CLI, pipe a newline: `printf "\n" | sail env list`.
+
 ## Commands
 
-| Intent | Command |
-| --- | --- |
-| List / show | `sail env list`, `sail env show [name]` |
-| Create | `sail env create <name>` |
-| Update / delete | `sail env update [name]`, `sail env delete [name]` |
-| Auth mode | `sail set auth pat` or `sail set auth oauth` |
-| Store PAT | `sail set pat` for the target env |
+| Intent | Command / Action | Notes |
+| --- | --- | --- |
+| List / show | Read `~/.sailpoint/config.yaml` | Instant, non-interactive; or `printf "\n" \| sail env list` |
+| Create | `sail env create <name>` | Prompts for tenant URL |
+| Update / delete | `sail env update [name]`, `sail env delete [name]` | Target specific env |
+| Auth mode | `sail set auth pat` or `sail set auth oauth` | Per active or target env |
+| Store PAT | `sail set pat --env <name>` | Prompts for client ID & secret in terminal |
 
-This skill passes `--env <name>` on each command. Leave `sail env use` for the case where the operator wants to change their shell default.
+Always pass `--env <name>` explicitly on commands rather than relying on global active environment.
 
 ## Create
 
@@ -24,7 +31,7 @@ This skill passes `--env <name>` on each command. Leave `sail env use` for the c
 4. Run `sail set pat --env <name>` in the agent terminal. The operator types the client ID and secret there (`*` echoes). Then `sail set auth pat` if the mode is not already PAT.
 5. Continue the original goal with `--env <name>`.
 
-The first PAT is created in the tenant admin UI. Later PAT management is the [Personal Access Tokens](api/groups/personal-access-tokens.md) group, which itself requires a working auth.
+The first PAT is created in the tenant admin UI. Later PAT management is the [Personal Access Tokens](api/groups/personal-access-tokens.md) group, which itself requires working auth.
 
 ### OAuth
 
@@ -51,4 +58,4 @@ When `SAIL_BASE_URL` is set it overrides the named environment for that process,
 
 ## Done when
 
-The named environment exists and a read succeeds (`sail env show --env <name>` or a small `sail api get`), or the operator has the exact install or auth step still open.
+The target environment exists and a read succeeds (`sail api get /v3/public-identities-config --env <name>` or `printf "\n" | sail env show <name>`), or the operator has the exact install or auth step still open.

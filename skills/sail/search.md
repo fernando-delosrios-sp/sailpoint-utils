@@ -4,17 +4,26 @@ Flags: `sail search --help` (alias `se`).
 
 ## Intent map
 
-| Intent | Start with |
-| --- | --- |
-| Ad-hoc query | `sail search query "<query>" --indices <name>` |
-| Template | `sail search template` |
+| Intent | Command / Method | Output |
+| --- | --- | --- |
+| Inline query (preferred) | `sail api post /v3/search -b '{"indices":["<idx>"],"query":{"query":"<query>"}}'` | Direct JSON stream to stdout/pipe |
+| File export query | `sail search query "<query>" --indices <idx>` | Writes JSON file to `search_results/` |
+| Template search | `sail search template` | Template query execution |
 
-Indices the command accepts: `accessprofiles`, `accountactivities`, `entitlements`, `events`, `identities`, `roles`. Results write JSON under `search_results/` unless `--folderPath` says otherwise. Template file location is `sail set searchTemplates`.
+Indices accepted: `accessprofiles`, `accountactivities`, `entitlements`, `events`, `identities`, `roles`.
 
-Always `--env <name>`. This command is read-only. A later write that uses the hits takes the mutating confirm from `SKILL.md`.
+### Inline Search (No Disk Litter)
 
-A custom body, aggregation, or `searchAfter` page past 10,000 rows is `sail api` against the Search group. Open [`api/conventions.md`](api/conventions.md) for that paging.
+`sail search query` always writes output to a file in `search_results/` rather than terminal stdout. For interactive tasks, debugging, or piping results to `jq`, prefer raw REST search:
+
+```bash
+sail api post /v3/search -b '{"indices":["identities"],"query":{"query":"status:ACTIVE"}}' --env <name> 2>&1 | grep -v '^[0-9]\{4\}/' | grep -v '^Status:' | jq .
+```
+
+Always pass `--env <name>`. Search is read-only; any subsequent mutation that acts on hits requires the goal confirm in `SKILL.md`.
+
+For aggregations, custom payloads, or `searchAfter` pagination past 10,000 rows, consult [`api/conventions.md`](api/conventions.md).
 
 ## Done when
 
-The query or template finished and the operator has the result path or a summary of the hits.
+The query completed and search hits are summarized or the export file path is delivered to the operator.
