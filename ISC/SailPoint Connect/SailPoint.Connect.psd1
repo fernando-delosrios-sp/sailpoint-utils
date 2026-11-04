@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.0.1'
+    ModuleVersion = '1.0.2'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -48,7 +48,6 @@
     # Aliases to export from this module, for best performance, do not use wildcards
     AliasesToExport = @(
         'sailpoint-connect'
-        'Connect-SailPointGCP'
     )
 
     # Private data to pass to the module specified in RootModule/ModuleList
@@ -80,7 +79,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Fix uninitialized console variables in strict mode and positional null argument binding when invoking platform scripts.'
+            ReleaseNotes = 'Fix Databricks wizard target resolution, forward wizard/interactive state to IQService and M365 Access Profiles, and align parameter bindings across platform scripts.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'

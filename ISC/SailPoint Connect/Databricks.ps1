@@ -66,6 +66,9 @@ if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $Connector
     return
 }
 Start-IntegrationWizardFlow -Platform 'Databricks' -ScriptName 'Databricks.ps1' -CoreOptionHelp $coreHelp -Context $context `
-    -PickTarget { Get-IntegrationWizardDefinition -Id 'databricks-connector' } `
+    -PickTarget {
+        $context['Connector'] = $true
+        Get-IntegrationWizardDefinition -Id 'databricks-connector'
+    } `
     -Discover { param($n, $c) @() } `
     -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx }

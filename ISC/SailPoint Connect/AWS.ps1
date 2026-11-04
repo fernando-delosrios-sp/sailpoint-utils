@@ -65,6 +65,14 @@ param(
 
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
+    [string]$RoleName,
+
+    [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'SaaSConnector')]
+    [string]$EntroRoleName,
+
+    [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'CiemConnector')]
     [string]$ProfileName,
 
     [Parameter(ParameterSetName = 'SaaSConnector')]
@@ -136,6 +144,8 @@ $context = @{
     Action           = $Action
     IscExternalId    = $IscExternalId
     EntroExternalId  = $EntroExternalId
+    RoleName         = $RoleName
+    EntroRoleName    = $EntroRoleName
     ProfileName      = $ProfileName
     Feature          = $Feature
     CloudTrailBucket = $CloudTrailBucket

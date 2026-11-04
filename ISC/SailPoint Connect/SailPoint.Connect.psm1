@@ -114,7 +114,7 @@ function Invoke-SailPointConnect {
         }
 
         Write-Step 'SailPoint Connect'
-        Write-Host 'Progressive-disclosure setup for ISC connectors and Entro onboarding.' -ForegroundColor Cyan
+        Write-Host 'Guided setup for ISC connectors and Entro onboarding.' -ForegroundColor Cyan
         Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
 
         $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'IQService', 'M365AccessProfiles')
@@ -176,11 +176,18 @@ function Invoke-SailPointConnect {
         }
         'IQService' {
             $script = Join-Path $script:ModuleRoot 'IQService Control.ps1'
-            if ($hasExtra) { & $script @RemainingArguments } else { & $script }
+            $pass = @{}
+            if ($Wizard) { $pass['Wizard'] = $true }
+            if ($NonInteractive) { $pass['NonInteractive'] = $true }
+            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
         }
         'M365AccessProfiles' {
             $script = Join-Path $script:ModuleRoot 'Microsoft 365 Access Profiles.ps1'
-            if ($hasExtra) { & $script @RemainingArguments } else { & $script }
+            $pass = @{}
+            if ($Wizard) { $pass['Wizard'] = $true }
+            if ($NonInteractive) { $pass['NonInteractive'] = $true }
+            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
         }
     }
 }
@@ -277,8 +284,8 @@ function Connect-SailPointAWS {
         [string]$IscExternalId,
         [string]$EntroExternalId,
         [string]$RoleName,
+        [string]$EntroRoleName,
         [string]$ProfileName,
-        [switch]$RotateSecret,
         [switch]$NonInteractive,
         [string[]]$Feature,
         [string]$CloudTrailBucket,
@@ -581,21 +588,37 @@ function Connect-SailPointDatabricks {
 function Start-SailPointIQServiceControl {
     [CmdletBinding()]
     param(
+        [switch]$Wizard,
         [ValidateSet('Download', 'Install', 'Update', 'Uninstall', 'Start', 'Stop', 'Restart', 'SetLogLevel', 'StreamLogs', 'Status', 'Unblock', 'EnableLdaps')]
         [string]$Action,
         [string]$InstallPath,
         [string]$InstanceName,
         [string]$DownloadUri,
         [string]$ZipPath,
+        [int]$Port,
+        [int]$TlsPort,
+        [switch]$SkipSecondary,
+        [ValidateSet('Off', 'Error', 'Info', 'Debug', 'Trace')]
         [string]$LogLevel,
-        [switch]$NonInteractive,
-        [switch]$SkipLdapsVerification,
-        [string]$LdapsCertSubject,
-        [string]$LdapsExportDirectory,
-        [string]$LdapsPort
+        [string]$TraceFile,
+        [int]$Tail = 50,
+        [switch]$StartAfterInstall,
+        [Alias('LdapsExportDirectory')]
+        [string]$PemOutputPath,
+        [string]$Thumbprint,
+        [Alias('LdapsCertSubject')]
+        [string[]]$DnsName,
+        [switch]$RestartNtds,
+        [switch]$CreateSelfSigned,
+        [switch]$NonInteractive
     )
     $script = Join-Path $script:ModuleRoot 'IQService Control.ps1'
-    & $script @PSBoundParameters
+    $pass = @{}
+    foreach ($k in $PSBoundParameters.Keys) { $pass[$k] = $PSBoundParameters[$k] }
+    if (-not $Action -and -not $pass.ContainsKey('Wizard') -and -not $NonInteractive) {
+        $pass['Wizard'] = $true
+    }
+    & $script @pass
 }
 
 <#
@@ -637,19 +660,30 @@ function Start-SailPointIQServiceControl {
 function New-SailPointM365AccessProfile {
     [CmdletBinding()]
     param(
+        [switch]$Wizard,
         [string]$Environment,
         [string]$ConfigPath,
         [string]$SailpointConfigPath,
         [string]$SourceId,
         [string[]]$PlanValues,
-        [string]$AccessProfilePrefix,
+        [string]$AccessProfilePrefix = 'M365 - ',
         [string]$ApplicationName,
         [switch]$SkipApplication,
-        [string]$OwnerIdentityId,
+        [Alias('OwnerIdentityId')]
+        [string]$OwnerId,
+        [string]$PreviousManifestPath,
+        [ValidateSet('Ask', 'Skip', 'Update')]
+        [string]$ExistingItemAction = 'Ask',
+        [string]$OutputDirectory,
         [switch]$NonInteractive
     )
     $script = Join-Path $script:ModuleRoot 'Microsoft 365 Access Profiles.ps1'
-    & $script @PSBoundParameters
+    $pass = @{}
+    foreach ($k in $PSBoundParameters.Keys) { $pass[$k] = $PSBoundParameters[$k] }
+    if (-not $Environment -and -not $PreviousManifestPath -and -not $pass.ContainsKey('Wizard') -and -not $NonInteractive) {
+        $pass['Wizard'] = $true
+    }
+    & $script @pass
 }
 
 <#
@@ -722,7 +756,6 @@ function Set-SailPointConnectProject {
 
 # Aliases
 Set-Alias -Name 'sailpoint-connect' -Value 'Invoke-SailPointConnect' -Description 'SailPoint Connect unified runner'
-Set-Alias -Name 'Connect-SailPointGCP' -Value 'Connect-SailPointGoogleCloud' -Description 'Google Cloud / Workspace connector setup'
 
 Export-ModuleMember -Function @(
     'Invoke-SailPointConnect',
@@ -735,6 +768,5 @@ Export-ModuleMember -Function @(
     'Get-SailPointConnectProject',
     'Set-SailPointConnectProject'
 ) -Alias @(
-    'sailpoint-connect',
-    'Connect-SailPointGCP'
+    'sailpoint-connect'
 )

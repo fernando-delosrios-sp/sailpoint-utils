@@ -70,6 +70,10 @@ param(
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'BothEntro')]
     [string]$ClientId,
+    [Parameter(ParameterSetName = 'GcpEntro')]
+    [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'BothEntro')]
+    [string]$ServiceAccountName,
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
@@ -128,7 +132,7 @@ $context = @{
     GcpEntro = [bool]$GcpEntro; WorkspaceEntro = [bool]$WorkspaceEntro
     Access = $Access; Action = $Action
     OrganizationId = $OrganizationId; ProjectId = $ProjectId; ImpersonateUser = $ImpersonateUser; Feature = $Feature
-    Method = $Method; ClientId = $ClientId; OutputDirectory = $OutputDirectory
+    Method = $Method; ClientId = $ClientId; ServiceAccountName = $ServiceAccountName; OutputDirectory = $OutputDirectory
     Project = $Project
 }
 if ($PSBoundParameters.ContainsKey('ApplyPreconditionFix')) {

@@ -65,7 +65,7 @@ Connect-SailPointDatabricks -Wizard
 | [`Invoke-SailPointConnect`](cmdlets/Invoke-SailPointConnect.md) | `sailpoint-connect` | Unified entry point with interactive platform picker |
 | [`Connect-SailPointAWS`](cmdlets/Connect-SailPointAWS.md) | — | Configures AWS SaaS connector, CIEM, and Entro |
 | [`Connect-SailPointAzure`](cmdlets/Connect-SailPointAzure.md) | — | Configures Microsoft Entra ID connector and Entro |
-| [`Connect-SailPointGoogleCloud`](cmdlets/Connect-SailPointGoogleCloud.md) | `Connect-SailPointGCP` | Configures Google Workspace connector, GCP CIEM, and Entro |
+| [`Connect-SailPointGoogleCloud`](cmdlets/Connect-SailPointGoogleCloud.md) | — | Configures Google Workspace connector, GCP CIEM, and Entro |
 | [`Connect-SailPointDatabricks`](cmdlets/Connect-SailPointDatabricks.md) | — | Configures Databricks service principal and OAuth M2M |
 | [`Start-SailPointIQServiceControl`](cmdlets/Start-SailPointIQServiceControl.md) | — | Installs, upgrades, and streams IQService logs on Windows |
 | [`New-SailPointM365AccessProfile`](cmdlets/New-SailPointM365AccessProfile.md) | — | Discovers Entra service plans and creates ISC access profiles |

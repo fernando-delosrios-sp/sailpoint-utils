@@ -14,7 +14,7 @@ Connect-SailPointGoogleCloud [-Wizard] [-SaaSConnector] [-CiemConnector]
 
 ## Description
 
-`Connect-SailPointGoogleCloud` (alias `Connect-SailPointGCP`) sets up Google Cloud and Google Workspace integrations:
+`Connect-SailPointGoogleCloud` sets up Google Cloud and Google Workspace integrations:
 1. **Google Workspace SaaS connector**: Configures service account keys or OAuth2 consent with domain-wide delegation.
 2. **Google Cloud CIEM connector**: Assigns IAM audit logging and viewer permissions.
 3. **Entro GCP Organization integration**: Automated service account provisioning, organization IAM grant, and audit log verification.
