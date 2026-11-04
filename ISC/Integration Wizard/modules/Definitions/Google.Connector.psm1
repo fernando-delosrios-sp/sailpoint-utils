@@ -45,6 +45,7 @@ function Get-GoogleLegacyArguments {
 }
 
 function Invoke-GoogleLegacyFromContext {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)][ValidateSet('Saas', 'Ciem')]
         [string]$Mode,
@@ -53,7 +54,7 @@ function Invoke-GoogleLegacyFromContext {
     $impl = Join-Path $PSScriptRoot '../Legacy/GoogleCloud.Implementation.ps1'
     $splat = Get-GoogleLegacyArguments -Mode $Mode -Context $Context
     if ($Context['Access'] -eq 'ReadOnly') { $splat.AggregationOnly = $true }
-    & $impl @splat
+    & $impl @splat -WhatIf:$WhatIfPreference
 }
 
 function Register-GoogleConnectorDefinitions {
@@ -75,7 +76,7 @@ function Register-GoogleConnectorDefinitions {
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Keys and connection settings'; Required = $false }
         )
         Steps        = { param($ctx) @() }
-        LegacyRun    = { param($ctx) Invoke-GoogleLegacyFromContext -Mode 'Saas' -Context $ctx }
+        LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-GoogleLegacyFromContext -Mode 'Saas' -Context $ctx -WhatIf:$WhatIfPreference }
     }
     Register-IntegrationWizardDefinition @{
         Id           = 'google-ciem-connector'
@@ -96,7 +97,7 @@ function Register-GoogleConnectorDefinitions {
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Artifacts'; Required = $false }
         )
         Steps        = { param($ctx) @() }
-        LegacyRun    = { param($ctx) Invoke-GoogleLegacyFromContext -Mode 'Ciem' -Context $ctx }
+        LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-GoogleLegacyFromContext -Mode 'Ciem' -Context $ctx -WhatIf:$WhatIfPreference }
     }
 }
 

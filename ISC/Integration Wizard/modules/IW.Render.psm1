@@ -367,12 +367,13 @@ function New-IntegrationWizardRequirementsDoc {
 }
 
 function Invoke-IntegrationWizardMemberRun {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)][hashtable]$Member,
         [Parameter(Mandatory)][hashtable]$Context
     )
     if ($Member['LegacyRun']) {
-        & $Member['LegacyRun'] $Context
+        & $Member['LegacyRun'] $Context -WhatIf:$WhatIfPreference
     }
     else {
         Invoke-IntegrationWizardRun -Definition $Member -Context $Context -WhatIfPreference:$WhatIfPreference
@@ -383,6 +384,7 @@ function Invoke-IntegrationWizardMemberRun {
 }
 
 function Invoke-IntegrationWizardAction {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)][hashtable]$Definition,
         [Parameter(Mandatory)][hashtable]$Context
@@ -394,11 +396,11 @@ function Invoke-IntegrationWizardAction {
                 foreach ($member in @($Definition.Members)) {
                     Write-Host ''
                     Write-Host "--- $($member.Title) ---" -ForegroundColor Cyan
-                    Invoke-IntegrationWizardMemberRun -Member $member -Context $Context
+                    Invoke-IntegrationWizardMemberRun -Member $member -Context $Context -WhatIf:$WhatIfPreference
                 }
             }
             elseif ($Definition['LegacyRun']) {
-                & $Definition['LegacyRun'] $Context
+                & $Definition['LegacyRun'] $Context -WhatIf:$WhatIfPreference
                 if ($Definition['OnRunComplete']) { & $Definition['OnRunComplete'] $Context }
             }
             else {

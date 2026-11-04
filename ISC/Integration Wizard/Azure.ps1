@@ -103,4 +103,4 @@ Start-IntegrationWizardFlow -Platform 'Azure' -ScriptName 'Azure.ps1' -CoreOptio
         }
         @()
     } `
-    -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx }
+    -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx -WhatIf:$WhatIfPreference }

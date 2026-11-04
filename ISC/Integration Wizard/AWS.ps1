@@ -183,5 +183,5 @@ Start-IntegrationWizardFlow -Platform 'AWS' -ScriptName 'AWS.ps1' -CoreOptionHel
     } `
     -Execute {
         param($def, $ctx)
-        Invoke-IntegrationWizardAction -Definition $def -Context $ctx
+        Invoke-IntegrationWizardAction -Definition $def -Context $ctx -WhatIf:$WhatIfPreference
     }

@@ -31,7 +31,7 @@ function Get-AwsLegacyArguments {
         ExternalId      = if ($Context['IscExternalId']) { $Context['IscExternalId'] } else { $Context['ExternalId'] }
         ProfileName     = $Context['ProfileName']
         Region          = if ($Context['Region']) { $Context['Region'] } else { 'us-east-1' }
-        RoleName        = $Context['RoleName']
+        RoleName        = if ($Context['RoleName']) { $Context['RoleName'] } else { 'SailPointAWSRole' }
         PolicySet       = if ($Context['PolicySet']) { $Context['PolicySet'] } else { 'Mgo' }
         Scope           = if ($Context['Scope']) { $Context['Scope'] } else { 'CurrentAccount' }
         OutputDirectory = $Context['OutputDirectory']
@@ -47,6 +47,7 @@ function Get-AwsLegacyArguments {
 }
 
 function Invoke-AwsLegacyFromContext {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)][string]$SourceType,
         [Parameter(Mandatory)][hashtable]$Context
@@ -62,9 +63,11 @@ function Invoke-AwsLegacyFromContext {
         foreach ($k in @('InventoryStackName', 'ActivityStackName', 'CiemActivity', 'EnableIdentityStoreReadOnly', 'EnableIdentityStoreProvision', 'TrailName', 'CloudTrailArn', 'CloudTrailBucketAccountId')) {
             if ($Context[$k]) { $splat[$k] = $Context[$k] }
         }
-        if ($Context['Access'] -eq 'ReadOnly') {
-            $splat['EnableIdentityStoreReadOnly'] = 'true'
-            $splat['EnableIdentityStoreProvision'] = 'false'
+        if ($splat['Scope'] -eq 'Organization') {
+            if ($Context['Access'] -eq 'ReadOnly') {
+                $splat['EnableIdentityStoreReadOnly'] = 'true'
+                $splat['EnableIdentityStoreProvision'] = 'false'
+            }
         }
     }
     else {
@@ -72,7 +75,7 @@ function Invoke-AwsLegacyFromContext {
             if ($Context[$k]) { $splat[$k] = $Context[$k] }
         }
     }
-    & $impl @splat
+    & $impl @splat -WhatIf:$WhatIfPreference
 }
 
 function Register-AwsConnectorDefinitions {
@@ -100,7 +103,7 @@ function Register-AwsConnectorDefinitions {
             @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: ActivityInsights, AgentDiscovery, Ciem)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
         )
         Steps        = { param($ctx) @() }
-        LegacyRun    = { param($ctx) Invoke-AwsLegacyFromContext -SourceType 'AwsSaas' -Context $ctx }
+        LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AwsLegacyFromContext -SourceType 'AwsSaas' -Context $ctx -WhatIf:$WhatIfPreference }
     }
     Register-IntegrationWizardDefinition @{
         Id           = 'aws-ciem-connector'
@@ -118,7 +121,7 @@ function Register-AwsConnectorDefinitions {
             @{ Name = 'Scope'; Source = 'Supply'; Prompt = 'Scope'; Purpose = 'Single account or organization'; Required = $false; ValidateSet = @('CurrentAccount', 'Organization'); Default = 'CurrentAccount' }
         )
         Steps        = { param($ctx) @() }
-        LegacyRun    = { param($ctx) Invoke-AwsLegacyFromContext -SourceType 'CiemAws' -Context $ctx }
+        LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AwsLegacyFromContext -SourceType 'CiemAws' -Context $ctx -WhatIf:$WhatIfPreference }
     }
 }
 

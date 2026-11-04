@@ -32,10 +32,11 @@ function Get-AzureLegacyArguments {
 }
 
 function Invoke-AzureLegacyFromContext {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param([Parameter(Mandatory)][hashtable]$Context)
     $impl = Join-Path $PSScriptRoot '../Legacy/Azure.Implementation.ps1'
     $parameters = Get-AzureLegacyArguments -Context $Context
-    & $impl @parameters
+    & $impl @parameters -WhatIf:$WhatIfPreference
 }
 
 function Register-AzureConnectorDefinitions {
@@ -58,7 +59,7 @@ function Register-AzureConnectorDefinitions {
             @{ Name = 'RotateSecret'; Source = 'Supply'; Prompt = 'Rotate secret'; Purpose = 'Create new client secret on update'; Required = $false }
         )
         Steps        = { param($ctx) @() }
-        LegacyRun    = { param($ctx) Invoke-AzureLegacyFromContext -Context $ctx }
+        LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AzureLegacyFromContext -Context $ctx -WhatIf:$WhatIfPreference }
     }
 }
 

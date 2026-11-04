@@ -472,6 +472,7 @@ function Resolve-IntegrationWizardAction {
 }
 
 function Start-IntegrationWizardFlow {
+    [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory)][string]$Platform,
         [Parameter(Mandatory)][string]$ScriptName,

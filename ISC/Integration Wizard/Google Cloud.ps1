@@ -169,4 +169,4 @@ Start-IntegrationWizardFlow -Platform 'GoogleCloud' -ScriptName 'Google Cloud.ps
         }
         @()
     } `
-    -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx }
+    -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx -WhatIf:$WhatIfPreference }
