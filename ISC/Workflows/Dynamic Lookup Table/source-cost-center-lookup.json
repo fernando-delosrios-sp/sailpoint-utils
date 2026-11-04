@@ -1,0 +1,47 @@
+{
+  "name": "Cost Center Lookup",
+  "description": "Demo delimited entitlements mapping SuccessFactors CostCenterID values to human-readable labels for Dynamic Lookup Table.",
+  "type": "DelimitedFile",
+  "connector": "delimited-file-angularsc",
+  "connectorClass": "sailpoint.connector.delimitedfile.DelimitedFileConnector",
+  "connectorScriptName": "delimited-file-angularsc",
+  "owner": {
+    "type": "IDENTITY",
+    "id": "6b022753f41b405d92df9243f8ff2094",
+    "name": "fernando.delosrios"
+  },
+  "features": ["DIRECT_PERMISSIONS", "DISCOVER_SCHEMA", "NO_RANDOM_ACCESS"],
+  "connectorAttributes": {
+    "hasHeader": true,
+    "group.hasHeader": true,
+    "delimiter": ",",
+    "parseType": "delimited",
+    "filetransport": "local",
+    "group.filetransport": "local",
+    "filterEmptyRecords": true,
+    "group.filterEmptyRecords": true,
+    "partitionMode": "disabled",
+    "group.partitionMode": "disabled",
+    "group.columnNames": [
+      "id",
+      "name",
+      "displayName",
+      "created",
+      "description",
+      "modified",
+      "entitlements",
+      "groups",
+      "permissions"
+    ],
+    "columnNames": [
+      "id",
+      "name",
+      "givenName",
+      "familyName",
+      "e-mail",
+      "location",
+      "manager",
+      "groups"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "SF Cost Center Lookup",
+  "type": "lookup",
+  "attributes": {
+    "table": {
+      "default": "Unknown cost center"
+    }
+  },
+  "internal": false
+}

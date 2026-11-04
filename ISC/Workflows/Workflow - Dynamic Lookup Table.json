@@ -1,0 +1,1228 @@
+{
+  "definition": {
+    "start": "Configuration",
+    "steps": {
+      "Configuration": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Source id whose entitlements populate the lookup table (Admin > Connections > Sources).",
+              "name": "sourceId",
+              "transforms": [],
+              "variableA": "YOUR_SOURCE_ID"
+            },
+            {
+              "description": "Name of the existing lookup transform to replace on each run.",
+              "name": "transformName",
+              "transforms": [],
+              "variableA": "YOUR_LOOKUP_TRANSFORM_NAME"
+            },
+            {
+              "description": "ISC API base URL (no trailing slash).",
+              "name": "url",
+              "transforms": [],
+              "variableA": "https://{tenant}.api.identitynow-demo.com"
+            },
+            {
+              "description": "Optional lookup default value. Leave blank to omit the default entry.",
+              "name": "defaultValue",
+              "transforms": [],
+              "variableA": ""
+            },
+            {
+              "description": "Accumulated JSON table fragments (comma-prefixed key/value pairs).",
+              "name": "tableEntries",
+              "transforms": [],
+              "variableA": ""
+            },
+            {
+              "description": "Set to true when at least one key/value pair was appended.",
+              "name": "tableHasEntries",
+              "transforms": [],
+              "variableA": "false"
+            },
+            {
+              "description": "Scratch: escaped key for the current loop item.",
+              "name": "entryKey",
+              "transforms": [],
+              "variableA": ""
+            },
+            {
+              "description": "Scratch: escaped value for the current loop item.",
+              "name": "entryValue",
+              "transforms": [],
+              "variableA": ""
+            }
+          ]
+        },
+        "description": "Set sourceId, transformName, and url before enabling. Replace KEY_ATTRIBUTE and VALUE_ATTRIBUTE in every serial loop step with the entitlement attribute names that hold the lookup key and value. Built-in fields: use $.loop.loopInput.value or $.loop.loopInput.name instead of attributes.*.",
+        "displayName": "Configuration",
+        "nextStep": "List Entitlements Page 0",
+        "type": "Mutation"
+      },
+      "List Entitlements Page 0": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "method": "get",
+          "url": "{$.defineVariable.url}/v3/entitlements?limit=250&offset=0&sorters=id&filters=source.id%20eq%20%22{$.defineVariable.sourceId}%22"
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "First page of entitlements for the configured source.",
+        "displayName": "List entitlements (page 0)",
+        "nextStep": "Check Any Entitlements",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Any Entitlements": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Serial Loop Page 0",
+            "variableA.$": "$.listEntitlementsPage0.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "End Step - Failure Empty Source",
+        "description": "Refuse to replace the transform when the source has no entitlements.",
+        "displayName": "Any entitlements?",
+        "type": "choice"
+      },
+      "Serial Loop Page 0": {
+        "actionId": "sp:loop:serial",
+        "attributes": {
+          "input.$": "$.listEntitlementsPage0.body",
+          "loopType": "forLoop",
+          "start": "Key Present",
+          "steps": {
+            "Key Present": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Key Not Empty",
+                  "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE"
+                }
+              ],
+              "defaultStep": "Iteration Done",
+              "displayName": "Lookup key present?",
+              "type": "choice"
+            },
+            "Key Not Empty": {
+              "actionId": "sp:compare-strings",
+              "choiceList": [
+                {
+                  "comparator": "StringEquals",
+                  "nextStep": "Iteration Done",
+                  "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE",
+                  "variableB": ""
+                }
+              ],
+              "defaultStep": "Set Entry Key",
+              "displayName": "Lookup key non-empty?",
+              "type": "choice"
+            },
+            "Set Entry Key": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.entryKey",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\\",
+                          "replacement": "\\\\"
+                        }
+                      },
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\"",
+                          "replacement": "\\\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE"
+                  }
+                ]
+              },
+              "displayName": "Escape lookup key",
+              "nextStep": "Set Entry Value",
+              "type": "Mutation"
+            },
+            "Set Entry Value": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.entryValue",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\\",
+                          "replacement": "\\\\"
+                        }
+                      },
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\"",
+                          "replacement": "\\\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.loop.loopInput.attributes.VALUE_ATTRIBUTE"
+                  }
+                ]
+              },
+              "displayName": "Escape lookup value",
+              "nextStep": "Append Table Entry",
+              "type": "Mutation"
+            },
+            "Append Table Entry": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.tableEntries",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:concatenate:string",
+                        "input": {
+                          "variableB": ",\"{{$.defineVariable.entryKey}}\":\"{{$.defineVariable.entryValue}}\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.defineVariable.tableEntries"
+                  },
+                  {
+                    "name": "$.defineVariable.tableHasEntries",
+                    "transforms": [],
+                    "variableA": "true"
+                  }
+                ]
+              },
+              "displayName": "Append lookup pair",
+              "nextStep": "Iteration Done",
+              "type": "Mutation"
+            },
+            "Iteration Done": {
+              "displayName": "Iteration complete",
+              "type": "success"
+            }
+          }
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Append key/value pairs from the first entitlement page. Edit KEY_ATTRIBUTE and VALUE_ATTRIBUTE in JSON paths.",
+        "displayName": "Build table (page 0)",
+        "nextStep": "Check Page 0 Full",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Page 0 Full": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericEquals",
+            "nextStep": "List Entitlements Page 1",
+            "variableA.$": "$.listEntitlementsPage0.body.length()",
+            "variableB": 250
+          }
+        ],
+        "defaultStep": "Check Table Has Entries",
+        "displayName": "Page 0 has 250 items?",
+        "type": "choice"
+      },
+      "List Entitlements Page 1": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "method": "get",
+          "url": "{$.defineVariable.url}/v3/entitlements?limit=250&offset=250&sorters=id&filters=source.id%20eq%20%22{$.defineVariable.sourceId}%22"
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Second page (offset 250).",
+        "displayName": "List entitlements (page 1)",
+        "nextStep": "Serial Loop Page 1",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Serial Loop Page 1": {
+        "actionId": "sp:loop:serial",
+        "attributes": {
+          "input.$": "$.listEntitlementsPage1.body",
+          "loopType": "forLoop",
+          "start": "Key Present",
+          "steps": {
+            "Key Present": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Key Not Empty",
+                  "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE"
+                }
+              ],
+              "defaultStep": "Iteration Done",
+              "displayName": "Lookup key present?",
+              "type": "choice"
+            },
+            "Key Not Empty": {
+              "actionId": "sp:compare-strings",
+              "choiceList": [
+                {
+                  "comparator": "StringEquals",
+                  "nextStep": "Iteration Done",
+                  "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE",
+                  "variableB": ""
+                }
+              ],
+              "defaultStep": "Set Entry Key",
+              "displayName": "Lookup key non-empty?",
+              "type": "choice"
+            },
+            "Set Entry Key": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.entryKey",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\\",
+                          "replacement": "\\\\"
+                        }
+                      },
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\"",
+                          "replacement": "\\\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE"
+                  }
+                ]
+              },
+              "displayName": "Escape lookup key",
+              "nextStep": "Set Entry Value",
+              "type": "Mutation"
+            },
+            "Set Entry Value": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.entryValue",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\\",
+                          "replacement": "\\\\"
+                        }
+                      },
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\"",
+                          "replacement": "\\\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.loop.loopInput.attributes.VALUE_ATTRIBUTE"
+                  }
+                ]
+              },
+              "displayName": "Escape lookup value",
+              "nextStep": "Append Table Entry",
+              "type": "Mutation"
+            },
+            "Append Table Entry": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.tableEntries",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:concatenate:string",
+                        "input": {
+                          "variableB": ",\"{{$.defineVariable.entryKey}}\":\"{{$.defineVariable.entryValue}}\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.defineVariable.tableEntries"
+                  },
+                  {
+                    "name": "$.defineVariable.tableHasEntries",
+                    "transforms": [],
+                    "variableA": "true"
+                  }
+                ]
+              },
+              "displayName": "Append lookup pair",
+              "nextStep": "Iteration Done",
+              "type": "Mutation"
+            },
+            "Iteration Done": {
+              "displayName": "Iteration complete",
+              "type": "success"
+            }
+          }
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Append pairs from offset 250.",
+        "displayName": "Build table (page 1)",
+        "nextStep": "Check Page 1 Full",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Page 1 Full": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericEquals",
+            "nextStep": "List Entitlements Page 2",
+            "variableA.$": "$.listEntitlementsPage1.body.length()",
+            "variableB": 250
+          }
+        ],
+        "defaultStep": "Check Table Has Entries",
+        "displayName": "Page 1 has 250 items?",
+        "type": "choice"
+      },
+      "List Entitlements Page 2": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "method": "get",
+          "url": "{$.defineVariable.url}/v3/entitlements?limit=250&offset=500&sorters=id&filters=source.id%20eq%20%22{$.defineVariable.sourceId}%22"
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Third page (offset 500).",
+        "displayName": "List entitlements (page 2)",
+        "nextStep": "Serial Loop Page 2",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Serial Loop Page 2": {
+        "actionId": "sp:loop:serial",
+        "attributes": {
+          "input.$": "$.listEntitlementsPage2.body",
+          "loopType": "forLoop",
+          "start": "Key Present",
+          "steps": {
+            "Key Present": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Key Not Empty",
+                  "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE"
+                }
+              ],
+              "defaultStep": "Iteration Done",
+              "displayName": "Lookup key present?",
+              "type": "choice"
+            },
+            "Key Not Empty": {
+              "actionId": "sp:compare-strings",
+              "choiceList": [
+                {
+                  "comparator": "StringEquals",
+                  "nextStep": "Iteration Done",
+                  "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE",
+                  "variableB": ""
+                }
+              ],
+              "defaultStep": "Set Entry Key",
+              "displayName": "Lookup key non-empty?",
+              "type": "choice"
+            },
+            "Set Entry Key": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.entryKey",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\\",
+                          "replacement": "\\\\"
+                        }
+                      },
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\"",
+                          "replacement": "\\\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE"
+                  }
+                ]
+              },
+              "displayName": "Escape lookup key",
+              "nextStep": "Set Entry Value",
+              "type": "Mutation"
+            },
+            "Set Entry Value": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.entryValue",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\\",
+                          "replacement": "\\\\"
+                        }
+                      },
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\"",
+                          "replacement": "\\\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.loop.loopInput.attributes.VALUE_ATTRIBUTE"
+                  }
+                ]
+              },
+              "displayName": "Escape lookup value",
+              "nextStep": "Append Table Entry",
+              "type": "Mutation"
+            },
+            "Append Table Entry": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.tableEntries",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:concatenate:string",
+                        "input": {
+                          "variableB": ",\"{{$.defineVariable.entryKey}}\":\"{{$.defineVariable.entryValue}}\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.defineVariable.tableEntries"
+                  },
+                  {
+                    "name": "$.defineVariable.tableHasEntries",
+                    "transforms": [],
+                    "variableA": "true"
+                  }
+                ]
+              },
+              "displayName": "Append lookup pair",
+              "nextStep": "Iteration Done",
+              "type": "Mutation"
+            },
+            "Iteration Done": {
+              "displayName": "Iteration complete",
+              "type": "success"
+            }
+          }
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Append pairs from offset 500.",
+        "displayName": "Build table (page 2)",
+        "nextStep": "Check Page 2 Full",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Page 2 Full": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericEquals",
+            "nextStep": "List Entitlements Page 3",
+            "variableA.$": "$.listEntitlementsPage2.body.length()",
+            "variableB": 250
+          }
+        ],
+        "defaultStep": "Check Table Has Entries",
+        "displayName": "Page 2 has 250 items?",
+        "type": "choice"
+      },
+      "List Entitlements Page 3": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "method": "get",
+          "url": "{$.defineVariable.url}/v3/entitlements?limit=250&offset=750&sorters=id&filters=source.id%20eq%20%22{$.defineVariable.sourceId}%22"
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Fourth page (offset 750).",
+        "displayName": "List entitlements (page 3)",
+        "nextStep": "Serial Loop Page 3",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Serial Loop Page 3": {
+        "actionId": "sp:loop:serial",
+        "attributes": {
+          "input.$": "$.listEntitlementsPage3.body",
+          "loopType": "forLoop",
+          "start": "Key Present",
+          "steps": {
+            "Key Present": {
+              "actionId": "sp:compare-unary",
+              "choiceList": [
+                {
+                  "comparator": "IsPresent",
+                  "nextStep": "Key Not Empty",
+                  "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE"
+                }
+              ],
+              "defaultStep": "Iteration Done",
+              "displayName": "Lookup key present?",
+              "type": "choice"
+            },
+            "Key Not Empty": {
+              "actionId": "sp:compare-strings",
+              "choiceList": [
+                {
+                  "comparator": "StringEquals",
+                  "nextStep": "Iteration Done",
+                  "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE",
+                  "variableB": ""
+                }
+              ],
+              "defaultStep": "Set Entry Key",
+              "displayName": "Lookup key non-empty?",
+              "type": "choice"
+            },
+            "Set Entry Key": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.entryKey",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\\",
+                          "replacement": "\\\\"
+                        }
+                      },
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\"",
+                          "replacement": "\\\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.loop.loopInput.attributes.KEY_ATTRIBUTE"
+                  }
+                ]
+              },
+              "displayName": "Escape lookup key",
+              "nextStep": "Set Entry Value",
+              "type": "Mutation"
+            },
+            "Set Entry Value": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.entryValue",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\\",
+                          "replacement": "\\\\"
+                        }
+                      },
+                      {
+                        "id": "sp:transform:replace:string",
+                        "input": {
+                          "pattern": "\"",
+                          "replacement": "\\\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.loop.loopInput.attributes.VALUE_ATTRIBUTE"
+                  }
+                ]
+              },
+              "displayName": "Escape lookup value",
+              "nextStep": "Append Table Entry",
+              "type": "Mutation"
+            },
+            "Append Table Entry": {
+              "actionId": "sp:update-variable",
+              "attributes": {
+                "id": "sp:update-variable",
+                "variables": [
+                  {
+                    "name": "$.defineVariable.tableEntries",
+                    "transforms": [
+                      {
+                        "id": "sp:transform:concatenate:string",
+                        "input": {
+                          "variableB": ",\"{{$.defineVariable.entryKey}}\":\"{{$.defineVariable.entryValue}}\""
+                        }
+                      }
+                    ],
+                    "variableA.$": "$.defineVariable.tableEntries"
+                  },
+                  {
+                    "name": "$.defineVariable.tableHasEntries",
+                    "transforms": [],
+                    "variableA": "true"
+                  }
+                ]
+              },
+              "displayName": "Append lookup pair",
+              "nextStep": "Iteration Done",
+              "type": "Mutation"
+            },
+            "Iteration Done": {
+              "displayName": "Iteration complete",
+              "type": "success"
+            }
+          }
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Append pairs from offset 750.",
+        "displayName": "Build table (page 3)",
+        "nextStep": "Check Page 3 Full",
+        "type": "action",
+        "versionNumber": 1
+      },
+      "Check Page 3 Full": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericEquals",
+            "nextStep": "Probe Entitlements Over 1000",
+            "variableA.$": "$.listEntitlementsPage3.body.length()",
+            "variableB": 250
+          }
+        ],
+        "defaultStep": "Check Table Has Entries",
+        "displayName": "Page 3 has 250 items?",
+        "type": "choice"
+      },
+      "Probe Entitlements Over 1000": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "method": "get",
+          "url": "{{$.defineVariable.url}}/v3/entitlements?limit=1&offset=1000&sorters=id&filters=source.id%20eq%20%22{{$.defineVariable.sourceId}}%22"
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "If any row exists, the source exceeds the 1000-entitlement workflow limit.",
+        "displayName": "Probe entitlements (offset 1000)",
+        "nextStep": "Check Over 1000 Limit",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Over 1000 Limit": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "End Step - Failure Over Limit",
+            "variableA.$": "$.probeEntitlementsOver1000.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "Check Table Has Entries",
+        "displayName": "More than 1000 entitlements?",
+        "type": "choice"
+      },
+      "Check Table Has Entries": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Get Transform By Name",
+            "variableA.$": "$.defineVariable.tableHasEntries",
+            "variableB": "true"
+          }
+        ],
+        "defaultStep": "End Step - Failure Empty Table",
+        "description": "Every entitlement had a blank lookup key.",
+        "displayName": "Table has entries?",
+        "type": "choice"
+      },
+      "Get Transform By Name": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "method": "get",
+          "url": "{{$.defineVariable.url}}/v3/transforms?filters=name%20eq%20%22{{$.defineVariable.transformName}}%22"
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Resolve the target transform id and confirm it exists.",
+        "displayName": "Get transform by name",
+        "nextStep": "Check Transform Found",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "Check Transform Found": {
+        "actionId": "sp:compare-numbers",
+        "choiceList": [
+          {
+            "comparator": "NumericGreaterThan",
+            "nextStep": "Check Transform Type",
+            "variableA.$": "$.getTransformByName.body.length()",
+            "variableB": 0
+          }
+        ],
+        "defaultStep": "End Step - Failure Transform Missing",
+        "displayName": "Transform found?",
+        "type": "choice"
+      },
+      "Check Transform Type": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Sync Table Entries",
+            "variableA.$": "$.getTransformByName.body[0].type",
+            "variableB": "lookup"
+          }
+        ],
+        "defaultStep": "End Step - Failure Transform Missing",
+        "description": "Only lookup transforms are replaced.",
+        "displayName": "Transform is lookup?",
+        "type": "choice"
+      },
+      "Sync Table Entries": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Read accumulated table fragments after serial loops (avoids stale inline templating).",
+              "name": "syncedTableEntries",
+              "transforms": [],
+              "variableA.$": "$.defineVariable.tableEntries"
+            }
+          ]
+        },
+        "displayName": "Sync table entries",
+        "nextStep": "Check Default Value",
+        "type": "Mutation"
+      },
+      "Check Default Value": {
+        "actionId": "sp:compare-unary",
+        "choiceList": [
+          {
+            "comparator": "IsPresent",
+            "nextStep": "Check Default Non Empty",
+            "variableA.$": "$.defineVariable.defaultValue"
+          }
+        ],
+        "defaultStep": "Wrap Table Object",
+        "displayName": "Default configured?",
+        "type": "choice"
+      },
+      "Check Default Non Empty": {
+        "actionId": "sp:compare-strings",
+        "choiceList": [
+          {
+            "comparator": "StringEquals",
+            "nextStep": "Wrap Table Object",
+            "variableA.$": "$.defineVariable.defaultValue",
+            "variableB": ""
+          }
+        ],
+        "defaultStep": "Append Default To Table",
+        "displayName": "Default non-empty?",
+        "type": "choice"
+      },
+      "Replace Transform": {
+        "actionId": "sp:http",
+        "attributes": {
+          "authenticationType": "OAuth",
+          "param_authenticationRef": "oauth",
+          "param_oauth": {
+            "mapping": {
+              "auth_client_id": "clientId",
+              "auth_client_secret": "clientSecret",
+              "auth_credential_location": "credentialLocation",
+              "auth_token_url": "tokenURL"
+            },
+            "paramID": "YOUR_OAUTH_PARAMETER_ID",
+            "paramType": "1.4"
+          },
+          "param_oauth_scopes": {
+            "mapping": {
+              "auth_scopes": "scopes"
+            },
+            "paramID": "YOUR_OAUTH_SCOPES_PARAMETER_ID",
+            "paramType": "3.1"
+          },
+          "requestContentType": "json",
+          "method": "put",
+          "url": "{{$.defineVariable.url}}/v3/transforms/{{$.getTransformByName.body[0].id}}",
+          "jsonRequestBody.$": "$.defineVariable.transformPutBody"
+        },
+        "catch": [
+          {
+            "next": "End Step - Failure"
+          }
+        ],
+        "description": "Replaces the entire lookup transform attributes.table with the built map.",
+        "displayName": "Replace lookup transform",
+        "nextStep": "End Step - Success",
+        "type": "action",
+        "versionNumber": 3
+      },
+      "End Step - Success": {
+        "description": "The lookup transform was replaced with entitlements from the configured source.",
+        "displayName": "Success: Transform Replaced",
+        "type": "success"
+      },
+      "End Step - Failure": {
+        "description": "An HTTP request failed. The transform was not replaced.",
+        "displayName": "Failure: Dynamic Lookup Table",
+        "failureName": "Dynamic Lookup Table Failed",
+        "type": "failure"
+      },
+      "End Step - Failure Empty Source": {
+        "description": "The source returned no entitlements. The transform was not replaced.",
+        "displayName": "Failure: Empty Source",
+        "failureName": "Empty Source",
+        "type": "failure"
+      },
+      "End Step - Failure Empty Table": {
+        "description": "No entitlement had a usable lookup key. The transform was not replaced.",
+        "displayName": "Failure: Empty Table",
+        "failureName": "Empty Lookup Table",
+        "type": "failure"
+      },
+      "End Step - Failure Over Limit": {
+        "description": "The source has more than 1000 entitlements. The transform was not replaced.",
+        "displayName": "Failure: Over 1000 Entitlements",
+        "failureName": "Entitlement Limit Exceeded",
+        "type": "failure"
+      },
+      "End Step - Failure Transform Missing": {
+        "description": "The named transform was not found or is not type lookup. The transform was not replaced.",
+        "displayName": "Failure: Transform Not Found",
+        "failureName": "Transform Not Found",
+        "type": "failure"
+      },
+      "Wrap Table Object": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "description": "Lookup table object JSON (keys from entitlements plus optional default).",
+              "name": "tableJsonObject",
+              "transforms": [
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB.$": "$.defineVariable.syncedTableEntries"
+                  }
+                },
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB": "}"
+                  }
+                },
+                {
+                  "id": "sp:transform:replace:string",
+                  "input": {
+                    "pattern": "{,",
+                    "replacement": "{"
+                  }
+                }
+              ],
+              "variableA": "{"
+            }
+          ]
+        },
+        "displayName": "Wrap table object",
+        "nextStep": "Build Put Body",
+        "type": "Mutation"
+      },
+      "Append Default To Table": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "name": "syncedTableEntries",
+              "transforms": [
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB": ",\"default\":\""
+                  }
+                },
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB.$": "$.defineVariable.defaultValue"
+                  }
+                },
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB": "\""
+                  }
+                }
+              ],
+              "variableA.$": "$.defineVariable.syncedTableEntries"
+            }
+          ]
+        },
+        "displayName": "Append default entry",
+        "nextStep": "Wrap Table Object",
+        "type": "Mutation"
+      },
+      "Build Put Body": {
+        "actionId": "sp:define-variable",
+        "attributes": {
+          "id": "sp:define-variable",
+          "variables": [
+            {
+              "name": "transformPutBody",
+              "transforms": [
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB.$": "$.getTransformByName.body[0].name"
+                  }
+                },
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB": "\",\"type\":\"lookup\",\"attributes\":{\"table\": "
+                  }
+                },
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB.$": "$.defineVariable.tableJsonObject"
+                  }
+                },
+                {
+                  "id": "sp:transform:concatenate:string",
+                  "input": {
+                    "variableB": "}}"
+                  }
+                }
+              ],
+              "variableA": "{\"name\":\""
+            }
+          ]
+        },
+        "displayName": "Build PUT body",
+        "nextStep": "Replace Transform",
+        "type": "Mutation"
+      }
+    }
+  },
+  "owner": {
+    "type": "IDENTITY",
+    "id": "YOUR_OWNER_IDENTITY_ID",
+    "name": "YOUR_OWNER_NAME"
+  },
+  "trigger": {
+    "type": "SCHEDULED",
+    "attributes": {
+      "cronString": "0 2 * * *",
+      "frequency": "cronSchedule",
+      "timeZone": "UTC"
+    }
+  },
+  "name": "Dynamic Lookup Table",
+  "description": "Scheduled integration: rebuild a lookup transform from entitlements on a configured source (sourceId, transformName, key attribute, value attribute). Each run fully replaces attributes.table on the existing lookup transform.",
+  "enabled": false
+}
