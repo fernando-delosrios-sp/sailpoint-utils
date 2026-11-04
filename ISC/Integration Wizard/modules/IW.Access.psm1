@@ -149,10 +149,10 @@ function Get-EntroGcpPinnedCustomRolePermissions {
 
 function Get-ContextFeatureNames {
     param([hashtable]$Context)
-    if (-not $Context.ContainsKey('Feature') -or $null -eq $Context['Feature']) { return @() }
+    if (-not $Context.ContainsKey('Feature') -or $null -eq $Context['Feature']) { return ,@() }
     $f = $Context['Feature']
-    if ($f -is [array]) { return @($f | ForEach-Object { [string]$_ } | Where-Object { $_ }) }
-    return @([string]$f -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    if ($f -is [array]) { return ,@($f | ForEach-Object { [string]$_ } | Where-Object { $_ }) }
+    return ,@([string]$f -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 }
 
 function Split-RequirementsByAccessClass {
@@ -237,20 +237,24 @@ function Get-IntegrationWizardAccessRequirementLists {
                 }
             }
             '^google-(saas|ciem)-connector$' {
-                Import-Module (Join-Path $moduleRoot 'ISC.GoogleWorkspaceConnector.psm1') -Force -WarningAction SilentlyContinue
-                Import-Module (Join-Path $moduleRoot 'ISC.GoogleCiemConnector.psm1') -Force -WarningAction SilentlyContinue
+                Import-Module (Join-Path $moduleRoot 'ISC.GoogleCiemConnector.psm1') -Force -Global -WarningAction SilentlyContinue
+                Import-Module (Join-Path $moduleRoot 'ISC.GoogleWorkspaceConnector.psm1') -Force -Global -WarningAction SilentlyContinue
                 Initialize-GoogleWorkspaceConnectorData
                 Initialize-GoogleCiemConnectorData
                 $features = Get-ContextFeatureNames -Context $Context
                 $scopes = @(Get-SelectedScopes -FeatureNames $features -Access $access)
-                $split = Split-RequirementsByAccessClass -Names $scopes -Kind 'GoogleOAuthScope'
-                foreach ($s in $split.ReadOnly) { $readOnly.Add($s) }
-                foreach ($s in $split.ReadWrite) { $readWrite.Add($s) }
+                if ($scopes.Count -gt 0) {
+                    $split = Split-RequirementsByAccessClass -Names $scopes -Kind 'GoogleOAuthScope'
+                    foreach ($s in $split.ReadOnly) { $readOnly.Add($s) }
+                    foreach ($s in $split.ReadWrite) { $readWrite.Add($s) }
+                }
                 $skipGcpWrite = ($access -eq 'ReadOnly')
                 $iam = @(Get-GoogleCustomRolePermissions -FeatureNames $features -SkipGcpWrite:$skipGcpWrite)
-                $splitIam = Split-RequirementsByAccessClass -Names $iam -Kind 'GoogleIamPermission'
-                foreach ($p in $splitIam.ReadOnly) { $readOnly.Add($p) }
-                foreach ($p in $splitIam.ReadWrite) { $readWrite.Add($p) }
+                if ($iam.Count -gt 0) {
+                    $splitIam = Split-RequirementsByAccessClass -Names $iam -Kind 'GoogleIamPermission'
+                    foreach ($p in $splitIam.ReadOnly) { $readOnly.Add($p) }
+                    foreach ($p in $splitIam.ReadWrite) { $readWrite.Add($p) }
+                }
             }
             '^google-gcp-entro$' {
                 $split = Split-RequirementsByAccessClass -Names @(Get-EntroGcpPinnedCustomRolePermissions) -Kind 'EntroGcpCustomPermission'

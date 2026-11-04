@@ -88,6 +88,22 @@ try {
     $folderName = Get-IntegrationWizardIntegrationFolderName -Definition $def
     Assert-Equal 'Entro GCP' $folderName 'FolderName from definition'
 
+    $saasMember = @{
+        Id          = 'google-saas-connector'
+        Title       = 'Google Workspace connector'
+        FolderName  = 'Google Workspace'
+        Platform    = 'GoogleCloud'
+        CliName     = 'gcloud'
+        Inputs      = @()
+        AdminRoles  = @()
+        OutputsHelp = ''
+        Steps       = { param($ctx) @() }
+    }
+    $combined = Merge-IntegrationWizardDefinitions -Members @($saasMember, $def)
+    $combinedFolder = Get-IntegrationWizardIntegrationFolderName -Definition $combined
+    Assert-Equal 'Google Workspace and Entro GCP' $combinedFolder 'composite folder name is filesystem-safe'
+    Assert-True ($combinedFolder -notmatch '[+]') 'composite folder name contains no plus sign'
+
     $existingOnly = @(Get-IntegrationProjectNames)
     Assert-True ($existingOnly -contains 'demo-customer') 'lists project subfolders only'
 

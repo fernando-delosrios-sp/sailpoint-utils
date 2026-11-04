@@ -37,6 +37,33 @@ function Get-EntroAwsWizardWorkDirectory {
     Join-Path $base 'entro-aws'
 }
 
+function Get-EntroAwsRoleArn {
+    param([hashtable]$Context)
+    if ($Context['EntroRoleArn']) { return [string]$Context['EntroRoleArn'] }
+    $rn = if ($Context['EntroRoleName']) { $Context['EntroRoleName'] } else { 'EntroReadOnly' }
+    $arn = aws iam get-role --role-name $rn --query Role.Arn --output text 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace([string]$arn)) { return $null }
+    $Context['EntroRoleArn'] = ([string]$arn).Trim()
+    return $Context['EntroRoleArn']
+}
+
+function Get-EntroAwsHandoffStep {
+    param([hashtable]$Context)
+    $method = if ($Context['Method']) { $Context['Method'] } else { 'AssumeRole' }
+    $rn = if ($Context['EntroRoleName']) { $Context['EntroRoleName'] } else { 'EntroReadOnly' }
+    $manual = switch ($method) {
+        'CloudFormation' { 'The wizard deployed the Entro CloudFormation stack, and the stack notifies Entro. In Entro, confirm the AWS account appears under Accounts.' }
+        'Terraform' { 'Apply Terraform-Entro.tf from the Entro AWS integration folder, then add the account in Entro (Add account, AWS) with the Role ARN it outputs.' }
+        default { "In Entro, Add account, AWS, Assume Role: paste the Role ARN of $rn (printed at the end of this run) and an Environment name." }
+    }
+    @{
+        Id     = 'entro-handoff'
+        Title  = 'Register in Entro UI'
+        Kind   = 'Manual'
+        Manual = $manual
+    }
+}
+
 function Register-AwsEntroDefinitions {
     Register-IntegrationWizardDefinition @{
         Id           = 'aws-entro'
@@ -100,8 +127,8 @@ function Register-AwsEntroDefinitions {
                                 -ExternalId $c['EntroExternalId'] -Region $region | Out-Null
                         }
                         else {
-                            Invoke-EntroAwsAssumeRoleSetup -EntroExternalId $c['EntroExternalId'] -RoleName $rn `
-                                -TemplatePath $tpl -WorkDirectory $work | Out-Null
+                            $c['EntroRoleArn'] = Invoke-EntroAwsAssumeRoleSetup -EntroExternalId $c['EntroExternalId'] -RoleName $rn `
+                                -TemplatePath $tpl -WorkDirectory $work
                         }
                     }
                     BuildScript = {
@@ -122,23 +149,23 @@ Invoke-EntroAwsAssumeRoleSetup -EntroExternalId '$($c['EntroExternalId'])' -Role
 "@
                     }
                 }
-                @{
-                    Id     = 'entro-handoff'
-                    Title  = 'Register in Entro UI'
-                    Kind   = 'Manual'
-                    Manual = 'Open Entro → Add account → AWS. For CloudFormation, launch the template from the wizard. For Assume Role, paste the Role ARN and Environment name.'
-                }
+                (Get-EntroAwsHandoffStep -Context $ctx)
             )
         }
         OnRunComplete = {
             param($ctx)
+            $method = if ($ctx['Method']) { $ctx['Method'] } else { 'AssumeRole' }
             Write-Host ''
             Write-Host 'Entro handoff' -ForegroundColor Cyan
             Write-Host '  Environment: (your label)'
             Write-Host "  External ID: $($ctx['EntroExternalId'])"
-            if ($ctx['Method'] -eq 'CloudFormation') {
+            if ($method -eq 'CloudFormation') {
                 $tplRegion = if ($ctx['EntroTemplateRegion']) { $ctx['EntroTemplateRegion'] } else { 'Default' }
                 Write-Host "  Template: $(Get-EntroAwsTemplatePath -Region $tplRegion)"
+            }
+            elseif ($method -eq 'AssumeRole') {
+                $arn = Get-EntroAwsRoleArn -Context $ctx
+                Write-Host "  Role ARN: $(if ($arn) { $arn } else { '(not found; run aws iam get-role)' })"
             }
             Write-Host ''
         }

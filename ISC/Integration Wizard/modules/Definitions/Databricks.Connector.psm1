@@ -1,5 +1,42 @@
 Set-StrictMode -Version Latest
 
+function Import-DatabricksWizardModule {
+    if (-not (Get-Module -Name 'ISC.DatabricksConnector')) {
+        $modRoot = Split-Path $PSScriptRoot -Parent
+        Import-Module (Join-Path $modRoot 'ISC.DatabricksConnector.psm1') -Force -Global -WarningAction SilentlyContinue
+    }
+}
+
+function Get-DatabricksWizardServicePrincipalName {
+    param([hashtable]$Context)
+    if ($Context['ServicePrincipalName']) { return [string]$Context['ServicePrincipalName'] }
+    'SailPoint-source'
+}
+
+function Get-DatabricksWizardCloud {
+    param([hashtable]$Context)
+    if ($Context['Cloud']) { return [string]$Context['Cloud'] }
+    'Aws'
+}
+
+function Get-DatabricksWizardSecretPath {
+    param([hashtable]$Context)
+    $dir = if ($Context['IntegrationFolderPath']) { [string]$Context['IntegrationFolderPath'] }
+        elseif ($Context['OutputDirectory']) { [string]$Context['OutputDirectory'] }
+        else { (Get-Location).Path }
+    Join-Path $dir 'databricks-oauth-secret.json'
+}
+
+function Get-DatabricksWizardServicePrincipal {
+    param([hashtable]$Context)
+    if ($Context['DatabricksServicePrincipal']) { return $Context['DatabricksServicePrincipal'] }
+    Import-DatabricksWizardModule
+    $sp = Get-DatabricksServicePrincipal -AccountId $Context['AccountId'] -Cloud (Get-DatabricksWizardCloud -Context $Context) `
+        -DisplayName (Get-DatabricksWizardServicePrincipalName -Context $Context)
+    if ($sp) { $Context['DatabricksServicePrincipal'] = $sp }
+    return $sp
+}
+
 function Register-DatabricksConnectorDefinitions {
     Register-IntegrationWizardDefinition @{
         Id           = 'databricks-connector'
@@ -23,35 +60,106 @@ function Register-DatabricksConnectorDefinitions {
         )
         Steps        = {
             param($ctx)
+            if ($ctx['Auth'] -eq 'Entra') {
+                return @(
+                    @{
+                        Id     = 'entra-sp'
+                        Title  = 'Add the Entra application as an account service principal'
+                        Kind   = 'Manual'
+                        Manual = 'In the Databricks Account Console, User management, Service principals, add the Microsoft Entra ID application ISC uses (Entra managed), give it Account admin, and put that application''s Client ID and secret in ISC.'
+                    }
+                )
+            }
             @(
                 @{
                     Id    = 'sp-create'
                     Title = 'Ensure account service principal with Account Admin'
                     Kind  = 'Ensure'
-                    Probe = { param($c) 'Create' }
-                    Cli   = {
+                    Probe = {
                         param($c)
-                        $name = if ($c['ServicePrincipalName']) { $c['ServicePrincipalName'] } else { 'SailPoint-source' }
-                        "# Create service principal and assign Account admin in Databricks Account Console, or use account API when available.`n# Display name: $name"
+                        Import-DatabricksWizardModule
+                        Connect-DatabricksAccount -AccountId $c['AccountId'] -Cloud (Get-DatabricksWizardCloud -Context $c) -NonInteractive:([bool]$c['NonInteractive'])
+                        $sp = Get-DatabricksWizardServicePrincipal -Context $c
+                        if (-not $sp) { return 'Create' }
+                        if (-not (Test-DatabricksAccountAdmin -ServicePrincipal $sp)) { return 'Update' }
+                        $record = Get-DatabricksRunRecord -Context $c
+                        $record.ServicePrincipalResult = 'Already present'
+                        $record.AccountAdminResult = 'Already granted'
+                        $record.ServicePrincipalId = [string]$sp['id']
+                        $record.ApplicationId = [string]$sp['applicationId']
+                        'Skip'
+                    }
+                    Run   = {
+                        param($c)
+                        Import-DatabricksWizardModule
+                        Invoke-DatabricksEnsureServicePrincipal -AccountId $c['AccountId'] -Cloud (Get-DatabricksWizardCloud -Context $c) `
+                            -DisplayName (Get-DatabricksWizardServicePrincipalName -Context $c) -Context $c | Out-Null
+                    }
+                    BuildScript = {
+                        param($c)
+                        $name = (Get-DatabricksWizardServicePrincipalName -Context $c) -replace "'", "''"
+                        @"
+Import-Module (Join-Path `$PSScriptRoot 'modules/ISC.OperatorConsole.psm1') -Force
+Import-Module (Join-Path `$PSScriptRoot 'modules/ISC.DatabricksConnector.psm1') -Force
+Connect-DatabricksAccount -AccountId '$($c['AccountId'])' -Cloud '$(Get-DatabricksWizardCloud -Context $c)'
+`$sp = Invoke-DatabricksEnsureServicePrincipal -AccountId '$($c['AccountId'])' -Cloud '$(Get-DatabricksWizardCloud -Context $c)' -DisplayName '$name'
+"@
                     }
                 }
                 @{
                     Id    = 'oauth-secret'
                     Title = 'OAuth client credentials'
-                    Kind  = 'Manual'
-                    Manual = 'In Account Console → Service Principals → Secrets, generate OAuth secret unless -RotateSecret is false and a secret already exists. Copy Client ID and Client Secret once.'
+                    Kind  = 'Ensure'
+                    Probe = {
+                        param($c)
+                        if ([bool]$c['RotateSecret']) { return 'Create' }
+                        Import-DatabricksWizardModule
+                        $sp = Get-DatabricksWizardServicePrincipal -Context $c
+                        if (-not $sp) { return 'Create' }
+                        $path = Get-DatabricksWizardSecretPath -Context $c
+                        if (Test-DatabricksOAuthSecretFile -Path $path -ApplicationId ([string]$sp['applicationId'])) {
+                            $record = Get-DatabricksRunRecord -Context $c
+                            $record.SecretPath = $path
+                            $record.SecretResult = 'Already on disk'
+                            return 'Skip'
+                        }
+                        'Create'
+                    }
+                    Run   = {
+                        param($c)
+                        Import-DatabricksWizardModule
+                        $sp = Get-DatabricksWizardServicePrincipal -Context $c
+                        if (-not $sp) { throw "Service principal $(Get-DatabricksWizardServicePrincipalName -Context $c) was not found. The previous step creates it." }
+                        Invoke-DatabricksEnsureOAuthSecret -AccountId $c['AccountId'] -Cloud (Get-DatabricksWizardCloud -Context $c) -ServicePrincipal $sp `
+                            -Path (Get-DatabricksWizardSecretPath -Context $c) -Rotate:([bool]$c['RotateSecret']) -Context $c
+                    }
+                    BuildScript = {
+                        param($c)
+                        $path = (Get-DatabricksWizardSecretPath -Context $c) -replace "'", "''"
+                        $rotate = if ([bool]$c['RotateSecret']) { ' -Rotate' } else { '' }
+                        @"
+Invoke-DatabricksEnsureOAuthSecret -AccountId '$($c['AccountId'])' -Cloud '$(Get-DatabricksWizardCloud -Context $c)' -ServicePrincipal `$sp -Path '$path'$rotate
+"@
+                    }
                 }
             )
         }
         OnRunComplete = {
             param($ctx)
+            $record = if (Get-Command Get-DatabricksRunRecord -ErrorAction SilentlyContinue) { Get-DatabricksRunRecord -Context $ctx } else { $null }
             Write-Host ''
             Write-Host 'Databricks connector handoff' -ForegroundColor Cyan
             Write-Host "  Cloud: $($ctx['Cloud'])"
             Write-Host "  Auth: $($ctx['Auth'])"
             Write-Host "  Account ID: $($ctx['AccountId'])"
             Write-Host "  Metastore ID: $($ctx['MetastoreId'])"
-            Write-Host '  Client ID / Secret: from service principal OAuth credentials'
+            if ($record -and $record.ApplicationId) {
+                Write-Host "  Client ID: $($record.ApplicationId)"
+                Write-Host "  Client Secret: client_secret in $($record.SecretPath)"
+            }
+            else {
+                Write-Host '  Client ID / Secret: from the Entra application'
+            }
             Write-Host ''
         }
     }

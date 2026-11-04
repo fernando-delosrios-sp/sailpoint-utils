@@ -5,9 +5,14 @@ function Import-EntroGcpWizardModules {
     $modRoot = Join-Path $wizardRoot 'modules'
     # -Global: the step Run blocks call these from a different scope, and ISC.EntroGcp
     # resolves Invoke-GCloud (exported by ISC.GoogleWorkspaceConnector) via Get-Command.
-    Import-Module (Join-Path $modRoot 'ISC.GoogleWorkspaceConnector.psm1') -Force -Global -WarningAction SilentlyContinue
-    Import-Module (Join-Path $modRoot 'ISC.EntroGcp.psm1') -Force -Global -WarningAction SilentlyContinue
-    Initialize-GoogleWorkspaceConnectorData
+    # Every step calls this, so a loaded module is kept: re-importing would replace an Invoke-GCloud the caller already set up.
+    if (-not (Get-Command Invoke-GCloud -ErrorAction SilentlyContinue)) {
+        Import-Module (Join-Path $modRoot 'ISC.GoogleWorkspaceConnector.psm1') -Force -Global -WarningAction SilentlyContinue
+        Initialize-GoogleWorkspaceConnectorData
+    }
+    if (-not (Get-Module -Name 'ISC.EntroGcp')) {
+        Import-Module (Join-Path $modRoot 'ISC.EntroGcp.psm1') -Force -Global -WarningAction SilentlyContinue
+    }
 }
 
 function Get-EntroGcpWizardReportPath {
@@ -91,6 +96,12 @@ function Get-EntroGcpOperatorHandoffStep {
         Title  = 'Upload the key in Entro'
         Kind   = 'Manual'
         Manual = "Upload '$keyPath' and the organization domain in Entro GCP onboarding."
+        When   = {
+            param($c)
+            if (-not (Get-Command Get-EntroGcpRunRecord -ErrorAction SilentlyContinue)) { return $true }
+            $record = Get-EntroGcpRunRecord -Context $c
+            return [string]$record.KeyResult -ne 'Blocked by organization policy'
+        }
     }
 }
 
@@ -174,7 +185,8 @@ Invoke-EntroGcpEnableApis -OrganizationId '$($c['OrganizationId'])' -ProjectId '
                     Run   = {
                         param($c)
                         Import-EntroGcpWizardModules
-                        Invoke-EntroGcpEnsureServiceAccount -ProjectId $c['ProjectId'] -ServiceAccountName (Get-EntroGcpServiceAccountName -Context $c) -Context $c
+                        Invoke-EntroGcpEnsureServiceAccount -ProjectId $c['ProjectId'] -ServiceAccountName (Get-EntroGcpServiceAccountName -Context $c) `
+                            -StateDirectory (Get-EntroGcpWizardStateDirectory -Context $c) -Context $c
                     }
                     BuildScript = {
                         param($c)
@@ -224,10 +236,33 @@ Invoke-EntroGcpIamGrants -OrganizationId '$($c['OrganizationId'])' -ProjectId '$
                 $keyStep
                 (Get-EntroGcpOperatorHandoffStep -Context $ctx)
                 @{
-                    Id     = 'audit'
-                    Title  = 'Org audit logs'
-                    Kind   = 'Manual'
-                    Manual = 'Enable Data Read/Write audit logs for Secret Manager, Cloud Functions, and IAM at https://console.cloud.google.com/iam-admin/audit (organization scope).'
+                    Id    = 'audit'
+                    Title = 'Org audit logs'
+                    Kind  = 'Ensure'
+                    Probe = {
+                        param($c)
+                        Import-EntroGcpWizardModules
+                        if (Test-EntroGcpAuditConfigsComplete -OrganizationId $c['OrganizationId']) {
+                            $record = Get-EntroGcpRunRecord -Context $c
+                            if ($record) { $record.AuditResult = 'Already in place' }
+                            'Skip'
+                        }
+                        else { 'Apply' }
+                    }
+                    Run   = {
+                        param($c)
+                        Import-EntroGcpWizardModules
+                        Invoke-EntroGcpAuditConfigs -OrganizationId $c['OrganizationId'] -Context $c
+                    }
+                    BuildScript = {
+                        param($c)
+                        @"
+Import-Module (Join-Path `$PSScriptRoot 'modules/ISC.GoogleWorkspaceConnector.psm1') -Force
+Import-Module (Join-Path `$PSScriptRoot 'modules/ISC.EntroGcp.psm1') -Force
+Initialize-GoogleWorkspaceConnectorData
+Invoke-EntroGcpAuditConfigs -OrganizationId '$($c['OrganizationId'])'
+"@
+                    }
                 }
             )
             $kept = [System.Collections.Generic.List[object]]::new()
@@ -254,24 +289,33 @@ Invoke-EntroGcpIamGrants -OrganizationId '$($c['OrganizationId'])' -ProjectId '$
             if (-not (Get-Command Save-IntegrationProjectOperatorAction -ErrorAction SilentlyContinue)) {
                 Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'IW.Project.psm1') -WarningAction SilentlyContinue
             }
-            if ($record.KeyGuidance -and $ctx['IntegrationProjectName'] -and (Get-Command Save-IntegrationProjectOperatorAction -ErrorAction SilentlyContinue)) {
-                Save-IntegrationProjectOperatorAction -ProjectName ([string]$ctx['IntegrationProjectName']) -Action @{
+            $blockedActions = [System.Collections.Generic.List[hashtable]]::new()
+            if ($record.KeyGuidance) {
+                $blockedActions.Add(@{
                     Section = $section
-                    Id      = 'entro-upload'
+                    Id      = 'key-policy'
                     Title   = 'Allow the service account key'
-                    Detail  = 'Google returned FAILED_PRECONDITION. Follow "How to clear this precondition" in entro-gcp-report.md, wait up to 15 minutes, rerun the wizard, then upload the key file and the organization domain in Entro.'
+                    Detail  = 'Google returned FAILED_PRECONDITION. Follow "How to clear this precondition" in entro-gcp-report.md, rerun the wizard, then upload the key file and the organization domain in Entro.'
                     Done    = $false
+                })
+            }
+            foreach ($item in @($record.Blocked)) {
+                $blockedActions.Add(@{ Section = $section; Id = [string]$item.Id; Title = [string]$item.Title; Detail = [string]$item.Detail; Done = $false })
+            }
+            if ($ctx['IntegrationProjectName'] -and (Get-Command Save-IntegrationProjectOperatorAction -ErrorAction SilentlyContinue)) {
+                foreach ($action in $blockedActions) {
+                    Save-IntegrationProjectOperatorAction -ProjectName ([string]$ctx['IntegrationProjectName']) -Action $action
                 }
             }
             if ($ctx['IntegrationProjectName'] -and (Get-Command Read-IntegrationProjectOperatorActions -ErrorAction SilentlyContinue)) {
                 $pending = @(Read-IntegrationProjectOperatorActions -ProjectName ([string]$ctx['IntegrationProjectName']) | Where-Object { $_.Section -eq $section })
             }
             if ($pending.Count -eq 0) {
-                $handoff = Get-EntroGcpOperatorHandoffStep -Context $ctx
-                $pending = @(
-                    @{ Title = $handoff.Title; Detail = $handoff.Manual; Done = $false }
-                    @{ Title = 'Org audit logs'; Detail = 'Enable Data Read/Write audit logs for Secret Manager, Cloud Functions, and IAM at https://console.cloud.google.com/iam-admin/audit (organization scope).'; Done = $false }
-                )
+                $pending = @($blockedActions)
+                if (-not $record.KeyGuidance) {
+                    $handoff = Get-EntroGcpOperatorHandoffStep -Context $ctx
+                    $pending = @(@{ Title = $handoff.Title; Detail = $handoff.Manual; Done = $false }) + $pending
+                }
             }
             Write-EntroGcpRunReport -Context $ctx -Path (Get-EntroGcpWizardReportPath -Context $ctx) -Pending $pending
         }

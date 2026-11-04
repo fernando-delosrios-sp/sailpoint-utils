@@ -99,6 +99,12 @@ function Invoke-IntegrationWizardRun {
     }
     $operatorActions = [System.Collections.Generic.List[hashtable]]::new()
     foreach ($step in @($steps)) {
+        if ($step['When'] -and -not (& $step['When'] $Context)) {
+            if (Get-Command Write-IntegrationProjectLogLine -ErrorAction SilentlyContinue) {
+                Write-IntegrationProjectLogLine -Level 'INFO' -Message "Step $($step.Title): not applicable to this run"
+            }
+            continue
+        }
         if ($step.Kind -eq 'Manual') {
             $recorded = Register-IntegrationWizardOperatorAction -Definition $Definition -Context $Context -Step $step -PriorById $priorById
             $operatorActions.Add($recorded)
@@ -400,11 +406,11 @@ function Invoke-IntegrationWizardAction {
             }
         }
         'BuildScript' {
-            $name = ($Definition.Id -replace '[^a-z0-9-+]', '-') + '.ps1'
+            $name = ($Definition.Id -replace '\+', '_' -replace '[^a-z0-9_-]', '-') + '.ps1'
             New-IntegrationWizardBuildScript -Definition $Definition -Context $Context -OutputPath (Join-Path $outDir $name)
         }
         'BuildRequirements' {
-            $name = ($Definition.Id -replace '[^a-z0-9-+]', '-') + '-requirements.md'
+            $name = ($Definition.Id -replace '\+', '_' -replace '[^a-z0-9_-]', '-') + '-requirements.md'
             New-IntegrationWizardRequirementsDoc -Definition $Definition -Context $Context -OutputPath (Join-Path $outDir $name)
         }
         default { throw "Unknown Action: $($Context['Action'])" }

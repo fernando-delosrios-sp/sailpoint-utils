@@ -55,7 +55,8 @@ function Get-IntegrationWizardIntegrationFolderName {
         $parts = @($Definition.Members | ForEach-Object {
             if ($_['FolderName']) { [string]$_['FolderName'] } else { [string]$_.Title }
         })
-        return ($parts -join ' + ')
+        # Folder names must stay portable: avoid '+' (not supported on every filesystem).
+        return ($parts -join ' and ')
     }
     if ($Definition['FolderName']) { return [string]$Definition['FolderName'] }
     return [string]$Definition.Title

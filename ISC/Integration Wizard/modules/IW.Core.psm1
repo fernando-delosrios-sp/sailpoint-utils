@@ -217,7 +217,7 @@ function Merge-IntegrationWizardDefinitions {
         Product      = 'Combined'
         CliName      = $cli
         Title        = ($titles -join ' + ')
-        FolderName   = ($folderNames -join ' + ')
+        FolderName   = ($folderNames -join ' and ')
         AccessLevels = $access
         Inputs       = @($mergedInputs.Values)
         Members      = $membersCopy
