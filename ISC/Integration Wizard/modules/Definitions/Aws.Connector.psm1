@@ -31,13 +31,16 @@ function Get-AwsLegacyArguments {
         ExternalId      = if ($Context['IscExternalId']) { $Context['IscExternalId'] } else { $Context['ExternalId'] }
         ProfileName     = $Context['ProfileName']
         Region          = if ($Context['Region']) { $Context['Region'] } else { 'us-east-1' }
-        Cloud           = if ($Context['Cloud']) { $Context['Cloud'] } else { 'Commercial' }
         RoleName        = $Context['RoleName']
         PolicySet       = if ($Context['PolicySet']) { $Context['PolicySet'] } else { 'Mgo' }
         Scope           = if ($Context['Scope']) { $Context['Scope'] } else { 'CurrentAccount' }
         OutputDirectory = $Context['OutputDirectory']
         NonInteractive  = [bool]$Context['NonInteractive']
     }
+    # Leave Cloud unbound when the operator did not choose one. The legacy script
+    # prompts for Commercial vs GovCloud, and only defaults to Commercial when
+    # -NonInteractive is set. Passing Commercial here would skip that prompt.
+    if ($Context['Cloud']) { $splat.Cloud = [string]$Context['Cloud'] }
     $featureNames = Get-AwsContextFeatureNames -Context $Context
     if ($null -ne $featureNames) { $splat.Feature = $featureNames }
     return $splat
@@ -76,6 +79,7 @@ function Register-AwsConnectorDefinitions {
     $commonInputs = @(
         @{ Name = 'IscExternalId'; Source = 'Supply'; Prompt = 'ISC External ID from Connection Settings'; Purpose = 'Trust condition on the ISC IAM role'; Required = $true }
         @{ Name = 'ProfileName'; Source = 'Supply'; Prompt = 'AWS profile name (optional)'; Purpose = 'Credential profile for aws CLI'; Required = $false }
+        @{ Name = 'Cloud'; Source = 'Supply'; Prompt = 'AWS cloud'; Purpose = 'Commercial or GovCloud trust principal'; Required = $false; ValidateSet = @('Commercial', 'GovCloud'); Default = 'Commercial' }
         @{ Name = 'Region'; Source = 'Supply'; Prompt = 'AWS region'; Purpose = 'Region for STS and Organizations API'; Required = $false; Default = 'us-east-1' }
         @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
     )

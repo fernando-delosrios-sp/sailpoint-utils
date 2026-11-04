@@ -41,6 +41,14 @@ Assert-Equal 0 @($none.Feature).Count 'an empty feature answer passes no packs'
 
 $omitted = & $awsMod { Get-AwsLegacyArguments -SourceType 'AwsSaas' -Context @{ IscExternalId = 'ext' } }
 Assert-True (-not $omitted.ContainsKey('Feature')) 'a missing feature list is left for the legacy prompt'
+Assert-True (-not $omitted.ContainsKey('Cloud')) 'an omitted cloud is left for the legacy prompt'
+
+$govCloud = & $awsMod { Get-AwsLegacyArguments -SourceType 'AwsSaas' -Context @{ IscExternalId = 'ext'; Cloud = 'GovCloud' } }
+Assert-Equal 'GovCloud' $govCloud.Cloud 'an explicit cloud is passed through'
+
+Assert-True (@($saasDef.Inputs.Name) -contains 'Cloud') 'AWS SaaS definition collects the AWS cloud'
+$ciemAwsDef = Get-IntegrationWizardDefinition -Id 'aws-ciem-connector'
+Assert-True (@($ciemAwsDef.Inputs.Name) -contains 'Cloud') 'AWS CIEM definition collects the AWS cloud'
 
 function Get-ScriptParameterSetNames {
     param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$ParameterName)
@@ -61,6 +69,10 @@ function Get-ScriptParameterSetNames {
 
 $awsFeatureSets = @(Get-ScriptParameterSetNames -Path (Join-Path $wizardRoot 'AWS.ps1') -ParameterName 'Feature')
 Assert-True ($awsFeatureSets -contains 'SaaSConnector') 'AWS.ps1 accepts -Feature for the SaaS connector'
+
+$awsCloudSets = @(Get-ScriptParameterSetNames -Path (Join-Path $wizardRoot 'AWS.ps1') -ParameterName 'Cloud')
+Assert-True ($awsCloudSets -contains 'SaaSConnector') 'AWS.ps1 accepts -Cloud for the SaaS connector'
+Assert-True ($awsCloudSets -contains 'CiemConnector') 'AWS.ps1 accepts -Cloud for the CIEM connector'
 
 $ciemDef = Get-IntegrationWizardDefinition -Id 'google-ciem-connector'
 Assert-True (@($ciemDef.Inputs.Name) -contains 'ImpersonateUser') 'GCP CIEM collects the impersonated admin'

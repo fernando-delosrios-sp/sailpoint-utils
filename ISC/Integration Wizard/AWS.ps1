@@ -32,6 +32,11 @@ param(
 
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
+    [ValidateSet('Commercial', 'GovCloud')]
+    [string]$Cloud,
+
+    [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'CiemConnector')]
     [string]$Region,
 
     [Parameter(ParameterSetName = 'Entro')]
@@ -124,8 +129,9 @@ $context = @{
     CiemConnector    = [bool]$CiemConnector
     Entro            = [bool]$Entro
     Method           = $Method
-    Region               = $Region
-    EntroTemplateRegion  = $EntroTemplateRegion
+    Cloud            = $Cloud
+    Region           = $Region
+    EntroTemplateRegion = $EntroTemplateRegion
     Access           = $Access
     Action           = $Action
     IscExternalId    = $IscExternalId
