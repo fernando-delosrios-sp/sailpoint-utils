@@ -7,6 +7,7 @@ param(
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [switch]$Wizard,
 
     # There is no separate "Combined" set. -SaaSConnector plus an Entro switch resolves to the
@@ -16,11 +17,15 @@ param(
     [switch]$SaaSConnector,
     [Parameter(ParameterSetName = 'CiemConnector', Mandatory)]
     [switch]$CiemConnector,
+    # BothEntro lets -GcpEntro -WorkspaceEntro bind so the script can reject that pair.
+    # Without it, PowerShell resolves the pair to SaaSConnector and demands -SaaSConnector.
     [Parameter(ParameterSetName = 'GcpEntro', Mandatory)]
     [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'BothEntro', Mandatory)]
     [switch]$GcpEntro,
     [Parameter(ParameterSetName = 'WorkspaceEntro', Mandatory)]
     [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'BothEntro', Mandatory)]
     [switch]$WorkspaceEntro,
 
     [Parameter(ParameterSetName = 'SaaSConnector')]
@@ -32,16 +37,19 @@ param(
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
     [string]$Action,
 
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [string]$OrganizationId,
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [string]$ProjectId,
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
@@ -51,23 +59,28 @@ param(
     [string[]]$Feature,
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [ValidateSet('PrivateKey', 'WorkloadIdentity')]
     [string]$Method,
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [switch]$ApplyPreconditionFix,
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [string]$ClientId,
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [string]$OutputDirectory,
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [switch]$NonInteractive,
 
     [Parameter(ParameterSetName = 'Help')]
@@ -76,14 +89,15 @@ param(
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [string]$Project
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-# Combined run (Google Workspace connector + one Entro variant). Both Entro variants at once is not allowed.
-if ($SaaSConnector -and $GcpEntro -and $WorkspaceEntro) {
+# One Entro variant may accompany the Workspace connector. Both Entro variants at once is not allowed.
+if ($GcpEntro -and $WorkspaceEntro) {
     throw 'Combined mode allows only one Entro variant (-GcpEntro or -WorkspaceEntro).'
 }
 

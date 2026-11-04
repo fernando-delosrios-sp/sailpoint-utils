@@ -64,8 +64,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $demoRoot = $PSScriptRoot
-$repoRoot = Split-Path (Split-Path -Parent $demoRoot) -Parent
-$sourceSetupModules = Join-Path $repoRoot 'Integration Wizard/modules'
+$sourceSetupModules = Join-Path (Split-Path -Parent $demoRoot) 'Integration Wizard/modules'
 $demoModules = Join-Path $demoRoot 'modules'
 
 Import-Module (Join-Path $sourceSetupModules 'ISC.OperatorConsole.psm1') -Force -WarningAction SilentlyContinue
