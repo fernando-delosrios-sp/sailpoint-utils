@@ -105,6 +105,9 @@ function Invoke-SailPointConnect {
         [string[]]$RemainingArguments
     )
 
+    Initialize-OperatorConsole -NonInteractive:$NonInteractive
+    $hasExtra = ($null -ne $RemainingArguments) -and (@($RemainingArguments).Count -gt 0)
+
     if (-not $Platform) {
         if ($NonInteractive) {
             throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, IQService, M365AccessProfiles."
@@ -139,7 +142,7 @@ function Invoke-SailPointConnect {
             if ($Action) { $pass['Action'] = $Action }
             if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
             if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            & $script @pass @RemainingArguments
+            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
         }
         'Azure' {
             $script = Join-Path $script:ModuleRoot 'Azure.ps1'
@@ -149,7 +152,7 @@ function Invoke-SailPointConnect {
             if ($Action) { $pass['Action'] = $Action }
             if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
             if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            & $script @pass @RemainingArguments
+            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
         }
         'GoogleCloud' {
             $script = Join-Path $script:ModuleRoot 'Google Cloud.ps1'
@@ -159,7 +162,7 @@ function Invoke-SailPointConnect {
             if ($Action) { $pass['Action'] = $Action }
             if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
             if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            & $script @pass @RemainingArguments
+            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
         }
         'Databricks' {
             $script = Join-Path $script:ModuleRoot 'Databricks.ps1'
@@ -169,15 +172,15 @@ function Invoke-SailPointConnect {
             if ($Action) { $pass['Action'] = $Action }
             if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
             if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            & $script @pass @RemainingArguments
+            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
         }
         'IQService' {
             $script = Join-Path $script:ModuleRoot 'IQService Control.ps1'
-            & $script @RemainingArguments
+            if ($hasExtra) { & $script @RemainingArguments } else { & $script }
         }
         'M365AccessProfiles' {
             $script = Join-Path $script:ModuleRoot 'Microsoft 365 Access Profiles.ps1'
-            & $script @RemainingArguments
+            if ($hasExtra) { & $script @RemainingArguments } else { & $script }
         }
     }
 }

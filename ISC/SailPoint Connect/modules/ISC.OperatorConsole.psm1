@@ -32,6 +32,9 @@ function Initialize-OperatorConsole {
     $script:InWizardPrompt = $false
 }
 
+# Ensure script-scoped variables exist under Set-StrictMode -Version Latest
+Initialize-OperatorConsole
+
 function Test-OperatorNonInteractive {
     return [bool]$script:NonInteractive
 }

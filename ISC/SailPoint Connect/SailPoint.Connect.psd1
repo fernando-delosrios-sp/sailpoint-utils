@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.0.0'
+    ModuleVersion = '1.0.1'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -80,7 +80,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Initial release of SailPoint Connect: unified progressive-disclosure setup for ISC connectors and Entro onboarding.'
+            ReleaseNotes = 'Fix uninitialized console variables in strict mode and positional null argument binding when invoking platform scripts.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'
