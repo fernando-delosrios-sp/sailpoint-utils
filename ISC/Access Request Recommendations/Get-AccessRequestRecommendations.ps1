@@ -125,7 +125,7 @@ class SailApiError : System.Exception {
 
 # --- Interactive console -----------------------------------------------------
 # Self-contained on purpose: the script is meant to be copied out of the repo, so
-# it must not depend on a sibling module under ISC/Source Connection Setup.
+# it must not depend on a sibling module under ISC/Integration Wizard.
 
 function Test-OperatorNonInteractive {
     return [bool]$script:NonInteractiveMode

@@ -26,8 +26,9 @@ pnpm-debug.log*
 *.local
 config.json
 
-# Source Connection Setup run artifacts (keys, PEMs, connection settings)
-sourceConfig/
+# Integration Wizard run artifacts (keys, PEMs, connection settings)
+wizard-output/
+.integrations/
 
 # Dependencies
 node_modules/

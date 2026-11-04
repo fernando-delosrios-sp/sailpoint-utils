@@ -4,6 +4,24 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-04
+
+### 💥 Breaking Changes
+
+- **Integration Wizard** — Removed `Agent Source Setup.ps1` (the JSON Catalog/Plan/Apply facade), its `agent-schema/` request, plan, and result schemas and examples, and `Test-AgentSourceSetupScript.ps1`. The platform wizards' progressive disclosure and `-NonInteractive` switches are now the agent-facing surface. The shared source-setup modules remain.
+
+## 2026-11-03
+
+### ✨ New Features
+
+- **Integration Wizard** — Replaced `ISC/Source Connection Setup` with root-level [Integration Wizard](Integration%20Wizard/): progressive-disclosure entry points (`AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Databricks.ps1`), shared `IW.Core` / `IW.Render` modules, Entro catalog reader, and `-Action Run|BuildScript|BuildRequirements`. Entro AWS/Azure/GCP/Workspace paths align with vendored `Entro/entro-connect` skill artifacts.
+- **Integration Wizard — combined ISC + Entro** — AWS/Azure/Google Cloud can merge connector and Entro definitions in one wizard or CLI run (`-SaaSConnector -Entro`, `-Connector -Entro`, Google SaaS + `-GcpEntro` or `-WorkspaceEntro`). Run/build/requirements execute both parts in order with shared context.
+
+### 💥 Breaking Changes
+
+- **Integration Wizard** — Running a platform script with no arguments prints help instead of starting the interactive wizard; use `-Wizard`. `-AggregationOnly` / `-PermissionMode` are replaced by `-Access ReadOnly|ReadWrite`. Output folder renamed from `sourceConfig/` to `wizard-output/`. `Entra ID.ps1` → `Azure.ps1`, `Google Workspace.ps1` → `Google Cloud.ps1`.
+- **Integration Wizard — AWS external IDs** — `-ExternalId` on `AWS.ps1` is replaced by `-IscExternalId` (ISC connector) and `-EntroExternalId` (Entro). Combined runs require both when both targets are active.
+
 ## 2026-10-20
 
 ### 🔧 Improvements
@@ -179,23 +197,23 @@ End-to-end testing of a deployed Access Model Change Management repo (every chan
 
 ### ✨ New Features
 
-- **Source Connection Setup (Entra ID)** — Interactive Microsoft Graph script that creates or updates the app registration used by the ISC Microsoft Entra connector (`ISC/Source Connection Setup/`).
+- **Source Connection Setup (Entra ID)** — Interactive Microsoft Graph script that creates or updates the app registration used by the ISC Microsoft Entra connector (`Integration Wizard/`).
   - Grants every application permission from SailPoint's required-permissions table by default, with a `Directory` mode for the documented coarse alternative.
   - Optional feature packs for access packages, MFA management, CIEM PIM groups, NHI discovery, Teams and SharePoint scanning, Copilot discovery, and Defender hunting.
   - Assigns the User Administrator role required for Set Password and Delete User; Global Administrator is no longer assigned by default.
   - Idempotent updates: merge permissions, grant missing admin consent, optionally rotate the client secret.
   - Replaces the retired AzureAD / Azure AD Graph workflow.
-- **Source Connection Setup (AWS SaaS)** — Interactive AWS Tools for PowerShell script that creates or updates the IAM role used by the ISC Amazon Web Services SaaS connector (`ISC/Source Connection Setup/AWS.ps1`).
+- **Source Connection Setup (AWS SaaS)** — Interactive AWS Tools for PowerShell script that creates or updates the IAM role used by the ISC Amazon Web Services SaaS connector (`Integration Wizard/AWS.ps1`).
   - Trusts SailPoint `ciem_universal` for commercial **CIEM** (`874540850173`) and **ISC SaaS** (`706944607044`), or GovCloud (`229634586956`), with the External ID from the ISC source.
   - Attaches documented MGO (default) or non-MGO aggregation, organization, and provisioning policies; optional Activity Insights, CIEM, Bedrock / AgentCore discovery, and IAM Identity Center packs.
   - Idempotent updates of trust and customer-managed policies; optional organization-wide create using a member assume role.
-- **Source Connection Setup (Google Workspace SaaS)** — Interactive gcloud script that configures either grant type for the ISC Google Workspace SaaS connector (`ISC/Source Connection Setup/Google Workspace.ps1`).
+- **Source Connection Setup (Google Workspace SaaS)** — Interactive gcloud script that configures either grant type for the ISC Google Workspace SaaS connector (`Integration Wizard/Google Workspace.ps1`).
   - **Service Account:** creates or updates the service account, enables documented Admin SDK / Groups Settings APIs, issues a JSON key, and converts it with OpenSSL to the encrypted RSA PEM the source expects; prints the client ID and scopes for Admin console domain-wide delegation.
   - **Client Credentials:** runs the OAuth 2.0 authorization-code flow against your OAuth client — loopback redirect caught by the script, or the documented OAuth Playground redirect — and returns the offline refresh token.
   - Optional feature packs for GCP inventory, CIEM, Gmail delegates, delta aggregation, Activity Insights, domain management, NHI discovery, and Vertex AI agents.
   - Idempotent updates of the service account and organization custom role `sailpointGoogleWorkspace`, bound to the service account or the authorizing user depending on grant type.
   - Connection Settings are printed one value per line, written to files, and offered through a repeatable copy-to-clipboard menu.
-- **Source Connection Setup (IQService Control)** — Windows operator script for IQService hosts (`ISC/Source Connection Setup/IQService Control.ps1`).
+- **Source Connection Setup (IQService Control)** — Windows operator script for IQService hosts (`Integration Wizard/IQService Control.ps1`).
   - Downloads `IQService.zip` from a pasted ISC pre-signed URL or a local file, unblocks the archive before extraction.
   - Installs or updates IQService with backup, service stop/uninstall, binary unblock, registry-aware reinstall, and optional auto-start.
   - Service management (start/stop/restart/uninstall), trace log level configuration, status reporting, and `Utils.dll` unblock.
