@@ -27,7 +27,7 @@ jobs:
       - name: Verify Module and Documentation
         shell: pwsh
         run: |
-          ./ISC/SailPoint\ Connect/tests/Test-SailPointConnectModule.ps1
+          & "./ISC/SailPoint Connect/tests/Test-SailPointConnectModule.ps1"
 
       - name: Publish to PowerShell Gallery
         shell: pwsh
