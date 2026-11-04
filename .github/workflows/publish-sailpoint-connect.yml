@@ -41,4 +41,7 @@ jobs:
           if (-not $env:POWERSHELL_GALLERY) {
             throw "Secret POWERSHELL_GALLERY is not set or empty."
           }
-          Publish-Module -Path "ISC/SailPoint Connect" -NuGetApiKey $env:POWERSHELL_GALLERY -Verbose
+          $stageDir = Join-Path $env:RUNNER_TEMP 'SailPoint.Connect'
+          Remove-Item -LiteralPath $stageDir -Recurse -Force -ErrorAction SilentlyContinue
+          Copy-Item -Path "ISC/SailPoint Connect" -Destination $stageDir -Recurse -Force
+          Publish-Module -Path $stageDir -NuGetApiKey $env:POWERSHELL_GALLERY -Verbose
