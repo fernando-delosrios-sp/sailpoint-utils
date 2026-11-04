@@ -1,5 +1,58 @@
 # SailPoint Connect
 
+Progressive-disclosure operator setup for SailPoint ISC connectors, Entro cloud onboarding, Microsoft 365 access profiles, and IQService host management.
+
+---
+
+## Installation & Quick Start
+
+### Install from PowerShell Gallery (PowerShell 7+)
+
+```powershell
+Install-Module -Name SailPoint.Connect -Scope CurrentUser
+```
+
+To update:
+
+```powershell
+Update-Module -Name SailPoint.Connect
+```
+
+### Run
+
+```powershell
+# Unified interactive platform menu
+Invoke-SailPointConnect
+# Or via alias
+sailpoint-connect
+
+# Guided platform wizards
+Connect-SailPointAWS -Wizard
+Connect-SailPointAzure -Wizard
+Connect-SailPointGoogleCloud -Wizard
+Connect-SailPointDatabricks -Wizard
+
+# Windows IQService operator console
+Start-SailPointIQServiceControl
+
+# Requestable M365 access profile creation
+New-SailPointM365AccessProfile
+```
+
+### Running Locally from Repo
+
+If you are working directly in this repository without installing the module from PowerShell Gallery:
+
+```powershell
+./AWS.ps1                    # lists core options
+./AWS.ps1 -SaaSConnector     # lists required sub-options
+./AWS.ps1 -Wizard            # guided setup (optional Entro addon after connector pick)
+./AWS.ps1 -SaaSConnector -Entro -Action BuildRequirements   # combined non-interactive
+./AWS.ps1 -Wizard -Entro     # Entro-only path, preset
+```
+
+---
+
 ## Purpose
 
 Progressive-disclosure operator scripts for SailPoint ISC connector setup, Entro cloud onboarding, Microsoft 365 access profiles, and IQService host management. Platform wizards (`AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Databricks.ps1`) print core options when run with no arguments; add `-Wizard` for interactive mode, or pass a core switch (`-SaaSConnector`, `-Connector`, `-Entro`, …) and `-Action Run|BuildScript|BuildRequirements`.
