@@ -1,4 +1,4 @@
-# Integration Wizard core: definition registry, progressive disclosure, wizard driver.
+# SailPoint Connect core: definition registry, progressive disclosure, wizard driver.
 
 Set-StrictMode -Version Latest
 
@@ -77,7 +77,7 @@ function Show-IntegrationWizardPlatformHelp {
         Write-Host "  ./$ScriptName -$key         [...]  $($CoreOptionHelp[$key].Long)"
     }
     Write-Host 'Then choose what to do: -Action Run | BuildScript | BuildRequirements'
-    Write-Host '  Artifacts go under .integrations/<project>/<platform>/<integration>/ (-Project to skip the project menu)'
+    Write-Host '  Artifacts go under ~/.sailpoint-connect/<project>/<platform>/<integration>/ (-Project to skip the project menu)'
     Write-Host '  Combine ISC connector + Entro: pass both switches (e.g. -SaaSConnector -Entro on AWS)'
     $first = ($CoreOptionHelp.Keys | Select-Object -First 1)
     if ($first) {

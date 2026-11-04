@@ -26,9 +26,10 @@ pnpm-debug.log*
 *.local
 config.json
 
-# Integration Wizard run artifacts (keys, PEMs, connection settings)
+# SailPoint Connect run artifacts (keys, PEMs, connection settings)
 wizard-output/
 .integrations/
+.sailpoint-connect/
 
 # Dependencies
 node_modules/

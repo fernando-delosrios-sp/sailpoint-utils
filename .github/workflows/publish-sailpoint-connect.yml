@@ -1,0 +1,44 @@
+name: Publish SailPoint Connect Module
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (run verification tests only, do not publish)'
+        type: boolean
+        default: false
+        required: false
+  push:
+    branches:
+      - main
+    paths:
+      - 'ISC/SailPoint Connect/**'
+      - '.github/workflows/publish-sailpoint-connect.yml'
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Module and Documentation
+        shell: pwsh
+        run: |
+          ./ISC/SailPoint\ Connect/tests/Test-SailPointConnectModule.ps1
+
+      - name: Publish to PowerShell Gallery
+        shell: pwsh
+        env:
+          POWERSHELL_GALLERY: ${{ secrets.POWERSHELL_GALLERY }}
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch" -and "${{ inputs.dry_run }}" -eq "true") {
+            Write-Host "Dry run enabled. Skipping Publish-Module."
+            exit 0
+          }
+          if (-not $env:POWERSHELL_GALLERY) {
+            throw "Secret POWERSHELL_GALLERY is not set or empty."
+          }
+          Publish-Module -Path "ISC/SailPoint Connect" -NuGetApiKey $env:POWERSHELL_GALLERY -Verbose

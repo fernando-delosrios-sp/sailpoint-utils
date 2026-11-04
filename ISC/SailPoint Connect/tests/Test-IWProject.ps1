@@ -14,6 +14,7 @@ Assert-True ($null -ne $def) 'google-gcp-entro registered'
 
 $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("iw-project-test-{0}" -f [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+$env:SAILPOINT_CONNECT_ROOT = Join-Path $tmp '.sailpoint-connect'
 Push-Location $tmp
 try {
     $thrown = $false
@@ -32,7 +33,7 @@ try {
     Initialize-IntegrationProjectContext -Platform 'GoogleCloud' -PlatformTitle 'Google Cloud' -Plan $def -Context $ctx -ScriptName 'Google Cloud.ps1'
 
     $root = Get-IntegrationProjectRoot
-    Assert-True (Test-Path -LiteralPath $root) '.integrations created on project init'
+    Assert-True (Test-Path -LiteralPath $root) '.sailpoint-connect created on project init'
 
     $expectedFolder = Join-Path (Join-Path (Join-Path $root 'demo-customer') 'Google Cloud') 'Entro GCP'
     Assert-Equal $expectedFolder $ctx['IntegrationFolderPath'] 'integration folder path'
@@ -175,6 +176,7 @@ try {
     Assert-Equal 'Enable a different set of audit logs.' $reset.Detail 'the file stores the new instruction'
 }
 finally {
+    Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue
     Pop-Location
     Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }

@@ -35,7 +35,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | [Optimistic Provisioning Generic SDIM](ISC/Optimistic%20Provisioning%20Generic%20SDIM/) | Configuration guide for optimistic provisioning with Generic SDIM |
 | [Organizational Hierarchy Path](ISC/Organizational%20Hierarchy%20Path/) | Transform rule that builds a consolidated org hierarchy path from entitlements |
 | [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) | Copy-ready IQService connector-rule bootstrap with logging, redaction, exit handling, and optional replay |
-| [Integration Wizard](Integration%20Wizard/) | Progressive-disclosure setup for ISC connectors and Entro (AWS, Azure, Google Cloud, Databricks), M365 access profiles, and IQService |
+| [SailPoint Connect](ISC/SailPoint%20Connect/) | Progressive-disclosure setup for ISC connectors and Entro (AWS, Azure, Google Cloud, Databricks), M365 access profiles, and IQService |
 | [Source Management](ISC/Workflows/Source%20Management/) | Interactive workflow to pick a source and run account aggregation (optimised/full), entitlement aggregation, identity profile refresh, or source reset (accounts and/or entitlements) |
 | [Transforms](ISC/Transforms/) | Reusable transform definitions (dates, lifecycle state, attribute history, manager flag) |
 
@@ -92,7 +92,7 @@ Utilities that include a Node.js toolchain (for example, [JDBC SaaS Driver Downl
 
 PowerShell scripts in this repository are for **PowerShell 7+** (`pwsh`). On Windows, use the PowerShell 7 app, which sits beside the built-in Windows PowerShell 5.1 (`powershell.exe`). Install PowerShell 7 or later, then run the scripts from a `pwsh` session.
 
-That covers [Email Templates](ISC/Email%20Templates/), [Integration Wizard](Integration%20Wizard/), [Demo Data](ISC/Demo%20Data/), [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) and the Active Directory rules built from it, and the Entro Azure onboarding script under [entro-connect](Entro/entro-connect/). Each of those folders repeats these install steps.
+That covers [Email Templates](ISC/Email%20Templates/), [SailPoint Connect](ISC/SailPoint%20Connect/), [Demo Data](ISC/Demo%20Data/), [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) and the Active Directory rules built from it, and the Entro Azure onboarding script under [entro-connect](Entro/entro-connect/). Each of those folders repeats these install steps.
 
 Confirm the version after install:
 

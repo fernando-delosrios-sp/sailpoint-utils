@@ -7,6 +7,10 @@
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_TestHelpers.ps1')
 
+$tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("iw-strictkeys-{0}" -f [Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+$env:SAILPOINT_CONNECT_ROOT = $tmp
+
 $wizardRoot = Split-Path $PSScriptRoot -Parent
 Import-Module (Join-Path $wizardRoot 'modules/ISC.OperatorConsole.psm1') -Force -Global -WarningAction SilentlyContinue
 Import-Module (Join-Path $wizardRoot 'modules/IW.Core.psm1') -Force -Global
@@ -147,5 +151,8 @@ $signed = @{ Installed = $true; SignedIn = $true; Summary = 'account a project p
 $signedMode = Resolve-IntegrationWizardConnectionChoice -CliName 'gcloud' -SessionState $signed -Wizard
 Assert-Equal 'UseSession' $signedMode 'signed-in session defaults to this session'
 Assert-True (@($script:ConnectionOptions) -contains 'UseSession') 'signed-in session offers Use this session'
+
+Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host 'PASS (20 assertions)'

@@ -17,4 +17,4 @@ if ($failures.Count -gt 0) {
     throw "Test failures: $($failures.Count)"
 }
 
-Write-Host 'All Integration Wizard tests passed.'
+Write-Host 'All SailPoint Connect tests passed.'

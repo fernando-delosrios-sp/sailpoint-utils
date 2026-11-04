@@ -64,7 +64,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $demoRoot = $PSScriptRoot
-$sourceSetupModules = Join-Path (Split-Path -Parent $demoRoot) 'Integration Wizard/modules'
+$sourceSetupModules = Join-Path (Split-Path -Parent $demoRoot) 'SailPoint Connect/modules'
 $demoModules = Join-Path $demoRoot 'modules'
 
 Import-Module (Join-Path $sourceSetupModules 'ISC.OperatorConsole.psm1') -Force -WarningAction SilentlyContinue

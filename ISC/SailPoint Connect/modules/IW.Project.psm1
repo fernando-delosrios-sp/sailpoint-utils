@@ -1,11 +1,14 @@
-# Integration Wizard: working-directory projects under .integrations/
+# SailPoint Connect: projects under ~/.sailpoint-connect/
 
 Set-StrictMode -Version Latest
 
 $script:IntegrationProjectActivityLogPath = $null
 
 function Get-IntegrationProjectRoot {
-    Join-Path (Get-Location).Path '.integrations'
+    if ($env:SAILPOINT_CONNECT_ROOT) {
+        return $env:SAILPOINT_CONNECT_ROOT
+    }
+    Join-Path $HOME '.sailpoint-connect'
 }
 
 function Test-IntegrationProjectName {
@@ -80,7 +83,7 @@ function Select-IntegrationProjectName {
     if ($NonInteractive) {
         $existing = @(Get-IntegrationProjectNames -Root $Root)
         $list = if ($existing.Count -gt 0) { ($existing -join ', ') } else { '(none)' }
-        throw "Non-interactive run requires -Project. Existing projects under .integrations/: $list"
+        throw "Non-interactive run requires -Project. Existing projects under ~/.sailpoint-connect/: $list"
     }
     $existing = @(Get-IntegrationProjectNames -Root $Root)
     $last = Get-IntegrationProjectLastSelected -Root $Root
@@ -91,7 +94,7 @@ function Select-IntegrationProjectName {
     if ($last -and ($existing -contains $last)) { $default = $last }
     elseif ($existing.Count -gt 0) { $default = $existing[0] }
     if (Get-Command Write-Step -ErrorAction SilentlyContinue) {
-        Write-Step 'Integration project workspace (.integrations/)'
+        Write-Step 'Integration project workspace (~/.sailpoint-connect/)'
     }
     $picked = Read-Choice -Prompt 'Which integration project?' -Options $options -Labels $labels -Default $default
     if ($picked -eq $createToken) {

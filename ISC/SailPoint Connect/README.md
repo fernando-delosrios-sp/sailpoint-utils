@@ -1,4 +1,4 @@
-# Integration Wizard
+# SailPoint Connect
 
 ## Purpose
 
@@ -16,7 +16,7 @@ Progressive-disclosure operator scripts for SailPoint ISC connector setup, Entro
 ./AWS.ps1 -Wizard -Entro     # Entro-only path, preset
 ```
 
-Platform wizards write artifacts under `.integrations/<project>/<platform>/<integration>/` in the working directory (gitignored). Pick a project interactively or pass `-Project`. Each run appends to `activity.log` in that integration folder and records the choice in `.integrations/<project>/selection.json` and `selections.jsonl`. A successful Entro GCP run also writes `entro-gcp-report.md` in the integration folder: the service account, APIs, organization roles, and the checks, in the words a customer can hand to someone who was not in the session. Steps you still have to do yourself are prompted during the run and saved in `.integrations/<project>/operator-actions.md`; a later run updates that integration's section and leaves the others in place. Pass `-OutputDirectory` to override the artifact path only; the activity log stays under the integration folder. Legacy `wizard-output/` remains for scripts that do not use the project layout. Use `-Access ReadOnly|ReadWrite` on connector targets instead of legacy `-AggregationOnly` / `-PermissionMode`.
+Platform wizards write artifacts under `~/.sailpoint-connect/<project>/<platform>/<integration>/` in your home folder. Pick a project interactively or pass `-Project`. Each run appends to `activity.log` in that integration folder and records the choice in `~/.sailpoint-connect/<project>/selection.json` and `selections.jsonl`. A successful Entro GCP run also writes `entro-gcp-report.md` in the integration folder: the service account, APIs, organization roles, and the checks, in the words a customer can hand to someone who was not in the session. Steps you still have to do yourself are prompted during the run and saved in `~/.sailpoint-connect/<project>/operator-actions.md`; a later run updates that integration's section and leaves the others in place. Pass `-OutputDirectory` to override the artifact path only; the activity log stays under the integration folder. Legacy `wizard-output/` remains for scripts that do not use the project layout. Use `-Access ReadOnly|ReadWrite` on connector targets instead of legacy `-AggregationOnly` / `-PermissionMode`.
 
 ## PowerShell 7+
 
@@ -80,7 +80,7 @@ Debian and other distributions: [Install PowerShell on Linux](https://learn.micr
 
 ## Artifacts
 
-- `AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Databricks.ps1` — platform wizards (ISC connectors + Entro where applicable). Outputs and `activity.log` under `.integrations/` unless `-OutputDirectory` is set.
+- `AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Databricks.ps1` — platform wizards (ISC connectors + Entro where applicable). Outputs and `activity.log` under `~/.sailpoint-connect/` unless `-OutputDirectory` is set.
 - `Microsoft 365 Access Profiles.ps1` — PSSailpoint access profiles from Entra service plans.
 - `IQService Control.ps1` — IQService host lifecycle and AD LDAPS.
 ## Modules
@@ -900,7 +900,7 @@ Environment **URLs** can be listed/created in `~/.sailpoint/config.yaml` (same c
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
-cd 'Integration Wizard'
+cd 'SailPoint Connect'
 .\Microsoft 365 Access Profiles.ps1
 ```
 

@@ -1,5 +1,5 @@
 {
-  "description": "Checksums for Entro skill artifacts referenced by Integration Wizard (drift detection).",
+  "description": "Checksums for Entro skill artifacts referenced by SailPoint Connect (drift detection).",
   "originRoot": "Entro/entro-connect/skills/entro-connect/integrations",
   "files": [
     {
