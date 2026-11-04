@@ -27,6 +27,11 @@ param(
     [string]$AccountId,
     [Parameter(ParameterSetName = 'Connector')]
     [string]$MetastoreId,
+
+    [Parameter(ParameterSetName = 'Connector')]
+    [ValidateSet('AgentDiscovery')]
+    [string[]]$Feature,
+
     [Parameter(ParameterSetName = 'Connector')]
     [switch]$RotateSecret,
     [Parameter(ParameterSetName = 'Connector')]
@@ -58,6 +63,7 @@ $context = @{
     Wizard = [bool]$Wizard; NonInteractive = [bool]$NonInteractive; Connector = [bool]$Connector
     Cloud = $Cloud; Auth = $Auth; Action = $Action
     ServicePrincipalName = $ServicePrincipalName; AccountId = $AccountId; MetastoreId = $MetastoreId
+    Feature = if ($Feature) { ($Feature -join ',') } else { $null }
     RotateSecret = [bool]$RotateSecret; OutputDirectory = $OutputDirectory
     Project = $Project
 }

@@ -1,6 +1,65 @@
 #Requires -Version 7
 Set-StrictMode -Version Latest
 
+$script:DatabricksFeaturePacks = @{
+    AgentDiscovery = @{
+        Name        = 'AgentDiscovery'
+        Label       = 'Machine identity governance - Mosaic AI Agents & Model Serving endpoints'
+        Description = 'Discovers autonomous Mosaic AI agents, deployed serving endpoints, and Unity Catalog AI models'
+        Permissions = @(
+            'CAN_QUERY on Model Serving Endpoints'
+            'USE_CATALOG and USE_SCHEMA on UC GenAI models'
+            'EXECUTE on AI Functions / Tools'
+        )
+    }
+}
+
+function Get-DatabricksFeaturePacks {
+    return $script:DatabricksFeaturePacks
+}
+
+function Get-DatabricksAgentDiscoveryFeaturePack {
+    return $script:DatabricksFeaturePacks['AgentDiscovery']
+}
+
+function Get-DatabricksIscFeatureChecklist {
+    param([string[]]$FeatureNames = @())
+    $items = [System.Collections.Generic.List[string]]::new()
+    $features = @($FeatureNames | Where-Object { $_ })
+    if ($features -contains 'AgentDiscovery') {
+        $items.Add('Machine Identity Governance: Enable Databricks Mosaic AI Agent & Serving Endpoint Discovery.')
+        $items.Add('Ensure the service principal has CAN_QUERY on all Mosaic AI agent serving endpoints.')
+        $items.Add('For Unity Catalog AI tools, verify USE_CATALOG and USE_SCHEMA are granted.')
+        $items.Add('Agent discovery requires SailPoint Agentic Fabric license on the tenant.')
+    }
+    return @($items)
+}
+
+function Build-DatabricksConnectionSettings {
+    param(
+        [Parameter(Mandatory)][string]$AccountId,
+        [Parameter(Mandatory)][string]$Cloud,
+        [Parameter(Mandatory)][string]$MetastoreId,
+        [Parameter(Mandatory)][string]$ClientId,
+        [string[]]$FeatureNames = @()
+    )
+    $sb = [System.Text.StringBuilder]::new()
+    [void]$sb.AppendLine('# SailPoint ISC Databricks SaaS Connection Settings')
+    [void]$sb.AppendLine("Cloud Type: $Cloud")
+    [void]$sb.AppendLine("Account ID: $AccountId")
+    [void]$sb.AppendLine("Metastore ID: $MetastoreId")
+    [void]$sb.AppendLine("OAuth Client ID: $ClientId")
+    $checklist = Get-DatabricksIscFeatureChecklist -FeatureNames $FeatureNames
+    if ($checklist.Count -gt 0) {
+        [void]$sb.AppendLine('')
+        [void]$sb.AppendLine('## Machine Identity & Agent Discovery Checklist')
+        foreach ($item in $checklist) {
+            [void]$sb.AppendLine("- $item")
+        }
+    }
+    return $sb.ToString().Trim()
+}
+
 function Get-DatabricksAccountHost {
     param([string]$Cloud = 'Aws')
     switch ($Cloud) {
@@ -211,6 +270,10 @@ function Invoke-DatabricksEnsureOAuthSecret {
 }
 
 Export-ModuleMember -Function @(
+    'Get-DatabricksFeaturePacks'
+    'Get-DatabricksAgentDiscoveryFeaturePack'
+    'Get-DatabricksIscFeatureChecklist'
+    'Build-DatabricksConnectionSettings'
     'Get-DatabricksAccountHost'
     'Get-DatabricksRunRecord'
     'Invoke-DatabricksAccountCli'

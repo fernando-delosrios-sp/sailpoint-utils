@@ -82,7 +82,7 @@ function Invoke-SailPointConnect {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Position = 0)]
-        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'IQService', 'M365AccessProfiles')]
+        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'Salesforce', 'GitHub', 'IQService', 'M365AccessProfiles')]
         [string]$Platform,
 
         [Parameter()]
@@ -110,19 +110,21 @@ function Invoke-SailPointConnect {
 
     if (-not $Platform) {
         if ($NonInteractive) {
-            throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, IQService, M365AccessProfiles."
+            throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, IQService, M365AccessProfiles."
         }
 
         Write-Step 'SailPoint Connect'
         Write-Host 'Guided setup for ISC connectors and Entro onboarding.' -ForegroundColor Cyan
         Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
 
-        $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'IQService', 'M365AccessProfiles')
+        $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'IQService', 'M365AccessProfiles')
         $labels = @(
             'Amazon Web Services (SaaS connector, CIEM, Entro)',
             'Microsoft Azure & Entra ID (Connector, Entro)',
             'Google Cloud & Workspace (Connector, CIEM, Entro)',
             'Databricks (Account & Metastore connector)',
+            'Salesforce (SaaS connector, Agentforce, Entro)',
+            'GitHub (SaaS connector, Copilot & Bots, Entro)',
             'IQService Control (Host lifecycle & AD LDAPS)',
             'Microsoft 365 Access Profiles (Entra service plans)'
         )
@@ -166,6 +168,26 @@ function Invoke-SailPointConnect {
         }
         'Databricks' {
             $script = Join-Path $script:ModuleRoot 'Databricks.ps1'
+            $pass = @{}
+            if ($Wizard) { $pass['Wizard'] = $true }
+            if ($Project) { $pass['Project'] = $Project }
+            if ($Action) { $pass['Action'] = $Action }
+            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+            if ($NonInteractive) { $pass['NonInteractive'] = $true }
+            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
+        }
+        'Salesforce' {
+            $script = Join-Path $script:ModuleRoot 'Salesforce.ps1'
+            $pass = @{}
+            if ($Wizard) { $pass['Wizard'] = $true }
+            if ($Project) { $pass['Project'] = $Project }
+            if ($Action) { $pass['Action'] = $Action }
+            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+            if ($NonInteractive) { $pass['NonInteractive'] = $true }
+            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
+        }
+        'GitHub' {
+            $script = Join-Path $script:ModuleRoot 'GitHub.ps1'
             $pass = @{}
             if ($Wizard) { $pass['Wizard'] = $true }
             if ($Project) { $pass['Project'] = $Project }
@@ -538,12 +560,139 @@ function Connect-SailPointDatabricks {
         [string]$ServicePrincipalName,
         [string]$AccountId,
         [string]$MetastoreId,
+        [ValidateSet('AgentDiscovery')]
+        [string[]]$Feature,
         [switch]$RotateSecret,
         [string]$OutputDirectory,
         [switch]$NonInteractive,
         [string]$Project
     )
     $script = Join-Path $script:ModuleRoot 'Databricks.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures SailPoint ISC Salesforce connector and Entro onboarding.
+
+.DESCRIPTION
+    Runs the Salesforce setup wizard or CLI driver. Supports configuring:
+    - Salesforce SaaS connector Connected App
+    - Machine identity governance for Salesforce Agentforce AI agents and bot users
+    - Entro Salesforce integration
+
+.PARAMETER Wizard
+    Runs interactive guided questionnaire.
+
+.PARAMETER Connector
+    Targets the Salesforce SaaS connector.
+
+.PARAMETER Entro
+    Targets the Entro Salesforce integration.
+
+.PARAMETER InstanceUrl
+    Salesforce My Domain URL (e.g. https://mycompany.my.salesforce.com).
+
+.PARAMETER Feature
+    Feature packs: AgentDiscovery (Agentforce), ActivityInsights.
+
+.PARAMETER Action
+    Action to execute: Run, BuildScript, or BuildRequirements.
+
+.EXAMPLE
+    Connect-SailPointSalesforce -Wizard
+    Starts guided interactive setup for Salesforce and Agentforce discovery.
+
+.EXAMPLE
+    Connect-SailPointSalesforce -Connector -InstanceUrl "https://mycompany.my.salesforce.com" -Feature AgentDiscovery -Action Run
+    Configures Salesforce SaaS connector with Agentforce AI agent discovery.
+#>
+function Connect-SailPointSalesforce {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Connector,
+        [switch]$Entro,
+        [ValidateSet('ReadOnly', 'ReadWrite')]
+        [string]$Access,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [string]$Action,
+        [string]$InstanceUrl,
+        [string]$LoginUrl,
+        [string]$ConsumerKey,
+        [string]$ConsumerSecret,
+        [string]$Username,
+        [ValidateSet('AgentDiscovery', 'ActivityInsights')]
+        [string[]]$Feature,
+        [string]$Environment,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'Salesforce.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures SailPoint ISC GitHub connector and Entro onboarding.
+
+.DESCRIPTION
+    Runs the GitHub setup wizard or CLI driver. Supports configuring:
+    - GitHub SaaS connector organization authentication
+    - Machine identity governance for GitHub Copilot seats, GitHub Apps, and Bots
+    - Entro GitHub integration (App installation or PAT)
+
+.PARAMETER Wizard
+    Runs interactive guided questionnaire.
+
+.PARAMETER Connector
+    Targets the GitHub SaaS connector.
+
+.PARAMETER Entro
+    Targets the Entro GitHub integration.
+
+.PARAMETER Organization
+    GitHub organization name.
+
+.PARAMETER Feature
+    Feature packs: AgentDiscovery (Copilot seats & Bots), ActivityInsights.
+
+.PARAMETER Action
+    Action to execute: Run, BuildScript, or BuildRequirements.
+
+.EXAMPLE
+    Connect-SailPointGitHub -Wizard
+    Starts guided interactive setup for GitHub SaaS connector and Copilot/bot discovery.
+
+.EXAMPLE
+    Connect-SailPointGitHub -Connector -Organization "acme-corp" -Feature AgentDiscovery -Action Run
+    Configures GitHub SaaS connector with Copilot seat and bot machine identity discovery.
+#>
+function Connect-SailPointGitHub {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Connector,
+        [switch]$Entro,
+        [ValidateSet('ReadOnly', 'ReadWrite')]
+        [string]$Access,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [string]$Action,
+        [string]$Organization,
+        [string]$ApiUrl,
+        [ValidateSet('PersonalAccessToken', 'GitHubApp')]
+        [string]$AuthMethod,
+        [string]$Token,
+        [ValidateSet('AgentDiscovery', 'ActivityInsights')]
+        [string[]]$Feature,
+        [ValidateSet('GitHubApp', 'ClassicPAT')]
+        [string]$Method,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'GitHub.ps1'
     & $script @PSBoundParameters
 }
 
@@ -763,6 +912,8 @@ Export-ModuleMember -Function @(
     'Connect-SailPointAzure',
     'Connect-SailPointGoogleCloud',
     'Connect-SailPointDatabricks',
+    'Connect-SailPointSalesforce',
+    'Connect-SailPointGitHub',
     'Start-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',
     'Get-SailPointConnectProject',

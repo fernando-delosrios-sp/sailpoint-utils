@@ -21,6 +21,8 @@ $expectedFunctions = @(
     'Connect-SailPointAzure',
     'Connect-SailPointGoogleCloud',
     'Connect-SailPointDatabricks',
+    'Connect-SailPointSalesforce',
+    'Connect-SailPointGitHub',
     'Start-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',
     'Get-SailPointConnectProject',
@@ -70,6 +72,21 @@ try {
     $dbxTarget = @(Get-IntegrationWizardTargets -Platform 'Databricks' -Context @{ Connector = $true })
     Assert-Equal 1 $dbxTarget.Count 'Databricks connector target resolves when Connector switch is set'
     Assert-Equal 'databricks-connector' $dbxTarget[0]['Id'] 'Databricks connector definition id matches'
+
+    # 6) Verify Salesforce and GitHub target resolution
+    Import-Module (Join-Path $connectRoot 'modules/Definitions/Salesforce.Connector.psm1') -Force
+    Register-IntegrationWizardPlatform -Name 'Salesforce' -Title 'Salesforce' -CoreOptions @('Connector', 'Entro') -CliName 'sf'
+    Register-SalesforceConnectorDefinitions
+    $sfTarget = @(Get-IntegrationWizardTargets -Platform 'Salesforce' -Context @{ Connector = $true })
+    Assert-Equal 1 $sfTarget.Count 'Salesforce connector target resolves'
+    Assert-Equal 'salesforce-connector' $sfTarget[0]['Id'] 'Salesforce connector id matches'
+
+    Import-Module (Join-Path $connectRoot 'modules/Definitions/GitHub.Connector.psm1') -Force
+    Register-IntegrationWizardPlatform -Name 'GitHub' -Title 'GitHub' -CoreOptions @('Connector', 'Entro') -CliName 'gh'
+    Register-GitHubConnectorDefinitions
+    $ghTarget = @(Get-IntegrationWizardTargets -Platform 'GitHub' -Context @{ Connector = $true })
+    Assert-Equal 1 $ghTarget.Count 'GitHub connector target resolves'
+    Assert-Equal 'github-connector' $ghTarget[0]['Id'] 'GitHub connector id matches'
 }
 finally {
     Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue

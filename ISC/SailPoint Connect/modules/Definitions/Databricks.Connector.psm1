@@ -55,6 +55,7 @@ function Register-DatabricksConnectorDefinitions {
             @{ Name = 'ServicePrincipalName'; Source = 'Supply'; Prompt = 'Service principal display name'; Purpose = 'Account-level SP for ISC'; Required = $false; Default = 'SailPoint-source' }
             @{ Name = 'AccountId'; Source = 'Discover'; Prompt = 'Databricks Account ID'; Purpose = 'From account console menu'; Required = $true }
             @{ Name = 'MetastoreId'; Source = 'Supply'; Prompt = 'Unity Catalog metastore ID'; Purpose = 'Governs workspaces in metastore'; Required = $true }
+            @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: AgentDiscovery)'; Purpose = 'Optional ISC feature permissions'; Required = $false; ValidateSet = @('AgentDiscovery') }
             @{ Name = 'RotateSecret'; Source = 'Supply'; Prompt = 'Rotate OAuth secret'; Purpose = 'Create new secret if SP exists'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings'; Required = $false }
         )
@@ -159,6 +160,13 @@ Invoke-DatabricksEnsureOAuthSecret -AccountId '$($c['AccountId'])' -Cloud '$(Get
             }
             else {
                 Write-Host '  Client ID / Secret: from the Entra application'
+            }
+            if ($ctx['Feature'] -and @($ctx['Feature'] -split ',') -contains 'AgentDiscovery') {
+                Write-Host ''
+                Write-Host '  Machine Identity & Agent Discovery (Mosaic AI):' -ForegroundColor Yellow
+                Write-Host '    - Grant CAN_QUERY on all Mosaic AI agent serving endpoints to the service principal'
+                Write-Host '    - Grant USE_CATALOG / USE_SCHEMA for Unity Catalog AI models & tools'
+                Write-Host '    - Requires SailPoint Agentic Fabric license on tenant'
             }
             Write-Host ''
         }

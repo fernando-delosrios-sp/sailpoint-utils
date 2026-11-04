@@ -97,6 +97,19 @@ try {
     $refused = $null
     try { Connect-DatabricksAccount -AccountId 'acct-1' -Cloud 'Azure' -NonInteractive } catch { $refused = $_.Exception.Message }
     Assert-True ($refused -match 'databricks auth login --host https://accounts.azuredatabricks.net --account-id acct-1') 'a missing account session names the login command'
+
+    # Agent Discovery / Mosaic AI tests
+    $packs = Get-DatabricksFeaturePacks
+    Assert-True ($packs.ContainsKey('AgentDiscovery')) 'AgentDiscovery pack exists in Databricks connector'
+    $agentPack = Get-DatabricksAgentDiscoveryFeaturePack
+    Assert-Equal 'AgentDiscovery' $agentPack.Name 'AgentDiscovery pack name matches'
+    $checklist = Get-DatabricksIscFeatureChecklist -FeatureNames @('AgentDiscovery')
+    Assert-True (($checklist -join ' ') -like '*Mosaic AI*') 'Checklist includes Mosaic AI guidance'
+    Assert-True (($checklist -join ' ') -like '*Agentic Fabric*') 'Checklist notes Agentic Fabric requirement'
+
+    $connSettings = Build-DatabricksConnectionSettings -AccountId 'acct-1' -Cloud 'Aws' -MetastoreId 'meta-123' -ClientId 'app-guid-1' -FeatureNames @('AgentDiscovery')
+    Assert-True ($connSettings -like '*OAuth Client ID: app-guid-1*') 'Connection settings include Client ID'
+    Assert-True ($connSettings -like '*Mosaic AI Agent*') 'Connection settings include Agent Discovery section'
 }
 finally {
     Remove-Item Function:global:databricks -ErrorAction SilentlyContinue

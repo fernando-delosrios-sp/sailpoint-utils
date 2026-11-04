@@ -33,6 +33,8 @@
         'Connect-SailPointAzure'
         'Connect-SailPointGoogleCloud'
         'Connect-SailPointDatabricks'
+        'Connect-SailPointSalesforce'
+        'Connect-SailPointGitHub'
         'Start-SailPointIQServiceControl'
         'New-SailPointM365AccessProfile'
         'Get-SailPointConnectProject'
