@@ -226,6 +226,7 @@ function Get-IntegrationWizardAccessRequirementLists {
             }
             '^aws-ciem-connector$' {
                 Import-Module (Join-Path $moduleRoot 'ISC.AwsCiemConnector.psm1') -Force -WarningAction SilentlyContinue
+                Initialize-AwsCiemConnectorData
                 $ciemActions = @(Get-CiemPolicyActions)
                 $split = Split-RequirementsByAccessClass -Names $ciemActions -Kind 'AwsAction'
                 foreach ($a in $split.ReadOnly) { $readOnly.Add($a) }
