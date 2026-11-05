@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.0.2' $manifest.Version.ToString() 'Manifest version 1.0.2'
+Assert-Equal '1.1.0' $manifest.Version.ToString() 'Manifest version 1.1.0'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members

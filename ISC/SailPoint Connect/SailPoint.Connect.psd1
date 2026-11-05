@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.0.2'
+    ModuleVersion = '1.1.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -67,6 +67,8 @@
                 'GoogleCloud'
                 'GCP'
                 'Databricks'
+                'Salesforce'
+                'GitHub'
                 'IQService'
                 'Connector'
             )
@@ -81,7 +83,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Fix Databricks wizard target resolution, forward wizard/interactive state to IQService and M365 Access Profiles, and align parameter bindings across platform scripts.'
+            ReleaseNotes = 'Add Salesforce and GitHub SaaS connectors, Agentforce and Copilot agent discovery, Entro companions, and Databricks Mosaic AI AgentDiscovery support.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'
