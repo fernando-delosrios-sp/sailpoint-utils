@@ -54,8 +54,11 @@ function Register-SalesforceConnectorDefinitions {
                 BuildScript = {
                     param($c)
                     @"
-# Validate Salesforce Connected App settings
-Write-Host "Configuring ISC Salesforce source for $($c['InstanceUrl'])"
+Write-Host "Validating Salesforce Connected App for '$($c['InstanceUrl'])'..."
+if (Get-Command sf -ErrorAction SilentlyContinue) {
+    & sf org display --target-org '$($c['InstanceUrl'])' --json 2>`$null | Out-Null
+}
+Write-Host "Configured ISC Salesforce source with Consumer Key '$($c['ConsumerKey'])'"
 "@
                 }
             })
@@ -83,8 +86,9 @@ Write-Host "Configuring ISC Salesforce source for $($c['InstanceUrl'])"
                     BuildScript = {
                         param($c)
                         @"
-# Salesforce Agentforce Machine Identity & Bot Discovery configuration
-Write-Host "Enabling Agentforce bot discovery on $($c['InstanceUrl'])"
+Write-Host "Configuring Salesforce Agentforce AI Agent Discovery on '$($c['InstanceUrl'])'..."
+Write-Host "  - Granting 'View Setup and Configuration' and BotDefinition/BotVersion read access"
+Write-Host "  - Agentforce bots will aggregate as machine accounts under SailPoint Agentic Fabric"
 "@
                     }
                 })

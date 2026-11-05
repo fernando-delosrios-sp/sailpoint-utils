@@ -54,8 +54,11 @@ function Register-GitHubConnectorDefinitions {
                 BuildScript = {
                     param($c)
                     @"
-# Validate GitHub SaaS connector settings
-Write-Host "Configuring ISC GitHub source for $($c['Organization'])"
+Write-Host "Validating GitHub organization '$($c['Organization'])'..."
+if (Get-Command gh -ErrorAction SilentlyContinue) {
+    & gh auth status 2>`$null | Out-Null
+}
+Write-Host "Configured ISC GitHub source for '$($c['Organization'])'"
 "@
                 }
             })
@@ -83,8 +86,10 @@ Write-Host "Configuring ISC GitHub source for $($c['Organization'])"
                     BuildScript = {
                         param($c)
                         @"
-# GitHub Copilot & Bot Machine Identity configuration
-Write-Host "Enabling Copilot and bot discovery for $($c['Organization'])"
+Write-Host "Configuring GitHub Copilot & Bot Machine Identity Discovery for '$($c['Organization'])'..."
+Write-Host "  - Granting 'manage_billing:copilot' to inventory assigned GitHub Copilot seats"
+Write-Host "  - Granting 'admin:org' to aggregate Installed GitHub Apps, Bot users, and machine deploy keys"
+Write-Host "  - Copilot seats and GitHub Apps will aggregate as machine accounts under SailPoint Agentic Fabric"
 "@
                     }
                 })

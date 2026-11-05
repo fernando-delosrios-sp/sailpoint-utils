@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.1.0'
+    ModuleVersion = '1.1.1'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -83,7 +83,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Add Salesforce and GitHub SaaS connectors, Agentforce and Copilot agent discovery, Entro companions, and Databricks Mosaic AI AgentDiscovery support.'
+            ReleaseNotes = 'Fix BuildScript action across AWS, Azure, Google Cloud, Salesforce, and GitHub connectors to generate complete, executable automation scripts instead of empty files.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'

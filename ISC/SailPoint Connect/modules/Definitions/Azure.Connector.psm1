@@ -59,6 +59,26 @@ function Register-AzureConnectorDefinitions {
             @{ Name = 'RotateSecret'; Source = 'Supply'; Prompt = 'Rotate secret'; Purpose = 'Create new client secret on update'; Required = $false }
         )
         Steps        = { param($ctx) @() }
+        BuildScript  = {
+            param($c)
+            $appName = if ($c['ApplicationName']) { [string]$c['ApplicationName'] } else { 'SailPoint-ISC-Connector' }
+            $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
+            $tenantId = if ($c['TenantId']) { [string]$c['TenantId'] } else { '' }
+            $featureStr = if ($c['Feature']) { [string]$c['Feature'] } else { '' }
+            @"
+# Ensure SailPoint.Connect module or platform runner is available
+`$setupScript = Join-Path `$PSScriptRoot 'Azure.ps1'
+if (-not (Test-Path -LiteralPath `$setupScript)) {
+    `$mod = Get-Module -ListAvailable SailPoint.Connect | Select-Object -First 1
+    if (`$mod) { `$setupScript = Join-Path (Split-Path `$mod.Path) 'Azure.ps1' }
+}
+if (Test-Path -LiteralPath `$setupScript) {
+    & `$setupScript -Connector -Access '$access' -ApplicationName '$appName'$(if ($tenantId) { " -TenantId '$tenantId'" })$(if ($featureStr) { " -Feature '$featureStr'" }) -Action Run -NonInteractive
+} else {
+    throw 'Could not locate Azure.ps1 or SailPoint.Connect module.'
+}
+"@
+        }
         LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AzureLegacyFromContext -Context $ctx -WhatIf:$WhatIfPreference }
     }
 }

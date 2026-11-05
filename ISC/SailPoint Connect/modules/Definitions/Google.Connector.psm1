@@ -76,6 +76,26 @@ function Register-GoogleConnectorDefinitions {
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Keys and connection settings'; Required = $false }
         )
         Steps        = { param($ctx) @() }
+        BuildScript  = {
+            param($c)
+            $orgId = if ($c['OrganizationId']) { [string]$c['OrganizationId'] } else { '' }
+            $projId = if ($c['ProjectId']) { [string]$c['ProjectId'] } else { '' }
+            $user = if ($c['ImpersonateUser']) { [string]$c['ImpersonateUser'] } else { '' }
+            $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
+            @"
+# Ensure SailPoint.Connect module or platform runner is available
+`$setupScript = Join-Path `$PSScriptRoot 'Google Cloud.ps1'
+if (-not (Test-Path -LiteralPath `$setupScript)) {
+    `$mod = Get-Module -ListAvailable SailPoint.Connect | Select-Object -First 1
+    if (`$mod) { `$setupScript = Join-Path (Split-Path `$mod.Path) 'Google Cloud.ps1' }
+}
+if (Test-Path -LiteralPath `$setupScript) {
+    & `$setupScript -SaaSConnector -Access '$access' -OrganizationId '$orgId' -ProjectId '$projId' -ImpersonateUser '$user' -Action Run -NonInteractive
+} else {
+    throw 'Could not locate Google Cloud.ps1 or SailPoint.Connect module.'
+}
+"@
+        }
         LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-GoogleLegacyFromContext -Mode 'Saas' -Context $ctx -WhatIf:$WhatIfPreference }
     }
     Register-IntegrationWizardDefinition @{
@@ -97,6 +117,27 @@ function Register-GoogleConnectorDefinitions {
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Artifacts'; Required = $false }
         )
         Steps        = { param($ctx) @() }
+        BuildScript  = {
+            param($c)
+            $orgId = if ($c['OrganizationId']) { [string]$c['OrganizationId'] } else { '' }
+            $projId = if ($c['ProjectId']) { [string]$c['ProjectId'] } else { '' }
+            $user = if ($c['ImpersonateUser']) { [string]$c['ImpersonateUser'] } else { '' }
+            $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
+            $featureStr = if ($c['Feature']) { [string]$c['Feature'] } else { '' }
+            @"
+# Ensure SailPoint.Connect module or platform runner is available
+`$setupScript = Join-Path `$PSScriptRoot 'Google Cloud.ps1'
+if (-not (Test-Path -LiteralPath `$setupScript)) {
+    `$mod = Get-Module -ListAvailable SailPoint.Connect | Select-Object -First 1
+    if (`$mod) { `$setupScript = Join-Path (Split-Path `$mod.Path) 'Google Cloud.ps1' }
+}
+if (Test-Path -LiteralPath `$setupScript) {
+    & `$setupScript -CiemConnector -Access '$access' -OrganizationId '$orgId' -ProjectId '$projId' -ImpersonateUser '$user'$(if ($featureStr) { " -Feature '$featureStr'" }) -Action Run -NonInteractive
+} else {
+    throw 'Could not locate Google Cloud.ps1 or SailPoint.Connect module.'
+}
+"@
+        }
         LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-GoogleLegacyFromContext -Mode 'Ciem' -Context $ctx -WhatIf:$WhatIfPreference }
     }
 }

@@ -103,6 +103,29 @@ function Register-AwsConnectorDefinitions {
             @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: ActivityInsights, AgentDiscovery, Ciem)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
         )
         Steps        = { param($ctx) @() }
+        BuildScript  = {
+            param($c)
+            $featureStr = if ($c['Feature']) { [string]$c['Feature'] } else { '' }
+            $policySet = if ($c['PolicySet']) { [string]$c['PolicySet'] } else { 'Mgo' }
+            $roleName = if ($c['RoleName']) { [string]$c['RoleName'] } else { 'SailPointAWSRole' }
+            $region = if ($c['Region']) { [string]$c['Region'] } else { 'us-east-1' }
+            $cloud = if ($c['Cloud']) { [string]$c['Cloud'] } else { 'Commercial' }
+            $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
+            $extId = if ($c['IscExternalId']) { [string]$c['IscExternalId'] } else { [string]$c['ExternalId'] }
+            @"
+# Ensure SailPoint.Connect module or platform runner is available
+`$setupScript = Join-Path `$PSScriptRoot 'AWS.ps1'
+if (-not (Test-Path -LiteralPath `$setupScript)) {
+    `$mod = Get-Module -ListAvailable SailPoint.Connect | Select-Object -First 1
+    if (`$mod) { `$setupScript = Join-Path (Split-Path `$mod.Path) 'AWS.ps1' }
+}
+if (Test-Path -LiteralPath `$setupScript) {
+    & `$setupScript -SaaSConnector -Access '$access' -IscExternalId '$extId' -RoleName '$roleName' -Region '$region' -Cloud '$cloud' -PolicySet '$policySet'$(if ($featureStr) { " -Feature '$featureStr'" }) -Action Run -NonInteractive
+} else {
+    throw 'Could not locate AWS.ps1 or SailPoint.Connect module.'
+}
+"@
+        }
         LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AwsLegacyFromContext -SourceType 'AwsSaas' -Context $ctx -WhatIf:$WhatIfPreference }
     }
     Register-IntegrationWizardDefinition @{
@@ -121,6 +144,26 @@ function Register-AwsConnectorDefinitions {
             @{ Name = 'Scope'; Source = 'Supply'; Prompt = 'Scope'; Purpose = 'Single account or organization'; Required = $false; ValidateSet = @('CurrentAccount', 'Organization'); Default = 'CurrentAccount' }
         )
         Steps        = { param($ctx) @() }
+        BuildScript  = {
+            param($c)
+            $cloudTrail = if ($c['CloudTrailBucket']) { [string]$c['CloudTrailBucket'] } else { '' }
+            $scope = if ($c['Scope']) { [string]$c['Scope'] } else { 'CurrentAccount' }
+            $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
+            $extId = if ($c['IscExternalId']) { [string]$c['IscExternalId'] } else { [string]$c['ExternalId'] }
+            @"
+# Ensure SailPoint.Connect module or platform runner is available
+`$setupScript = Join-Path `$PSScriptRoot 'AWS.ps1'
+if (-not (Test-Path -LiteralPath `$setupScript)) {
+    `$mod = Get-Module -ListAvailable SailPoint.Connect | Select-Object -First 1
+    if (`$mod) { `$setupScript = Join-Path (Split-Path `$mod.Path) 'AWS.ps1' }
+}
+if (Test-Path -LiteralPath `$setupScript) {
+    & `$setupScript -CiemConnector -Access '$access' -IscExternalId '$extId' -CloudTrailBucket '$cloudTrail' -Scope '$scope' -Action Run -NonInteractive
+} else {
+    throw 'Could not locate AWS.ps1 or SailPoint.Connect module.'
+}
+"@
+        }
         LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AwsLegacyFromContext -SourceType 'CiemAws' -Context $ctx -WhatIf:$WhatIfPreference }
     }
 }

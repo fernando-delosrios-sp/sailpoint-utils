@@ -214,7 +214,43 @@ function New-IntegrationWizardBuildScript {
         foreach ($member in @($Definition.Members)) {
             [void]$sb.AppendLine("# --- $($member.Title) ---")
             [void]$sb.AppendLine('')
-            $steps = & $member.Steps $Context
+            if ($member['BuildScript']) {
+                [void]$sb.AppendLine((& $member['BuildScript'] $Context))
+                [void]$sb.AppendLine('')
+            }
+            else {
+                $steps = & $member.Steps $Context
+                $n = 0
+                foreach ($step in @($steps)) {
+                    if ($step.Kind -in @('Manual', 'Output')) {
+                        $n++
+                        [void]$sb.AppendLine("# Step $n — $($step.Title) (manual)")
+                        [void]$sb.AppendLine("# $($step['Manual'])")
+                        [void]$sb.AppendLine('')
+                        continue
+                    }
+                    $n++
+                    [void]$sb.AppendLine("# Step $n — $($step.Title)")
+                    if ($step['BuildScript']) {
+                        [void]$sb.AppendLine((& $step['BuildScript'] $Context))
+                    }
+                    elseif ($step['ProbeScript']) { [void]$sb.AppendLine($step['ProbeScript']) }
+                    if ($step['Cli']) {
+                        $cliText = & $step['Cli'] $Context
+                        [void]$sb.AppendLine($cliText)
+                    }
+                    [void]$sb.AppendLine('')
+                }
+            }
+        }
+    }
+    else {
+        if ($Definition['BuildScript']) {
+            [void]$sb.AppendLine((& $Definition['BuildScript'] $Context))
+            [void]$sb.AppendLine('')
+        }
+        else {
+            $steps = & $Definition.Steps $Context
             $n = 0
             foreach ($step in @($steps)) {
                 if ($step.Kind -in @('Manual', 'Output')) {
@@ -229,39 +265,15 @@ function New-IntegrationWizardBuildScript {
                 if ($step['BuildScript']) {
                     [void]$sb.AppendLine((& $step['BuildScript'] $Context))
                 }
-                elseif ($step['ProbeScript']) { [void]$sb.AppendLine($step['ProbeScript']) }
+                elseif ($step['ProbeScript']) {
+                    [void]$sb.AppendLine($step['ProbeScript'])
+                }
                 if ($step['Cli']) {
                     $cliText = & $step['Cli'] $Context
                     [void]$sb.AppendLine($cliText)
                 }
                 [void]$sb.AppendLine('')
             }
-        }
-    }
-    else {
-        $steps = & $Definition.Steps $Context
-        $n = 0
-        foreach ($step in @($steps)) {
-            if ($step.Kind -in @('Manual', 'Output')) {
-                $n++
-                [void]$sb.AppendLine("# Step $n — $($step.Title) (manual)")
-                [void]$sb.AppendLine("# $($step['Manual'])")
-                [void]$sb.AppendLine('')
-                continue
-            }
-            $n++
-            [void]$sb.AppendLine("# Step $n — $($step.Title)")
-            if ($step['BuildScript']) {
-                [void]$sb.AppendLine((& $step['BuildScript'] $Context))
-            }
-            elseif ($step['ProbeScript']) {
-                [void]$sb.AppendLine($step['ProbeScript'])
-            }
-            if ($step['Cli']) {
-                $cliText = & $step['Cli'] $Context
-                [void]$sb.AppendLine($cliText)
-            }
-            [void]$sb.AppendLine('')
         }
     }
     $dir = Split-Path -Parent $OutputPath
