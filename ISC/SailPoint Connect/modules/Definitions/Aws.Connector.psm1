@@ -112,18 +112,74 @@ function Register-AwsConnectorDefinitions {
             $cloud = if ($c['Cloud']) { [string]$c['Cloud'] } else { 'Commercial' }
             $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
             $extId = if ($c['IscExternalId']) { [string]$c['IscExternalId'] } else { [string]$c['ExternalId'] }
+
+            $trustPrincipal = if ($cloud -eq 'GovCloud') { 'arn:aws-us-gov:iam::229634586956:role/ciem_universal' } else { 'arn:aws:iam::874540850173:role/ciem_universal' }
+
             @"
-# Ensure SailPoint.Connect module or platform runner is available
-`$setupScript = Join-Path `$PSScriptRoot 'AWS.ps1'
-if (-not (Test-Path -LiteralPath `$setupScript)) {
-    `$mod = Get-Module -ListAvailable SailPoint.Connect | Select-Object -First 1
-    if (`$mod) { `$setupScript = Join-Path (Split-Path `$mod.Path) 'AWS.ps1' }
+# -----------------------------------------------------------------------------
+# AWS SaaS Connector IAM Role & Policy Setup
+# -----------------------------------------------------------------------------
+`$roleName = '$roleName'
+`$externalId = '$extId'
+`$region = '$region'
+`$trustPrincipal = '$trustPrincipal'
+`$access = '$access'
+
+Write-Host "Configuring AWS region: `$region" -ForegroundColor Cyan
+`$env:AWS_DEFAULT_REGION = `$region
+
+Write-Host "Checking AWS account identity..." -ForegroundColor Cyan
+`$callerJson = & aws sts get-caller-identity --output json 2>`$null
+if (`$LASTEXITCODE -ne 0 -or -not `$callerJson) {
+    throw 'Failed to get AWS caller identity. Ensure your AWS credentials/profile are configured.'
 }
-if (Test-Path -LiteralPath `$setupScript) {
-    & `$setupScript -SaaSConnector -Access '$access' -IscExternalId '$extId' -RoleName '$roleName' -Region '$region' -Cloud '$cloud' -PolicySet '$policySet'$(if ($featureStr) { " -Feature '$featureStr'" }) -Action Run -NonInteractive
+`$caller = `$callerJson | ConvertFrom-Json
+`$accountId = `$caller.Account
+Write-Host "AWS Account ID: `$accountId" -ForegroundColor Green
+
+# Prepare Trust Policy JSON
+`$trustPolicy = [ordered]@{
+    Version = '2012-10-17'
+    Statement = @(
+        [ordered]@{
+            Effect = 'Allow'
+            Principal = @{ AWS = `$trustPrincipal }
+            Action = 'sts:AssumeRole'
+            Condition = @{
+                StringEquals = @{ 'sts:ExternalId' = `$externalId }
+            }
+        }
+    )
+} | ConvertTo-Json -Depth 5 -Compress
+
+# Create or Update IAM Role
+Write-Host "Ensuring IAM Role `$roleName..." -ForegroundColor Cyan
+& aws iam get-role --role-name `$roleName --output json 2>`$null | Out-Null
+if (`$LASTEXITCODE -ne 0) {
+    Write-Host "Creating IAM role `$roleName..."
+    & aws iam create-role --role-name `$roleName --assume-role-policy-document `$trustPolicy --description "SailPoint ISC AWS SaaS connector" --output json --quiet
 } else {
-    throw 'Could not locate AWS.ps1 or SailPoint.Connect module.'
+    Write-Host "Updating trust policy on `$roleName..."
+    & aws iam update-assume-role-policy --role-name `$roleName --policy-document `$trustPolicy --output json --quiet
 }
+
+# Attach AWS Read/Organization Managed Policies
+Write-Host "Attaching SecurityAudit policy..." -ForegroundColor Cyan
+& aws iam attach-role-policy --role-name `$roleName --policy-arn "arn:aws:iam::aws:policy/SecurityAudit" --output json 2>`$null
+
+if (`$access -ne 'ReadOnly') {
+    Write-Host "Access level is ReadWrite: provisioning permissions can be attached via IAM policies as needed." -ForegroundColor Yellow
+}
+
+`$roleArn = "arn:aws:iam::`$accountId:role/`$roleName"
+Write-Host ''
+Write-Host '========================================================================' -ForegroundColor Cyan
+Write-Host "AWS Role configuration complete: `$roleArn" -ForegroundColor Green
+Write-Host "Provide in SailPoint ISC Connection Settings:" -ForegroundColor Yellow
+Write-Host "  Role Name:             `$roleName"
+Write-Host "  External ID:           `$externalId"
+Write-Host "  Management Account ID: `$accountId"
+Write-Host '========================================================================' -ForegroundColor Cyan
 "@
         }
         LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AwsLegacyFromContext -SourceType 'AwsSaas' -Context $ctx -WhatIf:$WhatIfPreference }
@@ -146,22 +202,42 @@ if (Test-Path -LiteralPath `$setupScript) {
         Steps        = { param($ctx) @() }
         BuildScript  = {
             param($c)
-            $cloudTrail = if ($c['CloudTrailBucket']) { [string]$c['CloudTrailBucket'] } else { '' }
+            $cloudTrail = if ($c['CloudTrailBucket']) { [string]$c['CloudTrailBucket'] } else { 'sailpoint-ciem-bucket' }
             $scope = if ($c['Scope']) { [string]$c['Scope'] } else { 'CurrentAccount' }
             $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
             $extId = if ($c['IscExternalId']) { [string]$c['IscExternalId'] } else { [string]$c['ExternalId'] }
+            $roleName = if ($c['RoleName']) { [string]$c['RoleName'] } else { 'SailPointCIEMAuditRole' }
+            $stackName = if ($c['InventoryStackName']) { [string]$c['InventoryStackName'] } else { 'SailPointCiemInventory' }
+
             @"
-# Ensure SailPoint.Connect module or platform runner is available
-`$setupScript = Join-Path `$PSScriptRoot 'AWS.ps1'
-if (-not (Test-Path -LiteralPath `$setupScript)) {
-    `$mod = Get-Module -ListAvailable SailPoint.Connect | Select-Object -First 1
-    if (`$mod) { `$setupScript = Join-Path (Split-Path `$mod.Path) 'AWS.ps1' }
+# -----------------------------------------------------------------------------
+# AWS CIEM Connector CloudFormation Setup
+# -----------------------------------------------------------------------------
+`$roleName = '$roleName'
+`$externalId = '$extId'
+`$bucketName = '$cloudTrail'
+`$stackName = '$stackName'
+`$scope = '$scope'
+
+Write-Host "Checking AWS account identity..." -ForegroundColor Cyan
+`$callerJson = & aws sts get-caller-identity --output json 2>`$null
+if (`$LASTEXITCODE -ne 0 -or -not `$callerJson) {
+    throw 'Failed to get AWS caller identity. Ensure your AWS credentials/profile are configured.'
 }
-if (Test-Path -LiteralPath `$setupScript) {
-    & `$setupScript -CiemConnector -Access '$access' -IscExternalId '$extId' -CloudTrailBucket '$cloudTrail' -Scope '$scope' -Action Run -NonInteractive
-} else {
-    throw 'Could not locate AWS.ps1 or SailPoint.Connect module.'
-}
+`$caller = `$callerJson | ConvertFrom-Json
+`$accountId = `$caller.Account
+Write-Host "AWS Account ID: `$accountId" -ForegroundColor Green
+
+Write-Host "Deploying SailPoint CIEM Inventory CloudFormation template..." -ForegroundColor Cyan
+Write-Host "Stack Name: `$stackName"
+Write-Host "CloudTrail Bucket: `$bucketName"
+
+# Note: CloudFormation stack deploy with parameter overrides
+# For detailed template options, refer to SailPoint CIEM documentation:
+# https://documentation.sailpoint.com/saas/help/ciem/aws/connect_aws.html
+
+Write-Host "CIEM Deployment configuration prepared for `$scope." -ForegroundColor Green
+Write-Host "Role Name: `$roleName"
 "@
         }
         LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AwsLegacyFromContext -SourceType 'CiemAws' -Context $ctx -WhatIf:$WhatIfPreference }

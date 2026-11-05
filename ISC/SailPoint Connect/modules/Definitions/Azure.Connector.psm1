@@ -65,17 +65,61 @@ function Register-AzureConnectorDefinitions {
             $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
             $tenantId = if ($c['TenantId']) { [string]$c['TenantId'] } else { '' }
             $featureStr = if ($c['Feature']) { [string]$c['Feature'] } else { '' }
+
             @"
-# Ensure SailPoint.Connect module or platform runner is available
-`$setupScript = Join-Path `$PSScriptRoot 'Azure.ps1'
-if (-not (Test-Path -LiteralPath `$setupScript)) {
-    `$mod = Get-Module -ListAvailable SailPoint.Connect | Select-Object -First 1
-    if (`$mod) { `$setupScript = Join-Path (Split-Path `$mod.Path) 'Azure.ps1' }
-}
-if (Test-Path -LiteralPath `$setupScript) {
-    & `$setupScript -Connector -Access '$access' -ApplicationName '$appName'$(if ($tenantId) { " -TenantId '$tenantId'" })$(if ($featureStr) { " -Feature '$featureStr'" }) -Action Run -NonInteractive
+# -----------------------------------------------------------------------------
+# Microsoft Entra ID (Azure AD) SaaS Connector Setup
+# -----------------------------------------------------------------------------
+`$appName = '$appName'
+`$access = '$access'
+`$tenantId = '$tenantId'
+
+Write-Host "Checking Azure CLI authentication..." -ForegroundColor Cyan
+if (Get-Command az -ErrorAction SilentlyContinue) {
+    `$accountJson = & az account show --output json 2>`$null
+    if (`$LASTEXITCODE -ne 0 -or -not `$accountJson) {
+        throw 'Not signed in to Azure CLI. Run: az login'
+    }
+    `$account = `$accountJson | ConvertFrom-Json
+    if (-not `$tenantId) { `$tenantId = `$account.tenantId }
+    Write-Host "Tenant ID: `$tenantId" -ForegroundColor Green
+
+    Write-Host "Ensuring Microsoft Entra application registration for '`$appName'..." -ForegroundColor Cyan
+    `$appId = (& az ad app list --display-name "`$appName" --query "[0].appId" -o tsv 2>`$null)
+
+    if (-not `$appId) {
+        Write-Host "Creating application '`$appName'..."
+        `$appId = (& az ad app create --display-name "`$appName" --query "appId" -o tsv)
+        Write-Host "Created application with App ID (Client ID): `$appId" -ForegroundColor Green
+    } else {
+        Write-Host "Found existing application with App ID (Client ID): `$appId" -ForegroundColor Green
+    }
+
+    # Ensure service principal
+    `$spId = (& az ad sp list --filter "appId eq '`$appId'" --query "[0].id" -o tsv 2>`$null)
+    if (-not `$spId) {
+        Write-Host "Creating enterprise service principal..."
+        `$spId = (& az ad sp create --id `$appId --query "id" -o tsv)
+    }
+
+    Write-Host "Creating client secret..." -ForegroundColor Cyan
+    `$secretJson = & az ad app credential reset --id `$appId --display-name "ISC" --years 2 --output json 2>`$null
+    `$secret = (`$secretJson | ConvertFrom-Json).password
+
+    Write-Host ''
+    Write-Host '========================================================================' -ForegroundColor Cyan
+    Write-Host 'Microsoft Entra ID Connector Setup Complete' -ForegroundColor Green
+    Write-Host "Provide in SailPoint ISC Connection Settings:" -ForegroundColor Yellow
+    Write-Host "  Tenant ID:     `$tenantId"
+    Write-Host "  Client ID:     `$appId"
+    Write-Host "  Client Secret: `$secret"
+    Write-Host ''
+    Write-Host "Note: In the Azure Portal (Microsoft Entra admin center -> App registrations),"
+    Write-Host "grant Microsoft Graph Application Permissions (e.g. User.Read.All, Group.Read.All)"
+    Write-Host "and click 'Grant admin consent'."
+    Write-Host '========================================================================' -ForegroundColor Cyan
 } else {
-    throw 'Could not locate Azure.ps1 or SailPoint.Connect module.'
+    Write-Warning "Azure CLI (az) not found. Connect-MgGraph PowerShell SDK can be used alternatively."
 }
 "@
         }

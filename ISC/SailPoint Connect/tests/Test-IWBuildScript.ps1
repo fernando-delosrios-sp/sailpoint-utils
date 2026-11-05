@@ -32,8 +32,8 @@ try {
     $awsPath = Join-Path $outDir 'aws-saas.ps1'
     New-IntegrationWizardBuildScript -Definition $awsDef -Context $awsCtx -OutputPath $awsPath
     $awsContent = Get-Content -LiteralPath $awsPath -Raw
-    Assert-True ($awsContent -like '*AWS.ps1*') 'AWS SaaS script contains AWS.ps1 invocation'
-    Assert-True ($awsContent -like '*-SaaSConnector*') 'AWS SaaS script passes -SaaSConnector'
+    Assert-True ($awsContent -like '*aws iam create-role*') 'AWS SaaS script contains aws iam create-role CLI command'
+    Assert-True ($awsContent -like '*sts:AssumeRole*') 'AWS SaaS script configures sts:AssumeRole'
 
     # 2. Azure BuildScript
     $azDef = Get-IntegrationWizardDefinition -Id 'azure-connector'
@@ -41,8 +41,8 @@ try {
     $azPath = Join-Path $outDir 'azure.ps1'
     New-IntegrationWizardBuildScript -Definition $azDef -Context $azCtx -OutputPath $azPath
     $azContent = Get-Content -LiteralPath $azPath -Raw
-    Assert-True ($azContent -like '*Azure.ps1*') 'Azure script contains Azure.ps1 invocation'
-    Assert-True ($azContent -like '*-ApplicationName ''MyEntraApp''*') 'Azure script passes application name'
+    Assert-True ($azContent -like '*az ad app create*') 'Azure script contains az ad app create CLI command'
+    Assert-True ($azContent -like '*az ad sp create*') 'Azure script contains az ad sp create CLI command'
 
     # 3. Google Cloud BuildScript
     $gDef = Get-IntegrationWizardDefinition -Id 'google-saas-connector'
@@ -50,7 +50,8 @@ try {
     $gPath = Join-Path $outDir 'google.ps1'
     New-IntegrationWizardBuildScript -Definition $gDef -Context $gCtx -OutputPath $gPath
     $gContent = Get-Content -LiteralPath $gPath -Raw
-    Assert-True ($gContent -like '*Google Cloud.ps1*') 'Google script contains Google Cloud.ps1 invocation'
+    Assert-True ($gContent -like '*gcloud iam service-accounts create*') 'Google script contains gcloud iam service-accounts create CLI command'
+    Assert-True ($gContent -like '*gcloud services enable*') 'Google script contains gcloud services enable CLI command'
 
     # 4. Salesforce BuildScript
     $sfDef = Get-IntegrationWizardDefinition -Id 'salesforce-connector'
