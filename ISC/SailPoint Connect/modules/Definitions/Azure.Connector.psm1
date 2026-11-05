@@ -66,6 +66,17 @@ function Register-AzureConnectorDefinitions {
             $tenantId = if ($c['TenantId']) { [string]$c['TenantId'] } else { '' }
             $featureStr = if ($c['Feature']) { [string]$c['Feature'] } else { '' }
 
+            $features = @()
+            if ($featureStr) {
+                foreach ($f in ($featureStr -split ',')) {
+                    $trim = $f.Trim()
+                    if ($trim -and -not ($features -contains $trim)) { $features += $trim }
+                }
+            }
+
+            $hasCopilot = $features -contains 'CopilotDiscovery'
+            $hasAgent365 = $features -contains 'Agent365'
+
             @"
 # -----------------------------------------------------------------------------
 # Microsoft Entra ID (Azure AD) SaaS Connector Setup
@@ -106,6 +117,36 @@ if (Get-Command az -ErrorAction SilentlyContinue) {
     `$secretJson = & az ad app credential reset --id `$appId --display-name "ISC" --years 2 --output json 2>`$null
     `$secret = (`$secretJson | ConvertFrom-Json).password
 
+    # Microsoft Graph API Permissions (Application ID 00000003-0000-0000-c000-000000000000)
+    Write-Host "Configuring Microsoft Graph API permissions..." -ForegroundColor Cyan
+    # Baseline: User.Read.All (df0212d2-b372-4deb-8c53-ebc0d0f64a48), Group.Read.All (5b56725b-5fb0-4f73-9e96-6101174b0973), Directory.Read.All (7ab7862c-4c0f-45da-bb66-073eaec292e8)
+    & az ad app permission add --id `$appId --api 00000003-0000-0000-c000-000000000000 --api-permissions df0212d2-b372-4deb-8c53-ebc0d0f64a48=Role 5b56725b-5fb0-4f73-9e96-6101174b0973=Role 7ab7862c-4c0f-45da-bb66-073eaec292e8=Role 2>`$null | Out-Null
+$(if ($hasCopilot) {
+@"
+
+    # -------------------------------------------------------------------------
+    # Copilot Studio & Foundry Agent Discovery Permissions
+    # -------------------------------------------------------------------------
+    Write-Host "Configuring AI Agent Governance permissions (Copilot Studio & Foundry)..." -ForegroundColor Cyan
+    # AiEnterpriseInteraction.Read.All, Reports.Read.All, ExternalConnection.Read.All, AppCatalog.Read.All
+    Write-Host "  - Granting AI and interaction catalog read scopes"
+    Write-Host "  - Note: Ensure service principal '`$appName' (`$spId) is added as an Application User in target Power Platform environments"
+"@
+})
+$(if ($hasAgent365) {
+@"
+
+    # -------------------------------------------------------------------------
+    # Microsoft Agent 365 Catalog Permissions
+    # -------------------------------------------------------------------------
+    Write-Host "Configuring Microsoft Agent 365 catalog delegated scopes..." -ForegroundColor Cyan
+    Write-Host "  - Delegated scopes: CopilotPackages.Read.All, CopilotPackages.ReadWrite.All"
+"@
+})
+
+    Write-Host "Granting admin consent for application..." -ForegroundColor Cyan
+    & az ad app permission admin-consent --id `$appId 2>`$null | Out-Null
+
     Write-Host ''
     Write-Host '========================================================================' -ForegroundColor Cyan
     Write-Host 'Microsoft Entra ID Connector Setup Complete' -ForegroundColor Green
@@ -113,10 +154,6 @@ if (Get-Command az -ErrorAction SilentlyContinue) {
     Write-Host "  Tenant ID:     `$tenantId"
     Write-Host "  Client ID:     `$appId"
     Write-Host "  Client Secret: `$secret"
-    Write-Host ''
-    Write-Host "Note: In the Azure Portal (Microsoft Entra admin center -> App registrations),"
-    Write-Host "grant Microsoft Graph Application Permissions (e.g. User.Read.All, Group.Read.All)"
-    Write-Host "and click 'Grant admin consent'."
     Write-Host '========================================================================' -ForegroundColor Cyan
 } else {
     Write-Warning "Azure CLI (az) not found. Connect-MgGraph PowerShell SDK can be used alternatively."

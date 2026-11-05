@@ -10,6 +10,7 @@ Welcome to the documentation for **SailPoint Connect** — a progressive-disclos
 - [Command Reference (Cmdlets)](#command-reference)
 - [Architecture & Workspace Directory (`~/.sailpoint-connect`)](#architecture--workspaces)
 - [Progressive Disclosure Guide](#progressive-disclosure)
+- [Connector & Platform Permissions Breakdown](guides/connector-permissions-breakdown.md)
 - [Prerequisites & Toolchain](#prerequisites--toolchain)
 
 ---

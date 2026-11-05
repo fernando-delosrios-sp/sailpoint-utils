@@ -115,6 +115,19 @@ function Register-AwsConnectorDefinitions {
 
             $trustPrincipal = if ($cloud -eq 'GovCloud') { 'arn:aws-us-gov:iam::229634586956:role/ciem_universal' } else { 'arn:aws:iam::874540850173:role/ciem_universal' }
 
+            $features = @()
+            if ($featureStr) {
+                foreach ($f in ($featureStr -split ',')) {
+                    $trim = $f.Trim()
+                    if ($trim -and -not ($features -contains $trim)) { $features += $trim }
+                }
+            }
+            $tagSession = $features -contains 'ActivityInsights'
+            $trustActions = if ($tagSession) { "@('sts:AssumeRole', 'sts:TagSession')" } else { "@('sts:AssumeRole')" }
+
+            $hasAgentDiscovery = $features -contains 'AgentDiscovery'
+            $hasActivityInsights = $features -contains 'ActivityInsights'
+
             @"
 # -----------------------------------------------------------------------------
 # AWS SaaS Connector IAM Role & Policy Setup
@@ -138,13 +151,14 @@ if (`$LASTEXITCODE -ne 0 -or -not `$callerJson) {
 Write-Host "AWS Account ID: `$accountId" -ForegroundColor Green
 
 # Prepare Trust Policy JSON
+`$trustActions = $trustActions
 `$trustPolicy = [ordered]@{
     Version = '2012-10-17'
     Statement = @(
         [ordered]@{
             Effect = 'Allow'
             Principal = @{ AWS = `$trustPrincipal }
-            Action = 'sts:AssumeRole'
+            Action = `$trustActions
             Condition = @{
                 StringEquals = @{ 'sts:ExternalId' = `$externalId }
             }
@@ -163,9 +177,82 @@ if (`$LASTEXITCODE -ne 0) {
     & aws iam update-assume-role-policy --role-name `$roleName --policy-document `$trustPolicy --output json --quiet
 }
 
-# Attach AWS Read/Organization Managed Policies
+# Attach AWS Baseline Aggregation & Organization Policies
 Write-Host "Attaching SecurityAudit policy..." -ForegroundColor Cyan
 & aws iam attach-role-policy --role-name `$roleName --policy-arn "arn:aws:iam::aws:policy/SecurityAudit" --output json 2>`$null
+
+# Helper function to ensure customer-managed IAM policies
+function Set-ConnectorPolicy {
+    param([string]`$PolicyName, [string]`$PolicyDoc)
+    `$existingArn = "arn:aws:iam::`$accountId:policy/`$PolicyName"
+    `$check = & aws iam get-policy --policy-arn `$existingArn --output json 2>`$null
+    if (`$LASTEXITCODE -ne 0) {
+        Write-Host "Creating customer managed policy `$PolicyName..."
+        `$null = & aws iam create-policy --policy-name `$PolicyName --policy-document `$PolicyDoc --output json --quiet
+    }
+    Write-Host "Attaching `$PolicyName to `$roleName..."
+    & aws iam attach-role-policy --role-name `$roleName --policy-arn `$existingArn --output json 2>`$null
+}
+$(if ($hasAgentDiscovery) {
+@"
+
+# -----------------------------------------------------------------------------
+# Machine Identity & Agent Discovery Policy (Bedrock, AgentCore, Connect Bots)
+# -----------------------------------------------------------------------------
+Write-Host "Configuring Machine Identity & Agent Discovery permissions..." -ForegroundColor Cyan
+`$agentActions = @(
+    'bedrock:ListAgents', 'bedrock:GetAgent', 'bedrock:ListAgentActionGroups', 'bedrock:GetAgentActionGroup',
+    'bedrock:ListAgentKnowledgeBases', 'bedrock:GetAgentKnowledgeBase', 'bedrock:ListKnowledgeBases', 'bedrock:GetKnowledgeBase',
+    'bedrock:ListAgentAliases', 'bedrock:GetAgentAlias', 'bedrock:ListAgentVersions', 'bedrock:GetAgentVersion',
+    'bedrock:ListDataSources', 'bedrock:GetDataSource', 'bedrock:ListAgentCollaborators', 'bedrock:GetAgentCollaborator',
+    'kms:Decrypt', 'kms:GenerateDataKey',
+    'bedrock-agentcore:ListAgentRuntimes', 'bedrock-agentcore:GetAgentRuntime',
+    'bedrock-agentcore:ListAgentRuntimeEndpoints', 'bedrock-agentcore:GetAgentRuntimeEndpoint',
+    'bedrock-agentcore:ListAgentRuntimeVersions', 'bedrock-agentcore:ListGateways',
+    'bedrock-agentcore:GetGateway', 'bedrock-agentcore:ListGatewayTargets',
+    'bedrock-agentcore:GetGatewayTarget', 'bedrock-agentcore:ListWorkloadIdentities',
+    'bedrock-agentcore:GetWorkloadIdentity', 'bedrock-agentcore:ListOauth2CredentialProviders',
+    'bedrock-agentcore:GetApiKeyCredentialProvider', 'bedrock-agentcore:ListApiKeyCredentialProviders',
+    'bedrock-agentcore:GetOauth2CredentialProvider',
+    'connect:ListInstances', 'connect:DescribeInstance', 'connect:ListBots', 'connect:ListLexBots',
+    'lex:ListBots', 'lex:GetBot', 'lex:DescribeBotAlias', 'lex:ListBotAliases'
+)
+`$agentPolicyDoc = [ordered]@{
+    Version = '2012-10-17'
+    Statement = @(
+        [ordered]@{
+            Effect = 'Allow'
+            Action = `$agentActions
+            Resource = '*'
+        }
+    )
+} | ConvertTo-Json -Depth 5 -Compress
+Set-ConnectorPolicy -PolicyName 'SPAgentDiscoveryPolicy' -PolicyDoc `$agentPolicyDoc
+"@
+})
+$(if ($hasActivityInsights) {
+@"
+
+# -----------------------------------------------------------------------------
+# Activity Insights Policy (CloudTrail Event Lookup)
+# -----------------------------------------------------------------------------
+Write-Host "Configuring Activity Insights permissions..." -ForegroundColor Cyan
+`$insightsActions = @(
+    'cloudtrail:GetEventSelectors', 'cloudtrail:DescribeTrails', 'cloudtrail:List*', 'cloudtrail:LookupEvents'
+)
+`$insightsPolicyDoc = [ordered]@{
+    Version = '2012-10-17'
+    Statement = @(
+        [ordered]@{
+            Effect = 'Allow'
+            Action = `$insightsActions
+            Resource = '*'
+        }
+    )
+} | ConvertTo-Json -Depth 5 -Compress
+Set-ConnectorPolicy -PolicyName 'SPActivityInsightsPolicy' -PolicyDoc `$insightsPolicyDoc
+"@
+})
 
 if (`$access -ne 'ReadOnly') {
     Write-Host "Access level is ReadWrite: provisioning permissions can be attached via IAM policies as needed." -ForegroundColor Yellow

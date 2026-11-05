@@ -137,15 +137,72 @@ function Register-AwsEntroDefinitions {
                         if ($method -eq 'Terraform') {
                             return '# Use Entro Terraform-Entro.tf from the Entro AWS integration catalog.'
                         }
-                        $tplRegion = if ($c['EntroTemplateRegion']) { $c['EntroTemplateRegion'] } else { 'Default' }
                         $rn = if ($c['EntroRoleName']) { $c['EntroRoleName'] } else { 'EntroReadOnly' }
-                        $work = (Get-EntroAwsWizardWorkDirectory -Context $c) -replace "'", "''"
+                        $extId = [string]$c['EntroExternalId']
+
                         @"
-Import-Module (Join-Path `$PSScriptRoot 'modules/ISC.EntroAws.psm1') -Force
-Import-Module (Join-Path `$PSScriptRoot 'modules/Definitions/Aws.Entro.psm1') -Force
-`$tpl = Get-EntroAwsTemplatePath -Region '$tplRegion'
-`$work = '$work'
-Invoke-EntroAwsAssumeRoleSetup -EntroExternalId '$($c['EntroExternalId'])' -RoleName '$rn' -TemplatePath `$tpl -WorkDirectory `$work
+# -----------------------------------------------------------------------------
+# Entro AWS Integration Setup ($method)
+# -----------------------------------------------------------------------------
+`$roleName = '$rn'
+`$externalId = '$extId'
+`$entroAccountId = '937217723901'
+
+Write-Host "Checking AWS account identity..." -ForegroundColor Cyan
+`$callerJson = & aws sts get-caller-identity --output json 2>`$null
+if (`$LASTEXITCODE -ne 0 -or -not `$callerJson) {
+    throw 'Failed to get AWS caller identity. Ensure your AWS credentials/profile are configured.'
+}
+`$caller = `$callerJson | ConvertFrom-Json
+`$accountId = `$caller.Account
+Write-Host "AWS Account ID: `$accountId" -ForegroundColor Green
+
+# Prepare Entro Trust Policy JSON
+`$trustRoleArn = "arn:aws:iam::`$(`$entroAccountId):role/EntroTrustRole-`$externalId"
+`$userArn = "arn:aws:iam::`$(`$entroAccountId):user/liminal-saas-assume-role"
+
+`$trustPolicy = [ordered]@{
+    Version = '2012-10-17'
+    Statement = @(
+        [ordered]@{
+            Effect    = 'Allow'
+            Principal = @{ AWS = `$userArn }
+            Action    = 'sts:AssumeRole'
+            Condition = @{ StringEquals = @{ 'sts:ExternalId' = `$externalId } }
+        },
+        [ordered]@{
+            Effect    = 'Allow'
+            Principal = @{ AWS = `$trustRoleArn }
+            Action    = 'sts:AssumeRole'
+            Condition = @{ StringEquals = @{ 'sts:ExternalId' = `$externalId } }
+        }
+    )
+} | ConvertTo-Json -Depth 5 -Compress
+
+# Create or Update IAM Role
+Write-Host "Ensuring IAM Role `$roleName for Entro..." -ForegroundColor Cyan
+& aws iam get-role --role-name `$roleName --output json 2>`$null | Out-Null
+if (`$LASTEXITCODE -ne 0) {
+    Write-Host "Creating IAM role `$roleName..."
+    & aws iam create-role --role-name `$roleName --assume-role-policy-document `$trustPolicy --description "Entro Security AWS Integration Role" --output json --quiet
+} else {
+    Write-Host "Updating trust policy on `$roleName..."
+    & aws iam update-assume-role-policy --role-name `$roleName --policy-document `$trustPolicy --output json --quiet
+}
+
+# Attach SecurityAudit policy
+Write-Host "Attaching SecurityAudit policy..." -ForegroundColor Cyan
+& aws iam attach-role-policy --role-name `$roleName --policy-arn "arn:aws:iam::aws:policy/SecurityAudit" --output json 2>`$null
+
+`$roleArn = "arn:aws:iam::`$accountId:role/`$roleName"
+Write-Host ''
+Write-Host '========================================================================' -ForegroundColor Cyan
+Write-Host "Entro AWS Role configuration complete: `$roleArn" -ForegroundColor Green
+Write-Host "Register in Entro UI (Add account -> AWS -> Assume Role):" -ForegroundColor Yellow
+Write-Host "  Role ARN:     `$roleArn"
+Write-Host "  External ID:  `$externalId"
+Write-Host "  Environment:  (your label)"
+Write-Host '========================================================================' -ForegroundColor Cyan
 "@
                     }
                 }

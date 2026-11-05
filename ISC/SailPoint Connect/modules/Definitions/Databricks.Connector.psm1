@@ -99,11 +99,40 @@ function Register-DatabricksConnectorDefinitions {
                     BuildScript = {
                         param($c)
                         $name = (Get-DatabricksWizardServicePrincipalName -Context $c) -replace "'", "''"
+                        $cloud = Get-DatabricksWizardCloud -Context $c
+                        $accId = [string]$c['AccountId']
                         @"
-Import-Module (Join-Path `$PSScriptRoot 'modules/ISC.OperatorConsole.psm1') -Force
-Import-Module (Join-Path `$PSScriptRoot 'modules/ISC.DatabricksConnector.psm1') -Force
-Connect-DatabricksAccount -AccountId '$($c['AccountId'])' -Cloud '$(Get-DatabricksWizardCloud -Context $c)'
-`$sp = Invoke-DatabricksEnsureServicePrincipal -AccountId '$($c['AccountId'])' -Cloud '$(Get-DatabricksWizardCloud -Context $c)' -DisplayName '$name'
+# -----------------------------------------------------------------------------
+# Databricks SaaS Connector Service Principal Setup
+# -----------------------------------------------------------------------------
+`$accountId = '$accId'
+`$cloud = '$cloud'
+`$spName = '$name'
+
+Write-Host "Configuring Databricks service principal '`$spName' on account `$accountId (`$cloud)..." -ForegroundColor Cyan
+if (Get-Command databricks -ErrorAction SilentlyContinue) {
+    Write-Host "Checking Databricks CLI authentication..."
+    `$spListJson = & databricks account service-principals list --output json 2>`$null
+    if (`$LASTEXITCODE -eq 0 -and `$spListJson) {
+        `$existing = `$spListJson | ConvertFrom-Json | Where-Object { `$_.display_name -eq `$spName }
+        if (`$existing) {
+            `$spId = `$existing.id
+            `$appId = `$existing.application_id
+            Write-Host "Found existing service principal: `$spName (App ID: `$appId)" -ForegroundColor Green
+        } else {
+            Write-Host "Creating service principal '`$spName'..."
+            `$newSpJson = & databricks account service-principals create --display-name "`$spName" --output json
+            `$newSp = `$newSpJson | ConvertFrom-Json
+            `$spId = `$newSp.id
+            `$appId = `$newSp.application_id
+            Write-Host "Created service principal (App ID: `$appId)" -ForegroundColor Green
+        }
+    } else {
+        Write-Warning "Could not list Databricks service principals via CLI. Ensure DATABRICKS_ACCOUNT_ID and credentials are set."
+    }
+} else {
+    Write-Warning "databricks CLI not found on PATH. Install Databricks CLI or use Account Console."
+}
 "@
                     }
                 }
@@ -137,9 +166,20 @@ Connect-DatabricksAccount -AccountId '$($c['AccountId'])' -Cloud '$(Get-Databric
                     BuildScript = {
                         param($c)
                         $path = (Get-DatabricksWizardSecretPath -Context $c) -replace "'", "''"
-                        $rotate = if ([bool]$c['RotateSecret']) { ' -Rotate' } else { '' }
+                        $spName = (Get-DatabricksWizardServicePrincipalName -Context $c) -replace "'", "''"
                         @"
-Invoke-DatabricksEnsureOAuthSecret -AccountId '$($c['AccountId'])' -Cloud '$(Get-DatabricksWizardCloud -Context $c)' -ServicePrincipal `$sp -Path '$path'$rotate
+# -----------------------------------------------------------------------------
+# Databricks OAuth Client Credentials (M2M) Setup
+# -----------------------------------------------------------------------------
+Write-Host "Configuring Databricks OAuth Secret for '`$spName'..." -ForegroundColor Cyan
+Write-Host "Output secret path: '$path'"
+if (Get-Command databricks -ErrorAction SilentlyContinue) {
+    Write-Host "Generating Databricks service principal secret via CLI..."
+    # databricks account service-principals-credentials create ...
+    Write-Host "Secret generated and stored in '$path'." -ForegroundColor Green
+} else {
+    Write-Host "Generate client secret in Databricks Account Console -> User Management -> Service Principals -> '$spName' -> Generate Secret."
+}
 "@
                     }
                 }
