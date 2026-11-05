@@ -108,7 +108,8 @@ function Invoke-SailPointConnect {
     Initialize-OperatorConsole -NonInteractive:$NonInteractive
     $hasExtra = ($null -ne $RemainingArguments) -and (@($RemainingArguments).Count -gt 0)
 
-    if (-not $Platform) {
+    try {
+        if (-not $Platform) {
         if ($NonInteractive) {
             throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, IQService, M365AccessProfiles."
         }
@@ -211,6 +212,15 @@ function Invoke-SailPointConnect {
             if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
             if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
         }
+    }
+    }
+    catch {
+        if (Test-PromptBack $_) {
+            Write-Host ''
+            Write-Host 'Cancelled.' -ForegroundColor Yellow
+            return
+        }
+        throw
     }
 }
 

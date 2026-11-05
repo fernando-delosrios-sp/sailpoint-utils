@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.1.1'
+    ModuleVersion = '1.1.2'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -83,7 +83,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Fix BuildScript action across AWS, Azure, Google Cloud, Salesforce, and GitHub connectors to generate complete, executable automation scripts instead of empty files.'
+            ReleaseNotes = 'Fix Esc key / PROMPT_BACK unhandled exception during interactive wizard prompts and Entro companion selection; add full back navigation and clean cancellation.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'

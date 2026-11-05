@@ -96,16 +96,26 @@ function Select-IntegrationProjectName {
     if (Get-Command Write-Step -ErrorAction SilentlyContinue) {
         Write-Step 'Integration project workspace (~/.sailpoint-connect/)'
     }
-    $picked = Read-Choice -Prompt 'Which integration project?' -Options $options -Labels $labels -Default $default
-    if ($picked -eq $createToken) {
-        $name = Read-InputString -Prompt 'New project name' -Required
-        Test-IntegrationProjectName -Name $name
-        $projPath = Join-Path $Root $name
-        New-Item -ItemType Directory -Path $projPath -Force | Out-Null
-        Write-IntegrationProjectLogLine -Level 'INFO' -Message "Created project folder: $projPath"
-        return $name
+    while ($true) {
+        $picked = Read-Choice -Prompt 'Which integration project?' -Options $options -Labels $labels -Default $default
+        if ($picked -eq $createToken) {
+            try {
+                $name = Read-InputString -Prompt 'New project name' -Required
+                Test-IntegrationProjectName -Name $name
+                $projPath = Join-Path $Root $name
+                New-Item -ItemType Directory -Path $projPath -Force | Out-Null
+                Write-IntegrationProjectLogLine -Level 'INFO' -Message "Created project folder: $projPath"
+                return $name
+            }
+            catch {
+                if (Test-PromptBack $_) {
+                    continue
+                }
+                throw
+            }
+        }
+        return $picked
     }
-    return $picked
 }
 
 function Get-IntegrationProjectSelectionSnapshot {

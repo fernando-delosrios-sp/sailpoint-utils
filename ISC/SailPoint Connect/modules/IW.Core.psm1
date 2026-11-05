@@ -124,22 +124,40 @@ function Resolve-IntegrationWizardEntroAddon {
 
     if (-not $Wizard) { return }
 
-    if (-not (Read-YesNo -Prompt 'Also configure Entro for this platform?' -Default $false)) { return }
+    while ($true) {
+        $configureEntro = Read-YesNo -Prompt 'Also configure Entro for this platform?' -Default $false
+        if (-not $configureEntro) {
+            if ($companion['EntroSwitch']) { $Context[$companion['EntroSwitch']] = $false }
+            if ($companion['Variants']) {
+                foreach ($v in @($companion['Variants'])) { $Context[$v] = $false }
+            }
+            return
+        }
 
-    if ($companion['EntroSwitch']) {
-        $Context[$companion['EntroSwitch']] = $true
-        return
-    }
-    if ($companion['Variants']) {
-        $picked = Read-Choice -Prompt 'Which Entro integration?' -Options $companion['Variants'] `
-            -Labels @($companion['Variants'] | ForEach-Object {
-                switch ($_) {
-                    'GcpEntro' { 'Entro Google GCP organization' }
-                    'WorkspaceEntro' { 'Entro Google Workspace' }
-                    default { $_ }
+        if ($companion['EntroSwitch']) {
+            $Context[$companion['EntroSwitch']] = $true
+            return
+        }
+        if ($companion['Variants']) {
+            try {
+                $picked = Read-Choice -Prompt 'Which Entro integration?' -Options $companion['Variants'] `
+                    -Labels @($companion['Variants'] | ForEach-Object {
+                        switch ($_) {
+                            'GcpEntro' { 'Entro Google GCP organization' }
+                            'WorkspaceEntro' { 'Entro Google Workspace' }
+                            default { $_ }
+                        }
+                    }) -Default $companion['Variants'][0]
+                $Context[$picked] = $true
+                return
+            }
+            catch {
+                if (Test-PromptBack $_) {
+                    continue
                 }
-            }) -Default $companion['Variants'][0]
-        $Context[$picked] = $true
+                throw
+            }
+        }
     }
 }
 
@@ -406,28 +424,71 @@ function Collect-IntegrationWizardInputs {
         [switch]$NonInteractive,
         [scriptblock]$Discover
     )
-    foreach ($input in @($Definition.Inputs)) {
-        if (-not $input) { continue }
-        if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
+    $inputList = [System.Collections.Generic.List[hashtable]]::new()
+    foreach ($inp in @($Definition.Inputs)) {
+        if (-not $inp) { continue }
+        $inputList.Add($inp)
+    }
+
+    $idx = 0
+    $prompted = [System.Collections.Generic.HashSet[string]]::new()
+    while ($idx -ge 0 -and $idx -lt $inputList.Count) {
+        $input = $inputList[$idx]
+        if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) {
+            $idx++
+            continue
+        }
         $name = $input.Name
-        if ($Context.ContainsKey($name) -and -not [string]::IsNullOrWhiteSpace([string]$Context[$name])) { continue }
-        if (-not $Wizard) { continue }
+        if ($Context.ContainsKey($name) -and -not [string]::IsNullOrWhiteSpace([string]$Context[$name]) -and (-not $prompted.Contains($name))) {
+            $idx++
+            continue
+        }
+        if (-not $Wizard) {
+            $idx++
+            continue
+        }
         $discoverValues = $null
         if ($Context['ConnectionMode'] -ne 'NoSession' -and $input['Source'] -eq 'Discover' -and $Discover) {
             $discoverValues = & $Discover $name $Context
         }
-        if ($discoverValues -and @($discoverValues).Count -gt 0) {
-            $typed = 'Type a different value'
-            $options = @($discoverValues) + @($typed)
-            $picked = Read-Choice -Prompt $input['Prompt'] -Options $options -Default $discoverValues[0]
-            if ($picked -ne $typed) { $Context[$name] = $picked; continue }
+        try {
+            if ($discoverValues -and @($discoverValues).Count -gt 0) {
+                $typed = 'Type a different value'
+                $options = @($discoverValues) + @($typed)
+                $picked = Read-Choice -Prompt $input['Prompt'] -Options $options -Default $discoverValues[0]
+                if ($picked -ne $typed) {
+                    $Context[$name] = $picked
+                    [void]$prompted.Add($name)
+                    $idx++
+                    continue
+                }
+            }
+            if ($input['ValidateSet']) {
+                $Context[$name] = Read-Choice -Prompt $input['Prompt'] -Options $input['ValidateSet'] -Default $input['Default']
+            }
+            else {
+                $Context[$name] = Read-InputString -Prompt $input['Prompt'] -Default $input['Default'] -Required:([bool]$input['Required'])
+            }
+            [void]$prompted.Add($name)
+            $idx++
         }
-        if ($input['ValidateSet']) {
-            $Context[$name] = Read-Choice -Prompt $input['Prompt'] -Options $input['ValidateSet'] -Default $input['Default']
+        catch {
+            if (Test-PromptBack $_) {
+                $Context.Remove($name)
+                [void]$prompted.Remove($name)
+                $idx--
+                if ($idx -ge 0) {
+                    $prevName = $inputList[$idx].Name
+                    $Context.Remove($prevName)
+                    [void]$prompted.Remove($prevName)
+                }
+                continue
+            }
+            throw
         }
-        else {
-            $Context[$name] = Read-InputString -Prompt $input['Prompt'] -Default $input['Default'] -Required:([bool]$input['Required'])
-        }
+    }
+    if ($idx -lt 0) {
+        Invoke-PromptBack
     }
 }
 
@@ -503,73 +564,163 @@ function Start-IntegrationWizardFlow {
     if (-not (Get-Module -Name 'IW.Project')) {
         Import-Module $projectMod -Force -WarningAction SilentlyContinue
     }
-    if ($wizard -and (Test-IntegrationWizardNeedsProjectContext -Wizard:$wizard -Context $Context)) {
-        Select-IntegrationProjectWorkspace -Context $Context
-    }
-
-    $connectorDef = $null
-    if ($wizard -and -not $plan -and $PickTarget) {
-        $connectorDef = & $PickTarget
-        if ($connectorDef) {
-            if ($connectorDef.Product -eq 'ISC') {
-                Resolve-IntegrationWizardEntroAddon -Platform $Platform -Context $Context -ConnectorDefinition $connectorDef `
-                    -Wizard:$wizard -NonInteractive:$nonInteractive
-            }
-            $plan = Resolve-IntegrationWizardPlan -Platform $Platform -Context $Context
-        }
-    }
-    elseif ($wizard -and $plan -and -not $plan['IsComposite'] -and $plan.Product -eq 'ISC') {
-        Resolve-IntegrationWizardEntroAddon -Platform $Platform -Context $Context -ConnectorDefinition $plan `
-            -Wizard:$wizard -NonInteractive:$nonInteractive
-        try {
-            $plan = Resolve-IntegrationWizardPlan -Platform $Platform -Context $Context
-        }
-        catch {
-            Write-Error $_.Exception.Message
-            return
-        }
-    }
-
-    if (-not $plan) {
-        Show-IntegrationWizardPlatformHelp -Platform $Platform -ScriptName $ScriptName -CoreOptionHelp $CoreOptionHelp
-        return
-    }
-
-    Resolve-IntegrationWizardAccessLevel -Definition $plan -Context $Context -Wizard:$wizard -NonInteractive:$nonInteractive
-    $meta = $script:IntegrationWizardPlatforms[$Platform]
-    if (Test-IntegrationWizardNeedsProjectContext -Wizard:$wizard -Context $Context) {
-        Initialize-IntegrationProjectContext -Platform $Platform -PlatformTitle $meta.Title -Plan $plan -Context $Context -ScriptName $ScriptName
-    }
     if ($wizard) {
-        $session = Get-IntegrationWizardCliSession -CliName $meta.CliName
-        $mode = Resolve-IntegrationWizardConnectionChoice -CliName $meta.CliName -SessionState $session -Wizard:$wizard -NonInteractive:$nonInteractive
-        $Context['ConnectionMode'] = $mode
-        if ($mode -eq 'SignIn') {
-            Install-IntegrationWizardCli -CliName $meta.CliName -NonInteractive:$nonInteractive
-            Invoke-IntegrationWizardCliLogin -CliName $meta.CliName -NonInteractive:$nonInteractive
-        }
-        Collect-IntegrationWizardInputs -Definition $plan -Context $Context -Wizard:$wizard -NonInteractive:$nonInteractive -Discover $Discover
-    }
-    $missing = Test-IntegrationWizardRequiredInputs -Definition $plan -Context $Context
-    if ($missing.Count -gt 0 -and -not $wizard) {
-        Show-IntegrationWizardDefinitionHelp -Definition $plan -ScriptName $ScriptName -Context $Context -Missing $missing
-        return
-    }
-    if ($missing.Count -gt 0 -and $nonInteractive) {
-        throw "Missing required inputs: $($missing -join ', ')"
-    }
-    if ($wizard) {
-        Resolve-IntegrationWizardAction -Context $Context -Wizard:$wizard
-        Show-IntegrationWizardSummary -Definition $plan -Context $Context
-        if (-not (Read-YesNo -Prompt 'Proceed?' -Default $true)) {
-            Write-Host 'Cancelled.' -ForegroundColor Yellow
-            if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
-                Close-IntegrationProjectActivityLog
+        $stage = 0
+        $needWorkspace = Test-IntegrationWizardNeedsProjectContext -Wizard:$wizard -Context $Context
+        $pickedTarget = $false
+
+        $wizardComplete = $false
+        :wizardLoop while (-not $wizardComplete) {
+            try {
+                switch ($stage) {
+                    0 {
+                        if ($needWorkspace -and [string]::IsNullOrWhiteSpace([string]$Context['IntegrationProjectName'])) {
+                            Select-IntegrationProjectWorkspace -Context $Context
+                        }
+                        $stage = 1
+                    }
+                    1 {
+                        if (-not $plan -or $pickedTarget) {
+                            if ($PickTarget) {
+                                :pickLoop while ($true) {
+                                    $connectorDef = & $PickTarget
+                                    if (-not $connectorDef) { break :pickLoop }
+                                    $pickedTarget = $true
+                                    if ($connectorDef.Product -eq 'ISC') {
+                                        try {
+                                            Resolve-IntegrationWizardEntroAddon -Platform $Platform -Context $Context -ConnectorDefinition $connectorDef `
+                                                -Wizard:$wizard -NonInteractive:$nonInteractive
+                                            break :pickLoop
+                                        }
+                                        catch {
+                                            if (Test-PromptBack $_) {
+                                                continue
+                                            }
+                                            throw
+                                        }
+                                    }
+                                    else {
+                                        break :pickLoop
+                                    }
+                                }
+                                if ($connectorDef) {
+                                    $plan = Resolve-IntegrationWizardPlan -Platform $Platform -Context $Context
+                                }
+                            }
+                        }
+                        elseif ($plan -and -not $plan['IsComposite'] -and $plan.Product -eq 'ISC') {
+                            Resolve-IntegrationWizardEntroAddon -Platform $Platform -Context $Context -ConnectorDefinition $plan `
+                                -Wizard:$wizard -NonInteractive:$nonInteractive
+                            try {
+                                $plan = Resolve-IntegrationWizardPlan -Platform $Platform -Context $Context
+                            }
+                            catch {
+                                Write-Error $_.Exception.Message
+                                return
+                            }
+                        }
+
+                        if (-not $plan) {
+                            Show-IntegrationWizardPlatformHelp -Platform $Platform -ScriptName $ScriptName -CoreOptionHelp $CoreOptionHelp
+                            return
+                        }
+                        $stage = 2
+                    }
+                    2 {
+                        Resolve-IntegrationWizardAccessLevel -Definition $plan -Context $Context -Wizard:$wizard -NonInteractive:$nonInteractive
+                        $meta = $script:IntegrationWizardPlatforms[$Platform]
+                        if ($needWorkspace) {
+                            Initialize-IntegrationProjectContext -Platform $Platform -PlatformTitle $meta.Title -Plan $plan -Context $Context -ScriptName $ScriptName
+                        }
+                        $stage = 3
+                    }
+                    3 {
+                        $meta = $script:IntegrationWizardPlatforms[$Platform]
+                        $session = Get-IntegrationWizardCliSession -CliName $meta.CliName
+                        $mode = Resolve-IntegrationWizardConnectionChoice -CliName $meta.CliName -SessionState $session -Wizard:$wizard -NonInteractive:$nonInteractive
+                        $Context['ConnectionMode'] = $mode
+                        if ($mode -eq 'SignIn') {
+                            Install-IntegrationWizardCli -CliName $meta.CliName -NonInteractive:$nonInteractive
+                            Invoke-IntegrationWizardCliLogin -CliName $meta.CliName -NonInteractive:$nonInteractive
+                        }
+                        $stage = 4
+                    }
+                    4 {
+                        Collect-IntegrationWizardInputs -Definition $plan -Context $Context -Wizard:$wizard -NonInteractive:$nonInteractive -Discover $Discover
+                        $stage = 5
+                    }
+                    5 {
+                        Resolve-IntegrationWizardAction -Context $Context -Wizard:$wizard
+                        $stage = 6
+                    }
+                    6 {
+                        Show-IntegrationWizardSummary -Definition $plan -Context $Context
+                        if (-not (Read-YesNo -Prompt 'Proceed?' -Default $true)) {
+                            Write-Host 'Cancelled.' -ForegroundColor Yellow
+                            if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
+                                Close-IntegrationProjectActivityLog
+                            }
+                            return
+                        }
+                        $wizardComplete = $true
+                        break :wizardLoop
+                    }
+                }
             }
-            return
+            catch {
+                if (Test-PromptBack $_) {
+                    if ($stage -eq 6) {
+                        $Context.Remove('Action')
+                        $stage = 5
+                        continue
+                    }
+                    elseif ($stage -eq 5) {
+                        $stage = 4
+                        continue
+                    }
+                    elseif ($stage -eq 4) {
+                        $Context.Remove('ConnectionMode')
+                        $stage = 3
+                        continue
+                    }
+                    elseif ($stage -eq 3) {
+                        if ($plan['AccessLevels'] -and @($plan['AccessLevels']).Count -gt 1) {
+                            $Context.Remove('Access')
+                            $stage = 2
+                        }
+                        else {
+                            $stage = 1
+                        }
+                        continue
+                    }
+                    elseif ($stage -eq 2) {
+                        $Context.Remove('Access')
+                        $stage = 1
+                        continue
+                    }
+                    elseif ($stage -le 1) {
+                        Write-Host ''
+                        Write-Host 'Cancelled.' -ForegroundColor Yellow
+                        if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
+                            Close-IntegrationProjectActivityLog
+                        }
+                        return
+                    }
+                }
+                throw
+            }
         }
     }
     else {
+        if (-not $plan) {
+            Show-IntegrationWizardPlatformHelp -Platform $Platform -ScriptName $ScriptName -CoreOptionHelp $CoreOptionHelp
+            return
+        }
+        Resolve-IntegrationWizardAccessLevel -Definition $plan -Context $Context -Wizard:$false -NonInteractive:$nonInteractive
+        if (Test-IntegrationWizardNeedsProjectContext -Wizard:$false -Context $Context) {
+            $meta = $script:IntegrationWizardPlatforms[$Platform]
+            Initialize-IntegrationProjectContext -Platform $Platform -PlatformTitle $meta.Title -Plan $plan -Context $Context -ScriptName $ScriptName
+        }
         if ([string]::IsNullOrWhiteSpace([string]$Context['Action'])) {
             Show-IntegrationWizardDefinitionHelp -Definition $plan -ScriptName $ScriptName -Context $Context -Missing @('Action')
             return
