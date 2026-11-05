@@ -35,6 +35,7 @@
         'Connect-SailPointDatabricks'
         'Connect-SailPointSalesforce'
         'Connect-SailPointGitHub'
+        'Connect-SailPointCrowdStrike'
         'Start-SailPointIQServiceControl'
         'New-SailPointM365AccessProfile'
         'Get-SailPointConnectProject'
@@ -69,6 +70,7 @@
                 'Databricks'
                 'Salesforce'
                 'GitHub'
+                'CrowdStrike'
                 'IQService'
                 'Connector'
             )

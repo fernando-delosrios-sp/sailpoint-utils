@@ -23,6 +23,7 @@ $expectedFunctions = @(
     'Connect-SailPointDatabricks',
     'Connect-SailPointSalesforce',
     'Connect-SailPointGitHub',
+    'Connect-SailPointCrowdStrike',
     'Start-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',
     'Get-SailPointConnectProject',
@@ -87,6 +88,13 @@ try {
     $ghTarget = @(Get-IntegrationWizardTargets -Platform 'GitHub' -Context @{ Connector = $true })
     Assert-Equal 1 $ghTarget.Count 'GitHub connector target resolves'
     Assert-Equal 'github-connector' $ghTarget[0]['Id'] 'GitHub connector id matches'
+
+    Import-Module (Join-Path $connectRoot 'modules/Definitions/CrowdStrike.Connector.psm1') -Force
+    Register-IntegrationWizardPlatform -Name 'CrowdStrike' -Title 'CrowdStrike' -CoreOptions @('Connector', 'Entro') -CliName 'falcon'
+    Register-CrowdStrikeConnectorDefinitions
+    $csTarget = @(Get-IntegrationWizardTargets -Platform 'CrowdStrike' -Context @{ Connector = $true })
+    Assert-Equal 1 $csTarget.Count 'CrowdStrike connector target resolves'
+    Assert-Equal 'crowdstrike-connector' $csTarget[0]['Id'] 'CrowdStrike connector id matches'
 }
 finally {
     Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue

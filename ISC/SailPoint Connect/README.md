@@ -33,6 +33,7 @@ Connect-SailPointGoogleCloud -Wizard
 Connect-SailPointDatabricks -Wizard
 Connect-SailPointSalesforce -Wizard
 Connect-SailPointGitHub -Wizard
+Connect-SailPointCrowdStrike -Wizard
 
 # Windows IQService operator console
 Start-SailPointIQServiceControl
@@ -135,7 +136,7 @@ Debian and other distributions: [Install PowerShell on Linux](https://learn.micr
 
 ## Artifacts
 
-- `AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Databricks.ps1`, `Salesforce.ps1`, `GitHub.ps1` — platform wizards (ISC connectors + Entro where applicable). Outputs and `activity.log` under `~/.sailpoint-connect/` unless `-OutputDirectory` is set.
+- `AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Databricks.ps1`, `Salesforce.ps1`, `GitHub.ps1`, `CrowdStrike.ps1` — platform wizards (ISC connectors + Entro where applicable). Outputs and `activity.log` under `~/.sailpoint-connect/` unless `-OutputDirectory` is set.
 - `Microsoft 365 Access Profiles.ps1` — PSSailpoint access profiles from Entra service plans.
 - `IQService Control.ps1` — IQService host lifecycle and AD LDAPS.
 ## Modules
@@ -158,6 +159,7 @@ Shared PowerShell modules live under `modules/`. Each `.ps1` orchestrator import
 | `ISC.DatabricksConnector.psm1` | Databricks account service principal, OAuth M2M secret, Mosaic AI AgentDiscovery |
 | `ISC.SalesforceConnector.psm1` | Salesforce SaaS Connected App, OAuth validation, Agentforce AI Agent Discovery |
 | `ISC.GitHubConnector.psm1` | GitHub SaaS organization authentication, Copilot seats, Apps & Bot discovery |
+| `ISC.CrowdStrikeConnector.psm1` | CrowdStrike Falcon SaaS connector, Falcon Discover, ITDR, CSPM, and RTR |
 | `ISC.IQService.psm1` | IQService discovery, install/update, service control, trace, log streaming |
 | `ISC.AdLdaps.psm1` | AD LDAPS (TCP 636) cert selection/creation, PEM chain export, VA truststore instructions |
 | `ISC.AgentAdapter.psm1` | Source-setup helpers: request hashing, secret references, run folders, redaction, connector dispatch |

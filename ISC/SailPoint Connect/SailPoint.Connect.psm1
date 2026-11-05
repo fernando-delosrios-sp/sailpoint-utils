@@ -82,7 +82,7 @@ function Invoke-SailPointConnect {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Position = 0)]
-        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'Salesforce', 'GitHub', 'IQService', 'M365AccessProfiles')]
+        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles')]
         [string]$Platform,
 
         [Parameter()]
@@ -111,14 +111,14 @@ function Invoke-SailPointConnect {
     try {
         if (-not $Platform) {
         if ($NonInteractive) {
-            throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, IQService, M365AccessProfiles."
+            throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, IQService, M365AccessProfiles."
         }
 
         Write-Step 'SailPoint Connect'
         Write-Host 'Guided setup for ISC connectors and Entro onboarding.' -ForegroundColor Cyan
         Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
 
-        $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'IQService', 'M365AccessProfiles')
+        $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles')
         $labels = @(
             'Amazon Web Services (SaaS connector, CIEM, Entro)',
             'Microsoft Azure & Entra ID (Connector, Entro)',
@@ -126,6 +126,7 @@ function Invoke-SailPointConnect {
             'Databricks (Account & Metastore connector)',
             'Salesforce (SaaS connector, Agentforce, Entro)',
             'GitHub (SaaS connector, Copilot & Bots, Entro)',
+            'CrowdStrike (Falcon SaaS connector, Discover & ITDR, Entro)',
             'IQService Control (Host lifecycle & AD LDAPS)',
             'Microsoft 365 Access Profiles (Entra service plans)'
         )
@@ -189,6 +190,16 @@ function Invoke-SailPointConnect {
         }
         'GitHub' {
             $script = Join-Path $script:ModuleRoot 'GitHub.ps1'
+            $pass = @{}
+            if ($Wizard) { $pass['Wizard'] = $true }
+            if ($Project) { $pass['Project'] = $Project }
+            if ($Action) { $pass['Action'] = $Action }
+            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+            if ($NonInteractive) { $pass['NonInteractive'] = $true }
+            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
+        }
+        'CrowdStrike' {
+            $script = Join-Path $script:ModuleRoot 'CrowdStrike.ps1'
             $pass = @{}
             if ($Wizard) { $pass['Wizard'] = $true }
             if ($Project) { $pass['Project'] = $Project }
@@ -708,6 +719,91 @@ function Connect-SailPointGitHub {
 
 <#
 .SYNOPSIS
+    Configures SailPoint ISC CrowdStrike Falcon connector and Entro onboarding.
+
+.DESCRIPTION
+    Runs the CrowdStrike Falcon setup wizard or CLI driver. Supports configuring:
+    - CrowdStrike Falcon SaaS connector API client authentication (OAuth2)
+    - Access Level segmentation (ReadOnly vs ReadWrite host containment & user management)
+    - Feature packs: Falcon Discover (Machine Identity & unmanaged assets), Falcon Identity Threat Protection (ITDR), Falcon Horizon (CSPM), and Real Time Response (RTR)
+    - Entro CrowdStrike integration & optional Falcon RTR secrets scanner
+
+.PARAMETER Wizard
+    Runs interactive guided questionnaire.
+
+.PARAMETER Connector
+    Targets the CrowdStrike Falcon SaaS connector.
+
+.PARAMETER Entro
+    Targets the Entro CrowdStrike integration.
+
+.PARAMETER BaseUrl
+    CrowdStrike Falcon Cloud API Base URL or region (e.g. US-1, US-2, EU-1, US-GOV-1).
+
+.PARAMETER ClientId
+    Falcon OAuth2 API Client ID.
+
+.PARAMETER ClientSecret
+    Falcon OAuth2 API Client Secret.
+
+.PARAMETER Access
+    Access level: ReadOnly or ReadWrite. ReadOnly performs aggregation; ReadWrite authorizes host containment and user provisioning.
+
+.PARAMETER Feature
+    Feature packs: Discover, IdentityProtection, CloudSecurity, RealTimeResponse.
+
+.PARAMETER Environment
+    Environment nickname for Entro integration.
+
+.PARAMETER Action
+    Action to execute: Run, BuildScript, or BuildRequirements.
+
+.PARAMETER OutputDirectory
+    Overrides output directory for generated artifacts and connection settings.
+
+.PARAMETER NonInteractive
+    Runs in headless mode.
+
+.PARAMETER Project
+    Workspace project name.
+
+.EXAMPLE
+    Connect-SailPointCrowdStrike -Wizard
+    Starts guided interactive setup for CrowdStrike Falcon SaaS connector and Entro onboarding.
+
+.EXAMPLE
+    Connect-SailPointCrowdStrike -Connector -BaseUrl "https://api.crowdstrike.com" -ClientId "client-id" -Access ReadOnly -Feature Discover,IdentityProtection -Action BuildScript
+    Generates a standalone CLI/PowerShell script validating Falcon API connectivity, host aggregation, Falcon Discover machine identity governance, and ITDR scopes.
+#>
+function Connect-SailPointCrowdStrike {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Connector,
+        [switch]$Entro,
+        [ValidateSet('ReadOnly', 'ReadWrite')]
+        [string]$Access,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [string]$Action,
+        [string]$BaseUrl,
+        [string]$ClientId,
+        [string]$ClientSecret,
+        [ArgumentCompleter({
+            param($commandName, $parameterName, $wordToComplete, $commandAst, $fakeBoundParameters)
+            @('Discover', 'IdentityProtection', 'CloudSecurity', 'RealTimeResponse') | Where-Object { $_ -like "$wordToComplete*" }
+        })]
+        [string[]]$Feature,
+        [string]$Environment,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'CrowdStrike.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
     Manages SailPoint IQService lifecycle and Active Directory LDAPS setup.
 
 .DESCRIPTION
@@ -924,6 +1020,7 @@ Export-ModuleMember -Function @(
     'Connect-SailPointDatabricks',
     'Connect-SailPointSalesforce',
     'Connect-SailPointGitHub',
+    'Connect-SailPointCrowdStrike',
     'Start-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',
     'Get-SailPointConnectProject',

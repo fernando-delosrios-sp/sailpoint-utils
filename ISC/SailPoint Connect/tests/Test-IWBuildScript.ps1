@@ -12,6 +12,7 @@ Import-Module (Join-Path $wizardRoot 'modules/Definitions/Google.Connector.psm1'
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Databricks.Connector.psm1') -Force
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Salesforce.Connector.psm1') -Force
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/GitHub.Connector.psm1') -Force
+Import-Module (Join-Path $wizardRoot 'modules/Definitions/CrowdStrike.Connector.psm1') -Force
 
 Initialize-OperatorConsole -NonInteractive
 Register-AwsConnectorDefinitions
@@ -20,6 +21,7 @@ Register-GoogleConnectorDefinitions
 Register-DatabricksConnectorDefinitions
 Register-SalesforceConnectorDefinitions
 Register-GitHubConnectorDefinitions
+Register-CrowdStrikeConnectorDefinitions
 
 $tempRoot = if ($env:TEMP) { $env:TEMP } elseif ($env:TMPDIR) { $env:TMPDIR } else { '/tmp' }
 $outDir = Join-Path $tempRoot ("iw-buildscript-test-" + [guid]::NewGuid().ToString('N'))
@@ -70,6 +72,18 @@ try {
     $ghContent = Get-Content -LiteralPath $ghPath -Raw
     Assert-True ($ghContent -like '*Validating GitHub organization*') 'GitHub script validates org'
     Assert-True ($ghContent -like '*Copilot*') 'GitHub script configures Copilot'
+
+    # 6. CrowdStrike BuildScript
+    $csDef = Get-IntegrationWizardDefinition -Id 'crowdstrike-connector'
+    $csCtx = @{ BaseUrl = 'https://api.crowdstrike.com'; ClientId = 'client-xyz'; Access = 'ReadWrite'; Feature = 'Discover,IdentityProtection' }
+    $csPath = Join-Path $outDir 'crowdstrike.ps1'
+    New-IntegrationWizardBuildScript -Definition $csDef -Context $csCtx -OutputPath $csPath
+    $csContent = Get-Content -LiteralPath $csPath -Raw
+    Assert-True ($csContent -like '*oauth2/token*') 'CrowdStrike script requests OAuth2 token'
+    Assert-True ($csContent -like '*devices/queries/devices-scroll*') 'CrowdStrike script queries host devices'
+    Assert-True ($csContent -like '*hosts:write*') 'CrowdStrike script verifies ReadWrite containment scope'
+    Assert-True ($csContent -like '*Falcon Discover*') 'CrowdStrike script configures Falcon Discover'
+    Assert-True ($csContent -like '*Identity Threat Protection*') 'CrowdStrike script configures ITDR'
 }
 finally {
     if (Test-Path -LiteralPath $outDir) {

@@ -101,3 +101,17 @@ graph TD
 | **Tier 1** | **Base Target** | Databricks Account Service Principal (`SailPoint-source`) and M2M OAuth Secret. |
 | **Tier 2** | **ReadOnly / ReadWrite** | Governed through Databricks Account Admin role and Unity Catalog Metastore access. |
 | **Tier 3** | **`AgentDiscovery`** | Governs Mosaic AI Agent Framework endpoints and service credentials. |
+
+---
+
+### 7. CrowdStrike Falcon SaaS
+
+| Tier | Category | Implementation & Permissions |
+|---|---|---|
+| **Tier 1** | **Base Target** | CrowdStrike Falcon API Client (OAuth2 Client ID & Secret) scoped for the target cloud base URL (`https://api.crowdstrike.com`, `https://api.us-2.crowdstrike.com`, `https://api.eu-1.crowdstrike.com`, `https://api.laggar.gcw.crowdstrike.com`).<br>Base Scopes: `hosts:read`, `host-groups:read`, `user-management:read`. |
+| **Tier 2** | **ReadOnly** | Baseline only. Aggregates endpoint sensors, host groupings, Falcon console administrator profiles, and assigned roles. |
+| | **ReadWrite** | Adds write scopes for automated threat remediation and identity lifecycle:<br>• `hosts:write`: enables network containment (host isolation) and lifting containment via ISC workflows.<br>• `user-management:write`: enables Falcon console administrator account provisioning and role assignments. |
+| **Tier 3** | **`Discover`** | Grants `discover:read` for **Falcon Discover** unmanaged asset and machine identity governance:<br>• Discovers unmanaged endpoints, rogue computing devices, and shadow cloud assets.<br>• Aggregates machine accounts into SailPoint Agentic Fabric. |
+| | **`IdentityProtection`** | Grants `identity-protection:read` and `identity-protection:write` for **Falcon Identity Threat Protection (ITDR)**:<br>• Correlates compromised credential detections, anomalous identity risk scores, and lateral movement telemetry into SailPoint ISC access certifications and workflows. |
+| | **`CloudSecurity`** | Grants `cspm-registration:read` for **Falcon Horizon (CSPM)**:<br>• Aggregates multi-cloud accounts (AWS, Azure, GCP) and cloud security posture misconfigurations. |
+| | **`RealTimeResponse`** | Grants `real-time-response:read` and `real-time-response:write` for **Falcon Real Time Response (RTR)**:<br>• Authorizes remote endpoint investigation and automated incident remediation scripts. |
