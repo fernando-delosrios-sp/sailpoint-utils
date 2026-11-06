@@ -467,7 +467,8 @@ function Collect-IntegrationWizardInputs {
                 $Context[$name] = Read-Choice -Prompt $input['Prompt'] -Options $input['ValidateSet'] -Default $input['Default']
             }
             else {
-                $Context[$name] = Read-InputString -Prompt $input['Prompt'] -Default $input['Default'] -Required:([bool]$input['Required'])
+                $isSecret = [bool]($input['Secret'] -or ($name -match '(?i)secret|password|token|privatekey'))
+                $Context[$name] = Read-InputString -Prompt $input['Prompt'] -Default $input['Default'] -Required:([bool]$input['Required']) -Mask:$isSecret
             }
             [void]$prompted.Add($name)
             $idx++
@@ -510,7 +511,8 @@ function Show-IntegrationWizardSummary {
         if (-not $input) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
         $val = $Context[$input.Name]
-        if ($input['Secret']) { $val = if ($val) { '***' } else { '(created at run)' } }
+        $isSecret = [bool]($input['Secret'] -or ($input.Name -match '(?i)secret|password|token|privatekey'))
+        if ($isSecret) { $val = if ($val) { '***' } else { '(created at run)' } }
         Write-Host "  $($input.Name): $val"
     }
     Write-Host ''
@@ -640,12 +642,52 @@ function Start-IntegrationWizardFlow {
                         $mode = Resolve-IntegrationWizardConnectionChoice -CliName $meta.CliName -SessionState $session -Wizard:$wizard -NonInteractive:$nonInteractive
                         $Context['ConnectionMode'] = $mode
                         if ($mode -eq 'SignIn') {
-                            Install-IntegrationWizardCli -CliName $meta.CliName -NonInteractive:$nonInteractive
-                            Invoke-IntegrationWizardCliLogin -CliName $meta.CliName -NonInteractive:$nonInteractive
+                            while ($true) {
+                                Install-IntegrationWizardCli -CliName $meta.CliName -NonInteractive:$nonInteractive
+                                Invoke-IntegrationWizardCliLogin -CliName $meta.CliName -NonInteractive:$nonInteractive
+
+                                Write-Step 'Testing CLI session'
+                                $session = Get-IntegrationWizardCliSession -CliName $meta.CliName
+                                if ($session.SignedIn) {
+                                    Write-Ok "$($meta.CliName): $($session.Summary)"
+                                    if (Get-Command Write-IntegrationProjectLogLine -ErrorAction SilentlyContinue) {
+                                        Write-IntegrationProjectLogLine -Level 'OK' -Message "CLI session verified for $($meta.CliName): $($session.Summary)"
+                                    }
+                                    break
+                                }
+                                else {
+                                    Write-Warning "Could not verify an active session for $($meta.CliName)."
+                                    if ($nonInteractive) {
+                                        throw "Failed to verify an active CLI session for $($meta.CliName)."
+                                    }
+                                    $failChoice = Read-Choice -Prompt 'What would you like to do?' `
+                                        -Options @('Retry', 'NoSession', 'Cancel') `
+                                        -Labels @(
+                                            'Retry signing in'
+                                            'Continue without a session (type values manually)'
+                                            'Cancel'
+                                        ) -Default 'Retry'
+                                    if ($failChoice -eq 'Retry') {
+                                        continue
+                                    }
+                                    elseif ($failChoice -eq 'NoSession') {
+                                        $Context['ConnectionMode'] = 'NoSession'
+                                        break
+                                    }
+                                    else {
+                                        Write-Host 'Cancelled.' -ForegroundColor Yellow
+                                        if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
+                                            Close-IntegrationProjectActivityLog
+                                        }
+                                        return
+                                    }
+                                }
+                            }
                         }
                         $stage = 4
                     }
                     4 {
+                        Write-Step "Integration settings: $($plan.Title)"
                         Collect-IntegrationWizardInputs -Definition $plan -Context $Context -Wizard:$wizard -NonInteractive:$nonInteractive -Discover $Discover
                         $stage = 5
                     }
@@ -832,12 +874,23 @@ function Invoke-IntegrationWizardCliLogin {
     Write-Info (Get-IntegrationWizardLoginHint -CliName $CliName)
     switch ($CliName) {
         'aws' {
-            aws sso login 2>$null
-            if ($LASTEXITCODE -ne 0) {
-                aws login 2>$null
-                if ($LASTEXITCODE -ne 0) {
-                    aws configure
+            $method = Read-Choice -Prompt 'AWS login method:' `
+                -Options @('Login', 'Sso', 'Configure') `
+                -Labels @(
+                    'Direct browser login (aws login)'
+                    'IAM Identity Center / SSO (aws sso login)'
+                    'Access keys / credentials file (aws configure)'
+                ) -Default 'Login'
+            switch ($method) {
+                'Login' { aws login }
+                'Sso' {
+                    aws sso login
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Info 'SSO is not yet configured. Starting SSO setup (aws configure sso)...'
+                        aws configure sso
+                    }
                 }
+                'Configure' { aws configure }
             }
         }
         'az' { az login | Out-Null }
@@ -849,7 +902,7 @@ function Invoke-IntegrationWizardCliLogin {
 function Get-IntegrationWizardLoginHint {
     param([string]$CliName)
     switch ($CliName) {
-        'aws' { return 'Run: aws login  (or aws sso login)' }
+        'aws' { return 'Run: aws login  (or aws sso login / aws configure)' }
         'az' { return 'Run: az login' }
         'gcloud' { return 'Run: gcloud auth login' }
         'databricks' { return 'Run: databricks auth login' }

@@ -23,7 +23,7 @@ function Register-SalesforceConnectorDefinitions {
             @{ Name = 'InstanceUrl'; Source = 'Supply'; Prompt = 'Salesforce My Domain URL'; Purpose = 'Base URL of Salesforce org (e.g. https://mycompany.my.salesforce.com)'; Required = $true }
             @{ Name = 'LoginUrl'; Source = 'Supply'; Prompt = 'OAuth Login URL'; Purpose = 'Login endpoint'; Required = $false; Default = 'https://login.salesforce.com' }
             @{ Name = 'ConsumerKey'; Source = 'Supply'; Prompt = 'Connected App Consumer Key (Client ID)'; Purpose = 'OAuth client credential'; Required = $true }
-            @{ Name = 'ConsumerSecret'; Source = 'Supply'; Prompt = 'Connected App Consumer Secret (Client Secret)'; Purpose = 'OAuth client secret'; Required = $true }
+            @{ Name = 'ConsumerSecret'; Source = 'Supply'; Prompt = 'Connected App Consumer Secret (Client Secret)'; Purpose = 'OAuth client secret'; Required = $true; Secret = $true }
             @{ Name = 'Username'; Source = 'Supply'; Prompt = 'Integration user username'; Purpose = 'Salesforce account for integration'; Required = $false }
             @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: AgentDiscovery, ActivityInsights)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings file path'; Required = $false }

@@ -71,4 +71,16 @@ finally {
     }
 }
 
+$maskedVal = Read-InputString -Prompt 'Secret key' -Default 'my-secret' -Mask
+Assert-Equal 'my-secret' $maskedVal 'Read-InputString with -Mask returns default in non-interactive mode'
+
+$maskedRequiredThrown = $false
+try {
+    Read-InputString -Prompt 'Secret key' -Required -Mask
+}
+catch {
+    $maskedRequiredThrown = $true
+}
+Assert-True $maskedRequiredThrown 'Read-InputString with -Mask and -Required throws when missing in non-interactive'
+
 Write-Host "PASS ($script:AssertionCount assertions)"

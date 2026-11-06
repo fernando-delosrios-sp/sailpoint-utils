@@ -23,7 +23,7 @@ function Register-GitHubConnectorDefinitions {
             @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name'; Purpose = 'Organization to govern'; Required = $true }
             @{ Name = 'ApiUrl'; Source = 'Supply'; Prompt = 'API URL'; Purpose = 'GitHub API endpoint'; Required = $false; Default = 'https://api.github.com' }
             @{ Name = 'AuthMethod'; Source = 'Supply'; Prompt = 'Authentication method'; Purpose = 'PersonalAccessToken or GitHubApp'; Required = $true; ValidateSet = @('PersonalAccessToken', 'GitHubApp'); Default = 'PersonalAccessToken' }
-            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'Personal Access Token'; Purpose = 'OAuth / PAT credential'; Required = $false }
+            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'Personal Access Token'; Purpose = 'OAuth / PAT credential'; Required = $false; Secret = $true }
             @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: AgentDiscovery, ActivityInsights)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings file path'; Required = $false }
         )

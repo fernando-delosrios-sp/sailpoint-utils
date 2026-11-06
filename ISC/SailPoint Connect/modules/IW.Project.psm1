@@ -131,7 +131,7 @@ function Get-IntegrationProjectSelectionSnapshot {
         if (-not (Get-Command Test-IntegrationWizardInputWhen -ErrorAction SilentlyContinue)) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
         $name = $input.Name
-        if ($input['Secret']) {
+        if ($input['Secret'] -or ($name -match '(?i)secret|password|token|privatekey')) {
             $inputs[$name] = '***'
             continue
         }

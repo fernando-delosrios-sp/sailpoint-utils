@@ -438,7 +438,7 @@ try {
             }
             if (Enter-WizardPrompt) {
                 if (-not $isServiceAccount) {
-                    $ClientSecret = Read-InputString -Prompt 'OAuth client secret' -Default $ClientSecret -Required
+                    $ClientSecret = Read-InputString -Prompt 'OAuth client secret' -Default $ClientSecret -Required -Mask
                 }
                 Complete-WizardPrompt
             }
@@ -530,7 +530,7 @@ try {
                             $KeyPassword = New-KeyPassword
                         }
                         else {
-                            $entered = Read-InputString -Prompt 'Private Key Password for the ISC source (blank to generate)'
+                            $entered = Read-InputString -Prompt 'Private Key Password for the ISC source (blank to generate)' -Mask
                             $KeyPassword = if ($entered) { $entered } else { New-KeyPassword }
                         }
                     }

@@ -86,6 +86,10 @@ function Invoke-IntegrationWizardRun {
     if ($needsCliLogin) {
         Install-IntegrationWizardCli -CliName $Definition.CliName -NonInteractive:([bool]$Context['NonInteractive'])
         Invoke-IntegrationWizardCliLogin -CliName $Definition.CliName -NonInteractive:([bool]$Context['NonInteractive'])
+        $postSession = Get-IntegrationWizardCliSession -CliName $Definition.CliName
+        if ($postSession.SignedIn) {
+            Write-Ok "$($Definition.CliName): $($postSession.Summary)"
+        }
     }
     $steps = & $Definition.Steps $Context
     $projectName = [string]$Context['IntegrationProjectName']

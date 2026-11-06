@@ -373,7 +373,7 @@ function Get-Agent365RefreshTokenForApply {
     }
     if (-not $clientSecret -and -not (Test-OperatorNonInteractive)) {
         Write-Info 'Minting the token needs the client secret of this application, which Entra displays only once.'
-        $clientSecret = Read-InputString -Prompt 'Existing client secret (blank to skip the refresh token)'
+        $clientSecret = Read-InputString -Prompt 'Existing client secret (blank to skip the refresh token)' -Mask
     }
     if (-not $clientSecret) {
         $pending = 'no client secret was available to mint it. Re-run with -RotateSecret'

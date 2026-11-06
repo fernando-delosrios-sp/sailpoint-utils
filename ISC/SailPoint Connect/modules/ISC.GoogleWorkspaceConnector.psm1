@@ -871,7 +871,7 @@ function Invoke-OAuthClientWalkthrough {
                 $phase = 1
             }
             else {
-                $clientSecretValue = Read-InputString -Prompt 'Client secret from the dialog' -Required
+                $clientSecretValue = Read-InputString -Prompt 'Client secret from the dialog' -Required -Mask
                 $phase = 2
             }
         }

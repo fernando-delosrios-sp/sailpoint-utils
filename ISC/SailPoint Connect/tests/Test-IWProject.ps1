@@ -61,6 +61,16 @@ try {
     $snap = Get-IntegrationProjectSelectionSnapshot -Context $ctxWithSecret -Definition $defSecret -Platform 'GoogleCloud' -ScriptName 'Google Cloud.ps1'
     Assert-Equal '***' $snap.inputs.ClientSecret 'secrets masked in selection snapshot'
 
+    $defInferredSecret = @{
+        Title  = 'Inferred secret test'
+        Inputs = @(
+            @{ Name = 'ApiToken'; Required = $false }
+        )
+    }
+    $ctxInferred = @{ IntegrationProjectName = 'demo-customer'; ApiToken = 'pat-token-value' }
+    $snapInferred = Get-IntegrationProjectSelectionSnapshot -Context $ctxInferred -Definition $defInferredSecret -Platform 'GitHub' -ScriptName 'GitHub.ps1'
+    Assert-Equal '***' $snapInferred.inputs.ApiToken 'inferred secret by name is masked in selection snapshot'
+
     $record = Get-IntegrationProjectSelectionSnapshot -Context $ctx -Definition $def -Platform 'GoogleCloud' -ScriptName 'Google Cloud.ps1'
     Write-IntegrationProjectSelection -Record $record
     $selPath = Join-Path (Join-Path $root 'demo-customer') 'selection.json'

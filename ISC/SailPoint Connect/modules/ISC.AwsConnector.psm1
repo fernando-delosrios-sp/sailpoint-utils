@@ -295,7 +295,7 @@ function Connect-AwsSession {
         $identity = Get-STSCallerIdentity -Region $RequestedRegion -ErrorAction Stop
     }
     catch {
-        throw "AWS authentication failed. Sign in with aws login, configure a profile (aws sso login / aws configure), or pass -ProfileName. $($_.Exception.Message)"
+        throw "AWS authentication failed. Sign in with aws login, aws sso login, or aws configure, or pass -ProfileName. $($_.Exception.Message)"
     }
 
     Write-Ok "Connected as $($identity.Arn)"

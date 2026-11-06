@@ -422,7 +422,7 @@ The script prompts for:
 
 1. Source type (when not passed)
 2. External ID from the AWS SaaS source Connection Settings
-3. AWS profile (blank uses the default credential chain; run `aws login` or `aws sso login` first)
+3. AWS profile (blank uses the default credential chain; run `aws login`, `aws sso login`, or `aws configure` first)
 4. Commercial vs GovCloud (selects the SailPoint trust principal)
 5. Region for STS / Organizations (IAM is global; default `us-east-1` or `us-gov-west-1`)
 6. IAM role name (default `SailPointAWSRole` — this is the value ISC needs, not the ARN)

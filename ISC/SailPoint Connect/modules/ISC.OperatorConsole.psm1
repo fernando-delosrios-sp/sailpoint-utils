@@ -398,9 +398,17 @@ function Invoke-ConsoleMenu {
 }
 
 function Read-TypedLine {
-    param([string]$PromptText)
+    param(
+        [string]$PromptText,
+        [switch]$Mask
+    )
 
     if (Get-ConsoleMenuBlocker) {
+        if ($Mask) {
+            $sec = Read-Host $PromptText -AsSecureString
+            if ($null -eq $sec) { return '' }
+            return [System.Net.NetworkCredential]::new('', $sec).Password
+        }
         return Read-Host $PromptText
     }
 
@@ -410,6 +418,11 @@ function Read-TypedLine {
         try { $key = Read-MenuKey }
         catch {
             Write-Host ''
+            if ($Mask) {
+                $sec = Read-Host $PromptText -AsSecureString
+                if ($null -eq $sec) { return '' }
+                return [System.Net.NetworkCredential]::new('', $sec).Password
+            }
             return Read-Host $PromptText
         }
 
@@ -433,7 +446,8 @@ function Read-TypedLine {
                 $ch = $key.Character
                 if ($ch -and [int][char]$ch -ge 32) {
                     $null = $buffer.Append($ch)
-                    Write-Host $ch -NoNewline
+                    $display = if ($Mask) { '*' } else { $ch }
+                    Write-Host $display -NoNewline
                 }
             }
         }
@@ -445,6 +459,7 @@ function Read-InputString {
         [Parameter(Mandatory)][string]$Prompt,
         [string]$Default,
         [switch]$Required,
+        [switch]$Mask,
         [scriptblock]$Validate
     )
 
@@ -456,9 +471,11 @@ function Read-InputString {
     }
 
     $script:PromptCount++
-    $suffix = if ($Default) { " [$Default]" } else { '' }
+    $suffix = if ($Default) {
+        if ($Mask) { " [***]" } else { " [$Default]" }
+    } else { '' }
     while ($true) {
-        $value = Read-TypedLine "$Prompt$suffix"
+        $value = Read-TypedLine -PromptText "$Prompt$suffix" -Mask:$Mask
         if ([string]::IsNullOrWhiteSpace($value)) { $value = $Default }
         $value = if ($null -eq $value) { '' } else { $value.Trim() }
 

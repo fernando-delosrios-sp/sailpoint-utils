@@ -33,7 +33,7 @@ function global:Read-Choice {
     return @($Options)[0]
 }
 function global:Read-InputString {
-    param($Prompt, $Default, [switch]$Required)
+    param($Prompt, $Default, [switch]$Required, [switch]$Mask)
     if ($Default) { return $Default }
     return 'typed-value'
 }
