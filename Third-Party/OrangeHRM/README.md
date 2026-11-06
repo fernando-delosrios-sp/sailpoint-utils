@@ -92,9 +92,12 @@ The current implementation is demo-oriented. Before production use:
 
 ## Organization structure SQL
 
-Script: [`sql/20260921_subunit_five_groups.sql`](sql/20260921_subunit_five_groups.sql)
+Scripts:
 
-Removes the `Organization` root and reshapes `ohrm_subunit` into five top-level groups, keeping every existing leaf (and its `id`) so `hs_hr_employee.work_station` references stay valid:
+- [`sql/20260921_subunit_five_groups.sql`](sql/20260921_subunit_five_groups.sql) — five groups, with Executive Management under Corporate Services. Do not re-run it after the follow-up below; its nested-set rewrite overlaps the company root.
+- [`sql/20261106_subunit_company_root.sql`](sql/20261106_subunit_company_root.sql) — current tree. Applied on `resource-int.company24509-poc.demohub.sailpointtechnologies.com`.
+
+`CompanyStructureService::getSubunitArray()` drops the first subunit and copies `level` onto the option `_indent`. Indent 1 is flush left. With no level-0 company row, Corporate Services is that first node, so the Sub Unit dropdown hides it and Executive Management looks parentless. The follow-up puts the company name from `ohrm_organization_gen_info` back at level 0. The dropdown hides that row, and General Information can rename it again. Executive Management stays a leaf of Corporate Services. Leaf ids stay the same, so `hs_hr_employee.work_station` is unchanged.
 
 | Group | Leaves |
 | --- | --- |
@@ -104,11 +107,7 @@ Removes the `Organization` root and reshapes `ohrm_subunit` into five top-level 
 | Commercial | Sales, Call Center |
 | Healthcare | Nursing, Doctors, Students, Nursing-ER, Nursing-NICU, Radiology |
 
-Before changing data, the script creates snapshot table `ohrm_subunit_backup_20260921` once (not overwritten on re-run). It nulls any `work_station` pointing at Organization, deletes that row, then writes explicit `lft` / `rgt` / `level` values. A commented rollback block at the end of the script restores from the snapshot and removes the four inserted groups.
-
-Groups are `level` 1 and leaves `level` 2, not 0 and 1. The Sub Unit dropdown serializes `level` as the option's `_indent`, and the widget treats `_indent` 1 as flush left, so a 0-based tree renders as one flat list. Because nothing sits at `level` 0 any more, Admin → Organization → General Information can no longer rename the tree; that update targets `level = 0` and matches no row.
-
-Run against a backed-up database. Log out and back in after applying so OrangeHRM refreshes its cached org tree.
+The company row is level 0, these groups are level 1, and leaves are level 2. Log out and back in after applying so OrangeHRM refreshes its cached org tree.
 
 ## Duplicate job titles SQL
 
