@@ -831,7 +831,15 @@ function Invoke-IntegrationWizardCliLogin {
     }
     Write-Info (Get-IntegrationWizardLoginHint -CliName $CliName)
     switch ($CliName) {
-        'aws' { aws sso login 2>$null; if ($LASTEXITCODE -ne 0) { aws configure } }
+        'aws' {
+            aws sso login 2>$null
+            if ($LASTEXITCODE -ne 0) {
+                aws login 2>$null
+                if ($LASTEXITCODE -ne 0) {
+                    aws configure
+                }
+            }
+        }
         'az' { az login | Out-Null }
         'gcloud' { gcloud auth login }
         'databricks' { databricks auth login | Out-Null }
@@ -841,7 +849,7 @@ function Invoke-IntegrationWizardCliLogin {
 function Get-IntegrationWizardLoginHint {
     param([string]$CliName)
     switch ($CliName) {
-        'aws' { return 'Run: aws sso login  (or aws configure)' }
+        'aws' { return 'Run: aws login  (or aws sso login)' }
         'az' { return 'Run: az login' }
         'gcloud' { return 'Run: gcloud auth login' }
         'databricks' { return 'Run: databricks auth login' }

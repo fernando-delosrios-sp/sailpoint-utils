@@ -52,4 +52,6 @@ catch {
 }
 Assert-True $ciemEntroThrown 'CIEM + Entro rejected'
 
-Write-Host 'PASS (10 assertions)'
+Assert-Equal 'Run: aws login  (or aws sso login)' (Get-IntegrationWizardLoginHint -CliName 'aws') 'aws login hint points to aws login and sso'
+
+Write-Host 'PASS (11 assertions)'

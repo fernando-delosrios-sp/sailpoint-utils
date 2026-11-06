@@ -422,7 +422,7 @@ The script prompts for:
 
 1. Source type (when not passed)
 2. External ID from the AWS SaaS source Connection Settings
-3. AWS profile (blank uses the default credential chain; run `aws sso login` first if you use IAM Identity Center)
+3. AWS profile (blank uses the default credential chain; run `aws login` or `aws sso login` first)
 4. Commercial vs GovCloud (selects the SailPoint trust principal)
 5. Region for STS / Organizations (IAM is global; default `us-east-1` or `us-gov-west-1`)
 6. IAM role name (default `SailPointAWSRole` — this is the value ISC needs, not the ARN)
@@ -555,7 +555,7 @@ The `Ciem` pack asks how to supply the log bucket, and that answer decides where
 
 | Symptom | Cause and fix |
 | --- | --- |
-| `AWS authentication failed` | Run `aws sso login` or `aws configure`, then pass `-ProfileName`. |
+| `AWS authentication failed` | Run `aws login`, `aws sso login`, or `aws configure`, then pass `-ProfileName`. |
 | `Assembly with same name is already loaded` / `AWSSDK.Core` already loaded | This PowerShell process already loaded AWS SDK assemblies from a different AWS.Tools version (often after a mid-session install). **Close the terminal** and re-run `AWS.ps1` so every module loads together. Optional: `Update-AWSToolsModule -Scope CurrentUser -Force -Cleanup` before the new session. |
 | `Could not assume ... in <account>` | The member role is missing, or the current identity cannot assume it. Grant `sts:AssumeRole` or run the script in that account. |
 | Test connection fails with assume-role / External ID | Confirm the trust principal is `ciem_universal` in SailPoint's account, and that every role uses the **same** External ID shown in ISC. |
