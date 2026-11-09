@@ -919,13 +919,26 @@ function Add-CheckBulletList {
     [void]$Builder.AppendLine('')
 }
 
+function Get-RequirementDescription {
+    param([Parameter(Mandatory)][string]$Line)
+    switch -Regex ($Line.Trim()) {
+        '^repo$' { return 'Repository read access (contents, metadata, branches)' }
+        '^read:org$' { return 'Organization read access (profile and membership)' }
+        '^admin:org$' { return 'Organization administration (teams, installed apps, bot discovery)' }
+        '^manage_billing:copilot$' { return 'GitHub Copilot billing and seat discovery' }
+        '^read:audit_log$' { return 'Organization audit log read access' }
+        default { return '' }
+    }
+}
+
 function Format-IntegrationCheckSection {
     param([Parameter(Mandatory)][hashtable]$Result)
     $sb = [System.Text.StringBuilder]::new()
     $identity = if ($Result.Subject.Name) { "$($Result.Subject.Label) ``$($Result.Subject.Name)``" } else { $Result.Subject.Label }
     [void]$sb.AppendLine("## $identity")
     [void]$sb.AppendLine('')
-    [void]$sb.AppendLine("**$(Get-IntegrationCheckVerdictText -Verdict $Result.Verdict).**")
+    $verdictText = Get-IntegrationCheckVerdictText -Verdict $Result.Verdict
+    [void]$sb.AppendLine("**$verdictText.**")
     [void]$sb.AppendLine('')
     if ($Result.Subject.Note) { [void]$sb.AppendLine($Result.Subject.Note); [void]$sb.AppendLine('') }
     if ($Result.ReadNote) { [void]$sb.AppendLine($Result.ReadNote); [void]$sb.AppendLine('') }
@@ -933,6 +946,34 @@ function Format-IntegrationCheckSection {
         [void]$sb.AppendLine('The live identity was not read. The list below is what to compare. Nothing was changed.')
         [void]$sb.AppendLine('')
     }
+
+    # Explicit Requirements Table: clearly stating what the requirements are and how each was evaluated
+    $requiredList = @($Result.Required)
+    if ($requiredList.Count -gt 0) {
+        [void]$sb.AppendLine('### Required Permissions & Evaluation')
+        [void]$sb.AppendLine('')
+        [void]$sb.AppendLine('| Requirement | Purpose | Status |')
+        [void]$sb.AppendLine('| :--- | :--- | :--- |')
+        foreach ($req in $requiredList) {
+            $desc = Get-RequirementDescription -Line $req
+            if (-not $desc) { $desc = 'Integration access requirement' }
+            $status = if (@($Result.Met) -contains $req) {
+                '**Present**'
+            }
+            elseif (@($Result.Missing) -contains $req -or (@($Result.Missing) | Where-Object { $_ -like "$req *" })) {
+                '**MISSING**'
+            }
+            elseif (@($Result.Manual) -contains $req) {
+                'Manual comparison'
+            }
+            else {
+                'Not evaluated'
+            }
+            [void]$sb.AppendLine("| ``$req`` | $desc | $status |")
+        }
+        [void]$sb.AppendLine('')
+    }
+
     Add-CheckBulletList -Builder $sb -Heading 'Missing' -Items $Result.Missing
     Add-CheckBulletList -Builder $sb -Heading 'Already present' -Items $Result.Met
     Add-CheckBulletList -Builder $sb -Heading 'Compare these yourself' -Items $Result.Manual
@@ -999,6 +1040,7 @@ function Get-IntegrationMemberCheckResult {
         Verdict       = $verdict
         AttemptedRead = $attempted
         Found         = [bool]$read.Found
+        Required      = @($lines.Required)
         Missing       = @($coverage.Missing)
         Met           = @($coverage.Met)
         Manual        = @($coverage.Manual)
@@ -1018,6 +1060,14 @@ function Write-IntegrationCheckReport {
     )
     $sb = [System.Text.StringBuilder]::new()
     [void]$sb.AppendLine("# Check: $($Definition.Title)")
+    [void]$sb.AppendLine('')
+
+    $verdictBanner = switch ($Verdict) {
+        'Pass'   { "> ### Verdict: PASS — Meets the requirements`r`n>`r`n> All required permissions for **$($Definition.Title)** are verified and satisfied by the checked credential/identity." }
+        'Fail'   { "> ### Verdict: FAIL — Does not meet the requirements`r`n>`r`n> The checked credential/identity is missing required permissions for **$($Definition.Title)**. Review the missing items below." }
+        default  { "> ### Verdict: REVIEW — Manual comparison needed`r`n>`r`n> Some requirements cannot be automatically verified via CLI/API. Compare the listed requirements manually." }
+    }
+    [void]$sb.AppendLine($verdictBanner)
     [void]$sb.AppendLine('')
     [void]$sb.AppendLine('Nothing in the tenant was created or changed. This report is a local file.')
     [void]$sb.AppendLine('')
