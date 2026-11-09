@@ -36,7 +36,7 @@ Curated collection of reusable [SailPoint Identity Security Cloud (ISC)](https:/
 | [Optimistic Provisioning Generic SDIM](ISC/Optimistic%20Provisioning%20Generic%20SDIM/) | Configuration guide for optimistic provisioning with Generic SDIM |
 | [Organizational Hierarchy Path](ISC/Organizational%20Hierarchy%20Path/) | Transform rule that builds a consolidated org hierarchy path from entitlements |
 | [PowerShell Rule Template](ISC/PowerShell%20Rule%20Template/) | Copy-ready IQService connector-rule bootstrap with logging, redaction, exit handling, and optional replay |
-| [SailPoint Connect](ISC/SailPoint%20Connect/) | Progressive-disclosure setup for ISC connectors and Entro (AWS, Azure, Google Cloud, Databricks), M365 access profiles, and IQService (`Install-Module SailPoint.Connect`) |
+| [SailPoint Connect](ISC/SailPoint%20Connect/) | Checklist, read-only check of an existing identity, or an explicit `Run` for ISC connectors and Entro (AWS, Azure, Google Cloud, Databricks), plus M365 access profiles and IQService (`Install-Module SailPoint.Connect`) |
 | [Source Management](ISC/Workflows/Source%20Management/) | Interactive workflow to pick a source and run account aggregation (optimised/full), entitlement aggregation, identity profile refresh, or source reset (accounts and/or entitlements) |
 | [Transforms](ISC/Transforms/) | Reusable transform definitions (dates, lifecycle state, attribute history, manager flag) |
 

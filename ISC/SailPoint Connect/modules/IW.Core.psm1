@@ -60,6 +60,16 @@ function Import-IntegrationWizardConsole {
     Initialize-OperatorConsole -NonInteractive:$NonInteractive
 }
 
+function Show-IntegrationWizardSafetyNote {
+    Write-Host 'Nothing is changed until you choose Run and answer yes.' -ForegroundColor Cyan
+    Write-Host '  -Action BuildRequirements   Checklist of what this integration needs. Nothing is created.'
+    Write-Host '  -Action Check               Read a role, app, or service account you already have and report gaps. Nothing is created.'
+    Write-Host '  -Action BuildScript         Script to review and run later, under your own change process. Nothing is created.'
+    Write-Host '  -Action Run                 The only action that creates or updates anything, and only after you confirm.'
+    Write-Host 'Discovery is optional. A signed-in CLI can offer names that already exist. You can type every value yourself.'
+    Write-Host ''
+}
+
 function Show-IntegrationWizardPlatformHelp {
     param(
         [Parameter(Mandatory)][string]$Platform,
@@ -69,6 +79,7 @@ function Show-IntegrationWizardPlatformHelp {
     $meta = $script:IntegrationWizardPlatforms[$Platform]
     Write-Host ''
     Write-Host "$($meta.Title) integration wizard" -ForegroundColor Cyan
+    Show-IntegrationWizardSafetyNote
     Write-Host "  ./$ScriptName -Wizard              Guided setup, asks every question"
     foreach ($key in $CoreOptionHelp.Keys) {
         Write-Host "  ./$ScriptName -Wizard -$key     Guided setup, $($CoreOptionHelp[$key].Short) already chosen"
@@ -76,7 +87,6 @@ function Show-IntegrationWizardPlatformHelp {
     foreach ($key in $CoreOptionHelp.Keys) {
         Write-Host "  ./$ScriptName -$key         [...]  $($CoreOptionHelp[$key].Long)"
     }
-    Write-Host 'Then choose what to do: -Action Run | BuildScript | BuildRequirements'
     Write-Host '  Artifacts go under ~/.sailpoint-connect/<project>/<platform>/<integration>/ (-Project to skip the project menu)'
     Write-Host '  Combine ISC connector + Entro: pass both switches (e.g. -SaaSConnector -Entro on AWS)'
     $first = ($CoreOptionHelp.Keys | Select-Object -First 1)
@@ -321,7 +331,8 @@ function Show-IntegrationWizardDefinitionHelp {
     if ($Definition['AccessLevels'] -and @($Definition['AccessLevels']).Count -gt 1) {
         Write-Host '  -Access ReadOnly|ReadWrite'
     }
-    Write-Host '  -Action Run|BuildScript|BuildRequirements'
+    Write-Host '  -Action BuildRequirements|Check|BuildScript|Run'
+    Write-Host '  BuildRequirements, Check, and BuildScript do not change the tenant. Run is the only action that does.'
     Write-Host '  -OutputDirectory'
     Write-Host '  -NonInteractive   -OutputFormat Text|Json'
     Write-Host ''
@@ -330,7 +341,7 @@ function Show-IntegrationWizardDefinitionHelp {
         if (-not $input) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
         $req = if ($input['Required']) { ' (required)' } else { '' }
-        $src = if ($input['Source'] -eq 'Discover') { ' [discover]' } else { '' }
+        $src = if ($input['Source'] -eq 'Discover') { ' [pick-list if signed in, or type it]' } else { '' }
         Write-Host "  -$($input.Name)$req$src — $($input['Purpose'])"
     }
     if ($Missing -and $Missing.Count -gt 0) {
@@ -384,6 +395,7 @@ function Show-IntegrationWizardConnectionCheck {
     else {
         Write-Info "$CliName was not found on PATH."
     }
+    Write-Info 'A session is only used to list names that already exist, or to read an identity when you choose Check. You can type every value instead. Nothing is created here.'
 }
 
 function Resolve-IntegrationWizardConnectionChoice {
@@ -399,16 +411,18 @@ function Resolve-IntegrationWizardConnectionChoice {
     }
     Show-IntegrationWizardConnectionCheck -CliName $CliName -SessionState $SessionState
     # "Use this session" is only offered when a usable session exists. An installed CLI with
-    # expired or missing credentials cannot introspect, so that choice is omitted.
-    $options = @('SignIn', 'NoSession')
+    # expired or missing credentials cannot list existing names, so that choice is omitted.
+    # The default when nothing is signed in is to type values. Signing in is optional and
+    # only used to offer pick-lists, or to read an identity when the action is Check.
+    $options = @('NoSession', 'SignIn')
     $labels = @(
-        'Install or sign in / switch account'
-        'Continue without a session (type values manually)'
+        'Type every value yourself (complete; no CLI calls)'
+        'Sign in so the CLI can offer existing names (reads only; creates nothing)'
     )
-    $default = 'SignIn'
+    $default = 'NoSession'
     if ($SessionState.SignedIn) {
         $options = @('UseSession') + $options
-        $labels = @('Use this session (introspect and pick lists)') + $labels
+        $labels = @('Use this session to offer existing names (reads only; creates nothing)') + $labels
         $default = 'UseSession'
     }
     $pick = Read-Choice -Prompt 'How do you want to connect?' -Options $options -Labels $labels -Default $default
@@ -507,6 +521,12 @@ function Show-IntegrationWizardSummary {
     Write-Host "  Target:  $($Definition.Title)"
     if ($Context['Access']) { Write-Host "  Access:  $($Context['Access'])" }
     if ($Context['Action']) { Write-Host "  Action:  $($Context['Action'])" }
+    if ($Context['Action'] -eq 'Run') {
+        Write-Host '  Run changes the tenant. The next question is the confirmation.' -ForegroundColor Yellow
+    }
+    elseif ($Context['Action']) {
+        Write-Host '  This action does not change the tenant.'
+    }
     foreach ($input in @($Definition.Inputs)) {
         if (-not $input) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
@@ -518,20 +538,55 @@ function Show-IntegrationWizardSummary {
     Write-Host ''
 }
 
+function Show-IntegrationWizardActionPurpose {
+    param([Parameter(Mandatory)][string]$Action)
+    switch ($Action) {
+        'BuildRequirements' { Write-Host 'This session writes a checklist. The tenant will not be changed.' }
+        'Check' { Write-Host 'This session reads an existing identity and reports gaps. The tenant will not be changed.' }
+        'BuildScript' { Write-Host 'This session writes a script for you to review. The tenant will not be changed.' }
+        'Run' { Write-Host 'This session can change the tenant. You confirm again before anything is written.' }
+    }
+}
+
 function Resolve-IntegrationWizardAction {
     param(
         [Parameter(Mandatory)][hashtable]$Context,
         [switch]$Wizard
     )
-    if (-not [string]::IsNullOrWhiteSpace([string]$Context['Action'])) { return }
-    if (-not $Wizard) { throw 'Missing required -Action (Run|BuildScript|BuildRequirements).' }
-    $Context['Action'] = Read-Choice -Prompt 'What should happen next?' `
-        -Options @('Run', 'BuildScript', 'BuildRequirements') `
+    if (-not [string]::IsNullOrWhiteSpace([string]$Context['Action'])) {
+        if ($Wizard) { Show-IntegrationWizardActionPurpose -Action $Context['Action'] }
+        return
+    }
+    if (-not $Wizard) { throw 'Missing required -Action (BuildRequirements|Check|BuildScript|Run).' }
+    Show-IntegrationWizardSafetyNote
+    $Context['Action'] = Read-Choice -Prompt 'What should this session produce?' `
+        -Options @('BuildRequirements', 'Check', 'BuildScript', 'Run') `
         -Labels @(
-            'Run changes (apply on the target now)'
-            'Build script (PowerShell 7 + platform CLI, review before running)'
-            'Build requirements (Markdown document)'
-        ) -Default 'Run'
+            'Build requirements (a checklist; nothing is created)'
+            'Check an existing identity (read-only; reports what is missing)'
+            'Build script (review it, then run it yourself)'
+            'Run (the only choice that changes the tenant, after you confirm)'
+        ) -Default 'BuildRequirements'
+    Show-IntegrationWizardActionPurpose -Action $Context['Action']
+}
+
+function Remove-LastIntegrationWizardInput {
+    param(
+        [Parameter(Mandatory)][hashtable]$Definition,
+        [Parameter(Mandatory)][hashtable]$Context
+    )
+    $last = $null
+    foreach ($input in @($Definition.Inputs)) {
+        if (-not $input) { continue }
+        if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
+        $name = $input.Name
+        if ($Context.ContainsKey($name) -and -not [string]::IsNullOrWhiteSpace([string]$Context[$name])) {
+            $last = $name
+        }
+    }
+    if (-not $last) { return $false }
+    $Context.Remove($last)
+    return $true
 }
 
 function Start-IntegrationWizardFlow {
@@ -576,12 +631,16 @@ function Start-IntegrationWizardFlow {
             try {
                 switch ($stage) {
                     0 {
-                        if ($needWorkspace -and [string]::IsNullOrWhiteSpace([string]$Context['IntegrationProjectName'])) {
-                            Select-IntegrationProjectWorkspace -Context $Context
-                        }
+                        Resolve-IntegrationWizardAction -Context $Context -Wizard:$wizard
                         $stage = 1
                     }
                     1 {
+                        if ($needWorkspace -and [string]::IsNullOrWhiteSpace([string]$Context['IntegrationProjectName'])) {
+                            Select-IntegrationProjectWorkspace -Context $Context
+                        }
+                        $stage = 2
+                    }
+                    2 {
                         if (-not $plan -or $pickedTarget) {
                             if ($PickTarget) {
                                 :pickLoop while ($true) {
@@ -626,17 +685,17 @@ function Start-IntegrationWizardFlow {
                             Show-IntegrationWizardPlatformHelp -Platform $Platform -ScriptName $ScriptName -CoreOptionHelp $CoreOptionHelp
                             return
                         }
-                        $stage = 2
+                        $stage = 3
                     }
-                    2 {
+                    3 {
                         Resolve-IntegrationWizardAccessLevel -Definition $plan -Context $Context -Wizard:$wizard -NonInteractive:$nonInteractive
                         $meta = $script:IntegrationWizardPlatforms[$Platform]
                         if ($needWorkspace) {
                             Initialize-IntegrationProjectContext -Platform $Platform -PlatformTitle $meta.Title -Plan $plan -Context $Context -ScriptName $ScriptName
                         }
-                        $stage = 3
+                        $stage = 4
                     }
-                    3 {
+                    4 {
                         $meta = $script:IntegrationWizardPlatforms[$Platform]
                         $session = Get-IntegrationWizardCliSession -CliName $meta.CliName
                         $mode = Resolve-IntegrationWizardConnectionChoice -CliName $meta.CliName -SessionState $session -Wizard:$wizard -NonInteractive:$nonInteractive
@@ -684,20 +743,22 @@ function Start-IntegrationWizardFlow {
                                 }
                             }
                         }
-                        $stage = 4
-                    }
-                    4 {
-                        Write-Step "Integration settings: $($plan.Title)"
-                        Collect-IntegrationWizardInputs -Definition $plan -Context $Context -Wizard:$wizard -NonInteractive:$nonInteractive -Discover $Discover
                         $stage = 5
                     }
                     5 {
-                        Resolve-IntegrationWizardAction -Context $Context -Wizard:$wizard
+                        Write-Step "Integration settings: $($plan.Title)"
+                        Collect-IntegrationWizardInputs -Definition $plan -Context $Context -Wizard:$wizard -NonInteractive:$nonInteractive -Discover $Discover
                         $stage = 6
                     }
                     6 {
                         Show-IntegrationWizardSummary -Definition $plan -Context $Context
-                        if (-not (Read-YesNo -Prompt 'Proceed?' -Default $true)) {
+                        $proceed = if ($Context['Action'] -eq 'Run') {
+                            'Run will change the tenant. Proceed?'
+                        }
+                        else {
+                            'Write the local result? The tenant will not be changed.'
+                        }
+                        if (-not (Read-YesNo -Prompt $proceed -Default $true)) {
                             Write-Host 'Cancelled.' -ForegroundColor Yellow
                             if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
                                 Close-IntegrationProjectActivityLog
@@ -712,35 +773,46 @@ function Start-IntegrationWizardFlow {
             catch {
                 if (Test-PromptBack $_) {
                     if ($stage -eq 6) {
-                        $Context.Remove('Action')
-                        $stage = 5
+                        if (Remove-LastIntegrationWizardInput -Definition $plan -Context $Context) {
+                            $stage = 5
+                        }
+                        else {
+                            $Context.Remove('ConnectionMode')
+                            $stage = 4
+                        }
                         continue
                     }
                     elseif ($stage -eq 5) {
+                        $Context.Remove('ConnectionMode')
                         $stage = 4
                         continue
                     }
                     elseif ($stage -eq 4) {
-                        $Context.Remove('ConnectionMode')
-                        $stage = 3
+                        if ($plan['AccessLevels'] -and @($plan['AccessLevels']).Count -gt 1) {
+                            $Context.Remove('Access')
+                            $stage = 3
+                        }
+                        else {
+                            $stage = 2
+                        }
                         continue
                     }
                     elseif ($stage -eq 3) {
-                        if ($plan['AccessLevels'] -and @($plan['AccessLevels']).Count -gt 1) {
-                            $Context.Remove('Access')
-                            $stage = 2
-                        }
-                        else {
-                            $stage = 1
-                        }
+                        $Context.Remove('Access')
+                        $stage = 2
                         continue
                     }
                     elseif ($stage -eq 2) {
-                        $Context.Remove('Access')
+                        $Context.Remove('IntegrationProjectName')
                         $stage = 1
                         continue
                     }
-                    elseif ($stage -le 1) {
+                    elseif ($stage -eq 1) {
+                        $Context.Remove('Action')
+                        $stage = 0
+                        continue
+                    }
+                    else {
                         Write-Host ''
                         Write-Host 'Cancelled.' -ForegroundColor Yellow
                         if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {

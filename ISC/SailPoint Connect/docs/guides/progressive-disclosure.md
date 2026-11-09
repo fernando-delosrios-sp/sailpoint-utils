@@ -1,6 +1,6 @@
 # Progressive Disclosure in SailPoint Connect
 
-SailPoint Connect follows a **progressive-disclosure** design philosophy: it reveals complexity only as you need it, avoiding overwhelming the operator with dozens of flags at once.
+SailPoint Connect follows a **progressive-disclosure** design philosophy: it reveals complexity only as you need it, avoiding overwhelming the operator with dozens of flags at once. It also does not change a tenant until you choose `Run` and confirm. The longer explanation is [What SailPoint Connect changes](what-it-changes.md).
 
 ---
 
@@ -23,17 +23,19 @@ AWS integration wizard
 ```
 
 ### Layer 2: Guided Interactive Questionnaire (`-Wizard`)
-Adding `-Wizard` enters step-by-step interactive mode:
-- Probes your existing CLI session (e.g. `aws sts get-caller-identity`, `az account show`, `gcloud auth list`).
-- Auto-discovers existing resources (IAM roles, CloudTrail buckets, projects).
+Adding `-Wizard` enters step-by-step interactive mode. The first question is what the session should produce: a checklist, a read-only check, a script, or an apply. Every later question is in service of that choice.
+- Shows the current CLI session, if there is one, and asks how you want to supply values.
+- You can type every value. Signing in is optional. A signed-in CLI can offer names that already exist (IAM roles, CloudTrail buckets, projects). That list is a convenience. It does not create those objects.
 - Prompts for required fields with sensible defaults.
 - On combined platforms (AWS, Azure, GCP), asks whether to attach Entro cloud security onboarding.
 
 ### Layer 3: Action Execution (`-Action`)
-Every target supports three actions:
-1. `Run`: Executes the setup immediately using your authenticated CLI session.
-2. `BuildScript`: Renders a standalone, reproducible PowerShell automation script saved under your project directory.
-3. `BuildRequirements`: Renders a Markdown checklist detailing the exact IAM roles, API scopes, and permissions needed so you can hand it off to customer cloud admins prior to onboarding.
+Every target supports four actions. The interactive default is `BuildRequirements`.
+
+1. `BuildRequirements`: Renders a Markdown checklist of the identity and permissions needed, so you can hand it to the team that owns the tenant. Nothing is created.
+2. `Check`: Reads an identity that already exists (an IAM role, an Entra app registration, or a Google service account) and writes a gap report. Nothing is created. Where the grant cannot be read from the CLI, the report says what a person should open.
+3. `BuildScript`: Renders a standalone PowerShell script saved under your project directory. Review it, then run it under your change process.
+4. `Run`: The only action that creates or updates anything, and only after the plan summary and a yes/no. `-WhatIf` prints the steps and does not write.
 
 ### Headless Automation (`-NonInteractive`)
-Pass all required flags plus `-NonInteractive` for CI/CD pipelines and automated deployments.
+Pass all required flags plus `-NonInteractive` for CI/CD pipelines and automated deployments. `-Action` is required. `Check` exits with an error when the existing identity does not meet the requirements, and still does not change it.

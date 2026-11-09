@@ -2,6 +2,8 @@
 
 Welcome to the documentation for **SailPoint Connect** — a progressive-disclosure PowerShell module for configuring SailPoint Identity Security Cloud (ISC) connectors, Entro cloud integrations, Microsoft 365 access profiles, and IQService host infrastructure.
 
+Nothing in your tenant is created or updated unless you choose `Run` and confirm. Start with [What SailPoint Connect changes](guides/what-it-changes.md).
+
 ---
 
 ## Quick Navigation
@@ -9,6 +11,7 @@ Welcome to the documentation for **SailPoint Connect** — a progressive-disclos
 - [Installation & Quick Start](#installation--quick-start)
 - [Command Reference (Cmdlets)](#command-reference)
 - [Architecture & Workspace Directory (`~/.sailpoint-connect`)](#architecture--workspaces)
+- [What SailPoint Connect changes](guides/what-it-changes.md)
 - [Progressive Disclosure Guide](#progressive-disclosure)
 - [Connector & Platform Permissions Breakdown](guides/connector-permissions-breakdown.md)
 - [Prerequisites & Toolchain](#prerequisites--toolchain)
@@ -90,7 +93,8 @@ All project workspaces, activity logs, runbooks, and saved selections are preser
         └── <Integration>/
             ├── activity.log           # Full step-by-step execution log
             ├── <target>.ps1           # Generated standalone script (-Action BuildScript)
-            └── <target>-requirements.md # Generated checklist (-Action BuildRequirements)
+            ├── <target>-requirements.md # Generated checklist (-Action BuildRequirements)
+            └── <target>-check.md     # Read-only gap report (-Action Check)
 ```
 
 Read more in the [Architecture & Workspaces Guide](guides/architecture-and-workspaces.md).
@@ -99,13 +103,14 @@ Read more in the [Architecture & Workspaces Guide](guides/architecture-and-works
 
 ## Progressive Disclosure
 
-Every platform wizard supports 3 execution layers:
+Every platform wizard supports the same choices. Discovery is optional, and only `Run` writes to the tenant.
 
-1. **Interactive Guided Mode (`-Wizard`)**: Step-by-step questionnaire with dynamic auto-discovery of cloud resources (IAM roles, CloudTrail buckets, tenants, projects).
+1. **Interactive Guided Mode (`-Wizard`)**: The first question is what you want back: a checklist, a read-only check, a script, or an apply. Later questions only collect what that choice needs. You can type every value. If you are signed in, some questions also offer names that already exist. The default is `BuildRequirements`.
 2. **Action Selection (`-Action`)**:
-   - `Run`: Applies changes directly to cloud / tenant.
-   - `BuildScript`: Generates an offline `.ps1` script for approval and change management.
-   - `BuildRequirements`: Produces a complete Markdown requirements checklist for customer admins.
-3. **Headless Automation (`-NonInteractive`)**: Designed for CI/CD pipelines and automated deployments.
+   - `BuildRequirements`: Markdown checklist for the team that owns the tenant. Nothing is created.
+   - `Check`: Reads an existing role, app registration, or service account and reports gaps. Nothing is created.
+   - `BuildScript`: Offline `.ps1` for review and change management. Nothing is created until that script is run.
+   - `Run`: The only action that applies changes, and only after you confirm.
+3. **Headless Automation (`-NonInteractive`)**: Pass the parameters explicitly, including `-Action`. `Check` fails the command when the existing identity does not meet the requirements, and still does not change it.
 
 Read more in the [Progressive Disclosure Guide](guides/progressive-disclosure.md).

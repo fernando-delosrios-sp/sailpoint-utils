@@ -23,7 +23,10 @@ Connect-SailPointGoogleCloud [-Wizard] [-SaaSConnector] [-CiemConnector]
 ## Parameters
 
 ### `-Wizard`
-Interactive guided questionnaire with `gcloud` session discovery.
+Interactive guided questionnaire. You can type every value. A signed-in `gcloud` session can offer existing projects and organizations. It does not create them. The default action is a checklist.
+
+### `-Action`
+`BuildRequirements`, `Check` (read IAM permissions on an existing service account), `BuildScript`, or `Run`. OAuth scopes and domain-wide delegation are compared by hand. Only `Run` changes the tenant, after you confirm.
 
 ### `-SaaSConnector`
 Targets the Google Workspace SaaS connector.

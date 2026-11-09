@@ -36,10 +36,11 @@ Launches the interactive questionnaire for the selected platform.
 Name of the project workspace under `~/.sailpoint-connect/`. If omitted in interactive mode, prompts to select an existing workspace or create a new one.
 
 ### `-Action`
-Specifies what to do:
-- `Run`: Applies changes directly against cloud and tenant APIs.
-- `BuildScript`: Renders a standalone PowerShell automation script.
-- `BuildRequirements`: Generates a customer-facing Markdown requirements document.
+Specifies what to do. Only `Run` changes the tenant, and the wizard asks you to confirm first.
+- `BuildRequirements`: Generates a customer-facing Markdown requirements document. Nothing is created.
+- `Check`: Reads an existing role, app, or service account and reports gaps. Nothing is created.
+- `BuildScript`: Renders a standalone PowerShell automation script. Nothing is created until that script is run.
+- `Run`: Applies changes after you confirm.
 
 ### `-OutputDirectory`
 Overrides the directory where generated scripts or requirements files are saved (logs remain under `~/.sailpoint-connect/`).

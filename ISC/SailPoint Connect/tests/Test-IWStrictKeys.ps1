@@ -22,8 +22,10 @@ Import-Module (Join-Path $wizardRoot 'modules/Definitions/Google.Entro.psm1') -F
 # Choices take their default, typed input is a fixed value, and the "Also configure Entro?"
 # question is declined so the Google Workspace connector path stays on a single target.
 $script:ConnectionChoice = 'UseSession'
+$script:FirstChoicePrompt = $null
 function global:Read-Choice {
     param($Prompt, $Options, $Labels, $Default)
+    if (-not $script:FirstChoicePrompt) { $script:FirstChoicePrompt = $Prompt }
     # Pin the connection choice so the test does not depend on this machine's gcloud sign-in state.
     if ($Prompt -eq 'How do you want to connect?') {
         $script:ConnectionOptions = @($Options)
@@ -68,6 +70,7 @@ Start-IntegrationWizardFlow -Platform 'GoogleCloud' -ScriptName 'Google Cloud.ps
     -Discover $noDiscover `
     -Execute { param($def, $c) $script:Executed = @{ Def = $def; Ctx = $c } }
 
+Assert-Equal 'What should this session produce?' $script:FirstChoicePrompt 'the wizard asks for the result before any other question'
 Assert-True ($null -ne $script:Executed) 'GCP Entro -Wizard reaches execute'
 Assert-Equal 'google-gcp-entro' $script:Executed.Def.Id 'GCP Entro -Wizard resolves the Entro definition'
 Assert-Equal 'PrivateKey' $script:Executed.Ctx['Method'] 'Method ValidateSet input collected'
@@ -145,7 +148,7 @@ function global:Read-Choice {
 }
 $unsigned = @{ Installed = $true; SignedIn = $false; Summary = 'credentials expired' }
 $unsignedMode = Resolve-IntegrationWizardConnectionChoice -CliName 'gcloud' -SessionState $unsigned -Wizard
-Assert-Equal 'SignIn' $unsignedMode 'unsigned session defaults to sign in'
+Assert-Equal 'NoSession' $unsignedMode 'unsigned session defaults to typing values'
 Assert-True (@($script:ConnectionOptions) -notcontains 'UseSession') 'unsigned session hides Use this session'
 $signed = @{ Installed = $true; SignedIn = $true; Summary = 'account a project p' }
 $signedMode = Resolve-IntegrationWizardConnectionChoice -CliName 'gcloud' -SessionState $signed -Wizard
@@ -155,4 +158,4 @@ Assert-True (@($script:ConnectionOptions) -contains 'UseSession') 'signed-in ses
 Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue
 Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host 'PASS (20 assertions)'
+Write-Host 'PASS (21 assertions)'

@@ -2,6 +2,8 @@
 
 Progressive-disclosure operator setup for SailPoint ISC connectors, Entro cloud onboarding, Microsoft 365 access profiles, and IQService host management.
 
+SailPoint Connect does not change your tenant unless you choose `Run` and answer yes. The ordinary paths are a checklist (`BuildRequirements`), a read-only look at an identity you already have (`Check`), or a script you review and run yourself (`BuildScript`). Discovery is an optional pick-list of names that already exist. You can type every value instead. See [What SailPoint Connect changes](docs/guides/what-it-changes.md).
+
 ---
 
 ## Installation & Quick Start
@@ -47,10 +49,11 @@ New-SailPointM365AccessProfile
 If you are working directly in this repository without installing the module from PowerShell Gallery:
 
 ```powershell
-./AWS.ps1                    # lists core options
+./AWS.ps1                    # lists core options and the four actions
 ./AWS.ps1 -SaaSConnector     # lists required sub-options
-./AWS.ps1 -Wizard            # guided setup (optional Entro addon after connector pick)
-./AWS.ps1 -SaaSConnector -Entro -Action BuildRequirements   # combined non-interactive
+./AWS.ps1 -Wizard            # guided setup; defaults to a checklist, not a change
+./AWS.ps1 -SaaSConnector -RoleName SailPointAWSRole -Action Check   # read an existing role
+./AWS.ps1 -SaaSConnector -Entro -Action BuildRequirements   # combined checklist
 ./AWS.ps1 -Wizard -Entro     # Entro-only path, preset
 ```
 
@@ -58,17 +61,18 @@ If you are working directly in this repository without installing the module fro
 
 ## Purpose
 
-Progressive-disclosure operator scripts for SailPoint ISC connector setup, Entro cloud onboarding, Microsoft 365 access profiles, and IQService host management. Platform wizards (`AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Databricks.ps1`) print core options when run with no arguments; add `-Wizard` for interactive mode, or pass a core switch (`-SaaSConnector`, `-Connector`, `-Entro`, …) and `-Action Run|BuildScript|BuildRequirements`.
+Platform wizards (`AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Databricks.ps1`) print the four actions when run with no arguments. Add `-Wizard` for interactive mode, or pass a core switch (`-SaaSConnector`, `-Connector`, `-Entro`, …) and `-Action BuildRequirements|Check|BuildScript|Run`. Only `Run` changes the tenant, and the wizard asks you to confirm first. `Check` reads an existing IAM role, Entra app registration, or Google service account and reports whether it already meets the requirements for the integration you selected.
 
 **Combined ISC + Entro:** On AWS, Azure, and Google Cloud you can configure the ISC connector and Entro in one run. Interactive mode asks whether to add Entro after you pick the connector (Google SaaS also asks GCP vs Workspace Entro). CLI mode passes both switches on the same invocation, for example `./AWS.ps1 -SaaSConnector -Entro -IscExternalId … -EntroExternalId … -Action BuildRequirements`. AWS uses separate `-IscExternalId` (ISC Connection Settings) and `-EntroExternalId` (Entro wizard). CIEM + Entro is not supported.
 
 ## Progressive disclosure
 
 ```powershell
-./AWS.ps1                    # lists core options
+./AWS.ps1                    # lists core options and the four actions
 ./AWS.ps1 -SaaSConnector     # lists required sub-options
-./AWS.ps1 -Wizard            # guided setup (optional Entro addon after connector pick)
-./AWS.ps1 -SaaSConnector -Entro -Action BuildRequirements   # combined non-interactive
+./AWS.ps1 -Wizard            # guided setup; defaults to a checklist, not a change
+./AWS.ps1 -SaaSConnector -RoleName SailPointAWSRole -Action Check   # read an existing role
+./AWS.ps1 -SaaSConnector -Entro -Action BuildRequirements   # combined checklist
 ./AWS.ps1 -Wizard -Entro     # Entro-only path, preset
 ```
 

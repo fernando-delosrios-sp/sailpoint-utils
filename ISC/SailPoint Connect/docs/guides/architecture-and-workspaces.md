@@ -24,6 +24,7 @@ This ensures that running scripts from different directories or projects never p
             ├── activity.log           # Timestamped log lines with secret masking
             ├── <script>.ps1           # Generated standalone script (-Action BuildScript)
             ├── <script>-requirements.md # Requirements checklist (-Action BuildRequirements)
+            ├── <script>-check.md      # Read-only gap report (-Action Check)
             └── entro-gcp-report.md    # GCP Entro run summary (when applicable)
 ```
 

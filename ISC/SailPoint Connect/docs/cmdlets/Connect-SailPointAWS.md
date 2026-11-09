@@ -23,7 +23,7 @@ Connect-SailPointAWS [-Wizard] [-SaaSConnector] [-CiemConnector] [-Entro]
 ## Parameters
 
 ### `-Wizard`
-Launches the interactive questionnaire. Discovers existing IAM roles and CloudTrail buckets via AWS CLI.
+Launches the interactive questionnaire. You can type every value. If you are signed in, some questions also offer existing IAM roles and CloudTrail buckets. That pick-list does not create them. The default action is a checklist.
 
 ### `-SaaSConnector`
 Selects the ISC Amazon Web Services SaaS connector IAM role.
@@ -44,7 +44,7 @@ AWS environment: `Commercial` (default) or `GovCloud`.
 Permission level: `ReadOnly` or `ReadWrite`.
 
 ### `-Action`
-`Run`, `BuildScript`, or `BuildRequirements`.
+`BuildRequirements` (checklist), `Check` (read an existing IAM role and report gaps), `BuildScript` (review, then run it yourself), or `Run` (the only action that changes the account, after you confirm).
 
 ### `-IscExternalId`
 External ID for the ISC connector trust relationship.
@@ -59,7 +59,13 @@ External ID for the Entro trust relationship.
 Connect-SailPointAWS -Wizard
 ```
 
-### Example 2: Combined ISC + Entro requirements build
+### Example 2: Read an existing role
+```powershell
+Connect-SailPointAWS -SaaSConnector -Access ReadOnly -RoleName "SailPointAWSRole" -Action Check
+```
+Reports whether that role already has the ReadOnly permissions. Nothing is created.
+
+### Example 3: Combined ISC + Entro requirements build
 ```powershell
 Connect-SailPointAWS -SaaSConnector -Entro `
     -IscExternalId "isc-ext-001" `

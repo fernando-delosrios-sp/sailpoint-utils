@@ -22,7 +22,10 @@ Connect-SailPointAzure [-Wizard] [-Connector] [-Entro]
 ## Parameters
 
 ### `-Wizard`
-Runs the guided interactive setup questionnaire.
+Runs the guided interactive setup questionnaire. You can type every value. A signed-in Azure CLI can offer existing names. It does not create the application. The default action is a checklist.
+
+### `-Action`
+`BuildRequirements`, `Check` (read an existing app registration's granted permissions), `BuildScript`, or `Run`. Only `Run` changes the tenant, after you confirm.
 
 ### `-Connector`
 Targets the Microsoft Entra ID connector application registration.
@@ -34,7 +37,7 @@ Targets the Entro Microsoft integration.
 Microsoft Entra tenant ID (GUID). Discovered automatically if signed in to `az` or Microsoft Graph.
 
 ### `-ApplicationName`
-Name for the application registration. Default: `SailPoint-ISC-EntraID`.
+Display name of the app registration. `Check` reads the registration that already has this name. `Run` creates or updates it. Default: `SailPoint-ISC-EntraID`.
 
 ### `-Access`
 Permission level: `ReadOnly` or `ReadWrite`.
@@ -49,7 +52,14 @@ Generates a new client secret even if the application registration already exist
 Connect-SailPointAzure -Wizard
 ```
 
-### Example 2: Non-interactive run
+### Example 2: Read an existing app registration
 ```powershell
-Connect-SailPointAzure -Connector -TenantId "16131240-2ba6-4627-ad0a-275f8450303c" -Access ReadOnly -Action Run
+Connect-SailPointAzure -Connector -ApplicationName "SailPoint-ISC" -Access ReadOnly -Action Check
 ```
+Compares admin-consented application permissions with the ReadOnly requirements. Nothing is created.
+
+### Example 3: Non-interactive run
+```powershell
+Connect-SailPointAzure -Connector -TenantId "16131240-2ba6-4627-ad0a-275f8450303c" -ApplicationName "SailPoint-ISC" -Access ReadOnly -Action Run
+```
+This is the action that changes the tenant.

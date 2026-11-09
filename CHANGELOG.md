@@ -4,6 +4,16 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-09
+
+### ✨ New Features
+
+- **SailPoint Connect — Check** — `-Action Check` reads an IAM role, Entra application, or Google service account that already exists and reports whether it meets the permissions that integration needs. It does not create or update anything. Integrations whose grant lives outside the CLI (Databricks Account Admin, Salesforce, GitHub, CrowdStrike, Google Admin console delegation) get a hand-comparison list instead of a guessed pass.
+
+### 🔧 Improvements
+
+- **SailPoint Connect** — The wizard no longer presents discovery or `Run` as the path you have to take. Interactive mode defaults to `BuildRequirements`. An unsigned CLI defaults to typing values yourself. `Run` is labeled as the only action that changes the tenant, and it still asks you to confirm. See [What SailPoint Connect changes](ISC/SailPoint%20Connect/docs/guides/what-it-changes.md).
+
 ## 2026-11-04
 
 ### 💥 Breaking Changes

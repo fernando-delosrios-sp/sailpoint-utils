@@ -39,10 +39,11 @@ Import-Module (Join-Path $script:ModuleRoot 'modules/ISC.OperatorToolchain.psm1'
     If omitted in an interactive session, prompts for a project or creates a new one.
 
 .PARAMETER Action
-    Non-interactive action to perform:
-    - Run: Executes the setup directly in cloud/tenant
-    - BuildScript: Generates a self-contained automation script
-    - BuildRequirements: Generates a human-readable prerequisite checklist markdown file
+    What to do. Only Run changes the tenant, and the wizard asks you to confirm first.
+    - BuildRequirements: Writes a checklist. Nothing is created.
+    - Check: Reads an identity that already exists and reports gaps. Nothing is created.
+    - BuildScript: Writes a script to review and run later. Nothing is created until that script is run.
+    - Run: Creates or updates the identity after you confirm.
 
 .PARAMETER OutputDirectory
     Overrides the default output directory for generated artifacts while keeping logs in ~/.sailpoint-connect/.
@@ -92,7 +93,7 @@ function Invoke-SailPointConnect {
         [string]$Project,
 
         [Parameter()]
-        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
         [string]$Action,
 
         [Parameter()]
@@ -271,7 +272,7 @@ function Invoke-SailPointConnect {
     Permission access mode: ReadOnly or ReadWrite.
 
 .PARAMETER Action
-    Action to execute: Run, BuildScript, or BuildRequirements.
+    BuildRequirements (checklist), Check (read an existing identity), BuildScript (review, then run it yourself), or Run (the only action that changes the tenant, after you confirm).
 
 .PARAMETER IscExternalId
     External ID required for ISC connector connection settings trust policy.
@@ -280,7 +281,7 @@ function Invoke-SailPointConnect {
     External ID required for Entro onboarding trust policy.
 
 .PARAMETER RoleName
-    IAM role name to create or update.
+    IAM role name. Check reads the role that already has this name. Run creates or updates it, after you confirm.
 
 .PARAMETER Project
     Workspace project name under ~/.sailpoint-connect/.
@@ -296,8 +297,12 @@ function Invoke-SailPointConnect {
     Starts guided interactive setup for AWS.
 
 .EXAMPLE
+    Connect-SailPointAWS -SaaSConnector -Access ReadOnly -RoleName "SailPointAWSRole" -Action Check
+    Reads the existing IAM role and reports whether it already meets the ReadOnly requirements. Nothing is created.
+
+.EXAMPLE
     Connect-SailPointAWS -SaaSConnector -Access ReadOnly -IscExternalId "ext-12345" -Action Run
-    Creates the ISC AWS SaaS connector IAM role non-interactively.
+    Creates the ISC AWS SaaS connector IAM role non-interactively. This is the action that changes the account.
 
 .EXAMPLE
     Connect-SailPointAWS -SaaSConnector -Entro -IscExternalId "isc-1" -EntroExternalId "en-2" -Action BuildRequirements
@@ -322,7 +327,7 @@ function Connect-SailPointAWS {
         [string]$EntroTemplateRegion,
         [ValidateSet('ReadOnly', 'ReadWrite')]
         [string]$Access,
-        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
         [string]$Action,
         [string]$IscExternalId,
         [string]$EntroExternalId,
@@ -363,7 +368,7 @@ function Connect-SailPointAWS {
     Permission level: ReadOnly or ReadWrite.
 
 .PARAMETER Action
-    Action to execute: Run, BuildScript, or BuildRequirements.
+    BuildRequirements (checklist), Check (read an existing identity), BuildScript (review, then run it yourself), or Run (the only action that changes the tenant, after you confirm).
 
 .PARAMETER TenantId
     Microsoft Entra tenant ID (GUID).
@@ -405,7 +410,7 @@ function Connect-SailPointAzure {
         [switch]$Entro,
         [ValidateSet('ReadOnly', 'ReadWrite')]
         [string]$Access,
-        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
         [string]$Action,
         [string]$TenantId,
         [string]$ApplicationName,
@@ -450,7 +455,7 @@ function Connect-SailPointAzure {
     Permission level: ReadOnly or ReadWrite.
 
 .PARAMETER Action
-    Action to execute: Run, BuildScript, or BuildRequirements.
+    BuildRequirements (checklist), Check (read an existing identity), BuildScript (review, then run it yourself), or Run (the only action that changes the tenant, after you confirm).
 
 .PARAMETER OrganizationId
     Google Cloud Organization ID.
@@ -494,7 +499,7 @@ function Connect-SailPointGoogleCloud {
         [switch]$WorkspaceEntro,
         [ValidateSet('ReadOnly', 'ReadWrite')]
         [string]$Access,
-        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
         [string]$Action,
         [string]$OrganizationId,
         [string]$ProjectId,
@@ -536,7 +541,7 @@ function Connect-SailPointGoogleCloud {
     Authentication mechanism: DatabricksM2M or Entra.
 
 .PARAMETER Action
-    Action to execute: Run, BuildScript, or BuildRequirements.
+    BuildRequirements (checklist), Check (read an existing identity), BuildScript (review, then run it yourself), or Run (the only action that changes the tenant, after you confirm).
 
 .PARAMETER ServicePrincipalName
     Name of the Databricks service principal. Default: SailPoint-source.
@@ -576,7 +581,7 @@ function Connect-SailPointDatabricks {
         [string]$Cloud,
         [ValidateSet('DatabricksM2M', 'Entra')]
         [string]$Auth,
-        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
         [string]$Action,
         [string]$ServicePrincipalName,
         [string]$AccountId,
@@ -618,7 +623,7 @@ function Connect-SailPointDatabricks {
     Feature packs: AgentDiscovery (Agentforce), ActivityInsights.
 
 .PARAMETER Action
-    Action to execute: Run, BuildScript, or BuildRequirements.
+    BuildRequirements (checklist), Check (read an existing identity), BuildScript (review, then run it yourself), or Run (the only action that changes the tenant, after you confirm).
 
 .EXAMPLE
     Connect-SailPointSalesforce -Wizard
@@ -636,7 +641,7 @@ function Connect-SailPointSalesforce {
         [switch]$Entro,
         [ValidateSet('ReadOnly', 'ReadWrite')]
         [string]$Access,
-        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
         [string]$Action,
         [string]$InstanceUrl,
         [string]$LoginUrl,
@@ -680,7 +685,7 @@ function Connect-SailPointSalesforce {
     Feature packs: AgentDiscovery (Copilot seats & Bots), ActivityInsights.
 
 .PARAMETER Action
-    Action to execute: Run, BuildScript, or BuildRequirements.
+    BuildRequirements (checklist), Check (read an existing identity), BuildScript (review, then run it yourself), or Run (the only action that changes the tenant, after you confirm).
 
 .EXAMPLE
     Connect-SailPointGitHub -Wizard
@@ -698,7 +703,7 @@ function Connect-SailPointGitHub {
         [switch]$Entro,
         [ValidateSet('ReadOnly', 'ReadWrite')]
         [string]$Access,
-        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
         [string]$Action,
         [string]$Organization,
         [string]$ApiUrl,
@@ -756,7 +761,7 @@ function Connect-SailPointGitHub {
     Environment nickname for Entro integration.
 
 .PARAMETER Action
-    Action to execute: Run, BuildScript, or BuildRequirements.
+    BuildRequirements (checklist), Check (read an existing identity), BuildScript (review, then run it yourself), or Run (the only action that changes the tenant, after you confirm).
 
 .PARAMETER OutputDirectory
     Overrides output directory for generated artifacts and connection settings.
@@ -783,7 +788,7 @@ function Connect-SailPointCrowdStrike {
         [switch]$Entro,
         [ValidateSet('ReadOnly', 'ReadWrite')]
         [string]$Access,
-        [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
         [string]$Action,
         [string]$BaseUrl,
         [string]$ClientId,

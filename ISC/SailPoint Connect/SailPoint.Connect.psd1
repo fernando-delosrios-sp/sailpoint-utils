@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.1.3'
+    ModuleVersion = '1.2.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -21,7 +21,7 @@
     Copyright = '(c) 2026 SailPoint Technologies. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description = 'SailPoint Connect: Progressive-disclosure operator setup for SailPoint ISC connectors, Entro cloud onboarding, Microsoft 365 access profiles, and IQService host management.'
+    Description = 'SailPoint Connect: checklist, read-only check of an existing identity, or an explicit Run for SailPoint ISC connectors, Entro cloud onboarding, Microsoft 365 access profiles, and IQService host management.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = '7.0'
