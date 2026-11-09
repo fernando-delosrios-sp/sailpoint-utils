@@ -144,6 +144,99 @@ Assert-Equal 'Fail' $badRes.Verdict 'Expired/bad PAT fails Check'
 $badContent = Get-Content -LiteralPath $badReport -Raw
 Assert-True ($badContent -match 'Bad credentials') 'Report notes bad credentials'
 
+# Case 8d: Fine-grained PAT missing organization access
+Set-IntegrationCheckInvoker {
+    param($cmd, [string[]]$arguments)
+    if ($arguments -contains '/user') {
+        return @{
+            ExitCode = 0
+            Output = "HTTP/2.0 200 OK`r`n`r`n{`"login`": `"testuser`"}"
+        }
+    }
+    if ($arguments -contains '/user/orgs?per_page=1') {
+        return @{
+            ExitCode = 0
+            Output = "HTTP/2.0 200 OK`r`n`r`n[]"
+        }
+    }
+    if ($arguments -contains '/user/repos?per_page=1') {
+        return @{
+            ExitCode = 0
+            Output = "HTTP/2.0 200 OK`r`n`r`n[{`"name`": `"my-repo`"}]"
+        }
+    }
+    return @{ ExitCode = 0; Output = "HTTP/2.0 200 OK`r`n`r`n{}" }
+}
+$fgGapReport = Join-Path $tmp 'gh-fg-gap.md'
+$fgGapRes = Invoke-IntegrationRequirementCheck -Definition $entroDef -Context @{ Token = 'github_pat_11AAAABBBBCCCC' } -OutputPath $fgGapReport
+Assert-Equal 'Fail' $fgGapRes.Verdict 'Fine-grained PAT missing org fails Check'
+$fgGapContent = Get-Content -LiteralPath $fgGapReport -Raw
+Assert-True ($fgGapContent -match 'Does not meet the requirements') 'Fine-grained PAT report states does not meet requirements'
+Assert-True ($fgGapContent -match 'read:org') 'Report calls out missing read:org'
+Assert-True ($fgGapContent -match 'repo') 'Report mentions repo'
+
+# Case 8e: Fine-grained PAT with verified org and repo access
+Set-IntegrationCheckInvoker {
+    param($cmd, [string[]]$arguments)
+    if ($arguments -contains '/user') {
+        return @{
+            ExitCode = 0
+            Output = "HTTP/2.0 200 OK`r`n`r`n{`"login`": `"testuser`"}"
+        }
+    }
+    if ($arguments -contains '/orgs/acme-corp') {
+        return @{
+            ExitCode = 0
+            Output = "HTTP/2.0 200 OK`r`n`r`n{`"login`": `"acme-corp`"}"
+        }
+    }
+    if ($arguments -contains '/orgs/acme-corp/repos?per_page=1') {
+        return @{
+            ExitCode = 0
+            Output = "HTTP/2.0 200 OK`r`n`r`n[{`"name`": `"backend`"}]"
+        }
+    }
+    return @{ ExitCode = 0; Output = "HTTP/2.0 200 OK`r`n`r`n{}" }
+}
+$fgPassReport = Join-Path $tmp 'gh-fg-pass.md'
+$fgPassRes = Invoke-IntegrationRequirementCheck -Definition $entroDef -Context @{ Token = 'github_pat_11AAAABBBBCCCC'; Organization = 'acme-corp' } -OutputPath $fgPassReport
+Assert-Equal 'Pass' $fgPassRes.Verdict 'Fine-grained PAT with verified org and repo passes Check'
+$fgPassContent = Get-Content -LiteralPath $fgPassReport -Raw
+Assert-True ($fgPassContent -match 'Meets the requirements') 'Fine-grained PAT report states meets requirements'
+Assert-True ($fgPassContent -match 'read:org') 'Report lists read:org'
+Assert-True ($fgPassContent -match 'repo') 'Report lists repo'
+
+# Case 8f: Fine-grained PAT with SAML SSO required
+Set-IntegrationCheckInvoker {
+    param($cmd, [string[]]$arguments)
+    if ($arguments -contains '/user') {
+        return @{
+            ExitCode = 0
+            Output = "HTTP/2.0 200 OK`r`n`r`n{`"login`": `"testuser`"}"
+        }
+    }
+    if ($arguments -contains '/orgs/acme-corp') {
+        return @{
+            ExitCode = 1
+            Output = "HTTP/2.0 403 Forbidden`r`nX-GitHub-SSO: required; url=https://github.com/orgs/acme-corp/sso`r`n`r`n{`"message`": `"Resource protected by organization SAML enforcement`"}"
+        }
+    }
+    if ($arguments -contains '/orgs/acme-corp/repos?per_page=1') {
+        return @{
+            ExitCode = 1
+            Output = "HTTP/2.0 403 Forbidden`r`nX-GitHub-SSO: required; url=https://github.com/orgs/acme-corp/sso`r`n`r`n{`"message`": `"Resource protected by organization SAML enforcement`"}"
+        }
+    }
+    return @{ ExitCode = 0; Output = "HTTP/2.0 200 OK`r`n`r`n{}" }
+}
+$ssoReport = Join-Path $tmp 'gh-sso.md'
+$ssoRes = Invoke-IntegrationRequirementCheck -Definition $entroDef -Context @{ Token = 'github_pat_11AAAABBBBCCCC'; Organization = 'acme-corp' } -OutputPath $ssoReport
+Assert-Equal 'Fail' $ssoRes.Verdict 'PAT with SAML SSO required fails Check'
+$ssoContent = Get-Content -LiteralPath $ssoReport -Raw
+Assert-True ($ssoContent -match 'Does not meet the requirements') 'SSO report states does not meet requirements'
+Assert-True ($ssoContent -match 'SAML SSO') 'Report notes SAML SSO requirement'
+Assert-True ($ssoContent -match 'read:org') 'Report calls out missing read:org'
+
 Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
 Set-IntegrationCheckInvoker $null
 

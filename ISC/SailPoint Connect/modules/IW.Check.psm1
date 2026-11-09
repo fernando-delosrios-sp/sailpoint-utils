@@ -581,72 +581,122 @@ function Read-GcpServiceAccountGrants {
     }
 }
 
+function Invoke-GitHubApiProbe {
+    param(
+        [Parameter(Mandatory)][string]$Endpoint,
+        [string]$Token,
+        [string]$ApiUrl = 'https://api.github.com'
+    )
+    $statusCode = 0
+    $headers = @{}
+    $output = ''
+
+    if (-not [string]::IsNullOrWhiteSpace($Token)) {
+        $res = Invoke-IntegrationCheckCli -Command 'gh' -Arguments @('api', $Endpoint, '--include', '-H', "Authorization: Bearer $Token")
+        if (Test-CliNotFound -Result $res) {
+            try {
+                $reqHeaders = @{
+                    'Authorization' = "Bearer $Token"
+                    'User-Agent'    = 'SailPoint-Connect'
+                    'Accept'        = 'application/vnd.github+json'
+                }
+                $uri = "$($ApiUrl.TrimEnd('/'))$Endpoint"
+                $webRes = Invoke-WebRequest -Uri $uri -Headers $reqHeaders -TimeoutSec 10 -ErrorAction Stop
+                $statusCode = [int]$webRes.StatusCode
+                foreach ($k in $webRes.Headers.Keys) {
+                    $val = $webRes.Headers[$k]
+                    $headers[[string]$k.ToLower()] = if ($val -is [array]) { $val -join ',' } else { [string]$val }
+                }
+                $output = "HTTP/2.0 $($statusCode) OK`r`n`r`n$($webRes.Content)"
+            }
+            catch {
+                if ($_.Exception.Response) {
+                    $statusCode = [int]$_.Exception.Response.StatusCode
+                    if ($_.Exception.Response.Headers) {
+                        foreach ($k in $_.Exception.Response.Headers.Keys) {
+                            $val = $_.Exception.Response.Headers[$k]
+                            $headers[[string]$k.ToLower()] = if ($val -is [array]) { $val -join ',' } else { [string]$val }
+                        }
+                    }
+                }
+                else {
+                    $statusCode = 0
+                }
+                $output = [string]$_.Exception.Message
+            }
+        }
+        else {
+            $output = [string]$res.Output
+            if ([int]$res.ExitCode -eq 0 -and $statusCode -eq 0) {
+                $statusCode = 200
+            }
+        }
+    }
+    else {
+        $res = Invoke-IntegrationCheckCli -Command 'gh' -Arguments @('api', $Endpoint, '--include')
+        $output = [string]$res.Output
+        if ([int]$res.ExitCode -eq 0 -and $statusCode -eq 0) {
+            $statusCode = 200
+        }
+    }
+
+    if ($output) {
+        if ($output -match '(?i)^HTTP/\S+\s+(?<status>\d{3})') {
+            $statusCode = [int]$Matches['status']
+        }
+        elseif ($output -match '(?i)\(HTTP\s+(?<status>\d{3})\)') {
+            $statusCode = [int]$Matches['status']
+        }
+        elseif ($output -match '(?i)401\s+Unauthorized|Bad credentials') {
+            $statusCode = 401
+        }
+        elseif ($output -match '(?i)403\s+Forbidden') {
+            $statusCode = 403
+        }
+        elseif ($output -match '(?i)404\s+Not Found') {
+            $statusCode = 404
+        }
+    }
+
+    foreach ($line in ($output -split "`r?`n")) {
+        if ($line -match '^(?<name>[A-Za-z0-9_-]+):\s*(?<val>.*)$') {
+            $hName = $Matches['name'].ToLower()
+            if (-not $headers.ContainsKey($hName)) {
+                $headers[$hName] = $Matches['val'].Trim()
+            }
+        }
+    }
+
+    $ssoRequired = ($headers.ContainsKey('x-github-sso') -and $headers['x-github-sso'] -match '(?i)required')
+    if (-not $ssoRequired -and $output -match '(?i)x-github-sso:\s*required') {
+        $ssoRequired = $true
+    }
+
+    return @{
+        StatusCode  = $statusCode
+        Headers     = $headers
+        Output      = $output
+        Success     = ($statusCode -ge 200 -and $statusCode -lt 300)
+        SsoRequired = $ssoRequired
+    }
+}
+
 function Read-GitHubTokenGrants {
     param(
         [hashtable]$Context = @{}
     )
     $token = Get-CheckContextValue -Context $Context -Name 'Token'
     $org = Get-CheckContextValue -Context $Context -Name 'Organization'
+    $project = Get-CheckContextValue -Context $Context -Name 'Project'
     $apiUrl = Get-CheckContextValue -Context $Context -Name 'ApiUrl' -Default 'https://api.github.com'
 
     $scopes = [System.Collections.Generic.List[string]]::new()
     $notes = [System.Collections.Generic.List[string]]::new()
     $userLogin = ''
-    $headersAndBody = ''
 
-    if (-not [string]::IsNullOrWhiteSpace($token)) {
-        $res = Invoke-IntegrationCheckCli -Command 'gh' -Arguments @('api', '/user', '--include', '-H', "Authorization: Bearer $token")
-        if (Test-CliNotFound -Result $res) {
-            try {
-                $reqHeaders = @{
-                    'Authorization' = "Bearer $token"
-                    'User-Agent'    = 'SailPoint-Connect'
-                    'Accept'        = 'application/vnd.github+json'
-                }
-                $uri = "$($apiUrl.TrimEnd('/'))/user"
-                $webRes = Invoke-WebRequest -Uri $uri -Headers $reqHeaders -TimeoutSec 10 -ErrorAction Stop
-                $rawHeader = $webRes.Headers['x-oauth-scopes']
-                $headerStr = if ($rawHeader -is [array]) { $rawHeader -join ',' } else { [string]$rawHeader }
-                $headersAndBody = "HTTP/2.0 $($webRes.StatusCode) OK`r`nX-OAuth-Scopes: $headerStr`r`n`r`n$($webRes.Content)"
-            }
-            catch {
-                return @{
-                    Found      = $false
-                    Grants     = @()
-                    Denied     = @()
-                    Incomplete = $true
-                    Note       = "Could not authenticate with the provided GitHub token. Verify the token is valid and not expired. ($($_.Exception.Message))"
-                }
-            }
-        }
-        else {
-            $headersAndBody = [string]$res.Output
-        }
-    }
-    else {
-        $res = Invoke-IntegrationCheckCli -Command 'gh' -Arguments @('api', '/user', '--include')
-        if (Test-CliNotFound -Result $res) {
-            return @{
-                Found      = $false
-                Grants     = @()
-                Denied     = @()
-                Incomplete = $true
-                Note       = 'No GitHub token was provided and gh CLI is not available or not signed in. Provide a PAT or run: gh auth login'
-            }
-        }
-        if ([int]$res.ExitCode -ne 0) {
-            return @{
-                Found      = $false
-                Grants     = @()
-                Denied     = @()
-                Incomplete = $true
-                Note       = "GitHub authentication failed: $([string]$res.Output). Provide a valid PAT or run: gh auth login"
-            }
-        }
-        $headersAndBody = [string]$res.Output
-    }
-
-    if ($headersAndBody -match '(?i)401\s+Unauthorized|Bad credentials') {
+    # Step 1: Probe /user to validate credential & identity
+    $userProbe = Invoke-GitHubApiProbe -Endpoint '/user' -Token $token -ApiUrl $apiUrl
+    if ($userProbe.StatusCode -eq 401 -or $userProbe.Output -match '(?i)401\s+Unauthorized|Bad credentials') {
         return @{
             Found      = $false
             Grants     = @()
@@ -655,35 +705,144 @@ function Read-GitHubTokenGrants {
             Note       = 'GitHub token authentication failed: Bad credentials (token may be expired or invalid).'
         }
     }
-
-    foreach ($line in ($headersAndBody -split "`r?`n")) {
-        if ($line -match '(?i)^x-oauth-scopes:\s*(?<scopes>.*)$') {
-            $rawScopes = $Matches['scopes']
-            foreach ($s in ($rawScopes -split ',')) {
-                $trimmed = $s.Trim()
-                if ($trimmed) { $scopes.Add($trimmed) }
-            }
+    if ($userProbe.StatusCode -ne 0 -and -not $userProbe.Success) {
+        return @{
+            Found      = $false
+            Grants     = @()
+            Denied     = @()
+            Incomplete = $true
+            Note       = "GitHub authentication failed (HTTP $($userProbe.StatusCode)). Provide a valid token or run: gh auth login"
         }
     }
 
-    $json = ConvertFrom-CliJson -Text $headersAndBody
+    # Extract user login
+    $json = ConvertFrom-CliJson -Text $userProbe.Output
     if ($json) {
         $login = Get-CheckObjectProperty -Object $json -Name 'login'
         if ($login) { $userLogin = [string]$login }
     }
-
     if ($userLogin) {
         $notes.Add("Verified token for GitHub user '$userLogin'.")
     }
 
-    if ($token -and $token -match '^github_pat_') {
-        $notes.Add('Fine-grained PAT detected.')
-        $scopes.Add('repo')
-        $scopes.Add('read:org')
+    # Step 2: Check for OAuth scopes header (Classic PAT or OAuth token)
+    $hasOAuthScopes = $false
+    $rawScopes = ''
+    if ($userProbe.Headers.ContainsKey('x-oauth-scopes')) {
+        $rawScopes = $userProbe.Headers['x-oauth-scopes']
+        $hasOAuthScopes = $true
+    }
+    else {
+        foreach ($line in ($userProbe.Output -split "`r?`n")) {
+            if ($line -match '(?i)^x-oauth-scopes:\s*(?<scopes>.*)$') {
+                $rawScopes = $Matches['scopes']
+                $hasOAuthScopes = $true
+                break
+            }
+        }
     }
 
-    if ($headersAndBody -match '(?i)x-github-sso:\s*required') {
-        $notes.Add("SAML SSO is enforced by organization '$org'. Ensure token is authorized for SSO.")
+    if ($hasOAuthScopes) {
+        foreach ($s in ($rawScopes -split ',')) {
+            $trimmed = $s.Trim()
+            if ($trimmed) { $scopes.Add($trimmed) }
+        }
+        $notes.Add("Classic PAT / OAuth scopes: $(if ($scopes.Count -gt 0) { $scopes -join ', ' } else { '(none)' }).")
+
+        # Even with classic scopes, if an organization is specified, verify SSO isn't blocking it
+        if (-not [string]::IsNullOrWhiteSpace($org) -and $scopes.Contains('read:org')) {
+            $orgSsoProbe = Invoke-GitHubApiProbe -Endpoint "/orgs/$org" -Token $token -ApiUrl $apiUrl
+            if ($orgSsoProbe.SsoRequired -or ($orgSsoProbe.StatusCode -eq 403 -and $orgSsoProbe.Output -match '(?i)sso')) {
+                $scopes.Remove('read:org') | Out-Null
+                $notes.Add("Organization '$org' enforces SAML SSO. The token has not been authorized for SSO (read:org suspended until authorized).")
+            }
+        }
+    }
+    else {
+        # Fine-grained PAT: no X-OAuth-Scopes header returned by GitHub.
+        # Must actively probe endpoints to verify granted permissions.
+        $notes.Add('Fine-grained PAT detected (probing API endpoints for granted access).')
+
+        # Determine target organization if specified or inferable from project
+        $targetOrg = $org
+        if ([string]::IsNullOrWhiteSpace($targetOrg) -and -not [string]::IsNullOrWhiteSpace($project)) {
+            $checkProjectOrg = Invoke-GitHubApiProbe -Endpoint "/orgs/$project" -Token $token -ApiUrl $apiUrl
+            if ($checkProjectOrg.Success) {
+                $targetOrg = $project
+            }
+        }
+
+        # Probe 1: Organization access (read:org equivalent)
+        if (-not [string]::IsNullOrWhiteSpace($targetOrg)) {
+            $orgProbe = Invoke-GitHubApiProbe -Endpoint "/orgs/$targetOrg" -Token $token -ApiUrl $apiUrl
+            if ($orgProbe.Success) {
+                $scopes.Add('read:org')
+                $notes.Add("Verified read access to organization '$targetOrg'.")
+            }
+            elseif ($orgProbe.SsoRequired) {
+                $notes.Add("Organization access to '$targetOrg' requires SAML SSO authorization (token is not authorized for SSO).")
+            }
+            else {
+                $notes.Add("Organization access check for '$targetOrg' failed (HTTP $($orgProbe.StatusCode)).")
+            }
+        }
+        else {
+            $orgProbe = Invoke-GitHubApiProbe -Endpoint '/user/orgs?per_page=1' -Token $token -ApiUrl $apiUrl
+            if ($orgProbe.Success) {
+                $orgJson = ConvertFrom-CliJson -Text $orgProbe.Output
+                $orgCount = if ($orgJson -is [array]) { $orgJson.Count } elseif ($orgJson) { 1 } else { 0 }
+                if ($orgCount -gt 0) {
+                    $scopes.Add('read:org')
+                    $notes.Add('Verified organization membership read access (/user/orgs returned accessible organizations).')
+                }
+                else {
+                    $notes.Add('Token has no accessible organizations (/user/orgs returned 0 organizations).')
+                }
+            }
+            elseif ($orgProbe.SsoRequired) {
+                $notes.Add('Organization access requires SAML SSO authorization.')
+            }
+            else {
+                $notes.Add("Token lacks organization read permissions (/user/orgs returned HTTP $($orgProbe.StatusCode)).")
+            }
+        }
+
+        # Probe 2: Repository access (repo equivalent)
+        $repoEndpoint = if (-not [string]::IsNullOrWhiteSpace($targetOrg)) { "/orgs/$targetOrg/repos?per_page=1" } else { '/user/repos?per_page=1' }
+        $repoProbe = Invoke-GitHubApiProbe -Endpoint $repoEndpoint -Token $token -ApiUrl $apiUrl
+        if ($repoProbe.Success) {
+            $repoJson = ConvertFrom-CliJson -Text $repoProbe.Output
+            $repoCount = if ($repoJson -is [array]) { $repoJson.Count } elseif ($repoJson) { 1 } else { 0 }
+            if ($repoCount -gt 0) {
+                $scopes.Add('repo')
+                $notes.Add("Verified repository read access ($repoEndpoint returned accessible repositories).")
+            }
+            else {
+                $notes.Add("Token has no accessible repositories ($repoEndpoint returned 0 repositories).")
+            }
+        }
+        elseif ($repoProbe.SsoRequired) {
+            $notes.Add('Repository access requires SAML SSO authorization.')
+        }
+        else {
+            $notes.Add("Token lacks repository read access ($repoEndpoint returned HTTP $($repoProbe.StatusCode)).")
+        }
+
+        # Probe 3: Audit log access (read:audit_log equivalent) if org is known
+        if (-not [string]::IsNullOrWhiteSpace($targetOrg)) {
+            $auditProbe = Invoke-GitHubApiProbe -Endpoint "/orgs/$targetOrg/audit-log?per_page=1" -Token $token -ApiUrl $apiUrl
+            if ($auditProbe.Success) {
+                $scopes.Add('read:audit_log')
+            }
+        }
+
+        # Probe 4: Admin org / teams access (admin:org equivalent) if org is known
+        if (-not [string]::IsNullOrWhiteSpace($targetOrg)) {
+            $teamsProbe = Invoke-GitHubApiProbe -Endpoint "/orgs/$targetOrg/teams?per_page=1" -Token $token -ApiUrl $apiUrl
+            if ($teamsProbe.Success) {
+                $scopes.Add('admin:org')
+            }
+        }
     }
 
     return @{
@@ -935,6 +1094,7 @@ Export-ModuleMember -Function @(
     'Read-AwsIamRoleGrants'
     'Read-EntraApplicationGrants'
     'Read-GcpServiceAccountGrants'
+    'Invoke-GitHubApiProbe'
     'Read-GitHubTokenGrants'
     'Invoke-IntegrationRequirementCheck'
 )
