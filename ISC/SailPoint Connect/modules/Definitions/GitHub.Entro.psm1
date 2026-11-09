@@ -15,8 +15,9 @@ function Register-GitHubEntroDefinitions {
         AdminRoles   = @('GitHub Organization Owner')
         OutputsHelp  = 'Install the Entro GitHub App on your organization or paste a Classic PAT into the Entro admin console.'
         Inputs       = @(
-            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name'; Purpose = 'Organization to connect to Entro'; Required = $true }
-            @{ Name = 'Method'; Source = 'Supply'; Prompt = 'Integration method'; Purpose = 'GitHubApp or ClassicPAT'; Required = $true; ValidateSet = @('GitHubApp', 'ClassicPAT'); Default = 'GitHubApp' }
+            @{ Name = 'Method'; Source = 'Supply'; Prompt = 'Integration method'; Purpose = 'ClassicPAT or GitHubApp'; Required = $true; ValidateSet = @('ClassicPAT', 'GitHubApp'); Default = 'ClassicPAT' }
+            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'GitHub PAT with repo and read:org scopes to connect Entro or check'; Required = $false; Secret = $true }
+            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name (optional)'; Purpose = 'Organization to connect to Entro (leave blank for personal account / all repos)'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
         Steps        = {
@@ -34,20 +35,24 @@ function Register-GitHubEntroDefinitions {
                         param($c)
                         Write-Step 'Entro GitHub Onboarding'
                         $method = if ($c['Method']) { $c['Method'] } else { 'GitHubApp' }
+                        $hasOrg = -not [string]::IsNullOrWhiteSpace([string]$c['Organization'])
+                        $targetDesc = if ($hasOrg) { "organization '$($c['Organization'])'" } else { 'your GitHub account' }
                         if ($method -eq 'GitHubApp') {
-                            Write-Info "Install the Entro GitHub App on organization '$($c['Organization'])'."
+                            Write-Info "Install the Entro GitHub App on $targetDesc."
                             Write-Info "In Entro UI -> Integrations -> GitHub -> install the app with permissions."
                         }
                         else {
-                            Write-Info "Generate a Classic PAT with repo and read:org scopes for organization '$($c['Organization'])'."
+                            Write-Info "Generate a Classic PAT with repo and read:org scopes for $targetDesc."
                             Write-Info "Paste the token into the Entro admin console."
                         }
                     }
                     BuildScript = {
                         param($c)
+                        $hasOrg = -not [string]::IsNullOrWhiteSpace([string]$c['Organization'])
+                        $targetDesc = if ($hasOrg) { "organization '$($c['Organization'])'" } else { 'GitHub account' }
                         @"
 # Entro GitHub Integration Setup
-Write-Host "Configure Entro integration for GitHub organization '$($c['Organization'])'"
+Write-Host "Configure Entro integration for $targetDesc"
 "@
                     }
                 }
@@ -55,9 +60,10 @@ Write-Host "Configure Entro integration for GitHub organization '$($c['Organizat
         }
         OnRunComplete = {
             param($ctx)
+            $target = if (-not [string]::IsNullOrWhiteSpace([string]$ctx['Organization'])) { $ctx['Organization'] } else { '[Personal / All accessible repos]' }
             Write-Host ''
             Write-Host 'Entro handoff' -ForegroundColor Cyan
-            Write-Host "  Organization: $($ctx['Organization'])"
+            Write-Host "  Target: $target"
             Write-Host "  Method: $($ctx['Method'])"
             Write-Host '  Registration: complete GitHub App installation or paste PAT in Entro UI'
             Write-Host ''

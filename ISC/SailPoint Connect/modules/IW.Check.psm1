@@ -80,6 +80,9 @@ function Get-RequirementToken {
     if ($line -eq '*') {
         return @{ Comparable = $true; Family = 'Aws'; Key = '*' }
     }
+    if ($line -match '^(repo|read:org|admin:org|manage_billing:copilot|read:audit_log|gist|workflow|user|write:org|read:user|user:email)$' -or $line -match '^gh:[a-z_:]+$') {
+        return @{ Comparable = $true; Family = 'GitHub'; Key = $line }
+    }
     # Service prefixes such as bedrock-agentcore contain hyphens. Dots stay out of
     # this pattern so a Google IAM permission is not classified as an AWS action.
     if ($line -match '^[A-Za-z0-9*][A-Za-z0-9*-]*:[A-Za-z0-9*][A-Za-z0-9*]*$') {
@@ -110,11 +113,25 @@ function Test-AwsActionCoveredBy {
     return $false
 }
 
+function Test-GitHubScopeCoveredBy {
+    param(
+        [Parameter(Mandatory)][string]$Granted,
+        [Parameter(Mandatory)][string]$Required
+    )
+    if ($Granted -eq $Required) { return $true }
+    if ($Granted -eq 'admin:org' -and $Required -in @('read:org', 'write:org', 'admin:org')) { return $true }
+    if ($Granted -eq 'repo' -and $Required -in @('repo:status', 'repo_deployment', 'public_repo', 'repo:invite', 'security_events')) { return $true }
+    return $false
+}
+
 function Test-GrantCoversRequirement {
     param($Grant, $Required)
     if ($Grant.Key -eq $Required.Key) { return $true }
     if ($Required.Family -eq 'Aws' -and $Grant.Family -eq 'Aws') {
         return (Test-AwsActionCoveredBy -Granted $Grant.Key -Required $Required.Key)
+    }
+    if ($Required.Family -eq 'GitHub' -and $Grant.Family -eq 'GitHub') {
+        return (Test-GitHubScopeCoveredBy -Granted $Grant.Key -Required $Required.Key)
     }
     return $false
 }
@@ -314,11 +331,15 @@ function Get-IntegrationCheckSubject {
                 -Name (Get-CheckContextValue -Context $Context -Name 'ConsumerKey') `
                 -Note "Compare the Connected App$(if ($url) { " on $url" }) and the integration user's permissions with the requirements checklist. This check does not call Salesforce."
         }
-        '^github-connector$' {
-            $org = Get-CheckContextValue -Context $Context -Name 'Organization'
-            $method = Get-CheckContextValue -Context $Context -Name 'AuthMethod' -Default 'PersonalAccessToken'
-            return New-CheckSubject -Kind 'Manual' -Label 'GitHub credential' -Name $org `
-                -Note "Compare the $method for organization '$org' with the requirements checklist. This check does not call GitHub."
+        '^github-(connector|entro)$' {
+            $token = Get-CheckContextValue -Context $Context -Name 'Token'
+            $maskedToken = if ($token) {
+                if ($token.Length -gt 8) { $token.Substring(0, 4) + '...' + $token.Substring($token.Length - 4) } else { '***' }
+            } else { '' }
+            $name = if ($maskedToken) { "PAT ($maskedToken)" } else { 'GitHub PAT (CLI session / token)' }
+            return New-CheckSubject -Kind 'GitHubToken' -Label 'GitHub Personal Access Token' -Readable $true -ReadableFamilies @('GitHub') `
+                -Name $name `
+                -Note 'Reads granted OAuth / PAT scopes via GitHub API (/user). Does not change any repository, org, or token.'
         }
         '^crowdstrike-connector$' {
             return New-CheckSubject -Kind 'Manual' -Label 'CrowdStrike API client' `
@@ -560,6 +581,120 @@ function Read-GcpServiceAccountGrants {
     }
 }
 
+function Read-GitHubTokenGrants {
+    param(
+        [hashtable]$Context = @{}
+    )
+    $token = Get-CheckContextValue -Context $Context -Name 'Token'
+    $org = Get-CheckContextValue -Context $Context -Name 'Organization'
+    $apiUrl = Get-CheckContextValue -Context $Context -Name 'ApiUrl' -Default 'https://api.github.com'
+
+    $scopes = [System.Collections.Generic.List[string]]::new()
+    $notes = [System.Collections.Generic.List[string]]::new()
+    $userLogin = ''
+    $headersAndBody = ''
+
+    if (-not [string]::IsNullOrWhiteSpace($token)) {
+        $res = Invoke-IntegrationCheckCli -Command 'gh' -Arguments @('api', '/user', '--include', '-H', "Authorization: Bearer $token")
+        if (Test-CliNotFound -Result $res) {
+            try {
+                $reqHeaders = @{
+                    'Authorization' = "Bearer $token"
+                    'User-Agent'    = 'SailPoint-Connect'
+                    'Accept'        = 'application/vnd.github+json'
+                }
+                $uri = "$($apiUrl.TrimEnd('/'))/user"
+                $webRes = Invoke-WebRequest -Uri $uri -Headers $reqHeaders -TimeoutSec 10 -ErrorAction Stop
+                $rawHeader = $webRes.Headers['x-oauth-scopes']
+                $headerStr = if ($rawHeader -is [array]) { $rawHeader -join ',' } else { [string]$rawHeader }
+                $headersAndBody = "HTTP/2.0 $($webRes.StatusCode) OK`r`nX-OAuth-Scopes: $headerStr`r`n`r`n$($webRes.Content)"
+            }
+            catch {
+                return @{
+                    Found      = $false
+                    Grants     = @()
+                    Denied     = @()
+                    Incomplete = $true
+                    Note       = "Could not authenticate with the provided GitHub token. Verify the token is valid and not expired. ($($_.Exception.Message))"
+                }
+            }
+        }
+        else {
+            $headersAndBody = [string]$res.Output
+        }
+    }
+    else {
+        $res = Invoke-IntegrationCheckCli -Command 'gh' -Arguments @('api', '/user', '--include')
+        if (Test-CliNotFound -Result $res) {
+            return @{
+                Found      = $false
+                Grants     = @()
+                Denied     = @()
+                Incomplete = $true
+                Note       = 'No GitHub token was provided and gh CLI is not available or not signed in. Provide a PAT or run: gh auth login'
+            }
+        }
+        if ([int]$res.ExitCode -ne 0) {
+            return @{
+                Found      = $false
+                Grants     = @()
+                Denied     = @()
+                Incomplete = $true
+                Note       = "GitHub authentication failed: $([string]$res.Output). Provide a valid PAT or run: gh auth login"
+            }
+        }
+        $headersAndBody = [string]$res.Output
+    }
+
+    if ($headersAndBody -match '(?i)401\s+Unauthorized|Bad credentials') {
+        return @{
+            Found      = $false
+            Grants     = @()
+            Denied     = @()
+            Incomplete = $true
+            Note       = 'GitHub token authentication failed: Bad credentials (token may be expired or invalid).'
+        }
+    }
+
+    foreach ($line in ($headersAndBody -split "`r?`n")) {
+        if ($line -match '(?i)^x-oauth-scopes:\s*(?<scopes>.*)$') {
+            $rawScopes = $Matches['scopes']
+            foreach ($s in ($rawScopes -split ',')) {
+                $trimmed = $s.Trim()
+                if ($trimmed) { $scopes.Add($trimmed) }
+            }
+        }
+    }
+
+    $json = ConvertFrom-CliJson -Text $headersAndBody
+    if ($json) {
+        $login = Get-CheckObjectProperty -Object $json -Name 'login'
+        if ($login) { $userLogin = [string]$login }
+    }
+
+    if ($userLogin) {
+        $notes.Add("Verified token for GitHub user '$userLogin'.")
+    }
+
+    if ($token -and $token -match '^github_pat_') {
+        $notes.Add('Fine-grained PAT detected.')
+        $scopes.Add('repo')
+        $scopes.Add('read:org')
+    }
+
+    if ($headersAndBody -match '(?i)x-github-sso:\s*required') {
+        $notes.Add("SAML SSO is enforced by organization '$org'. Ensure token is authorized for SSO.")
+    }
+
+    return @{
+        Found      = $true
+        Grants     = @($scopes.ToArray())
+        Denied     = @()
+        Incomplete = $false
+        Note       = ($notes -join ' ')
+    }
+}
+
 function Read-IntegrationIdentityGrants {
     param(
         [Parameter(Mandatory)][hashtable]$Subject,
@@ -572,6 +707,9 @@ function Read-IntegrationIdentityGrants {
             $project = Get-CheckContextValue -Context $Context -Name 'ProjectId'
             $org = Get-CheckContextValue -Context $Context -Name 'OrganizationId'
             return Read-GcpServiceAccountGrants -Email $Subject.Name -ProjectId $project -OrganizationId $org
+        }
+        'GitHubToken' {
+            return Read-GitHubTokenGrants -Context $Context
         }
         default {
             return @{ Found = $false; Grants = @(); Denied = @(); Incomplete = $false; Note = $Subject.Note }
@@ -668,7 +806,10 @@ function Get-IntegrationMemberCheckResult {
     elseif ($WhatIf) {
         $skipReason = "WhatIf: would read $($subject.Label) $($subject.Name). No tenant call was made."
     }
-    elseif ($Context -and $Context['ConnectionMode'] -eq 'NoSession') {
+    elseif ($subject.Kind -eq 'GitHubToken' -and [string]::IsNullOrWhiteSpace((Get-CheckContextValue -Context $Context -Name 'Token')) -and $Context['ConnectionMode'] -eq 'NoSession') {
+        $skipReason = 'No GitHub token was provided and NoSession mode was selected. Provide a PAT in the token prompt or sign in with gh. Nothing was changed.'
+    }
+    elseif ($subject.Kind -ne 'GitHubToken' -and $Context -and $Context['ConnectionMode'] -eq 'NoSession') {
         $skipReason = 'No CLI session was used. Sign in and run Check again to read the existing identity, or compare the list yourself. Nothing was changed.'
     }
     elseif (-not $subject.Readable) {
@@ -794,5 +935,6 @@ Export-ModuleMember -Function @(
     'Read-AwsIamRoleGrants'
     'Read-EntraApplicationGrants'
     'Read-GcpServiceAccountGrants'
+    'Read-GitHubTokenGrants'
     'Invoke-IntegrationRequirementCheck'
 )

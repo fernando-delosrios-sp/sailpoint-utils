@@ -8,10 +8,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates u
 
 ### ✨ New Features
 
-- **SailPoint Connect — Check** — `-Action Check` reads an IAM role, Entra application, or Google service account that already exists and reports whether it meets the permissions that integration needs. It does not create or update anything. Integrations whose grant lives outside the CLI (Databricks Account Admin, Salesforce, GitHub, CrowdStrike, Google Admin console delegation) get a hand-comparison list instead of a guessed pass.
+- **SailPoint Connect — Check** — `-Action Check` checks existing connection details (IAM roles, Entra applications, GCP service accounts, and GitHub PATs) and reports whether they meet the required permissions. For GitHub, it reads granted OAuth/PAT scopes directly via GitHub API (`/user`) and reports missing scopes (e.g. `repo`, `read:org`) or invalid credentials without modifying the tenant. Integrations whose grant lives outside the CLI (Databricks Account Admin, Salesforce, CrowdStrike, Google Admin console delegation) get a hand-comparison list instead of a guessed pass.
 
 ### 🔧 Improvements
 
+- **SailPoint Connect — GitHub Organization is optional** — Made the GitHub Organization prompt optional for Entro GitHub integrations and token checks/requirements, matching the Entro UI where onboarding only requires the access token.
 - **SailPoint Connect** — The wizard no longer presents discovery or `Run` as the path you have to take. Interactive mode defaults to `BuildRequirements`. An unsigned CLI defaults to typing values yourself. `Run` is labeled as the only action that changes the tenant, and it still asks you to confirm. See [What SailPoint Connect changes](ISC/SailPoint%20Connect/docs/guides/what-it-changes.md).
 
 ## 2026-11-04

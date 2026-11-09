@@ -108,7 +108,7 @@ function Get-GitHubIscFeatureChecklist {
 
 function Build-GitHubConnectionSettings {
     param(
-        [Parameter(Mandatory)][string]$Organization,
+        [string]$Organization = '',
         [string]$ApiUrl = 'https://api.github.com',
         [string]$AuthMethod = 'PersonalAccessToken',
         [string]$TokenMasked = '***',
@@ -116,13 +116,14 @@ function Build-GitHubConnectionSettings {
     )
     $sb = [System.Text.StringBuilder]::new()
     [void]$sb.AppendLine('# SailPoint ISC GitHub SaaS Connection Settings')
-    [void]$sb.AppendLine("Organization: $Organization")
+    $orgLine = if (-not [string]::IsNullOrWhiteSpace($Organization)) { $Organization } else { '[Your-GitHub-Organization]' }
+    [void]$sb.AppendLine("Organization: $orgLine")
     [void]$sb.AppendLine("API URL: $ApiUrl")
     [void]$sb.AppendLine("Authentication Method: $AuthMethod")
     [void]$sb.AppendLine("Access Token: $TokenMasked")
     [void]$sb.AppendLine("Recommended Scopes: repo, admin:org, manage_billing:copilot, read:audit_log")
 
-    $checklist = Get-GitHubIscFeatureChecklist -FeatureNames $FeatureNames
+    $checklist = @(Get-GitHubIscFeatureChecklist -FeatureNames $FeatureNames)
     if ($checklist.Count -gt 0) {
         [void]$sb.AppendLine('')
         [void]$sb.AppendLine('## Machine Identity & Agent Discovery Checklist')

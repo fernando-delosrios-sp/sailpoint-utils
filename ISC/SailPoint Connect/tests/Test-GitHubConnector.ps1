@@ -69,4 +69,82 @@ $entroSteps = @(& $entroDef.Steps @{ Organization = 'acme-corp'; Method = 'GitHu
 Assert-Equal 1 $entroSteps.Count 'Entro GitHub has 1 step'
 Assert-Equal 'entro-github-onboard' $entroSteps[0].Id 'Entro step is entro-github-onboard'
 
+# 7. Verify optional Organization
+$connOrgInput = @($def.Inputs | Where-Object { $_.Name -eq 'Organization' })[0]
+Assert-Equal $false ([bool]$connOrgInput.Required) 'Connector definition Organization is optional'
+
+$entroOrgInput = @($entroDef.Inputs | Where-Object { $_.Name -eq 'Organization' })[0]
+Assert-Equal $false ([bool]$entroOrgInput.Required) 'Entro definition Organization is optional'
+
+$connSettingsNoOrg = Build-GitHubConnectionSettings -AuthMethod 'PersonalAccessToken'
+Assert-True ($connSettingsNoOrg.Contains('Organization: [Your-GitHub-Organization]')) 'Connection settings placeholder when Organization omitted'
+
+$noOrgCtx = @{ AuthMethod = 'PersonalAccessToken' }
+$noOrgSteps = @(& $def.Steps $noOrgCtx)
+Assert-Equal 'Skip' (& $noOrgSteps[0].Probe $noOrgCtx) 'Probe succeeds without Organization'
+& $noOrgSteps[0].Run $noOrgCtx
+
+Import-Module (Join-Path $wizardRoot 'modules/IW.Check.psm1') -Force
+$checkConnNoOrg = Get-IntegrationCheckSubject -Definition $def -Context @{}
+Assert-Equal 'GitHub PAT (CLI session / token)' $checkConnNoOrg.Name 'Check subject name handles omitted Organization'
+
+$checkEntroNoOrg = Get-IntegrationCheckSubject -Definition $entroDef -Context @{}
+Assert-Equal 'GitHub PAT (CLI session / token)' $checkEntroNoOrg.Name 'Entro check subject name handles omitted Organization'
+
+$checkWithToken = Get-IntegrationCheckSubject -Definition $entroDef -Context @{ Token = 'ghp_1234567890abcdef' }
+Assert-Equal 'PAT (ghp_...cdef)' $checkWithToken.Name 'Check subject masks token'
+Assert-Equal 'GitHubToken' $checkWithToken.Kind 'Check subject kind is GitHubToken'
+Assert-True $checkWithToken.Readable 'GitHubToken subject is marked readable'
+
+# 8. Test Check execution for GitHub PAT
+$tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("gh-check-test-" + [System.Guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+
+# Case 8a: Passing PAT (has repo and read:org)
+Set-IntegrationCheckInvoker {
+    param($cmd, $args)
+    return @{
+        ExitCode = 0
+        Output = "HTTP/2.0 200 OK`r`nX-OAuth-Scopes: repo, read:org, workflow`r`n`r`n{`"login`": `"testuser`"}"
+    }
+}
+$passReport = Join-Path $tmp 'gh-pass.md'
+$passRes = Invoke-IntegrationRequirementCheck -Definition $entroDef -Context @{ Token = 'ghp_valid1234567890' } -OutputPath $passReport
+Assert-Equal 'Pass' $passRes.Verdict 'PAT with repo and read:org passes Check'
+$passContent = Get-Content -LiteralPath $passReport -Raw
+Assert-True ($passContent -match 'Meets the requirements') 'Report states requirements met'
+Assert-True ($passContent -match 'testuser') 'Report identifies verified user'
+
+# Case 8b: Gaps in PAT (missing read:org)
+Set-IntegrationCheckInvoker {
+    param($cmd, $args)
+    return @{
+        ExitCode = 0
+        Output = "HTTP/2.0 200 OK`r`nX-OAuth-Scopes: repo, gist`r`n`r`n{`"login`": `"testuser`"}"
+    }
+}
+$failReport = Join-Path $tmp 'gh-gap.md'
+$failRes = Invoke-IntegrationRequirementCheck -Definition $entroDef -Context @{ Token = 'ghp_gap1234567890' } -OutputPath $failReport
+Assert-Equal 'Fail' $failRes.Verdict 'PAT missing read:org fails Check'
+$failContent = Get-Content -LiteralPath $failReport -Raw
+Assert-True ($failContent -match 'Does not meet the requirements') 'Report states does not meet requirements'
+Assert-True ($failContent -match 'read:org') 'Report calls out missing read:org scope'
+
+# Case 8c: Invalid/expired PAT (401 Bad credentials)
+Set-IntegrationCheckInvoker {
+    param($cmd, $args)
+    return @{
+        ExitCode = 1
+        Output = "HTTP/2.0 401 Unauthorized`r`n`r`n{`"message`": `"Bad credentials`"}"
+    }
+}
+$badReport = Join-Path $tmp 'gh-bad.md'
+$badRes = Invoke-IntegrationRequirementCheck -Definition $entroDef -Context @{ Token = 'ghp_bad1234567890' } -OutputPath $badReport
+Assert-Equal 'Fail' $badRes.Verdict 'Expired/bad PAT fails Check'
+$badContent = Get-Content -LiteralPath $badReport -Raw
+Assert-True ($badContent -match 'Bad credentials') 'Report notes bad credentials'
+
+Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
+Set-IntegrationCheckInvoker $null
+
 Write-Host "PASS ($script:AssertionCount assertions)"

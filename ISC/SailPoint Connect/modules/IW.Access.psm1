@@ -266,6 +266,22 @@ function Get-IntegrationWizardAccessRequirementLists {
             '^databricks-connector$' {
                 $readWrite.Add('Databricks Account Admin (account-level service principal)')
             }
+            '^github-entro$' {
+                $readOnly.Add('repo')
+                $readOnly.Add('read:org')
+            }
+            '^github-connector$' {
+                $readOnly.Add('repo')
+                $readOnly.Add('read:org')
+                $features = Get-ContextFeatureNames -Context $Context
+                if ($features -contains 'AgentDiscovery') {
+                    $readOnly.Add('admin:org')
+                    $readOnly.Add('manage_billing:copilot')
+                }
+                if ($features -contains 'ActivityInsights') {
+                    $readOnly.Add('read:audit_log')
+                }
+            }
             '^aws-entro$|^azure-entro$|^google-workspace-entro$' {
                 $readOnly.Add('Entro connected identity (read-only discovery; onboarding steps create IAM/app resources in the cloud)')
             }

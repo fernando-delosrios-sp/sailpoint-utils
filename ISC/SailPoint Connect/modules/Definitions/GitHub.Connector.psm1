@@ -20,10 +20,10 @@ function Register-GitHubConnectorDefinitions {
         AdminRoles   = @('GitHub Organization Owner')
         OutputsHelp  = 'Paste Organization name, Personal Access Token (or GitHub App ID/Key), and API URL into ISC Connection Settings.'
         Inputs       = @(
-            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name'; Purpose = 'Organization to govern'; Required = $true }
-            @{ Name = 'ApiUrl'; Source = 'Supply'; Prompt = 'API URL'; Purpose = 'GitHub API endpoint'; Required = $false; Default = 'https://api.github.com' }
             @{ Name = 'AuthMethod'; Source = 'Supply'; Prompt = 'Authentication method'; Purpose = 'PersonalAccessToken or GitHubApp'; Required = $true; ValidateSet = @('PersonalAccessToken', 'GitHubApp'); Default = 'PersonalAccessToken' }
-            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'Personal Access Token'; Purpose = 'OAuth / PAT credential'; Required = $false; Secret = $true }
+            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'OAuth / PAT credential to connect or check'; Required = $false; Secret = $true }
+            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name (optional)'; Purpose = 'Organization to govern (leave blank to verify credentials only)'; Required = $false }
+            @{ Name = 'ApiUrl'; Source = 'Supply'; Prompt = 'API URL'; Purpose = 'GitHub API endpoint'; Required = $false; Default = 'https://api.github.com' }
             @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: AgentDiscovery, ActivityInsights)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings file path'; Required = $false }
         )
@@ -38,9 +38,8 @@ function Register-GitHubConnectorDefinitions {
                 Probe = {
                     param($c)
                     Import-GitHubWizardModule
-                    if ([string]::IsNullOrWhiteSpace([string]$c['Organization'])) { return 'Create' }
                     $record = Get-GitHubRunRecord -Context $c
-                    $record.Organization = [string]$c['Organization']
+                    $record.Organization = if ($c['Organization']) { [string]$c['Organization'] } else { '' }
                     $record.ApiUrl = if ($c['ApiUrl']) { [string]$c['ApiUrl'] } else { 'https://api.github.com' }
                     $record.AuthMethod = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'PersonalAccessToken' }
                     $record.AuthResult = 'Verified'
@@ -49,16 +48,18 @@ function Register-GitHubConnectorDefinitions {
                 Run   = {
                     param($c)
                     Import-GitHubWizardModule
-                    Write-Ok "GitHub organization $($c['Organization']) credentials validated"
+                    $orgDesc = if (-not [string]::IsNullOrWhiteSpace([string]$c['Organization'])) { "organization $($c['Organization'])" } else { "account" }
+                    Write-Ok "GitHub $orgDesc credentials validated"
                 }
                 BuildScript = {
                     param($c)
+                    $orgDesc = if (-not [string]::IsNullOrWhiteSpace([string]$c['Organization'])) { "'$($c['Organization'])'" } else { 'default account' }
                     @"
-Write-Host "Validating GitHub organization '$($c['Organization'])'..."
+Write-Host "Validating GitHub organization $orgDesc..."
 if (Get-Command gh -ErrorAction SilentlyContinue) {
     & gh auth status 2>`$null | Out-Null
 }
-Write-Host "Configured ISC GitHub source for '$($c['Organization'])'"
+Write-Host "Configured ISC GitHub source for $orgDesc"
 "@
                 }
             })
@@ -104,9 +105,11 @@ Write-Host "  - Copilot seats and GitHub Apps will aggregate as machine accounts
             $apiUrl = if ($ctx['ApiUrl']) { $ctx['ApiUrl'] } else { 'https://api.github.com' }
             $authMethod = if ($ctx['AuthMethod']) { $ctx['AuthMethod'] } else { 'PersonalAccessToken' }
 
+            $orgDisplay = if (-not [string]::IsNullOrWhiteSpace([string]$ctx['Organization'])) { $ctx['Organization'] } else { '[Unspecified / User scope]' }
+
             Write-Host ''
             Write-Host 'GitHub SaaS connector handoff' -ForegroundColor Cyan
-            Write-Host "  Organization: $($ctx['Organization'])"
+            Write-Host "  Organization: $orgDisplay"
             Write-Host "  API URL: $apiUrl"
             Write-Host "  Auth Method: $authMethod"
             Write-Host "  Token: [Configured in Vault]"

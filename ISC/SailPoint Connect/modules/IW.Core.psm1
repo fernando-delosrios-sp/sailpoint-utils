@@ -63,7 +63,7 @@ function Import-IntegrationWizardConsole {
 function Show-IntegrationWizardSafetyNote {
     Write-Host 'Nothing is changed until you choose Run and answer yes.' -ForegroundColor Cyan
     Write-Host '  -Action BuildRequirements   Checklist of what this integration needs. Nothing is created.'
-    Write-Host '  -Action Check               Read a role, app, or service account you already have and report gaps. Nothing is created.'
+    Write-Host '  -Action Check               Check existing connection details, credentials, or identities for gaps. Nothing is created.'
     Write-Host '  -Action BuildScript         Script to review and run later, under your own change process. Nothing is created.'
     Write-Host '  -Action Run                 The only action that creates or updates anything, and only after you confirm.'
     Write-Host 'Discovery is optional. A signed-in CLI can offer names that already exist. You can type every value yourself.'
@@ -542,7 +542,7 @@ function Show-IntegrationWizardActionPurpose {
     param([Parameter(Mandatory)][string]$Action)
     switch ($Action) {
         'BuildRequirements' { Write-Host 'This session writes a checklist. The tenant will not be changed.' }
-        'Check' { Write-Host 'This session reads an existing identity and reports gaps. The tenant will not be changed.' }
+        'Check' { Write-Host 'This session reads existing connection details and reports gaps. The tenant will not be changed.' }
         'BuildScript' { Write-Host 'This session writes a script for you to review. The tenant will not be changed.' }
         'Run' { Write-Host 'This session can change the tenant. You confirm again before anything is written.' }
     }
@@ -563,7 +563,7 @@ function Resolve-IntegrationWizardAction {
         -Options @('BuildRequirements', 'Check', 'BuildScript', 'Run') `
         -Labels @(
             'Build requirements (a checklist; nothing is created)'
-            'Check an existing identity (read-only; reports what is missing)'
+            'Check existing connection details (read-only; verifies credentials and permissions)'
             'Build script (review it, then run it yourself)'
             'Run (the only choice that changes the tenant, after you confirm)'
         ) -Default 'BuildRequirements'
