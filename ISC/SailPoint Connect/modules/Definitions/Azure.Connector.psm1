@@ -47,7 +47,7 @@ function Register-AzureConnectorDefinitions {
         CoreSwitch   = 'Connector'
         CliName      = 'az'
         Title        = 'Microsoft Entra ID connector application'
-        FolderName   = 'Microsoft Entra ID'
+        FolderName   = 'Microsoft-Entra-ID'
         AccessLevels = @('ReadOnly', 'ReadWrite')
         AdminRoles   = @('Application Administrator', 'Privileged Role Administrator or Global Administrator')
         OutputsHelp  = 'Paste Tenant ID, Client ID, and Client Secret into ISC Connection Settings.'

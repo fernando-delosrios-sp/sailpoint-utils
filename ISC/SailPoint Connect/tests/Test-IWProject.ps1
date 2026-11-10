@@ -35,7 +35,7 @@ try {
     $root = Get-IntegrationProjectRoot
     Assert-True (Test-Path -LiteralPath $root) '.sailpoint-connect created on project init'
 
-    $expectedFolder = Join-Path (Join-Path (Join-Path $root 'demo-customer') 'Google Cloud') 'Entro GCP'
+    $expectedFolder = Join-Path (Join-Path (Join-Path $root 'demo-customer') 'Google-Cloud') 'Entro-GCP'
     Assert-Equal $expectedFolder $ctx['IntegrationFolderPath'] 'integration folder path'
     Assert-Equal $expectedFolder $ctx['OutputDirectory'] 'OutputDirectory defaults to integration folder'
 
@@ -76,7 +76,7 @@ try {
     $selPath = Join-Path (Join-Path $root 'demo-customer') 'selection.json'
     Assert-True (Test-Path -LiteralPath $selPath) 'selection.json written'
     $sel = Get-Content -LiteralPath $selPath -Raw | ConvertFrom-Json
-    Assert-Equal 'Entro GCP' $sel.integrationFolder 'selection records integration folder name'
+    Assert-Equal 'Entro-GCP' $sel.integrationFolder 'selection records integration folder name'
 
     $jsonl = Join-Path (Join-Path $root 'demo-customer') 'selections.jsonl'
     Assert-True (Test-Path -LiteralPath $jsonl) 'selections.jsonl appended'
@@ -97,12 +97,12 @@ try {
     Assert-True $ctxOverride['IntegrationOutputOverride'] 'override flag set'
 
     $folderName = Get-IntegrationWizardIntegrationFolderName -Definition $def
-    Assert-Equal 'Entro GCP' $folderName 'FolderName from definition'
+    Assert-Equal 'Entro-GCP' $folderName 'FolderName from definition'
 
     $saasMember = @{
         Id          = 'google-saas-connector'
         Title       = 'Google Workspace connector'
-        FolderName  = 'Google Workspace'
+        FolderName  = 'Google-Workspace'
         Platform    = 'GoogleCloud'
         CliName     = 'gcloud'
         Inputs      = @()
@@ -112,7 +112,7 @@ try {
     }
     $combined = Merge-IntegrationWizardDefinitions -Members @($saasMember, $def)
     $combinedFolder = Get-IntegrationWizardIntegrationFolderName -Definition $combined
-    Assert-Equal 'Google Workspace and Entro GCP' $combinedFolder 'composite folder name is filesystem-safe'
+    Assert-Equal 'Google-Workspace-and-Entro-GCP' $combinedFolder 'composite folder name is filesystem-safe'
     Assert-True ($combinedFolder -notmatch '[+]') 'composite folder name contains no plus sign'
 
     $existingOnly = @(Get-IntegrationProjectNames)
@@ -130,7 +130,7 @@ try {
     }
     $manualDef = @{
         Title      = 'Entro GCP'
-        FolderName = 'Entro GCP'
+        FolderName = 'Entro-GCP'
         Platform   = 'GoogleCloud'
         CliName    = 'gcloud'
         Steps      = {
@@ -147,11 +147,11 @@ try {
     Assert-Equal 1 $open.Count 'one operator action recorded'
     Assert-Equal 'audit' $open[0].Id 'operator action keeps the step id'
     Assert-True (-not $open[0].Done) 'a non-interactive run leaves the action open'
-    Assert-Equal 'Google Cloud / Entro GCP' $open[0].Section 'section names the platform and integration'
+    Assert-Equal 'Google Cloud / Entro-GCP' $open[0].Section 'section names the platform and integration'
 
     $otherDef = @{
         Title      = 'Entro Workspace'
-        FolderName = 'Entro Workspace'
+        FolderName = 'Entro-Workspace'
         Platform   = 'GoogleCloud'
         CliName    = 'gcloud'
         Steps      = {
@@ -167,7 +167,7 @@ try {
     Assert-Equal 'audit,dwd' (($both | ForEach-Object { $_.Id }) -join ',') 'both integrations stay in the project file'
 
     $done = @{
-        Section = 'Google Cloud / Entro GCP'
+        Section = 'Google Cloud / Entro-GCP'
         Id      = 'audit'
         Title   = 'Org audit logs'
         Detail  = 'Enable audit logs.'

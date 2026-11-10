@@ -113,7 +113,7 @@ function Register-GoogleEntroDefinitions {
         CoreSwitch   = 'GcpEntro'
         CliName      = 'gcloud'
         Title        = 'Entro Google GCP organization integration'
-        FolderName   = 'Entro GCP'
+        FolderName   = 'Entro-GCP'
         AccessLevels = @()
         AdminRoles   = @('Organization admin')
         OutputsHelp  = 'Upload private key JSON or WIF JSON and organization domain in Entro GCP onboarding.'
@@ -327,7 +327,7 @@ Invoke-EntroGcpAuditConfigs -OrganizationId '$($c['OrganizationId'])'
         CoreSwitch   = 'WorkspaceEntro'
         CliName      = 'gcloud'
         Title        = 'Entro Google Workspace integration'
-        FolderName   = 'Entro Workspace'
+        FolderName   = 'Entro-Workspace'
         AccessLevels = @()
         AdminRoles   = @('Google Workspace super admin for domain-wide delegation')
         OutputsHelp  = 'Paste Client ID and service account key JSON in Entro Workspace onboarding.'

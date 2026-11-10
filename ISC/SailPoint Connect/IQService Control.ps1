@@ -190,8 +190,9 @@ if ($PSBoundParameters.Count -eq 0) {
 
 
 function Write-Banner {
-    Write-Host ''
-    Write-Host '  SailPoint ISC  -  IQService Control' -ForegroundColor Cyan
+    if (Test-OperatorNonInteractive) { return }
+    Write-SailPointConnectBanner
+    Write-Host '  IQService Control' -ForegroundColor Cyan
     Write-Host '  Download, install, update, manage IQService, and enable AD LDAPS.' -ForegroundColor DarkCyan
     Write-Host ''
 }

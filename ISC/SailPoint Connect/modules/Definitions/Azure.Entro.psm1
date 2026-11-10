@@ -13,7 +13,7 @@ function Register-AzureEntroDefinitions {
         CoreSwitch   = 'Entro'
         CliName      = 'az'
         Title        = 'Entro Microsoft ecosystem integration'
-        FolderName   = 'Entro Microsoft'
+        FolderName   = 'Entro-Microsoft'
         AccessLevels = @()
         AdminRoles   = @('Global Administrator (Entro onboarding script)')
         OutputsHelp  = 'Paste Environment nickname, Tenant ID, Client ID, and Client Secret at https://app.entro.security/admin/account/add/2'

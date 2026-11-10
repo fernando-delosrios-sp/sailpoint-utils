@@ -83,4 +83,54 @@ catch {
 }
 Assert-True $maskedRequiredThrown 'Read-InputString with -Mask and -Required throws when missing in non-interactive'
 
+# Banner and report tests
+$ver = Get-SailPointConnectVersion
+Assert-Equal '1.2.0' $ver 'Get-SailPointConnectVersion resolves 1.2.0 from module/psd1'
+
+# Non-interactive banner writes nothing
+$nonIntBannerOut = pwsh -Command {
+    param($m)
+    Import-Module $m -Force
+    Initialize-OperatorConsole -NonInteractive
+    Write-SailPointConnectBanner
+} -Args $ModulePath
+Assert-True ([string]::IsNullOrWhiteSpace($nonIntBannerOut)) 'Write-SailPointConnectBanner is silent in non-interactive mode'
+
+# Interactive banner includes project name and version
+$intBannerOut = pwsh -Command {
+    param($m)
+    Import-Module $m -Force
+    Initialize-OperatorConsole
+    Write-SailPointConnectBanner -ProjectName 'DemoProject'
+} -Args $ModulePath
+Assert-True ((@($intBannerOut) -join "`n") -match 'SailPoint Connect') 'banner includes project title'
+Assert-True ((@($intBannerOut) -join "`n") -match 'v1\.2\.0') 'banner includes module version'
+Assert-True ((@($intBannerOut) -join "`n") -match 'Workspace: DemoProject') 'banner includes active workspace project'
+
+# Report stdout output
+$reportOut = pwsh -Command {
+    param($m)
+    Import-Module $m -Force
+    Write-ReportStdout -Content "# Report Header`n`nDetails here."
+} -Args $ModulePath
+Assert-True ((@($reportOut) -join "`n") -match '# Report Header') 'Write-ReportStdout writes report header'
+Assert-True ((@($reportOut) -join "`n") -match 'Details here\.') 'Write-ReportStdout writes report body'
+
+# Format-TerminalHyperlink tests
+$nonIntLink = Format-TerminalHyperlink -Path '/path/to/some file.txt'
+Assert-Equal '/path/to/some file.txt' $nonIntLink 'Format-TerminalHyperlink returns raw path in non-interactive mode'
+
+$intLinkOut = pwsh -Command {
+    param($m)
+    Import-Module $m -Force
+    Initialize-OperatorConsole
+    $env:TERM = 'xterm-256color'
+    Remove-Item env:NO_COLOR -ErrorAction SilentlyContinue
+    Format-TerminalHyperlink -Path '/path/to/some file.txt'
+} -Args $ModulePath
+$esc = [char]27
+Assert-True ($intLinkOut -match [regex]::Escape("$esc]8;;file:///")) 'Format-TerminalHyperlink outputs OSC 8 file URI in interactive mode'
+Assert-True ($intLinkOut -match '/path/to/some%20file\.txt') 'Format-TerminalHyperlink percent-encodes spaces in URI'
+Assert-True ($intLinkOut -match '/path/to/some file\.txt') 'Format-TerminalHyperlink preserves original path in display text'
+
 Write-Host "PASS ($script:AssertionCount assertions)"

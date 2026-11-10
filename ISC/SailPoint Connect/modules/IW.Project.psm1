@@ -54,15 +54,20 @@ function Set-IntegrationProjectLastSelected {
 
 function Get-IntegrationWizardIntegrationFolderName {
     param([Parameter(Mandatory)][hashtable]$Definition)
-    if ($Definition['IsComposite']) {
+    $name = if ($Definition['IsComposite']) {
         $parts = @($Definition.Members | ForEach-Object {
             if ($_['FolderName']) { [string]$_['FolderName'] } else { [string]$_.Title }
         })
-        # Folder names must stay portable: avoid '+' (not supported on every filesystem).
-        return ($parts -join ' and ')
+        # Folder names must stay portable and space-free: avoid '+' and whitespace.
+        ($parts -join '-and-')
     }
-    if ($Definition['FolderName']) { return [string]$Definition['FolderName'] }
-    return [string]$Definition.Title
+    elseif ($Definition['FolderName']) {
+        [string]$Definition['FolderName']
+    }
+    else {
+        [string]$Definition.Title
+    }
+    return ($name -replace '\s+', '-')
 }
 
 function Select-IntegrationProjectName {
@@ -245,7 +250,8 @@ function Initialize-IntegrationProjectContext {
     $projectName = [string]$Context['IntegrationProjectName']
 
     $folderName = Get-IntegrationWizardIntegrationFolderName -Definition $Plan
-    $integrationPath = Join-Path (Join-Path (Join-Path $root $projectName) $platformTitle) $folderName
+    $platformFolder = if ($platformTitle) { $platformTitle -replace '\s+', '-' } else { $platformTitle }
+    $integrationPath = Join-Path (Join-Path (Join-Path $root $projectName) $platformFolder) $folderName
     if (-not (Test-Path -LiteralPath $integrationPath)) {
         New-Item -ItemType Directory -Path $integrationPath -Force | Out-Null
     }
@@ -273,9 +279,19 @@ function Initialize-IntegrationProjectContext {
 
     if (Get-Command Write-Info -ErrorAction SilentlyContinue) {
         Write-Info "Project: $projectName"
-        Write-Info "Artifacts: $integrationPath"
+        $displayPath = if (Get-Command Format-TerminalHyperlink -ErrorAction SilentlyContinue) {
+            Format-TerminalHyperlink -Path $integrationPath
+        } else {
+            $integrationPath
+        }
+        Write-Info "Artifacts: $displayPath"
         if ($outputOverride) {
-            Write-Info "Output override: $($Context['OutputDirectory'])"
+            $displayOverride = if (Get-Command Format-TerminalHyperlink -ErrorAction SilentlyContinue) {
+                Format-TerminalHyperlink -Path $Context['OutputDirectory']
+            } else {
+                $Context['OutputDirectory']
+            }
+            Write-Info "Output override: $displayOverride"
         }
     }
 }

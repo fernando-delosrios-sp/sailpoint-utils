@@ -30,6 +30,7 @@ function Initialize-OperatorConsole {
     $script:WizardStepPromptCount = 0
     $script:WizardAskedSteps = @{}
     $script:InWizardPrompt = $false
+    $script:BannerDisplayed = $false
 }
 
 # Ensure script-scoped variables exist under Set-StrictMode -Version Latest
@@ -893,6 +894,119 @@ function Invoke-CompletionActionMenu {
     }
 }
 
+function Get-SailPointConnectVersion {
+    $m = Get-Module -Name 'SailPoint.Connect' -ErrorAction SilentlyContinue
+    if ($m -and $m.Version) {
+        return $m.Version.ToString()
+    }
+    $root = Split-Path $PSScriptRoot -Parent
+    $manifestPath = Join-Path $root 'SailPoint.Connect.psd1'
+    if (Test-Path -LiteralPath $manifestPath) {
+        try {
+            $data = Import-PowerShellDataFile -LiteralPath $manifestPath -ErrorAction SilentlyContinue
+            if ($data -and $data['ModuleVersion']) {
+                return [string]$data['ModuleVersion']
+            }
+        }
+        catch {}
+    }
+    return '1.2.0'
+}
+
+function Write-SailPointConnectBanner {
+    [CmdletBinding()]
+    param(
+        [string]$ProjectName,
+        [string]$Version,
+        [switch]$Force
+    )
+
+    if (Test-OperatorNonInteractive) { return }
+    if ($script:BannerDisplayed -and -not $Force) { return }
+
+    if (-not $Version) {
+        $Version = Get-SailPointConnectVersion
+    }
+
+    $title = 'SailPoint Connect'
+    $versionText = if ($Version -match '^v') { $Version } else { "v$Version" }
+    $tagline = 'Guided setup for ISC connectors and Entro onboarding'
+
+    $lines = [System.Collections.Generic.List[hashtable]]::new()
+    $lines.Add(@{ Text = "$title  $versionText"; Color = 'Cyan' })
+    $lines.Add(@{ Text = $tagline; Color = 'DarkGray' })
+    if ($ProjectName) {
+        $lines.Add(@{ Text = "Workspace: $ProjectName"; Color = 'Yellow' })
+    }
+
+    $contentWidth = 60
+    foreach ($line in $lines) {
+        if ($line.Text.Length -gt $contentWidth) {
+            $contentWidth = $line.Text.Length
+        }
+    }
+
+    Write-Host ''
+    Write-Host ("  ┌─" + ('─' * $contentWidth) + "─┐") -ForegroundColor Cyan
+    foreach ($line in $lines) {
+        $padded = $line.Text.PadRight($contentWidth)
+        Write-Host "  │ $padded │" -ForegroundColor $line.Color
+    }
+    Write-Host ("  └─" + ('─' * $contentWidth) + "─┘") -ForegroundColor Cyan
+    Write-Host ''
+
+    $script:BannerDisplayed = $true
+}
+
+function Write-ReportStdout {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Content
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($Content)) {
+        [Console]::Out.WriteLine($Content.TrimEnd())
+        [Console]::Out.WriteLine()
+    }
+}
+
+function Format-TerminalHyperlink {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)][string]$Path,
+        [Parameter(Position = 1)][string]$Label
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        return ''
+    }
+
+    $displayText = if ([string]::IsNullOrEmpty($Label)) { $Path } else { $Label }
+
+    if (Test-OperatorNonInteractive) {
+        return $displayText
+    }
+
+    if ($env:TERM -eq 'dumb' -or $env:NO_COLOR) {
+        return $displayText
+    }
+
+    try {
+        $uri = if ($Path -match '^[a-zA-Z][a-zA-Z0-9+.-]*://') {
+            $Path
+        }
+        else {
+            $fullPath = [System.IO.Path]::GetFullPath($Path)
+            [System.Uri]::new($fullPath).AbsoluteUri
+        }
+        $esc = [char]27
+        return "$esc]8;;$uri$esc\$displayText$esc]8;;$esc\"
+    }
+    catch {
+        return $displayText
+    }
+}
+
 Export-ModuleMember -Function @(
     'Import-IscModule'
     'Initialize-OperatorConsole'
@@ -926,4 +1040,8 @@ Export-ModuleMember -Function @(
     'Write-CompletionSummary'
     'Invoke-CompletionActionMenu'
     'ConvertTo-MenuLine'
+    'Get-SailPointConnectVersion'
+    'Write-SailPointConnectBanner'
+    'Write-ReportStdout'
+    'Format-TerminalHyperlink'
 )

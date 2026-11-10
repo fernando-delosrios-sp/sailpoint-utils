@@ -10,7 +10,7 @@ function Register-GitHubEntroDefinitions {
         CoreSwitch   = 'Entro'
         CliName      = 'gh'
         Title        = 'Entro GitHub integration'
-        FolderName   = 'Entro GitHub'
+        FolderName   = 'Entro-GitHub'
         AccessLevels = @()
         AdminRoles   = @('GitHub Organization Owner')
         OutputsHelp  = 'Install the Entro GitHub App on your organization or paste a Classic PAT into the Entro admin console.'

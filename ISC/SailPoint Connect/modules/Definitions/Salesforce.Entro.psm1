@@ -10,7 +10,7 @@ function Register-SalesforceEntroDefinitions {
         CoreSwitch   = 'Entro'
         CliName      = 'sf'
         Title        = 'Entro Salesforce integration'
-        FolderName   = 'Entro Salesforce'
+        FolderName   = 'Entro-Salesforce'
         AccessLevels = @()
         AdminRoles   = @('Salesforce System Administrator (Setup, App Manager, Connected Apps)')
         OutputsHelp  = 'Paste Environment nickname, Instance URL, and Access Token or refresh credentials into Entro admin console.'

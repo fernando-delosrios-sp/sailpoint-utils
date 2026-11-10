@@ -10,7 +10,7 @@ function Register-CrowdStrikeEntroDefinitions {
         CoreSwitch   = 'Entro'
         CliName      = 'falcon'
         Title        = 'Entro CrowdStrike integration'
-        FolderName   = 'Entro CrowdStrike'
+        FolderName   = 'Entro-CrowdStrike'
         AccessLevels = @()
         AdminRoles   = @('CrowdStrike Falcon Administrator (API Clients and Keys)')
         OutputsHelp  = 'Paste Environment nickname, Client ID, and Client Secret into the Entro admin console.'

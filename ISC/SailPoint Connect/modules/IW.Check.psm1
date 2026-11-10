@@ -1080,9 +1080,15 @@ function Write-IntegrationCheckReport {
     [void]$sb.AppendLine('`BuildRequirements` is the checklist. `Check` reads an identity you already have. `Run` is the only action that changes the tenant, and only after you confirm.')
     [void]$sb.AppendLine('')
     foreach ($section in @($Sections)) { [void]$sb.AppendLine($section) }
-    $dir = Split-Path -Parent $OutputPath
-    if ($dir -and -not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    Set-Content -LiteralPath $OutputPath -Value $sb.ToString() -Encoding utf8
+    $reportContent = $sb.ToString()
+    Set-Content -LiteralPath $OutputPath -Value $reportContent -Encoding utf8
+    if (Get-Command Write-ReportStdout -ErrorAction SilentlyContinue) {
+        Write-ReportStdout -Content $reportContent
+    }
+    else {
+        [Console]::Out.WriteLine($reportContent.TrimEnd())
+        [Console]::Out.WriteLine()
+    }
 }
 
 function Invoke-IntegrationRequirementCheck {
@@ -1111,7 +1117,12 @@ function Invoke-IntegrationRequirementCheck {
     Write-Host ''
     Write-Host $phrase -ForegroundColor $color
     Write-Host 'Nothing in the tenant was changed.'
-    Write-Host "Wrote $OutputPath"
+    $displayPath = if (Get-Command Format-TerminalHyperlink -ErrorAction SilentlyContinue) {
+        Format-TerminalHyperlink -Path $OutputPath
+    } else {
+        $OutputPath
+    }
+    Write-Host "Wrote $displayPath"
     foreach ($result in @($results)) {
         if (@($result.Missing).Count -eq 0) { continue }
         Write-Host "$($result.Title) is missing:" -ForegroundColor $color

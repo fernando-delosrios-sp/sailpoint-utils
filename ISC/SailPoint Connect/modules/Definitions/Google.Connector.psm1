@@ -65,7 +65,7 @@ function Register-GoogleConnectorDefinitions {
         CoreSwitch   = 'SaaSConnector'
         CliName      = 'gcloud'
         Title        = 'Google Workspace connector'
-        FolderName   = 'Google Workspace'
+        FolderName   = 'Google-Workspace'
         AccessLevels = @('ReadOnly', 'ReadWrite')
         AdminRoles   = @('Organization admin or project owner for IAM and service accounts')
         OutputsHelp  = 'Paste service account email, key, and admin email into ISC Connection Settings.'
@@ -172,7 +172,7 @@ Write-Host "====================================================================
         CoreSwitch   = 'CiemConnector'
         CliName      = 'gcloud'
         Title        = 'GCP CIEM connector feature packs'
-        FolderName   = 'GCP CIEM'
+        FolderName   = 'GCP-CIEM'
         AccessLevels = @('ReadOnly', 'ReadWrite')
         AdminRoles   = @('Organization admin for custom org roles')
         OutputsHelp  = 'Enable CIEM/NHI packs in ISC using the GCP org role from connection settings.'

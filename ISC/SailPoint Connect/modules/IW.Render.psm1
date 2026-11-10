@@ -285,7 +285,12 @@ function New-IntegrationWizardBuildScript {
     $dir = Split-Path -Parent $OutputPath
     if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     Set-Content -Path $OutputPath -Value $sb.ToString() -Encoding utf8
-    Write-Ok "Wrote $OutputPath"
+    $displayPath = if (Get-Command Format-TerminalHyperlink -ErrorAction SilentlyContinue) {
+        Format-TerminalHyperlink -Path $OutputPath
+    } else {
+        $OutputPath
+    }
+    Write-Ok "Wrote $displayPath"
     if (Get-Command Write-IntegrationProjectLogLine -ErrorAction SilentlyContinue) {
         Write-IntegrationProjectLogLine -Level 'INFO' -Message "Wrote build script: $OutputPath"
     }
@@ -379,8 +384,21 @@ function New-IntegrationWizardRequirementsDoc {
     }
     $dir = Split-Path -Parent $OutputPath
     if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-    Set-Content -Path $OutputPath -Value $sb.ToString() -Encoding utf8
-    Write-Ok "Wrote $OutputPath"
+    $reqContent = $sb.ToString()
+    Set-Content -Path $OutputPath -Value $reqContent -Encoding utf8
+    if (Get-Command Write-ReportStdout -ErrorAction SilentlyContinue) {
+        Write-ReportStdout -Content $reqContent
+    }
+    else {
+        [Console]::Out.WriteLine($reqContent.TrimEnd())
+        [Console]::Out.WriteLine()
+    }
+    $displayPath = if (Get-Command Format-TerminalHyperlink -ErrorAction SilentlyContinue) {
+        Format-TerminalHyperlink -Path $OutputPath
+    } else {
+        $OutputPath
+    }
+    Write-Ok "Wrote $displayPath"
     if (Get-Command Write-IntegrationProjectLogLine -ErrorAction SilentlyContinue) {
         Write-IntegrationProjectLogLine -Level 'INFO' -Message "Wrote requirements doc: $OutputPath"
     }

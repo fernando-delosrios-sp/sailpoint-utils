@@ -115,8 +115,7 @@ function Invoke-SailPointConnect {
             throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, IQService, M365AccessProfiles."
         }
 
-        Write-Step 'SailPoint Connect'
-        Write-Host 'Guided setup for ISC connectors and Entro onboarding.' -ForegroundColor Cyan
+        Write-SailPointConnectBanner -ProjectName $Project
         Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
 
         $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles')

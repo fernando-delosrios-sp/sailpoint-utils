@@ -123,8 +123,9 @@ function Show-M365AccessProfilesHelp {
 }
 
 function Write-Banner {
-    Write-Host ''
-    Write-Host '  SailPoint ISC  -  Microsoft 365 access profiles' -ForegroundColor Cyan
+    if (Test-OperatorNonInteractive) { return }
+    Write-SailPointConnectBanner
+    Write-Host '  Microsoft 365 access profiles' -ForegroundColor Cyan
     Write-Host '  Build requestable APs from Entra service-plan entitlements.' -ForegroundColor DarkCyan
     Write-Host ''
 }

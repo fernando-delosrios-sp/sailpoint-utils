@@ -245,7 +245,7 @@ function Merge-IntegrationWizardDefinitions {
         Product      = 'Combined'
         CliName      = $cli
         Title        = ($titles -join ' + ')
-        FolderName   = ($folderNames -join ' and ')
+        FolderName   = (($folderNames -join '-and-') -replace '\s+', '-')
         AccessLevels = $access
         Inputs       = @($mergedInputs.Values)
         Members      = $membersCopy
@@ -622,6 +622,12 @@ function Start-IntegrationWizardFlow {
         Import-Module $projectMod -Force -WarningAction SilentlyContinue
     }
     if ($wizard) {
+        if (-not $nonInteractive) {
+            $bannerProj = if ($Context.ContainsKey('Project') -and $Context['Project']) { [string]$Context['Project'] }
+                          elseif ($Context.ContainsKey('IntegrationProjectName') -and $Context['IntegrationProjectName']) { [string]$Context['IntegrationProjectName'] }
+                          else { $null }
+            Write-SailPointConnectBanner -ProjectName $bannerProj
+        }
         $stage = 0
         $needWorkspace = Test-IntegrationWizardNeedsProjectContext -Wizard:$wizard -Context $Context
         $pickedTarget = $false

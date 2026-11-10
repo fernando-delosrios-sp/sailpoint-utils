@@ -72,7 +72,7 @@ function Register-AwsEntroDefinitions {
         CoreSwitch   = 'Entro'
         CliName      = 'aws'
         Title        = 'Entro AWS integration'
-        FolderName   = 'Entro AWS'
+        FolderName   = 'Entro-AWS'
         AccessLevels = @()
         AdminRoles   = @('IAM policy and role management')
         OutputsHelp  = 'Paste Environment label and AWS Role ARN into the Entro admin console (Add account → AWS).'

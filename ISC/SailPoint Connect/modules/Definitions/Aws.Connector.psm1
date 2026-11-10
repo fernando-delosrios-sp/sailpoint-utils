@@ -93,7 +93,7 @@ function Register-AwsConnectorDefinitions {
         CoreSwitch   = 'SaaSConnector'
         CliName      = 'aws'
         Title        = 'Amazon Web Services SaaS connector IAM role'
-        FolderName   = 'Amazon Web Services SaaS'
+        FolderName   = 'Amazon-Web-Services-SaaS'
         AccessLevels = @('ReadOnly', 'ReadWrite')
         AdminRoles   = @('IAM role and policy management in target account(s)')
         OutputsHelp  = 'Paste role name, region, External ID, and management account ID into ISC Connection Settings.'
@@ -278,7 +278,7 @@ Write-Host '====================================================================
         CoreSwitch   = 'CiemConnector'
         CliName      = 'aws'
         Title        = 'AWS CIEM connector (CloudFormation)'
-        FolderName   = 'AWS CIEM'
+        FolderName   = 'AWS-CIEM'
         AccessLevels = @('ReadOnly', 'ReadWrite')
         AdminRoles   = @('CloudFormation in management account; StackSet for organizations')
         OutputsHelp  = 'Paste Role ARN, External ID, and CloudTrail ARNs into CIEM Connection Settings.'

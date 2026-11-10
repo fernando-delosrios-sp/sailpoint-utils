@@ -322,11 +322,23 @@ function Write-EntroGcpRunReport {
         New-Item -ItemType Directory -Path $parent -Force | Out-Null
     }
     Set-Content -LiteralPath $Path -Value $markdown -Encoding utf8
+    if (Get-Command Write-ReportStdout -ErrorAction SilentlyContinue) {
+        Write-ReportStdout -Content $markdown
+    }
+    else {
+        [Console]::Out.WriteLine($markdown.TrimEnd())
+        [Console]::Out.WriteLine()
+    }
     $legacy = Join-Path $parent 'entro-gcp-pre-onboarding-report.txt'
     if ((Test-Path -LiteralPath $legacy) -and $legacy -ne $Path) {
         Remove-Item -LiteralPath $legacy -Force
     }
-    Write-Ok "Wrote $Path"
+    $displayPath = if (Get-Command Format-TerminalHyperlink -ErrorAction SilentlyContinue) {
+        Format-TerminalHyperlink -Path $Path
+    } else {
+        $Path
+    }
+    Write-Ok "Wrote $displayPath"
 }
 
 function Invoke-EntroGcpPreOnboardingCheck {
