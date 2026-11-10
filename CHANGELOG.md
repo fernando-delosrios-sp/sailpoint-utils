@@ -4,6 +4,21 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-10 · v1.3.0
+
+### ✨ New Features & Improvements
+
+- **SailPoint Connect — Parameter Forwarding**: Implemented `Convert-RemainingArgumentsToHashtable` in `Invoke-SailPointConnect` to cleanly forward named arguments to underlying connector scripts without positional parameter binding errors.
+- **SailPoint Connect — Check Validation**: Added `'Check'` to the `-Action` `ValidateSet` across all platform connector scripts (`AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Salesforce.ps1`, `CrowdStrike.ps1`, `Databricks.ps1`).
+- **SailPoint Connect — Headless Automation**: Allowed non-interactive execution with `-OutputDirectory` defaulting the project to an ephemeral workspace without requiring persistent `~/.sailpoint-connect/` state.
+- **SailPoint Connect — Structured Pipeline Output & JSON**: Standardized `-OutputFormat Text|Json` across connector scripts and cmdlets, emitting clean `PSCustomObject` results on Stream 1 and writing structured `-requirements.json` / `-check.json` reports.
+- **SailPoint Connect — Safe Script Execution**: Replaced `Invoke-Expression` with safe scriptblock execution in `IW.Render.psm1`, isolating `$global:LASTEXITCODE`.
+- **SailPoint Connect — Kebab-Case Entrypoints**: Added forwarding shims `Google-Cloud.ps1`, `IQService-Control.ps1`, and `Microsoft-365-Access-Profiles.ps1`.
+- **SailPoint Connect — Cmdlet Naming**: Standardized on approved verb `Invoke-SailPointIQServiceControl` with backwards compatibility alias `Start-SailPointIQServiceControl`.
+- **SailPoint Connect — Typed Navigation**: Replaced string-based navigation tokens with a typed `[PromptBackException]` class in `IW.Core.psm1` and `ISC.OperatorConsole.psm1`.
+- **SailPoint Connect — Safe Cancellation**: Replaced `exit 0` / `exit 1` with non-terminating `PipelineStoppedException` ErrorRecords and standard `throw`/`return` patterns to prevent killing the operator's host shell session.
+- **Agent Guidelines**: Added `AGENTS.md`, `CLAUDE.md`, and `.cursorrules` establishing mandatory minor version bumps for all future `ISC/SailPoint Connect` changes.
+
 ## 2026-11-09
 
 ### ✨ New Features

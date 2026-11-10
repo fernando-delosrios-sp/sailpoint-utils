@@ -1,0 +1,12 @@
+# SailPoint Utils Cursor Rules
+
+## SailPoint Connect Versioning Rule
+Every commit that touches files under `ISC/SailPoint Connect/` MUST include a version bump:
+- Default: **minor** version bump (e.g., `1.2.0` -> `1.3.0`), unless the user explicitly requests otherwise.
+- Update `ModuleVersion` in `ISC/SailPoint Connect/SailPoint.Connect.psd1`.
+- Add an entry in `CHANGELOG.md` (`## YYYY-MM-DD · vX.Y.Z`).
+- Update `Get-SailPointConnectVersion` in `ISC/SailPoint Connect/modules/ISC.OperatorConsole.psm1`.
+- Update version test assertions in `ISC/SailPoint Connect/tests/Test-OperatorConsole.ps1`.
+- Run `pwsh "ISC/SailPoint Connect/tests/Invoke-AllSourceConnectionTests.ps1"` before committing.
+
+See `AGENTS.md` for full instructions.

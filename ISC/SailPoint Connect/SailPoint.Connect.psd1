@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.2.0'
+    ModuleVersion = '1.3.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -86,7 +86,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Fix Esc key / PROMPT_BACK unhandled exception during interactive wizard prompts and Entro companion selection; add full back navigation and clean cancellation.'
+            ReleaseNotes = 'Add parameter forwarding fix in Invoke-SailPointConnect, -Action Check validation, safe session exit, headless execution with -OutputDirectory, structured JSON pipeline output, kebab-case shims, and typed PromptBackException.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'
