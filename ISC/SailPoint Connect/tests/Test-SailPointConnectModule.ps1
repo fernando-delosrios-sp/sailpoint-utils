@@ -97,7 +97,6 @@ try {
     Assert-Equal 1 $csTarget.Count 'CrowdStrike connector target resolves'
     Assert-Equal 'crowdstrike-connector' $csTarget[0]['Id'] 'CrowdStrike connector id matches'
 
-<<<<<<< HEAD
     # 7) Verify Invoke-SailPointConnect forwards named arguments cleanly without positional argument errors
     $fwdErr = $null
     $fwdOutDir = Join-Path $tmp 'fwd-out'
