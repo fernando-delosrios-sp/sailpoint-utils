@@ -4,6 +4,19 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-10 · v1.4.0
+
+### ✨ New Features & Improvements
+
+- **SailPoint Connect — Module Autoupdate**: Added module autoupdate capabilities for `SailPoint.Connect`:
+  - `Update-SailPointConnect` cmdlet (and alias `update-sailpoint-connect`) to check for and install newer versions from PowerShell Gallery.
+  - `Get-SailPointConnectUpdate` cmdlet to check for newer releases via fast PowerShell Gallery OData API with fallback to `Find-Module`.
+  - `Invoke-SailPointConnect -Update` and `Invoke-SailPointConnect -CheckUpdate` command-line switches.
+  - Interactive autoupdate prompt in `Invoke-SailPointConnect`, `Start-IntegrationWizardFlow` (AWS, Azure, Google Cloud, Databricks, Salesforce, GitHub, CrowdStrike), `IQService Control`, and `Microsoft 365 Access Profiles` wizards whenever a newer release is detected.
+  - Platform picker option `Update` in `Invoke-SailPointConnect` for easy on-demand module updates.
+  - Added `-SkipUpdateCheck` switch and `SAILPOINT_CONNECT_SKIP_UPDATE_CHECK` environment variable support for headless and offline operation.
+- **SailPoint Connect — Test Suite Fixes**: Fixed `Test-SailPointConnectModule.ps1` version assertion and added 24-assertion comprehensive test suite `Test-AutoUpdate.ps1`.
+
 ## 2026-11-10 · v1.3.0
 
 ### ✨ New Features & Improvements

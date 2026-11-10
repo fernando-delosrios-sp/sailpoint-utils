@@ -537,6 +537,328 @@ function Expand-IQServicePayload {
     }
 }
 
+$script:UpdateCheckPerformed = $false
+
+<#
+.SYNOPSIS
+    Checks whether an update is available for the SailPoint Connect PowerShell module.
+
+.DESCRIPTION
+    Queries PowerShell Gallery (via fast REST API and fallback Find-Module) to compare
+    the latest published release against the locally installed or active version.
+
+.PARAMETER CurrentVersion
+    Optional override for the current version string. Defaults to the active module version.
+
+.PARAMETER Repository
+    PowerShell repository to check. Default: PSGallery.
+
+.PARAMETER TimeoutSeconds
+    Network timeout in seconds for repository query. Default: 4.
+
+.PARAMETER Force
+    Bypasses any update skip environment variables.
+
+.EXAMPLE
+    Get-SailPointConnectUpdate
+    Checks PowerShell Gallery for the latest version of SailPoint.Connect.
+
+.OUTPUTS
+    System.Management.Automation.PSCustomObject with UpdateAvailable, CurrentVersion, and LatestVersion.
+#>
+function Get-SailPointConnectUpdate {
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [string]$CurrentVersion,
+
+        [Parameter()]
+        [string]$Repository = 'PSGallery',
+
+        [Parameter()]
+        [int]$TimeoutSeconds = 4,
+
+        [Parameter()]
+        [switch]$Force
+    )
+
+    if (-not $Force -and ($env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK -in @('1', 'true', '$true', 'True'))) {
+        $cur = if ($CurrentVersion) { [version]$CurrentVersion } else { [version](Get-SailPointConnectVersion) }
+        return [PSCustomObject]@{
+            UpdateAvailable = $false
+            CurrentVersion  = $cur
+            LatestVersion   = $null
+            Repository      = $Repository
+            Skipped         = $true
+        }
+    }
+
+    if (-not $CurrentVersion) {
+        $CurrentVersion = Get-SailPointConnectVersion
+    }
+    $currVer = try { [version]$CurrentVersion } catch { [version]'0.0.0' }
+
+    $latestVer = $null
+
+    if ($env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION) {
+        try {
+            $latestVer = [version]$env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION
+        }
+        catch {}
+    }
+
+    if ($null -eq $latestVer) {
+        $galleryUrl = "https://www.powershellgallery.com/api/v2/FindPackagesById()?id=%27SailPoint.Connect%27"
+        try {
+            $response = Invoke-RestMethod -Uri $galleryUrl -TimeoutSec $TimeoutSeconds -ErrorAction Stop
+            $versions = @()
+            if ($response) {
+                foreach ($entry in @($response)) {
+                    if ($entry.properties -and $entry.properties.Version) {
+                        $versions += [string]$entry.properties.Version
+                    }
+                    elseif ($entry.properties) {
+                        try {
+                            $nodeList = $entry.properties.GetElementsByTagName("d:Version")
+                            foreach ($node in $nodeList) {
+                                $versions += [string]$node.InnerText
+                            }
+                        }
+                        catch {}
+                    }
+                }
+            }
+
+            if ($versions.Count -gt 0) {
+                $parsed = @($versions | ForEach-Object {
+                    try { [version]$_ } catch { $null }
+                } | Where-Object { $null -ne $_ } | Sort-Object -Descending)
+
+                if ($parsed.Count -gt 0) {
+                    $latestVer = $parsed[0]
+                }
+            }
+        }
+        catch {
+            try {
+                $mod = Find-Module -Name 'SailPoint.Connect' -Repository $Repository -ErrorAction Stop
+                if ($mod -and $mod.Version) {
+                    $latestVer = [version]$mod.Version
+                }
+            }
+            catch {}
+        }
+    }
+
+    $updateAvailable = ($null -ne $latestVer -and $latestVer -gt $currVer)
+
+    return [PSCustomObject]@{
+        UpdateAvailable = $updateAvailable
+        CurrentVersion  = $currVer
+        LatestVersion   = $latestVer
+        Repository      = $Repository
+        Skipped         = $false
+    }
+}
+
+<#
+.SYNOPSIS
+    Updates the SailPoint Connect PowerShell module to the latest version.
+
+.DESCRIPTION
+    Checks PowerShell Gallery for a newer release of SailPoint.Connect and installs
+    or updates the module for the current user.
+
+.PARAMETER CheckOnly
+    Checks whether a newer version is available and outputs the result without updating.
+
+.PARAMETER Force
+    Reinstalls the latest version even if the current version is up to date.
+
+.PARAMETER Scope
+    Installation scope: CurrentUser (default) or AllUsers.
+
+.PARAMETER TargetVersion
+    Optional specific version to install.
+
+.PARAMETER NonInteractive
+    Runs headlessly without confirmation prompts.
+
+.EXAMPLE
+    Update-SailPointConnect
+    Checks for a newer version and installs the update if available.
+
+.EXAMPLE
+    Update-SailPointConnect -CheckOnly
+    Reports whether an update is available without making changes.
+
+.OUTPUTS
+    System.Management.Automation.PSCustomObject with update results.
+#>
+function Update-SailPointConnect {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter()]
+        [switch]$CheckOnly,
+
+        [Parameter()]
+        [switch]$Force,
+
+        [Parameter()]
+        [ValidateSet('CurrentUser', 'AllUsers')]
+        [string]$Scope = 'CurrentUser',
+
+        [Parameter()]
+        [string]$TargetVersion,
+
+        [Parameter()]
+        [switch]$NonInteractive
+    )
+
+    $updateInfo = Get-SailPointConnectUpdate -Force:$Force
+    $currentVer = $updateInfo.CurrentVersion
+    $latestVer = if ($TargetVersion) { try { [version]$TargetVersion } catch { $null } } else { $updateInfo.LatestVersion }
+
+    if ($CheckOnly) {
+        if ($updateInfo.UpdateAvailable) {
+            Write-Host "A newer version of SailPoint.Connect is available: v$latestVer (current: v$currentVer)." -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "SailPoint.Connect is up to date (version v$currentVer)." -ForegroundColor Green
+        }
+        return $updateInfo
+    }
+
+    if (-not $updateInfo.UpdateAvailable -and -not $Force -and -not $TargetVersion) {
+        Write-Ok "SailPoint.Connect is already up to date (v$currentVer)."
+        return [PSCustomObject]@{
+            Success        = $true
+            Updated        = $false
+            CurrentVersion = $currentVer
+            LatestVersion  = $currentVer
+        }
+    }
+
+    $verToInstall = if ($latestVer) { $latestVer.ToString() } else { 'latest' }
+
+    if (-not $PSCmdlet.ShouldProcess("SailPoint.Connect", "Update module to version $verToInstall")) {
+        return [PSCustomObject]@{
+            Success        = $false
+            Updated        = $false
+            CurrentVersion = $currentVer
+            LatestVersion  = $latestVer
+            Message        = 'Operation cancelled by ShouldProcess / WhatIf.'
+        }
+    }
+
+    if ($env:SAILPOINT_CONNECT_MOCK_UPDATE_ACTION -eq 'Fail') {
+        throw "Simulated module installation failure"
+    }
+
+    Write-Step "Updating SailPoint.Connect to version $verToInstall..."
+
+    $installSuccess = $false
+    $errorMsg = $null
+
+    if ($env:SAILPOINT_CONNECT_MOCK_UPDATE_ACTION -eq 'Success') {
+        $installSuccess = $true
+    }
+    else {
+        try {
+            Write-Info "Checking installed module state..."
+            Update-Module -Name 'SailPoint.Connect' -Scope $Scope -Force -AcceptLicense -ErrorAction Stop
+            $installSuccess = $true
+        }
+        catch {
+            Write-Info "Update-Module not applicable; running Install-Module -AllowClobber..."
+            try {
+                $installParams = @{
+                    Name         = 'SailPoint.Connect'
+                    Scope        = $Scope
+                    Force        = $true
+                    AllowClobber = $true
+                    ErrorAction  = 'Stop'
+                }
+                if ($TargetVersion) {
+                    $installParams['RequiredVersion'] = $TargetVersion
+                }
+                Install-Module @installParams
+                $installSuccess = $true
+            }
+            catch {
+                $errorMsg = $_.Exception.Message
+            }
+        }
+    }
+
+    if ($installSuccess) {
+        Write-Ok "SailPoint.Connect has been successfully updated to v$verToInstall."
+        Write-Info "To refresh your current session, run: Import-Module SailPoint.Connect -Force"
+        if ($env:SAILPOINT_CONNECT_MOCK_UPDATE_ACTION -ne 'Success') {
+            try {
+                Import-Module 'SailPoint.Connect' -Force -ErrorAction SilentlyContinue
+            }
+            catch {}
+        }
+
+        return [PSCustomObject]@{
+            Success        = $true
+            Updated        = $true
+            CurrentVersion = $currentVer
+            LatestVersion  = $latestVer
+        }
+    }
+    else {
+        Write-Host "   Update failed: $errorMsg" -ForegroundColor Red
+        return [PSCustomObject]@{
+            Success        = $false
+            Updated        = $false
+            CurrentVersion = $currentVer
+            LatestVersion  = $latestVer
+            Error          = $errorMsg
+        }
+    }
+}
+
+function Confirm-SailPointConnectUpdate {
+    [CmdletBinding()]
+    param(
+        [switch]$Wizard,
+        [switch]$Force
+    )
+
+    if (Test-OperatorNonInteractive) { return $false }
+    if ($env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK -in @('1', 'true', '$true', 'True')) { return $false }
+    if ($script:UpdateCheckPerformed -and -not $Force) { return $false }
+    $script:UpdateCheckPerformed = $true
+
+    $updateInfo = Get-SailPointConnectUpdate
+    if ($null -eq $updateInfo -or -not $updateInfo.UpdateAvailable) {
+        return $false
+    }
+
+    Write-Host ''
+    Write-Host ("  ┌─" + ('─' * 62) + "─┐") -ForegroundColor Yellow
+    Write-Host ("  │ ⚡ A newer version of SailPoint Connect is available!         │") -ForegroundColor Yellow
+    Write-Host ("  │ Current: v{0,-10}  Latest: v{1,-12}           │" -f $updateInfo.CurrentVersion, $updateInfo.LatestVersion) -ForegroundColor Yellow
+    Write-Host ("  └─" + ('─' * 62) + "─┘") -ForegroundColor Yellow
+    Write-Host ''
+
+    $shouldUpdate = Read-YesNo -Prompt "Would you like to autoupdate SailPoint Connect to v$($updateInfo.LatestVersion) now?" -Default $true
+    if ($shouldUpdate) {
+        $result = Update-SailPointConnect -TargetVersion $updateInfo.LatestVersion.ToString()
+        if ($result.Success) {
+            Write-Ok "SailPoint Connect updated to v$($updateInfo.LatestVersion)."
+            Write-Info "PowerShell session refreshed with the new version."
+            return $true
+        }
+        else {
+            Write-Host "   Autoupdate did not complete: $($result.Error)" -ForegroundColor Yellow
+        }
+    }
+    return $false
+}
+
 Export-ModuleMember -Function @(
     'Set-OperatorToolchainPackageManager'
     'Get-OperatorPlatform'
@@ -560,4 +882,7 @@ Export-ModuleMember -Function @(
     'Ensure-AwsToolsModules'
     'Save-IQServicePayload'
     'Expand-IQServicePayload'
+    'Get-SailPointConnectUpdate'
+    'Update-SailPointConnect'
+    'Confirm-SailPointConnectUpdate'
 )

@@ -680,6 +680,9 @@ function Start-IntegrationWizardFlow {
                           elseif ($Context.ContainsKey('IntegrationProjectName') -and $Context['IntegrationProjectName']) { [string]$Context['IntegrationProjectName'] }
                           else { $null }
             Write-SailPointConnectBanner -ProjectName $bannerProj
+            if (Get-Command Confirm-SailPointConnectUpdate -ErrorAction SilentlyContinue) {
+                Confirm-SailPointConnectUpdate -Wizard
+            }
         }
         $stage = 0
         $needWorkspace = Test-IntegrationWizardNeedsProjectContext -Wizard:$wizard -Context $Context

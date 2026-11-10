@@ -18,7 +18,14 @@ To update:
 
 ```powershell
 Update-Module -Name SailPoint.Connect
+# Or directly via module cmdlet / alias:
+Update-SailPointConnect
+# Or
+sailpoint-connect -Update
 ```
+
+SailPoint Connect also automatically checks for updates and offers to autoupdate whenever you launch the interactive wizard!
+
 
 ### Run
 

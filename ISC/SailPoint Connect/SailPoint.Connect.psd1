@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.3.0'
+    ModuleVersion = '1.4.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -40,6 +40,8 @@
         'New-SailPointM365AccessProfile'
         'Get-SailPointConnectProject'
         'Set-SailPointConnectProject'
+        'Update-SailPointConnect'
+        'Get-SailPointConnectUpdate'
     )
 
     # Cmdlets to export from this module, for best performance, do not use wildcards
@@ -52,6 +54,7 @@
     AliasesToExport = @(
         'sailpoint-connect'
         'Start-SailPointIQServiceControl'
+        'update-sailpoint-connect'
     )
 
     # Private data to pass to the module specified in RootModule/ModuleList
@@ -86,7 +89,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Add parameter forwarding fix in Invoke-SailPointConnect, -Action Check validation, safe session exit, headless execution with -OutputDirectory, structured JSON pipeline output, kebab-case shims, and typed PromptBackException.'
+            ReleaseNotes = 'Add autoupdate feature for SailPoint Connect module (Update-SailPointConnect, Get-SailPointConnectUpdate, Invoke-SailPointConnect -Update, and interactive wizard autoupdate prompt).'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'

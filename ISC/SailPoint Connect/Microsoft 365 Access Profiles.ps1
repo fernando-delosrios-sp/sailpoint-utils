@@ -125,6 +125,9 @@ function Show-M365AccessProfilesHelp {
 function Write-Banner {
     if (Test-OperatorNonInteractive) { return }
     Write-SailPointConnectBanner
+    if ($Wizard -and (Get-Command Confirm-SailPointConnectUpdate -ErrorAction SilentlyContinue)) {
+        Confirm-SailPointConnectUpdate -Wizard
+    }
     Write-Host '  Microsoft 365 access profiles' -ForegroundColor Cyan
     Write-Host '  Build requestable APs from Entra service-plan entitlements.' -ForegroundColor DarkCyan
     Write-Host ''

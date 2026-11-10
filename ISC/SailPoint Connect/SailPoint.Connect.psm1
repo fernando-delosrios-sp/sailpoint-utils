@@ -153,7 +153,7 @@ function Invoke-SailPointConnect {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Position = 0)]
-        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles')]
+        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles', 'Update')]
         [string]$Platform,
 
         [Parameter()]
@@ -176,6 +176,15 @@ function Invoke-SailPointConnect {
         [ValidateSet('Text', 'Json')]
         [string]$OutputFormat = 'Text',
 
+        [Parameter()]
+        [switch]$Update,
+
+        [Parameter()]
+        [switch]$CheckUpdate,
+
+        [Parameter()]
+        [switch]$SkipUpdateCheck,
+
         [Parameter(ValueFromRemainingArguments = $true)]
         $RemainingArguments
     )
@@ -183,16 +192,30 @@ function Invoke-SailPointConnect {
     Initialize-OperatorConsole -NonInteractive:$NonInteractive
     $extraArgs = Convert-RemainingArgumentsToHashtable -Arguments $RemainingArguments
 
+    if ($SkipUpdateCheck) {
+        $env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK = '1'
+    }
+
+    if ($Update -or $Platform -eq 'Update') {
+        return (Update-SailPointConnect -NonInteractive:$NonInteractive)
+    }
+
+    if ($CheckUpdate) {
+        return (Update-SailPointConnect -CheckOnly -NonInteractive:$NonInteractive)
+    }
+
     try {
         if (-not $Platform) {
             if ($NonInteractive) {
-                throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, IQService, M365AccessProfiles."
+                throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, IQService, M365AccessProfiles, Update."
             }
 
             Write-SailPointConnectBanner -ProjectName $Project
+            Confirm-SailPointConnectUpdate -Wizard
+
             Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
 
-            $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles')
+            $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles', 'Update')
             $labels = @(
                 'Amazon Web Services (SaaS connector, CIEM, Entro)',
                 'Microsoft Azure & Entra ID (Connector, Entro)',
@@ -202,9 +225,13 @@ function Invoke-SailPointConnect {
                 'GitHub (SaaS connector, Copilot & Bots, Entro)',
                 'CrowdStrike (Falcon SaaS connector, Discover & ITDR, Entro)',
                 'IQService Control (Host lifecycle & AD LDAPS)',
-                'Microsoft 365 Access Profiles (Entra service plans)'
+                'Microsoft 365 Access Profiles (Entra service plans)',
+                'Update SailPoint Connect (autoupdate module)'
             )
             $picked = Read-Choice -Prompt 'Select platform to configure' -Options $options -Labels $labels -Default 'AWS'
+            if ($picked -eq 'Update') {
+                return (Update-SailPointConnect)
+            }
             $Platform = $picked
             $Wizard = $true
         }
@@ -212,6 +239,9 @@ function Invoke-SailPointConnect {
         $targetPlatform = if ($Platform -eq 'GCP') { 'GoogleCloud' } else { $Platform }
 
         switch ($targetPlatform) {
+            'Update' {
+                return (Update-SailPointConnect -NonInteractive:$NonInteractive)
+            }
             'AWS' {
                 $script = Join-Path $script:ModuleRoot 'AWS.ps1'
                 $pass = @{}
@@ -1134,9 +1164,130 @@ function Set-SailPointConnectProject {
     Write-Host "Active SailPoint Connect project set to: $Name" -ForegroundColor Green
 }
 
+<#
+.SYNOPSIS
+    Checks whether an update is available for the SailPoint Connect PowerShell module.
+
+.DESCRIPTION
+    Queries PowerShell Gallery to compare the latest published release against the
+    locally installed or active version.
+
+.PARAMETER CurrentVersion
+    Optional override for the current version string. Defaults to the active module version.
+
+.PARAMETER Repository
+    PowerShell repository to check. Default: PSGallery.
+
+.PARAMETER TimeoutSeconds
+    Network timeout in seconds for repository query. Default: 4.
+
+.PARAMETER Force
+    Bypasses any update skip environment variables.
+
+.EXAMPLE
+    Get-SailPointConnectUpdate
+    Checks PowerShell Gallery for the latest version of SailPoint.Connect.
+
+.OUTPUTS
+    System.Management.Automation.PSCustomObject with UpdateAvailable, CurrentVersion, and LatestVersion.
+
+.LINK
+    https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs/cmdlets/Get-SailPointConnectUpdate.md
+#>
+function Get-SailPointConnectUpdate {
+    [CmdletBinding()]
+    param(
+        [Parameter()]
+        [string]$CurrentVersion,
+
+        [Parameter()]
+        [string]$Repository = 'PSGallery',
+
+        [Parameter()]
+        [int]$TimeoutSeconds = 4,
+
+        [Parameter()]
+        [switch]$Force
+    )
+    $mod = @(Get-Module 'ISC.OperatorToolchain' | Where-Object { $_.ExportedFunctions.ContainsKey('Get-SailPointConnectUpdate') }) | Select-Object -Last 1
+    if ($mod) {
+        $fn = $mod.ExportedFunctions['Get-SailPointConnectUpdate']
+        $pass = @{}
+        foreach ($k in $PSBoundParameters.Keys) { $pass[$k] = $PSBoundParameters[$k] }
+        & $fn @pass
+    }
+}
+
+<#
+.SYNOPSIS
+    Updates the SailPoint Connect PowerShell module to the latest version.
+
+.DESCRIPTION
+    Checks PowerShell Gallery for a newer release of SailPoint.Connect and installs
+    or updates the module for the current user.
+
+.PARAMETER CheckOnly
+    Checks whether a newer version is available and outputs the result without updating.
+
+.PARAMETER Force
+    Reinstalls the latest version even if the current version is up to date.
+
+.PARAMETER Scope
+    Installation scope: CurrentUser (default) or AllUsers.
+
+.PARAMETER TargetVersion
+    Optional specific version to install.
+
+.PARAMETER NonInteractive
+    Runs headlessly without confirmation prompts.
+
+.EXAMPLE
+    Update-SailPointConnect
+    Checks for a newer version and installs the update if available.
+
+.EXAMPLE
+    Update-SailPointConnect -CheckOnly
+    Reports whether an update is available without making changes.
+
+.OUTPUTS
+    System.Management.Automation.PSCustomObject with update results.
+
+.LINK
+    https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs/cmdlets/Update-SailPointConnect.md
+#>
+function Update-SailPointConnect {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter()]
+        [switch]$CheckOnly,
+
+        [Parameter()]
+        [switch]$Force,
+
+        [Parameter()]
+        [ValidateSet('CurrentUser', 'AllUsers')]
+        [string]$Scope = 'CurrentUser',
+
+        [Parameter()]
+        [string]$TargetVersion,
+
+        [Parameter()]
+        [switch]$NonInteractive
+    )
+    $mod = @(Get-Module 'ISC.OperatorToolchain' | Where-Object { $_.ExportedFunctions.ContainsKey('Update-SailPointConnect') }) | Select-Object -Last 1
+    if ($mod) {
+        $fn = $mod.ExportedFunctions['Update-SailPointConnect']
+        $pass = @{}
+        foreach ($k in $PSBoundParameters.Keys) { $pass[$k] = $PSBoundParameters[$k] }
+        if ($WhatIfPreference) { $pass['WhatIf'] = $true }
+        & $fn @pass
+    }
+}
+
 # Aliases
 Set-Alias -Name 'sailpoint-connect' -Value 'Invoke-SailPointConnect' -Description 'SailPoint Connect unified runner'
 Set-Alias -Name 'Start-SailPointIQServiceControl' -Value 'Invoke-SailPointIQServiceControl' -Description 'Alias for Invoke-SailPointIQServiceControl'
+Set-Alias -Name 'update-sailpoint-connect' -Value 'Update-SailPointConnect' -Description 'Alias for Update-SailPointConnect'
 
 Export-ModuleMember -Function @(
     'Invoke-SailPointConnect',
@@ -1150,8 +1301,11 @@ Export-ModuleMember -Function @(
     'Invoke-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',
     'Get-SailPointConnectProject',
-    'Set-SailPointConnectProject'
+    'Set-SailPointConnectProject',
+    'Update-SailPointConnect',
+    'Get-SailPointConnectUpdate'
 ) -Alias @(
     'sailpoint-connect',
-    'Start-SailPointIQServiceControl'
+    'Start-SailPointIQServiceControl',
+    'update-sailpoint-connect'
 )

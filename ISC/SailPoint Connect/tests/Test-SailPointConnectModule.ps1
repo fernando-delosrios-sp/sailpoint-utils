@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.2.0' $manifest.Version.ToString() 'Manifest version 1.2.0'
+Assert-Equal '1.4.0' $manifest.Version.ToString() 'Manifest version 1.4.0'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members
@@ -27,17 +27,20 @@ $expectedFunctions = @(
     'Invoke-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',
     'Get-SailPointConnectProject',
-    'Set-SailPointConnectProject'
+    'Set-SailPointConnectProject',
+    'Update-SailPointConnect',
+    'Get-SailPointConnectUpdate'
 )
 foreach ($fn in $expectedFunctions) {
     Assert-True ($m.ExportedFunctions.ContainsKey($fn)) "Function $fn is exported"
 }
 
-$expectedAliases = @('sailpoint-connect', 'Start-SailPointIQServiceControl')
+$expectedAliases = @('sailpoint-connect', 'Start-SailPointIQServiceControl', 'update-sailpoint-connect')
 foreach ($alias in $expectedAliases) {
     Assert-True ($m.ExportedAliases.ContainsKey($alias)) "Alias $alias is exported"
 }
 Assert-Equal 'Invoke-SailPointIQServiceControl' $m.ExportedAliases['Start-SailPointIQServiceControl'].Definition 'Start-SailPointIQServiceControl aliases Invoke-SailPointIQServiceControl'
+Assert-Equal 'Update-SailPointConnect' $m.ExportedAliases['update-sailpoint-connect'].Definition 'update-sailpoint-connect aliases Update-SailPointConnect'
 Assert-True (-not $m.ExportedAliases.ContainsKey('Connect-SailPointGCP')) "Connect-SailPointGCP alias is dropped"
 
 # 3) Ubiquitous Comment-Based Help verification

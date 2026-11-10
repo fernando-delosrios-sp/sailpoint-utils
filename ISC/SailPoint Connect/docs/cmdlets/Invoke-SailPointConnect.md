@@ -26,8 +26,21 @@ Target platform or integration:
 - `Azure`: Microsoft Azure & Entra ID (Connector, Entro)
 - `GoogleCloud` (or `GCP`): Google Workspace & Cloud (Connector, CIEM, Entro)
 - `Databricks`: Databricks Account & Metastore connector
+- `Salesforce`: Salesforce SaaS connector & Agentforce discovery
+- `GitHub`: GitHub SaaS connector & Copilot/bot discovery
+- `CrowdStrike`: CrowdStrike Falcon SaaS connector & ITDR
 - `IQService`: IQService Host Lifecycle & LDAPS
 - `M365AccessProfiles`: Microsoft 365 Entra Service Plan Access Profiles
+- `Update`: Autoupdates the module to the latest version published on PowerShell Gallery
+
+### `-Update`
+Directly invokes module autoupdate from PowerShell Gallery.
+
+### `-CheckUpdate`
+Checks whether a newer module version is available on PowerShell Gallery and reports the verdict without installing.
+
+### `-SkipUpdateCheck`
+Suppresses automated update checking during interactive runs or scripts.
 
 ### `-Wizard`
 Launches the interactive questionnaire for the selected platform.
