@@ -38,7 +38,7 @@ Connect-SailPointGitHub -Wizard
 Connect-SailPointCrowdStrike -Wizard
 
 # Windows IQService operator console
-Start-SailPointIQServiceControl
+Invoke-SailPointIQServiceControl
 
 # Requestable M365 access profile creation
 New-SailPointM365AccessProfile

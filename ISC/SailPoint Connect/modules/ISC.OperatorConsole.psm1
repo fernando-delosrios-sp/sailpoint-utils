@@ -40,6 +40,24 @@ function Test-OperatorNonInteractive {
     return [bool]$script:NonInteractive
 }
 
+if (-not ('PromptBackException' -as [type])) {
+    try {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Management.Automation;
+
+public class PromptBackException : RuntimeException {
+    public PromptBackException() : base("PROMPT_BACK") {}
+    public PromptBackException(string message) : base(message) {}
+    public PromptBackException(string message, Exception innerException) : base(message, innerException) {}
+}
+'@ -ErrorAction Stop
+    }
+    catch {
+        # Fallback if Add-Type is unavailable
+    }
+}
+
 $script:Esc = [char]27
 $script:AnsiEraseLine = "$([char]27)[K"
 $script:PromptBackToken = 'PROMPT_BACK'
@@ -99,10 +117,33 @@ function Write-ConnectionSettings {
 
 function Test-PromptBack {
     param($ErrorRecord)
-    return [string]$ErrorRecord.Exception.Message -eq $script:PromptBackToken
+    if ($null -eq $ErrorRecord) { return $false }
+    $ex = if ($ErrorRecord -is [System.Management.Automation.ErrorRecord]) {
+        $ErrorRecord.Exception
+    }
+    elseif ($ErrorRecord -is [System.Exception]) {
+        $ErrorRecord
+    }
+    else {
+        return ([string]$ErrorRecord -eq 'PROMPT_BACK' -or [string]$ErrorRecord -eq $script:PromptBackToken)
+    }
+
+    while ($ex) {
+        if ($ex -is [PromptBackException] -or
+            $ex.GetType().Name -eq 'PromptBackException' -or
+            $ex.Message -eq 'PROMPT_BACK' -or
+            $ex.Message -eq $script:PromptBackToken) {
+            return $true
+        }
+        $ex = $ex.InnerException
+    }
+    return $false
 }
 
 function Invoke-PromptBack {
+    if ('PromptBackException' -as [type]) {
+        throw [PromptBackException]::new()
+    }
     throw $script:PromptBackToken
 }
 
