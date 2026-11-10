@@ -95,6 +95,39 @@ try {
     $csTarget = @(Get-IntegrationWizardTargets -Platform 'CrowdStrike' -Context @{ Connector = $true })
     Assert-Equal 1 $csTarget.Count 'CrowdStrike connector target resolves'
     Assert-Equal 'crowdstrike-connector' $csTarget[0]['Id'] 'CrowdStrike connector id matches'
+
+    # 7) Verify Invoke-SailPointConnect forwards named arguments cleanly without positional argument errors
+    $fwdErr = $null
+    $fwdOutDir = Join-Path $tmp 'fwd-out'
+    New-Item -ItemType Directory -Path $fwdOutDir -Force | Out-Null
+    try {
+        Invoke-SailPointConnect -Platform AWS -SaaSConnector -Action BuildRequirements -Access ReadOnly -NonInteractive -Project 'test-project-alpha' -OutputDirectory $fwdOutDir
+    }
+    catch {
+        $fwdErr = $_
+    }
+    Assert-True ($null -eq $fwdErr) 'Invoke-SailPointConnect forwards extra named arguments cleanly'
+    $fwdArtifact = Join-Path $fwdOutDir 'aws-saas-connector-requirements.md'
+    Assert-True (Test-Path -LiteralPath $fwdArtifact) 'Invoke-SailPointConnect with forwarded parameters writes expected artifact'
+
+    # 8) Verify Connect-SailPoint* -Action Check succeeds in argument validation
+    $checkPlatforms = @(
+        @{ Cmd = 'Connect-SailPointAWS'; Script = 'AWS.ps1' }
+        @{ Cmd = 'Connect-SailPointAzure'; Script = 'Azure.ps1' }
+        @{ Cmd = 'Connect-SailPointGoogleCloud'; Script = 'Google Cloud.ps1' }
+        @{ Cmd = 'Connect-SailPointDatabricks'; Script = 'Databricks.ps1' }
+        @{ Cmd = 'Connect-SailPointSalesforce'; Script = 'Salesforce.ps1' }
+        @{ Cmd = 'Connect-SailPointCrowdStrike'; Script = 'CrowdStrike.ps1' }
+    )
+    foreach ($p in $checkPlatforms) {
+        $cmdInfo = Get-Command $p.Cmd
+        $actionAttr = $cmdInfo.Parameters['Action'].Attributes | Where-Object { $_ -is [System.Management.Automation.ValidateSetAttribute] }
+        Assert-True ($actionAttr.ValidValues -contains 'Check') "$($p.Cmd) includes Check in Action ValidateSet"
+
+        $scriptInfo = Get-Command (Join-Path $connectRoot $p.Script)
+        $scriptActionAttr = $scriptInfo.Parameters['Action'].Attributes | Where-Object { $_ -is [System.Management.Automation.ValidateSetAttribute] }
+        Assert-True ($scriptActionAttr.ValidValues -contains 'Check') "$($p.Script) includes Check in Action ValidateSet"
+    }
 }
 finally {
     Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue

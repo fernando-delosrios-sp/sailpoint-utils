@@ -38,7 +38,7 @@ param(
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
     [Parameter(ParameterSetName = 'BothEntro')]
-    [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+    [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
 
     [Parameter(ParameterSetName = 'SaaSConnector')]

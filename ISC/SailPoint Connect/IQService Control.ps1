@@ -286,5 +286,5 @@ catch {
     }
     Write-Host ''
     Write-Error $_
-    exit 1
+    throw
 }

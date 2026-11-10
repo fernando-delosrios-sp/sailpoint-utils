@@ -612,14 +612,14 @@ try {
     }
 }
 catch {
-    if (Test-PromptBack $_) {
+    if (Test-CancelledNavigation $_) {
         Write-Host 'Cancelled.' -ForegroundColor Yellow
-        exit 0
+        return
     }
     Write-Host ''
     Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
     if ($_.ScriptStackTrace) {
         Write-Host $_.ScriptStackTrace -ForegroundColor DarkGray
     }
-    exit 1
+    throw
 }

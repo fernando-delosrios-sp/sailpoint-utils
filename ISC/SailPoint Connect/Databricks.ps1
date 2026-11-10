@@ -18,7 +18,7 @@ param(
     [string]$Auth,
 
     [Parameter(ParameterSetName = 'Connector')]
-    [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+    [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
 
     [Parameter(ParameterSetName = 'Connector')]

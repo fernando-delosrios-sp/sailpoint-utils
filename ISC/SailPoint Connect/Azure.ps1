@@ -22,7 +22,7 @@ param(
 
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
-    [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+    [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
 
     [Parameter(ParameterSetName = 'Connector')]

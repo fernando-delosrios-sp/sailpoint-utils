@@ -133,4 +133,16 @@ Assert-True ($intLinkOut -match [regex]::Escape("$esc]8;;file:///")) 'Format-Ter
 Assert-True ($intLinkOut -match '/path/to/some%20file\.txt') 'Format-TerminalHyperlink percent-encodes spaces in URI'
 Assert-True ($intLinkOut -match '/path/to/some file\.txt') 'Format-TerminalHyperlink preserves original path in display text'
 
+# Non-terminating exit mechanism for Ctrl+C
+$promptExitCaught = $false
+try {
+    Invoke-PromptExit
+}
+catch {
+    if (Test-CancelledNavigation $_) {
+        $promptExitCaught = $true
+    }
+}
+Assert-True $promptExitCaught 'Invoke-PromptExit throws non-terminating cancellation caught by Test-CancelledNavigation'
+
 Write-Host "PASS ($script:AssertionCount assertions)"

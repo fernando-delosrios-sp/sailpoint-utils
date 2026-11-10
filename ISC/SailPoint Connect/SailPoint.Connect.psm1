@@ -9,6 +9,76 @@ Import-Module (Join-Path $script:ModuleRoot 'modules/IW.Render.psm1') -Force -Gl
 Import-Module (Join-Path $script:ModuleRoot 'modules/ISC.OperatorConsole.psm1') -Force -Global -WarningAction SilentlyContinue
 Import-Module (Join-Path $script:ModuleRoot 'modules/ISC.OperatorToolchain.psm1') -Force -Global -WarningAction SilentlyContinue
 
+function Convert-RemainingArgumentsToHashtable {
+    param(
+        $Arguments
+    )
+
+    $result = [ordered]@{}
+    if ($null -eq $Arguments) { return $result }
+
+    $argList = @($Arguments)
+    $i = 0
+    while ($i -lt $argList.Count) {
+        $item = $argList[$i]
+        if ($null -eq $item) {
+            $i++
+            continue
+        }
+
+        if ($item -is [string] -and $item -match '^--?([a-zA-Z_][a-zA-Z0-9_]*)(?:[:=](.*))?$') {
+            $paramName = $Matches[1]
+            $inlineValue = $Matches[2]
+
+            if ($null -ne $inlineValue) {
+                if ($inlineValue -in @('$true', 'true', '$True', 'True')) {
+                    $result[$paramName] = $true
+                }
+                elseif ($inlineValue -in @('$false', 'false', '$False', 'False')) {
+                    $result[$paramName] = $false
+                }
+                elseif ($inlineValue -match '^-?\d+$') {
+                    $result[$paramName] = [int]$inlineValue
+                }
+                else {
+                    $result[$paramName] = $inlineValue
+                }
+                $i++
+            }
+            else {
+                if (($i + 1) -lt $argList.Count) {
+                    $nextItem = $argList[$i + 1]
+                    if ($nextItem -is [string] -and $nextItem -match '^--?[a-zA-Z_][a-zA-Z0-9_]*') {
+                        $result[$paramName] = $true
+                        $i++
+                    }
+                    else {
+                        if ($nextItem -is [string] -and ($nextItem -in @('$true', 'true', '$True', 'True'))) {
+                            $result[$paramName] = $true
+                        }
+                        elseif ($nextItem -is [string] -and ($nextItem -in @('$false', 'false', '$False', 'False'))) {
+                            $result[$paramName] = $false
+                        }
+                        else {
+                            $result[$paramName] = $nextItem
+                        }
+                        $i += 2
+                    }
+                }
+                else {
+                    $result[$paramName] = $true
+                    $i++
+                }
+            }
+        }
+        else {
+            $i++
+        }
+    }
+
+    return $result
+}
+
 <#
 .SYNOPSIS
     Unified entry point for SailPoint Connect.
@@ -103,130 +173,139 @@ function Invoke-SailPointConnect {
         [switch]$NonInteractive,
 
         [Parameter(ValueFromRemainingArguments = $true)]
-        [string[]]$RemainingArguments
+        $RemainingArguments
     )
 
     Initialize-OperatorConsole -NonInteractive:$NonInteractive
-    $hasExtra = ($null -ne $RemainingArguments) -and (@($RemainingArguments).Count -gt 0)
+    $extraArgs = Convert-RemainingArgumentsToHashtable -Arguments $RemainingArguments
 
     try {
         if (-not $Platform) {
-        if ($NonInteractive) {
-            throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, IQService, M365AccessProfiles."
+            if ($NonInteractive) {
+                throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, IQService, M365AccessProfiles."
+            }
+
+            Write-SailPointConnectBanner -ProjectName $Project
+            Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
+
+            $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles')
+            $labels = @(
+                'Amazon Web Services (SaaS connector, CIEM, Entro)',
+                'Microsoft Azure & Entra ID (Connector, Entro)',
+                'Google Cloud & Workspace (Connector, CIEM, Entro)',
+                'Databricks (Account & Metastore connector)',
+                'Salesforce (SaaS connector, Agentforce, Entro)',
+                'GitHub (SaaS connector, Copilot & Bots, Entro)',
+                'CrowdStrike (Falcon SaaS connector, Discover & ITDR, Entro)',
+                'IQService Control (Host lifecycle & AD LDAPS)',
+                'Microsoft 365 Access Profiles (Entra service plans)'
+            )
+            $picked = Read-Choice -Prompt 'Select platform to configure' -Options $options -Labels $labels -Default 'AWS'
+            $Platform = $picked
+            $Wizard = $true
         }
 
-        Write-SailPointConnectBanner -ProjectName $Project
-        Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
+        $targetPlatform = if ($Platform -eq 'GCP') { 'GoogleCloud' } else { $Platform }
 
-        $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles')
-        $labels = @(
-            'Amazon Web Services (SaaS connector, CIEM, Entro)',
-            'Microsoft Azure & Entra ID (Connector, Entro)',
-            'Google Cloud & Workspace (Connector, CIEM, Entro)',
-            'Databricks (Account & Metastore connector)',
-            'Salesforce (SaaS connector, Agentforce, Entro)',
-            'GitHub (SaaS connector, Copilot & Bots, Entro)',
-            'CrowdStrike (Falcon SaaS connector, Discover & ITDR, Entro)',
-            'IQService Control (Host lifecycle & AD LDAPS)',
-            'Microsoft 365 Access Profiles (Entra service plans)'
-        )
-        $picked = Read-Choice -Prompt 'Select platform to configure' -Options $options -Labels $labels -Default 'AWS'
-        $Platform = $picked
-        $Wizard = $true
-    }
-
-    $targetPlatform = if ($Platform -eq 'GCP') { 'GoogleCloud' } else { $Platform }
-
-    switch ($targetPlatform) {
-        'AWS' {
-            $script = Join-Path $script:ModuleRoot 'AWS.ps1'
-            $pass = @{}
-            if ($Wizard) { $pass['Wizard'] = $true }
-            if ($Project) { $pass['Project'] = $Project }
-            if ($Action) { $pass['Action'] = $Action }
-            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
-            if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
+        switch ($targetPlatform) {
+            'AWS' {
+                $script = Join-Path $script:ModuleRoot 'AWS.ps1'
+                $pass = @{}
+                if ($Wizard) { $pass['Wizard'] = $true }
+                if ($Project) { $pass['Project'] = $Project }
+                if ($Action) { $pass['Action'] = $Action }
+                if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                & $script @pass
+            }
+            'Azure' {
+                $script = Join-Path $script:ModuleRoot 'Azure.ps1'
+                $pass = @{}
+                if ($Wizard) { $pass['Wizard'] = $true }
+                if ($Project) { $pass['Project'] = $Project }
+                if ($Action) { $pass['Action'] = $Action }
+                if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                & $script @pass
+            }
+            'GoogleCloud' {
+                $script = Join-Path $script:ModuleRoot 'Google Cloud.ps1'
+                $pass = @{}
+                if ($Wizard) { $pass['Wizard'] = $true }
+                if ($Project) { $pass['Project'] = $Project }
+                if ($Action) { $pass['Action'] = $Action }
+                if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                & $script @pass
+            }
+            'Databricks' {
+                $script = Join-Path $script:ModuleRoot 'Databricks.ps1'
+                $pass = @{}
+                if ($Wizard) { $pass['Wizard'] = $true }
+                if ($Project) { $pass['Project'] = $Project }
+                if ($Action) { $pass['Action'] = $Action }
+                if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                & $script @pass
+            }
+            'Salesforce' {
+                $script = Join-Path $script:ModuleRoot 'Salesforce.ps1'
+                $pass = @{}
+                if ($Wizard) { $pass['Wizard'] = $true }
+                if ($Project) { $pass['Project'] = $Project }
+                if ($Action) { $pass['Action'] = $Action }
+                if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                & $script @pass
+            }
+            'GitHub' {
+                $script = Join-Path $script:ModuleRoot 'GitHub.ps1'
+                $pass = @{}
+                if ($Wizard) { $pass['Wizard'] = $true }
+                if ($Project) { $pass['Project'] = $Project }
+                if ($Action) { $pass['Action'] = $Action }
+                if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                & $script @pass
+            }
+            'CrowdStrike' {
+                $script = Join-Path $script:ModuleRoot 'CrowdStrike.ps1'
+                $pass = @{}
+                if ($Wizard) { $pass['Wizard'] = $true }
+                if ($Project) { $pass['Project'] = $Project }
+                if ($Action) { $pass['Action'] = $Action }
+                if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                & $script @pass
+            }
+            'IQService' {
+                $script = Join-Path $script:ModuleRoot 'IQService Control.ps1'
+                $pass = @{}
+                if ($Wizard) { $pass['Wizard'] = $true }
+                if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                & $script @pass
+            }
+            'M365AccessProfiles' {
+                $script = Join-Path $script:ModuleRoot 'Microsoft 365 Access Profiles.ps1'
+                $pass = @{}
+                if ($Wizard) { $pass['Wizard'] = $true }
+                if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                & $script @pass
+            }
         }
-        'Azure' {
-            $script = Join-Path $script:ModuleRoot 'Azure.ps1'
-            $pass = @{}
-            if ($Wizard) { $pass['Wizard'] = $true }
-            if ($Project) { $pass['Project'] = $Project }
-            if ($Action) { $pass['Action'] = $Action }
-            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
-            if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
-        }
-        'GoogleCloud' {
-            $script = Join-Path $script:ModuleRoot 'Google Cloud.ps1'
-            $pass = @{}
-            if ($Wizard) { $pass['Wizard'] = $true }
-            if ($Project) { $pass['Project'] = $Project }
-            if ($Action) { $pass['Action'] = $Action }
-            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
-            if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
-        }
-        'Databricks' {
-            $script = Join-Path $script:ModuleRoot 'Databricks.ps1'
-            $pass = @{}
-            if ($Wizard) { $pass['Wizard'] = $true }
-            if ($Project) { $pass['Project'] = $Project }
-            if ($Action) { $pass['Action'] = $Action }
-            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
-            if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
-        }
-        'Salesforce' {
-            $script = Join-Path $script:ModuleRoot 'Salesforce.ps1'
-            $pass = @{}
-            if ($Wizard) { $pass['Wizard'] = $true }
-            if ($Project) { $pass['Project'] = $Project }
-            if ($Action) { $pass['Action'] = $Action }
-            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
-            if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
-        }
-        'GitHub' {
-            $script = Join-Path $script:ModuleRoot 'GitHub.ps1'
-            $pass = @{}
-            if ($Wizard) { $pass['Wizard'] = $true }
-            if ($Project) { $pass['Project'] = $Project }
-            if ($Action) { $pass['Action'] = $Action }
-            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
-            if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
-        }
-        'CrowdStrike' {
-            $script = Join-Path $script:ModuleRoot 'CrowdStrike.ps1'
-            $pass = @{}
-            if ($Wizard) { $pass['Wizard'] = $true }
-            if ($Project) { $pass['Project'] = $Project }
-            if ($Action) { $pass['Action'] = $Action }
-            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
-            if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
-        }
-        'IQService' {
-            $script = Join-Path $script:ModuleRoot 'IQService Control.ps1'
-            $pass = @{}
-            if ($Wizard) { $pass['Wizard'] = $true }
-            if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
-        }
-        'M365AccessProfiles' {
-            $script = Join-Path $script:ModuleRoot 'Microsoft 365 Access Profiles.ps1'
-            $pass = @{}
-            if ($Wizard) { $pass['Wizard'] = $true }
-            if ($NonInteractive) { $pass['NonInteractive'] = $true }
-            if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
-            if ($hasExtra) { & $script @pass @RemainingArguments } else { & $script @pass }
-        }
-    }
     }
     catch {
-        if (Test-PromptBack $_) {
+        if (Test-CancelledNavigation $_) {
             Write-Host ''
             Write-Host 'Cancelled.' -ForegroundColor Yellow
             return

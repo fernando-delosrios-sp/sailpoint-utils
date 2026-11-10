@@ -109,7 +109,9 @@ function Invoke-PromptBack {
 function Invoke-PromptExit {
     Write-Host ''
     Write-Host 'Cancelled.' -ForegroundColor Yellow
-    exit 0
+    $e = [System.Management.Automation.PipelineStoppedException]::new()
+    $er = [System.Management.Automation.ErrorRecord]::new($e, 'Cancelled', [System.Management.Automation.ErrorCategory]::OperationStopped, $null)
+    throw $er
 }
 
 function Start-WizardPass {
