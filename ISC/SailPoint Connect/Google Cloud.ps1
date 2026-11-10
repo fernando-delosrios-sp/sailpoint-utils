@@ -38,7 +38,7 @@ param(
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
     [Parameter(ParameterSetName = 'BothEntro')]
-    [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+    [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
 
     [Parameter(ParameterSetName = 'SaaSConnector')]
@@ -87,6 +87,14 @@ param(
     [Parameter(ParameterSetName = 'BothEntro')]
     [switch]$NonInteractive,
 
+    [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'CiemConnector')]
+    [Parameter(ParameterSetName = 'GcpEntro')]
+    [Parameter(ParameterSetName = 'WorkspaceEntro')]
+    [Parameter(ParameterSetName = 'BothEntro')]
+    [ValidateSet('Text', 'Json')]
+    [string]$OutputFormat = 'Text',
+
     [Parameter(ParameterSetName = 'Help')]
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
@@ -133,6 +141,7 @@ $context = @{
     Access = $Access; Action = $Action
     OrganizationId = $OrganizationId; ProjectId = $ProjectId; ImpersonateUser = $ImpersonateUser; Feature = $Feature
     Method = $Method; ClientId = $ClientId; ServiceAccountName = $ServiceAccountName; OutputDirectory = $OutputDirectory
+    OutputFormat = $OutputFormat
     Project = $Project
 }
 if ($PSBoundParameters.ContainsKey('ApplyPreconditionFix')) {

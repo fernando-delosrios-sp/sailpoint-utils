@@ -74,7 +74,8 @@ function Select-IntegrationProjectName {
     param(
         [Parameter(Mandatory)][string]$Root,
         [string]$Preset,
-        [switch]$NonInteractive
+        [switch]$NonInteractive,
+        [string]$OutputDirectory
     )
     if ($Preset) {
         Test-IntegrationProjectName -Name $Preset
@@ -86,6 +87,15 @@ function Select-IntegrationProjectName {
         return $Preset
     }
     if ($NonInteractive) {
+        if (-not [string]::IsNullOrWhiteSpace($OutputDirectory)) {
+            $ephemeral = 'ephemeral'
+            $projPath = Join-Path $Root $ephemeral
+            if (-not (Test-Path -LiteralPath $projPath)) {
+                New-Item -ItemType Directory -Path $projPath -Force | Out-Null
+                Write-IntegrationProjectLogLine -Level 'INFO' -Message "Created project folder: $projPath"
+            }
+            return $ephemeral
+        }
         $existing = @(Get-IntegrationProjectNames -Root $Root)
         $list = if ($existing.Count -gt 0) { ($existing -join ', ') } else { '(none)' }
         throw "Non-interactive run requires -Project. Existing projects under ~/.sailpoint-connect/: $list"
@@ -215,8 +225,11 @@ function Select-IntegrationProjectWorkspace {
     }
 
     $preset = if ($Context['Project']) { [string]$Context['Project'] } else { $null }
-    $projectName = Select-IntegrationProjectName -Root $root -Preset $preset -NonInteractive:([bool]$Context['NonInteractive'])
-    Set-IntegrationProjectLastSelected -ProjectName $projectName -Root $root
+    $outDir = if ($Context['OutputDirectory']) { [string]$Context['OutputDirectory'] } else { $null }
+    $projectName = Select-IntegrationProjectName -Root $root -Preset $preset -NonInteractive:([bool]$Context['NonInteractive']) -OutputDirectory $outDir
+    if ($projectName -ne 'ephemeral') {
+        Set-IntegrationProjectLastSelected -ProjectName $projectName -Root $root
+    }
 
     $projPath = Join-Path $root $projectName
     if (-not (Test-Path -LiteralPath $projPath)) {
@@ -249,14 +262,18 @@ function Initialize-IntegrationProjectContext {
     }
     $projectName = [string]$Context['IntegrationProjectName']
 
+    $outputOverride = -not [string]::IsNullOrWhiteSpace([string]$Context['OutputDirectory'])
     $folderName = Get-IntegrationWizardIntegrationFolderName -Definition $Plan
     $platformFolder = if ($platformTitle) { $platformTitle -replace '\s+', '-' } else { $platformTitle }
-    $integrationPath = Join-Path (Join-Path (Join-Path $root $projectName) $platformFolder) $folderName
+    $integrationPath = if ($projectName -eq 'ephemeral' -and $outputOverride) {
+        [string]$Context['OutputDirectory']
+    } else {
+        Join-Path (Join-Path (Join-Path $root $projectName) $platformFolder) $folderName
+    }
     if (-not (Test-Path -LiteralPath $integrationPath)) {
         New-Item -ItemType Directory -Path $integrationPath -Force | Out-Null
     }
 
-    $outputOverride = -not [string]::IsNullOrWhiteSpace([string]$Context['OutputDirectory'])
     if (-not $outputOverride) {
         $Context['OutputDirectory'] = $integrationPath
     }

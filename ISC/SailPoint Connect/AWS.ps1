@@ -52,7 +52,7 @@ param(
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'Entro')]
-    [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+    [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
 
     [Parameter(ParameterSetName = 'SaaSConnector')]

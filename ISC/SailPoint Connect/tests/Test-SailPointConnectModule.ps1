@@ -95,6 +95,48 @@ try {
     $csTarget = @(Get-IntegrationWizardTargets -Platform 'CrowdStrike' -Context @{ Connector = $true })
     Assert-Equal 1 $csTarget.Count 'CrowdStrike connector target resolves'
     Assert-Equal 'crowdstrike-connector' $csTarget[0]['Id'] 'CrowdStrike connector id matches'
+
+    # 7) OutputFormat parameter and ValidateSet verification on all connector cmdlets
+    $connectorCmdlets = @(
+        'Connect-SailPointAWS',
+        'Connect-SailPointAzure',
+        'Connect-SailPointGoogleCloud',
+        'Connect-SailPointDatabricks',
+        'Connect-SailPointSalesforce',
+        'Connect-SailPointGitHub',
+        'Connect-SailPointCrowdStrike'
+    )
+    foreach ($cmdletName in $connectorCmdlets) {
+        $cmd = Get-Command $cmdletName -ErrorAction Stop
+        Assert-True ($cmd.Parameters.ContainsKey('OutputFormat')) "$cmdletName has OutputFormat parameter"
+        $paramDef = $cmd.Parameters['OutputFormat']
+        $valSet = $paramDef.Attributes | Where-Object { $_ -is [System.Management.Automation.ValidateSetAttribute] }
+        Assert-True ($null -ne $valSet) "$cmdletName OutputFormat has ValidateSet"
+        Assert-Equal 'Json,Text' (($valSet.ValidValues | Sort-Object) -join ',') "$cmdletName ValidateSet is Text,Json"
+    }
+
+    # 8) Non-interactive execution without -Project returning structured pipeline output
+    $outTestDir = Join-Path $tmp 'headless-output'
+    $pipelineResult = @(Connect-SailPointAWS -SaaSConnector -Access ReadOnly -Action BuildRequirements -NonInteractive -OutputDirectory $outTestDir -OutputFormat Json)
+    Assert-Equal 1 $pipelineResult.Count 'Pipeline returned exactly 1 object on Stream 1 with zero stream pollution'
+    Assert-True ($pipelineResult[0] -is [System.Management.Automation.PSCustomObject]) 'Result is a PSCustomObject'
+    Assert-Equal 'Success' $pipelineResult[0].Status 'Status is Success'
+    Assert-Equal 'BuildRequirements' $pipelineResult[0].Action 'Action is BuildRequirements'
+    Assert-Equal 'AWS' $pipelineResult[0].Platform 'Platform is AWS'
+    Assert-True (Test-Path -LiteralPath $pipelineResult[0].Path) 'Requirements markdown path exists'
+    Assert-True ($pipelineResult[0].PSObject.Properties.Match('JsonPath').Count -gt 0) 'JsonPath property exists'
+    Assert-True (Test-Path -LiteralPath $pipelineResult[0].JsonPath) 'Requirements JSON file exists'
+
+    $jsonData = Get-Content -LiteralPath $pipelineResult[0].JsonPath -Raw | ConvertFrom-Json
+    Assert-Equal 'AWS' $jsonData.platform 'JSON platform matches'
+    Assert-Equal 'BuildRequirements' $jsonData.action 'JSON action matches'
+    Assert-True ($jsonData.inputs.Count -gt 0) 'JSON contains inputs list'
+
+    # 9) BuildScript action also returns structured PSCustomObject
+    $scriptResult = @(Connect-SailPointAWS -SaaSConnector -Access ReadOnly -Action BuildScript -NonInteractive -OutputDirectory $outTestDir)
+    Assert-Equal 1 $scriptResult.Count 'BuildScript returned exactly 1 object on Stream 1'
+    Assert-Equal 'BuildScript' $scriptResult[0].Action 'Action is BuildScript'
+    Assert-True (Test-Path -LiteralPath $scriptResult[0].Path) 'Build script file exists'
 }
 finally {
     Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue

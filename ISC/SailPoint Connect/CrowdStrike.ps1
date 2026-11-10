@@ -20,7 +20,7 @@ param(
 
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
-    [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+    [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
 
     [Parameter(ParameterSetName = 'Connector')]
@@ -53,6 +53,11 @@ param(
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [switch]$NonInteractive,
+
+    [Parameter(ParameterSetName = 'Connector')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [ValidateSet('Text', 'Json')]
+    [string]$OutputFormat = 'Text',
 
     [Parameter(ParameterSetName = 'Help')]
     [Parameter(ParameterSetName = 'Wizard')]
@@ -100,6 +105,7 @@ $context = @{
     BaseUrl = $BaseUrl; ClientId = $ClientId; ClientSecret = $ClientSecret
     Feature = if ($parsedFeatures.Count -gt 0) { ($parsedFeatures -join ',') } else { $null }
     Environment = $Environment; OutputDirectory = $OutputDirectory
+    OutputFormat = $OutputFormat
     Project = $Project
 }
 

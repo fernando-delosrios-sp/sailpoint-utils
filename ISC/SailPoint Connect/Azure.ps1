@@ -22,7 +22,7 @@ param(
 
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
-    [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+    [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
 
     [Parameter(ParameterSetName = 'Connector')]
@@ -42,6 +42,10 @@ param(
     [switch]$NonInteractive,
     [Parameter(ParameterSetName = 'Connector')]
     [switch]$RotateSecret,
+    [Parameter(ParameterSetName = 'Connector')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [ValidateSet('Text', 'Json')]
+    [string]$OutputFormat = 'Text',
 
     [Parameter(ParameterSetName = 'Help')]
     [Parameter(ParameterSetName = 'Wizard')]
@@ -77,6 +81,7 @@ $context = @{
     Access = $Access; Action = $Action
     TenantId = $TenantId; ApplicationName = $ApplicationName; Feature = $Feature
     EnvironmentNickname = $EnvironmentNickname; OutputDirectory = $OutputDirectory; RotateSecret = [bool]$RotateSecret
+    OutputFormat = $OutputFormat
     Project = $Project
 }
 $hasCore = $Connector -or $Entro

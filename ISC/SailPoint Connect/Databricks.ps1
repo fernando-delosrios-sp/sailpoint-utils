@@ -18,7 +18,7 @@ param(
     [string]$Auth,
 
     [Parameter(ParameterSetName = 'Connector')]
-    [ValidateSet('Run', 'BuildScript', 'BuildRequirements')]
+    [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
 
     [Parameter(ParameterSetName = 'Connector')]
@@ -38,6 +38,9 @@ param(
     [string]$OutputDirectory,
     [Parameter(ParameterSetName = 'Connector')]
     [switch]$NonInteractive,
+    [Parameter(ParameterSetName = 'Connector')]
+    [ValidateSet('Text', 'Json')]
+    [string]$OutputFormat = 'Text',
 
     [Parameter(ParameterSetName = 'Help')]
     [Parameter(ParameterSetName = 'Wizard')]
@@ -65,6 +68,7 @@ $context = @{
     ServicePrincipalName = $ServicePrincipalName; AccountId = $AccountId; MetastoreId = $MetastoreId
     Feature = if ($Feature) { ($Feature -join ',') } else { $null }
     RotateSecret = [bool]$RotateSecret; OutputDirectory = $OutputDirectory
+    OutputFormat = $OutputFormat
     Project = $Project
 }
 if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $Connector) {

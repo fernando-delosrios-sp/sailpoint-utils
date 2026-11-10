@@ -55,6 +55,11 @@ param(
     [Parameter(ParameterSetName = 'Entro')]
     [switch]$NonInteractive,
 
+    [Parameter(ParameterSetName = 'Connector')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [ValidateSet('Text', 'Json')]
+    [string]$OutputFormat = 'Text',
+
     [Parameter(ParameterSetName = 'Help')]
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
@@ -92,6 +97,7 @@ $context = @{
     AuthMethod = $AuthMethod; Token = $Token
     Feature = if ($Feature) { ($Feature -join ',') } else { $null }
     Method = $Method; OutputDirectory = $OutputDirectory
+    OutputFormat = $OutputFormat
     Project = $Project
 }
 
