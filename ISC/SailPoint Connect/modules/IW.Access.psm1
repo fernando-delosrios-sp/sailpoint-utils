@@ -282,7 +282,14 @@ function Get-IntegrationWizardAccessRequirementLists {
                     $readOnly.Add('read:audit_log')
                 }
             }
-            '^aws-entro$|^azure-entro$|^google-workspace-entro$' {
+            '^azure-entro$' {
+                $readOnly.Add('Microsoft Graph: User.Read')
+                $readOnly.Add('Microsoft Graph: User.Read.All')
+                $readOnly.Add('Microsoft Graph: Directory.Read.All')
+                $readOnly.Add('Microsoft Graph: Application.Read.All')
+                $readOnly.Add('Microsoft Graph: AuditLog.Read.All')
+            }
+            '^aws-entro$|^google-workspace-entro$' {
                 $readOnly.Add('Entro connected identity (read-only discovery; onboarding steps create IAM/app resources in the cloud)')
             }
         }

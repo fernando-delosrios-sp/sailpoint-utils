@@ -348,13 +348,25 @@ function Test-IntegrationWizardInputWhen {
     & $when $Context
 }
 
+function Get-IntegrationWizardActiveInputs {
+    param(
+        [Parameter(Mandatory)][hashtable]$Definition,
+        [Parameter(Mandatory)][hashtable]$Context
+    )
+    if ($Context['Action'] -eq 'Check' -and $Definition.ContainsKey('CheckInputs') -and $Definition['CheckInputs']) {
+        return @($Definition['CheckInputs'])
+    }
+    return @($Definition.Inputs)
+}
+
 function Test-IntegrationWizardRequiredInputs {
     param(
         [Parameter(Mandatory)][hashtable]$Definition,
         [Parameter(Mandatory)][hashtable]$Context
     )
     $missing = @()
-    foreach ($input in @($Definition.Inputs)) {
+    $inputs = Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context
+    foreach ($input in $inputs) {
         if (-not $input) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
         $name = $input.Name
@@ -390,7 +402,8 @@ function Show-IntegrationWizardDefinitionHelp {
     Write-Host '  -NonInteractive   -OutputFormat Text|Json'
     Write-Host ''
     Write-Host 'Inputs:'
-    foreach ($input in @($Definition.Inputs)) {
+    $helpInputs = Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context
+    foreach ($input in $helpInputs) {
         if (-not $input) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
         $req = if ($input['Required']) { ' (required)' } else { '' }
@@ -491,8 +504,9 @@ function Collect-IntegrationWizardInputs {
         [switch]$NonInteractive,
         [scriptblock]$Discover
     )
+    $inputs = Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context
     $inputList = [System.Collections.Generic.List[hashtable]]::new()
-    foreach ($inp in @($Definition.Inputs)) {
+    foreach ($inp in $inputs) {
         if (-not $inp) { continue }
         $inputList.Add($inp)
     }
@@ -580,7 +594,8 @@ function Show-IntegrationWizardSummary {
     elseif ($Context['Action']) {
         Write-Host '  This action does not change the tenant.'
     }
-    foreach ($input in @($Definition.Inputs)) {
+    $summaryInputs = Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context
+    foreach ($input in $summaryInputs) {
         if (-not $input) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
         $val = $Context[$input.Name]
@@ -642,6 +657,12 @@ function Remove-LastIntegrationWizardInput {
     return $true
 }
 
+$script:LastWizardCancelled = $false
+
+function Test-IntegrationWizardCancelled {
+    return [bool]$script:LastWizardCancelled
+}
+
 function Start-IntegrationWizardFlow {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
@@ -653,6 +674,7 @@ function Start-IntegrationWizardFlow {
         [scriptblock]$Discover,
         [scriptblock]$Execute
     )
+    $script:LastWizardCancelled = $false
     $wizard = [bool]$Context['Wizard']
     $nonInteractive = [bool]$Context['NonInteractive']
 
@@ -681,7 +703,7 @@ function Start-IntegrationWizardFlow {
                           else { $null }
             Write-SailPointConnectBanner -ProjectName $bannerProj
             if (Get-Command Confirm-SailPointConnectUpdate -ErrorAction SilentlyContinue) {
-                Confirm-SailPointConnectUpdate -Wizard
+                if (Confirm-SailPointConnectUpdate -Wizard) { return }
             }
         }
         $stage = 0
@@ -758,6 +780,11 @@ function Start-IntegrationWizardFlow {
                         $stage = 4
                     }
                     4 {
+                        if ($Context['Action'] -eq 'Check') {
+                            $Context['ConnectionMode'] = 'NoSession'
+                            $stage = 5
+                            continue
+                        }
                         $meta = $script:IntegrationWizardPlatforms[$Platform]
                         $session = Get-IntegrationWizardCliSession -CliName $meta.CliName
                         $mode = Resolve-IntegrationWizardConnectionChoice -CliName $meta.CliName -SessionState $session -Wizard:$wizard -NonInteractive:$nonInteractive
@@ -800,6 +827,7 @@ function Start-IntegrationWizardFlow {
                                         if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
                                             Close-IntegrationProjectActivityLog
                                         }
+                                        $script:LastWizardCancelled = $true
                                         return
                                     }
                                 }
@@ -825,6 +853,7 @@ function Start-IntegrationWizardFlow {
                             if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
                                 Close-IntegrationProjectActivityLog
                             }
+                            $script:LastWizardCancelled = $true
                             return
                         }
                         $wizardComplete = $true
@@ -838,6 +867,15 @@ function Start-IntegrationWizardFlow {
                         if (Remove-LastIntegrationWizardInput -Definition $plan -Context $Context) {
                             $stage = 5
                         }
+                        elseif ($Context['Action'] -eq 'Check') {
+                            if ($plan['AccessLevels'] -and @($plan['AccessLevels']).Count -gt 1) {
+                                $Context.Remove('Access')
+                                $stage = 3
+                            }
+                            else {
+                                $stage = 2
+                            }
+                        }
                         else {
                             $Context.Remove('ConnectionMode')
                             $stage = 4
@@ -845,6 +883,16 @@ function Start-IntegrationWizardFlow {
                         continue
                     }
                     elseif ($stage -eq 5) {
+                        if ($Context['Action'] -eq 'Check') {
+                            if ($plan['AccessLevels'] -and @($plan['AccessLevels']).Count -gt 1) {
+                                $Context.Remove('Access')
+                                $stage = 3
+                            }
+                            else {
+                                $stage = 2
+                            }
+                            continue
+                        }
                         $Context.Remove('ConnectionMode')
                         $stage = 4
                         continue
@@ -865,7 +913,17 @@ function Start-IntegrationWizardFlow {
                         continue
                     }
                     elseif ($stage -eq 2) {
+                        $meta = $script:IntegrationWizardPlatforms[$Platform]
+                        if ($meta -and $meta['CoreOptions']) {
+                            foreach ($opt in @($meta['CoreOptions'])) {
+                                $Context.Remove($opt)
+                            }
+                        }
+                        $Context.Remove('Connector')
+                        $Context.Remove('Entro')
                         $Context.Remove('IntegrationProjectName')
+                        $pickedTarget = $false
+                        $plan = $null
                         $stage = 1
                         continue
                     }
@@ -880,6 +938,7 @@ function Start-IntegrationWizardFlow {
                         if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
                             Close-IntegrationProjectActivityLog
                         }
+                        $script:LastWizardCancelled = $true
                         return
                     }
                 }
@@ -1060,12 +1119,14 @@ Export-ModuleMember -Function @(
     'Resolve-IntegrationWizardEntroAddon'
     'Resolve-IntegrationWizardConnectionChoice'
     'Test-IntegrationWizardRequiredInputs'
+    'Get-IntegrationWizardActiveInputs'
     'Test-IntegrationWizardInputWhen'
     'Start-IntegrationWizardFlow'
     'Get-IntegrationWizardCliSession'
     'Install-IntegrationWizardCli'
     'Invoke-IntegrationWizardCliLogin'
     'Get-IntegrationWizardLoginHint'
+    'Test-IntegrationWizardCancelled'
     'Test-PromptBack'
     'Invoke-PromptBack'
 )

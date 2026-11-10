@@ -596,7 +596,11 @@ function Get-SailPointConnectUpdate {
     if (-not $CurrentVersion) {
         $CurrentVersion = Get-SailPointConnectVersion
     }
-    $currVer = try { [version]$CurrentVersion } catch { [version]'0.0.0' }
+    if ($CurrentVersion -is [System.Collections.IEnumerable] -and $CurrentVersion -isnot [string]) {
+        $firstItem = @($CurrentVersion | ForEach-Object { $_ } | Sort-Object { try { [version][string]$_ } catch { [version]'0.0.0' } } -Descending)
+        $CurrentVersion = if ($firstItem.Count -gt 0) { [string]$firstItem[0] } else { '0.0.0' }
+    }
+    $currVer = try { [version][string]$CurrentVersion } catch { [version]'0.0.0' }
 
     $latestVer = $null
 

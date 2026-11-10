@@ -1,8 +1,7 @@
 #Requires -Version 7
 [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Help')]
 param(
-    [Parameter(ParameterSetName = 'Help')]
-    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Wizard', Mandatory)]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [switch]$Wizard,
@@ -20,6 +19,7 @@ param(
     [ValidateSet('ReadOnly', 'ReadWrite')]
     [string]$Access,
 
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
@@ -34,14 +34,17 @@ param(
     [Parameter(ParameterSetName = 'Entro')]
     [Parameter(ParameterSetName = 'Connector')]
     [string]$EnvironmentNickname,
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [string]$OutputDirectory,
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [switch]$NonInteractive,
     [Parameter(ParameterSetName = 'Connector')]
     [switch]$RotateSecret,
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [ValidateSet('Text', 'Json')]

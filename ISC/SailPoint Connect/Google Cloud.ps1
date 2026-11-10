@@ -1,8 +1,7 @@
 #Requires -Version 7
 [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Help')]
 param(
-    [Parameter(ParameterSetName = 'Help')]
-    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Wizard', Mandatory)]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
@@ -33,6 +32,7 @@ param(
     [ValidateSet('ReadOnly', 'ReadWrite')]
     [string]$Access,
 
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
@@ -74,12 +74,14 @@ param(
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'BothEntro')]
     [string]$ServiceAccountName,
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
     [Parameter(ParameterSetName = 'BothEntro')]
     [string]$OutputDirectory,
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]
@@ -87,6 +89,7 @@ param(
     [Parameter(ParameterSetName = 'BothEntro')]
     [switch]$NonInteractive,
 
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'GcpEntro')]

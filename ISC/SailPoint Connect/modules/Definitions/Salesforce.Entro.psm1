@@ -19,6 +19,11 @@ function Register-SalesforceEntroDefinitions {
             @{ Name = 'InstanceUrl'; Source = 'Supply'; Prompt = 'Salesforce My Domain URL'; Purpose = 'Salesforce instance URL'; Required = $true }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
+        CheckInputs  = @(
+            @{ Name = 'InstanceUrl'; Source = 'Supply'; Prompt = 'Salesforce My Domain URL'; Purpose = 'Salesforce instance URL'; Required = $true }
+            @{ Name = 'ConsumerKey'; Source = 'Supply'; Prompt = 'Connected App Consumer Key (Client ID)'; Purpose = 'OAuth client credential'; Required = $false }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
+        )
         Steps        = {
             param($ctx)
             @(

@@ -4,6 +4,24 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-10 · v1.6.0
+
+### ✨ New Features & Improvements
+
+- **SailPoint Connect — Check Inputs Collection**: Added `CheckInputs` across integration definitions (`Azure.Entro`, `Azure.Connector`, `CrowdStrike.Entro`, `CrowdStrike.Connector`, `GitHub.Entro`, `Salesforce.Entro`, `Aws.Entro`, `Google.Entro`) to collect target credentials (such as Azure Tenant ID, Client ID, and Client Secret) when verifying an already-completed onboarding or existing integration, rather than prompting for local CLI creation parameters.
+- **SailPoint Connect — Direct Live Credential Validation**: Implemented direct Microsoft Entra ID verification (`Test-EntraCredentialsDirect`) using OAuth2 client credentials grant against Microsoft Graph API (`/v1.0/servicePrincipals`) to validate granted app role permissions without requiring the `az` CLI.
+- **SailPoint Connect — Wizard Sign-In Bypass for Check**: Bypassed the interactive CLI session selection prompt (`How do you want to connect?`) when running the `Check` action, as check directly verifies target credentials against live cloud endpoints.
+- **SailPoint Connect — Navigation & Esc Back Handling**: Wrapped `Invoke-SailPointConnect` in a persistent interactive loop and updated `Start-IntegrationWizardFlow` cancellation handling so that pressing Esc or backing out of an integration wizard returns to `Select platform to configure` rather than abruptly terminating pwsh.
+
+## 2026-11-10 · v1.5.0
+ 
+### 🐛 Bug Fixes & Improvements
+ 
+- **SailPoint Connect — Wizard Parameter Set Resolution**: Added `[Parameter(ParameterSetName = 'Wizard')]` to generic execution parameters (`-Action`, `-OutputDirectory`, `-NonInteractive`, and `-OutputFormat`) and marked `[switch]$Wizard` mandatory in the `Wizard` set across all 7 platform wizard scripts (`AWS.ps1`, `Azure.ps1`, `Google Cloud.ps1`, `Databricks.ps1`, `Salesforce.ps1`, `GitHub.ps1`, `CrowdStrike.ps1`). Resolves `Parameter set cannot be resolved using the specified named parameters` when launching wizards from `Invoke-SailPointConnect` or when supplying output/action flags in interactive mode.
+- **SailPoint Connect — Pipeline Leak Suppression**: Wrapped `Confirm-SailPointConnectUpdate -Wizard` calls in condition checks (`if (Confirm-SailPointConnectUpdate -Wizard) { return }`) across `Invoke-SailPointConnect`, `IW.Core.psm1`, `Microsoft 365 Access Profiles.ps1`, and `IQService Control.ps1` to prevent `$false` from leaking into standard pipeline output.
+- **SailPoint Connect — Multi-Instance Version Resolution**: Fixed `Get-SailPointConnectVersion` and `Get-SailPointConnectUpdate` to handle PowerShell returning multiple `PSModuleInfo` instances when `Import-Module -Force` is used in an active session, preventing version evaluation to `"System.Object[]"` and false fallback to `v0.0.0`.
+- **SailPoint Connect — Test Suite Coverage**: Added assertion section #13 to `Test-SailPointConnectModule.ps1` validating that all platform scripts expose the generic parameters under the `Wizard` parameter set and enforce mandatory `$Wizard`.
+
 ## 2026-11-10 · v1.4.0
 
 ### ✨ New Features & Improvements

@@ -20,6 +20,11 @@ function Register-GitHubEntroDefinitions {
             @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name (optional)'; Purpose = 'Organization to connect to Entro (leave blank for personal account / all repos)'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
+        CheckInputs  = @(
+            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'GitHub PAT to verify'; Required = $true; Secret = $true }
+            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name (optional)'; Purpose = 'Organization to verify'; Required = $false }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
+        )
         Steps        = {
             param($ctx)
             @(

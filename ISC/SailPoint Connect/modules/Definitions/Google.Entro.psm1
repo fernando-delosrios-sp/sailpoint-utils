@@ -123,6 +123,11 @@ function Register-GoogleEntroDefinitions {
             @{ Name = 'Method'; Source = 'Supply'; Prompt = 'Auth method'; Purpose = 'PrivateKey or WorkloadIdentity'; Required = $true; ValidateSet = @('PrivateKey', 'WorkloadIdentity'); Default = 'PrivateKey' }
             @{ Name = 'ServiceAccountName'; Source = 'Supply'; Prompt = 'Service account name'; Purpose = 'Entro SA id'; Required = $false; Default = 'entro-automatic-onboard' }
         )
+        CheckInputs  = @(
+            @{ Name = 'ProjectId'; Source = 'Discover'; Prompt = 'Host project ID'; Purpose = 'Host project'; Required = $true }
+            @{ Name = 'ServiceAccountName'; Source = 'Supply'; Prompt = 'Service account name'; Purpose = 'Entro SA id to verify'; Required = $false; Default = 'entro-automatic-onboard' }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
+        )
         Steps        = {
             param($ctx)
             $keyStep = if ($ctx['Method'] -eq 'WorkloadIdentity') { $null } else { Get-EntroGcpServiceAccountKeyStep }

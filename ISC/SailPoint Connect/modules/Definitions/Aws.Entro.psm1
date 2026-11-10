@@ -83,6 +83,11 @@ function Register-AwsEntroDefinitions {
             @{ Name = 'EntroRoleName'; Source = 'Supply'; Prompt = 'Entro IAM role name'; Purpose = 'Entro read role'; Required = $false; Default = 'EntroReadOnly' }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
+        CheckInputs  = @(
+            @{ Name = 'EntroRoleName'; Source = 'Supply'; Prompt = 'Entro IAM role name'; Purpose = 'Entro read role to verify'; Required = $false; Default = 'EntroReadOnly' }
+            @{ Name = 'ProfileName'; Source = 'Supply'; Prompt = 'AWS profile name (optional)'; Purpose = 'Credential profile for aws CLI'; Required = $false }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
+        )
         Steps        = {
             param($ctx)
             @(

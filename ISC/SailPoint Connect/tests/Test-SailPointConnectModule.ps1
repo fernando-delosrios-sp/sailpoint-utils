@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.4.0' $manifest.Version.ToString() 'Manifest version 1.4.0'
+Assert-Equal '1.6.0' $manifest.Version.ToString() 'Manifest version 1.6.0'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members
@@ -190,6 +190,23 @@ try {
         # Verify executing kebab-case script runs without error
         $out = & $kebabPath 6>&1 2>&1 | Out-String
         Assert-True (-not [string]::IsNullOrWhiteSpace($out)) "Kebab-case script $($pair.Kebab) executes and produces output"
+    }
+
+    # 13) Parameter set resolution for Wizard with generic options on all platform scripts
+    $platformScripts = @('AWS.ps1', 'Azure.ps1', 'Google Cloud.ps1', 'Databricks.ps1', 'Salesforce.ps1', 'GitHub.ps1', 'CrowdStrike.ps1')
+    foreach ($scriptName in $platformScripts) {
+        $scriptPath = Join-Path $connectRoot $scriptName
+        $cmd = Get-Command $scriptPath
+        Assert-True ($cmd.ParameterSets.Name -contains 'Wizard') "$scriptName has Wizard parameter set"
+        $wizardSet = $cmd.ParameterSets | Where-Object { $_.Name -eq 'Wizard' }
+        $wizardParamNames = @($wizardSet.Parameters.Name)
+        Assert-True ($wizardParamNames -contains 'OutputFormat') "$scriptName Wizard set includes OutputFormat"
+        Assert-True ($wizardParamNames -contains 'OutputDirectory') "$scriptName Wizard set includes OutputDirectory"
+        Assert-True ($wizardParamNames -contains 'NonInteractive') "$scriptName Wizard set includes NonInteractive"
+        Assert-True ($wizardParamNames -contains 'Action') "$scriptName Wizard set includes Action"
+        Assert-True ($wizardParamNames -contains 'Wizard') "$scriptName Wizard set includes Wizard"
+        $wizParam = $wizardSet.Parameters | Where-Object { $_.Name -eq 'Wizard' }
+        Assert-True ($wizParam.IsMandatory) "$scriptName Wizard switch is mandatory in Wizard parameter set"
     }
 }
 finally {

@@ -1,8 +1,7 @@
 #Requires -Version 7
 [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Help')]
 param(
-    [Parameter(ParameterSetName = 'Help')]
-    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Wizard', Mandatory)]
     [Parameter(ParameterSetName = 'Connector')]
     [switch]$Wizard,
 
@@ -17,6 +16,7 @@ param(
     [ValidateSet('DatabricksM2M', 'Entra')]
     [string]$Auth,
 
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
@@ -34,10 +34,13 @@ param(
 
     [Parameter(ParameterSetName = 'Connector')]
     [switch]$RotateSecret,
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [string]$OutputDirectory,
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [switch]$NonInteractive,
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [ValidateSet('Text', 'Json')]
     [string]$OutputFormat = 'Text',

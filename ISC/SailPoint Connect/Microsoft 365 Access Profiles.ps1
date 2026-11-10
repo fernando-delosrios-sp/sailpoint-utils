@@ -126,7 +126,7 @@ function Write-Banner {
     if (Test-OperatorNonInteractive) { return }
     Write-SailPointConnectBanner
     if ($Wizard -and (Get-Command Confirm-SailPointConnectUpdate -ErrorAction SilentlyContinue)) {
-        Confirm-SailPointConnectUpdate -Wizard
+        if (Confirm-SailPointConnectUpdate -Wizard) { return }
     }
     Write-Host '  Microsoft 365 access profiles' -ForegroundColor Cyan
     Write-Host '  Build requestable APs from Entra service-plan entitlements.' -ForegroundColor DarkCyan

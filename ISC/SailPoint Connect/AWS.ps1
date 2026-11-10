@@ -5,8 +5,7 @@
 #>
 [CmdletBinding(SupportsShouldProcess = $true, DefaultParameterSetName = 'Help')]
 param(
-    [Parameter(ParameterSetName = 'Help')]
-    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Wizard', Mandatory)]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'Entro')]
@@ -49,6 +48,7 @@ param(
     [ValidateSet('ReadOnly', 'ReadWrite')]
     [string]$Access,
 
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'Entro')]
@@ -83,16 +83,19 @@ param(
     [Parameter(ParameterSetName = 'CiemConnector')]
     [string]$CloudTrailBucket,
 
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'Entro')]
     [string]$OutputDirectory,
 
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'Entro')]
     [switch]$NonInteractive,
 
+    [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [Parameter(ParameterSetName = 'Entro')]

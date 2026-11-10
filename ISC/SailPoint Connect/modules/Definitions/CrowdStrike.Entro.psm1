@@ -21,6 +21,12 @@ function Register-CrowdStrikeEntroDefinitions {
             @{ Name = 'BaseUrl'; Source = 'Supply'; Prompt = 'Falcon Cloud API Base URL'; Purpose = 'Falcon Cloud region endpoint'; Required = $false; Default = 'https://api.crowdstrike.com' }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
+        CheckInputs  = @(
+            @{ Name = 'ClientId'; Source = 'Supply'; Prompt = 'Falcon OAuth2 Client ID'; Purpose = 'Falcon API Client ID to verify'; Required = $true }
+            @{ Name = 'ClientSecret'; Source = 'Supply'; Prompt = 'Falcon OAuth2 Client Secret'; Purpose = 'Falcon API Client Secret'; Required = $true; Secret = $true }
+            @{ Name = 'BaseUrl'; Source = 'Supply'; Prompt = 'Falcon Cloud API Base URL'; Purpose = 'Falcon Cloud region endpoint'; Required = $false; Default = 'https://api.crowdstrike.com' }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
+        )
         Steps        = {
             param($ctx)
             @(

@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.4.0'
+    ModuleVersion = '1.6.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -89,7 +89,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Add autoupdate feature for SailPoint Connect module (Update-SailPointConnect, Get-SailPointConnectUpdate, Invoke-SailPointConnect -Update, and interactive wizard autoupdate prompt).'
+            ReleaseNotes = 'Fix Wizard navigation allowing Esc back from integration selection to root platform menu; add CheckInputs across integrations collecting expected target credentials (e.g. Tenant ID, Client ID, Client Secret for Azure / Entro) directly validating live permissions while bypassing unnecessary CLI sign-in options; fix parameter set resolution and suppress False stdout leakage.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'

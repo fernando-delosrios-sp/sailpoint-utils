@@ -16,6 +16,8 @@ Register-IntegrationWizardPlatform -Name 'GoogleCloud' -Title 'Google Cloud' `
     }
 Register-GoogleConnectorDefinitions
 Register-GoogleEntroDefinitions
+Import-Module (Join-Path $wizardRoot 'modules/Definitions/Azure.Entro.psm1') -Force
+Register-AzureEntroDefinitions
 
 # Test 1: Resolve-IntegrationWizardEntroAddon handles Esc on variant prompt by looping back to Yes/No
 $script:yesNoCalls = 0
@@ -152,6 +154,27 @@ try {
 catch {
     $otherError = $_
 }
-Assert-True (-not (Test-PromptBack $otherError)) 'Test-PromptBack returns false for standard operational exceptions'
+# Test 8: Test-IntegrationWizardCancelled reports true when wizard is cancelled at stage 0
+Import-Module (Join-Path $wizardRoot 'modules/Definitions/Azure.Entro.psm1') -Force
+Register-AzureEntroDefinitions
+$azDef = Get-IntegrationWizardDefinition -Id 'azure-entro'
+Assert-True ($null -ne $azDef) 'azure-entro definition exists'
+$activeCheckInputs = Get-IntegrationWizardActiveInputs -Definition $azDef -Context @{ Action = 'Check' }
+$activeRunInputs = Get-IntegrationWizardActiveInputs -Definition $azDef -Context @{ Action = 'Run' }
+Assert-Equal 4 $activeCheckInputs.Count 'azure-entro Check inputs has 4 fields (TenantId, ClientId, ClientSecret, OutputDirectory)'
+Assert-Equal 'TenantId' $activeCheckInputs[0].Name 'First active check input is TenantId'
+Assert-Equal 'ClientId' $activeCheckInputs[1].Name 'Second active check input is ClientId'
+Assert-Equal 'ClientSecret' $activeCheckInputs[2].Name 'Third active check input is ClientSecret'
+Assert-Equal 'EnvironmentNickname' $activeRunInputs[0].Name 'Run action uses standard Inputs starting with EnvironmentNickname'
+
+# Test 9: Start-IntegrationWizardFlow marks LastWizardCancelled when backing out at Stage 0
+function global:Read-Choice {
+    param($Prompt, $Options, $Labels, $Default)
+    Invoke-PromptBack
+}
+$cancelCtx = @{ Wizard = $true; NonInteractive = $false; Action = 'Run' }
+Start-IntegrationWizardFlow -Platform 'Azure' -ScriptName 'Azure.ps1' -CoreOptionHelp @{} `
+    -Context $cancelCtx -PickTarget { Invoke-PromptBack } -Discover { @() } -Execute { }
+Assert-True (Test-IntegrationWizardCancelled) 'Test-IntegrationWizardCancelled is true after escaping from Stage 0'
 
 Write-Host "PASS ($script:AssertionCount assertions)"

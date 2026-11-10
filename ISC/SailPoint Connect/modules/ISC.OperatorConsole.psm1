@@ -938,9 +938,12 @@ function Invoke-CompletionActionMenu {
 }
 
 function Get-SailPointConnectVersion {
-    $m = Get-Module -Name 'SailPoint.Connect' -ErrorAction SilentlyContinue
-    if ($m -and $m.Version) {
-        return $m.Version.ToString()
+    $mods = @(Get-Module -Name 'SailPoint.Connect' -ErrorAction SilentlyContinue)
+    if ($mods.Count -gt 0) {
+        $versions = @($mods | Where-Object { $null -ne $_.Version } | ForEach-Object { $_.Version } | Sort-Object -Descending)
+        if ($versions.Count -gt 0) {
+            return $versions[0].ToString()
+        }
     }
     $root = Split-Path $PSScriptRoot -Parent
     $manifestPath = Join-Path $root 'SailPoint.Connect.psd1'
@@ -953,7 +956,7 @@ function Get-SailPointConnectVersion {
         }
         catch {}
     }
-    return '1.4.0'
+    return '1.6.0'
 }
 
 function Write-SailPointConnectBanner {

@@ -22,6 +22,12 @@ function Register-AzureEntroDefinitions {
             @{ Name = 'DisplayName'; Source = 'Supply'; Prompt = 'App display name'; Purpose = 'Entra application name'; Required = $false; Default = 'EntroSecurityApp' }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
+        CheckInputs  = @(
+            @{ Name = 'TenantId'; Source = 'Supply'; Prompt = 'Azure tenant ID'; Purpose = 'Microsoft Entra tenant ID'; Required = $true }
+            @{ Name = 'ClientId'; Source = 'Supply'; Prompt = 'Azure Client ID'; Purpose = 'Application (client) ID'; Required = $true }
+            @{ Name = 'ClientSecret'; Source = 'Supply'; Prompt = 'Azure Client Secret'; Purpose = 'Client secret value'; Required = $true; Secret = $true }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
+        )
         Steps        = {
             param($ctx)
             @(

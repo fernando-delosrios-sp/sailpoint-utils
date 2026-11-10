@@ -288,15 +288,17 @@ function Get-IntegrationCheckSubject {
                 -Name (Get-CheckContextValue -Context $Context -Name 'EntroRoleName' -Default 'EntroReadOnly') `
                 -Note 'Reads the Entro role policy. Does not create the role.'
         }
-        '^azure-connector$' {
+        '^azure-connector$|^azure-entro$' {
+            $name = Get-CheckContextValue -Context $Context -Name 'ClientId'
+            if (-not $name) {
+                $name = Get-CheckContextValue -Context $Context -Name 'ApplicationName'
+            }
+            if (-not $name) {
+                $name = Get-CheckContextValue -Context $Context -Name 'DisplayName' -Default 'EntroSecurityApp'
+            }
             return New-CheckSubject -Kind 'EntraApplication' -Label 'Entra app registration' -Readable $true -ReadableFamilies @('Named') `
-                -Name (Get-CheckContextValue -Context $Context -Name 'ApplicationName') `
+                -Name $name `
                 -Note 'Reads admin-consented application permissions on the existing service principal. Does not create the app or grant consent.'
-        }
-        '^azure-entro$' {
-            return New-CheckSubject -Kind 'EntraApplication' -Label 'Entra app registration' -Readable $true -ReadableFamilies @('Named') `
-                -Name (Get-CheckContextValue -Context $Context -Name 'DisplayName' -Default 'EntroSecurityApp') `
-                -Note 'Reads admin-consented application permissions. Does not run Entro onboarding.'
         }
         '^google-(saas|ciem)-connector$' {
             $project = Get-CheckContextValue -Context $Context -Name 'ProjectId'
@@ -436,9 +438,125 @@ function Read-AwsIamRoleGrants {
     }
 }
 
+function Test-EntraCredentialsDirect {
+    param(
+        [Parameter(Mandatory)][string]$TenantId,
+        [Parameter(Mandatory)][string]$ClientId,
+        [Parameter(Mandatory)][string]$ClientSecret
+    )
+    if ($script:IntegrationCheckInvoker -is [scriptblock]) {
+        $mockRes = & $script:IntegrationCheckInvoker 'entra-direct' @($TenantId, $ClientId, $ClientSecret)
+        if ($null -ne $mockRes) { return $mockRes }
+    }
+
+    $tokenUri = "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token"
+    $body = @{
+        client_id     = $ClientId
+        client_secret = $ClientSecret
+        scope         = 'https://graph.microsoft.com/.default'
+        grant_type    = 'client_credentials'
+    }
+    try {
+        $tokenResp = Invoke-RestMethod -Method Post -Uri $tokenUri -Body $body -ErrorAction Stop
+    }
+    catch {
+        $msg = $_.Exception.Message
+        if ($_.ErrorDetails -and $_.ErrorDetails.Message) {
+            try {
+                $jsonErr = $_.ErrorDetails.Message | ConvertFrom-Json
+                if ($jsonErr.error_description) { $msg = $jsonErr.error_description }
+            } catch { }
+        }
+        return @{
+            Found      = $false
+            Grants     = @()
+            Denied     = @()
+            Incomplete = $true
+            Note       = "Authentication failed with Microsoft Entra ID: $msg"
+        }
+    }
+
+    $accessToken = $tokenResp.access_token
+    if (-not $accessToken) {
+        return @{
+            Found      = $false
+            Grants     = @()
+            Denied     = @()
+            Incomplete = $true
+            Note       = "Did not receive an access token from Microsoft Entra ID."
+        }
+    }
+
+    $headers = @{
+        Authorization = "Bearer $accessToken"
+        Accept        = 'application/json'
+    }
+
+    $spUri = "https://graph.microsoft.com/v1.0/servicePrincipals(appId='$ClientId')/appRoleAssignments"
+    try {
+        $assignResp = Invoke-RestMethod -Method Get -Uri $spUri -Headers $headers -ErrorAction Stop
+    }
+    catch {
+        return @{
+            Found      = $true
+            Grants     = @()
+            Denied     = @()
+            Incomplete = $true
+            Note       = "Authenticated successfully, but could not read app role assignments: $($_.Exception.Message)"
+        }
+    }
+
+    $grants = [System.Collections.Generic.List[string]]::new()
+    $byResource = @{}
+    foreach ($assignment in @($assignResp.value)) {
+        $resourceId = [string]$assignment.resourceId
+        $roleId = [string]$assignment.appRoleId
+        if (-not $resourceId -or -not $roleId) { continue }
+        if (-not $byResource.ContainsKey($resourceId)) { $byResource[$resourceId] = [System.Collections.Generic.List[string]]::new() }
+        $byResource[$resourceId].Add($roleId)
+    }
+
+    foreach ($resourceId in @($byResource.Keys)) {
+        $uri = "https://graph.microsoft.com/v1.0/servicePrincipals/$resourceId`?`$select=appRoles,displayName"
+        try {
+            $resResp = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers -ErrorAction Stop
+            $roles = @($resResp.appRoles)
+            foreach ($roleId in @($byResource[$resourceId])) {
+                $matchedRole = @($roles | Where-Object { [string]$_.id -eq $roleId } | Select-Object -First 1)
+                $val = if ($matchedRole) { [string]$matchedRole[0].value } else { '' }
+                if ($val) { $grants.Add($val) }
+            }
+        }
+        catch { }
+    }
+
+    return @{
+        Found      = $true
+        Grants     = @($grants.ToArray())
+        Denied     = @()
+        Incomplete = $false
+        Note       = "Authenticated directly with Microsoft Entra ID using target credentials. Verified $(@($grants).Count) granted application permissions."
+    }
+}
+
 function Read-EntraApplicationGrants {
-    param([Parameter(Mandatory)][string]$DisplayName)
-    $appsResult = Invoke-IntegrationCheckCli -Command 'az' -Arguments @('ad', 'app', 'list', '--display-name', $DisplayName, '-o', 'json')
+    param(
+        [Parameter(Mandatory)][string]$DisplayName,
+        [hashtable]$Context = @{}
+    )
+    $tenantId = Get-CheckContextValue -Context $Context -Name 'TenantId'
+    $clientId = Get-CheckContextValue -Context $Context -Name 'ClientId'
+    if (-not $clientId -and $DisplayName -match '^[0-9a-fA-F-]{36}$') {
+        $clientId = $DisplayName
+    }
+    $clientSecret = Get-CheckContextValue -Context $Context -Name 'ClientSecret'
+
+    if ($tenantId -and $clientId -and $clientSecret) {
+        return Test-EntraCredentialsDirect -TenantId $tenantId -ClientId $clientId -ClientSecret $clientSecret
+    }
+
+    $appName = if ($DisplayName) { $DisplayName } else { $clientId }
+    $appsResult = Invoke-IntegrationCheckCli -Command 'az' -Arguments @('ad', 'app', 'list', '--display-name', $appName, '-o', 'json')
     if ([int]$appsResult.ExitCode -ne 0) {
         return @{ Found = $false; Grants = @(); Denied = @(); Incomplete = $true; Note = "Could not list app registrations. $([string]$appsResult.Output)".Trim() + ' Nothing was changed.' }
     }
@@ -861,7 +979,7 @@ function Read-IntegrationIdentityGrants {
     )
     switch ($Subject.Kind) {
         'IamRole' { return Read-AwsIamRoleGrants -RoleName $Subject.Name -Context $Context }
-        'EntraApplication' { return Read-EntraApplicationGrants -DisplayName $Subject.Name }
+        'EntraApplication' { return Read-EntraApplicationGrants -DisplayName $Subject.Name -Context $Context }
         'GcpServiceAccount' {
             $project = Get-CheckContextValue -Context $Context -Name 'ProjectId'
             $org = Get-CheckContextValue -Context $Context -Name 'OrganizationId'
@@ -1001,13 +1119,17 @@ function Get-IntegrationMemberCheckResult {
         $skipReason = 'Check needs -ProjectId and the service account id of an account that already exists. Nothing was changed.'
     }
     elseif ($subject.Kind -eq 'EntraApplication' -and [string]::IsNullOrWhiteSpace([string]$subject.Name)) {
-        $skipReason = 'Check needs -ApplicationName, the display name of an app registration that already exists. Nothing was changed.'
+        $skipReason = 'Check needs -ClientId or -ApplicationName, the client ID or display name of an app registration that already exists. Nothing was changed.'
     }
     elseif ($WhatIf) {
         $skipReason = "WhatIf: would read $($subject.Label) $($subject.Name). No tenant call was made."
     }
     elseif ($subject.Kind -eq 'GitHubToken' -and [string]::IsNullOrWhiteSpace((Get-CheckContextValue -Context $Context -Name 'Token')) -and $Context['ConnectionMode'] -eq 'NoSession') {
         $skipReason = 'No GitHub token was provided and NoSession mode was selected. Provide a PAT in the token prompt or sign in with gh. Nothing was changed.'
+    }
+    elseif ($subject.Kind -eq 'EntraApplication' -and $Context -and $Context['TenantId'] -and $Context['ClientId'] -and $Context['ClientSecret']) {
+        $attempted = $true
+        $read = Read-IntegrationIdentityGrants -Subject $subject -Context $Context
     }
     elseif ($subject.Kind -ne 'GitHubToken' -and $Context -and $Context['ConnectionMode'] -eq 'NoSession') {
         $skipReason = 'No CLI session was used. Sign in and run Check again to read the existing identity, or compare the list yourself. Nothing was changed.'

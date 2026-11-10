@@ -29,6 +29,13 @@ function Register-CrowdStrikeConnectorDefinitions {
             @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: Discover, IdentityProtection, CloudSecurity, RealTimeResponse)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings file path'; Required = $false }
         )
+        CheckInputs  = @(
+            @{ Name = 'ClientId'; Source = 'Supply'; Prompt = 'Falcon OAuth2 Client ID'; Purpose = 'API Client identifier to verify'; Required = $true }
+            @{ Name = 'ClientSecret'; Source = 'Supply'; Prompt = 'Falcon OAuth2 Client Secret'; Purpose = 'API Client secret'; Required = $true; Secret = $true }
+            @{ Name = 'BaseUrl'; Source = 'Supply'; Prompt = 'CrowdStrike Falcon Cloud API Base URL'; Purpose = 'Falcon Cloud region endpoint'; Required = $false; Default = 'https://api.crowdstrike.com' }
+            @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: Discover, IdentityProtection, CloudSecurity, RealTimeResponse)'; Purpose = 'Optional ISC feature permissions to verify'; Required = $false }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings file path'; Required = $false }
+        )
         Steps        = {
             param($ctx)
             $steps = [System.Collections.Generic.List[hashtable]]::new()
