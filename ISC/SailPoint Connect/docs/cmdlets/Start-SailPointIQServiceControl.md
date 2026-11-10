@@ -1,12 +1,12 @@
-# `Start-SailPointIQServiceControl` & `New-SailPointM365AccessProfile`
+# `Invoke-SailPointIQServiceControl` & `New-SailPointM365AccessProfile`
 
-## `Start-SailPointIQServiceControl`
+## `Invoke-SailPointIQServiceControl` (Alias: `Start-SailPointIQServiceControl`)
 
 Operator utility for Windows IQService hosts.
 
 ### Synopsis
 ```powershell
-Start-SailPointIQServiceControl [[-Action] <String>] [-InstallPath <String>]
+Invoke-SailPointIQServiceControl [[-Action] <String>] [-InstallPath <String>]
     [-InstanceName <String>] [-DownloadUri <String>] [-ZipPath <String>]
     [-LogLevel <String>] [-NonInteractive] [<CommonParameters>]
 ```

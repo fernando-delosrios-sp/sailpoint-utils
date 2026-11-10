@@ -24,7 +24,7 @@ $expectedFunctions = @(
     'Connect-SailPointSalesforce',
     'Connect-SailPointGitHub',
     'Connect-SailPointCrowdStrike',
-    'Start-SailPointIQServiceControl',
+    'Invoke-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',
     'Get-SailPointConnectProject',
     'Set-SailPointConnectProject'
@@ -33,10 +33,11 @@ foreach ($fn in $expectedFunctions) {
     Assert-True ($m.ExportedFunctions.ContainsKey($fn)) "Function $fn is exported"
 }
 
-$expectedAliases = @('sailpoint-connect')
+$expectedAliases = @('sailpoint-connect', 'Start-SailPointIQServiceControl')
 foreach ($alias in $expectedAliases) {
     Assert-True ($m.ExportedAliases.ContainsKey($alias)) "Alias $alias is exported"
 }
+Assert-Equal 'Invoke-SailPointIQServiceControl' $m.ExportedAliases['Start-SailPointIQServiceControl'].Definition 'Start-SailPointIQServiceControl aliases Invoke-SailPointIQServiceControl'
 Assert-True (-not $m.ExportedAliases.ContainsKey('Connect-SailPointGCP')) "Connect-SailPointGCP alias is dropped"
 
 # 3) Ubiquitous Comment-Based Help verification
@@ -96,6 +97,7 @@ try {
     Assert-Equal 1 $csTarget.Count 'CrowdStrike connector target resolves'
     Assert-Equal 'crowdstrike-connector' $csTarget[0]['Id'] 'CrowdStrike connector id matches'
 
+<<<<<<< HEAD
     # 7) Verify Invoke-SailPointConnect forwards named arguments cleanly without positional argument errors
     $fwdErr = $null
     $fwdOutDir = Join-Path $tmp 'fwd-out'
@@ -170,6 +172,23 @@ try {
     Assert-Equal 1 $scriptResult.Count 'BuildScript returned exactly 1 object on Stream 1'
     Assert-Equal 'BuildScript' $scriptResult[0].Action 'Action is BuildScript'
     Assert-True (Test-Path -LiteralPath $scriptResult[0].Path) 'Build script file exists'
+
+    # 12) Kebab-case script entrypoints alongside spaced scripts
+    $scriptPairs = @(
+        @{ Kebab = 'Google-Cloud.ps1'; Spaced = 'Google Cloud.ps1' },
+        @{ Kebab = 'IQService-Control.ps1'; Spaced = 'IQService Control.ps1' },
+        @{ Kebab = 'Microsoft-365-Access-Profiles.ps1'; Spaced = 'Microsoft 365 Access Profiles.ps1' }
+    )
+    foreach ($pair in $scriptPairs) {
+        $kebabPath = Join-Path $connectRoot $pair.Kebab
+        $spacedPath = Join-Path $connectRoot $pair.Spaced
+        Assert-True (Test-Path -LiteralPath $kebabPath) "Kebab-case script $($pair.Kebab) exists"
+        Assert-True (Test-Path -LiteralPath $spacedPath) "Spaced script $($pair.Spaced) exists"
+
+        # Verify executing kebab-case script runs without error
+        $out = & $kebabPath 6>&1 2>&1 | Out-String
+        Assert-True (-not [string]::IsNullOrWhiteSpace($out)) "Kebab-case script $($pair.Kebab) executes and produces output"
+    }
 }
 finally {
     Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue

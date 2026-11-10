@@ -71,7 +71,7 @@ Connect-SailPointDatabricks -Wizard
 | [`Connect-SailPointAzure`](cmdlets/Connect-SailPointAzure.md) | — | Configures Microsoft Entra ID connector and Entro |
 | [`Connect-SailPointGoogleCloud`](cmdlets/Connect-SailPointGoogleCloud.md) | — | Configures Google Workspace connector, GCP CIEM, and Entro |
 | [`Connect-SailPointDatabricks`](cmdlets/Connect-SailPointDatabricks.md) | — | Configures Databricks service principal and OAuth M2M |
-| [`Start-SailPointIQServiceControl`](cmdlets/Start-SailPointIQServiceControl.md) | — | Installs, upgrades, and streams IQService logs on Windows |
+| [`Invoke-SailPointIQServiceControl`](cmdlets/Start-SailPointIQServiceControl.md) | `Start-SailPointIQServiceControl` | Installs, upgrades, and streams IQService logs on Windows |
 | [`New-SailPointM365AccessProfile`](cmdlets/New-SailPointM365AccessProfile.md) | — | Discovers Entra service plans and creates ISC access profiles |
 | [`Get-SailPointConnectProject`](cmdlets/Get-SailPointConnectProject.md) | — | Lists all project workspaces under `~/.sailpoint-connect/` |
 | [`Set-SailPointConnectProject`](cmdlets/Set-SailPointConnectProject.md) | — | Sets the default active project workspace |

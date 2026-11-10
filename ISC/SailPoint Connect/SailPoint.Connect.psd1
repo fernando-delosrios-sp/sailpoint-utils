@@ -36,7 +36,7 @@
         'Connect-SailPointSalesforce'
         'Connect-SailPointGitHub'
         'Connect-SailPointCrowdStrike'
-        'Start-SailPointIQServiceControl'
+        'Invoke-SailPointIQServiceControl'
         'New-SailPointM365AccessProfile'
         'Get-SailPointConnectProject'
         'Set-SailPointConnectProject'
@@ -51,6 +51,7 @@
     # Aliases to export from this module, for best performance, do not use wildcards
     AliasesToExport = @(
         'sailpoint-connect'
+        'Start-SailPointIQServiceControl'
     )
 
     # Private data to pass to the module specified in RootModule/ModuleList

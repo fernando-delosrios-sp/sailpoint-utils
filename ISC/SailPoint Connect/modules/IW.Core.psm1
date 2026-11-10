@@ -2,6 +2,59 @@
 
 Set-StrictMode -Version Latest
 
+if (-not ('PromptBackException' -as [type])) {
+    try {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Management.Automation;
+
+public class PromptBackException : RuntimeException {
+    public PromptBackException() : base("PROMPT_BACK") {}
+    public PromptBackException(string message) : base(message) {}
+    public PromptBackException(string message, Exception innerException) : base(message, innerException) {}
+}
+'@ -ErrorAction Stop
+    }
+    catch {
+        # Fallback if Add-Type is unavailable
+    }
+}
+
+if (-not (Get-Command Test-PromptBack -ErrorAction SilentlyContinue)) {
+    function Test-PromptBack {
+        param($ErrorRecord)
+        if ($null -eq $ErrorRecord) { return $false }
+        $ex = if ($ErrorRecord -is [System.Management.Automation.ErrorRecord]) {
+            $ErrorRecord.Exception
+        }
+        elseif ($ErrorRecord -is [System.Exception]) {
+            $ErrorRecord
+        }
+        else {
+            return ([string]$ErrorRecord -eq 'PROMPT_BACK')
+        }
+
+        while ($ex) {
+            if ($ex -is [PromptBackException] -or
+                $ex.GetType().Name -eq 'PromptBackException' -or
+                $ex.Message -eq 'PROMPT_BACK') {
+                return $true
+            }
+            $ex = $ex.InnerException
+        }
+        return $false
+    }
+}
+
+if (-not (Get-Command Invoke-PromptBack -ErrorAction SilentlyContinue)) {
+    function Invoke-PromptBack {
+        if ('PromptBackException' -as [type]) {
+            throw [PromptBackException]::new()
+        }
+        throw 'PROMPT_BACK'
+    }
+}
+
 $script:IntegrationWizardDefinitions = @{}
 $script:IntegrationWizardPlatforms = @{}
 
@@ -1010,4 +1063,6 @@ Export-ModuleMember -Function @(
     'Install-IntegrationWizardCli'
     'Invoke-IntegrationWizardCliLogin'
     'Get-IntegrationWizardLoginHint'
+    'Test-PromptBack'
+    'Invoke-PromptBack'
 )

@@ -108,4 +108,50 @@ catch {
 }
 Assert-True (-not $connectThrown) 'Invoke-SailPointConnect handles PROMPT_BACK on root menu cleanly'
 
+# Test 5: Invoke-PromptBack throws a typed [PromptBackException]
+$caughtTyped = $false
+$caughtType = $null
+try {
+    Invoke-PromptBack
+}
+catch [PromptBackException] {
+    $caughtTyped = $true
+    $caughtType = $_.Exception.GetType().Name
+}
+catch {
+    $caughtType = $_.Exception.GetType().Name
+}
+Assert-True $caughtTyped 'Invoke-PromptBack throws dedicated [PromptBackException] class'
+Assert-Equal 'PromptBackException' $caughtType 'Exception type name is PromptBackException'
+
+# Test 6: Test-PromptBack recognizes [PromptBackException] and legacy string 'PROMPT_BACK'
+$exTyped = $null
+try {
+    Invoke-PromptBack
+}
+catch {
+    $exTyped = $_
+}
+Assert-True (Test-PromptBack $exTyped) 'Test-PromptBack returns true for typed [PromptBackException] ErrorRecord'
+Assert-True (Test-PromptBack $exTyped.Exception) 'Test-PromptBack returns true for typed [PromptBackException] instance'
+
+$exLegacy = $null
+try {
+    throw 'PROMPT_BACK'
+}
+catch {
+    $exLegacy = $_
+}
+Assert-True (Test-PromptBack $exLegacy) 'Test-PromptBack returns true for legacy string-based PROMPT_BACK'
+
+# Test 7: Standard catch-all correctly differentiates PromptBackException from arbitrary exceptions
+$otherError = $null
+try {
+    throw [System.InvalidOperationException]::new('Unexpected operational failure')
+}
+catch {
+    $otherError = $_
+}
+Assert-True (-not (Test-PromptBack $otherError)) 'Test-PromptBack returns false for standard operational exceptions'
+
 Write-Host "PASS ($script:AssertionCount assertions)"
