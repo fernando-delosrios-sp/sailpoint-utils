@@ -172,6 +172,10 @@ function Invoke-SailPointConnect {
         [Parameter()]
         [switch]$NonInteractive,
 
+        [Parameter()]
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+
         [Parameter(ValueFromRemainingArguments = $true)]
         $RemainingArguments
     )
@@ -216,6 +220,7 @@ function Invoke-SailPointConnect {
                 if ($Action) { $pass['Action'] = $Action }
                 if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
                 if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
                 foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
                 & $script @pass
             }
@@ -227,6 +232,7 @@ function Invoke-SailPointConnect {
                 if ($Action) { $pass['Action'] = $Action }
                 if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
                 if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
                 foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
                 & $script @pass
             }
@@ -238,6 +244,7 @@ function Invoke-SailPointConnect {
                 if ($Action) { $pass['Action'] = $Action }
                 if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
                 if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
                 foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
                 & $script @pass
             }
@@ -249,6 +256,7 @@ function Invoke-SailPointConnect {
                 if ($Action) { $pass['Action'] = $Action }
                 if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
                 if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
                 foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
                 & $script @pass
             }
@@ -260,6 +268,7 @@ function Invoke-SailPointConnect {
                 if ($Action) { $pass['Action'] = $Action }
                 if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
                 if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
                 foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
                 & $script @pass
             }
@@ -271,6 +280,7 @@ function Invoke-SailPointConnect {
                 if ($Action) { $pass['Action'] = $Action }
                 if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
                 if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
                 foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
                 & $script @pass
             }
@@ -282,6 +292,7 @@ function Invoke-SailPointConnect {
                 if ($Action) { $pass['Action'] = $Action }
                 if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
                 if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
                 foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
                 & $script @pass
             }
@@ -416,7 +427,8 @@ function Connect-SailPointAWS {
         [string[]]$Feature,
         [string]$CloudTrailBucket,
         [string]$OutputDirectory,
-        [string]$OutputFormat,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
         [string]$Project
     )
     $script = Join-Path $script:ModuleRoot 'AWS.ps1'
@@ -497,6 +509,8 @@ function Connect-SailPointAzure {
         [string]$OutputDirectory,
         [switch]$NonInteractive,
         [switch]$RotateSecret,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
         [string]$Project
     )
     $script = Join-Path $script:ModuleRoot 'Azure.ps1'
@@ -588,6 +602,8 @@ function Connect-SailPointGoogleCloud {
         [string]$ServiceAccountName,
         [string]$OutputDirectory,
         [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
         [string]$Project,
         [switch]$ApplyPreconditionFix
     )
@@ -669,6 +685,8 @@ function Connect-SailPointDatabricks {
         [switch]$RotateSecret,
         [string]$OutputDirectory,
         [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
         [string]$Project
     )
     $script = Join-Path $script:ModuleRoot 'Databricks.ps1'
@@ -731,6 +749,8 @@ function Connect-SailPointSalesforce {
         [string]$Environment,
         [string]$OutputDirectory,
         [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
         [string]$Project
     )
     $script = Join-Path $script:ModuleRoot 'Salesforce.ps1'
@@ -794,6 +814,8 @@ function Connect-SailPointGitHub {
         [string]$Method,
         [string]$OutputDirectory,
         [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
         [string]$Project
     )
     $script = Join-Path $script:ModuleRoot 'GitHub.ps1'
@@ -879,6 +901,8 @@ function Connect-SailPointCrowdStrike {
         [string]$Environment,
         [string]$OutputDirectory,
         [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
         [string]$Project
     )
     $script = Join-Path $script:ModuleRoot 'CrowdStrike.ps1'

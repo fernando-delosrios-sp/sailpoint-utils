@@ -154,10 +154,11 @@ function Invoke-IntegrationWizardRun {
             continue
         }
         if ($step['Cli']) {
-            $cliText = & $step['Cli'] $Context
+            $cliResult = if ($step['Cli'] -is [scriptblock]) { & $step['Cli'] $Context } else { $step['Cli'] }
+            $cliDisplay = if ($cliResult -is [scriptblock]) { $cliResult.ToString() } else { [string]$cliResult }
             if ($WhatIfPreference) {
                 Write-Host "WhatIf: would run step $($step.Title)" -ForegroundColor Yellow
-                Write-Host $cliText -ForegroundColor DarkGray
+                Write-Host $cliDisplay -ForegroundColor DarkGray
                 if (Get-Command Write-IntegrationProjectLogLine -ErrorAction SilentlyContinue) {
                     Write-IntegrationProjectLogLine -Level 'INFO' -Message "WhatIf: would run step $($step.Title)"
                 }
@@ -165,8 +166,18 @@ function Invoke-IntegrationWizardRun {
             }
             Write-Step $step.Title
             try {
-                Invoke-Expression $cliText
-                if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { throw "Step failed: $($step.Title) (exit $LASTEXITCODE)" }
+                $global:LASTEXITCODE = 0
+                $cmdOutput = if ($cliResult -is [scriptblock]) {
+                    & $cliResult
+                }
+                elseif ($cliResult -is [string]) {
+                    $scriptBlock = [scriptblock]::Create($cliResult)
+                    & $scriptBlock
+                }
+                if ($global:LASTEXITCODE -and $global:LASTEXITCODE -ne 0) {
+                    $detail = if ($cmdOutput) { " Output: $($cmdOutput | Out-String)" } else { "" }
+                    throw "Step failed: $($step.Title) (exit $global:LASTEXITCODE).$detail"
+                }
                 Write-Ok "$($step.Title): $status"
             }
             catch {
@@ -428,6 +439,9 @@ function Invoke-IntegrationWizardAction {
         [Parameter(Mandatory)][hashtable]$Context
     )
     $outDir = if ($Context['OutputDirectory']) { $Context['OutputDirectory'] } elseif ($Context['IntegrationFolderPath']) { $Context['IntegrationFolderPath'] } else { Join-Path (Get-Location) 'wizard-output' }
+    $isJson = [string]$Context['OutputFormat'] -eq 'Json'
+    $result = $null
+
     switch ($Context['Action']) {
         'Run' {
             if ($Definition['IsComposite']) {
@@ -444,21 +458,101 @@ function Invoke-IntegrationWizardAction {
             else {
                 Invoke-IntegrationWizardRun -Definition $Definition -Context $Context -WhatIfPreference:$WhatIfPreference
             }
+            $result = [PSCustomObject]@{
+                Status          = 'Success'
+                Action          = 'Run'
+                Platform        = [string]$Definition.Platform
+                Target          = [string]$Definition.Title
+                OutputDirectory = [string]$Context['OutputDirectory']
+                Project         = [string]$Context['IntegrationProjectName']
+            }
         }
         'BuildScript' {
             $name = ($Definition.Id -replace '\+', '_' -replace '[^a-z0-9_-]', '-') + '.ps1'
-            New-IntegrationWizardBuildScript -Definition $Definition -Context $Context -OutputPath (Join-Path $outDir $name)
+            $outputPath = Join-Path $outDir $name
+            New-IntegrationWizardBuildScript -Definition $Definition -Context $Context -OutputPath $outputPath
+            $result = [PSCustomObject]@{
+                Status   = 'Success'
+                Action   = 'BuildScript'
+                Platform = [string]$Definition.Platform
+                Target   = [string]$Definition.Title
+                Path     = $outputPath
+            }
         }
         'BuildRequirements' {
             $name = ($Definition.Id -replace '\+', '_' -replace '[^a-z0-9_-]', '-') + '-requirements.md'
-            New-IntegrationWizardRequirementsDoc -Definition $Definition -Context $Context -OutputPath (Join-Path $outDir $name)
+            $outputPath = Join-Path $outDir $name
+            New-IntegrationWizardRequirementsDoc -Definition $Definition -Context $Context -OutputPath $outputPath
+            $result = [PSCustomObject]@{
+                Status   = 'Success'
+                Action   = 'BuildRequirements'
+                Platform = [string]$Definition.Platform
+                Target   = [string]$Definition.Title
+                Path     = $outputPath
+            }
+            if ($isJson) {
+                $jsonName = ($Definition.Id -replace '\+', '_' -replace '[^a-z0-9_-]', '-') + '-requirements.json'
+                $jsonPath = Join-Path $outDir $jsonName
+                $reqInputs = [System.Collections.Generic.List[object]]::new()
+                foreach ($inp in @($Definition.Inputs)) {
+                    if ($inp) {
+                        $reqInputs.Add([ordered]@{
+                            name     = [string]$inp.Name
+                            purpose  = [string]$inp['Purpose']
+                            required = [bool]$inp['Required']
+                            secret   = [bool]$inp['Secret']
+                        })
+                    }
+                }
+                $reqData = [ordered]@{
+                    target      = [string]$Definition.Title
+                    platform    = [string]$Definition.Platform
+                    id          = [string]$Definition.Id
+                    action      = 'BuildRequirements'
+                    access      = [string]$Context['Access']
+                    inputs      = $reqInputs.ToArray()
+                    adminRoles  = @($Definition.AdminRoles)
+                    outputsHelp = [string]$Definition.OutputsHelp
+                }
+                Set-Content -LiteralPath $jsonPath -Value ($reqData | ConvertTo-Json -Depth 5) -Encoding utf8
+                $result | Add-Member -NotePropertyName JsonPath -NotePropertyValue $jsonPath
+            }
         }
         'Check' {
             Import-Module (Join-Path $PSScriptRoot 'IW.Check.psm1') -Force -WarningAction SilentlyContinue
             $name = ($Definition.Id -replace '\+', '_' -replace '[^a-z0-9_-]', '-') + '-check.md'
-            Invoke-IntegrationRequirementCheck -Definition $Definition -Context $Context -OutputPath (Join-Path $outDir $name) -WhatIf:$WhatIfPreference
+            $outputPath = Join-Path $outDir $name
+            $checkRes = Invoke-IntegrationRequirementCheck -Definition $Definition -Context $Context -OutputPath $outputPath -WhatIf:$WhatIfPreference
+            $verdict = if ($checkRes -and $checkRes.ContainsKey('Verdict')) { [string]$checkRes['Verdict'] } else { 'Pass' }
+            $reportPath = if ($checkRes -and $checkRes.ContainsKey('Path')) { [string]$checkRes['Path'] } else { $outputPath }
+            $result = [PSCustomObject]@{
+                Status   = if ($verdict -eq 'Pass') { 'Success' } else { $verdict }
+                Verdict  = $verdict
+                Action   = 'Check'
+                Platform = [string]$Definition.Platform
+                Target   = [string]$Definition.Title
+                Path     = $reportPath
+            }
+            if ($isJson) {
+                $jsonName = ($Definition.Id -replace '\+', '_' -replace '[^a-z0-9_-]', '-') + '-check.json'
+                $jsonPath = Join-Path $outDir $jsonName
+                $checkData = [ordered]@{
+                    target   = [string]$Definition.Title
+                    platform = [string]$Definition.Platform
+                    id       = [string]$Definition.Id
+                    action   = 'Check'
+                    verdict  = $verdict
+                    path     = $reportPath
+                }
+                Set-Content -LiteralPath $jsonPath -Value ($checkData | ConvertTo-Json -Depth 5) -Encoding utf8
+                $result | Add-Member -NotePropertyName JsonPath -NotePropertyValue $jsonPath
+            }
         }
         default { throw "Unknown Action: $($Context['Action'])" }
+    }
+
+    if ($Context['NonInteractive']) {
+        return $result
     }
 }
 

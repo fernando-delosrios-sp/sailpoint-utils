@@ -54,6 +54,11 @@ param(
     [Parameter(ParameterSetName = 'Entro')]
     [switch]$NonInteractive,
 
+    [Parameter(ParameterSetName = 'Connector')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [ValidateSet('Text', 'Json')]
+    [string]$OutputFormat = 'Text',
+
     [Parameter(ParameterSetName = 'Help')]
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
@@ -100,6 +105,7 @@ $context = @{
     BaseUrl = $BaseUrl; ClientId = $ClientId; ClientSecret = $ClientSecret
     Feature = if ($parsedFeatures.Count -gt 0) { ($parsedFeatures -join ',') } else { $null }
     Environment = $Environment; OutputDirectory = $OutputDirectory
+    OutputFormat = $OutputFormat
     Project = $Project
 }
 

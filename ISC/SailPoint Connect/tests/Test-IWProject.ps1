@@ -184,6 +184,38 @@ try {
     $reset = @(@(Read-IntegrationProjectOperatorActions -ProjectName 'demo-customer') | Where-Object { $_.Id -eq 'audit' })[0]
     Assert-True (-not $reset.Done) 'a changed instruction becomes open again'
     Assert-Equal 'Enable a different set of audit logs.' $reset.Detail 'the file stores the new instruction'
+
+    # Headless Project Requirement:
+    # Non-interactive run with -OutputDirectory and without -Project should succeed using ephemeral workspace
+    $headlessOut = Join-Path $tmp 'headless-out'
+    $ctxHeadless = @{
+        NonInteractive  = $true
+        Action          = 'BuildRequirements'
+        OrganizationId  = '1'
+        ProjectId       = 'p'
+        Method          = 'PrivateKey'
+        OutputDirectory = $headlessOut
+    }
+    Initialize-IntegrationProjectContext -Platform 'GoogleCloud' -PlatformTitle 'Google Cloud' -Plan $def -Context $ctxHeadless -ScriptName 'Google Cloud.ps1'
+    Assert-Equal 'ephemeral' $ctxHeadless['IntegrationProjectName'] 'headless without Project defaults to ephemeral'
+    Assert-Equal $headlessOut $ctxHeadless['OutputDirectory'] 'headless OutputDirectory is preserved'
+    Assert-Equal $headlessOut $ctxHeadless['IntegrationFolderPath'] 'headless IntegrationFolderPath maps to OutputDirectory'
+    Assert-True (Test-Path -LiteralPath (Join-Path $headlessOut 'activity.log')) 'headless activity.log written to OutputDirectory'
+
+    # Non-interactive run without Project and without OutputDirectory must still throw
+    $ctxMissing = @{
+        NonInteractive = $true
+        Action         = 'BuildRequirements'
+    }
+    $headlessThrow = $false
+    try {
+        Initialize-IntegrationProjectContext -Platform 'GoogleCloud' -PlatformTitle 'Google Cloud' -Plan $def -Context $ctxMissing -ScriptName 'Google Cloud.ps1'
+    }
+    catch {
+        $headlessThrow = $true
+        Assert-True ($_.Exception.Message -match 'Non-interactive run requires -Project') 'missing both Project and OutputDirectory throws'
+    }
+    Assert-True $headlessThrow 'throws when neither Project nor OutputDirectory provided'
 }
 finally {
     Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue
