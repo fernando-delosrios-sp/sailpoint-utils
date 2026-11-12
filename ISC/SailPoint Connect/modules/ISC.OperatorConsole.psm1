@@ -956,7 +956,24 @@ function Get-SailPointConnectVersion {
         }
         catch {}
     }
-    return '1.7.1'
+    return '1.7.2'
+}
+
+function Write-OperatorFramedRow {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Text,
+        [Parameter(Mandatory)]
+        [int]$ContentWidth,
+        [string]$TextColor = 'Gray',
+        [string]$BorderColor = 'Cyan'
+    )
+
+    $padded = $Text.PadRight($ContentWidth)
+    Write-Host '  │ ' -NoNewline -ForegroundColor $BorderColor
+    Write-Host $padded -NoNewline -ForegroundColor $TextColor
+    Write-Host ' │' -ForegroundColor $BorderColor
 }
 
 function Write-SailPointConnectBanner {
@@ -964,6 +981,7 @@ function Write-SailPointConnectBanner {
     param(
         [string]$ProjectName,
         [string]$Version,
+        [pscustomobject]$UpdateInfo,
         [switch]$Force
     )
 
@@ -981,6 +999,12 @@ function Write-SailPointConnectBanner {
     $lines = [System.Collections.Generic.List[hashtable]]::new()
     $lines.Add(@{ Text = "$title  $versionText"; Color = 'Cyan' })
     $lines.Add(@{ Text = $tagline; Color = 'DarkGray' })
+    if ($UpdateInfo -and $UpdateInfo.UpdateAvailable -and $UpdateInfo.LatestVersion) {
+        $lines.Add(@{
+                Text  = "Newer version available: v$($UpdateInfo.LatestVersion) (Update in menu)"
+                Color = 'Yellow'
+            })
+    }
     if ($ProjectName) {
         $lines.Add(@{ Text = "Workspace: $ProjectName"; Color = 'Yellow' })
     }
@@ -992,13 +1016,13 @@ function Write-SailPointConnectBanner {
         }
     }
 
+    $borderColor = 'Cyan'
     Write-Host ''
-    Write-Host ("  ┌─" + ('─' * $contentWidth) + "─┐") -ForegroundColor Cyan
+    Write-Host ("  ┌─" + ('─' * $contentWidth) + "─┐") -ForegroundColor $borderColor
     foreach ($line in $lines) {
-        $padded = $line.Text.PadRight($contentWidth)
-        Write-Host "  │ $padded │" -ForegroundColor $line.Color
+        Write-OperatorFramedRow -Text $line.Text -ContentWidth $contentWidth -TextColor $line.Color -BorderColor $borderColor
     }
-    Write-Host ("  └─" + ('─' * $contentWidth) + "─┘") -ForegroundColor Cyan
+    Write-Host ("  └─" + ('─' * $contentWidth) + "─┘") -ForegroundColor $borderColor
     Write-Host ''
 
     $script:BannerDisplayed = $true
@@ -1087,6 +1111,7 @@ Export-ModuleMember -Function @(
     'Invoke-CompletionActionMenu'
     'ConvertTo-MenuLine'
     'Get-SailPointConnectVersion'
+    'Write-OperatorFramedRow'
     'Write-SailPointConnectBanner'
     'Write-ReportStdout'
     'Format-TerminalHyperlink'

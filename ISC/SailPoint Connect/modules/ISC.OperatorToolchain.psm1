@@ -828,7 +828,8 @@ function Confirm-SailPointConnectUpdate {
     [CmdletBinding()]
     param(
         [switch]$Wizard,
-        [switch]$Force
+        [switch]$Force,
+        [pscustomobject]$UpdateInfo
     )
 
     if (Test-OperatorNonInteractive) { return $false }
@@ -836,16 +837,28 @@ function Confirm-SailPointConnectUpdate {
     if ($script:UpdateCheckPerformed -and -not $Force) { return $false }
     $script:UpdateCheckPerformed = $true
 
-    $updateInfo = Get-SailPointConnectUpdate
-    if ($null -eq $updateInfo -or -not $updateInfo.UpdateAvailable) {
+    if ($null -eq $UpdateInfo) {
+        $UpdateInfo = Get-SailPointConnectUpdate
+    }
+    if ($null -eq $UpdateInfo -or -not $UpdateInfo.UpdateAvailable) {
         return $false
     }
 
+    $borderColor = 'Yellow'
+    $textColor = 'Yellow'
+    $lines = @(
+        '⚡ A newer version of SailPoint Connect is available!'
+        ("Current: v{0}  →  Latest: v{1}" -f $UpdateInfo.CurrentVersion, $UpdateInfo.LatestVersion)
+    )
+    $contentWidth = ($lines | ForEach-Object { $_.Length } | Measure-Object -Maximum).Maximum
+    if ($contentWidth -lt 48) { $contentWidth = 48 }
+
     Write-Host ''
-    Write-Host ("  ┌─" + ('─' * 62) + "─┐") -ForegroundColor Yellow
-    Write-Host ("  │ ⚡ A newer version of SailPoint Connect is available!         │") -ForegroundColor Yellow
-    Write-Host ("  │ Current: v{0,-10}  Latest: v{1,-12}           │" -f $updateInfo.CurrentVersion, $updateInfo.LatestVersion) -ForegroundColor Yellow
-    Write-Host ("  └─" + ('─' * 62) + "─┘") -ForegroundColor Yellow
+    Write-Host ("  ┌─" + ('─' * $contentWidth) + "─┐") -ForegroundColor $borderColor
+    foreach ($line in $lines) {
+        Write-OperatorFramedRow -Text $line -ContentWidth $contentWidth -TextColor $textColor -BorderColor $borderColor
+    }
+    Write-Host ("  └─" + ('─' * $contentWidth) + "─┘") -ForegroundColor $borderColor
     Write-Host ''
 
     $shouldUpdate = Read-YesNo -Prompt "Would you like to autoupdate SailPoint Connect to v$($updateInfo.LatestVersion) now?" -Default $true

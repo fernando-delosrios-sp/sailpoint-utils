@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-12 · v1.7.2
+
+### 🐛 Bug Fixes & Improvements
+
+- **SailPoint Connect — banner framing**: Box borders stay cyan on every row; tagline and workspace text no longer dim the vertical sides. When PowerShell Gallery reports a newer module, the banner shows a yellow “newer version available” line before the interactive update prompt.
+
 ## 2026-11-12 · v1.7.1
 
 ### 🐛 Bug Fixes & Improvements

@@ -85,7 +85,7 @@ Assert-True $maskedRequiredThrown 'Read-InputString with -Mask and -Required thr
 
 # Banner and report tests
 $ver = Get-SailPointConnectVersion
-Assert-Equal '1.7.1' $ver 'Get-SailPointConnectVersion resolves 1.7.1 from module/psd1'
+Assert-Equal '1.7.2' $ver 'Get-SailPointConnectVersion resolves 1.7.2 from module/psd1'
 
 # Non-interactive banner writes nothing
 $nonIntBannerOut = pwsh -Command {
@@ -104,8 +104,20 @@ $intBannerOut = pwsh -Command {
     Write-SailPointConnectBanner -ProjectName 'DemoProject'
 } -Args $ModulePath
 Assert-True ((@($intBannerOut) -join "`n") -match 'SailPoint Connect') 'banner includes project title'
-Assert-True ((@($intBannerOut) -join "`n") -match 'v1\.7\.1') 'banner includes module version'
+Assert-True ((@($intBannerOut) -join "`n") -match 'v1\.7\.2') 'banner includes module version'
 Assert-True ((@($intBannerOut) -join "`n") -match 'Workspace: DemoProject') 'banner includes active workspace project'
+
+$updateBannerOut = pwsh -Command {
+    param($m)
+    Import-Module $m -Force
+    Initialize-OperatorConsole
+    $info = [PSCustomObject]@{
+        UpdateAvailable = $true
+        LatestVersion   = [version]'9.9.9'
+    }
+    Write-SailPointConnectBanner -UpdateInfo $info -Force
+} -Args $ModulePath
+Assert-True ((@($updateBannerOut) -join "`n") -match 'Newer version available: v9\.9\.9') 'banner includes update hint when a newer version is available'
 
 # Report stdout output
 $reportOut = pwsh -Command {

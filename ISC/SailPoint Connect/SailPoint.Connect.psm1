@@ -213,8 +213,12 @@ function Invoke-SailPointConnect {
                 throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, Okta, GitLab, Slack, Snowflake, ServiceNow, HashiCorpVault, IQService, M365AccessProfiles, Update."
             }
 
-            Write-SailPointConnectBanner -ProjectName $Project
-            if (Confirm-SailPointConnectUpdate -Wizard) {
+            $rootMenuUpdateInfo = $null
+            if ($env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK -notin @('1', 'true', '$true', 'True')) {
+                $rootMenuUpdateInfo = Get-SailPointConnectUpdate
+            }
+            Write-SailPointConnectBanner -ProjectName $Project -UpdateInfo $rootMenuUpdateInfo
+            if (Confirm-SailPointConnectUpdate -Wizard -UpdateInfo $rootMenuUpdateInfo) {
                 return
             }
 
