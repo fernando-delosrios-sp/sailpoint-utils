@@ -539,6 +539,83 @@ function Expand-IQServicePayload {
 
 $script:UpdateCheckPerformed = $false
 
+function Get-SailPointConnectVersionInstallRoots {
+    [CmdletBinding()]
+    param()
+
+    $roots = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($candidate in @(
+            Get-Module -ListAvailable -Name 'SailPoint.Connect' -ErrorAction SilentlyContinue
+            Get-Module -Name 'SailPoint.Connect' -ErrorAction SilentlyContinue
+        )) {
+        foreach ($item in @($candidate)) {
+            if (-not $item -or [string]::IsNullOrWhiteSpace($item.ModuleBase)) { continue }
+            $base = $item.ModuleBase
+            if ($base -match '[\\/]modules$') {
+                $base = Split-Path -Parent $base
+            }
+            [void]$roots.Add($base)
+        }
+    }
+    return @($roots)
+}
+
+function Remove-SailPointConnectSessionModules {
+    [CmdletBinding()]
+    param()
+
+    $roots = Get-SailPointConnectVersionInstallRoots
+    if ($roots.Count -eq 0) { return }
+
+    $loaded = @(Get-Module | Where-Object {
+            $mb = $_.ModuleBase
+            if ([string]::IsNullOrWhiteSpace($mb)) { return $false }
+            foreach ($root in $roots) {
+                if ($mb.StartsWith($root, [StringComparison]::OrdinalIgnoreCase)) { return $true }
+            }
+            return $false
+        })
+
+    foreach ($mod in ($loaded | Sort-Object { $_.Path.Length } -Descending)) {
+        Remove-Module $mod -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Import-SailPointConnectModuleFresh {
+    <#
+    .SYNOPSIS
+        Removes in-session SailPoint Connect modules and imports the installed gallery build.
+    #>
+    [CmdletBinding()]
+    param(
+        [version]$RequiredVersion
+    )
+
+    Remove-SailPointConnectSessionModules
+
+    $imported = $null
+    $devReloadPath = $env:SAILPOINT_CONNECT_RELOAD_FROM_PATH
+    if ($devReloadPath -and (Test-Path -LiteralPath $devReloadPath)) {
+        $imported = @(Import-Module -Name $devReloadPath -Force -Global -PassThru -ErrorAction Stop)
+    }
+    else {
+        $importParams = @{
+            Name   = 'SailPoint.Connect'
+            Force  = $true
+            Global = $true
+        }
+        if ($RequiredVersion) {
+            $importParams['RequiredVersion'] = $RequiredVersion.ToString()
+        }
+        $imported = @(Import-Module @importParams -PassThru -ErrorAction Stop)
+    }
+    $primary = @($imported | Sort-Object { $_.Version } -Descending | Select-Object -First 1)
+    if ($primary.Count -eq 0) {
+        throw 'SailPoint.Connect could not be reloaded into the current session.'
+    }
+    return $primary[0]
+}
+
 <#
 .SYNOPSIS
     Checks whether an update is available for the SailPoint Connect PowerShell module.
@@ -797,19 +874,47 @@ function Update-SailPointConnect {
 
     if ($installSuccess) {
         Write-Ok "SailPoint.Connect has been successfully updated to v$verToInstall."
-        Write-Info "To refresh your current session, run: Import-Module SailPoint.Connect -Force"
-        if ($env:SAILPOINT_CONNECT_MOCK_UPDATE_ACTION -ne 'Success') {
-            try {
-                Import-Module 'SailPoint.Connect' -Force -ErrorAction SilentlyContinue
+
+        $reloadedVersion = $null
+        $reloadError = $null
+        try {
+            $reloadParams = @{}
+            if ($env:SAILPOINT_CONNECT_MOCK_UPDATE_ACTION -ne 'Success') {
+                $reloadTarget = if ($latestVer) { $latestVer } elseif ($TargetVersion) { try { [version]$TargetVersion } catch { $null } } else { $null }
+                if ($reloadTarget) { $reloadParams['RequiredVersion'] = $reloadTarget }
             }
-            catch {}
+            $reloadedMod = Import-SailPointConnectModuleFresh @reloadParams
+            $reloadedVersion = $reloadedMod.Version
+            Write-Ok "Reloaded SailPoint.Connect v$reloadedVersion in this PowerShell session."
+        }
+        catch {
+            $reloadError = $_.Exception.Message
+            try {
+                Import-Module -Name 'SailPoint.Connect' -Force -Global -ErrorAction Stop | Out-Null
+                $reloadedMod = Get-Module -Name 'SailPoint.Connect' | Select-Object -First 1
+                if ($reloadedMod) {
+                    $reloadedVersion = $reloadedMod.Version
+                    $reloadError = $null
+                    Write-Ok "Reloaded SailPoint.Connect v$reloadedVersion in this PowerShell session."
+                }
+            }
+            catch {
+                $reloadError = "$reloadError | $($_.Exception.Message)"
+            }
+            if ($reloadError) {
+                Write-Host "   Update installed but session reload failed: $reloadError" -ForegroundColor Yellow
+                Write-Info "Run: Import-Module SailPoint.Connect -Force"
+            }
         }
 
         return [PSCustomObject]@{
-            Success        = $true
-            Updated        = $true
-            CurrentVersion = $currentVer
-            LatestVersion  = $latestVer
+            Success         = $true
+            Updated         = $true
+            Reloaded        = ($null -ne $reloadedVersion)
+            ReloadedVersion = $reloadedVersion
+            CurrentVersion  = $currentVer
+            LatestVersion   = $latestVer
+            ReloadError     = $reloadError
         }
     }
     else {
@@ -861,15 +966,20 @@ function Confirm-SailPointConnectUpdate {
     Write-Host ("  └─" + ('─' * $contentWidth) + "─┘") -ForegroundColor $borderColor
     Write-Host ''
 
-    $shouldUpdate = Read-YesNo -Prompt "Would you like to autoupdate SailPoint Connect to v$($updateInfo.LatestVersion) now?" -Default $true
+    $shouldUpdate = Read-YesNo -Prompt "Would you like to autoupdate SailPoint Connect to v$($UpdateInfo.LatestVersion) now?" -Default $true
     if ($shouldUpdate) {
-        $result = Update-SailPointConnect -TargetVersion $updateInfo.LatestVersion.ToString()
-        if ($result.Success) {
-            Write-Ok "SailPoint Connect updated to v$($updateInfo.LatestVersion)."
-            Write-Info "PowerShell session refreshed with the new version."
+        $result = Update-SailPointConnect -TargetVersion $UpdateInfo.LatestVersion.ToString()
+        if ($result.Success -and $result.Reloaded) {
+            Write-Ok "SailPoint Connect updated to v$($result.ReloadedVersion)."
             return $true
         }
-        else {
+        if ($result.Success -and -not $result.Reloaded) {
+            Write-Host "   Updated on disk but the session could not reload automatically." -ForegroundColor Yellow
+            if ($result.ReloadError) {
+                Write-Info $result.ReloadError
+            }
+        }
+        elseif (-not $result.Success) {
             Write-Host "   Autoupdate did not complete: $($result.Error)" -ForegroundColor Yellow
         }
     }

@@ -26,8 +26,10 @@ param(
     [string]$Action,
 
     [Parameter(ParameterSetName = 'Connector')]
+    [Parameter(ParameterSetName = 'Entro')]
     [string]$TenantId,
     [Parameter(ParameterSetName = 'Connector')]
+    [Parameter(ParameterSetName = 'Entro')]
     [string]$ApplicationName,
     [Parameter(ParameterSetName = 'Connector')]
     [string[]]$Feature,
@@ -54,7 +56,14 @@ param(
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
-    [string]$Project
+    [string]$Project,
+    [string]$CatalogIntegrationId,
+    [string]$CatalogProduct,
+    [string]$CatalogVariantId,
+    [string]$CatalogCredentialKind,
+    [ValidateSet('CreateNew', 'UpdateExisting')]
+    [string]$CatalogReuseMode = 'CreateNew',
+    [string]$CatalogCredentialId
 )
 
 Set-StrictMode -Version Latest
@@ -82,7 +91,7 @@ $context = @{
     Wizard = [bool]$Wizard; NonInteractive = [bool]$NonInteractive
     Connector = [bool]$Connector; Entro = [bool]$Entro
     Access = $Access; Action = $Action
-    TenantId = $TenantId; ApplicationName = $ApplicationName; Feature = $Feature
+    TenantId = $TenantId; ApplicationName = $ApplicationName; DisplayName = $ApplicationName; Feature = $Feature
     EnvironmentNickname = $EnvironmentNickname; OutputDirectory = $OutputDirectory; RotateSecret = [bool]$RotateSecret
     OutputFormat = $OutputFormat
     Project = $Project
@@ -92,6 +101,8 @@ if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $hasCore) 
     Show-IntegrationWizardPlatformHelp -Platform 'Azure' -ScriptName 'Azure.ps1' -CoreOptionHelp $coreHelp
     return
 }
+Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBoundParameters
+
 Start-IntegrationWizardFlow -Platform 'Azure' -ScriptName 'Azure.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
         $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Connector', 'Entro') `

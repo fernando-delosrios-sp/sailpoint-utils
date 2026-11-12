@@ -76,7 +76,14 @@ param(
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
-    [string]$Project
+    [string]$Project,
+    [string]$CatalogIntegrationId,
+    [string]$CatalogProduct,
+    [string]$CatalogVariantId,
+    [string]$CatalogCredentialKind,
+    [ValidateSet('CreateNew', 'UpdateExisting')]
+    [string]$CatalogReuseMode = 'CreateNew',
+    [string]$CatalogCredentialId
 )
 
 Set-StrictMode -Version Latest
@@ -119,6 +126,8 @@ if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $hasCore) 
     return
 }
 
+Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBoundParameters
+
 Start-IntegrationWizardFlow -Platform 'GitHub' -ScriptName 'GitHub.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
         $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Connector', 'Entro') `
@@ -134,5 +143,14 @@ Start-IntegrationWizardFlow -Platform 'GitHub' -ScriptName 'GitHub.ps1' -CoreOpt
             }
         }
     } `
-    -Discover { param($n, $c) @() } `
+    -Discover {
+        param($name, $ctx)
+        if ($name -eq 'Organization') {
+            $json = gh api user/orgs --jq '.[].login' 2>$null
+            if ($LASTEXITCODE -eq 0 -and $json) {
+                return @($json -split "`n" | Where-Object { $_.Trim() } | ForEach-Object { $_.Trim() })
+            }
+        }
+        @()
+    } `
     -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx }

@@ -48,7 +48,14 @@ param(
     [Parameter(ParameterSetName = 'Help')]
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
-    [string]$Project
+    [string]$Project,
+    [string]$CatalogIntegrationId,
+    [string]$CatalogProduct,
+    [string]$CatalogVariantId,
+    [string]$CatalogCredentialKind,
+    [ValidateSet('CreateNew', 'UpdateExisting')]
+    [string]$CatalogReuseMode = 'CreateNew',
+    [string]$CatalogCredentialId
 )
 
 Set-StrictMode -Version Latest
@@ -78,6 +85,8 @@ if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $Connector
     Show-IntegrationWizardPlatformHelp -Platform 'Databricks' -ScriptName 'Databricks.ps1' -CoreOptionHelp $coreHelp
     return
 }
+Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBoundParameters
+
 Start-IntegrationWizardFlow -Platform 'Databricks' -ScriptName 'Databricks.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
         $context['Connector'] = $true

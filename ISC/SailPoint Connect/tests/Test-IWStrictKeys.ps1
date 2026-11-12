@@ -70,7 +70,7 @@ Start-IntegrationWizardFlow -Platform 'GoogleCloud' -ScriptName 'Google Cloud.ps
     -Discover $noDiscover `
     -Execute { param($def, $c) $script:Executed = @{ Def = $def; Ctx = $c } }
 
-Assert-Equal 'What should this session produce?' $script:FirstChoicePrompt 'the wizard asks for the result before any other question'
+Assert-Equal 'Which integration project?' $script:FirstChoicePrompt 'the wizard asks for the project workspace before action'
 Assert-True ($null -ne $script:Executed) 'GCP Entro -Wizard reaches execute'
 Assert-Equal 'google-gcp-entro' $script:Executed.Def.Id 'GCP Entro -Wizard resolves the Entro definition'
 Assert-Equal 'PrivateKey' $script:Executed.Ctx['Method'] 'Method ValidateSet input collected'

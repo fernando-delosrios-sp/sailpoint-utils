@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.7.2'
+    ModuleVersion = '1.9.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -95,7 +95,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Fix Wizard navigation allowing Esc back from integration selection to root platform menu; add CheckInputs across integrations collecting expected target credentials (e.g. Tenant ID, Client ID, Client Secret for Azure / Entro) directly validating live permissions while bypassing unnecessary CLI sign-in options; fix parameter set resolution and suppress False stdout leakage.'
+            ReleaseNotes = 'Catalog-driven root menu (Project, Action, integration/product/variant/credential kind) via IW.CatalogMenu.psm1; wizards ask for project before action.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'

@@ -95,20 +95,23 @@ catch {
 }
 Assert-True (-not $startThrown) 'Start-IntegrationWizardFlow handles PROMPT_BACK cleanly without throwing'
 
-# Test 4: Invoke-SailPointConnect catches PROMPT_BACK on platform menu without throwing
+Remove-Item function:\global:Read-Choice -ErrorAction SilentlyContinue
+
+# Test 4: Invoke-SailPointConnect catches PROMPT_BACK on catalog root menu without throwing
+$env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK = '1'
+$env:SAILPOINT_CONNECT_TEST_CATALOG_PROMPT_BACK = '1'
 Import-Module (Join-Path $wizardRoot 'SailPoint.Connect.psd1') -Force
-function global:Read-Choice {
-    param($Prompt, $Options, $Labels, $Default)
-    Invoke-PromptBack
-}
 $connectThrown = $false
 try {
-    Invoke-SailPointConnect
+    Invoke-SailPointConnect -Project 'test-proj' -Action 'Run'
 }
 catch {
     $connectThrown = $true
 }
-Assert-True (-not $connectThrown) 'Invoke-SailPointConnect handles PROMPT_BACK on root menu cleanly'
+finally {
+    Remove-Item env:SAILPOINT_CONNECT_TEST_CATALOG_PROMPT_BACK -ErrorAction SilentlyContinue
+}
+Assert-True (-not $connectThrown) 'Invoke-SailPointConnect handles PROMPT_BACK on catalog root menu cleanly'
 
 # Test 5: Invoke-PromptBack throws a typed [PromptBackException]
 $caughtTyped = $false

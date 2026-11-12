@@ -8,6 +8,8 @@ Import-Module (Join-Path $script:ModuleRoot 'modules/IW.Project.psm1') -Force -G
 Import-Module (Join-Path $script:ModuleRoot 'modules/IW.Render.psm1') -Force -Global
 Import-Module (Join-Path $script:ModuleRoot 'modules/ISC.OperatorConsole.psm1') -Force -Global -WarningAction SilentlyContinue
 Import-Module (Join-Path $script:ModuleRoot 'modules/ISC.OperatorToolchain.psm1') -Force -Global -WarningAction SilentlyContinue
+Import-Module (Join-Path $script:ModuleRoot 'modules/IW.Catalog.psm1') -Force -Global -WarningAction SilentlyContinue
+Import-Module (Join-Path $script:ModuleRoot 'modules/IW.CatalogMenu.psm1') -Force -Global -WarningAction SilentlyContinue
 
 function Convert-RemainingArgumentsToHashtable {
     param(
@@ -77,6 +79,20 @@ function Convert-RemainingArgumentsToHashtable {
     }
 
     return $result
+}
+
+function Invoke-SailPointConnectSessionReentry {
+    [CmdletBinding()]
+    param(
+        [hashtable]$ConnectParams
+    )
+
+    if (-not $ConnectParams) { $ConnectParams = @{} }
+    $cmd = @(Get-Command -Name 'Invoke-SailPointConnect' -Module 'SailPoint.Connect' -ErrorAction Stop)
+    if ($cmd.Count -eq 0) {
+        throw 'SailPoint.Connect is not loaded after update.'
+    }
+    return & $cmd[0] @ConnectParams
 }
 
 <#
@@ -197,7 +213,15 @@ function Invoke-SailPointConnect {
     }
 
     if ($Update -or $Platform -eq 'Update') {
-        return (Update-SailPointConnect -NonInteractive:$NonInteractive)
+        $updateResult = Update-SailPointConnect -NonInteractive:$NonInteractive
+        if ($updateResult.Reloaded -and -not $NonInteractive -and $Update -and -not $Platform) {
+            return (Invoke-SailPointConnectSessionReentry -ConnectParams @{
+                    Project              = $Project
+                    SkipUpdateCheck      = $SkipUpdateCheck
+                    RemainingArguments   = $RemainingArguments
+                })
+        }
+        return $updateResult
     }
 
     if ($CheckUpdate) {
@@ -213,38 +237,45 @@ function Invoke-SailPointConnect {
                 throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, Okta, GitLab, Slack, Snowflake, ServiceNow, HashiCorpVault, IQService, M365AccessProfiles, Update."
             }
 
-            $rootMenuUpdateInfo = $null
-            if ($env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK -notin @('1', 'true', '$true', 'True')) {
-                $rootMenuUpdateInfo = Get-SailPointConnectUpdate
-            }
-            Write-SailPointConnectBanner -ProjectName $Project -UpdateInfo $rootMenuUpdateInfo
-            if (Confirm-SailPointConnectUpdate -Wizard -UpdateInfo $rootMenuUpdateInfo) {
-                return
-            }
-
-            Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
-
-            $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'Okta', 'GitLab', 'Slack', 'Snowflake', 'ServiceNow', 'HashiCorpVault', 'IQService', 'M365AccessProfiles', 'Update')
-            $labels = @(
-                'Amazon Web Services (SaaS connector, CIEM, Entro)',
-                'Microsoft Azure & Entra ID (Connector, Entro)',
-                'Google Cloud & Workspace (Connector, CIEM, Entro)',
-                'Databricks (Account & Metastore connector)',
-                'Salesforce (SaaS connector, Agentforce, Entro)',
-                'GitHub (SaaS connector, Copilot & Bots, Entro)',
-                'CrowdStrike (Falcon SaaS connector, Discover & ITDR, Entro)',
-                'Okta (SaaS connector JWT auth, Entro)',
-                'GitLab (SaaS connector, Entro)',
-                'Slack (SaaS connector, Entro)',
-                'Snowflake (Entro key-pair user)',
-                'ServiceNow (Entro REST API key)',
-                'HashiCorp Vault (Entro policy & token)',
-                'IQService Control (Host lifecycle & AD LDAPS)',
-                'Microsoft 365 Access Profiles (Entra service plans)',
-                'Update SailPoint Connect (autoupdate module)'
-            )
             try {
-                $picked = Read-Choice -Prompt 'Select platform to configure' -Options $options -Labels $labels -Default 'AWS'
+                $rootMenuUpdateInfo = $null
+                if ($env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK -notin @('1', 'true', '$true', 'True')) {
+                    $rootMenuUpdateInfo = Get-SailPointConnectUpdate
+                }
+                Write-SailPointConnectBanner -ProjectName $Project -UpdateInfo $rootMenuUpdateInfo
+                if (Confirm-SailPointConnectUpdate -Wizard -UpdateInfo $rootMenuUpdateInfo) {
+                    return (Invoke-SailPointConnectSessionReentry -ConnectParams @{
+                            Project              = $Project
+                            SkipUpdateCheck      = $SkipUpdateCheck
+                            RemainingArguments   = $RemainingArguments
+                        })
+                }
+
+                Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
+
+                $catalogResult = Start-IntegrationCatalogRootMenu -WizardRoot $script:ModuleRoot -Project $Project `
+                    -Action $Action -OutputDirectory $OutputDirectory -OutputFormat $OutputFormat
+                if ($catalogResult -and $catalogResult['Cancelled']) { return }
+                if ($catalogResult -and $catalogResult['Launched']) { return }
+                if ($catalogResult -and $catalogResult['Platform']) {
+                    $special = [string]$catalogResult['Platform']
+                    if ($special -eq 'Update') {
+                        $menuUpdateResult = Update-SailPointConnect
+                        if ($menuUpdateResult.Reloaded) {
+                            return (Invoke-SailPointConnectSessionReentry -ConnectParams @{
+                                    Project              = $Project
+                                    SkipUpdateCheck      = $SkipUpdateCheck
+                                    RemainingArguments   = $RemainingArguments
+                                })
+                        }
+                        return $menuUpdateResult
+                    }
+                    $activePlatform = $special
+                    $activeWizard = $true
+                }
+                else {
+                    return
+                }
             }
             catch {
                 if (Test-CancelledNavigation $_) {
@@ -254,11 +285,6 @@ function Invoke-SailPointConnect {
                 }
                 throw
             }
-            if ($picked -eq 'Update') {
-                return (Update-SailPointConnect)
-            }
-            $activePlatform = $picked
-            $activeWizard = $true
         }
 
         $targetPlatform = if ($activePlatform -eq 'GCP') { 'GoogleCloud' } else { $activePlatform }
@@ -293,9 +319,9 @@ function Invoke-SailPointConnect {
                     & $script @pass
                 }
                 'GoogleCloud' {
-                    $script = Join-Path $script:ModuleRoot 'Google-Cloud.ps1'
+                    $script = Join-Path $script:ModuleRoot 'Google Cloud.ps1'
                     if (-not (Test-Path -LiteralPath $script)) {
-                        $script = Join-Path $script:ModuleRoot 'Google Cloud.ps1'
+                        $script = Join-Path $script:ModuleRoot 'Google-Cloud.ps1'
                     }
                     $pass = @{}
                     if ($activeWizard) { $pass['Wizard'] = $true }
@@ -745,7 +771,9 @@ function Connect-SailPointGoogleCloud {
         [string]$OrganizationId,
         [string]$ProjectId,
         [string]$ImpersonateUser,
-        [ValidateSet('PrivateKey', 'OAuth')]
+        [ValidateSet('ActivityInsights', 'AgentDiscovery', 'Ciem', 'DeltaAggregation', 'DomainManagement', 'Gcp', 'GmailDelegates', 'NhiDiscovery')]
+        [string[]]$Feature,
+        [ValidateSet('PrivateKey', 'WorkloadIdentity')]
         [string]$Method,
         [string]$ClientId,
         [string]$ServiceAccountName,
@@ -756,9 +784,9 @@ function Connect-SailPointGoogleCloud {
         [string]$Project,
         [switch]$ApplyPreconditionFix
     )
-    $script = Join-Path $script:ModuleRoot 'Google-Cloud.ps1'
+    $script = Join-Path $script:ModuleRoot 'Google Cloud.ps1'
     if (-not (Test-Path -LiteralPath $script)) {
-        $script = Join-Path $script:ModuleRoot 'Google Cloud.ps1'
+        $script = Join-Path $script:ModuleRoot 'Google-Cloud.ps1'
     }
     & $script @PSBoundParameters
 }

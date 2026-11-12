@@ -1,0 +1,564 @@
+{
+  "version": 1,
+  "menuFlow": ["Project", "Action", "Integration", "Product", "Variant", "CredentialKind", "ReuseOrCreate", "Access"],
+  "actions": ["BuildRequirements", "Check", "BuildScript", "Run"],
+  "products": {
+    "fabric": {
+      "label": "SailPoint Fabric",
+      "access": ["ReadOnly", "ReadWrite"],
+      "legacyCoreSwitches": ["SaaSConnector", "Connector"]
+    },
+    "entro": {
+      "label": "Entro",
+      "access": ["ReadOnly"],
+      "legacyCoreSwitches": ["Entro", "GcpEntro", "WorkspaceEntro"]
+    },
+    "ciem": {
+      "label": "CIEM",
+      "access": ["ReadOnly", "ReadWrite"],
+      "legacyCoreSwitches": ["CiemConnector"]
+    }
+  },
+  "policies": {
+    "oneProductPerRun": true,
+    "mutations": "additive-only",
+    "update": {
+      "rotateSecrets": false,
+      "reusePromptWhenDiscriminatorsMatch": true
+    }
+  },
+  "credentialKinds": {
+    "entra.appClientSecret": {
+      "label": "Entra application (client secret)",
+      "discriminators": ["TenantId", "ClientId"],
+      "secretFields": ["ClientSecret"],
+      "checkSubject": "EntraApplication"
+    },
+    "aws.iamAssumeRole": {
+      "label": "AWS IAM role (ExternalId trust)",
+      "discriminators": ["RoleName", "AccountId"],
+      "secretFields": [],
+      "checkSubject": "IamRole"
+    },
+    "gcp.serviceAccountKey": {
+      "label": "GCP service account key (JSON)",
+      "discriminators": ["ProjectId", "ServiceAccountId", "ServiceAccountName"],
+      "secretFields": ["PrivateKey", "ClientSecret"],
+      "checkSubject": "GcpServiceAccount"
+    },
+    "gcp.workloadIdentity": {
+      "label": "GCP Workload Identity Federation",
+      "discriminators": ["ProjectId", "OrganizationId"],
+      "secretFields": [],
+      "checkSubject": "GcpServiceAccount"
+    },
+    "google.workspaceDomainDelegation": {
+      "label": "Google Workspace domain-wide delegation",
+      "discriminators": ["ClientId", "ProjectId"],
+      "secretFields": [],
+      "checkSubject": "Manual"
+    },
+    "google.oauthClientCredentials": {
+      "label": "Google OAuth client credentials",
+      "discriminators": ["ClientId", "ProjectId"],
+      "secretFields": ["ClientSecret"],
+      "checkSubject": "GcpServiceAccount"
+    },
+    "github.appInstallation": {
+      "label": "GitHub App (installation + PEM)",
+      "discriminators": ["Organization", "AppId", "InstallationId"],
+      "secretFields": ["PrivateKey"],
+      "checkSubject": "GitHubToken"
+    },
+    "github.pat": {
+      "label": "GitHub personal access token",
+      "discriminators": ["Organization"],
+      "secretFields": ["Token"],
+      "checkSubject": "GitHubToken"
+    },
+    "okta.jwtServiceApp": {
+      "label": "Okta OAuth service app (JWT + PEM)",
+      "discriminators": ["OktaDomain", "ClientId"],
+      "secretFields": ["PrivateKey", "PrivateKeyPassword"],
+      "checkSubject": "Manual"
+    },
+    "okta.apiServicesPublicKey": {
+      "label": "Okta API Services app (Entro public key)",
+      "discriminators": ["OktaDomain", "ClientId"],
+      "secretFields": [],
+      "checkSubject": "Manual"
+    },
+    "oauth.clientIdSecret": {
+      "label": "OAuth2 client ID and secret",
+      "discriminators": ["ClientId", "BaseUrl", "InstanceUrl"],
+      "secretFields": ["ClientSecret", "ConsumerSecret"],
+      "checkSubject": "Manual"
+    },
+    "salesforce.connectedAppOrToken": {
+      "label": "Salesforce Connected App or bearer token",
+      "discriminators": ["InstanceUrl", "ConsumerKey"],
+      "secretFields": ["ConsumerSecret", "AccessToken"],
+      "checkSubject": "Manual"
+    },
+    "slack.botUserAppTokens": {
+      "label": "Slack bot, user, and app-level tokens",
+      "discriminators": ["WorkspaceName"],
+      "secretFields": ["BotUserOAuthToken", "UserOAuthToken", "AppLevelToken"],
+      "checkSubject": "Manual"
+    },
+    "snowflake.keyPairUser": {
+      "label": "Snowflake key-pair user",
+      "discriminators": ["AccountUrl", "EntroUser"],
+      "secretFields": [],
+      "checkSubject": "Manual"
+    },
+    "vault.policyToken": {
+      "label": "HashiCorp Vault policy token",
+      "discriminators": ["VaultAddress"],
+      "secretFields": ["AccessToken"],
+      "checkSubject": "Manual"
+    },
+    "gitlab.accessToken": {
+      "label": "GitLab access token",
+      "discriminators": ["BaseUrl"],
+      "secretFields": ["AccessToken"],
+      "checkSubject": "Manual"
+    },
+    "servicenow.restApiKey": {
+      "label": "ServiceNow REST API key",
+      "discriminators": ["InstanceUrl"],
+      "secretFields": ["AccessToken"],
+      "checkSubject": "Manual"
+    }
+  },
+  "integrations": [
+    {
+      "id": "aws",
+      "title": "Amazon Web Services",
+      "cli": "aws",
+      "launcher": "AWS.ps1",
+      "platformName": "AWS",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "saas",
+              "label": "AWS SaaS connector",
+              "definitionId": "aws-saas-connector",
+              "definitionModule": "modules/Definitions/Aws.Connector.psm1",
+              "folderName": "Amazon-Web-Services-SaaS",
+              "credentialKinds": ["aws.iamAssumeRole"]
+            }
+          ]
+        },
+        "ciem": {
+          "bindings": [
+            {
+              "variantId": "aws-ciem",
+              "label": "AWS CIEM connector",
+              "definitionId": "aws-ciem-connector",
+              "definitionModule": "modules/Definitions/Aws.Connector.psm1",
+              "folderName": "Amazon-Web-Services-CIEM",
+              "credentialKinds": ["aws.iamAssumeRole"]
+            }
+          ]
+        },
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "aws",
+              "label": "Entro AWS account",
+              "definitionId": "aws-entro",
+              "definitionModule": "modules/Definitions/Aws.Entro.psm1",
+              "folderName": "Entro-AWS",
+              "credentialKinds": ["aws.iamAssumeRole"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "azure",
+      "title": "Microsoft Azure & Entra ID",
+      "cli": "az",
+      "launcher": "Azure.ps1",
+      "platformName": "Azure",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "entra",
+              "label": "Microsoft Entra ID connector",
+              "definitionId": "azure-connector",
+              "definitionModule": "modules/Definitions/Azure.Connector.psm1",
+              "folderName": "Microsoft-Entra-ID",
+              "credentialKinds": ["entra.appClientSecret"]
+            }
+          ]
+        },
+        "ciem": {
+          "bindings": [
+            {
+              "variantId": "entra-ciem",
+              "label": "Azure CIEM (Entra embedded CIEM packs)",
+              "definitionId": "azure-connector",
+              "definitionModule": "modules/Definitions/Azure.Connector.psm1",
+              "folderName": "Microsoft-Entra-CIEM",
+              "credentialKinds": ["entra.appClientSecret"],
+              "contextDefaults": {
+                "Feature": "Ciem"
+              }
+            }
+          ]
+        },
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "microsoft-ecosystem",
+              "label": "Entro Microsoft ecosystem",
+              "definitionId": "azure-entro",
+              "definitionModule": "modules/Definitions/Azure.Entro.psm1",
+              "folderName": "Entro-Microsoft",
+              "credentialKinds": ["entra.appClientSecret"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "google-cloud",
+      "title": "Google Cloud & Workspace",
+      "cli": "gcloud",
+      "launcher": "Google Cloud.ps1",
+      "platformName": "GoogleCloud",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "workspace-saas",
+              "label": "Google Workspace connector",
+              "definitionId": "google-saas-connector",
+              "definitionModule": "modules/Definitions/Google.Connector.psm1",
+              "folderName": "Google-Workspace",
+              "credentialKinds": ["gcp.serviceAccountKey", "google.oauthClientCredentials"]
+            }
+          ]
+        },
+        "ciem": {
+          "bindings": [
+            {
+              "variantId": "gcp-ciem",
+              "label": "GCP CIEM connector",
+              "definitionId": "google-ciem-connector",
+              "definitionModule": "modules/Definitions/Google.Connector.psm1",
+              "folderName": "GCP-CIEM",
+              "credentialKinds": ["gcp.serviceAccountKey"]
+            }
+          ]
+        },
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "gcp-org",
+              "label": "Entro GCP organization",
+              "definitionId": "google-gcp-entro",
+              "definitionModule": "modules/Definitions/Google.Entro.psm1",
+              "folderName": "Entro-GCP",
+              "credentialKinds": ["gcp.serviceAccountKey", "gcp.workloadIdentity"]
+            },
+            {
+              "variantId": "workspace",
+              "label": "Entro Google Workspace",
+              "definitionId": "google-workspace-entro",
+              "definitionModule": "modules/Definitions/Google.Entro.psm1",
+              "folderName": "Entro-Workspace",
+              "credentialKinds": ["google.workspaceDomainDelegation"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "github",
+      "title": "GitHub",
+      "cli": "gh",
+      "launcher": "GitHub.ps1",
+      "platformName": "GitHub",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "saas",
+              "label": "GitHub SaaS connector",
+              "definitionId": "github-connector",
+              "definitionModule": "modules/Definitions/GitHub.Connector.psm1",
+              "folderName": "GitHub",
+              "credentialKinds": ["github.appInstallation", "github.pat"]
+            }
+          ]
+        },
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "github",
+              "label": "Entro GitHub",
+              "definitionId": "github-entro",
+              "definitionModule": "modules/Definitions/GitHub.Entro.psm1",
+              "folderName": "Entro-GitHub",
+              "credentialKinds": ["github.appInstallation", "github.pat"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "okta",
+      "title": "Okta",
+      "cli": "okta",
+      "launcher": "Okta.ps1",
+      "platformName": "Okta",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "saas",
+              "label": "Okta SaaS connector",
+              "definitionId": "okta-connector",
+              "definitionModule": "modules/Definitions/Okta.Connector.psm1",
+              "folderName": "Okta",
+              "credentialKinds": ["okta.jwtServiceApp"]
+            }
+          ]
+        },
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "okta",
+              "label": "Entro Okta",
+              "definitionId": "okta-entro",
+              "definitionModule": "modules/Definitions/Okta.Entro.psm1",
+              "folderName": "Entro-Okta",
+              "credentialKinds": ["okta.apiServicesPublicKey"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "crowdstrike",
+      "title": "CrowdStrike",
+      "cli": "falcon",
+      "launcher": "CrowdStrike.ps1",
+      "platformName": "CrowdStrike",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "saas",
+              "label": "CrowdStrike Falcon SaaS connector",
+              "definitionId": "crowdstrike-connector",
+              "definitionModule": "modules/Definitions/CrowdStrike.Connector.psm1",
+              "folderName": "CrowdStrike",
+              "credentialKinds": ["oauth.clientIdSecret"]
+            }
+          ]
+        },
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "crowdstrike",
+              "label": "Entro CrowdStrike",
+              "definitionId": "crowdstrike-entro",
+              "definitionModule": "modules/Definitions/CrowdStrike.Entro.psm1",
+              "folderName": "Entro-CrowdStrike",
+              "credentialKinds": ["oauth.clientIdSecret"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "slack",
+      "title": "Slack",
+      "cli": "slack",
+      "launcher": "Slack.ps1",
+      "platformName": "Slack",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "saas",
+              "label": "Slack SaaS connector",
+              "definitionId": "slack-connector",
+              "definitionModule": "modules/Definitions/Slack.Connector.psm1",
+              "folderName": "Slack",
+              "credentialKinds": ["slack.botUserAppTokens"]
+            }
+          ]
+        },
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "slack",
+              "label": "Entro Slack",
+              "definitionId": "slack-entro",
+              "definitionModule": "modules/Definitions/Slack.Entro.psm1",
+              "folderName": "Entro-Slack",
+              "credentialKinds": ["slack.botUserAppTokens"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "gitlab",
+      "title": "GitLab",
+      "cli": "glab",
+      "launcher": "GitLab.ps1",
+      "platformName": "GitLab",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "saas",
+              "label": "GitLab SaaS connector",
+              "definitionId": "gitlab-connector",
+              "definitionModule": "modules/Definitions/GitLab.Connector.psm1",
+              "folderName": "GitLab",
+              "credentialKinds": ["gitlab.accessToken"]
+            }
+          ]
+        },
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "gitlab",
+              "label": "Entro GitLab",
+              "definitionId": "gitlab-entro",
+              "definitionModule": "modules/Definitions/GitLab.Entro.psm1",
+              "folderName": "Entro-GitLab",
+              "credentialKinds": ["gitlab.accessToken"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "salesforce",
+      "title": "Salesforce",
+      "cli": "sf",
+      "launcher": "Salesforce.ps1",
+      "platformName": "Salesforce",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "saas",
+              "label": "Salesforce SaaS connector",
+              "definitionId": "salesforce-connector",
+              "definitionModule": "modules/Definitions/Salesforce.Connector.psm1",
+              "folderName": "Salesforce",
+              "credentialKinds": ["salesforce.connectedAppOrToken"]
+            }
+          ]
+        },
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "salesforce",
+              "label": "Entro Salesforce",
+              "definitionId": "salesforce-entro",
+              "definitionModule": "modules/Definitions/Salesforce.Entro.psm1",
+              "folderName": "Entro-Salesforce",
+              "credentialKinds": ["salesforce.connectedAppOrToken"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "databricks",
+      "title": "Databricks",
+      "cli": "databricks",
+      "launcher": "Databricks.ps1",
+      "platformName": "Databricks",
+      "products": {
+        "fabric": {
+          "bindings": [
+            {
+              "variantId": "account",
+              "label": "Databricks account connector",
+              "definitionId": "databricks-connector",
+              "definitionModule": "modules/Definitions/Databricks.Connector.psm1",
+              "folderName": "Databricks",
+              "credentialKinds": ["entra.appClientSecret"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "snowflake",
+      "title": "Snowflake",
+      "cli": "snow",
+      "launcher": "Snowflake.ps1",
+      "platformName": "Snowflake",
+      "products": {
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "snowflake",
+              "label": "Entro Snowflake",
+              "definitionId": "snowflake-entro",
+              "definitionModule": "modules/Definitions/Snowflake.Entro.psm1",
+              "folderName": "Entro-Snowflake",
+              "credentialKinds": ["snowflake.keyPairUser"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "servicenow",
+      "title": "ServiceNow",
+      "cli": "servicenow",
+      "launcher": "ServiceNow.ps1",
+      "platformName": "ServiceNow",
+      "products": {
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "servicenow",
+              "label": "Entro ServiceNow",
+              "definitionId": "servicenow-entro",
+              "definitionModule": "modules/Definitions/ServiceNow.Entro.psm1",
+              "folderName": "Entro-ServiceNow",
+              "credentialKinds": ["servicenow.restApiKey"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "hashicorp-vault",
+      "title": "HashiCorp Vault",
+      "cli": "vault",
+      "launcher": "HashiCorp Vault.ps1",
+      "platformName": "HashiCorpVault",
+      "products": {
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "vault",
+              "label": "Entro HashiCorp Vault",
+              "definitionId": "hashicorp-vault-entro",
+              "definitionModule": "modules/Definitions/HashiCorp.Entro.psm1",
+              "folderName": "Entro-HashiCorp-Vault",
+              "credentialKinds": ["vault.policyToken"]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -4,7 +4,7 @@ Manages SailPoint Connect module updates from the PowerShell Gallery.
 
 ## `Update-SailPointConnect`
 
-Checks whether a newer release is published on PowerShell Gallery and updates or reinstalls the module. Also offered automatically when starting the interactive platform wizard if a newer release is detected.
+Checks whether a newer release is published on PowerShell Gallery and updates or reinstalls the module. On success it unloads in-session helper modules and force-imports the installed build so the current shell runs the new version. The interactive root menu and `-Update` flow re-enter automatically after reload. Also offered when starting the interactive platform wizard if a newer release is detected.
 
 ### Synopsis
 

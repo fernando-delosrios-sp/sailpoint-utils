@@ -34,7 +34,14 @@ param(
     [Parameter(ParameterSetName = 'Help')]
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Entro')]
-    [string]$Project
+    [string]$Project,
+    [string]$CatalogIntegrationId,
+    [string]$CatalogProduct,
+    [string]$CatalogVariantId,
+    [string]$CatalogCredentialKind,
+    [ValidateSet('CreateNew', 'UpdateExisting')]
+    [string]$CatalogReuseMode = 'CreateNew',
+    [string]$CatalogCredentialId
 )
 
 Set-StrictMode -Version Latest
@@ -63,6 +70,8 @@ if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $Entro) {
     Show-IntegrationWizardPlatformHelp -Platform 'ServiceNow' -ScriptName 'ServiceNow.ps1' -CoreOptionHelp $coreHelp
     return
 }
+
+Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBoundParameters
 
 Start-IntegrationWizardFlow -Platform 'ServiceNow' -ScriptName 'ServiceNow.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {

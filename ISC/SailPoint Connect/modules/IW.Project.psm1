@@ -141,7 +141,13 @@ function Get-IntegrationProjectSelectionSnapshot {
         [Parameter(Mandatory)][string]$ScriptName
     )
     $inputs = [ordered]@{}
-    foreach ($input in @($Definition.Inputs)) {
+    $activeInputs = if (Get-Command Get-IntegrationWizardActiveInputs -ErrorAction SilentlyContinue) {
+        @(Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context)
+    }
+    else {
+        @($Definition.Inputs)
+    }
+    foreach ($input in $activeInputs) {
         if (-not $input) { continue }
         if (-not (Get-Command Test-IntegrationWizardInputWhen -ErrorAction SilentlyContinue)) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
@@ -155,18 +161,34 @@ function Get-IntegrationProjectSelectionSnapshot {
         if ($val -is [array]) { $val = $val -join ',' }
         $inputs[$name] = [string]$val
     }
+    $credentialKind = [string]$Context['CatalogCredentialKind']
+    $discriminators = if ($credentialKind) {
+        Get-IntegrationProjectCredentialDiscriminatorMap -Context $Context -CredentialKind $credentialKind
+    }
+    else {
+        [ordered]@{}
+    }
     [ordered]@{
-        timestamp         = (Get-Date).ToUniversalTime().ToString('o')
-        project           = [string]$Context['IntegrationProjectName']
-        platform          = $Platform
-        integrationFolder = Get-IntegrationWizardIntegrationFolderName -Definition $Definition
-        script            = $ScriptName
-        target            = [string]$Definition.Title
-        action            = [string]$Context['Action']
-        outputDirectory   = [string]$Context['OutputDirectory']
-        outputOverride    = [bool]$Context['IntegrationOutputOverride']
-        integrationPath   = [string]$Context['IntegrationFolderPath']
-        inputs            = $inputs
+        schemaVersion          = 1
+        timestamp              = (Get-Date).ToUniversalTime().ToString('o')
+        project                = [string]$Context['IntegrationProjectName']
+        platform               = $Platform
+        definitionId           = if ($Definition.ContainsKey('Id')) { [string]$Definition['Id'] } else { '' }
+        integrationFolder      = Get-IntegrationWizardIntegrationFolderName -Definition $Definition
+        script                 = $ScriptName
+        target                 = if ($Definition.ContainsKey('Title')) { [string]$Definition['Title'] } else { '' }
+        action                 = [string]$Context['Action']
+        outputDirectory        = [string]$Context['OutputDirectory']
+        outputOverride         = [bool]$Context['IntegrationOutputOverride']
+        integrationPath        = [string]$Context['IntegrationFolderPath']
+        catalogIntegrationId   = [string]$Context['CatalogIntegrationId']
+        catalogProduct         = [string]$Context['CatalogProduct']
+        catalogVariantId       = [string]$Context['CatalogVariantId']
+        catalogCredentialKind  = $credentialKind
+        catalogReuseMode       = [string]$Context['CatalogReuseMode']
+        catalogCredentialId    = [string]$Context['CatalogCredentialId']
+        discriminators         = $discriminators
+        inputs                 = $inputs
     }
 }
 
@@ -184,6 +206,269 @@ function Write-IntegrationProjectSelection {
     $json = $Record | ConvertTo-Json -Depth 8 -Compress:$false
     Set-Content -LiteralPath (Join-Path $projRoot 'selection.json') -Value $json -Encoding utf8
     Add-Content -LiteralPath (Join-Path $projRoot 'selections.jsonl') -Value ($Record | ConvertTo-Json -Depth 8 -Compress) -Encoding utf8
+}
+
+function Get-IntegrationProjectCredentialIndexPath {
+    param(
+        [Parameter(Mandatory)][string]$ProjectName,
+        [string]$Root = (Get-IntegrationProjectRoot)
+    )
+    Test-IntegrationProjectName -Name $ProjectName
+    Join-Path (Join-Path $Root $ProjectName) 'credential-index.json'
+}
+
+function Read-IntegrationProjectCredentialIndex {
+    param(
+        [Parameter(Mandatory)][string]$ProjectName,
+        [string]$Root = (Get-IntegrationProjectRoot)
+    )
+    $path = Get-IntegrationProjectCredentialIndexPath -ProjectName $ProjectName -Root $Root
+    if (-not (Test-Path -LiteralPath $path)) { return @() }
+    try {
+        $index = Get-Content -LiteralPath $path -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
+    }
+    catch {
+        throw "Could not read credential index '$path': $($_.Exception.Message)"
+    }
+    if ($null -eq $index -or -not $index.ContainsKey('entries') -or $null -eq $index['entries']) { return @() }
+    return @($index['entries'])
+}
+
+function Get-IntegrationProjectCredentialKindMetadata {
+    param([Parameter(Mandatory)][string]$CredentialKind)
+    if (-not (Get-Command Get-IntegrationCatalogCredentialKind -ErrorAction SilentlyContinue)) {
+        Import-Module (Join-Path $PSScriptRoot 'IW.Catalog.psm1') -WarningAction SilentlyContinue | Out-Null
+    }
+    Get-IntegrationCatalogCredentialKind -KindId $CredentialKind
+}
+
+function Get-IntegrationProjectCredentialDiscriminatorMap {
+    param(
+        [Parameter(Mandatory)][hashtable]$Context,
+        [Parameter(Mandatory)][string]$CredentialKind
+    )
+    $kind = Get-IntegrationProjectCredentialKindMetadata -CredentialKind $CredentialKind
+    $aliases = @{
+        RoleName         = @('RoleName', 'EntroRoleName')
+        ServiceAccountId = @('ServiceAccountId', 'ServiceAccountName')
+        ServiceAccountName = @('ServiceAccountName', 'ServiceAccountId')
+        VaultAddress     = @('VaultAddress', 'VaultUrl')
+        BaseUrl          = @('BaseUrl', 'GitLabUrl')
+    }
+    $values = [ordered]@{}
+    foreach ($name in @($kind.Discriminators)) {
+        $candidateNames = if ($aliases.ContainsKey($name)) { @($aliases[$name]) } else { @($name) }
+        foreach ($candidate in $candidateNames) {
+            $value = $Context[$candidate]
+            if ($null -eq $value) { continue }
+            if ($value -is [array]) { $value = $value -join ',' }
+            $text = ([string]$value).Trim()
+            if (-not $text -or $text -eq '***') { continue }
+            $values[$name] = $text
+            break
+        }
+    }
+    return $values
+}
+
+function Get-IntegrationProjectSafeInputMap {
+    param(
+        [Parameter(Mandatory)][hashtable]$Context,
+        [Parameter(Mandatory)][hashtable]$Definition
+    )
+    $secretFields = @()
+    if ($Context['CatalogCredentialKind']) {
+        $kind = Get-IntegrationProjectCredentialKindMetadata -CredentialKind ([string]$Context['CatalogCredentialKind'])
+        $secretFields = @($kind.SecretFields)
+    }
+    $activeInputs = if (Get-Command Get-IntegrationWizardActiveInputs -ErrorAction SilentlyContinue) {
+        @(Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context)
+    }
+    else {
+        @($Definition.Inputs)
+    }
+    $safe = [ordered]@{}
+    foreach ($input in $activeInputs) {
+        if (-not $input) { continue }
+        if ((Get-Command Test-IntegrationWizardInputWhen -ErrorAction SilentlyContinue) -and
+            -not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
+        $name = [string]$input.Name
+        if ($name -in @('OutputDirectory', 'RotateSecret', 'RotateKey')) { continue }
+        if ($input['Secret'] -or $secretFields -contains $name -or $name -match '(?i)secret|password|token|privatekey') { continue }
+        $value = $Context[$name]
+        if ($null -eq $value) { continue }
+        if ($value -is [array]) { $value = $value -join ',' }
+        $text = ([string]$value).Trim()
+        if (-not $text -or $text -eq '***') { continue }
+        $safe[$name] = $text
+    }
+    return $safe
+}
+
+function Test-IntegrationProjectCredentialIdentityComplete {
+    param(
+        [Parameter(Mandatory)][string]$CredentialKind,
+        [Parameter(Mandatory)][hashtable]$Discriminators
+    )
+    if ($Discriminators.Count -eq 0) { return $false }
+    $kind = Get-IntegrationProjectCredentialKindMetadata -CredentialKind $CredentialKind
+    if ($CredentialKind -eq 'oauth.clientIdSecret') {
+        return $Discriminators.ContainsKey('ClientId') -and
+            ($Discriminators.ContainsKey('BaseUrl') -or $Discriminators.ContainsKey('InstanceUrl'))
+    }
+    foreach ($name in @($kind.Discriminators)) {
+        if (-not $Discriminators.ContainsKey($name) -or [string]::IsNullOrWhiteSpace([string]$Discriminators[$name])) {
+            return $false
+        }
+    }
+    return $true
+}
+
+function Compare-IntegrationProjectCredentialDiscriminators {
+    param(
+        [Parameter(Mandatory)][hashtable]$Left,
+        [Parameter(Mandatory)][hashtable]$Right
+    )
+    if ($Left.Count -ne $Right.Count) { return $false }
+    foreach ($name in @($Left.Keys)) {
+        if (-not $Right.ContainsKey($name)) { return $false }
+        if (-not [string]::Equals(([string]$Left[$name]).Trim(), ([string]$Right[$name]).Trim(), [System.StringComparison]::OrdinalIgnoreCase)) {
+            return $false
+        }
+    }
+    return $true
+}
+
+function Find-IntegrationProjectCredential {
+    param(
+        [Parameter(Mandatory)][string]$ProjectName,
+        [Parameter(Mandatory)][string]$IntegrationId,
+        [Parameter(Mandatory)][string]$CredentialKind,
+        [string]$Product,
+        [string]$VariantId,
+        [string]$Root = (Get-IntegrationProjectRoot)
+    )
+    $matches = @(Read-IntegrationProjectCredentialIndex -ProjectName $ProjectName -Root $Root | Where-Object {
+        [string]$_['integrationId'] -eq $IntegrationId -and [string]$_['credentialKind'] -eq $CredentialKind
+    })
+    if ($Product -or $VariantId) {
+        $matches = @($matches | Where-Object {
+            $entry = $_
+            @($entry['uses'] | Where-Object {
+                (-not $Product -or [string]$_['product'] -eq $Product) -and
+                (-not $VariantId -or [string]$_['variantId'] -eq $VariantId)
+            }).Count -gt 0
+        })
+    }
+    return @($matches | Sort-Object { [string]$_['updatedAt'] } -Descending)
+}
+
+function Save-IntegrationProjectCredential {
+    param(
+        [Parameter(Mandatory)][hashtable]$Context,
+        [Parameter(Mandatory)][hashtable]$Definition,
+        [Parameter(Mandatory)][string]$Platform,
+        [Parameter(Mandatory)][string]$ScriptName,
+        [string]$Root = (Get-IntegrationProjectRoot)
+    )
+    $projectName = [string]$Context['IntegrationProjectName']
+    $integrationId = [string]$Context['CatalogIntegrationId']
+    $credentialKind = [string]$Context['CatalogCredentialKind']
+    if (-not $projectName -or $projectName -eq 'ephemeral' -or -not $integrationId -or -not $credentialKind) { return $null }
+
+    $snapshot = Get-IntegrationProjectSelectionSnapshot -Context $Context -Definition $Definition -Platform $Platform -ScriptName $ScriptName
+    $newDiscriminators = @{}
+    foreach ($key in @($snapshot.discriminators.Keys)) { $newDiscriminators[$key] = [string]$snapshot.discriminators[$key] }
+    $newInputs = Get-IntegrationProjectSafeInputMap -Context $Context -Definition $Definition
+    $entries = [System.Collections.Generic.List[hashtable]]::new()
+    foreach ($entry in @(Read-IntegrationProjectCredentialIndex -ProjectName $projectName -Root $Root)) { $entries.Add($entry) }
+
+    $existing = $null
+    $credentialId = [string]$Context['CatalogCredentialId']
+    if ($credentialId) {
+        $existing = @($entries | Where-Object { [string]$_['id'] -eq $credentialId })
+        if ($existing.Count -ne 1) { throw "Saved credential '$credentialId' was not found in project '$projectName'." }
+        $existing = $existing[0]
+        if ([string]$existing['integrationId'] -ne $integrationId -or [string]$existing['credentialKind'] -ne $credentialKind) {
+            throw "Saved credential '$credentialId' does not match $integrationId/$credentialKind."
+        }
+    }
+    elseif (Test-IntegrationProjectCredentialIdentityComplete -CredentialKind $credentialKind -Discriminators $newDiscriminators) {
+        $matches = @($entries | Where-Object {
+            [string]$_['integrationId'] -eq $integrationId -and
+            [string]$_['credentialKind'] -eq $credentialKind -and
+            (Compare-IntegrationProjectCredentialDiscriminators -Left $_['discriminators'] -Right $newDiscriminators)
+        })
+        if ($matches.Count -eq 1) { $existing = $matches[0] }
+    }
+
+    $now = [string]$snapshot.timestamp
+    if ($existing) {
+        $existingDiscriminators = if ($existing['discriminators']) { $existing['discriminators'] } else { @{} }
+        foreach ($name in @($newDiscriminators.Keys)) {
+            if ($existingDiscriminators.ContainsKey($name) -and
+                -not [string]::Equals(([string]$existingDiscriminators[$name]).Trim(), ([string]$newDiscriminators[$name]).Trim(), [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw "The supplied $name does not match saved credential '$($existing['id'])'. Choose Create new instead."
+            }
+        }
+        foreach ($name in @($newDiscriminators.Keys)) { $existingDiscriminators[$name] = $newDiscriminators[$name] }
+        $existing['discriminators'] = $existingDiscriminators
+        $existingInputs = if ($existing['inputs']) { $existing['inputs'] } else { @{} }
+        foreach ($name in @($newInputs.Keys)) { $existingInputs[$name] = $newInputs[$name] }
+        $existing['inputs'] = $existingInputs
+        $existing['updatedAt'] = $now
+        $existing['lastAction'] = [string]$Context['Action']
+        $entry = $existing
+    }
+    else {
+        $entry = @{
+            schemaVersion   = 1
+            id              = if ($credentialId) { $credentialId } else { [Guid]::NewGuid().ToString('N') }
+            integrationId   = $integrationId
+            credentialKind  = $credentialKind
+            discriminators  = $newDiscriminators
+            inputs          = $newInputs
+            uses            = @()
+            createdAt       = $now
+            updatedAt       = $now
+            lastAction      = [string]$Context['Action']
+        }
+        $entries.Add($entry)
+    }
+
+    $use = @{
+        product      = [string]$Context['CatalogProduct']
+        variantId    = [string]$Context['CatalogVariantId']
+        definitionId = [string]$Definition.Id
+        folderName   = [string]$snapshot.integrationFolder
+        access       = [string]$Context['Access']
+        lastAction   = [string]$Context['Action']
+        updatedAt    = $now
+    }
+    $uses = [System.Collections.Generic.List[hashtable]]::new()
+    $replacedUse = $false
+    foreach ($currentUse in @($entry['uses'])) {
+        if ([string]$currentUse['product'] -eq $use.product -and
+            [string]$currentUse['variantId'] -eq $use.variantId -and
+            [string]$currentUse['definitionId'] -eq $use.definitionId) {
+            if (-not $replacedUse) { $uses.Add($use) }
+            $replacedUse = $true
+        }
+        else {
+            $uses.Add($currentUse)
+        }
+    }
+    if (-not $replacedUse) { $uses.Add($use) }
+    $entry['uses'] = @($uses)
+    $entry['lastProduct'] = $use.product
+    $entry['lastVariantId'] = $use.variantId
+
+    $path = Get-IntegrationProjectCredentialIndexPath -ProjectName $projectName -Root $Root
+    $directory = Split-Path -Parent $path
+    if (-not (Test-Path -LiteralPath $directory)) { New-Item -ItemType Directory -Path $directory -Force | Out-Null }
+    $payload = [ordered]@{ schemaVersion = 1; entries = @($entries) }
+    Set-Content -LiteralPath $path -Value ($payload | ConvertTo-Json -Depth 10) -Encoding utf8
+    return $entry
 }
 
 function Initialize-IntegrationProjectActivityLog {
@@ -450,6 +735,11 @@ Export-ModuleMember -Function @(
     'Select-IntegrationProjectWorkspace'
     'Get-IntegrationProjectSelectionSnapshot'
     'Write-IntegrationProjectSelection'
+    'Get-IntegrationProjectCredentialIndexPath'
+    'Read-IntegrationProjectCredentialIndex'
+    'Get-IntegrationProjectCredentialDiscriminatorMap'
+    'Find-IntegrationProjectCredential'
+    'Save-IntegrationProjectCredential'
     'Initialize-IntegrationProjectActivityLog'
     'Close-IntegrationProjectActivityLog'
     'Write-IntegrationProjectLogLine'

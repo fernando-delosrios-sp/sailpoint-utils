@@ -105,7 +105,14 @@ param(
     [Parameter(ParameterSetName = 'GcpEntro')]
     [Parameter(ParameterSetName = 'WorkspaceEntro')]
     [Parameter(ParameterSetName = 'BothEntro')]
-    [string]$Project
+    [string]$Project,
+    [string]$CatalogIntegrationId,
+    [string]$CatalogProduct,
+    [string]$CatalogVariantId,
+    [string]$CatalogCredentialKind,
+    [ValidateSet('CreateNew', 'UpdateExisting')]
+    [string]$CatalogReuseMode = 'CreateNew',
+    [string]$CatalogCredentialId
 )
 
 Set-StrictMode -Version Latest
@@ -155,6 +162,8 @@ if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $hasCore) 
     Show-IntegrationWizardPlatformHelp -Platform 'GoogleCloud' -ScriptName 'Google Cloud.ps1' -CoreOptionHelp $coreHelp
     return
 }
+Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBoundParameters
+
 Start-IntegrationWizardFlow -Platform 'GoogleCloud' -ScriptName 'Google Cloud.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
         $picked = Read-Choice -Prompt 'What do you want to configure?' `

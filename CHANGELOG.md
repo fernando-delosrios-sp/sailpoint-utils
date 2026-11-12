@@ -4,6 +4,29 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-12 · v1.9.0
+
+### Added
+
+- **SailPoint Connect — catalog-driven root menu**: `IW.CatalogMenu.psm1` runs Project → Action → Integration → Product → variant → credential kind, then launches the platform wizard with legacy switches (`SaaSConnector`, `Connector`, `Entro`, etc.). `Invoke-SailPointConnect` with no `-Platform` uses this flow; IQService, M365 Access Profiles, and Update remain on the integration list.
+
+### Changed
+
+- **Wizard stage order**: interactive platform wizards prompt for **project workspace before action** (`IW.Core.psm1`).
+- **Catalog PROMPT_BACK**: root and launcher paths treat back/cancel via `Test-CancelledNavigation`; catalog menus resolve `Read-Choice` through the operator console module for consistent behavior and tests.
+
+## 2026-11-12 · v1.8.0
+
+### Added
+
+- **SailPoint Connect — integration wizard catalog**: `catalog/wizard-catalog.json` defines integrations, Fabric/Entro/CIEM product bindings, credential kinds, and CLI launchers. New `IW.Catalog.psm1` loads and validates the catalog and resolves bindings (including Azure CIEM as a separate product with shared `entra.appClientSecret` kind). `Test-WizardCatalog.ps1` asserts catalog files, definition modules, and registered definition IDs.
+
+## 2026-11-12 · v1.7.3
+
+### 🐛 Bug Fixes & Improvements
+
+- **SailPoint Connect — session reload after update**: `Update-SailPointConnect` removes in-session SailPoint.Connect/IW/ISC modules and force-imports the installed build. Interactive flows re-enter `Invoke-SailPointConnect` so the platform menu runs on the new version immediately.
+
 ## 2026-11-12 · v1.7.2
 
 ### 🐛 Bug Fixes & Improvements

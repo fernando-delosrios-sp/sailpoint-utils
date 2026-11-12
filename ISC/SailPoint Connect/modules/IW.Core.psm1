@@ -262,12 +262,12 @@ function Merge-IntegrationWizardDefinitions {
         if ($m.CliName -ne $cli) { throw 'Combined definitions must use the same CLI.' }
     }
 
-    $mergedInputs = @{}
+    $mergedInputs = [ordered]@{}
     foreach ($m in $Members) {
         foreach ($inputDef in @($m.Inputs)) {
             if (-not $inputDef) { continue }
             $name = $inputDef.Name
-            if ($mergedInputs.ContainsKey($name)) {
+            if ($mergedInputs.Contains($name)) {
                 $existing = $mergedInputs[$name]
                 if ($existing.Purpose -ne $inputDef.Purpose) {
                     throw "Input name collision '$name' with different purpose; use distinct names (e.g. IscExternalId vs EntroExternalId)."
@@ -663,6 +663,31 @@ function Test-IntegrationWizardCancelled {
     return [bool]$script:LastWizardCancelled
 }
 
+function Copy-IntegrationWizardCatalogContext {
+    param(
+        [Parameter(Mandatory)][hashtable]$Context,
+        [Parameter(Mandatory)]$BoundParameters
+    )
+    foreach ($name in @(
+        'CatalogIntegrationId', 'CatalogProduct', 'CatalogVariantId', 'CatalogCredentialKind',
+        'CatalogReuseMode', 'CatalogCredentialId'
+    )) {
+        $hasKey = if ($BoundParameters.PSObject.Methods.Name -contains 'ContainsKey') {
+            $BoundParameters.ContainsKey($name)
+        }
+        elseif ($BoundParameters.PSObject.Methods.Name -contains 'Contains') {
+            $BoundParameters.Contains($name)
+        }
+        else {
+            $null -ne $BoundParameters[$name]
+        }
+        if ($hasKey) { $Context[$name] = $BoundParameters[$name] }
+    }
+    if ($Context['CatalogIntegrationId'] -and -not $Context['CatalogReuseMode']) {
+        $Context['CatalogReuseMode'] = 'CreateNew'
+    }
+}
+
 function Start-IntegrationWizardFlow {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
@@ -715,13 +740,13 @@ function Start-IntegrationWizardFlow {
             try {
                 switch ($stage) {
                     0 {
-                        Resolve-IntegrationWizardAction -Context $Context -Wizard:$wizard
-                        $stage = 1
-                    }
-                    1 {
                         if ($needWorkspace -and [string]::IsNullOrWhiteSpace([string]$Context['IntegrationProjectName'])) {
                             Select-IntegrationProjectWorkspace -Context $Context
                         }
+                        $stage = 1
+                    }
+                    1 {
+                        Resolve-IntegrationWizardAction -Context $Context -Wizard:$wizard
                         $stage = 2
                     }
                     2 {
@@ -753,7 +778,7 @@ function Start-IntegrationWizardFlow {
                                 }
                             }
                         }
-                        elseif ($plan -and -not $plan['IsComposite'] -and $plan.Product -eq 'ISC') {
+                        elseif ($plan -and -not $plan['IsComposite'] -and $plan.Product -eq 'ISC' -and -not $Context['CatalogIntegrationId']) {
                             Resolve-IntegrationWizardEntroAddon -Platform $Platform -Context $Context -ConnectorDefinition $plan `
                                 -Wizard:$wizard -NonInteractive:$nonInteractive
                             try {
@@ -921,7 +946,6 @@ function Start-IntegrationWizardFlow {
                         }
                         $Context.Remove('Connector')
                         $Context.Remove('Entro')
-                        $Context.Remove('IntegrationProjectName')
                         $pickedTarget = $false
                         $plan = $null
                         $stage = 1
@@ -929,8 +953,27 @@ function Start-IntegrationWizardFlow {
                     }
                     elseif ($stage -eq 1) {
                         $Context.Remove('Action')
+                        if (-not [string]::IsNullOrWhiteSpace([string]$Context['Project'])) {
+                            Write-Host ''
+                            Write-Host 'Cancelled.' -ForegroundColor Yellow
+                            if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
+                                Close-IntegrationProjectActivityLog
+                            }
+                            $script:LastWizardCancelled = $true
+                            return
+                        }
+                        $Context.Remove('IntegrationProjectName')
                         $stage = 0
                         continue
+                    }
+                    elseif ($stage -eq 0) {
+                        Write-Host ''
+                        Write-Host 'Cancelled.' -ForegroundColor Yellow
+                        if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
+                            Close-IntegrationProjectActivityLog
+                        }
+                        $script:LastWizardCancelled = $true
+                        return
                     }
                     else {
                         Write-Host ''
@@ -968,6 +1011,11 @@ function Start-IntegrationWizardFlow {
     }
     try {
         & $Execute $plan $Context
+        if (-not $WhatIfPreference -and $Context['IntegrationProjectName'] -and
+            $Context['CatalogIntegrationId'] -and $Context['CatalogCredentialKind']) {
+            Save-IntegrationProjectCredential -Context $Context -Definition $plan -Platform $Platform -ScriptName $ScriptName | Out-Null
+            Write-IntegrationProjectLogLine -Level 'INFO' -Message "Updated credential index for project $($Context['IntegrationProjectName'])"
+        }
     }
     finally {
         if (Get-Command Close-IntegrationProjectActivityLog -ErrorAction SilentlyContinue) {
@@ -1025,6 +1073,13 @@ function Get-IntegrationWizardCliSession {
                 if ($LASTEXITCODE -eq 0 -and $out) {
                     $state.SignedIn = $true
                     $state.Summary = 'Databricks CLI authenticated'
+                }
+            }
+            'gh' {
+                $user = gh api user --jq .login 2>$null
+                if ($LASTEXITCODE -eq 0 -and $user) {
+                    $state.SignedIn = $true
+                    $state.Summary = "user $user"
                 }
             }
         }
@@ -1118,9 +1173,11 @@ Export-ModuleMember -Function @(
     'Resolve-IntegrationWizardPlan'
     'Resolve-IntegrationWizardEntroAddon'
     'Resolve-IntegrationWizardConnectionChoice'
+    'Resolve-IntegrationWizardAction'
     'Test-IntegrationWizardRequiredInputs'
     'Get-IntegrationWizardActiveInputs'
     'Test-IntegrationWizardInputWhen'
+    'Copy-IntegrationWizardCatalogContext'
     'Start-IntegrationWizardFlow'
     'Get-IntegrationWizardCliSession'
     'Install-IntegrationWizardCli'

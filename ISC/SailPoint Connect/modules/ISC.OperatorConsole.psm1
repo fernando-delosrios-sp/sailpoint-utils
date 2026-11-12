@@ -449,9 +449,14 @@ function Read-TypedLine {
 
     if (Get-ConsoleMenuBlocker) {
         if ($Mask) {
-            $sec = Read-Host $PromptText -AsSecureString
-            if ($null -eq $sec) { return '' }
-            return [System.Net.NetworkCredential]::new('', $sec).Password
+            try {
+                if (-not [Console]::IsInputRedirected) {
+                    $sec = Read-Host $PromptText -AsSecureString
+                    if ($null -eq $sec) { return '' }
+                    return [System.Net.NetworkCredential]::new('', $sec).Password
+                }
+            }
+            catch { }
         }
         return Read-Host $PromptText
     }
@@ -463,9 +468,14 @@ function Read-TypedLine {
         catch {
             Write-Host ''
             if ($Mask) {
-                $sec = Read-Host $PromptText -AsSecureString
-                if ($null -eq $sec) { return '' }
-                return [System.Net.NetworkCredential]::new('', $sec).Password
+                try {
+                    if (-not [Console]::IsInputRedirected) {
+                        $sec = Read-Host $PromptText -AsSecureString
+                        if ($null -eq $sec) { return '' }
+                        return [System.Net.NetworkCredential]::new('', $sec).Password
+                    }
+                }
+                catch { }
             }
             return Read-Host $PromptText
         }
@@ -956,7 +966,7 @@ function Get-SailPointConnectVersion {
         }
         catch {}
     }
-    return '1.7.2'
+    return '1.9.0'
 }
 
 function Write-OperatorFramedRow {

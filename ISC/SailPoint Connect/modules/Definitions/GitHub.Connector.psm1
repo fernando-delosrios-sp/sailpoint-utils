@@ -21,14 +21,14 @@ function Register-GitHubConnectorDefinitions {
         OutputsHelp  = 'Paste Organization name, GitHub App ID, Installation ID, private key PEM (or PAT), and API URL into Agentic Fabric Connection Settings.'
         Inputs       = @(
             @{ Name = 'AuthMethod'; Source = 'Supply'; Prompt = 'Authentication method'; Purpose = 'GitHubApp (Agentic Fabric default) or PersonalAccessToken'; Required = $true; ValidateSet = @('PersonalAccessToken', 'GitHubApp'); Default = 'GitHubApp' }
-            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name'; Purpose = 'Public profile name of the GitHub organization'; Required = $false; When = { param($c) $true } }
+            @{ Name = 'Organization'; Source = 'Discover'; Prompt = 'GitHub Organization name'; Purpose = 'GitHub Organization name'; Required = $false; When = { param($c) $true } }
             @{ Name = 'AppId'; Source = 'Supply'; Prompt = 'GitHub App ID'; Purpose = 'Unique identifier for the installed GitHub app'; Required = $true; When = { param($c) $m = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'GitHubApp' }; $m -eq 'GitHubApp' } }
             @{ Name = 'InstallationId'; Source = 'Supply'; Prompt = 'GitHub App Installation ID'; Purpose = 'From URL .../settings/installations/{id}'; Required = $true; When = { param($c) $m = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'GitHubApp' }; $m -eq 'GitHubApp' } }
             @{ Name = 'PrivateKey'; Source = 'Supply'; Prompt = 'GitHub App private key (PEM)'; Purpose = 'Full PEM including BEGIN/END PRIVATE KEY lines'; Required = $true; Secret = $true; When = { param($c) $m = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'GitHubApp' }; $m -eq 'GitHubApp' } }
-            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'PAT credential when not using a GitHub App'; Required = $true; Secret = $true; When = { param($c) $c['AuthMethod'] -eq 'PersonalAccessToken' } }
+            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'GitHub Personal Access Token (PAT)'; Required = $true; Secret = $true; When = { param($c) $c['AuthMethod'] -eq 'PersonalAccessToken' } }
             @{ Name = 'ApiUrl'; Source = 'Supply'; Prompt = 'API URL'; Purpose = 'GitHub API endpoint'; Required = $false; Default = 'https://api.github.com' }
             @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: AgentDiscovery, ActivityInsights)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
-            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings file path'; Required = $false }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Output directory'; Required = $false }
         )
         CheckInputs  = @(
             @{ Name = 'AuthMethod'; Source = 'Supply'; Prompt = 'Authentication method'; Purpose = 'GitHubApp or PersonalAccessToken'; Required = $true; ValidateSet = @('PersonalAccessToken', 'GitHubApp'); Default = 'GitHubApp' }

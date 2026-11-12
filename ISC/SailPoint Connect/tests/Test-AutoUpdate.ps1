@@ -3,7 +3,8 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '_TestHelpers.ps1')
 
 $connectRoot = Split-Path $PSScriptRoot -Parent
-Import-Module (Join-Path $connectRoot 'SailPoint.Connect.psd1') -Force
+$env:SAILPOINT_CONNECT_RELOAD_FROM_PATH = Join-Path $connectRoot 'SailPoint.Connect.psd1'
+Import-Module $env:SAILPOINT_CONNECT_RELOAD_FROM_PATH -Force
 
 try {
     # 1) Get-SailPointConnectUpdate when skip env var is set
@@ -18,7 +19,7 @@ try {
     $mockCheck = Get-SailPointConnectUpdate
     Assert-True $mockCheck.UpdateAvailable 'Get-SailPointConnectUpdate detects higher mock version'
     Assert-Equal '9.9.9' $mockCheck.LatestVersion.ToString() 'LatestVersion matches mock version'
-    Assert-Equal '1.7.2' $mockCheck.CurrentVersion.ToString() 'CurrentVersion matches active version'
+    Assert-Equal '1.9.0' $mockCheck.CurrentVersion.ToString() 'CurrentVersion matches active version'
 
     # 3) Get-SailPointConnectUpdate with mock lower version
     $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.0.0'
@@ -40,9 +41,10 @@ try {
     $updateSuccess = Update-SailPointConnect
     Assert-True $updateSuccess.Success 'Update-SailPointConnect succeeds with mock update'
     Assert-True $updateSuccess.Updated 'Update-SailPointConnect reports Updated = true'
+    Assert-True $updateSuccess.Reloaded 'Update-SailPointConnect reloads module in session after mock update'
 
     # 7) Update-SailPointConnect when already up to date and no force
-    $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.7.2'
+    $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.7.3'
     $upToDate = Update-SailPointConnect
     Assert-True $upToDate.Success 'Update-SailPointConnect succeeds when already up to date'
     Assert-True (-not $upToDate.Updated) 'Update-SailPointConnect does not reinstall when already up to date'
@@ -98,6 +100,7 @@ finally {
     Remove-Item env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK -ErrorAction SilentlyContinue
     Remove-Item env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION -ErrorAction SilentlyContinue
     Remove-Item env:SAILPOINT_CONNECT_MOCK_UPDATE_ACTION -ErrorAction SilentlyContinue
+    Remove-Item env:SAILPOINT_CONNECT_RELOAD_FROM_PATH -ErrorAction SilentlyContinue
 }
 
 Write-Host "PASS ($script:AssertionCount assertions)"

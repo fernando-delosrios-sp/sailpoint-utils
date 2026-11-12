@@ -67,7 +67,14 @@ param(
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
-    [string]$Project
+    [string]$Project,
+    [string]$CatalogIntegrationId,
+    [string]$CatalogProduct,
+    [string]$CatalogVariantId,
+    [string]$CatalogCredentialKind,
+    [ValidateSet('CreateNew', 'UpdateExisting')]
+    [string]$CatalogReuseMode = 'CreateNew',
+    [string]$CatalogCredentialId
 )
 
 Set-StrictMode -Version Latest
@@ -109,6 +116,8 @@ if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $hasCore) 
     Show-IntegrationWizardPlatformHelp -Platform 'Salesforce' -ScriptName 'Salesforce.ps1' -CoreOptionHelp $coreHelp
     return
 }
+
+Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBoundParameters
 
 Start-IntegrationWizardFlow -Platform 'Salesforce' -ScriptName 'Salesforce.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {

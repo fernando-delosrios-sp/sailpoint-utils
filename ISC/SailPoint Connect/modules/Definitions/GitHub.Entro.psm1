@@ -16,9 +16,9 @@ function Register-GitHubEntroDefinitions {
         OutputsHelp  = 'Install the Entro GitHub App on your organization or paste a Classic PAT into the Entro admin console.'
         Inputs       = @(
             @{ Name = 'Method'; Source = 'Supply'; Prompt = 'Integration method'; Purpose = 'GitHubApp (Entro Cloud - New) or ClassicPAT'; Required = $true; ValidateSet = @('ClassicPAT', 'GitHubApp'); Default = 'GitHubApp' }
-            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'GitHub PAT with repo and read:org scopes to connect Entro or check'; Required = $false; Secret = $true }
-            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name (optional)'; Purpose = 'Organization to connect to Entro (leave blank for personal account / all repos)'; Required = $false }
-            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
+            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'GitHub Personal Access Token (PAT)'; Required = $false; Secret = $true }
+            @{ Name = 'Organization'; Source = 'Discover'; Prompt = 'GitHub Organization name (optional)'; Purpose = 'GitHub Organization name'; Required = $false }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Output directory'; Required = $false }
         )
         CheckInputs  = @(
             @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'GitHub PAT to verify'; Required = $true; Secret = $true }
