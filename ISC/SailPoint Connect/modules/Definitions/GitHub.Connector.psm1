@@ -18,14 +18,27 @@ function Register-GitHubConnectorDefinitions {
         FolderName   = 'GitHub'
         AccessLevels = @('ReadOnly', 'ReadWrite')
         AdminRoles   = @('GitHub Organization Owner')
-        OutputsHelp  = 'Paste Organization name, Personal Access Token (or GitHub App ID/Key), and API URL into ISC Connection Settings.'
+        OutputsHelp  = 'Paste Organization name, GitHub App ID, Installation ID, private key PEM (or PAT), and API URL into Agentic Fabric Connection Settings.'
         Inputs       = @(
-            @{ Name = 'AuthMethod'; Source = 'Supply'; Prompt = 'Authentication method'; Purpose = 'PersonalAccessToken or GitHubApp'; Required = $true; ValidateSet = @('PersonalAccessToken', 'GitHubApp'); Default = 'PersonalAccessToken' }
-            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'OAuth / PAT credential to connect or check'; Required = $false; Secret = $true }
-            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name (optional)'; Purpose = 'Organization to govern (leave blank to verify credentials only)'; Required = $false }
+            @{ Name = 'AuthMethod'; Source = 'Supply'; Prompt = 'Authentication method'; Purpose = 'GitHubApp (Agentic Fabric default) or PersonalAccessToken'; Required = $true; ValidateSet = @('PersonalAccessToken', 'GitHubApp'); Default = 'GitHubApp' }
+            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name'; Purpose = 'Public profile name of the GitHub organization'; Required = $false; When = { param($c) $true } }
+            @{ Name = 'AppId'; Source = 'Supply'; Prompt = 'GitHub App ID'; Purpose = 'Unique identifier for the installed GitHub app'; Required = $true; When = { param($c) $m = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'GitHubApp' }; $m -eq 'GitHubApp' } }
+            @{ Name = 'InstallationId'; Source = 'Supply'; Prompt = 'GitHub App Installation ID'; Purpose = 'From URL .../settings/installations/{id}'; Required = $true; When = { param($c) $m = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'GitHubApp' }; $m -eq 'GitHubApp' } }
+            @{ Name = 'PrivateKey'; Source = 'Supply'; Prompt = 'GitHub App private key (PEM)'; Purpose = 'Full PEM including BEGIN/END PRIVATE KEY lines'; Required = $true; Secret = $true; When = { param($c) $m = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'GitHubApp' }; $m -eq 'GitHubApp' } }
+            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'PAT credential when not using a GitHub App'; Required = $true; Secret = $true; When = { param($c) $c['AuthMethod'] -eq 'PersonalAccessToken' } }
             @{ Name = 'ApiUrl'; Source = 'Supply'; Prompt = 'API URL'; Purpose = 'GitHub API endpoint'; Required = $false; Default = 'https://api.github.com' }
             @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: AgentDiscovery, ActivityInsights)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings file path'; Required = $false }
+        )
+        CheckInputs  = @(
+            @{ Name = 'AuthMethod'; Source = 'Supply'; Prompt = 'Authentication method'; Purpose = 'GitHubApp or PersonalAccessToken'; Required = $true; ValidateSet = @('PersonalAccessToken', 'GitHubApp'); Default = 'GitHubApp' }
+            @{ Name = 'Organization'; Source = 'Supply'; Prompt = 'GitHub Organization name'; Purpose = 'Organization to verify'; Required = $false }
+            @{ Name = 'AppId'; Source = 'Supply'; Prompt = 'GitHub App ID'; Purpose = 'App ID to verify'; Required = $true; When = { param($c) $c['AuthMethod'] -eq 'GitHubApp' } }
+            @{ Name = 'InstallationId'; Source = 'Supply'; Prompt = 'Installation ID'; Purpose = 'Installation to verify'; Required = $true; When = { param($c) $c['AuthMethod'] -eq 'GitHubApp' } }
+            @{ Name = 'PrivateKey'; Source = 'Supply'; Prompt = 'Private key (PEM)'; Purpose = 'App key to verify'; Required = $true; Secret = $true; When = { param($c) $c['AuthMethod'] -eq 'GitHubApp' } }
+            @{ Name = 'Token'; Source = 'Supply'; Prompt = 'Personal Access Token'; Purpose = 'PAT to verify'; Required = $true; Secret = $true; When = { param($c) $c['AuthMethod'] -eq 'PersonalAccessToken' } }
+            @{ Name = 'ApiUrl'; Source = 'Supply'; Prompt = 'API URL'; Purpose = 'GitHub API endpoint'; Required = $false; Default = 'https://api.github.com' }
+            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
         Steps        = {
             param($ctx)
@@ -41,7 +54,7 @@ function Register-GitHubConnectorDefinitions {
                     $record = Get-GitHubRunRecord -Context $c
                     $record.Organization = if ($c['Organization']) { [string]$c['Organization'] } else { '' }
                     $record.ApiUrl = if ($c['ApiUrl']) { [string]$c['ApiUrl'] } else { 'https://api.github.com' }
-                    $record.AuthMethod = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'PersonalAccessToken' }
+                    $record.AuthMethod = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'GitHubApp' }
                     $record.AuthResult = 'Verified'
                     'Skip'
                 }
@@ -103,17 +116,24 @@ Write-Host "  - Copilot seats and GitHub Apps will aggregate as machine accounts
             Import-GitHubWizardModule
             $features = if ($ctx['Feature']) { @($ctx['Feature'] -split ',' | ForEach-Object { $_.Trim() }) } else { @() }
             $apiUrl = if ($ctx['ApiUrl']) { $ctx['ApiUrl'] } else { 'https://api.github.com' }
-            $authMethod = if ($ctx['AuthMethod']) { $ctx['AuthMethod'] } else { 'PersonalAccessToken' }
+            $authMethod = if ($ctx['AuthMethod']) { $ctx['AuthMethod'] } else { 'GitHubApp' }
 
-            $orgDisplay = if (-not [string]::IsNullOrWhiteSpace([string]$ctx['Organization'])) { $ctx['Organization'] } else { '[Unspecified / User scope]' }
+            $orgDisplay = if (-not [string]::IsNullOrWhiteSpace([string]$ctx['Organization'])) { $ctx['Organization'] } else { '[Organization name required for Agentic Fabric]' }
 
             Write-Host ''
             Write-Host 'GitHub SaaS connector handoff' -ForegroundColor Cyan
             Write-Host "  Organization: $orgDisplay"
             Write-Host "  API URL: $apiUrl"
             Write-Host "  Auth Method: $authMethod"
-            Write-Host "  Token: [Configured in Vault]"
-            Write-Host "  Recommended Scopes: repo, admin:org, manage_billing:copilot, read:audit_log"
+            if ($authMethod -eq 'GitHubApp') {
+                Write-Host "  GitHub App ID: $($ctx['AppId'])"
+                Write-Host "  Installation ID: $($ctx['InstallationId'])"
+                Write-Host '  Private key: [PEM in vault]'
+            }
+            else {
+                Write-Host '  PAT: [Configured in Vault]'
+                Write-Host '  Recommended Scopes: repo, admin:org, manage_billing:copilot, read:audit_log'
+            }
 
             if ($features -contains 'AgentDiscovery') {
                 Write-Host ''

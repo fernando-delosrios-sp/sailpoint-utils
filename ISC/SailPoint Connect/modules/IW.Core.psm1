@@ -264,17 +264,17 @@ function Merge-IntegrationWizardDefinitions {
 
     $mergedInputs = @{}
     foreach ($m in $Members) {
-        foreach ($input in @($m.Inputs)) {
-            if (-not $input) { continue }
-            $name = $input.Name
+        foreach ($inputDef in @($m.Inputs)) {
+            if (-not $inputDef) { continue }
+            $name = $inputDef.Name
             if ($mergedInputs.ContainsKey($name)) {
                 $existing = $mergedInputs[$name]
-                if ($existing.Purpose -ne $input.Purpose) {
+                if ($existing.Purpose -ne $inputDef.Purpose) {
                     throw "Input name collision '$name' with different purpose; use distinct names (e.g. IscExternalId vs EntroExternalId)."
                 }
                 continue
             }
-            $mergedInputs[$name] = $input
+            $mergedInputs[$name] = $inputDef
         }
     }
 
@@ -366,11 +366,11 @@ function Test-IntegrationWizardRequiredInputs {
     )
     $missing = @()
     $inputs = Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context
-    foreach ($input in $inputs) {
-        if (-not $input) { continue }
-        if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
-        $name = $input.Name
-        if ($input['Required'] -and [string]::IsNullOrWhiteSpace([string]$Context[$name])) {
+    foreach ($inputDef in $inputs) {
+        if (-not $inputDef) { continue }
+        if (-not (Test-IntegrationWizardInputWhen -InputDef $inputDef -Context $Context)) { continue }
+        $name = $inputDef.Name
+        if ($inputDef['Required'] -and [string]::IsNullOrWhiteSpace([string]$Context[$name])) {
             $missing += $name
         }
     }
@@ -403,12 +403,12 @@ function Show-IntegrationWizardDefinitionHelp {
     Write-Host ''
     Write-Host 'Inputs:'
     $helpInputs = Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context
-    foreach ($input in $helpInputs) {
-        if (-not $input) { continue }
-        if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
-        $req = if ($input['Required']) { ' (required)' } else { '' }
-        $src = if ($input['Source'] -eq 'Discover') { ' [pick-list if signed in, or type it]' } else { '' }
-        Write-Host "  -$($input.Name)$req$src — $($input['Purpose'])"
+    foreach ($inputDef in $helpInputs) {
+        if (-not $inputDef) { continue }
+        if (-not (Test-IntegrationWizardInputWhen -InputDef $inputDef -Context $Context)) { continue }
+        $req = if ($inputDef['Required']) { ' (required)' } else { '' }
+        $src = if ($inputDef['Source'] -eq 'Discover') { ' [pick-list if signed in, or type it]' } else { '' }
+        Write-Host "  -$($inputDef.Name)$req$src — $($inputDef['Purpose'])"
     }
     if ($Missing -and $Missing.Count -gt 0) {
         Write-Host ''
@@ -514,12 +514,12 @@ function Collect-IntegrationWizardInputs {
     $idx = 0
     $prompted = [System.Collections.Generic.HashSet[string]]::new()
     while ($idx -ge 0 -and $idx -lt $inputList.Count) {
-        $input = $inputList[$idx]
-        if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) {
+        $inputDef = $inputList[$idx]
+        if (-not (Test-IntegrationWizardInputWhen -InputDef $inputDef -Context $Context)) {
             $idx++
             continue
         }
-        $name = $input.Name
+        $name = $inputDef.Name
         if ($Context.ContainsKey($name) -and -not [string]::IsNullOrWhiteSpace([string]$Context[$name]) -and (-not $prompted.Contains($name))) {
             $idx++
             continue
@@ -529,14 +529,14 @@ function Collect-IntegrationWizardInputs {
             continue
         }
         $discoverValues = $null
-        if ($Context['ConnectionMode'] -ne 'NoSession' -and $input['Source'] -eq 'Discover' -and $Discover) {
+        if ($Context['ConnectionMode'] -ne 'NoSession' -and $inputDef['Source'] -eq 'Discover' -and $Discover) {
             $discoverValues = & $Discover $name $Context
         }
         try {
             if ($discoverValues -and @($discoverValues).Count -gt 0) {
                 $typed = 'Type a different value'
                 $options = @($discoverValues) + @($typed)
-                $picked = Read-Choice -Prompt $input['Prompt'] -Options $options -Default $discoverValues[0]
+                $picked = Read-Choice -Prompt $inputDef['Prompt'] -Options $options -Default $discoverValues[0]
                 if ($picked -ne $typed) {
                     $Context[$name] = $picked
                     [void]$prompted.Add($name)
@@ -544,12 +544,12 @@ function Collect-IntegrationWizardInputs {
                     continue
                 }
             }
-            if ($input['ValidateSet']) {
-                $Context[$name] = Read-Choice -Prompt $input['Prompt'] -Options $input['ValidateSet'] -Default $input['Default']
+            if ($inputDef['ValidateSet']) {
+                $Context[$name] = Read-Choice -Prompt $inputDef['Prompt'] -Options $inputDef['ValidateSet'] -Default $inputDef['Default']
             }
             else {
-                $isSecret = [bool]($input['Secret'] -or ($name -match '(?i)secret|password|token|privatekey'))
-                $Context[$name] = Read-InputString -Prompt $input['Prompt'] -Default $input['Default'] -Required:([bool]$input['Required']) -Mask:$isSecret
+                $isSecret = [bool]($inputDef['Secret'] -or ($name -match '(?i)secret|password|token|privatekey'))
+                $Context[$name] = Read-InputString -Prompt $inputDef['Prompt'] -Default $inputDef['Default'] -Required:([bool]$inputDef['Required']) -Mask:$isSecret
             }
             [void]$prompted.Add($name)
             $idx++
@@ -595,13 +595,13 @@ function Show-IntegrationWizardSummary {
         Write-Host '  This action does not change the tenant.'
     }
     $summaryInputs = Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context
-    foreach ($input in $summaryInputs) {
-        if (-not $input) { continue }
-        if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
-        $val = $Context[$input.Name]
-        $isSecret = [bool]($input['Secret'] -or ($input.Name -match '(?i)secret|password|token|privatekey'))
+    foreach ($inputDef in $summaryInputs) {
+        if (-not $inputDef) { continue }
+        if (-not (Test-IntegrationWizardInputWhen -InputDef $inputDef -Context $Context)) { continue }
+        $val = $Context[$inputDef.Name]
+        $isSecret = [bool]($inputDef['Secret'] -or ($inputDef.Name -match '(?i)secret|password|token|privatekey'))
         if ($isSecret) { $val = if ($val) { '***' } else { '(created at run)' } }
-        Write-Host "  $($input.Name): $val"
+        Write-Host "  $($inputDef.Name): $val"
     }
     Write-Host ''
 }
@@ -644,10 +644,10 @@ function Remove-LastIntegrationWizardInput {
         [Parameter(Mandatory)][hashtable]$Context
     )
     $last = $null
-    foreach ($input in @($Definition.Inputs)) {
-        if (-not $input) { continue }
-        if (-not (Test-IntegrationWizardInputWhen -InputDef $input -Context $Context)) { continue }
-        $name = $input.Name
+    foreach ($inputDef in @($Definition.Inputs)) {
+        if (-not $inputDef) { continue }
+        if (-not (Test-IntegrationWizardInputWhen -InputDef $inputDef -Context $Context)) { continue }
+        $name = $inputDef.Name
         if ($Context.ContainsKey($name) -and -not [string]::IsNullOrWhiteSpace([string]$Context[$name])) {
             $last = $name
         }

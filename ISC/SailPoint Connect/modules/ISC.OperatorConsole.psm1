@@ -956,7 +956,7 @@ function Get-SailPointConnectVersion {
         }
         catch {}
     }
-    return '1.6.0'
+    return '1.7.1'
 }
 
 function Write-SailPointConnectBanner {

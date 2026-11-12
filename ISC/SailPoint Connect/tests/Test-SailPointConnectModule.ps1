@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.6.0' $manifest.Version.ToString() 'Manifest version 1.6.0'
+Assert-Equal '1.7.1' $manifest.Version.ToString() 'Manifest version 1.7.1'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members
@@ -24,6 +24,12 @@ $expectedFunctions = @(
     'Connect-SailPointSalesforce',
     'Connect-SailPointGitHub',
     'Connect-SailPointCrowdStrike',
+    'Connect-SailPointOkta',
+    'Connect-SailPointGitLab',
+    'Connect-SailPointSlack',
+    'Connect-SailPointSnowflake',
+    'Connect-SailPointServiceNow',
+    'Connect-SailPointHashiCorpVault',
     'Invoke-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',
     'Get-SailPointConnectProject',
@@ -99,6 +105,18 @@ try {
     $csTarget = @(Get-IntegrationWizardTargets -Platform 'CrowdStrike' -Context @{ Connector = $true })
     Assert-Equal 1 $csTarget.Count 'CrowdStrike connector target resolves'
     Assert-Equal 'crowdstrike-connector' $csTarget[0]['Id'] 'CrowdStrike connector id matches'
+
+    Import-Module (Join-Path $connectRoot 'modules/Definitions/Okta.Connector.psm1') -Force
+    Register-IntegrationWizardPlatform -Name 'Okta' -Title 'Okta' -CoreOptions @('Connector', 'Entro') -CliName 'okta'
+    Register-OktaConnectorDefinitions
+    $oktaTarget = @(Get-IntegrationWizardTargets -Platform 'Okta' -Context @{ Connector = $true })
+    Assert-Equal 'okta-connector' $oktaTarget[0]['Id'] 'Okta connector id matches'
+
+    Import-Module (Join-Path $connectRoot 'modules/Definitions/Snowflake.Entro.psm1') -Force
+    Register-IntegrationWizardPlatform -Name 'Snowflake' -Title 'Snowflake' -CoreOptions @('Entro') -CliName 'snow'
+    Register-SnowflakeEntroDefinitions
+    $snowTarget = @(Get-IntegrationWizardTargets -Platform 'Snowflake' -Context @{ Entro = $true })
+    Assert-Equal 'snowflake-entro' $snowTarget[0]['Id'] 'Snowflake Entro id matches'
 
     # 7) Verify Invoke-SailPointConnect forwards named arguments cleanly without positional argument errors
     $fwdErr = $null
@@ -193,7 +211,10 @@ try {
     }
 
     # 13) Parameter set resolution for Wizard with generic options on all platform scripts
-    $platformScripts = @('AWS.ps1', 'Azure.ps1', 'Google Cloud.ps1', 'Databricks.ps1', 'Salesforce.ps1', 'GitHub.ps1', 'CrowdStrike.ps1')
+    $platformScripts = @(
+        'AWS.ps1', 'Azure.ps1', 'Google Cloud.ps1', 'Databricks.ps1', 'Salesforce.ps1', 'GitHub.ps1', 'CrowdStrike.ps1',
+        'Okta.ps1', 'GitLab.ps1', 'Slack.ps1', 'Snowflake.ps1', 'ServiceNow.ps1', 'HashiCorp Vault.ps1'
+    )
     foreach ($scriptName in $platformScripts) {
         $scriptPath = Join-Path $connectRoot $scriptName
         $cmd = Get-Command $scriptPath

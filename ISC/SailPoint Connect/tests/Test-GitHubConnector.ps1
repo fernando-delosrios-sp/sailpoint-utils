@@ -39,7 +39,20 @@ $connSettings = Build-GitHubConnectionSettings -Organization 'acme-corp' -AuthMe
 Assert-True ($connSettings -like '*Organization: acme-corp*') 'Organization in connection settings'
 Assert-True ($connSettings -like '*Machine Identity & Agent Discovery*') 'Agent discovery section in settings'
 
-# 4. Verify step generation
+# 4. GitHub App conditional inputs (Agentic Fabric)
+$authDefault = @($def.Inputs | Where-Object { $_.Name -eq 'AuthMethod' })[0]
+Assert-Equal 'GitHubApp' $authDefault.Default 'ISC GitHub connector defaults to GitHubApp'
+foreach ($name in @('AppId', 'InstallationId', 'PrivateKey')) {
+    $field = @($def.Inputs | Where-Object { $_.Name -eq $name })[0]
+    Assert-True ([bool]$field.Required) "GitHubApp field $name is required when active"
+    Assert-True (Test-IntegrationWizardInputWhen -InputDef $field -Context @{ AuthMethod = 'GitHubApp' }) "$name applies to GitHubApp auth"
+    Assert-True (-not (Test-IntegrationWizardInputWhen -InputDef $field -Context @{ AuthMethod = 'PersonalAccessToken' })) "$name hidden for PAT auth"
+}
+$patField = @($def.Inputs | Where-Object { $_.Name -eq 'Token' })[0]
+Assert-True (Test-IntegrationWizardInputWhen -InputDef $patField -Context @{ AuthMethod = 'PersonalAccessToken' }) 'PAT token shown for PAT auth'
+Assert-True (-not (Test-IntegrationWizardInputWhen -InputDef $patField -Context @{ AuthMethod = 'GitHubApp' })) 'PAT token hidden for GitHubApp auth'
+
+# 5. Verify step generation
 $baseCtx = @{ Organization = 'acme-corp'; AuthMethod = 'PersonalAccessToken' }
 $stepsBase = @(& $def.Steps $baseCtx)
 Assert-Equal 1 $stepsBase.Count 'Base connector has 1 step'
@@ -69,7 +82,7 @@ $entroSteps = @(& $entroDef.Steps @{ Organization = 'acme-corp'; Method = 'GitHu
 Assert-Equal 1 $entroSteps.Count 'Entro GitHub has 1 step'
 Assert-Equal 'entro-github-onboard' $entroSteps[0].Id 'Entro step is entro-github-onboard'
 
-# 7. Verify optional Organization
+# 8. Verify optional Organization
 $connOrgInput = @($def.Inputs | Where-Object { $_.Name -eq 'Organization' })[0]
 Assert-Equal $false ([bool]$connOrgInput.Required) 'Connector definition Organization is optional'
 

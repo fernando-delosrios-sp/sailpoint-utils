@@ -39,6 +39,15 @@ param(
     [string]$Token,
 
     [Parameter(ParameterSetName = 'Connector')]
+    [string]$AppId,
+
+    [Parameter(ParameterSetName = 'Connector')]
+    [string]$InstallationId,
+
+    [Parameter(ParameterSetName = 'Connector')]
+    [string]$PrivateKey,
+
+    [Parameter(ParameterSetName = 'Connector')]
     [ValidateSet('AgentDiscovery', 'ActivityInsights')]
     [string[]]$Feature,
 
@@ -97,7 +106,7 @@ $context = @{
     Connector = [bool]$Connector; Entro = [bool]$Entro
     Access = $Access; Action = $Action
     Organization = $Organization; ApiUrl = $ApiUrl
-    AuthMethod = $AuthMethod; Token = $Token
+    AuthMethod = $AuthMethod; Token = $Token; AppId = $AppId; InstallationId = $InstallationId; PrivateKey = $PrivateKey
     Feature = if ($Feature) { ($Feature -join ',') } else { $null }
     Method = $Method; OutputDirectory = $OutputDirectory
     OutputFormat = $OutputFormat

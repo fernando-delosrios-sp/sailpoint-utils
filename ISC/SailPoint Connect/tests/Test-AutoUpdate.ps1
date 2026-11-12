@@ -18,7 +18,7 @@ try {
     $mockCheck = Get-SailPointConnectUpdate
     Assert-True $mockCheck.UpdateAvailable 'Get-SailPointConnectUpdate detects higher mock version'
     Assert-Equal '9.9.9' $mockCheck.LatestVersion.ToString() 'LatestVersion matches mock version'
-    Assert-Equal '1.6.0' $mockCheck.CurrentVersion.ToString() 'CurrentVersion matches active version'
+    Assert-Equal '1.7.1' $mockCheck.CurrentVersion.ToString() 'CurrentVersion matches active version'
 
     # 3) Get-SailPointConnectUpdate with mock lower version
     $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.0.0'
@@ -42,7 +42,7 @@ try {
     Assert-True $updateSuccess.Updated 'Update-SailPointConnect reports Updated = true'
 
     # 7) Update-SailPointConnect when already up to date and no force
-    $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.6.0'
+    $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.7.1'
     $upToDate = Update-SailPointConnect
     Assert-True $upToDate.Success 'Update-SailPointConnect succeeds when already up to date'
     Assert-True (-not $upToDate.Updated) 'Update-SailPointConnect does not reinstall when already up to date'

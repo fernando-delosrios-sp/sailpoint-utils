@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.6.0'
+    ModuleVersion = '1.7.1'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -35,6 +35,12 @@
         'Connect-SailPointDatabricks'
         'Connect-SailPointSalesforce'
         'Connect-SailPointGitHub'
+        'Connect-SailPointOkta'
+        'Connect-SailPointGitLab'
+        'Connect-SailPointSlack'
+        'Connect-SailPointSnowflake'
+        'Connect-SailPointServiceNow'
+        'Connect-SailPointHashiCorpVault'
         'Connect-SailPointCrowdStrike'
         'Invoke-SailPointIQServiceControl'
         'New-SailPointM365AccessProfile'

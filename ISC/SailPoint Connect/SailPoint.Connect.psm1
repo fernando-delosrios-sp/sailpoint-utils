@@ -153,7 +153,7 @@ function Invoke-SailPointConnect {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Position = 0)]
-        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles', 'Update')]
+        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'Okta', 'GitLab', 'Slack', 'Snowflake', 'ServiceNow', 'HashiCorpVault', 'IQService', 'M365AccessProfiles', 'Update')]
         [string]$Platform,
 
         [Parameter()]
@@ -210,7 +210,7 @@ function Invoke-SailPointConnect {
         $activeWizard = [bool]$Wizard
         if (-not $activePlatform) {
             if ($NonInteractive) {
-                throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, IQService, M365AccessProfiles, Update."
+                throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, Okta, GitLab, Slack, Snowflake, ServiceNow, HashiCorpVault, IQService, M365AccessProfiles, Update."
             }
 
             Write-SailPointConnectBanner -ProjectName $Project
@@ -220,7 +220,7 @@ function Invoke-SailPointConnect {
 
             Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
 
-            $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'IQService', 'M365AccessProfiles', 'Update')
+            $options = @('AWS', 'Azure', 'GoogleCloud', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'Okta', 'GitLab', 'Slack', 'Snowflake', 'ServiceNow', 'HashiCorpVault', 'IQService', 'M365AccessProfiles', 'Update')
             $labels = @(
                 'Amazon Web Services (SaaS connector, CIEM, Entro)',
                 'Microsoft Azure & Entra ID (Connector, Entro)',
@@ -229,6 +229,12 @@ function Invoke-SailPointConnect {
                 'Salesforce (SaaS connector, Agentforce, Entro)',
                 'GitHub (SaaS connector, Copilot & Bots, Entro)',
                 'CrowdStrike (Falcon SaaS connector, Discover & ITDR, Entro)',
+                'Okta (SaaS connector JWT auth, Entro)',
+                'GitLab (SaaS connector, Entro)',
+                'Slack (SaaS connector, Entro)',
+                'Snowflake (Entro key-pair user)',
+                'ServiceNow (Entro REST API key)',
+                'HashiCorp Vault (Entro policy & token)',
                 'IQService Control (Host lifecycle & AD LDAPS)',
                 'Microsoft 365 Access Profiles (Entra service plans)',
                 'Update SailPoint Connect (autoupdate module)'
@@ -335,6 +341,78 @@ function Invoke-SailPointConnect {
                 }
                 'CrowdStrike' {
                     $script = Join-Path $script:ModuleRoot 'CrowdStrike.ps1'
+                    $pass = @{}
+                    if ($activeWizard) { $pass['Wizard'] = $true }
+                    if ($Project) { $pass['Project'] = $Project }
+                    if ($Action) { $pass['Action'] = $Action }
+                    if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                    if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                    if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
+                    foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                    & $script @pass
+                }
+                'Okta' {
+                    $script = Join-Path $script:ModuleRoot 'Okta.ps1'
+                    $pass = @{}
+                    if ($activeWizard) { $pass['Wizard'] = $true }
+                    if ($Project) { $pass['Project'] = $Project }
+                    if ($Action) { $pass['Action'] = $Action }
+                    if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                    if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                    if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
+                    foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                    & $script @pass
+                }
+                'GitLab' {
+                    $script = Join-Path $script:ModuleRoot 'GitLab.ps1'
+                    $pass = @{}
+                    if ($activeWizard) { $pass['Wizard'] = $true }
+                    if ($Project) { $pass['Project'] = $Project }
+                    if ($Action) { $pass['Action'] = $Action }
+                    if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                    if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                    if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
+                    foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                    & $script @pass
+                }
+                'Slack' {
+                    $script = Join-Path $script:ModuleRoot 'Slack.ps1'
+                    $pass = @{}
+                    if ($activeWizard) { $pass['Wizard'] = $true }
+                    if ($Project) { $pass['Project'] = $Project }
+                    if ($Action) { $pass['Action'] = $Action }
+                    if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                    if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                    if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
+                    foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                    & $script @pass
+                }
+                'Snowflake' {
+                    $script = Join-Path $script:ModuleRoot 'Snowflake.ps1'
+                    $pass = @{}
+                    if ($activeWizard) { $pass['Wizard'] = $true }
+                    if ($Project) { $pass['Project'] = $Project }
+                    if ($Action) { $pass['Action'] = $Action }
+                    if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                    if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                    if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
+                    foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                    & $script @pass
+                }
+                'ServiceNow' {
+                    $script = Join-Path $script:ModuleRoot 'ServiceNow.ps1'
+                    $pass = @{}
+                    if ($activeWizard) { $pass['Wizard'] = $true }
+                    if ($Project) { $pass['Project'] = $Project }
+                    if ($Action) { $pass['Action'] = $Action }
+                    if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                    if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                    if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
+                    foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                    & $script @pass
+                }
+                'HashiCorpVault' {
+                    $script = Join-Path $script:ModuleRoot 'HashiCorp Vault.ps1'
                     $pass = @{}
                     if ($activeWizard) { $pass['Wizard'] = $true }
                     if ($Project) { $pass['Project'] = $Project }
@@ -878,6 +956,9 @@ function Connect-SailPointGitHub {
         [ValidateSet('PersonalAccessToken', 'GitHubApp')]
         [string]$AuthMethod,
         [string]$Token,
+        [string]$AppId,
+        [string]$InstallationId,
+        [string]$PrivateKey,
         [ValidateSet('AgentDiscovery', 'ActivityInsights')]
         [string[]]$Feature,
         [ValidateSet('GitHubApp', 'ClassicPAT')]
@@ -889,6 +970,189 @@ function Connect-SailPointGitHub {
         [string]$Project
     )
     $script = Join-Path $script:ModuleRoot 'GitHub.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures SailPoint ISC Okta connector and Entro onboarding.
+.DESCRIPTION
+    Runs the Okta wizard for Agentic Fabric JWT service-app authentication and Entro API Services app handoff.
+.EXAMPLE
+    Connect-SailPointOkta -Wizard
+#>
+function Connect-SailPointOkta {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Connector,
+        [switch]$Entro,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
+        [string]$Action,
+        [string]$OktaDomain,
+        [string]$ClientId,
+        [string]$TokenUrl,
+        [string]$Scope,
+        [string]$JwtHeader,
+        [string]$PrivateKey,
+        [string]$PrivateKeyPassword,
+        [string]$Environment,
+        [string]$DisplayName,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'Okta.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures SailPoint ISC GitLab connector and Entro onboarding.
+.DESCRIPTION
+    Runs the GitLab wizard for access-token-based Agentic Fabric sources and Entro GitLab integration.
+.EXAMPLE
+    Connect-SailPointGitLab -Wizard
+#>
+function Connect-SailPointGitLab {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Connector,
+        [switch]$Entro,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
+        [string]$Action,
+        [string]$BaseUrl,
+        [ValidateSet('Yes', 'No')]
+        [string]$SelfManaged,
+        [ValidateSet('PersonalAccessToken', 'GroupAccessToken')]
+        [string]$AuthType,
+        [string]$AccessToken,
+        [string]$TargetGroups,
+        [string]$Nickname,
+        [string]$GitLabUrl,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'GitLab.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures SailPoint ISC Slack connector and Entro onboarding.
+.DESCRIPTION
+    Runs the Slack wizard for workspace app tokens (Agentic Fabric) and Entro private-app manifest install.
+.EXAMPLE
+    Connect-SailPointSlack -Wizard
+#>
+function Connect-SailPointSlack {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Connector,
+        [switch]$Entro,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
+        [string]$Action,
+        [string]$WorkspaceName,
+        [string]$BotUserOAuthToken,
+        [string]$UserOAuthToken,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'Slack.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures Entro Snowflake integration onboarding.
+.DESCRIPTION
+    Runs the Snowflake Entro wizard for key-pair user setup and account URL handoff.
+.EXAMPLE
+    Connect-SailPointSnowflake -Wizard
+#>
+function Connect-SailPointSnowflake {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Entro,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
+        [string]$Action,
+        [string]$Environment,
+        [string]$DisplayName,
+        [string]$AccountUrl,
+        [string]$EntroUser,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'Snowflake.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures Entro ServiceNow integration onboarding.
+.DESCRIPTION
+    Runs the ServiceNow Entro wizard for REST API key integration user setup.
+.EXAMPLE
+    Connect-SailPointServiceNow -Wizard
+#>
+function Connect-SailPointServiceNow {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Entro,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
+        [string]$Action,
+        [string]$Environment,
+        [string]$DisplayName,
+        [string]$InstanceUrl,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'ServiceNow.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures Entro HashiCorp Vault integration onboarding.
+.DESCRIPTION
+    Runs the Vault Entro wizard for entro-policy ACL and renewable token handoff.
+.EXAMPLE
+    Connect-SailPointHashiCorpVault -Wizard
+#>
+function Connect-SailPointHashiCorpVault {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Entro,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
+        [string]$Action,
+        [string]$Environment,
+        [string]$VaultUrl,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'HashiCorp Vault.ps1'
     & $script @PSBoundParameters
 }
 
@@ -1325,6 +1589,12 @@ Export-ModuleMember -Function @(
     'Connect-SailPointDatabricks',
     'Connect-SailPointSalesforce',
     'Connect-SailPointGitHub',
+    'Connect-SailPointOkta',
+    'Connect-SailPointGitLab',
+    'Connect-SailPointSlack',
+    'Connect-SailPointSnowflake',
+    'Connect-SailPointServiceNow',
+    'Connect-SailPointHashiCorpVault',
     'Connect-SailPointCrowdStrike',
     'Invoke-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',

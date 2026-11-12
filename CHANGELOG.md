@@ -4,6 +4,22 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-12 · v1.7.1
+
+### 🐛 Bug Fixes & Improvements
+
+- **SailPoint Connect — Entro data folder removed**: Dropped `modules/Entro/data` (checksum manifest and drift test). Entro onboarding continues to use the vendored `Entro/entro-connect` skill tree via `Get-EntroConnectSkillRoot` in `IW.EntroCatalog.psm1`.
+
+## 2026-11-12 · v1.7.0
+
+### ✨ New Features & Improvements
+
+- **SailPoint Connect — Agentic Fabric high-priority platforms**: Added `Okta.ps1`, `GitLab.ps1`, and `Slack.ps1` with ISC connector and Entro definitions aligned to Agentic Fabric onboarding and Entro `catalog.json` handoff fields.
+- **SailPoint Connect — Entro vault & data platforms**: Added Entro-only wizards `Snowflake.ps1`, `ServiceNow.ps1`, and `HashiCorp Vault.ps1` with definitions sourced from the vendored entro-connect integration catalogs.
+- **SailPoint Connect — GitHub App auth alignment**: GitHub ISC connector now defaults to `GitHubApp` auth, collects App ID, Installation ID, and PEM private key (conditional inputs), and documents Agentic Fabric handoff fields; Entro GitHub path defaults to `GitHubApp` (Cloud — New).
+- **SailPoint Connect — menu expansion**: `Invoke-SailPointConnect` and exported `Connect-SailPoint*` cmdlets cover the new platforms.
+- **SailPoint Connect — input validation**: Renamed wizard input loop variables in `IW.Core.psm1` to avoid clobbering PowerShell’s automatic `$input` variable (fixes false missing-input results in tests and non-interactive runs).
+
 ## 2026-11-10 · v1.6.0
 
 ### ✨ New Features & Improvements
