@@ -85,7 +85,7 @@ Assert-True $maskedRequiredThrown 'Read-InputString with -Mask and -Required thr
 
 # Banner and report tests
 $ver = Get-SailPointConnectVersion
-Assert-Equal '1.11.0' $ver 'Get-SailPointConnectVersion resolves 1.11.0 from module/psd1'
+Assert-Equal '1.12.0' $ver 'Get-SailPointConnectVersion resolves 1.12.0 from module/psd1'
 
 # Non-interactive banner writes nothing
 $nonIntBannerOut = pwsh -Command {
@@ -104,7 +104,7 @@ $intBannerOut = pwsh -Command {
     Write-SailPointConnectBanner -ProjectName 'DemoProject'
 } -Args $ModulePath
 Assert-True ((@($intBannerOut) -join "`n") -match 'SailPoint Connect') 'banner includes project title'
-Assert-True ((@($intBannerOut) -join "`n") -match 'v1\.11\.0') 'banner includes module version'
+Assert-True ((@($intBannerOut) -join "`n") -match 'v1\.12\.0') 'banner includes module version'
 Assert-True ((@($intBannerOut) -join "`n") -match 'Workspace: DemoProject') 'banner includes active workspace project'
 
 $updateBannerOut = pwsh -Command {

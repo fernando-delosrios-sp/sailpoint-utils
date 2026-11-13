@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-13 · v1.12.0
+
+### Changed
+
+- **SailPoint Connect — PowerShell 7+ install steps**: The folder README and [Prerequisites & Toolchain](ISC/SailPoint%20Connect/docs/guides/prerequisites-and-toolchain.md) now include install instructions for macOS (Homebrew and the signed package), Windows (winget and the MSI), and Linux (Ubuntu 22.04/24.04/26.04 and RHEL 8/9/10, with a pointer for Debian and other distributions). The prerequisites page no longer points at the retired `powershell/tap` Homebrew formula.
+
 ## 2026-11-13 · v1.11.0
 
 ### Added

@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.11.0'
+    ModuleVersion = '1.12.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -100,7 +100,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Wave 1 on-premise Entro integrations: HashiCorp Vault, GitLab self-managed, GitHub Enterprise Server, on-prem Active Directory, and remote file systems (SMB, SFTP, WinRM). Each keeps BuildRequirements, Check, BuildScript, and Run, uses pwsh on an explicit target host, and links an Entro Outpost.'
+            ReleaseNotes = 'Installation docs now include PowerShell 7+ steps for macOS (Homebrew and the signed pkg), Windows (winget and the MSI), and Linux (Ubuntu and Red Hat Enterprise Linux, with a pointer for Debian and other distributions).'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'
