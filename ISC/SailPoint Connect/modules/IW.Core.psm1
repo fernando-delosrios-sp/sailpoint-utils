@@ -102,6 +102,36 @@ function Get-IntegrationWizardWizardRoot {
     Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 }
 
+function Get-IntegrationWizardEffectiveCliName {
+    param(
+        [Parameter(Mandatory)][string]$Platform,
+        [hashtable]$Definition
+    )
+    if ($Definition -and $Definition.ContainsKey('CliName') -and -not [string]::IsNullOrWhiteSpace([string]$Definition['CliName'])) {
+        return [string]$Definition['CliName']
+    }
+    if ($script:IntegrationWizardPlatforms.ContainsKey($Platform)) {
+        $meta = $script:IntegrationWizardPlatforms[$Platform]
+        if ($meta -and $meta['CliName']) { return [string]$meta['CliName'] }
+    }
+    return 'pwsh'
+}
+
+function Resolve-IntegrationWizardTargetHost {
+    param(
+        [Parameter(Mandatory)][hashtable]$Definition,
+        [hashtable]$Context = @{}
+    )
+    if (-not $Definition -or -not $Definition.ContainsKey('TargetHost')) { return $null }
+    $th = $Definition['TargetHost']
+    if ($null -eq $th) { return $null }
+    if ($th -is [scriptblock]) {
+        $th = & $th $Context
+    }
+    if ($th -is [hashtable]) { return $th }
+    return $null
+}
+
 function Import-IntegrationWizardConsole {
     param(
         [string]$WizardRoot,
@@ -359,6 +389,16 @@ function Get-IntegrationWizardActiveInputs {
     return @($Definition.Inputs)
 }
 
+function Test-IntegrationWizardInputRequired {
+    param($InputDef, [hashtable]$Context)
+    if (-not $InputDef) { return $false }
+    $hasReq = if ($InputDef -is [hashtable]) { $InputDef.ContainsKey('Required') } else { $InputDef.PSObject.Properties.Name -contains 'Required' }
+    if (-not $hasReq) { return $false }
+    $req = if ($InputDef -is [hashtable]) { $InputDef['Required'] } else { $InputDef.Required }
+    if ($req -is [scriptblock]) { return [bool](& $req $Context) }
+    return [bool]$req
+}
+
 function Test-IntegrationWizardRequiredInputs {
     param(
         [Parameter(Mandatory)][hashtable]$Definition,
@@ -370,7 +410,7 @@ function Test-IntegrationWizardRequiredInputs {
         if (-not $inputDef) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $inputDef -Context $Context)) { continue }
         $name = $inputDef.Name
-        if ($inputDef['Required'] -and [string]::IsNullOrWhiteSpace([string]$Context[$name])) {
+        if ((Test-IntegrationWizardInputRequired -InputDef $inputDef -Context $Context) -and [string]::IsNullOrWhiteSpace([string]$Context[$name])) {
             $missing += $name
         }
     }
@@ -393,6 +433,10 @@ function Show-IntegrationWizardDefinitionHelp {
     elseif ($Definition['CoreSwitch']) {
         Write-Host "  Core switch: -$($Definition['CoreSwitch'])"
     }
+    $th = Resolve-IntegrationWizardTargetHost -Definition $Definition -Context $Context
+    if ($th -and $th['Role']) {
+        Write-Host "  Target host: $($th['Role'])"
+    }
     if ($Definition['AccessLevels'] -and @($Definition['AccessLevels']).Count -gt 1) {
         Write-Host '  -Access ReadOnly|ReadWrite'
     }
@@ -406,7 +450,7 @@ function Show-IntegrationWizardDefinitionHelp {
     foreach ($inputDef in $helpInputs) {
         if (-not $inputDef) { continue }
         if (-not (Test-IntegrationWizardInputWhen -InputDef $inputDef -Context $Context)) { continue }
-        $req = if ($inputDef['Required']) { ' (required)' } else { '' }
+        $req = if (Test-IntegrationWizardInputRequired -InputDef $inputDef -Context $Context) { ' (required)' } else { '' }
         $src = if ($inputDef['Source'] -eq 'Discover') { ' [pick-list if signed in, or type it]' } else { '' }
         Write-Host "  -$($inputDef.Name)$req$src — $($inputDef['Purpose'])"
     }
@@ -549,7 +593,8 @@ function Collect-IntegrationWizardInputs {
             }
             else {
                 $isSecret = [bool]($inputDef['Secret'] -or ($name -match '(?i)secret|password|token|privatekey'))
-                $Context[$name] = Read-InputString -Prompt $inputDef['Prompt'] -Default $inputDef['Default'] -Required:([bool]$inputDef['Required']) -Mask:$isSecret
+                $isReq = Test-IntegrationWizardInputRequired -InputDef $inputDef -Context $Context
+                $Context[$name] = Read-InputString -Prompt $inputDef['Prompt'] -Default $inputDef['Default'] -Required:$isReq -Mask:$isSecret
             }
             [void]$prompted.Add($name)
             $idx++
@@ -586,13 +631,26 @@ function Show-IntegrationWizardSummary {
         Write-Host "  Folder:  $($Context['IntegrationFolderPath'])"
     }
     Write-Host "  Target:  $($Definition.Title)"
+    $th = Resolve-IntegrationWizardTargetHost -Definition $Definition -Context $Context
+    if ($th -and $th['Role']) {
+        Write-Host "  Run on:  $($th['Role'])" -ForegroundColor Cyan
+        if ($th['Notes']) { Write-Host "  Host note: $($th['Notes'])" -ForegroundColor DarkGray }
+    }
+    if ($Context['WorkerGroup'] -and -not $Definition['OutpostDefinition']) {
+        Write-Host "  Outpost: $($Context['WorkerGroup'])"
+    }
     if ($Context['Access']) { Write-Host "  Access:  $($Context['Access'])" }
     if ($Context['Action']) { Write-Host "  Action:  $($Context['Action'])" }
     if ($Context['Action'] -eq 'Run') {
-        Write-Host '  Run changes the tenant. The next question is the confirmation.' -ForegroundColor Yellow
+        if ($Definition['OutpostDefinition']) {
+            Write-Host '  Run modifies the target host/cluster. The next question is the confirmation.' -ForegroundColor Yellow
+        }
+        else {
+            Write-Host '  Run changes the tenant. The next question is the confirmation.' -ForegroundColor Yellow
+        }
     }
     elseif ($Context['Action']) {
-        Write-Host '  This action does not change the tenant.'
+        Write-Host '  This action does not change the tenant or target host.'
     }
     $summaryInputs = Get-IntegrationWizardActiveInputs -Definition $Definition -Context $Context
     foreach ($inputDef in $summaryInputs) {
@@ -600,7 +658,7 @@ function Show-IntegrationWizardSummary {
         if (-not (Test-IntegrationWizardInputWhen -InputDef $inputDef -Context $Context)) { continue }
         $val = $Context[$inputDef.Name]
         $isSecret = [bool]($inputDef['Secret'] -or ($inputDef.Name -match '(?i)secret|password|token|privatekey'))
-        if ($isSecret) { $val = if ($val) { '***' } else { '(created at run)' } }
+        if ($isSecret) { $val = if ($val) { '***' } else { '(created at run / prompted later)' } }
         Write-Host "  $($inputDef.Name): $val"
     }
     Write-Host ''
@@ -670,7 +728,8 @@ function Copy-IntegrationWizardCatalogContext {
     )
     foreach ($name in @(
         'CatalogIntegrationId', 'CatalogProduct', 'CatalogVariantId', 'CatalogCredentialKind',
-        'CatalogReuseMode', 'CatalogCredentialId'
+        'CatalogReuseMode', 'CatalogCredentialId',
+        'WorkerGroup', 'OutpostId', 'OutpostPublicKeyPath', 'OutpostDeploymentMode'
     )) {
         $hasKey = if ($BoundParameters.PSObject.Methods.Name -contains 'ContainsKey') {
             $BoundParameters.ContainsKey($name)
@@ -810,28 +869,41 @@ function Start-IntegrationWizardFlow {
                             $stage = 5
                             continue
                         }
-                        $meta = $script:IntegrationWizardPlatforms[$Platform]
-                        $session = Get-IntegrationWizardCliSession -CliName $meta.CliName
-                        $mode = Resolve-IntegrationWizardConnectionChoice -CliName $meta.CliName -SessionState $session -Wizard:$wizard -NonInteractive:$nonInteractive
+                        $effectiveCli = Get-IntegrationWizardEffectiveCliName -Platform $Platform -Definition $plan
+                        if ($effectiveCli -eq 'pwsh') {
+                            $session = Get-IntegrationWizardCliSession -CliName 'pwsh'
+                            $Context['ConnectionMode'] = 'UseSession'
+                            Write-Step 'Local runtime'
+                            Write-Ok $session.Summary
+                            $th = Resolve-IntegrationWizardTargetHost -Definition $plan -Context $Context
+                            if ($th -and $th['Role']) {
+                                Write-Info "Target host: $($th['Role'])"
+                                if ($th['Notes']) { Write-Info ([string]$th['Notes']) }
+                            }
+                            $stage = 5
+                            continue
+                        }
+                        $session = Get-IntegrationWizardCliSession -CliName $effectiveCli
+                        $mode = Resolve-IntegrationWizardConnectionChoice -CliName $effectiveCli -SessionState $session -Wizard:$wizard -NonInteractive:$nonInteractive
                         $Context['ConnectionMode'] = $mode
                         if ($mode -eq 'SignIn') {
                             while ($true) {
-                                Install-IntegrationWizardCli -CliName $meta.CliName -NonInteractive:$nonInteractive
-                                Invoke-IntegrationWizardCliLogin -CliName $meta.CliName -NonInteractive:$nonInteractive
+                                Install-IntegrationWizardCli -CliName $effectiveCli -NonInteractive:$nonInteractive
+                                Invoke-IntegrationWizardCliLogin -CliName $effectiveCli -NonInteractive:$nonInteractive
 
                                 Write-Step 'Testing CLI session'
-                                $session = Get-IntegrationWizardCliSession -CliName $meta.CliName
+                                $session = Get-IntegrationWizardCliSession -CliName $effectiveCli
                                 if ($session.SignedIn) {
-                                    Write-Ok "$($meta.CliName): $($session.Summary)"
+                                    Write-Ok "${effectiveCli}: $($session.Summary)"
                                     if (Get-Command Write-IntegrationProjectLogLine -ErrorAction SilentlyContinue) {
-                                        Write-IntegrationProjectLogLine -Level 'OK' -Message "CLI session verified for $($meta.CliName): $($session.Summary)"
+                                        Write-IntegrationProjectLogLine -Level 'OK' -Message "CLI session verified for ${effectiveCli}: $($session.Summary)"
                                     }
                                     break
                                 }
                                 else {
-                                    Write-Warning "Could not verify an active session for $($meta.CliName)."
+                                    Write-Warning "Could not verify an active session for $effectiveCli."
                                     if ($nonInteractive) {
-                                        throw "Failed to verify an active CLI session for $($meta.CliName)."
+                                        throw "Failed to verify an active CLI session for $effectiveCli."
                                     }
                                     $failChoice = Read-Choice -Prompt 'What would you like to do?' `
                                         -Options @('Retry', 'NoSession', 'Cancel') `
@@ -868,7 +940,8 @@ function Start-IntegrationWizardFlow {
                     6 {
                         Show-IntegrationWizardSummary -Definition $plan -Context $Context
                         $proceed = if ($Context['Action'] -eq 'Run') {
-                            'Run will change the tenant. Proceed?'
+                            if ($plan['OutpostDefinition']) { 'Run modifies the target host/cluster. Proceed?' }
+                            else { 'Run will change the tenant. Proceed?' }
                         }
                         else {
                             'Write the local result? The tenant will not be changed.'
@@ -888,11 +961,13 @@ function Start-IntegrationWizardFlow {
             }
             catch {
                 if (Test-PromptBack $_) {
+                    $effectiveCli = if ($plan) { Get-IntegrationWizardEffectiveCliName -Platform $Platform -Definition $plan } else { '' }
+                    $skipStage4 = ($Context['Action'] -eq 'Check') -or ($effectiveCli -eq 'pwsh')
                     if ($stage -eq 6) {
                         if (Remove-LastIntegrationWizardInput -Definition $plan -Context $Context) {
                             $stage = 5
                         }
-                        elseif ($Context['Action'] -eq 'Check') {
+                        elseif ($skipStage4) {
                             if ($plan['AccessLevels'] -and @($plan['AccessLevels']).Count -gt 1) {
                                 $Context.Remove('Access')
                                 $stage = 3
@@ -908,7 +983,7 @@ function Start-IntegrationWizardFlow {
                         continue
                     }
                     elseif ($stage -eq 5) {
-                        if ($Context['Action'] -eq 'Check') {
+                        if ($skipStage4) {
                             if ($plan['AccessLevels'] -and @($plan['AccessLevels']).Count -gt 1) {
                                 $Context.Remove('Access')
                                 $stage = 3
@@ -1012,9 +1087,18 @@ function Start-IntegrationWizardFlow {
     try {
         & $Execute $plan $Context
         if (-not $WhatIfPreference -and $Context['IntegrationProjectName'] -and
-            $Context['CatalogIntegrationId'] -and $Context['CatalogCredentialKind']) {
-            Save-IntegrationProjectCredential -Context $Context -Definition $plan -Platform $Platform -ScriptName $ScriptName | Out-Null
-            Write-IntegrationProjectLogLine -Level 'INFO' -Message "Updated credential index for project $($Context['IntegrationProjectName'])"
+            $Context['IntegrationProjectName'] -ne 'ephemeral') {
+            if ($Context['CatalogIntegrationId'] -and $Context['CatalogCredentialKind'] -and -not $plan['OutpostDefinition']) {
+                Save-IntegrationProjectCredential -Context $Context -Definition $plan -Platform $Platform -ScriptName $ScriptName | Out-Null
+                Write-IntegrationProjectLogLine -Level 'INFO' -Message "Updated credential index for project $($Context['IntegrationProjectName'])"
+            }
+            if ($plan['OutpostDefinition'] -and (Get-Command Save-IntegrationProjectOutpost -ErrorAction SilentlyContinue)) {
+                $savedOutpost = Save-IntegrationProjectOutpost -ProjectName $Context['IntegrationProjectName'] -Context $Context -Definition $plan
+                if ($savedOutpost -and $savedOutpost['id']) {
+                    $Context['OutpostId'] = [string]$savedOutpost['id']
+                }
+                Write-IntegrationProjectLogLine -Level 'INFO' -Message "Updated outpost index for project $($Context['IntegrationProjectName'])"
+            }
         }
     }
     finally {
@@ -1030,6 +1114,15 @@ function Get-IntegrationWizardCliSession {
         Installed = $false
         SignedIn  = $false
         Summary   = ''
+    }
+    if ($CliName -eq 'pwsh') {
+        $state.Installed = $true
+        $state.SignedIn = $true
+        $state['LocalRuntime'] = $true
+        $osDesc = [System.Runtime.InteropServices.RuntimeInformation]::OSDescription
+        $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+        $state.Summary = "PowerShell $($PSVersionTable.PSVersion) on $([Environment]::MachineName) ($osDesc, $arch)"
+        return $state
     }
     $cmd = Get-Command $CliName -ErrorAction SilentlyContinue
     if (-not $cmd) { return $state }
@@ -1154,6 +1247,7 @@ function Get-IntegrationWizardLoginHint {
         'az' { return 'Run: az login' }
         'gcloud' { return 'Run: gcloud auth login' }
         'databricks' { return 'Run: databricks auth login' }
+        'pwsh' { return 'Run directly with PowerShell 7+ (pwsh) on the target host' }
         default { return "Sign in to $CliName" }
     }
 }
@@ -1164,6 +1258,8 @@ Export-ModuleMember -Function @(
     'Get-IntegrationWizardDefinition'
     'Get-IntegrationWizardDefinitionsForPlatform'
     'Get-IntegrationWizardWizardRoot'
+    'Get-IntegrationWizardEffectiveCliName'
+    'Resolve-IntegrationWizardTargetHost'
     'Import-IntegrationWizardConsole'
     'Show-IntegrationWizardPlatformHelp'
     'Show-IntegrationWizardDefinitionHelp'
@@ -1175,6 +1271,7 @@ Export-ModuleMember -Function @(
     'Resolve-IntegrationWizardConnectionChoice'
     'Resolve-IntegrationWizardAction'
     'Test-IntegrationWizardRequiredInputs'
+    'Test-IntegrationWizardInputRequired'
     'Get-IntegrationWizardActiveInputs'
     'Test-IntegrationWizardInputWhen'
     'Copy-IntegrationWizardCatalogContext'

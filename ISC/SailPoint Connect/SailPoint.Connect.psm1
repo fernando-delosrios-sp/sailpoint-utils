@@ -113,6 +113,9 @@ function Invoke-SailPointConnectSessionReentry {
     - Azure: Microsoft Entra ID connector or Entro
     - GoogleCloud (or GCP): Google Workspace SaaS connector, GCP CIEM, or Entro
     - Databricks: Databricks account & metastore connector
+    - EntroOutpost: Entro Outpost on-premise container runtime (Docker Compose or Kubernetes Helm)
+    - OnPremActiveDirectory: Entro on-prem Active Directory service account and LDAPS CA
+    - RemoteFileSystem: Entro SMB, SFTP, or WinRM file scanning
     - IQService: IQService host management and Active Directory LDAPS
     - M365AccessProfiles: Requestable access profiles from Entra service plans
 
@@ -169,7 +172,7 @@ function Invoke-SailPointConnect {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Position = 0)]
-        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'Okta', 'GitLab', 'Slack', 'Snowflake', 'ServiceNow', 'HashiCorpVault', 'IQService', 'M365AccessProfiles', 'Update')]
+        [ValidateSet('AWS', 'Azure', 'GoogleCloud', 'GCP', 'Databricks', 'Salesforce', 'GitHub', 'CrowdStrike', 'Okta', 'GitLab', 'Slack', 'Snowflake', 'ServiceNow', 'HashiCorpVault', 'EntroOutpost', 'OnPremActiveDirectory', 'RemoteFileSystem', 'IQService', 'M365AccessProfiles', 'Update')]
         [string]$Platform,
 
         [Parameter()]
@@ -234,7 +237,7 @@ function Invoke-SailPointConnect {
         $activeWizard = [bool]$Wizard
         if (-not $activePlatform) {
             if ($NonInteractive) {
-                throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, Okta, GitLab, Slack, Snowflake, ServiceNow, HashiCorpVault, IQService, M365AccessProfiles, Update."
+                throw "Non-interactive invocation requires -Platform. Choose from: AWS, Azure, GoogleCloud, Databricks, Salesforce, GitHub, CrowdStrike, Okta, GitLab, Slack, Snowflake, ServiceNow, HashiCorpVault, EntroOutpost, OnPremActiveDirectory, RemoteFileSystem, IQService, M365AccessProfiles, Update."
             }
 
             try {
@@ -443,6 +446,51 @@ function Invoke-SailPointConnect {
                 }
                 'HashiCorpVault' {
                     $script = Join-Path $script:ModuleRoot 'HashiCorp Vault.ps1'
+                    $pass = @{}
+                    if ($activeWizard) { $pass['Wizard'] = $true }
+                    if ($Project) { $pass['Project'] = $Project }
+                    if ($Action) { $pass['Action'] = $Action }
+                    if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                    if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                    if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
+                    foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                    & $script @pass
+                }
+                'EntroOutpost' {
+                    $script = Join-Path $script:ModuleRoot 'Entro Outpost.ps1'
+                    if (-not (Test-Path -LiteralPath $script)) {
+                        $script = Join-Path $script:ModuleRoot 'Entro-Outpost.ps1'
+                    }
+                    $pass = @{}
+                    if ($activeWizard) { $pass['Wizard'] = $true }
+                    if ($Project) { $pass['Project'] = $Project }
+                    if ($Action) { $pass['Action'] = $Action }
+                    if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                    if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                    if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
+                    foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                    & $script @pass
+                }
+                'OnPremActiveDirectory' {
+                    $script = Join-Path $script:ModuleRoot 'On-Prem Active Directory.ps1'
+                    if (-not (Test-Path -LiteralPath $script)) {
+                        $script = Join-Path $script:ModuleRoot 'On-Prem-Active-Directory.ps1'
+                    }
+                    $pass = @{}
+                    if ($activeWizard) { $pass['Wizard'] = $true }
+                    if ($Project) { $pass['Project'] = $Project }
+                    if ($Action) { $pass['Action'] = $Action }
+                    if ($OutputDirectory) { $pass['OutputDirectory'] = $OutputDirectory }
+                    if ($NonInteractive) { $pass['NonInteractive'] = $true }
+                    if ($OutputFormat) { $pass['OutputFormat'] = $OutputFormat }
+                    foreach ($k in $extraArgs.Keys) { $pass[$k] = $extraArgs[$k] }
+                    & $script @pass
+                }
+                'RemoteFileSystem' {
+                    $script = Join-Path $script:ModuleRoot 'Remote File System.ps1'
+                    if (-not (Test-Path -LiteralPath $script)) {
+                        $script = Join-Path $script:ModuleRoot 'Remote-File-System.ps1'
+                    }
                     $pass = @{}
                     if ($activeWizard) { $pass['Wizard'] = $true }
                     if ($Project) { $pass['Project'] = $Project }
@@ -945,7 +993,8 @@ function Connect-SailPointSalesforce {
     Runs the GitHub setup wizard or CLI driver. Supports configuring:
     - GitHub SaaS connector organization authentication
     - Machine identity governance for GitHub Copilot seats, GitHub Apps, and Bots
-    - Entro GitHub integration (App installation or PAT)
+    - Entro GitHub Cloud integration (App installation or PAT)
+    - Entro GitHub Enterprise Server classic PAT (requires an Outpost)
 
 .PARAMETER Wizard
     Runs interactive guided questionnaire.
@@ -954,7 +1003,10 @@ function Connect-SailPointSalesforce {
     Targets the GitHub SaaS connector.
 
 .PARAMETER Entro
-    Targets the Entro GitHub integration.
+    Targets the Entro GitHub Cloud integration.
+
+.PARAMETER GhesEntro
+    Targets Entro onboarding for GitHub Enterprise Server. Requires an Outpost Worker Group.
 
 .PARAMETER Organization
     GitHub organization name.
@@ -972,6 +1024,10 @@ function Connect-SailPointSalesforce {
 .EXAMPLE
     Connect-SailPointGitHub -Connector -Organization "acme-corp" -Feature AgentDiscovery -Action Run
     Configures GitHub SaaS connector with Copilot seat and bot machine identity discovery.
+
+.EXAMPLE
+    Connect-SailPointGitHub -GhesEntro -Hostname "github.corp.local" -DisplayName "Corp GHES" -Action BuildScript -NonInteractive
+    Writes the GitHub Enterprise Server classic PAT checklist script. Run does not create the PAT.
 #>
 function Connect-SailPointGitHub {
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -979,6 +1035,7 @@ function Connect-SailPointGitHub {
         [switch]$Wizard,
         [switch]$Connector,
         [switch]$Entro,
+        [switch]$GhesEntro,
         [ValidateSet('ReadOnly', 'ReadWrite')]
         [string]$Access,
         [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
@@ -995,6 +1052,14 @@ function Connect-SailPointGitHub {
         [string[]]$Feature,
         [ValidateSet('GitHubApp', 'ClassicPAT')]
         [string]$Method,
+        [string]$Hostname,
+        [string]$DisplayName,
+        [ValidateSet('Production', 'Development', 'Staging')]
+        [string]$EnvironmentType,
+        [string]$WorkerGroup,
+        [string]$OutpostId,
+        [string]$OutpostPublicKeyPath,
+        [string]$OutpostDeploymentMode,
         [string]$OutputDirectory,
         [switch]$NonInteractive,
         [ValidateSet('Text', 'Json')]
@@ -1044,9 +1109,13 @@ function Connect-SailPointOkta {
 .SYNOPSIS
     Configures SailPoint ISC GitLab connector and Entro onboarding.
 .DESCRIPTION
-    Runs the GitLab wizard for access-token-based Agentic Fabric sources and Entro GitLab integration.
+    Runs the GitLab wizard for access-token-based Agentic Fabric sources, Entro GitLab on gitlab.com, and self-managed GitLab through an Outpost.
 .EXAMPLE
     Connect-SailPointGitLab -Wizard
+
+.EXAMPLE
+    Connect-SailPointGitLab -GitLabSelfManaged -Nickname "corp-gitlab" -GitLabUrl "https://gitlab.corp.local" -Action BuildScript -NonInteractive
+    Writes the self-managed GitLab token script. The admin token stays in the environment and is not written into the file.
 #>
 function Connect-SailPointGitLab {
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -1054,6 +1123,7 @@ function Connect-SailPointGitLab {
         [switch]$Wizard,
         [switch]$Connector,
         [switch]$Entro,
+        [switch]$GitLabSelfManaged,
         [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
         [string]$Action,
         [string]$BaseUrl,
@@ -1065,6 +1135,15 @@ function Connect-SailPointGitLab {
         [string]$TargetGroups,
         [string]$Nickname,
         [string]$GitLabUrl,
+        [ValidateSet('Group', 'Personal')]
+        [string]$TokenKind,
+        [string]$GroupPath,
+        [string]$Username,
+        [string]$TokenExpires,
+        [string]$WorkerGroup,
+        [string]$OutpostId,
+        [string]$OutpostPublicKeyPath,
+        [string]$OutpostDeploymentMode,
         [string]$OutputDirectory,
         [switch]$NonInteractive,
         [ValidateSet('Text', 'Json')]
@@ -1165,9 +1244,13 @@ function Connect-SailPointServiceNow {
 .SYNOPSIS
     Configures Entro HashiCorp Vault integration onboarding.
 .DESCRIPTION
-    Runs the Vault Entro wizard for entro-policy ACL and renewable token handoff.
+    Runs the Vault Entro wizard for entro-policy ACL and renewable token handoff. The target is a host that can reach the Vault API. An Outpost Worker Group scans the cluster.
 .EXAMPLE
     Connect-SailPointHashiCorpVault -Wizard
+
+.EXAMPLE
+    Connect-SailPointHashiCorpVault -Entro -Environment "prod" -VaultUrl "https://vault.corp.local:8200" -Action BuildScript -NonInteractive
+    Writes the entro-policy and token script. The admin token is read from the environment at run time.
 #>
 function Connect-SailPointHashiCorpVault {
     [CmdletBinding(SupportsShouldProcess = $true)]
@@ -1178,6 +1261,13 @@ function Connect-SailPointHashiCorpVault {
         [string]$Action,
         [string]$Environment,
         [string]$VaultUrl,
+        [ValidateSet('Standard', 'KvMetadata')]
+        [string]$PolicyMode,
+        [string]$KvMount,
+        [string]$WorkerGroup,
+        [string]$OutpostId,
+        [string]$OutpostPublicKeyPath,
+        [string]$OutpostDeploymentMode,
         [string]$OutputDirectory,
         [switch]$NonInteractive,
         [ValidateSet('Text', 'Json')]
@@ -1185,6 +1275,304 @@ function Connect-SailPointHashiCorpVault {
         [string]$Project
     )
     $script = Join-Path $script:ModuleRoot 'HashiCorp Vault.ps1'
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Deploys or generates artifacts for the Entro Outpost on-premise container runtime.
+
+.DESCRIPTION
+    Configures, checks, or deploys an Entro Outpost worker group via Docker Compose
+    (on a Linux AMD64 host) or Kubernetes Helm (OCI chart on Linux AMD64 nodes).
+    Supports BuildRequirements, Check, BuildScript, and Run actions across both modes.
+
+.PARAMETER Wizard
+    Runs the interactive guided setup for Entro Outpost.
+
+.PARAMETER DockerCompose
+    Targets the Docker Compose deployment model on a Linux AMD64 host.
+
+.PARAMETER KubernetesHelm
+    Targets the Kubernetes Helm deployment model via oci://ghcr.io/entro-security-registry/entro-connector-helm.
+
+.PARAMETER Action
+    BuildRequirements (checklist), Check (probe host/cluster prerequisites), BuildScript (write deploy script), or Run (execute deployment).
+
+.PARAMETER WorkerGroup
+    Logical Entro Worker Group name.
+
+.PARAMETER AwsRegion
+    AWS region for Entro Outpost S3/SQS/CloudWatch Logs (default us-east-1).
+
+.PARAMETER AwsAccessKeyId
+    AWS Access Key ID from the Entro Outpost console wizard.
+
+.PARAMETER AwsSecretAccessKey
+    AWS Secret Access Key from the Entro Outpost console wizard.
+
+.PARAMETER CrPat
+    GitHub Container Registry PAT for entro-registry.
+
+.PARAMETER LogGroup
+    CloudWatch log group name (default /entro/connector).
+
+.PARAMETER EnableEncryptedSecrets
+    Yes or No to generate an RSA-2048 key pair for Encrypted Integration Secrets.
+
+.PARAMETER UseProxy
+    Yes or No to configure HTTP_PROXY and NO_PROXY.
+
+.PARAMETER HttpProxy
+    HTTP/HTTPS proxy URL when UseProxy is Yes.
+
+.PARAMETER NoProxy
+    Comma-separated NO_PROXY bypass list when UseProxy is Yes.
+
+.PARAMETER DeploymentTier
+    Docker Compose host sizing tier (Standard or Large).
+
+.PARAMETER InstallDirectory
+    Target install directory on the Linux host for Docker Compose (default /opt/entro-outpost).
+
+.PARAMETER ComposeFileUrl
+    Path or URL to docker-compose.yaml from the Entro Outpost wizard.
+
+.PARAMETER OutputBucket
+    S3 bucket name (OUTPUT_BUCKET) for Docker Compose.
+
+.PARAMETER SqsQueueUrl
+    SQS queue URL (SQS_QUEUE_URL) for Docker Compose.
+
+.PARAMETER RedshiftBucket
+    Optional Redshift S3 bucket name (REDSHIFT_BUCKET) for Docker Compose.
+
+.PARAMETER LogStream
+    CloudWatch log stream name for Docker Compose.
+
+.PARAMETER KubernetesNamespace
+    Target Kubernetes namespace for Helm deployment (default entro).
+
+.PARAMETER HelmReleaseName
+    Helm release name (default entro-connector).
+
+.PARAMETER ChartVersion
+    Helm chart version or 'latest'.
+
+.PARAMETER AwsAccountId
+    Entro AWS Account ID for Helm values (default 937217723901).
+
+.PARAMETER EntroConnectorId
+    Entro Connector ID for Helm values.
+
+.PARAMETER EntroPassword
+    Entro Connector password for Helm values.
+
+.PARAMETER EnableScheduling
+    Yes or No to configure KEDA/cron pod scaling schedule in Helm values.
+
+.PARAMETER ScheduleScaleUp
+    Cron schedule for scale-up (default 0 7 * * 1-5).
+
+.PARAMETER ScheduleScaleDown
+    Cron schedule for scale-down (default 0 19 * * 1-5).
+
+.PARAMETER ScheduleTimeZone
+    IANA timezone for pod scaling schedule (default UTC).
+
+.PARAMETER OutputDirectory
+    Overrides output directory for generated artifacts.
+
+.PARAMETER NonInteractive
+    Runs in headless mode without prompts.
+
+.PARAMETER OutputFormat
+    Output format: Text or Json.
+
+.PARAMETER Project
+    Workspace project name.
+
+.EXAMPLE
+    Connect-SailPointEntroOutpost -Wizard
+    Starts the interactive Entro Outpost wizard to select Docker Compose or Kubernetes Helm.
+
+.EXAMPLE
+    Connect-SailPointEntroOutpost -DockerCompose -Action BuildRequirements -NonInteractive -OutputFormat Json
+    Generates the Docker Compose prerequisite checklist and returns structured JSON.
+#>
+function Connect-SailPointEntroOutpost {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$DockerCompose,
+        [switch]$KubernetesHelm,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
+        [string]$Action,
+        [string]$WorkerGroup,
+        [string]$AwsRegion,
+        [string]$AwsAccessKeyId,
+        [string]$AwsSecretAccessKey,
+        [string]$CrPat,
+        [string]$LogGroup,
+        [ValidateSet('No', 'Yes')]
+        [string]$EnableEncryptedSecrets,
+        [ValidateSet('No', 'Yes')]
+        [string]$UseProxy,
+        [string]$HttpProxy,
+        [string]$NoProxy,
+        [ValidateSet('Standard', 'Large')]
+        [string]$DeploymentTier,
+        [string]$InstallDirectory,
+        [string]$ComposeFileUrl,
+        [string]$OutputBucket,
+        [string]$SqsQueueUrl,
+        [string]$RedshiftBucket,
+        [string]$LogStream,
+        [string]$KubernetesNamespace,
+        [string]$HelmReleaseName,
+        [string]$ChartVersion,
+        [string]$AwsAccountId,
+        [string]$EntroConnectorId,
+        [string]$EntroPassword,
+        [ValidateSet('No', 'Yes')]
+        [string]$EnableScheduling,
+        [string]$ScheduleScaleUp,
+        [string]$ScheduleScaleDown,
+        [string]$ScheduleTimeZone,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'Entro Outpost.ps1'
+    if (-not (Test-Path -LiteralPath $script)) {
+        $script = Join-Path $script:ModuleRoot 'Entro-Outpost.ps1'
+    }
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures Entro on-prem Active Directory onboarding.
+
+.DESCRIPTION
+    Creates a read-only AD service account and exports the LDAPS root CA for Entro.
+    Run this on a Windows host with the ActiveDirectory module, or use BuildScript and copy the .ps1 there.
+    An Outpost Worker Group must reach the domain controller. The account is not added to an admin group.
+
+.PARAMETER Entro
+    Targets the Entro on-prem Active Directory integration.
+
+.PARAMETER Action
+    BuildRequirements, Check, BuildScript, or Run.
+
+.EXAMPLE
+    Connect-SailPointOnPremActiveDirectory -Wizard
+    Starts the guided on-prem Active Directory wizard.
+
+.EXAMPLE
+    Connect-SailPointOnPremActiveDirectory -Entro -Nickname "corp-ad" -DomainController "dc01" -DcFqdn "dc01.corp.local" -Domain "corp.local" -EnvironmentNickname "corp" -Action BuildScript -NonInteractive
+    Writes the service-account and root CA script. The password is not written into the file.
+#>
+function Connect-SailPointOnPremActiveDirectory {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Entro,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
+        [string]$Action,
+        [string]$Nickname,
+        [string]$DomainController,
+        [string]$DcFqdn,
+        [string]$Domain,
+        [string]$SamAccountName,
+        [string]$EnvironmentNickname,
+        [ValidateSet('Production', 'Staging', 'Dev')]
+        [string]$EnvironmentType,
+        [string]$WorkerGroup,
+        [string]$OutpostId,
+        [string]$OutpostPublicKeyPath,
+        [string]$OutpostDeploymentMode,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'On-Prem Active Directory.ps1'
+    if (-not (Test-Path -LiteralPath $script)) {
+        $script = Join-Path $script:ModuleRoot 'On-Prem-Active-Directory.ps1'
+    }
+    & $script @PSBoundParameters
+}
+
+<#
+.SYNOPSIS
+    Configures Entro remote file scanning over SMB, SFTP, or WinRM.
+
+.DESCRIPTION
+    Prepares a read-only file account and the Entro handoff for one transport.
+    SMB and WinRM Run on the Windows host that will be changed. SFTP can run from any host that can reach port 22 and has ssh-keygen.
+    Each transport requires an Outpost Worker Group. Passwords are not written into generated scripts.
+
+.PARAMETER Smb
+    Targets SMB file shares.
+
+.PARAMETER Sftp
+    Targets SFTP.
+
+.PARAMETER WinRm
+    Targets WinRM.
+
+.PARAMETER FileHost
+    DNS name or IP of the SFTP or WinRM host. Alias: TargetHostName.
+
+.PARAMETER Action
+    BuildRequirements, Check, BuildScript, or Run.
+
+.EXAMPLE
+    Connect-SailPointRemoteFileSystem -Wizard
+    Starts the guided remote file system wizard.
+
+.EXAMPLE
+    Connect-SailPointRemoteFileSystem -Smb -Nickname "finance" -Username "CORP\entro_smb" -ShareHost "files.corp.local" -Action BuildScript -NonInteractive
+    Writes the SMB account script and smb-file-shares.json template. The password stays in the environment.
+#>
+function Connect-SailPointRemoteFileSystem {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [switch]$Wizard,
+        [switch]$Smb,
+        [switch]$Sftp,
+        [switch]$WinRm,
+        [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
+        [string]$Action,
+        [string]$Nickname,
+        [ValidateSet('Domain', 'Local')]
+        [string]$AccountScope,
+        [string]$Username,
+        [string]$ShareHost,
+        [string]$ShareNames,
+        [string]$IgnoreShares,
+        [Alias('TargetHostName')]
+        [string]$FileHost,
+        [string]$TargetDirectories,
+        [string]$PublicKeyPath,
+        [string]$WorkerGroup,
+        [string]$OutpostId,
+        [string]$OutpostPublicKeyPath,
+        [string]$OutpostDeploymentMode,
+        [string]$OutputDirectory,
+        [switch]$NonInteractive,
+        [ValidateSet('Text', 'Json')]
+        [string]$OutputFormat = 'Text',
+        [string]$Project
+    )
+    $script = Join-Path $script:ModuleRoot 'Remote File System.ps1'
+    if (-not (Test-Path -LiteralPath $script)) {
+        $script = Join-Path $script:ModuleRoot 'Remote-File-System.ps1'
+    }
     & $script @PSBoundParameters
 }
 
@@ -1627,6 +2015,9 @@ Export-ModuleMember -Function @(
     'Connect-SailPointSnowflake',
     'Connect-SailPointServiceNow',
     'Connect-SailPointHashiCorpVault',
+    'Connect-SailPointEntroOutpost',
+    'Connect-SailPointOnPremActiveDirectory',
+    'Connect-SailPointRemoteFileSystem',
     'Connect-SailPointCrowdStrike',
     'Invoke-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',

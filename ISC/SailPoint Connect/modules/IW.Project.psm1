@@ -471,6 +471,188 @@ function Save-IntegrationProjectCredential {
     return $entry
 }
 
+function Get-IntegrationProjectOutpostIndexPath {
+    param(
+        [Parameter(Mandatory)][string]$ProjectName,
+        [string]$Root = (Get-IntegrationProjectRoot)
+    )
+    Test-IntegrationProjectName -Name $ProjectName
+    Join-Path (Join-Path $Root $ProjectName) 'outpost-index.json'
+}
+
+function Read-IntegrationProjectOutpostIndex {
+    param(
+        [Parameter(Mandatory)][string]$ProjectName,
+        [string]$Root = (Get-IntegrationProjectRoot)
+    )
+    $path = Get-IntegrationProjectOutpostIndexPath -ProjectName $ProjectName -Root $Root
+    if (-not (Test-Path -LiteralPath $path)) { return @() }
+    try {
+        $index = Get-Content -LiteralPath $path -Raw -Encoding utf8 | ConvertFrom-Json -AsHashtable
+    }
+    catch {
+        throw "Could not read outpost index '$path': $($_.Exception.Message)"
+    }
+    if ($null -eq $index -or -not $index.ContainsKey('entries') -or $null -eq $index['entries']) { return @() }
+    return @($index['entries'])
+}
+
+function Find-IntegrationProjectOutpost {
+    param(
+        [Parameter(Mandatory)][string]$ProjectName,
+        [string]$DeploymentMode,
+        [string]$WorkerGroupName,
+        [string]$OutpostId,
+        [string]$Root = (Get-IntegrationProjectRoot)
+    )
+    $matches = @(Read-IntegrationProjectOutpostIndex -ProjectName $ProjectName -Root $Root)
+    if ($OutpostId) {
+        $matches = @($matches | Where-Object { [string]$_['id'] -eq $OutpostId })
+    }
+    if ($DeploymentMode) {
+        $matches = @($matches | Where-Object { [string]::Equals([string]$_['deploymentMode'], $DeploymentMode, [System.StringComparison]::OrdinalIgnoreCase) })
+    }
+    if ($WorkerGroupName) {
+        $matches = @($matches | Where-Object { [string]::Equals([string]$_['workerGroupName'], $WorkerGroupName, [System.StringComparison]::OrdinalIgnoreCase) })
+    }
+    return @($matches | Sort-Object { [string]$_['updatedAt'] } -Descending)
+}
+
+function Get-IntegrationProjectOutpostStatusRank {
+    param([string]$Status)
+    switch ($Status) {
+        'Planned' { return 1 }
+        'ScriptBuilt' { return 2 }
+        'Verified' { return 3 }
+        'External' { return 3 }
+        'Deployed' { return 4 }
+        default { return 0 }
+    }
+}
+
+function Save-IntegrationProjectOutpost {
+    param(
+        [Parameter(Mandatory)][string]$ProjectName,
+        [Parameter(Mandatory)][hashtable]$Context,
+        [hashtable]$Definition,
+        [string]$Status,
+        [string]$Root = (Get-IntegrationProjectRoot)
+    )
+    if (-not $ProjectName -or $ProjectName -eq 'ephemeral') { return $null }
+    Test-IntegrationProjectName -Name $ProjectName
+
+    $action = [string]$Context['Action']
+    $resolvedStatus = if ($Status) {
+        $Status
+    }
+    else {
+        switch ($action) {
+            'Run' { 'Deployed' }
+            'Check' { 'Verified' }
+            'BuildScript' { 'ScriptBuilt' }
+            'BuildRequirements' { 'Planned' }
+            default { 'Planned' }
+        }
+    }
+
+    $deploymentMode = [string]$Context['DeploymentMode']
+    if (-not $deploymentMode -and $Definition) {
+        if ($Definition['Id'] -eq 'entro-outpost-docker' -or $Definition['CoreSwitch'] -eq 'DockerCompose') { $deploymentMode = 'DockerCompose' }
+        elseif ($Definition['Id'] -eq 'entro-outpost-kubernetes' -or $Definition['CoreSwitch'] -eq 'KubernetesHelm') { $deploymentMode = 'KubernetesHelm' }
+    }
+    if (-not $deploymentMode) {
+        if ($Context['DockerCompose']) { $deploymentMode = 'DockerCompose' }
+        elseif ($Context['KubernetesHelm']) { $deploymentMode = 'KubernetesHelm' }
+        else { $deploymentMode = 'Unknown' }
+    }
+
+    $workerGroup = [string]$Context['WorkerGroup']
+    if (-not $workerGroup) { $workerGroup = 'default-outpost' }
+
+    $entries = [System.Collections.Generic.List[hashtable]]::new()
+    foreach ($entry in @(Read-IntegrationProjectOutpostIndex -ProjectName $ProjectName -Root $Root)) { $entries.Add($entry) }
+
+    $outpostId = [string]$Context['OutpostId']
+    $existing = $null
+    if ($outpostId) {
+        $matched = @($entries | Where-Object { [string]$_['id'] -eq $outpostId })
+        if ($matched.Count -eq 1) { $existing = $matched[0] }
+    }
+    if (-not $existing) {
+        $matchedByName = @($entries | Where-Object {
+            [string]::Equals([string]$_['workerGroupName'], $workerGroup, [System.StringComparison]::OrdinalIgnoreCase) -and
+            ([string]$_['deploymentMode'] -eq $deploymentMode -or $deploymentMode -eq 'Unknown' -or [string]$_['deploymentMode'] -eq 'Unknown')
+        })
+        if ($matchedByName.Count -eq 1) { $existing = $matchedByName[0] }
+    }
+
+    $now = (Get-Date).ToUniversalTime().ToString('o')
+    $encryptedEnabled = ($Context['EnableEncryptedSecrets'] -eq 'Yes') -or (-not [string]::IsNullOrWhiteSpace([string]$Context['OutpostPublicKeyPath']))
+    $proxyEnabled = ($Context['UseProxy'] -eq 'Yes') -or (-not [string]::IsNullOrWhiteSpace([string]$Context['HttpProxy']))
+    $region = if ($Context['AwsRegion']) { [string]$Context['AwsRegion'] } else { 'us-east-1' }
+    $publicKeyPath = [string]$Context['OutpostPublicKeyPath']
+    $installDir = [string]$Context['InstallDirectory']
+    $namespace = [string]$Context['KubernetesNamespace']
+    $releaseName = [string]$Context['HelmReleaseName']
+    $defId = if ($Definition -and $Definition['Id']) { [string]$Definition['Id'] } else { '' }
+    $hostName = [Environment]::MachineName
+
+    if ($existing) {
+        $prevRank = Get-IntegrationProjectOutpostStatusRank -Status ([string]$existing['status'])
+        $newRank = Get-IntegrationProjectOutpostStatusRank -Status $resolvedStatus
+        if ($newRank -ge $prevRank) {
+            $existing['status'] = $resolvedStatus
+        }
+        $existing['workerGroupName'] = $workerGroup
+        if ($deploymentMode -ne 'Unknown' -or -not $existing['deploymentMode']) {
+            $existing['deploymentMode'] = $deploymentMode
+        }
+        if ($defId) { $existing['definitionId'] = $defId }
+        if ($encryptedEnabled) { $existing['encryptedSecretsEnabled'] = $true }
+        elseif (-not $existing.ContainsKey('encryptedSecretsEnabled')) { $existing['encryptedSecretsEnabled'] = $false }
+        if ($publicKeyPath) { $existing['publicKeyPath'] = $publicKeyPath }
+        if ($proxyEnabled) { $existing['proxyEnabled'] = $true }
+        elseif (-not $existing.ContainsKey('proxyEnabled')) { $existing['proxyEnabled'] = $false }
+        if ($region) { $existing['region'] = $region }
+        if ($installDir) { $existing['installDirectory'] = $installDir }
+        if ($namespace) { $existing['namespace'] = $namespace }
+        if ($releaseName) { $existing['releaseName'] = $releaseName }
+        if ($action) { $existing['lastAction'] = $action }
+        $existing['hostName'] = $hostName
+        $existing['updatedAt'] = $now
+        $record = $existing
+    }
+    else {
+        $record = [ordered]@{
+            schemaVersion           = 1
+            id                      = if ($outpostId) { $outpostId } else { [Guid]::NewGuid().ToString('N') }
+            workerGroupName         = $workerGroup
+            deploymentMode          = $deploymentMode
+            definitionId            = $defId
+            status                  = $resolvedStatus
+            encryptedSecretsEnabled = [bool]$encryptedEnabled
+            publicKeyPath           = $publicKeyPath
+            proxyEnabled            = [bool]$proxyEnabled
+            hostName                = $hostName
+            region                  = $region
+            namespace               = $namespace
+            releaseName             = $releaseName
+            installDirectory        = $installDir
+            lastAction              = $action
+            createdAt               = $now
+            updatedAt               = $now
+        }
+        $entries.Add($record)
+    }
+
+    $path = Get-IntegrationProjectOutpostIndexPath -ProjectName $ProjectName -Root $Root
+    $directory = Split-Path -Parent $path
+    if (-not (Test-Path -LiteralPath $directory)) { New-Item -ItemType Directory -Path $directory -Force | Out-Null }
+    $payload = [ordered]@{ schemaVersion = 1; entries = @($entries) }
+    Set-Content -LiteralPath $path -Value ($payload | ConvertTo-Json -Depth 10) -Encoding utf8
+    return $record
+}
+
 function Initialize-IntegrationProjectActivityLog {
     param([Parameter(Mandatory)][string]$LogPath)
     $dir = Split-Path -Parent $LogPath
@@ -740,6 +922,10 @@ Export-ModuleMember -Function @(
     'Get-IntegrationProjectCredentialDiscriminatorMap'
     'Find-IntegrationProjectCredential'
     'Save-IntegrationProjectCredential'
+    'Get-IntegrationProjectOutpostIndexPath'
+    'Read-IntegrationProjectOutpostIndex'
+    'Find-IntegrationProjectOutpost'
+    'Save-IntegrationProjectOutpost'
     'Initialize-IntegrationProjectActivityLog'
     'Close-IntegrationProjectActivityLog'
     'Write-IntegrationProjectLogLine'

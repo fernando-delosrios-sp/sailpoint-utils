@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.9.0'
+    ModuleVersion = '1.11.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -21,7 +21,7 @@
     Copyright = '(c) 2026 SailPoint Technologies. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description = 'SailPoint Connect: checklist, read-only check of an existing identity, or an explicit Run for SailPoint ISC connectors, Entro cloud onboarding, Microsoft 365 access profiles, and IQService host management.'
+    Description = 'SailPoint Connect: checklist, read-only check of an existing identity, or an explicit Run for SailPoint ISC connectors, Entro cloud and on-premise Outpost integrations (Vault, GitLab, GHES, Active Directory, remote files), Microsoft 365 access profiles, and IQService host management.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = '7.0'
@@ -41,6 +41,9 @@
         'Connect-SailPointSnowflake'
         'Connect-SailPointServiceNow'
         'Connect-SailPointHashiCorpVault'
+        'Connect-SailPointEntroOutpost'
+        'Connect-SailPointOnPremActiveDirectory'
+        'Connect-SailPointRemoteFileSystem'
         'Connect-SailPointCrowdStrike'
         'Invoke-SailPointIQServiceControl'
         'New-SailPointM365AccessProfile'
@@ -72,6 +75,8 @@
                 'ISC'
                 'IdentitySecurityCloud'
                 'Entro'
+                'EntroOutpost'
+                'OnPremises'
                 'AWS'
                 'Azure'
                 'EntraID'
@@ -95,7 +100,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Catalog-driven root menu (Project, Action, integration/product/variant/credential kind) via IW.CatalogMenu.psm1; wizards ask for project before action.'
+            ReleaseNotes = 'Wave 1 on-premise Entro integrations: HashiCorp Vault, GitLab self-managed, GitHub Enterprise Server, on-prem Active Directory, and remote file systems (SMB, SFTP, WinRM). Each keeps BuildRequirements, Check, BuildScript, and Run, uses pwsh on an explicit target host, and links an Entro Outpost.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'

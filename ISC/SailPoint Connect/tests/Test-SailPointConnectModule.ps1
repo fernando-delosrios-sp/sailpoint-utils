@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.9.0' $manifest.Version.ToString() 'Manifest version 1.9.0'
+Assert-Equal '1.11.0' $manifest.Version.ToString() 'Manifest version 1.11.0'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members
@@ -30,6 +30,9 @@ $expectedFunctions = @(
     'Connect-SailPointSnowflake',
     'Connect-SailPointServiceNow',
     'Connect-SailPointHashiCorpVault',
+    'Connect-SailPointEntroOutpost',
+    'Connect-SailPointOnPremActiveDirectory',
+    'Connect-SailPointRemoteFileSystem',
     'Invoke-SailPointIQServiceControl',
     'New-SailPointM365AccessProfile',
     'Get-SailPointConnectProject',
@@ -140,6 +143,7 @@ try {
         @{ Cmd = 'Connect-SailPointDatabricks'; Script = 'Databricks.ps1' }
         @{ Cmd = 'Connect-SailPointSalesforce'; Script = 'Salesforce.ps1' }
         @{ Cmd = 'Connect-SailPointCrowdStrike'; Script = 'CrowdStrike.ps1' }
+        @{ Cmd = 'Connect-SailPointEntroOutpost'; Script = 'Entro Outpost.ps1' }
     )
     foreach ($p in $checkPlatforms) {
         $cmdInfo = Get-Command $p.Cmd
@@ -159,7 +163,8 @@ try {
         'Connect-SailPointDatabricks',
         'Connect-SailPointSalesforce',
         'Connect-SailPointGitHub',
-        'Connect-SailPointCrowdStrike'
+        'Connect-SailPointCrowdStrike',
+        'Connect-SailPointEntroOutpost'
     )
     foreach ($cmdletName in $connectorCmdlets) {
         $cmd = Get-Command $cmdletName -ErrorAction Stop
@@ -196,6 +201,9 @@ try {
     # 12) Kebab-case script entrypoints alongside spaced scripts
     $scriptPairs = @(
         @{ Kebab = 'Google-Cloud.ps1'; Spaced = 'Google Cloud.ps1' },
+        @{ Kebab = 'Entro-Outpost.ps1'; Spaced = 'Entro Outpost.ps1' },
+        @{ Kebab = 'On-Prem-Active-Directory.ps1'; Spaced = 'On-Prem Active Directory.ps1' },
+        @{ Kebab = 'Remote-File-System.ps1'; Spaced = 'Remote File System.ps1' },
         @{ Kebab = 'IQService-Control.ps1'; Spaced = 'IQService Control.ps1' },
         @{ Kebab = 'Microsoft-365-Access-Profiles.ps1'; Spaced = 'Microsoft 365 Access Profiles.ps1' }
     )
@@ -213,7 +221,8 @@ try {
     # 13) Parameter set resolution for Wizard with generic options on all platform scripts
     $platformScripts = @(
         'AWS.ps1', 'Azure.ps1', 'Google Cloud.ps1', 'Databricks.ps1', 'Salesforce.ps1', 'GitHub.ps1', 'CrowdStrike.ps1',
-        'Okta.ps1', 'GitLab.ps1', 'Slack.ps1', 'Snowflake.ps1', 'ServiceNow.ps1', 'HashiCorp Vault.ps1'
+        'Okta.ps1', 'GitLab.ps1', 'Slack.ps1', 'Snowflake.ps1', 'ServiceNow.ps1', 'HashiCorp Vault.ps1', 'Entro Outpost.ps1',
+        'On-Prem Active Directory.ps1', 'Remote File System.ps1'
     )
     foreach ($scriptName in $platformScripts) {
         $scriptPath = Join-Path $connectRoot $scriptName

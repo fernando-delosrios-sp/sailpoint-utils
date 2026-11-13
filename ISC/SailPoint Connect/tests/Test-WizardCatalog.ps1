@@ -31,6 +31,9 @@ function Register-AllCatalogDefinitions {
     Import-Module (Join-Path $defRoot 'Snowflake.Entro.psm1') -Force
     Import-Module (Join-Path $defRoot 'ServiceNow.Entro.psm1') -Force
     Import-Module (Join-Path $defRoot 'HashiCorp.Entro.psm1') -Force
+    Import-Module (Join-Path $defRoot 'EntroOutpost.psm1') -Force
+    Import-Module (Join-Path $defRoot 'ActiveDirectory.Entro.psm1') -Force
+    Import-Module (Join-Path $defRoot 'RemoteFileSystem.Entro.psm1') -Force
     Register-AwsConnectorDefinitions
     Register-AwsEntroDefinitions
     Register-AzureConnectorDefinitions
@@ -53,6 +56,9 @@ function Register-AllCatalogDefinitions {
     Register-SnowflakeEntroDefinitions
     Register-ServiceNowEntroDefinitions
     Register-HashiCorpEntroDefinitions
+    Register-EntroOutpostDefinitions
+    Register-ActiveDirectoryEntroDefinitions
+    Register-RemoteFileSystemEntroDefinitions
 }
 
 $catalog = Import-IntegrationWizardCatalog -Force

@@ -19,7 +19,7 @@ try {
     $mockCheck = Get-SailPointConnectUpdate
     Assert-True $mockCheck.UpdateAvailable 'Get-SailPointConnectUpdate detects higher mock version'
     Assert-Equal '9.9.9' $mockCheck.LatestVersion.ToString() 'LatestVersion matches mock version'
-    Assert-Equal '1.9.0' $mockCheck.CurrentVersion.ToString() 'CurrentVersion matches active version'
+    Assert-Equal '1.11.0' $mockCheck.CurrentVersion.ToString() 'CurrentVersion matches active version'
 
     # 3) Get-SailPointConnectUpdate with mock lower version
     $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.0.0'

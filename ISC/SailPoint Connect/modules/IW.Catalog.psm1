@@ -107,20 +107,44 @@ function Get-IntegrationCatalogFlatBindings {
             if ($Product -and $productName -ne $Product) { continue }
             $bindings = @($productProp.Value.bindings)
             foreach ($binding in $bindings) {
+                $hosting = if ($binding.PSObject.Properties.Name -contains 'hosting' -and $binding.hosting) {
+                    [string]$binding.hosting
+                } elseif ($integration.PSObject.Properties.Name -contains 'hosting' -and $integration.hosting) {
+                    [string]$integration.hosting
+                } else {
+                    'saas'
+                }
+                $requiresOutpost = if ($binding.PSObject.Properties.Name -contains 'requiresOutpost') {
+                    [bool]$binding.requiresOutpost
+                } elseif ($integration.PSObject.Properties.Name -contains 'requiresOutpost') {
+                    [bool]$integration.requiresOutpost
+                } else {
+                    $false
+                }
+                $targetHostRole = if ($binding.PSObject.Properties.Name -contains 'targetHostRole' -and $binding.targetHostRole) {
+                    [string]$binding.targetHostRole
+                } elseif ($integration.PSObject.Properties.Name -contains 'targetHostRole' -and $integration.targetHostRole) {
+                    [string]$integration.targetHostRole
+                } else {
+                    ''
+                }
                 $flat.Add([ordered]@{
-                    IntegrationId   = [string]$integration.id
+                    IntegrationId    = [string]$integration.id
                     IntegrationTitle = [string]$integration.title
-                    PlatformName    = [string]$integration.platformName
-                    Cli             = [string]$integration.cli
-                    Launcher        = [string]$integration.launcher
-                    Product         = $productName
-                    VariantId       = [string]$binding.variantId
-                    Label           = [string]$binding.label
-                    DefinitionId    = [string]$binding.definitionId
+                    PlatformName     = [string]$integration.platformName
+                    Cli              = [string]$integration.cli
+                    Launcher         = [string]$integration.launcher
+                    Hosting          = $hosting
+                    RequiresOutpost  = $requiresOutpost
+                    TargetHostRole   = $targetHostRole
+                    Product          = $productName
+                    VariantId        = [string]$binding.variantId
+                    Label            = [string]$binding.label
+                    DefinitionId     = [string]$binding.definitionId
                     DefinitionModule = [string]$binding.definitionModule
-                    FolderName      = [string]$binding.folderName
-                    CredentialKinds = @($binding.credentialKinds)
-                    ContextDefaults = if ($binding.PSObject.Properties.Name -contains 'contextDefaults' -and $binding.contextDefaults) {
+                    FolderName       = [string]$binding.folderName
+                    CredentialKinds  = @($binding.credentialKinds)
+                    ContextDefaults  = if ($binding.PSObject.Properties.Name -contains 'contextDefaults' -and $binding.contextDefaults) {
                         $h = @{}
                         foreach ($p in $binding.contextDefaults.PSObject.Properties) {
                             $h[$p.Name] = $p.Value
@@ -190,11 +214,18 @@ function Test-IntegrationWizardCatalog {
     if ($kindIds.Count -eq 0) {
         throw 'Catalog credentialKinds is empty.'
     }
+    $validHostings = @('saas', 'hybrid', 'on-prem', 'self-hosted', 'infrastructure')
+    $hasOutpostEntry = @($Catalog.integrations | Where-Object { [string]$_.id -eq 'entro-outpost' }).Count -gt 0
     $seenVariantKeys = @{}
     foreach ($integration in @($Catalog.integrations)) {
         if (-not $integration.id) { throw 'Integration entry missing id.' }
         if (-not $integration.platformName) { throw "Integration $($integration.id) missing platformName." }
         if (-not $integration.cli) { throw "Integration $($integration.id) missing cli." }
+        if ($integration.PSObject.Properties.Name -contains 'hosting' -and $integration.hosting) {
+            if ($validHostings -notcontains [string]$integration.hosting) {
+                throw "Integration $($integration.id) has invalid hosting '$($integration.hosting)'."
+            }
+        }
         $launcherPath = Join-Path $WizardRoot ([string]$integration.launcher)
         if (-not (Test-Path -LiteralPath $launcherPath)) {
             throw "Integration $($integration.id) launcher not found: $launcherPath"
@@ -210,6 +241,16 @@ function Test-IntegrationWizardCatalog {
             }
             foreach ($binding in $bindings) {
                 if (-not $binding.variantId) { throw "Binding missing variantId on $($integration.id)/$productName." }
+                if ($binding.PSObject.Properties.Name -contains 'hosting' -and $binding.hosting) {
+                    if ($validHostings -notcontains [string]$binding.hosting) {
+                        throw "Binding $($integration.id)/$productName/$($binding.variantId) has invalid hosting '$($binding.hosting)'."
+                    }
+                }
+                $reqOutpost = ($binding.PSObject.Properties.Name -contains 'requiresOutpost' -and [bool]$binding.requiresOutpost) -or
+                    ($integration.PSObject.Properties.Name -contains 'requiresOutpost' -and [bool]$integration.requiresOutpost)
+                if ($reqOutpost -and -not $hasOutpostEntry) {
+                    throw "Binding $($integration.id)/$productName/$($binding.variantId) sets requiresOutpost=true, but catalog is missing 'entro-outpost' integration."
+                }
                 $variantKey = "$($integration.id)|$productName|$($binding.variantId)"
                 if ($seenVariantKeys.ContainsKey($variantKey)) {
                     throw "Duplicate variant key: $variantKey"

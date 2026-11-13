@@ -4,6 +4,7 @@ param(
     [Parameter(ParameterSetName = 'Wizard', Mandatory)]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
     [switch]$Wizard,
 
     [Parameter(ParameterSetName = 'Connector', Mandatory)]
@@ -13,6 +14,9 @@ param(
     [Parameter(ParameterSetName = 'Connector')]
     [switch]$Entro,
 
+    [Parameter(ParameterSetName = 'GhesEntro', Mandatory)]
+    [switch]$GhesEntro,
+
     [Parameter(ParameterSetName = 'Connector')]
     [ValidateSet('ReadOnly', 'ReadWrite')]
     [string]$Access,
@@ -20,6 +24,7 @@ param(
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
     [ValidateSet('Run', 'BuildScript', 'BuildRequirements', 'Check')]
     [string]$Action,
 
@@ -36,7 +41,32 @@ param(
 
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
     [string]$Token,
+
+    [Parameter(ParameterSetName = 'GhesEntro')]
+    [string]$Hostname,
+    [Parameter(ParameterSetName = 'GhesEntro')]
+    [string]$DisplayName,
+    [Parameter(ParameterSetName = 'GhesEntro')]
+    [ValidateSet('Production', 'Development', 'Staging')]
+    [string]$EnvironmentType,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
+    [string]$WorkerGroup,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
+    [string]$OutpostId,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
+    [string]$OutpostPublicKeyPath,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
+    [string]$OutpostDeploymentMode,
 
     [Parameter(ParameterSetName = 'Connector')]
     [string]$AppId,
@@ -59,16 +89,19 @@ param(
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
     [string]$OutputDirectory,
 
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
     [switch]$NonInteractive,
 
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
     [ValidateSet('Text', 'Json')]
     [string]$OutputFormat = 'Text',
 
@@ -76,6 +109,7 @@ param(
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
+    [Parameter(ParameterSetName = 'GhesEntro')]
     [string]$Project,
     [string]$CatalogIntegrationId,
     [string]$CatalogProduct,
@@ -96,7 +130,7 @@ Import-IntegrationWizardConsole -WizardRoot $wizardRoot -NonInteractive:$NonInte
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/GitHub.Connector.psm1') -Force
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/GitHub.Entro.psm1') -Force
 
-Register-IntegrationWizardPlatform -Name 'GitHub' -Title 'GitHub' -CoreOptions @('Connector', 'Entro') -CliName 'gh' `
+Register-IntegrationWizardPlatform -Name 'GitHub' -Title 'GitHub' -CoreOptions @('Connector', 'Entro', 'GhesEntro') -CliName 'gh' `
     -EntroCompanions @{
         Connector = @{ EntroSwitch = 'Entro' }
     }
@@ -105,14 +139,17 @@ Register-GitHubEntroDefinitions
 
 $coreHelp = [ordered]@{
     Connector = @{ Short = 'GitHub SaaS connector'; Long = 'GitHub SaaS connector & Copilot/Bot discovery' }
-    Entro     = @{ Short = 'Entro'; Long = 'Entro GitHub integration' }
+    Entro     = @{ Short = 'Entro'; Long = 'Entro GitHub Cloud integration' }
+    GhesEntro = @{ Short = 'GHES'; Long = 'Entro GitHub Enterprise Server (requires an Outpost)' }
 }
 
 $context = @{
     Wizard = [bool]$Wizard; NonInteractive = [bool]$NonInteractive
-    Connector = [bool]$Connector; Entro = [bool]$Entro
+    Connector = [bool]$Connector; Entro = [bool]$Entro; GhesEntro = [bool]$GhesEntro
     Access = $Access; Action = $Action
     Organization = $Organization; ApiUrl = $ApiUrl
+    Hostname = $Hostname; DisplayName = $DisplayName; EnvironmentType = $EnvironmentType
+    WorkerGroup = $WorkerGroup
     AuthMethod = $AuthMethod; Token = $Token; AppId = $AppId; InstallationId = $InstallationId; PrivateKey = $PrivateKey
     Feature = if ($Feature) { ($Feature -join ',') } else { $null }
     Method = $Method; OutputDirectory = $OutputDirectory
@@ -120,7 +157,7 @@ $context = @{
     Project = $Project
 }
 
-$hasCore = $Connector -or $Entro
+$hasCore = $Connector -or $Entro -or $GhesEntro
 if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $hasCore) {
     Show-IntegrationWizardPlatformHelp -Platform 'GitHub' -ScriptName 'GitHub.ps1' -CoreOptionHelp $coreHelp
     return
@@ -130,8 +167,12 @@ Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBound
 
 Start-IntegrationWizardFlow -Platform 'GitHub' -ScriptName 'GitHub.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
-        $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Connector', 'Entro') `
-            -Labels @('GitHub SaaS connector (with Copilot/Bot discovery)', 'Entro GitHub integration') -Default 'Connector'
+        $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Connector', 'Entro', 'GhesEntro') `
+            -Labels @(
+                'GitHub SaaS connector (with Copilot/Bot discovery)',
+                'Entro GitHub Cloud',
+                'Entro GitHub Enterprise Server [Requires Outpost]'
+            ) -Default 'Connector'
         switch ($picked) {
             'Connector' {
                 $context['Connector'] = $true
@@ -140,6 +181,10 @@ Start-IntegrationWizardFlow -Platform 'GitHub' -ScriptName 'GitHub.ps1' -CoreOpt
             'Entro' {
                 $context['Entro'] = $true
                 Get-IntegrationWizardDefinition -Id 'github-entro'
+            }
+            'GhesEntro' {
+                $context['GhesEntro'] = $true
+                Get-IntegrationWizardDefinition -Id 'github-ghes-entro'
             }
         }
     } `

@@ -11,7 +11,7 @@
     "entro": {
       "label": "Entro",
       "access": ["ReadOnly"],
-      "legacyCoreSwitches": ["Entro", "GcpEntro", "WorkspaceEntro"]
+      "legacyCoreSwitches": ["Entro", "GcpEntro", "WorkspaceEntro", "GhesEntro", "GitLabSelfManaged", "Smb", "Sftp", "WinRm"]
     },
     "ciem": {
       "label": "CIEM",
@@ -128,6 +128,42 @@
       "label": "ServiceNow REST API key",
       "discriminators": ["InstanceUrl"],
       "secretFields": ["AccessToken"],
+      "checkSubject": "Manual"
+    },
+    "entroOutpost.connector": {
+      "label": "Entro Outpost container deployment (Worker Group)",
+      "discriminators": ["WorkerGroup", "DeploymentMode"],
+      "secretFields": ["CrPat", "AwsSecretAccessKey", "EntroPassword"],
+      "checkSubject": "Manual"
+    },
+    "github.ghesPat": {
+      "label": "GitHub Enterprise Server classic PAT",
+      "discriminators": ["Hostname"],
+      "secretFields": ["Token"],
+      "checkSubject": "Manual"
+    },
+    "ad.ldapsServiceAccount": {
+      "label": "On-prem Active Directory LDAPS service account",
+      "discriminators": ["Domain", "DcFqdn", "SamAccountName"],
+      "secretFields": ["Password"],
+      "checkSubject": "Manual"
+    },
+    "filesystem.smb": {
+      "label": "SMB file share account",
+      "discriminators": ["ShareHost", "Username"],
+      "secretFields": ["Password"],
+      "checkSubject": "Manual"
+    },
+    "filesystem.sftp": {
+      "label": "SFTP reader account",
+      "discriminators": ["FileHost", "Username"],
+      "secretFields": [],
+      "checkSubject": "Manual"
+    },
+    "filesystem.winrm": {
+      "label": "WinRM reader account",
+      "discriminators": ["FileHost", "Username"],
+      "secretFields": ["Password"],
       "checkSubject": "Manual"
     }
   },
@@ -301,11 +337,22 @@
           "bindings": [
             {
               "variantId": "github",
-              "label": "Entro GitHub",
+              "label": "Entro GitHub Cloud",
               "definitionId": "github-entro",
               "definitionModule": "modules/Definitions/GitHub.Entro.psm1",
               "folderName": "Entro-GitHub",
               "credentialKinds": ["github.appInstallation", "github.pat"]
+            },
+            {
+              "variantId": "ghes",
+              "label": "Entro GitHub Enterprise Server [Requires Outpost]",
+              "definitionId": "github-ghes-entro",
+              "definitionModule": "modules/Definitions/GitHub.Entro.psm1",
+              "folderName": "Entro-GitHub-Enterprise-Server",
+              "hosting": "self-hosted",
+              "requiresOutpost": true,
+              "targetHostRole": "Internal host that can reach GitHub Enterprise Server",
+              "credentialKinds": ["github.ghesPat"]
             }
           ]
         }
@@ -433,10 +480,22 @@
           "bindings": [
             {
               "variantId": "gitlab",
-              "label": "Entro GitLab",
+              "label": "Entro GitLab (gitlab.com)",
               "definitionId": "gitlab-entro",
               "definitionModule": "modules/Definitions/GitLab.Entro.psm1",
               "folderName": "Entro-GitLab",
+              "requiresOutpost": false,
+              "credentialKinds": ["gitlab.accessToken"]
+            },
+            {
+              "variantId": "self-managed",
+              "label": "Entro GitLab self-managed [Requires Outpost]",
+              "definitionId": "gitlab-selfmanaged-entro",
+              "definitionModule": "modules/Definitions/GitLab.Entro.psm1",
+              "folderName": "Entro-GitLab-Self-Managed",
+              "hosting": "self-hosted",
+              "requiresOutpost": true,
+              "targetHostRole": "Internal host with HTTPS reachability to self-managed GitLab",
               "credentialKinds": ["gitlab.accessToken"]
             }
           ]
@@ -542,9 +601,11 @@
     {
       "id": "hashicorp-vault",
       "title": "HashiCorp Vault",
-      "cli": "vault",
+      "cli": "pwsh",
       "launcher": "HashiCorp Vault.ps1",
       "platformName": "HashiCorpVault",
+      "hosting": "self-hosted",
+      "requiresOutpost": true,
       "products": {
         "entro": {
           "bindings": [
@@ -555,6 +616,104 @@
               "definitionModule": "modules/Definitions/HashiCorp.Entro.psm1",
               "folderName": "Entro-HashiCorp-Vault",
               "credentialKinds": ["vault.policyToken"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "entro-outpost",
+      "title": "Entro Outpost (On-Prem Connector)",
+      "cli": "pwsh",
+      "launcher": "Entro Outpost.ps1",
+      "platformName": "EntroOutpost",
+      "hosting": "on-prem",
+      "products": {
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "docker-compose",
+              "label": "Docker Compose (Linux AMD64 host)",
+              "definitionId": "entro-outpost-docker",
+              "definitionModule": "modules/Definitions/EntroOutpost.psm1",
+              "folderName": "Entro-Outpost-Docker",
+              "targetHostRole": "On-Premises Linux Docker Host (AMD64 / x86_64)",
+              "credentialKinds": ["entroOutpost.connector"]
+            },
+            {
+              "variantId": "kubernetes-helm",
+              "label": "Kubernetes Helm (Linux AMD64 nodes)",
+              "definitionId": "entro-outpost-kubernetes",
+              "definitionModule": "modules/Definitions/EntroOutpost.psm1",
+              "folderName": "Entro-Outpost-Kubernetes",
+              "targetHostRole": "Kubernetes Control Workstation (helm + kubectl -> Linux AMD64 nodes)",
+              "credentialKinds": ["entroOutpost.connector"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "on-prem-active-directory",
+      "title": "On-Prem Active Directory",
+      "cli": "pwsh",
+      "launcher": "On-Prem Active Directory.ps1",
+      "platformName": "OnPremActiveDirectory",
+      "hosting": "on-prem",
+      "requiresOutpost": true,
+      "products": {
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "ad",
+              "label": "Entro on-prem Active Directory [Requires Outpost]",
+              "definitionId": "on-prem-active-directory-entro",
+              "definitionModule": "modules/Definitions/ActiveDirectory.Entro.psm1",
+              "folderName": "Entro-On-Prem-Active-Directory",
+              "targetHostRole": "Windows host with the ActiveDirectory module",
+              "credentialKinds": ["ad.ldapsServiceAccount"]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "remote-file-system",
+      "title": "Remote File System",
+      "cli": "pwsh",
+      "launcher": "Remote File System.ps1",
+      "platformName": "RemoteFileSystem",
+      "hosting": "on-prem",
+      "requiresOutpost": true,
+      "products": {
+        "entro": {
+          "bindings": [
+            {
+              "variantId": "smb",
+              "label": "SMB file shares [Requires Outpost]",
+              "definitionId": "remote-file-smb-entro",
+              "definitionModule": "modules/Definitions/RemoteFileSystem.Entro.psm1",
+              "folderName": "Entro-Remote-File-SMB",
+              "targetHostRole": "Windows file server",
+              "credentialKinds": ["filesystem.smb"]
+            },
+            {
+              "variantId": "sftp",
+              "label": "SFTP [Requires Outpost]",
+              "definitionId": "remote-file-sftp-entro",
+              "definitionModule": "modules/Definitions/RemoteFileSystem.Entro.psm1",
+              "folderName": "Entro-Remote-File-SFTP",
+              "targetHostRole": "Host that can reach the SFTP server",
+              "credentialKinds": ["filesystem.sftp"]
+            },
+            {
+              "variantId": "winrm",
+              "label": "WinRM [Requires Outpost]",
+              "definitionId": "remote-file-winrm-entro",
+              "definitionModule": "modules/Definitions/RemoteFileSystem.Entro.psm1",
+              "folderName": "Entro-Remote-File-WinRM",
+              "targetHostRole": "Windows host that Entro will scan over WinRM",
+              "credentialKinds": ["filesystem.winrm"]
             }
           ]
         }

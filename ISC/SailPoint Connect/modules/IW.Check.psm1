@@ -1066,6 +1066,7 @@ function Format-IntegrationCheckSection {
     }
 
     # Explicit Requirements Table: clearly stating what the requirements are and how each was evaluated
+    $purposeMap = if ($Result.ContainsKey('PurposeMap') -and $Result['PurposeMap']) { $Result['PurposeMap'] } else { $null }
     $requiredList = @($Result.Required)
     if ($requiredList.Count -gt 0) {
         [void]$sb.AppendLine('### Required Permissions & Evaluation')
@@ -1073,7 +1074,11 @@ function Format-IntegrationCheckSection {
         [void]$sb.AppendLine('| Requirement | Purpose | Status |')
         [void]$sb.AppendLine('| :--- | :--- | :--- |')
         foreach ($req in $requiredList) {
-            $desc = Get-RequirementDescription -Line $req
+            $desc = if ($purposeMap -and $purposeMap.ContainsKey($req)) {
+                [string]$purposeMap[$req]
+            } else {
+                Get-RequirementDescription -Line $req
+            }
             if (-not $desc) { $desc = 'Integration access requirement' }
             $status = if (@($Result.Met) -contains $req) {
                 '**Present**'
@@ -1105,6 +1110,46 @@ function Get-IntegrationMemberCheckResult {
         [hashtable]$Context = @{},
         [switch]$WhatIf
     )
+    if ($Definition.ContainsKey('CheckProbe') -and $Definition['CheckProbe'] -is [scriptblock]) {
+        $probeResult = & $Definition['CheckProbe'] $Context ([bool]$WhatIf)
+        if ($probeResult -is [hashtable]) {
+            $subj = if ($probeResult.ContainsKey('Subject') -and $probeResult['Subject']) {
+                $probeResult['Subject']
+            } else {
+                New-CheckSubject -Kind 'Custom' -Label ([string]$Definition.Title) -Readable $true
+            }
+            $req = if ($probeResult.ContainsKey('Required')) { @($probeResult['Required']) } else { @() }
+            $miss = if ($probeResult.ContainsKey('Missing')) { @($probeResult['Missing']) } else { @() }
+            $met = if ($probeResult.ContainsKey('Met')) { @($probeResult['Met']) } else { @() }
+            $manual = if ($probeResult.ContainsKey('Manual')) { @($probeResult['Manual']) } else { @() }
+            $planning = if ($probeResult.ContainsKey('PlanningOnly')) { @($probeResult['PlanningOnly']) } else { @() }
+            $attemptedProbe = if ($probeResult.ContainsKey('AttemptedRead')) { [bool]$probeResult['AttemptedRead'] } else { -not [bool]$WhatIf }
+            $foundProbe = if ($probeResult.ContainsKey('Found')) { [bool]$probeResult['Found'] } else { $true }
+            $verdictProbe = if ($probeResult.ContainsKey('Verdict') -and $probeResult['Verdict']) {
+                [string]$probeResult['Verdict']
+            } else {
+                Get-IntegrationCheckVerdict -AttemptedRead $attemptedProbe -Found $foundProbe -Incomplete $false `
+                    -RequiredCount $req.Count -MissingCount $miss.Count -ManualCount $manual.Count
+            }
+            $readNoteProbe = if ($probeResult.ContainsKey('ReadNote')) { [string]$probeResult['ReadNote'] } else { '' }
+            $purposeMapProbe = if ($probeResult.ContainsKey('PurposeMap')) { $probeResult['PurposeMap'] } else { $null }
+            return @{
+                Title         = [string]$Definition.Title
+                Subject       = $subj
+                Verdict       = $verdictProbe
+                AttemptedRead = $attemptedProbe
+                Found         = $foundProbe
+                Required      = $req
+                Missing       = $miss
+                Met           = $met
+                Manual        = $manual
+                PlanningOnly  = $planning
+                ReadNote      = $readNoteProbe
+                SubjectNote   = [string]$subj.Note
+                PurposeMap    = $purposeMapProbe
+            }
+        }
+    }
     if (-not (Get-Command Get-IntegrationWizardAccessRequirementLists -ErrorAction SilentlyContinue)) {
         Import-Module (Join-Path $PSScriptRoot 'IW.Access.psm1') -Force -WarningAction SilentlyContinue
     }
@@ -1178,8 +1223,12 @@ function Write-IntegrationCheckReport {
         [Parameter(Mandatory)][string]$OutputPath,
         [Parameter(Mandatory)][string]$Verdict,
         [string]$Access,
-        [string[]]$Sections
+        [string[]]$Sections,
+        [hashtable]$Context = @{}
     )
+    $targetHost = if (Get-Command Resolve-IntegrationWizardTargetHost -ErrorAction SilentlyContinue) {
+        Resolve-IntegrationWizardTargetHost -Definition $Definition -Context $Context
+    } elseif ($Definition.ContainsKey('TargetHost')) { $Definition['TargetHost'] } else { $null }
     $sb = [System.Text.StringBuilder]::new()
     [void]$sb.AppendLine("# Check: $($Definition.Title)")
     [void]$sb.AppendLine('')
@@ -1195,6 +1244,11 @@ function Write-IntegrationCheckReport {
     [void]$sb.AppendLine('')
     [void]$sb.AppendLine("**$(Get-IntegrationCheckVerdictText -Verdict $Verdict).**")
     [void]$sb.AppendLine('')
+    if ($targetHost -and $targetHost['Role']) {
+        [void]$sb.AppendLine("Target host: $($targetHost['Role'])")
+        if ($targetHost['Notes']) { [void]$sb.AppendLine("Host note: $($targetHost['Notes'])") }
+        [void]$sb.AppendLine('')
+    }
     if ($Access) {
         [void]$sb.AppendLine("Access level: $Access")
         [void]$sb.AppendLine('')
@@ -1203,6 +1257,10 @@ function Write-IntegrationCheckReport {
     [void]$sb.AppendLine('')
     foreach ($section in @($Sections)) { [void]$sb.AppendLine($section) }
     $reportContent = $sb.ToString()
+    $outParent = Split-Path -Parent $OutputPath
+    if ($outParent -and -not (Test-Path -LiteralPath $outParent)) {
+        New-Item -ItemType Directory -Path $outParent -Force | Out-Null
+    }
     Set-Content -LiteralPath $OutputPath -Value $reportContent -Encoding utf8
     if (Get-Command Write-ReportStdout -ErrorAction SilentlyContinue) {
         Write-ReportStdout -Content $reportContent
@@ -1233,7 +1291,7 @@ function Invoke-IntegrationRequirementCheck {
     }
     $verdict = Get-WorstCheckVerdict -Verdicts $verdicts.ToArray()
     $access = Get-CheckContextValue -Context $Context -Name 'Access'
-    Write-IntegrationCheckReport -Definition $Definition -OutputPath $OutputPath -Verdict $verdict -Access $access -Sections $sections
+    Write-IntegrationCheckReport -Definition $Definition -OutputPath $OutputPath -Verdict $verdict -Access $access -Sections $sections -Context $Context
     $phrase = Get-IntegrationCheckVerdictText -Verdict $verdict
     $color = switch ($verdict) { 'Pass' { 'Green' } 'Fail' { 'Red' } default { 'Yellow' } }
     Write-Host ''

@@ -17,6 +17,25 @@ param(
     [string]$Environment,
     [Parameter(ParameterSetName = 'Entro')]
     [string]$VaultUrl,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [ValidateSet('Standard', 'KvMetadata')]
+    [string]$PolicyMode,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [string]$KvMount,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [string]$WorkerGroup,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [string]$OutpostId,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [string]$OutpostPublicKeyPath,
+    [Parameter(ParameterSetName = 'Wizard')]
+    [Parameter(ParameterSetName = 'Entro')]
+    [string]$OutpostDeploymentMode,
 
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Entro')]
@@ -51,7 +70,7 @@ Import-Module (Join-Path $wizardRoot 'modules/IW.Render.psm1') -Force -Global
 Import-IntegrationWizardConsole -WizardRoot $wizardRoot -NonInteractive:$NonInteractive
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/HashiCorp.Entro.psm1') -Force
 
-Register-IntegrationWizardPlatform -Name 'HashiCorpVault' -Title 'HashiCorp Vault' -CoreOptions @('Entro') -CliName 'vault'
+Register-IntegrationWizardPlatform -Name 'HashiCorpVault' -Title 'HashiCorp Vault' -CoreOptions @('Entro') -CliName 'pwsh'
 Register-HashiCorpEntroDefinitions
 
 $coreHelp = [ordered]@{
@@ -60,7 +79,8 @@ $coreHelp = [ordered]@{
 
 $context = @{
     Wizard = [bool]$Wizard; NonInteractive = [bool]$NonInteractive; Entro = [bool]$Entro; Action = $Action
-    Environment = $Environment; VaultUrl = $VaultUrl
+    Environment = $Environment; VaultUrl = $VaultUrl; PolicyMode = $PolicyMode; KvMount = $KvMount
+    WorkerGroup = $WorkerGroup
     OutputDirectory = $OutputDirectory; OutputFormat = $OutputFormat; Project = $Project
 }
 

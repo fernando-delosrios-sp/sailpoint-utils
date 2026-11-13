@@ -4,6 +4,20 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-13 · v1.11.0
+
+### Added
+
+- **SailPoint Connect — Wave 1 on-premise Entro integrations**: HashiCorp Vault, GitLab self-managed, GitHub Enterprise Server, on-prem Active Directory, and remote file systems (SMB, SFTP, WinRM). Each keeps BuildRequirements, Check, BuildScript, and Run. Definitions use `pwsh`, name the target host, and require an Entro Outpost. Generated scripts read secrets from the environment. New cmdlets: `Connect-SailPointOnPremActiveDirectory` and `Connect-SailPointRemoteFileSystem`. GitHub gains `-GhesEntro`. GitLab gains `-GitLabSelfManaged` (the ISC connector `-SelfManaged Yes/No` path is unchanged).
+
+## 2026-11-13 · v1.10.0
+
+### Added
+
+- **SailPoint Connect — Entro Outpost on-premise runtime (`Connect-SailPointEntroOutpost`)**: Added `Entro Outpost.ps1`, `Entro-Outpost.ps1`, `modules/Definitions/EntroOutpost.psm1`, and `-Platform EntroOutpost` for deploying and verifying the Entro Outpost container runtime via **Docker Compose** (Linux AMD64 host) or **Kubernetes Helm** (`oci://ghcr.io/entro-security-registry/entro-connector-helm`). Supports `BuildRequirements` (text + JSON), `Check` (host/cluster capability & egress probes), `BuildScript` (standalone `.ps1` with target-host assertions and zero plaintext secrets), and `Run`.
+- **Generic `pwsh` target-host runtime & `CheckProbe`**: Updated `IW.Core.psm1`, `IW.Render.psm1`, and `IW.Check.psm1` to support `CliName = 'pwsh'`, explicit `TargetHost` (`Role`, `Notes`, `Assert`, `AssertScript`) across help/requirements/scripts/reports, `CheckProbe` hooks on definitions without cloud CLI requirements, and automatic redaction/env-var redirection for `Secret = $true` inputs in generated `.ps1` scripts.
+- **Project-scoped Outpost dependency resolver (`outpost-index.json`)**: Added `outpost-index.json` helpers in `IW.Project.psm1`, catalog metadata (`hosting`, `requiresOutpost`) in `IW.Catalog.psm1` and `catalog/wizard-catalog.json` (marking `hashicorp-vault` as self-hosted), and `Resolve-IntegrationCatalogOutpostDependency` in `IW.CatalogMenu.psm1` so self-hosted integrations prompt to link, deploy inline, or register an External Outpost without re-prompting or passing incompatible switches.
+
 ## 2026-11-12 · v1.9.0
 
 ### Added

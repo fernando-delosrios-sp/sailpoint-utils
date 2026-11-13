@@ -62,6 +62,13 @@ function Get-IntegrationCatalogLegacyLaunchParameters {
             switch ([string]$Binding.VariantId) {
                 'gcp-org' { $pass['GcpEntro'] = $true }
                 'workspace' { $pass['WorkspaceEntro'] = $true }
+                'docker-compose' { $pass['DockerCompose'] = $true }
+                'kubernetes-helm' { $pass['KubernetesHelm'] = $true }
+                'ghes' { $pass['GhesEntro'] = $true }
+                'self-managed' { $pass['GitLabSelfManaged'] = $true }
+                'smb' { $pass['Smb'] = $true }
+                'sftp' { $pass['Sftp'] = $true }
+                'winrm' { $pass['WinRm'] = $true }
                 default { $pass['Entro'] = $true }
             }
         }
@@ -91,7 +98,7 @@ function Get-IntegrationCatalogLegacyLaunchParameters {
             if ($Product -eq 'fabric') {
                 $pass['AuthMethod'] = if ($kind -eq 'github.pat') { 'PersonalAccessToken' } else { 'GitHubApp' }
             }
-            elseif ($Product -eq 'entro') {
+            elseif ($Product -eq 'entro' -and [string]$Binding.VariantId -ne 'ghes' -and $kind -ne 'github.ghesPat') {
                 $pass['Method'] = if ($kind -eq 'github.pat') { 'ClassicPAT' } else { 'GitHubApp' }
             }
         }
@@ -194,9 +201,259 @@ function Resolve-IntegrationCatalogCredentialReuse {
     }
 }
 
+function Set-IntegrationCatalogOutpostContext {
+    param(
+        [Parameter(Mandatory)][hashtable]$Context,
+        [Parameter(Mandatory)][hashtable]$Outpost
+    )
+    if ($Outpost['id']) { $Context['OutpostId'] = [string]$Outpost['id'] }
+    if ($Outpost['workerGroupName']) { $Context['WorkerGroup'] = [string]$Outpost['workerGroupName'] }
+    if ($Outpost['deploymentMode']) { $Context['OutpostDeploymentMode'] = [string]$Outpost['deploymentMode'] }
+    if ($Outpost['publicKeyPath']) { $Context['OutpostPublicKeyPath'] = [string]$Outpost['publicKeyPath'] }
+}
+
+function Invoke-IntegrationCatalogInlineOutpostSetup {
+    param(
+        [Parameter(Mandatory)][hashtable]$Context,
+        [Parameter(Mandatory)][string]$WizardRoot,
+        [string]$ProjectName
+    )
+    $launcherPath = Join-Path $WizardRoot 'Entro Outpost.ps1'
+    if (-not (Test-Path -LiteralPath $launcherPath)) {
+        $alt = Join-Path $WizardRoot 'Entro-Outpost.ps1'
+        if (Test-Path -LiteralPath $alt) { $launcherPath = $alt }
+        else { throw "Entro Outpost launcher not found: $launcherPath" }
+    }
+    $mode = Invoke-IntegrationCatalogReadChoice -Prompt 'Select Entro Outpost deployment mode' `
+        -Options @('DockerCompose', 'KubernetesHelm') `
+        -Labels @('Docker Compose (Linux AMD64 host)', 'Kubernetes Helm (Linux AMD64 nodes)') `
+        -Default 'DockerCompose'
+    $outAction = Invoke-IntegrationCatalogReadChoice -Prompt 'What should the Entro Outpost setup produce?' `
+        -Options @('Run', 'BuildScript', 'BuildRequirements', 'Check') `
+        -Labels @(
+            'Run (deploy on this target host now)'
+            'Build script (generate .ps1 to run on the target Linux host)'
+            'Build requirements (checklist of host, network, and registry prerequisites)'
+            'Check (verify target host prerequisites)'
+        ) `
+        -Default 'Run'
+
+    $outParams = @{
+        Wizard = $true
+        Action = $outAction
+    }
+    $outParams[$mode] = $true
+    if ($ProjectName -and $ProjectName -ne 'ephemeral') {
+        $outParams['Project'] = $ProjectName
+    }
+
+    & $launcherPath @outParams
+
+    if ((Get-Command Test-IntegrationWizardCancelled -ErrorAction SilentlyContinue) -and (Test-IntegrationWizardCancelled)) {
+        return $null
+    }
+    if ($ProjectName -and $ProjectName -ne 'ephemeral') {
+        $latest = @(Find-IntegrationProjectOutpost -ProjectName $ProjectName -DeploymentMode $mode)
+        if ($latest.Count -eq 0) {
+            $latest = @(Find-IntegrationProjectOutpost -ProjectName $ProjectName)
+        }
+        if ($latest.Count -gt 0) {
+            return $latest[0]
+        }
+    }
+    return $null
+}
+
+function Resolve-IntegrationCatalogOutpostDependency {
+    param(
+        [Parameter(Mandatory)][hashtable]$Context,
+        [Parameter(Mandatory)][hashtable]$Binding,
+        [string]$WizardRoot = (Split-Path $PSScriptRoot -Parent),
+        [switch]$NonInteractive
+    )
+    if (-not $Binding.ContainsKey('RequiresOutpost') -or -not [bool]$Binding['RequiresOutpost']) {
+        return $null
+    }
+    if (-not (Get-Module -Name 'IW.Project')) {
+        Import-Module (Join-Path $PSScriptRoot 'IW.Project.psm1') -WarningAction SilentlyContinue | Out-Null
+    }
+    if (-not (Get-Module -Name 'ISC.OperatorConsole')) {
+        Import-Module (Join-Path $PSScriptRoot 'ISC.OperatorConsole.psm1') -Force -WarningAction SilentlyContinue | Out-Null
+    }
+
+    $projectName = if ($Context['IntegrationProjectName']) { [string]$Context['IntegrationProjectName'] } else { [string]$Context['Project'] }
+    $entries = @(
+        if ($projectName -and $projectName -ne 'ephemeral') {
+            Find-IntegrationProjectOutpost -ProjectName $projectName
+        }
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Context['OutpostId'])) {
+        $matchedById = @($entries | Where-Object { [string]$_['id'] -eq [string]$Context['OutpostId'] })
+        if ($matchedById.Count -eq 1) {
+            Set-IntegrationCatalogOutpostContext -Context $Context -Outpost $matchedById[0]
+            return $matchedById[0]
+        }
+        if ($entries.Count -gt 0 -and $matchedById.Count -eq 0) {
+            throw "Saved Entro Outpost '$($Context['OutpostId'])' was not found in project '$projectName'."
+        }
+        return $null
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Context['WorkerGroup'])) {
+        $matchedByWg = @($entries | Where-Object {
+            [string]::Equals([string]$_['workerGroupName'], [string]$Context['WorkerGroup'], [System.StringComparison]::OrdinalIgnoreCase)
+        })
+        if ($matchedByWg.Count -eq 1) {
+            Set-IntegrationCatalogOutpostContext -Context $Context -Outpost $matchedByWg[0]
+            return $matchedByWg[0]
+        }
+        return $null
+    }
+
+    if ($NonInteractive) {
+        if ($entries.Count -eq 1) {
+            Set-IntegrationCatalogOutpostContext -Context $Context -Outpost $entries[0]
+            return $entries[0]
+        }
+        if ($entries.Count -gt 1) {
+            throw "Multiple Entro Outposts exist in project '$projectName'. Specify -WorkerGroup or -OutpostId."
+        }
+        if ([string]$Context['Action'] -eq 'Run') {
+            throw "$($Binding.IntegrationTitle) requires an Entro Outpost. Deploy one first via -Platform EntroOutpost or pass -WorkerGroup."
+        }
+        return $null
+    }
+
+    if ($entries.Count -gt 0) {
+        Write-Info "$($Binding.IntegrationTitle) requires an Entro Outpost (Worker Group)."
+        while ($true) {
+            $options = [System.Collections.Generic.List[string]]::new()
+            $labels = [System.Collections.Generic.List[string]]::new()
+            foreach ($entry in $entries) {
+                $options.Add("use:$($entry['id'])")
+                $labels.Add("Use existing Outpost '$($entry['workerGroupName'])' [$($entry['deploymentMode']), $($entry['status'])]")
+            }
+            $options.Add('deploy')
+            $labels.Add('Deploy a new Entro Outpost now (Docker Compose or Kubernetes Helm)')
+            $options.Add('manual')
+            $labels.Add('Continue without linking (type Worker Group name manually)')
+
+            $choice = Invoke-IntegrationCatalogReadChoice -Prompt 'Select Entro Outpost for this integration' `
+                -Options @($options) -Labels @($labels) -Default $options[0]
+
+            if ($choice -like 'use:*') {
+                $pickedId = $choice.Substring(4)
+                $selected = @($entries | Where-Object { [string]$_['id'] -eq $pickedId })[0]
+                Set-IntegrationCatalogOutpostContext -Context $Context -Outpost $selected
+                Write-Ok "Linked Entro Outpost: $($selected['workerGroupName']) ($($selected['deploymentMode']))"
+                return $selected
+            }
+            if ($choice -eq 'deploy') {
+                try {
+                    $deployed = Invoke-IntegrationCatalogInlineOutpostSetup -Context $Context -WizardRoot $WizardRoot -ProjectName $projectName
+                    if ($deployed) {
+                        Set-IntegrationCatalogOutpostContext -Context $Context -Outpost $deployed
+                        Write-Ok "Linked new Entro Outpost: $($deployed['workerGroupName']) ($($deployed['deploymentMode']))"
+                        return $deployed
+                    }
+                    $entries = @(if ($projectName -and $projectName -ne 'ephemeral') { Find-IntegrationProjectOutpost -ProjectName $projectName })
+                    continue
+                }
+                catch {
+                    if (Test-PromptBack $_) { continue }
+                    throw
+                }
+            }
+            if ($choice -eq 'manual') {
+                try {
+                    $wg = Read-InputString -Prompt 'Worker Group name (leave blank if not yet created)' -Default 'default-outpost'
+                    if (-not [string]::IsNullOrWhiteSpace($wg)) { $Context['WorkerGroup'] = $wg }
+                    return $null
+                }
+                catch {
+                    if (Test-PromptBack $_) { continue }
+                    throw
+                }
+            }
+        }
+    }
+    else {
+        Write-Info "$($Binding.IntegrationTitle) is on-premise/self-hosted and requires an Entro Outpost (Worker Group)."
+        while ($true) {
+            $choice = Invoke-IntegrationCatalogReadChoice -Prompt 'No Entro Outpost is registered in this project yet. What do you want to do?' `
+                -Options @('deploy', 'register', 'skip') `
+                -Labels @(
+                    'Deploy an Entro Outpost now (Docker Compose or Kubernetes Helm)'
+                    'I already have an Outpost deployed elsewhere — register its Worker Group name'
+                    'Skip for now (continue with planning / requirements / script generation)'
+                ) `
+                -Default 'deploy'
+
+            if ($choice -eq 'deploy') {
+                try {
+                    $deployed = Invoke-IntegrationCatalogInlineOutpostSetup -Context $Context -WizardRoot $WizardRoot -ProjectName $projectName
+                    if ($deployed) {
+                        Set-IntegrationCatalogOutpostContext -Context $Context -Outpost $deployed
+                        Write-Ok "Linked Entro Outpost: $($deployed['workerGroupName']) ($($deployed['deploymentMode']))"
+                        return $deployed
+                    }
+                    $entries = @(if ($projectName -and $projectName -ne 'ephemeral') { Find-IntegrationProjectOutpost -ProjectName $projectName })
+                    if ($entries.Count -gt 0) {
+                        Set-IntegrationCatalogOutpostContext -Context $Context -Outpost $entries[0]
+                        return $entries[0]
+                    }
+                    continue
+                }
+                catch {
+                    if (Test-PromptBack $_) { continue }
+                    throw
+                }
+            }
+            if ($choice -eq 'register') {
+                try {
+                    $wg = Read-InputString -Prompt 'Existing Worker Group name' -Default 'default-outpost' -Required
+                    $depMode = Invoke-IntegrationCatalogReadChoice -Prompt 'Existing Outpost deployment type' `
+                        -Options @('DockerCompose', 'KubernetesHelm', 'Unknown') `
+                        -Labels @('Docker Compose', 'Kubernetes Helm', 'Other / Unknown') `
+                        -Default 'DockerCompose'
+                    $pubKey = Read-InputString -Prompt 'Outpost RSA public key path (optional, for encrypted secrets)' -Default ''
+                    $Context['WorkerGroup'] = $wg
+                    $Context['OutpostDeploymentMode'] = $depMode
+                    if (-not [string]::IsNullOrWhiteSpace($pubKey)) { $Context['OutpostPublicKeyPath'] = $pubKey }
+                    if ($projectName -and $projectName -ne 'ephemeral') {
+                        $regCtx = @{
+                            WorkerGroup          = $wg
+                            DeploymentMode       = $depMode
+                            OutpostPublicKeyPath = $pubKey
+                            Action               = 'Run'
+                        }
+                        $saved = Save-IntegrationProjectOutpost -ProjectName $projectName -Context $regCtx -Status 'External'
+                        if ($saved) {
+                            Set-IntegrationCatalogOutpostContext -Context $Context -Outpost $saved
+                            Write-Ok "Registered existing Entro Outpost: $wg"
+                            return $saved
+                        }
+                    }
+                    return $null
+                }
+                catch {
+                    if (Test-PromptBack $_) { continue }
+                    throw
+                }
+            }
+            if ($choice -eq 'skip') {
+                Write-Info 'Continuing without a linked Entro Outpost.'
+                return $null
+            }
+        }
+    }
+}
+
 function Resolve-IntegrationCatalogInteractiveSelection {
     param(
         [hashtable]$Context = @{},
+        [string]$WizardRoot = (Split-Path $PSScriptRoot -Parent),
         [switch]$NonInteractive
     )
     Import-Module (Join-Path $PSScriptRoot 'IW.Catalog.psm1') -Force -WarningAction SilentlyContinue | Out-Null
@@ -244,16 +501,21 @@ function Resolve-IntegrationCatalogInteractiveSelection {
 
     $integration = Get-IntegrationCatalogIntegration -IntegrationId ([string]$Context['CatalogIntegrationId'])
     if (-not $Context['CatalogProduct']) {
-        if ($NonInteractive) {
-            throw 'Non-interactive catalog flow requires CatalogProduct (fabric, entro, ciem).'
-        }
         $productNames = @(Get-IntegrationCatalogIntegrationProductIds -Integration $integration)
-        $productLabels = @($productNames | ForEach-Object {
-            $meta = $catalog.products.$_
-            if ($meta -and $meta.label) { [string]$meta.label } else { $_ }
-        })
-        $pickedProduct = Invoke-IntegrationCatalogReadChoice -Prompt 'Select product' -Options $productNames -Labels $productLabels -Default $productNames[0]
-        $Context['CatalogProduct'] = $pickedProduct
+        if ($productNames.Count -eq 1) {
+            $Context['CatalogProduct'] = $productNames[0]
+        }
+        else {
+            if ($NonInteractive) {
+                throw 'Non-interactive catalog flow requires CatalogProduct (fabric, entro, ciem).'
+            }
+            $productLabels = @($productNames | ForEach-Object {
+                $meta = $catalog.products.$_
+                if ($meta -and $meta.label) { [string]$meta.label } else { $_ }
+            })
+            $pickedProduct = Invoke-IntegrationCatalogReadChoice -Prompt 'Select product' -Options $productNames -Labels $productLabels -Default $productNames[0]
+            $Context['CatalogProduct'] = $pickedProduct
+        }
     }
 
     $product = [string]$Context['CatalogProduct']
@@ -291,14 +553,19 @@ function Resolve-IntegrationCatalogInteractiveSelection {
     elseif ($kinds.Count -eq 1) {
         $binding['SelectedCredentialKind'] = $kinds[0]
     }
-  elseif ($Context['CatalogCredentialKind']) {
+    elseif ($Context['CatalogCredentialKind']) {
         $binding = Resolve-IntegrationCatalogBinding -IntegrationId ([string]$integration.id) -Product $product `
             -VariantId ([string]$binding.VariantId) -CredentialKind ([string]$Context['CatalogCredentialKind'])
     }
 
     $Context['CatalogCredentialKind'] = [string]$binding['SelectedCredentialKind']
     $Context['CatalogVariantId'] = [string]$binding.VariantId
-    $credential = Resolve-IntegrationCatalogCredentialReuse -Context $Context -Binding $binding -NonInteractive:$NonInteractive
+
+    $credential = $null
+    if ([string]$integration.id -ne 'entro-outpost') {
+        $credential = Resolve-IntegrationCatalogCredentialReuse -Context $Context -Binding $binding -NonInteractive:$NonInteractive
+    }
+    $outpost = Resolve-IntegrationCatalogOutpostDependency -Context $Context -Binding $binding -WizardRoot $WizardRoot -NonInteractive:$NonInteractive
 
     return @{
         Integration = $integration
@@ -306,6 +573,7 @@ function Resolve-IntegrationCatalogInteractiveSelection {
         Product     = $product
         Context     = $Context
         Credential  = $credential
+        Outpost     = $outpost
     }
 }
 
@@ -355,6 +623,7 @@ function Invoke-IntegrationCatalogLauncher {
         [Parameter(Mandatory)][hashtable]$Binding,
         [Parameter(Mandatory)][string]$Product,
         [hashtable]$BaseParameters = @{},
+        [hashtable]$OutpostParameters = @{},
         [hashtable]$Credential
     )
     $launcherName = [string]$Integration.launcher
@@ -364,8 +633,24 @@ function Invoke-IntegrationCatalogLauncher {
         if (Test-Path -LiteralPath $alt) { $launcherPath = $alt }
         else { throw "Launcher not found: $launcherPath" }
     }
+    $outpostParamNames = @('WorkerGroup', 'OutpostId', 'OutpostPublicKeyPath', 'OutpostDeploymentMode')
+    $candidateOutpost = @{}
+    foreach ($k in @($OutpostParameters.Keys)) {
+        if ($null -ne $OutpostParameters[$k] -and -not [string]::IsNullOrWhiteSpace([string]$OutpostParameters[$k])) {
+            $candidateOutpost[$k] = $OutpostParameters[$k]
+        }
+    }
+
     $pass = @{}
-    foreach ($k in $BaseParameters.Keys) { $pass[$k] = $BaseParameters[$k] }
+    foreach ($k in $BaseParameters.Keys) {
+        if ($outpostParamNames -contains $k) {
+            if ($null -ne $BaseParameters[$k] -and -not [string]::IsNullOrWhiteSpace([string]$BaseParameters[$k])) {
+                $candidateOutpost[$k] = $BaseParameters[$k]
+            }
+            continue
+        }
+        $pass[$k] = $BaseParameters[$k]
+    }
     $pass['Wizard'] = $true
     foreach ($entry in (Get-IntegrationCatalogLegacyLaunchParameters -Binding $Binding -Product $Product).GetEnumerator()) {
         $pass[$entry.Key] = $entry.Value
@@ -373,6 +658,13 @@ function Invoke-IntegrationCatalogLauncher {
 
     $command = Get-Command -Name $launcherPath -ErrorAction Stop
     $compatibleSets = @(Get-IntegrationCatalogCompatibleParameterSets -Command $command -Parameters $pass)
+    foreach ($ok in @($candidateOutpost.Keys)) {
+        if (Test-IntegrationCatalogLauncherParameter -Name $ok -Command $command -CompatibleSets $compatibleSets) {
+            $pass[$ok] = $candidateOutpost[$ok]
+            $candidateSets = @($compatibleSets | Where-Object { @($_.Parameters.Name) -contains $ok })
+            if ($candidateSets.Count -gt 0) { $compatibleSets = $candidateSets }
+        }
+    }
     if ($Credential) {
         $pass['CatalogReuseMode'] = 'UpdateExisting'
         $pass['CatalogCredentialId'] = [string]$Credential['id']
@@ -427,7 +719,7 @@ function Start-IntegrationCatalogRootMenu {
     if ($OutputDirectory) { $ctx['OutputDirectory'] = $OutputDirectory }
 
     try {
-        $sel = Resolve-IntegrationCatalogInteractiveSelection -Context $ctx -NonInteractive:$NonInteractive
+        $sel = Resolve-IntegrationCatalogInteractiveSelection -Context $ctx -WizardRoot $WizardRoot -NonInteractive:$NonInteractive
     }
     catch {
         if (Test-CancelledNavigation $_) {
@@ -452,9 +744,17 @@ function Start-IntegrationCatalogRootMenu {
     if ($ctx['CatalogReuseMode']) { $basePass['CatalogReuseMode'] = [string]$ctx['CatalogReuseMode'] }
     if ($ctx['CatalogCredentialId']) { $basePass['CatalogCredentialId'] = [string]$ctx['CatalogCredentialId'] }
 
+    $outpostPass = @{}
+    foreach ($ok in @('WorkerGroup', 'OutpostId', 'OutpostPublicKeyPath', 'OutpostDeploymentMode')) {
+        if ($ctx.ContainsKey($ok) -and -not [string]::IsNullOrWhiteSpace([string]$ctx[$ok])) {
+            $outpostPass[$ok] = [string]$ctx[$ok]
+        }
+    }
+
     try {
         Invoke-IntegrationCatalogLauncher -WizardRoot $WizardRoot -Integration $sel['Integration'] `
-            -Binding $sel['Binding'] -Product $sel['Product'] -BaseParameters $basePass -Credential $sel['Credential']
+            -Binding $sel['Binding'] -Product $sel['Product'] -BaseParameters $basePass `
+            -OutpostParameters $outpostPass -Credential $sel['Credential']
     }
     catch {
         if (Test-CancelledNavigation $_) {
@@ -477,6 +777,7 @@ function Get-IntegrationCatalogRootMenuExtras {
 
 Export-ModuleMember -Function @(
     'Get-IntegrationCatalogLegacyLaunchParameters'
+    'Resolve-IntegrationCatalogOutpostDependency'
     'Resolve-IntegrationCatalogInteractiveSelection'
     'Invoke-IntegrationCatalogLauncher'
     'Start-IntegrationCatalogRootMenu'
