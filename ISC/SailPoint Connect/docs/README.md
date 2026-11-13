@@ -1,116 +1,78 @@
 # SailPoint Connect Documentation
 
-Welcome to the documentation for **SailPoint Connect** — a progressive-disclosure PowerShell module for configuring SailPoint Identity Security Cloud (ISC) connectors, Entro cloud integrations, Microsoft 365 access profiles, and IQService host infrastructure.
+Welcome to the documentation for **SailPoint Connect** — a progressive-disclosure PowerShell module for configuring, verifying, and auditing cloud and SaaS integrations across **SailPoint Fabric** (ISC SaaS connectors), **SailPoint CIEM**, and **Entro**, as well as managing **IQService Windows hosts** and generating **Microsoft 365 access profiles**.
 
-Nothing in your tenant is created or updated unless you choose `Run` and confirm. Start with [What SailPoint Connect changes](guides/what-it-changes.md).
+Nothing in your tenant or cloud provider is created or changed unless you explicitly choose `Run` and confirm. See [What SailPoint Connect changes](guides/what-it-changes.md).
 
 ---
 
 ## Quick Navigation
 
-- [Installation & Quick Start](#installation--quick-start)
-- [Command Reference (Cmdlets)](#command-reference)
-- [Architecture & Workspace Directory (`~/.sailpoint-connect`)](#architecture--workspaces)
-- [What SailPoint Connect changes](guides/what-it-changes.md)
-- [Progressive Disclosure Guide](#progressive-disclosure)
+- [Supported Platforms & Integration Guides](#supported-platforms--integration-guides)
+- [Complete Command Reference (All Cmdlets)](#complete-command-reference)
+- [Architecture & Workspaces (`~/.sailpoint-connect`)](guides/architecture-and-workspaces.md)
 - [Connector & Platform Permissions Breakdown](guides/connector-permissions-breakdown.md)
-- [Prerequisites & Toolchain](#prerequisites--toolchain)
+- [Progressive Disclosure Guide](guides/progressive-disclosure.md)
+- [Prerequisites & Toolchain](guides/prerequisites-and-toolchain.md)
 
 ---
 
-## Installation & Quick Start
+## Supported Platforms & Integration Guides
 
-### Installation
+Detailed technical reference guides for each supported platform:
 
-Install directly from the PowerShell Gallery (PowerShell 7+ required):
-
-```powershell
-Install-Module -Name SailPoint.Connect -Scope CurrentUser
-```
-
-Or update an existing installation:
-
-```powershell
-Update-Module -Name SailPoint.Connect
-```
-
-### Quick Start
-
-Launch the interactive menu to select your platform:
-
-```powershell
-Invoke-SailPointConnect
-# Or using the alias:
-sailpoint-connect
-```
-
-Or jump straight to your target platform with guided questionnaires:
-
-```powershell
-# AWS (SaaS connector, CIEM, or Entro)
-Connect-SailPointAWS -Wizard
-
-# Azure / Microsoft Entra ID
-Connect-SailPointAzure -Wizard
-
-# Google Cloud & Google Workspace
-Connect-SailPointGoogleCloud -Wizard
-
-# Databricks Account & Metastore
-Connect-SailPointDatabricks -Wizard
-```
+- [**Amazon Web Services (AWS)**](guides/aws-technical-reference.md) — IAM role trust, Organization scope, CloudFormation StackSets, and CIEM setup.
+- [**Microsoft Azure & Entra ID**](guides/azure-entra-technical-reference.md) — Microsoft Graph application permissions, directory roles, Microsoft Agent 365, and Power Platform Copilot Studio.
+- [**Google Cloud & Workspace**](guides/google-cloud-technical-reference.md) — Service accounts, RSA PEM keys, domain-wide delegation, and GCP CIEM.
+- [**IQService Host Control**](guides/iqservice-control-guide.md) — Windows service lifecycle, binary unblocking, log streaming, and Active Directory LDAPS (TCP 636) TLS certificate generation.
+- [**Microsoft 365 Access Profiles**](guides/microsoft-365-access-profiles.md) — Entra service plan mapping and requestable access profile generation.
 
 ---
 
-## Command Reference
+## Complete Command Reference
+
+### 1. Unified Entry Point & Workspaces
 
 | Cmdlet | Alias | Description |
 | :--- | :--- | :--- |
-| [`Invoke-SailPointConnect`](cmdlets/Invoke-SailPointConnect.md) | `sailpoint-connect` | Unified entry point with interactive platform picker |
-| [`Connect-SailPointAWS`](cmdlets/Connect-SailPointAWS.md) | — | Configures AWS SaaS connector, CIEM, and Entro |
-| [`Connect-SailPointAzure`](cmdlets/Connect-SailPointAzure.md) | — | Configures Microsoft Entra ID connector and Entro |
-| [`Connect-SailPointGoogleCloud`](cmdlets/Connect-SailPointGoogleCloud.md) | — | Configures Google Workspace connector, GCP CIEM, and Entro |
-| [`Connect-SailPointDatabricks`](cmdlets/Connect-SailPointDatabricks.md) | — | Configures Databricks service principal and OAuth M2M |
-| [`Invoke-SailPointIQServiceControl`](cmdlets/Start-SailPointIQServiceControl.md) | `Start-SailPointIQServiceControl` | Installs, upgrades, and streams IQService logs on Windows |
-| [`New-SailPointM365AccessProfile`](cmdlets/New-SailPointM365AccessProfile.md) | — | Discovers Entra service plans and creates ISC access profiles |
-| [`Get-SailPointConnectProject`](cmdlets/Get-SailPointConnectProject.md) | — | Lists all project workspaces under `~/.sailpoint-connect/` |
-| [`Set-SailPointConnectProject`](cmdlets/Set-SailPointConnectProject.md) | — | Sets the default active project workspace |
+| [`Invoke-SailPointConnect`](cmdlets/Invoke-SailPointConnect.md) | `sailpoint-connect` | Unified entry point with interactive keyboard-driven platform questionnaire |
+| [`Get-SailPointConnectProject`](cmdlets/Get-SailPointConnectProject.md) | — | Lists all project workspaces stored under `~/.sailpoint-connect/` |
+| [`Set-SailPointConnectProject`](cmdlets/Set-SailPointConnectProject.md) | — | Sets or switches the default active project workspace |
+| [`Update-SailPointConnect`](cmdlets/Update-SailPointConnect.md) | `update-sailpoint-connect` | Updates the SailPoint.Connect module from PowerShell Gallery |
+| [`Get-SailPointConnectUpdate`](cmdlets/Get-SailPointConnectUpdate.md) | — | Checks PowerShell Gallery for newer module versions |
+
+### 2. Platform Connectors (SailPoint Fabric, CIEM & Entro)
+
+| Cmdlet | Primary Launcher | Supported Products | Description |
+| :--- | :--- | :--- | :--- |
+| [`Connect-SailPointAWS`](cmdlets/Connect-SailPointAWS.md) | `./AWS.ps1` | Fabric, CIEM, Entro | Configures AWS SaaS connector IAM role, CIEM CloudFormation, or Entro |
+| [`Connect-SailPointAzure`](cmdlets/Connect-SailPointAzure.md) | `./Azure.ps1` | Fabric, CIEM, Entro | Configures Microsoft Entra ID connector, CIEM, and Entro integrations |
+| [`Connect-SailPointGoogleCloud`](cmdlets/Connect-SailPointGoogleCloud.md) | `./Google Cloud.ps1` | Fabric, CIEM, Entro | Configures Google Workspace connector, GCP CIEM, and Entro |
+| [`Connect-SailPointGitHub`](cmdlets/Connect-SailPointGitHub.md) | `./GitHub.ps1` | Fabric, Entro | Configures GitHub organization App or PAT for SaaS and Entro |
+| [`Connect-SailPointOkta`](cmdlets/Connect-SailPointOkta.md) | `./Okta.ps1` | Fabric, Entro | Configures Okta OAuth service app (JWT) and Entro API Services |
+| [`Connect-SailPointCrowdStrike`](cmdlets/Connect-SailPointCrowdStrike.md) | `./CrowdStrike.ps1` | Fabric, Entro | Configures CrowdStrike Falcon OAuth API client for SaaS and Entro |
+| [`Connect-SailPointSalesforce`](cmdlets/Connect-SailPointSalesforce.md) | `./Salesforce.ps1` | Fabric, Entro | Configures Salesforce Connected App and Agentforce bot discovery |
+| [`Connect-SailPointSlack`](cmdlets/Connect-SailPointSlack.md) | `./Slack.ps1` | Fabric, Entro | Configures Slack Enterprise Grid bot and user tokens |
+| [`Connect-SailPointGitLab`](cmdlets/Connect-SailPointGitLab.md) | `./GitLab.ps1` | Fabric, Entro | Configures GitLab personal or group access token credentials |
+| [`Connect-SailPointDatabricks`](cmdlets/Connect-SailPointDatabricks.md) | `./Databricks.ps1` | Fabric | Configures Databricks account service principal and OAuth M2M |
+| [`Connect-SailPointSnowflake`](cmdlets/Connect-SailPointSnowflake.md) | `./Snowflake.ps1` | Entro | Configures Snowflake key-pair authenticated user for Entro |
+| [`Connect-SailPointServiceNow`](cmdlets/Connect-SailPointServiceNow.md) | `./ServiceNow.ps1` | Entro | Configures ServiceNow REST API credentials for Entro |
+| [`Connect-SailPointHashiCorpVault`](cmdlets/Connect-SailPointHashiCorpVault.md) | `./HashiCorp Vault.ps1` | Entro | Configures HashiCorp Vault policy and token for Entro |
+
+### 3. Specialized Windows Host & Identity Tools
+
+| Cmdlet | Alias / Script | Description |
+| :--- | :--- | :--- |
+| [`Invoke-SailPointIQServiceControl`](cmdlets/Start-SailPointIQServiceControl.md) | `Start-SailPointIQServiceControl`<br>`./IQService Control.ps1` | Manages Windows IQService host lifecycle, log streaming, and AD LDAPS certificates |
+| [`New-SailPointM365AccessProfile`](cmdlets/New-SailPointM365AccessProfile.md) | `./Microsoft 365 Access Profiles.ps1` | Discovers Entra service plans and creates requestable ISC access profiles |
 
 ---
 
-## Architecture & Workspaces
+## The Four Progressive Disclosure Actions
 
-All project workspaces, activity logs, runbooks, and saved selections are preserved centrally under the user's home folder:
+Every platform connector cmdlet supports the same standard `-Action` parameter:
 
-```
-~/.sailpoint-connect/
-├── current.json                       # Active project pointer
-└── <ProjectName>/
-    ├── selection.json                 # Last chosen target & parameters
-    ├── selections.jsonl               # Historical run audit log
-    ├── operator-actions.md            # Action items for manual steps
-    └── <Platform>/
-        └── <Integration>/
-            ├── activity.log           # Full step-by-step execution log
-            ├── <target>.ps1           # Generated standalone script (-Action BuildScript)
-            ├── <target>-requirements.md # Generated checklist (-Action BuildRequirements)
-            └── <target>-check.md     # Read-only gap report (-Action Check)
-```
-
-Read more in the [Architecture & Workspaces Guide](guides/architecture-and-workspaces.md).
-
----
-
-## Progressive Disclosure
-
-Every platform wizard supports the same choices. Discovery is optional, and only `Run` writes to the tenant.
-
-1. **Interactive Guided Mode (`-Wizard`)**: The first question is what you want back: a checklist, a read-only check, a script, or an apply. Later questions only collect what that choice needs. You can type every value. If you are signed in, some questions also offer names that already exist. The default is `BuildRequirements`.
-2. **Action Selection (`-Action`)**:
-   - `BuildRequirements`: Markdown checklist for the team that owns the tenant. Nothing is created.
-   - `Check`: Reads an existing role, app registration, or service account and reports gaps. Nothing is created.
-   - `BuildScript`: Offline `.ps1` for review and change management. Nothing is created until that script is run.
-   - `Run`: The only action that applies changes, and only after you confirm.
-3. **Headless Automation (`-NonInteractive`)**: Pass the parameters explicitly, including `-Action`. `Check` fails the command when the existing identity does not meet the requirements, and still does not change it.
-
-Read more in the [Progressive Disclosure Guide](guides/progressive-disclosure.md).
+1. **`BuildRequirements`**: Generates a Markdown checklist (`*-requirements.md`) for your cloud security or operations team. Does not touch the cloud tenant.
+2. **`Check`**: Reads an existing cloud identity (IAM role, Entra app, GCP service account) and reports gaps in `*-check.md`. Completely read-only.
+3. **`BuildScript`**: Generates an executable `.ps1` script for change-management ticket review before running.
+4. **`Run`**: Applies the changes directly to your cloud provider using the official CLI after an interactive confirmation prompt.
