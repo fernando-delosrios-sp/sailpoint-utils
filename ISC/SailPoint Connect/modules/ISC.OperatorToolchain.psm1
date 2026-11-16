@@ -900,6 +900,13 @@ function Update-SailPointConnect {
             }
             catch {
                 $reloadError = "$reloadError | $($_.Exception.Message)"
+                $fallbackManifest = Join-Path (Split-Path -Parent $PSScriptRoot) 'SailPoint.Connect.psd1'
+                if (Test-Path -LiteralPath $fallbackManifest) {
+                    try {
+                        Import-Module -Name $fallbackManifest -Force -Global -ErrorAction Stop | Out-Null
+                    }
+                    catch { }
+                }
             }
             if ($reloadError) {
                 Write-Host "   Update installed but session reload failed: $reloadError" -ForegroundColor Yellow

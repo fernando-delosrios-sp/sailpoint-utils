@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-16 · v1.14.0
+
+### Fixed
+
+- **SailPoint Connect — `Get-IntegrationProjectRoot` recovery and reload resilience**: Added `Initialize-SailPointConnectDependencies` in `SailPoint.Connect.psm1` and invoked it in `Invoke-SailPointConnect` (including after `Confirm-SailPointConnectUpdate`), `Get-SailPointConnectProject`, `Set-SailPointConnectProject`, `Get-SailPointConnectUpdate`, and `Update-SailPointConnect` so `IW.Project` and sibling submodules are automatically re-imported if unloaded (e.g. after a failed session reload). Added a fallback re-import of the active manifest in `Update-SailPointConnect` when `Import-SailPointConnectModuleFresh` fails, and guarded `.Reloaded` property checks under `Set-StrictMode -Version Latest`.
+
 ## 2026-11-16 · v1.13.0
 
 ### Fixed

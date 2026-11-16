@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.13.0' $manifest.Version.ToString() 'Manifest version 1.13.0'
+Assert-Equal '1.14.0' $manifest.Version.ToString() 'Manifest version 1.14.0'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members
@@ -282,6 +282,17 @@ try {
         $m365SplatErr = $_.Exception.Message
     }
     Assert-True ($m365SplatErr -notmatch "Environment 'True' was not found") 'Microsoft-365-Access-Profiles.ps1 @pass with Wizard=$true does not bind True to Environment'
+
+    # 15) Submodule dependency recovery (Get-IntegrationProjectRoot) and -Update strict-mode guard
+    Remove-Module 'IW.Project' -Force -ErrorAction SilentlyContinue
+    Assert-True ($null -eq (Get-Command 'Get-IntegrationProjectRoot' -ErrorAction SilentlyContinue)) 'IW.Project unloaded before recovery check'
+    $recoveredProjects = @(Get-SailPointConnectProject)
+    Assert-True ($null -ne (Get-Command 'Get-IntegrationProjectRoot' -ErrorAction SilentlyContinue)) 'Get-SailPointConnectProject reloads IW.Project when missing'
+    Assert-True ($recoveredProjects.Count -ge 1) 'Get-SailPointConnectProject returns projects after recovery'
+
+    $upToDateUpdate = Invoke-SailPointConnect -Update -SkipUpdateCheck
+    Assert-True ($upToDateUpdate.Success) 'Invoke-SailPointConnect -Update -SkipUpdateCheck returns without strict-mode Reloaded error'
+    Remove-Item env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK -ErrorAction SilentlyContinue
 }
 finally {
     Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue

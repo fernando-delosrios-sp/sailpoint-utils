@@ -11,6 +11,30 @@ Import-Module (Join-Path $script:ModuleRoot 'modules/ISC.OperatorToolchain.psm1'
 Import-Module (Join-Path $script:ModuleRoot 'modules/IW.Catalog.psm1') -Force -Global -WarningAction SilentlyContinue
 Import-Module (Join-Path $script:ModuleRoot 'modules/IW.CatalogMenu.psm1') -Force -Global -WarningAction SilentlyContinue
 
+function Initialize-SailPointConnectDependencies {
+    $deps = @(
+        @{ Command = 'Start-IntegrationWizardFlow'; Path = 'modules/IW.Core.psm1'; SilenceWarnings = $false }
+        @{ Command = 'Get-IntegrationProjectRoot'; Path = 'modules/IW.Project.psm1'; SilenceWarnings = $false }
+        @{ Command = 'Invoke-IntegrationWizardRun'; Path = 'modules/IW.Render.psm1'; SilenceWarnings = $false }
+        @{ Command = 'Write-SailPointConnectBanner'; Path = 'modules/ISC.OperatorConsole.psm1'; SilenceWarnings = $true }
+        @{ Command = 'Get-SailPointConnectUpdate'; Path = 'modules/ISC.OperatorToolchain.psm1'; SilenceWarnings = $true }
+        @{ Command = 'Get-IntegrationWizardCatalog'; Path = 'modules/IW.Catalog.psm1'; SilenceWarnings = $true }
+        @{ Command = 'Start-IntegrationCatalogRootMenu'; Path = 'modules/IW.CatalogMenu.psm1'; SilenceWarnings = $true }
+    )
+    foreach ($dep in $deps) {
+        if (-not (Get-Command -Name $dep.Command -ErrorAction SilentlyContinue)) {
+            $importParams = @{
+                Name        = Join-Path $script:ModuleRoot $dep.Path
+                Force       = $true
+                Global      = $true
+                ErrorAction = 'Stop'
+            }
+            if ($dep.SilenceWarnings) { $importParams['WarningAction'] = 'SilentlyContinue' }
+            Import-Module @importParams
+        }
+    }
+}
+
 function Convert-RemainingArgumentsToHashtable {
     param(
         $Arguments
@@ -208,6 +232,7 @@ function Invoke-SailPointConnect {
         $RemainingArguments
     )
 
+    Initialize-SailPointConnectDependencies
     Initialize-OperatorConsole -NonInteractive:$NonInteractive
     $extraArgs = Convert-RemainingArgumentsToHashtable -Arguments $RemainingArguments
 
@@ -217,7 +242,7 @@ function Invoke-SailPointConnect {
 
     if ($Update -or $Platform -eq 'Update') {
         $updateResult = Update-SailPointConnect -NonInteractive:$NonInteractive
-        if ($updateResult.Reloaded -and -not $NonInteractive -and $Update -and -not $Platform) {
+        if ($updateResult.PSObject.Properties['Reloaded'] -and $updateResult.Reloaded -and -not $NonInteractive -and $Update -and -not $Platform) {
             return (Invoke-SailPointConnectSessionReentry -ConnectParams @{
                     Project              = $Project
                     SkipUpdateCheck      = $SkipUpdateCheck
@@ -253,6 +278,7 @@ function Invoke-SailPointConnect {
                             RemainingArguments   = $RemainingArguments
                         })
                 }
+                Initialize-SailPointConnectDependencies
 
                 Write-Host "Project workspace root: $(Get-IntegrationProjectRoot)`n" -ForegroundColor DarkGray
 
@@ -264,7 +290,7 @@ function Invoke-SailPointConnect {
                     $special = [string]$catalogResult['Platform']
                     if ($special -eq 'Update') {
                         $menuUpdateResult = Update-SailPointConnect
-                        if ($menuUpdateResult.Reloaded) {
+                        if ($menuUpdateResult.PSObject.Properties['Reloaded'] -and $menuUpdateResult.Reloaded) {
                             return (Invoke-SailPointConnectSessionReentry -ConnectParams @{
                                     Project              = $Project
                                     SkipUpdateCheck      = $SkipUpdateCheck
@@ -1830,6 +1856,7 @@ function New-SailPointM365AccessProfile {
 function Get-SailPointConnectProject {
     [CmdletBinding()]
     param()
+    Initialize-SailPointConnectDependencies
     $root = Get-IntegrationProjectRoot
     $current = Get-IntegrationProjectLastSelected -Root $root
     $names = @(Get-IntegrationProjectNames -Root $root)
@@ -1866,6 +1893,7 @@ function Set-SailPointConnectProject {
         [Parameter(Mandatory, Position = 0)]
         [string]$Name
     )
+    Initialize-SailPointConnectDependencies
     Test-IntegrationProjectName -Name $Name
     $root = Get-IntegrationProjectRoot
     $projDir = Join-Path $root $Name
@@ -1921,6 +1949,7 @@ function Get-SailPointConnectUpdate {
         [Parameter()]
         [switch]$Force
     )
+    Initialize-SailPointConnectDependencies
     $mod = @(Get-Module 'ISC.OperatorToolchain' | Where-Object { $_.ExportedFunctions.ContainsKey('Get-SailPointConnectUpdate') }) | Select-Object -Last 1
     if ($mod) {
         $fn = $mod.ExportedFunctions['Get-SailPointConnectUpdate']
@@ -1986,6 +2015,7 @@ function Update-SailPointConnect {
         [Parameter()]
         [switch]$NonInteractive
     )
+    Initialize-SailPointConnectDependencies
     $mod = @(Get-Module 'ISC.OperatorToolchain' | Where-Object { $_.ExportedFunctions.ContainsKey('Update-SailPointConnect') }) | Select-Object -Last 1
     if ($mod) {
         $fn = $mod.ExportedFunctions['Update-SailPointConnect']
