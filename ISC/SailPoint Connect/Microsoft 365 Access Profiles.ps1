@@ -107,7 +107,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $script:ModuleRoot = Join-Path $PSScriptRoot 'modules'
-Import-Module (Join-Path $script:ModuleRoot 'ISC.OperatorConsole.psm1') -Force -WarningAction SilentlyContinue
+Import-Module (Join-Path $script:ModuleRoot 'ISC.OperatorConsole.psm1') -Force -Global -WarningAction SilentlyContinue
 Import-IscModule -Path (Join-Path $script:ModuleRoot 'ISC.OperatorToolchain.psm1') -Force
 Import-IscModule -Path (Join-Path $script:ModuleRoot 'ISC.SailPointSdk.psm1') -Force
 Import-IscModule -Path (Join-Path $script:ModuleRoot 'ISC.Microsoft365AccessProfiles.psm1') -Force

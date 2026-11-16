@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.14.0' $manifest.Version.ToString() 'Manifest version 1.14.0'
+Assert-Equal '1.15.0' $manifest.Version.ToString() 'Manifest version 1.15.0'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members
@@ -293,6 +293,42 @@ try {
     $upToDateUpdate = Invoke-SailPointConnect -Update -SkipUpdateCheck
     Assert-True ($upToDateUpdate.Success) 'Invoke-SailPointConnect -Update -SkipUpdateCheck returns without strict-mode Reloaded error'
     Remove-Item env:SAILPOINT_CONNECT_SKIP_UPDATE_CHECK -ErrorAction SilentlyContinue
+
+    # 16) Global ISC.OperatorConsole scope preserved when launching IQService Control / M365 from SailPoint.Connect scope
+    $iqPrimary = Join-Path $connectRoot 'IQService Control.ps1'
+    $m365Primary = Join-Path $connectRoot 'Microsoft 365 Access Profiles.ps1'
+    $iqScopeOut = & pwsh -NoProfile -Command {
+        param($manifest, $iqPath)
+        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.15.0'
+        Import-Module $manifest -Force -Global
+        & (Get-Module SailPoint.Connect) {
+            param($p)
+            function Assert-WindowsHost { }
+            function Resolve-IQServiceInstallPath { 'C:\SailPoint\IQService' }
+            function Show-InteractiveMenu { param($ResolvedInstallPath, $TraceFile, $TailLines) Write-Output 'IQ_SCOPE_OK' }
+            & $p -Wizard
+        } $iqPath
+    } -Args $manifestPath, $iqPrimary 2>&1 | Out-String
+    Assert-True ($iqScopeOut -match 'IQ_SCOPE_OK') 'IQService Control.ps1 -Wizard from SailPoint.Connect scope keeps Test-OperatorNonInteractive available'
+    Assert-True ($iqScopeOut -notmatch 'Test-OperatorNonInteractive') 'IQService Control.ps1 -Wizard does not throw Test-OperatorNonInteractive error'
+
+    $missingM365Cfg = Join-Path $tmp 'missing-m365-config.yaml'
+    $m365ScopeOut = & pwsh -NoProfile -Command {
+        param($manifest, $m365Path, $cfg)
+        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.15.0'
+        Import-Module $manifest -Force -Global
+        & (Get-Module SailPoint.Connect) {
+            param($p, $c)
+            try {
+                & $p -Wizard -Environment '__missing__' -SailpointConfigPath $c
+            }
+            catch {
+                if ($_.Exception.Message -match "Environment '__missing__' was not found") { Write-Output 'M365_SCOPE_OK' } else { throw }
+            }
+        } $m365Path $cfg
+    } -Args $manifestPath, $m365Primary, $missingM365Cfg 2>&1 | Out-String
+    Assert-True ($m365ScopeOut -match 'M365_SCOPE_OK') 'Microsoft 365 Access Profiles.ps1 -Wizard from SailPoint.Connect scope keeps Test-OperatorNonInteractive available'
+    Assert-True ($m365ScopeOut -notmatch 'Test-OperatorNonInteractive') 'Microsoft 365 Access Profiles.ps1 -Wizard does not throw Test-OperatorNonInteractive error'
 }
 finally {
     Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue

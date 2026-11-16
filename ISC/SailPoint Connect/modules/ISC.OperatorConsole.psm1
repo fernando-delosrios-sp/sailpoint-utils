@@ -966,7 +966,7 @@ function Get-SailPointConnectVersion {
         }
         catch {}
     }
-    return '1.14.0'
+    return '1.15.0'
 }
 
 function Write-OperatorFramedRow {

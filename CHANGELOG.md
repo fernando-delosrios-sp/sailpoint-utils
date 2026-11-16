@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-16 · v1.15.0
+
+### Fixed
+
+- **SailPoint Connect — Global `ISC.OperatorConsole` scope when launching IQService Control & M365 Access Profiles**: Added `-Global` to the `ISC.OperatorConsole.psm1` import in `IQService Control.ps1` and `Microsoft 365 Access Profiles.ps1` (and to shared core module imports in `modules/IW.CatalogMenu.psm1`) so invoking them from inside `SailPoint.Connect.psm1` no longer evicts `ISC.OperatorConsole` from global scope and breaks `Confirm-SailPointConnectUpdate` with `The term 'Test-OperatorNonInteractive' is not recognized`.
+
 ## 2026-11-16 · v1.14.0
 
 ### Fixed

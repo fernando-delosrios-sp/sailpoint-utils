@@ -10,12 +10,12 @@ function Invoke-IntegrationCatalogReadChoice {
     )
     if ($env:SAILPOINT_CONNECT_TEST_CATALOG_PROMPT_BACK -in @('1', 'true', '$true', 'True')) {
         if (-not (Get-Command Invoke-PromptBack -ErrorAction SilentlyContinue)) {
-            Import-Module (Join-Path $PSScriptRoot 'IW.Core.psm1') -Force -WarningAction SilentlyContinue | Out-Null
+            Import-Module (Join-Path $PSScriptRoot 'IW.Core.psm1') -Force -Global -WarningAction SilentlyContinue | Out-Null
         }
         Invoke-PromptBack
     }
     if (-not (Get-Module -Name 'ISC.OperatorConsole')) {
-        Import-Module (Join-Path $PSScriptRoot 'ISC.OperatorConsole.psm1') -Force -WarningAction SilentlyContinue | Out-Null
+        Import-Module (Join-Path $PSScriptRoot 'ISC.OperatorConsole.psm1') -Force -Global -WarningAction SilentlyContinue | Out-Null
     }
     $readChoice = Get-Command -Name 'Read-Choice' -Module 'ISC.OperatorConsole' -ErrorAction Stop
     & $readChoice @PSBoundParameters
@@ -275,10 +275,10 @@ function Resolve-IntegrationCatalogOutpostDependency {
         return $null
     }
     if (-not (Get-Module -Name 'IW.Project')) {
-        Import-Module (Join-Path $PSScriptRoot 'IW.Project.psm1') -WarningAction SilentlyContinue | Out-Null
+        Import-Module (Join-Path $PSScriptRoot 'IW.Project.psm1') -Global -WarningAction SilentlyContinue | Out-Null
     }
     if (-not (Get-Module -Name 'ISC.OperatorConsole')) {
-        Import-Module (Join-Path $PSScriptRoot 'ISC.OperatorConsole.psm1') -Force -WarningAction SilentlyContinue | Out-Null
+        Import-Module (Join-Path $PSScriptRoot 'ISC.OperatorConsole.psm1') -Force -Global -WarningAction SilentlyContinue | Out-Null
     }
 
     $projectName = if ($Context['IntegrationProjectName']) { [string]$Context['IntegrationProjectName'] } else { [string]$Context['Project'] }
@@ -456,12 +456,12 @@ function Resolve-IntegrationCatalogInteractiveSelection {
         [string]$WizardRoot = (Split-Path $PSScriptRoot -Parent),
         [switch]$NonInteractive
     )
-    Import-Module (Join-Path $PSScriptRoot 'IW.Catalog.psm1') -Force -WarningAction SilentlyContinue | Out-Null
+    Import-Module (Join-Path $PSScriptRoot 'IW.Catalog.psm1') -Force -Global -WarningAction SilentlyContinue | Out-Null
     $catalog = Get-IntegrationWizardCatalog
 
     if (-not $Context['IntegrationProjectName'] -and -not $Context['Project']) {
         if (-not (Get-Module -Name 'IW.Project')) {
-            Import-Module (Join-Path $PSScriptRoot 'IW.Project.psm1') -Force -WarningAction SilentlyContinue | Out-Null
+            Import-Module (Join-Path $PSScriptRoot 'IW.Project.psm1') -Force -Global -WarningAction SilentlyContinue | Out-Null
         }
         Select-IntegrationProjectWorkspace -Context $Context
     }
@@ -473,7 +473,7 @@ function Resolve-IntegrationCatalogInteractiveSelection {
         if ($NonInteractive) {
             throw 'Non-interactive catalog flow requires -Action.'
         }
-        Import-Module (Join-Path $PSScriptRoot 'IW.Core.psm1') -Force -WarningAction SilentlyContinue | Out-Null
+        Import-Module (Join-Path $PSScriptRoot 'IW.Core.psm1') -Force -Global -WarningAction SilentlyContinue | Out-Null
         Resolve-IntegrationWizardAction -Context $Context -Wizard
     }
 
@@ -704,11 +704,11 @@ function Start-IntegrationCatalogRootMenu {
         [string]$OutputFormat,
         [switch]$NonInteractive
     )
-    Import-Module (Join-Path $WizardRoot 'modules/IW.Catalog.psm1') -Force -WarningAction SilentlyContinue | Out-Null
-    Import-Module (Join-Path $WizardRoot 'modules/IW.Project.psm1') -Force -WarningAction SilentlyContinue | Out-Null
+    Import-Module (Join-Path $WizardRoot 'modules/IW.Catalog.psm1') -Force -Global -WarningAction SilentlyContinue | Out-Null
+    Import-Module (Join-Path $WizardRoot 'modules/IW.Project.psm1') -Force -Global -WarningAction SilentlyContinue | Out-Null
     $operatorConsolePath = Join-Path $WizardRoot 'modules/ISC.OperatorConsole.psm1'
     if (-not (Get-Module -Name 'ISC.OperatorConsole')) {
-        Import-Module $operatorConsolePath -Force -WarningAction SilentlyContinue | Out-Null
+        Import-Module $operatorConsolePath -Force -Global -WarningAction SilentlyContinue | Out-Null
     }
 
     $ctx = @{
