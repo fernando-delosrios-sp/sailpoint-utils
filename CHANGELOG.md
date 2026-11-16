@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-16 · v1.13.0
+
+### Fixed
+
+- **SailPoint Connect — IQService Control and wrapper script `@args` forwarding**: Fixed parameter forwarding in all six kebab-case wrapper scripts (`IQService-Control.ps1`, `Microsoft-365-Access-Profiles.ps1`, `Entro-Outpost.ps1`, `Google-Cloud.ps1`, `On-Prem-Active-Directory.ps1`, `Remote-File-System.ps1`) so hashtable splatting (`@pass`) and `-Switch:$true` no longer leak `True` into the first positional parameter (which caused `IQService Control` from the interactive menu to fail with `Cannot validate argument on parameter 'Action'. The argument "True"...`). Updated `SailPoint.Connect.psm1` so `IQService` and `M365AccessProfiles` resolve their primary spaced scripts first, matching the other platforms.
+
 ## 2026-11-13 · v1.12.0
 
 ### Changed

@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.12.0' $manifest.Version.ToString() 'Manifest version 1.12.0'
+Assert-Equal '1.13.0' $manifest.Version.ToString() 'Manifest version 1.13.0'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members
@@ -238,6 +238,50 @@ try {
         $wizParam = $wizardSet.Parameters | Where-Object { $_.Name -eq 'Wizard' }
         Assert-True ($wizParam.IsMandatory) "$scriptName Wizard switch is mandatory in Wizard parameter set"
     }
+
+    # 14) Hashtable splatting with switches to kebab-case forwarding scripts and IQService/M365 cmdlets
+    $splatOutDir = Join-Path $tmp 'kebab-splat-out'
+    $gcKebab = Join-Path $connectRoot 'Google-Cloud.ps1'
+    $gcSplat = @{ GcpEntro = $true; Method = 'WorkloadIdentity'; ProjectId = 'p-test'; ServiceAccountName = 'sa-test'; Action = 'BuildRequirements'; NonInteractive = $true; OutputDirectory = $splatOutDir }
+    $gcRes = & $gcKebab @gcSplat 6>&1 | Out-String
+    Assert-True ($gcRes -match 'Entro Google GCP') 'Google-Cloud.ps1 forwards hashtable splat with switches cleanly'
+
+    $iqKebab = Join-Path $connectRoot 'IQService-Control.ps1'
+    $iqSplatErr = ''
+    try {
+        $iqSplat = @{ Wizard = $true }
+        & $iqKebab @iqSplat 6>&1 | Out-Null
+    }
+    catch {
+        $iqSplatErr = $_.Exception.Message
+    }
+    Assert-True ($iqSplatErr -notmatch "Cannot validate argument on parameter 'Action'") 'IQService-Control.ps1 @pass with Wizard=$true does not bind True to Action'
+    if ($IsWindows) {
+        Assert-True ($true) 'IQService-Control.ps1 skipped Assert-WindowsHost check on Windows'
+    }
+    else {
+        Assert-True ($iqSplatErr -match 'must run on Windows') 'IQService-Control.ps1 @pass with Wizard=$true reaches Assert-WindowsHost on non-Windows'
+    }
+
+    $iqCmdErr = ''
+    try {
+        Invoke-SailPointIQServiceControl -Wizard 6>&1 | Out-Null
+    }
+    catch {
+        $iqCmdErr = $_.Exception.Message
+    }
+    Assert-True ($iqCmdErr -notmatch "Cannot validate argument on parameter 'Action'") 'Invoke-SailPointIQServiceControl -Wizard does not bind True to Action'
+
+    $m365Kebab = Join-Path $connectRoot 'Microsoft-365-Access-Profiles.ps1'
+    $m365SplatErr = ''
+    try {
+        $m365Splat = @{ Wizard = $true; NonInteractive = $true; SailpointConfigPath = (Join-Path $tmp 'missing-config.yaml') }
+        & $m365Kebab @m365Splat 6>&1 | Out-Null
+    }
+    catch {
+        $m365SplatErr = $_.Exception.Message
+    }
+    Assert-True ($m365SplatErr -notmatch "Environment 'True' was not found") 'Microsoft-365-Access-Profiles.ps1 @pass with Wizard=$true does not bind True to Environment'
 }
 finally {
     Remove-Item env:SAILPOINT_CONNECT_ROOT -ErrorAction SilentlyContinue

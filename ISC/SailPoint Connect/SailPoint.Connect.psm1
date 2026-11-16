@@ -502,9 +502,9 @@ function Invoke-SailPointConnect {
                     & $script @pass
                 }
                 'IQService' {
-                    $script = Join-Path $script:ModuleRoot 'IQService-Control.ps1'
+                    $script = Join-Path $script:ModuleRoot 'IQService Control.ps1'
                     if (-not (Test-Path -LiteralPath $script)) {
-                        $script = Join-Path $script:ModuleRoot 'IQService Control.ps1'
+                        $script = Join-Path $script:ModuleRoot 'IQService-Control.ps1'
                     }
                     $pass = @{}
                     if ($activeWizard) { $pass['Wizard'] = $true }
@@ -513,9 +513,9 @@ function Invoke-SailPointConnect {
                     & $script @pass
                 }
                 'M365AccessProfiles' {
-                    $script = Join-Path $script:ModuleRoot 'Microsoft-365-Access-Profiles.ps1'
+                    $script = Join-Path $script:ModuleRoot 'Microsoft 365 Access Profiles.ps1'
                     if (-not (Test-Path -LiteralPath $script)) {
-                        $script = Join-Path $script:ModuleRoot 'Microsoft 365 Access Profiles.ps1'
+                        $script = Join-Path $script:ModuleRoot 'Microsoft-365-Access-Profiles.ps1'
                     }
                     $pass = @{}
                     if ($activeWizard) { $pass['Wizard'] = $true }
@@ -1728,9 +1728,9 @@ function Invoke-SailPointIQServiceControl {
         [switch]$CreateSelfSigned,
         [switch]$NonInteractive
     )
-    $script = Join-Path $script:ModuleRoot 'IQService-Control.ps1'
+    $script = Join-Path $script:ModuleRoot 'IQService Control.ps1'
     if (-not (Test-Path -LiteralPath $script)) {
-        $script = Join-Path $script:ModuleRoot 'IQService Control.ps1'
+        $script = Join-Path $script:ModuleRoot 'IQService-Control.ps1'
     }
     $pass = @{}
     foreach ($k in $PSBoundParameters.Keys) { $pass[$k] = $PSBoundParameters[$k] }
@@ -1796,9 +1796,9 @@ function New-SailPointM365AccessProfile {
         [string]$OutputDirectory,
         [switch]$NonInteractive
     )
-    $script = Join-Path $script:ModuleRoot 'Microsoft-365-Access-Profiles.ps1'
+    $script = Join-Path $script:ModuleRoot 'Microsoft 365 Access Profiles.ps1'
     if (-not (Test-Path -LiteralPath $script)) {
-        $script = Join-Path $script:ModuleRoot 'Microsoft 365 Access Profiles.ps1'
+        $script = Join-Path $script:ModuleRoot 'Microsoft-365-Access-Profiles.ps1'
     }
     $pass = @{}
     foreach ($k in $PSBoundParameters.Keys) { $pass[$k] = $PSBoundParameters[$k] }
