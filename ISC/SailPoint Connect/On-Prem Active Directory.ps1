@@ -28,18 +28,6 @@ param(
     [Parameter(ParameterSetName = 'Entro')]
     [ValidateSet('Production', 'Staging', 'Dev')]
     [string]$EnvironmentType,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [string]$WorkerGroup,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [string]$OutpostId,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [string]$OutpostPublicKeyPath,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [string]$OutpostDeploymentMode,
 
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Entro')]
@@ -85,7 +73,6 @@ $context = @{
     Wizard = [bool]$Wizard; NonInteractive = [bool]$NonInteractive; Entro = [bool]$Entro; Action = $Action
     Nickname = $Nickname; DomainController = $DomainController; DcFqdn = $DcFqdn; Domain = $Domain
     SamAccountName = $SamAccountName; EnvironmentNickname = $EnvironmentNickname; EnvironmentType = $EnvironmentType
-    WorkerGroup = $WorkerGroup
     OutputDirectory = $OutputDirectory; OutputFormat = $OutputFormat; Project = $Project
 }
 

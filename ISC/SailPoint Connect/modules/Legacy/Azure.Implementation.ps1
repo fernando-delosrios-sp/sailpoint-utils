@@ -89,9 +89,10 @@ param(
     [string]$PermissionMode = 'Granular',
 
     [Parameter()]
-    [ValidateSet('AccessPackages', 'ActivityInsights', 'AdministrativeUnits', 'Agent365', 'Ciem',
-        'CopilotDiscovery', 'DefenderHunting', 'ExchangeOnline', 'MfaManagement', 'NhiDiscovery',
-        'ServicePrincipalProvisioning', 'SharePointScanning', 'TeamsMessaging', 'TeamsSecretScanning')]
+    [ValidateSet('AccessPackages', 'ActivityInsights', 'AdministrativeUnits', 'Agent365', 'AzureRbacAudit', 'Ciem',
+        'CopilotDiscovery', 'DefenderHunting', 'ExchangeOnline', 'KeyVaultActivityLogs', 'KeyVaultScanning',
+        'LogAnalyticsForwarding', 'MfaManagement', 'NhiDiscovery', 'ServicePrincipalProvisioning',
+        'SharePointScanning', 'TeamsMessaging', 'TeamsSecretScanning')]
     [string[]]$Feature,
 
     [Parameter()]

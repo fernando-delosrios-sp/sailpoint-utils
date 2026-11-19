@@ -1104,6 +1104,11 @@ try {
             -ExpectedExternalId $ExternalId -AwsParams $targetParams
     }
 
+    if ($SourceType -eq 'AwsSaas' -and (Test-EmbeddedCiemSelected -FeatureNames $Feature) -and $Scope -eq 'Organization' -and $roleArns.Count -gt 0) {
+        Write-Step 'Attaching CIEM Identity Center inline policies (Organization scope)'
+        Set-CiemIdentityCenterPolicy -RoleArn $roleArns[0] -RegionName $Region -IncludeReadOnly:$true -IncludeProvision:(-not $AggregationOnly)
+    }
+
     $consoleHost = if ($Cloud -eq 'GovCloud') { 'https://console.amazonaws-us-gov.com' } else { 'https://console.aws.amazon.com' }
     $roleUrl = "$consoleHost/iam/home#/roles/$RoleName"
     $orgUrl = "$consoleHost/organizations/v2/home/accounts"
@@ -1147,10 +1152,19 @@ try {
         $embeddedCiemFields = Build-EmbeddedCiemConnectionSettings -Context $ciemCtx
         $saasCloudTrailList = [string]$embeddedCiemFields['CloudTrail ARN(s)']
         $situation.Add('In ISC Additional Settings: enable Cloud Infrastructure Entitlement Management (CIEM), then paste CloudTrail ARN(s) and the CloudTrail Bucket Account ID.')
-        $situation.Add('Do not enable CIEM on this AWS SaaS source if you also use a dedicated CIEM AWS source for the same management account.')
+        if ($Scope -eq 'Organization') {
+            $icAttachedList = if ($AggregationOnly) {
+                'SailPointCIEMAuditICReadOnlyPolicy'
+            } else {
+                'SailPointCIEMAuditICReadOnlyPolicy, SailPointCIEMAuditICProvisionPolicy, SailPointCIEMAuditICProvisionSupplementPolicy'
+            }
+            $situation.Add("CIEM Identity Center inline policies ($icAttachedList) were attached to the management account role.")
+        }
         $situation.Add('After a successful test connection, mark Groups, AWSManagedPolicy, CustomerManagedPolicy, and InlinePolicy entitlements as cloud-enabled.')
     }
-    $situation.Add('This source governs IAM users only. To govern Identity Center users and permission sets, run this script again with -SourceType CiemAws and connect a CIEM AWS source.')
+    else {
+        $situation.Add('To govern AWS Identity Center users and permission sets with CIEM, enable the Ciem feature (-Feature Ciem) with -Scope Organization.')
+    }
 
     $fields = [ordered]@{
         'Role Name' = $RoleName

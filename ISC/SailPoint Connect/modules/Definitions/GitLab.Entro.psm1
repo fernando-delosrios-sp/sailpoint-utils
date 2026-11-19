@@ -32,7 +32,7 @@ function Test-GitLabEntroCheck {
     $base = Get-EntroGitLabApiBase -Url ([string]$Context['GitLabUrl'])
     $cloud = Test-EntroGitLabHostIsCloud -Url $base
     if ($SelfManaged -and $cloud) { $missing.Add('GitLabUrl is gitlab.com; use the gitlab.com variant') }
-    if (-not $SelfManaged -and -not $cloud) { $missing.Add('GitLabUrl is self-managed; use the self-managed variant so an Outpost is linked') }
+    if (-not $SelfManaged -and -not $cloud) { $missing.Add('GitLabUrl is self-managed; use the self-managed variant') }
     $ep = Get-OnPremEndpoint -Address $base
     if ($WhatIf) { $manual.Add("TCP $($ep.Host):$($ep.Port)") }
     elseif (Test-OnPremTcpPort -HostName $ep.Host -Port $ep.Port) { $met.Add("TCP $($ep.Host):$($ep.Port)") }
@@ -177,16 +177,16 @@ function Add-GitLabEntroDefinition {
         {
             param($c)
             if (-not (Test-EntroGitLabHostIsCloud -Url ([string]$c['GitLabUrl']))) {
-                throw 'This GitLab URL is self-managed. Use the GitLab self-managed variant so SailPoint Connect links an Entro Outpost.'
+                throw 'This GitLab URL is self-managed. Use the GitLab self-managed variant.'
             }
         }
     }
     $role = if ($selfManaged) { 'Internal host with HTTPS reachability to self-managed GitLab' } else { 'Workstation that can reach https://gitlab.com' }
     $notes = if ($selfManaged) {
-        'Self-managed GitLab is scanned by an Entro Outpost Worker Group inside your network. Run here, or copy the generated script to a host that can reach GitLab.'
+        'Run here, or copy the generated script to an internal host that can reach self-managed GitLab.'
     }
     else {
-        'gitlab.com is reached from Entro Cloud. An Outpost is not required. A private GitLab URL belongs on the self-managed variant.'
+        'gitlab.com is reached from Entro Cloud. A private GitLab URL belongs on the self-managed variant.'
     }
     $inputs = @(
         @{ Name = 'Nickname'; Source = 'Supply'; Prompt = 'Nickname in Entro'; Purpose = 'Operator-chosen label'; Required = $true }
@@ -195,7 +195,6 @@ function Add-GitLabEntroDefinition {
         @{ Name = 'GroupPath'; Source = 'Supply'; Prompt = 'GitLab group full path'; Purpose = 'Group that will own entro_svc, for example acme/platform'; When = $groupWhen; Required = $groupWhen }
         @{ Name = 'Username'; Source = 'Supply'; Prompt = 'GitLab username'; Purpose = 'User that will own entro_pat'; When = $userWhen; Required = $userWhen }
         @{ Name = 'TokenExpires'; Source = 'Supply'; Prompt = 'Token expiry (YYYY-MM-DD)'; Purpose = 'Expiry sent to the GitLab API; default is 90 days when omitted at run time'; Required = $false }
-        @{ Name = 'WorkerGroup'; Source = 'Supply'; Prompt = 'Entro Outpost Worker Group'; Purpose = 'Required in Entro for self-managed GitLab; optional for gitlab.com'; Required = $false }
         @{ Name = 'AdminToken'; Source = 'Supply'; Prompt = 'GitLab owner or admin token used to create the Entro token'; Purpose = 'Not the token you paste into Entro'; Secret = $true; When = $runRequired; Required = $runRequired }
         @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
     )
@@ -209,7 +208,7 @@ function Add-GitLabEntroDefinition {
         FolderName    = [string]$Definition['FolderName']
         AccessLevels  = @()
         AdminRoles    = @('GitLab group Owner (group access token) or instance admin (personal access token)')
-        OutputsHelp   = 'Paste Nickname, GitLab URL, port 443 (or your listen port), username, the token in entro-gitlab-token.txt, and for self-managed GitLab the Outpost Worker Group plus Self managed.'
+        OutputsHelp   = 'Paste Nickname, GitLab URL, port 443 (or your listen port), username, the token in entro-gitlab-token.txt, and for self-managed GitLab select Self managed.'
         TargetHost    = @{ Role = $role; Notes = $notes; Assert = $assert; AssertScript = '' }
         Inputs        = $inputs
         CheckInputs   = @(
@@ -238,7 +237,6 @@ function Add-GitLabEntroDefinition {
         OnRunComplete = {
             param($ctx)
             $base = Get-EntroGitLabApiBase -Url ([string]$ctx['GitLabUrl'])
-            $wg = if ($ctx['WorkerGroup']) { $ctx['WorkerGroup'] } else { '(none for gitlab.com; required for self-managed)' }
             $tokenPath = if ($ctx['CreatedTokenPath']) { $ctx['CreatedTokenPath'] } else { 'entro-gitlab-token.txt' }
             $self = -not (Test-EntroGitLabHostIsCloud -Url $base)
             Write-Host ''
@@ -246,7 +244,6 @@ function Add-GitLabEntroDefinition {
             Write-Host "  Nickname: $($ctx['Nickname'])"
             Write-Host "  GitLab URL: $base"
             Write-Host "  Self managed: $(if ($self) { 'yes' } else { 'no' })"
-            Write-Host "  Worker Group: $wg"
             Write-Host "  Token file: $tokenPath"
             Write-Host ''
         }

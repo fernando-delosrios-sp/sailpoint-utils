@@ -38,8 +38,8 @@ function New-TestCredentialContext {
     param(
         [string]$Project = 'demo',
         [string]$Action = 'Check',
-        [string]$Product = 'fabric',
-        [string]$VariantId = 'entra',
+        [string]$Product = 'SailPoint Fabric',
+        [string]$VariantId = 'azure',
         [string]$ClientId = 'client-1',
         [string]$CredentialId,
         [string]$ReuseMode = 'CreateNew'
@@ -66,6 +66,15 @@ function New-TestCredentialContext {
     }
 }
 
+$entroDefinition = @{
+    Id         = 'azure-entro'
+    Title      = 'Entro Microsoft ecosystem integration'
+    FolderName = 'Entro-Microsoft'
+    Platform   = 'Azure'
+    Inputs     = $definition.Inputs
+    CheckInputs = $definition.CheckInputs
+}
+
 try {
     $ctx = New-TestCredentialContext
     $snapshot = Get-IntegrationProjectSelectionSnapshot -Context $ctx -Definition $definition -Platform 'Azure' -ScriptName 'Azure.ps1'
@@ -84,17 +93,17 @@ try {
     Assert-True (-not $entry.inputs.Contains('ClientSecret')) 'secret input is omitted from reusable inputs'
     Assert-True (-not $entry.inputs.Contains('OutputDirectory')) 'old output directory is not reusable credential configuration'
     Assert-Equal 'client-1' $entry.inputs.ClientId 'non-secret Check input is reusable'
-    Assert-Equal 1 @($entry.uses).Count 'initial credential has one product use'
+    Assert-Equal 1 @($entry.uses).Count 'initial credential has one definition use'
 
-    $update = New-TestCredentialContext -Action 'Run' -Product 'ciem' -VariantId 'entra-ciem' -CredentialId $entry.id -ReuseMode 'UpdateExisting'
-    $updated = Save-IntegrationProjectCredential -Context $update -Definition $definition -Platform 'Azure' -ScriptName 'Azure.ps1'
+    $update = New-TestCredentialContext -Action 'Run' -Product 'SailPoint Fabric' -VariantId 'azure' -CredentialId $entry.id -ReuseMode 'UpdateExisting'
+    $updated = Save-IntegrationProjectCredential -Context $update -Definition $entroDefinition -Platform 'Azure' -ScriptName 'Azure.ps1'
     Assert-Equal $entry.id $updated.id 'explicit update keeps the credential id'
     Assert-Equal 1 @(Read-IntegrationProjectCredentialIndex -ProjectName 'demo').Count 'explicit update does not duplicate the credential'
-    Assert-Equal 2 @($updated.uses).Count 'Fabric and CIEM uses are retained on the same credential'
+    Assert-Equal 2 @($updated.uses).Count 'Connector and Entro uses are retained on the same credential'
     Assert-Equal 'client-1' $updated.inputs.ClientId 'update preserves prior non-secret inputs'
     Assert-Equal 'Ciem' $updated.inputs.Feature 'new additive configuration is recorded'
     Assert-True (-not $updated.inputs.Contains('RotateSecret')) 'rotation preference is never persisted for reuse'
-    Assert-Equal 'ciem' $updated.lastProduct 'last product use is recorded'
+    Assert-Equal 'SailPoint Fabric' $updated.lastProduct 'last product coverage is recorded'
 
     $automatic = Save-IntegrationProjectCredential -Context (New-TestCredentialContext) -Definition $definition -Platform 'Azure' -ScriptName 'Azure.ps1'
     Assert-Equal $entry.id $automatic.id 'complete matching discriminators upsert instead of duplicating'
@@ -103,9 +112,12 @@ try {
     Assert-True ($second.id -ne $entry.id) 'different discriminators create a separate credential'
     Assert-Equal 2 @(Read-IntegrationProjectCredentialIndex -ProjectName 'demo').Count 'index retains both credentials'
 
-    $crossProduct = @(Find-IntegrationProjectCredential -ProjectName 'demo' -IntegrationId 'azure' -CredentialKind 'entra.appClientSecret' -Product 'ciem')
-    Assert-Equal 1 $crossProduct.Count 'credential lookup can find an existing credential through another product use'
-    Assert-Equal $entry.id $crossProduct[0].id 'CIEM finds the credential originally saved by Fabric'
+    $crossProduct = @(Find-IntegrationProjectCredential -ProjectName 'demo' -IntegrationId 'azure' -CredentialKind 'entra.appClientSecret' -VariantId 'azure')
+    Assert-Equal 2 $crossProduct.Count 'credential lookup finds both credentials sharing the unified azure variant'
+    $matchedEntry = @($crossProduct | Where-Object { $_.id -eq $entry.id })
+    Assert-Equal 1 $matchedEntry.Count 'lookup includes the updated credential'
+    $matchedDefs = @($matchedEntry[0].uses | ForEach-Object { [string]$_.definitionId })
+    Assert-True (($matchedDefs -contains 'azure-connector') -and ($matchedDefs -contains 'azure-entro')) 'updated credential retains both Connector and Entro definition uses'
 
     $conflict = New-TestCredentialContext -CredentialId $entry.id -ReuseMode 'UpdateExisting'
     $conflict.TenantId = 'different-tenant'
@@ -126,8 +138,8 @@ try {
         IntegrationProjectName = 'demo'
         Action                 = 'Run'
         CatalogIntegrationId   = 'azure'
-        CatalogProduct         = 'ciem'
-        CatalogVariantId       = 'entra-ciem'
+        CatalogProduct         = 'SailPoint Fabric'
+        CatalogVariantId       = 'azure'
         CatalogCredentialKind  = 'entra.appClientSecret'
         CatalogReuseMode       = 'UpdateExisting'
         CatalogCredentialId    = $entry.id
@@ -141,8 +153,8 @@ try {
         IntegrationProjectName = 'demo'
         Action                 = 'Run'
         CatalogIntegrationId   = 'azure'
-        CatalogProduct         = 'fabric'
-        CatalogVariantId       = 'entra'
+        CatalogProduct         = 'SailPoint Fabric'
+        CatalogVariantId       = 'azure'
         CatalogCredentialKind  = 'entra.appClientSecret'
     }
     $createSelection = Resolve-IntegrationCatalogInteractiveSelection -Context $createContext -NonInteractive
@@ -155,8 +167,8 @@ try {
             IntegrationProjectName = 'demo'
             Action                 = 'Run'
             CatalogIntegrationId   = 'azure'
-            CatalogProduct         = 'fabric'
-            CatalogVariantId       = 'entra'
+            CatalogProduct         = 'SailPoint Fabric'
+            CatalogVariantId       = 'azure'
             CatalogCredentialKind  = 'entra.appClientSecret'
             CatalogReuseMode       = 'UpdateExisting'
         }) -NonInteractive | Out-Null
@@ -170,8 +182,8 @@ try {
         IntegrationProjectName = 'demo'
         Action                 = 'Run'
         CatalogIntegrationId   = 'azure'
-        CatalogProduct         = 'ciem'
-        CatalogVariantId       = 'entra-ciem'
+        CatalogProduct         = 'SailPoint Fabric'
+        CatalogVariantId       = 'azure'
         CatalogCredentialKind  = 'entra.appClientSecret'
     }
     $catalogModule = Get-Module -Name 'IW.CatalogMenu'
@@ -204,6 +216,7 @@ try {
 param(
     [switch]$Wizard,
     [switch]$Connector,
+    [switch]$Entro,
     [string]$Project,
     [string]$Action,
     [switch]$NonInteractive,
@@ -235,6 +248,7 @@ $capture | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $env:SAILPOINT_CON
             TenantId        = 'tenant-1'
             ClientId        = 'client-1'
             ApplicationName = 'Demo Entra app'
+            Feature         = 'Ciem'
             ClientSecret    = 'must-not-pass'
             RotateSecret    = $true
             OutputDirectory = 'old-output'
@@ -242,7 +256,7 @@ $capture | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $env:SAILPOINT_CON
         }
     }
     Invoke-IntegrationCatalogLauncher -WizardRoot $tmp -Integration @{ launcher = 'FakeLauncher.ps1' } `
-        -Binding $selection.Binding -Product 'ciem' `
+        -Binding $selection.Binding -Product 'SailPoint Fabric' `
         -BaseParameters @{ Project = 'demo'; Action = 'Run'; NonInteractive = $true } `
         -Credential $launchCredential
     $launch = Get-Content -LiteralPath $env:SAILPOINT_CONNECT_TEST_LAUNCH_CAPTURE -Raw | ConvertFrom-Json
@@ -253,7 +267,9 @@ $capture | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $env:SAILPOINT_CON
     Assert-True ($launch.PSObject.Properties.Name -notcontains 'OutputDirectory') 'launcher does not reuse an old output directory'
     Assert-True ($launch.PSObject.Properties.Name -notcontains 'UnknownValue') 'launcher ignores inputs not accepted by the target script'
     Assert-True (-not [bool]$launch.RotateSecret) 'launcher forces secret rotation off for update existing'
-    Assert-True (@($launch.Feature) -contains 'Ciem') 'catalog product defaults still apply during reuse'
+    Assert-True (@($launch.Feature) -contains 'Ciem') 'saved Feature selection is forwarded during reuse'
+    Assert-True ([bool]$launch.Connector) 'unified launch passes Connector switch'
+    Assert-True ([bool]$launch.Entro) 'unified launch passes Entro switch'
     Assert-Equal $entry.id $launch.CatalogCredentialId 'launcher passes selected credential id'
     Assert-Equal 'UpdateExisting' $launch.CatalogReuseMode 'launcher passes update mode'
     Assert-Equal 'Run' $launch.Action 'current action is preserved during reuse'

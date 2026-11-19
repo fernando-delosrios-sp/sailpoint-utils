@@ -53,27 +53,13 @@ function Invoke-AwsLegacyFromContext {
         [Parameter(Mandatory)][hashtable]$Context
     )
     $impl = Get-AwsLegacyImplementationPath
-    $splat = Get-AwsLegacyArguments -SourceType $SourceType -Context $Context
+    $splat = Get-AwsLegacyArguments -SourceType 'AwsSaas' -Context $Context
     if ($Context['Access'] -eq 'ReadOnly') { $splat.AggregationOnly = $true }
     if ($Context['TrustPrincipal']) { $splat.TrustPrincipal = $Context['TrustPrincipal'] }
     if ($Context['CloudTrailBucket']) { $splat.CloudTrailBucket = $Context['CloudTrailBucket'] }
     if ($Context['MemberAssumeRole']) { $splat.MemberAssumeRole = $Context['MemberAssumeRole'] }
-    if ($SourceType -eq 'CiemAws') {
-        $splat.RoleName = if ($Context['RoleName']) { $Context['RoleName'] } else { 'SailPointCIEMAuditRole' }
-        foreach ($k in @('InventoryStackName', 'ActivityStackName', 'CiemActivity', 'EnableIdentityStoreReadOnly', 'EnableIdentityStoreProvision', 'TrailName', 'CloudTrailArn', 'CloudTrailBucketAccountId')) {
-            if ($Context[$k]) { $splat[$k] = $Context[$k] }
-        }
-        if ($splat['Scope'] -eq 'Organization') {
-            if ($Context['Access'] -eq 'ReadOnly') {
-                $splat['EnableIdentityStoreReadOnly'] = 'true'
-                $splat['EnableIdentityStoreProvision'] = 'false'
-            }
-        }
-    }
-    else {
-        foreach ($k in @('SaasCiemCloudTrailSetup', 'SaasCiemCloudTrailStackName', 'CloudTrailArn', 'CloudTrailBucketAccountId')) {
-            if ($Context[$k]) { $splat[$k] = $Context[$k] }
-        }
+    foreach ($k in @('SaasCiemCloudTrailSetup', 'SaasCiemCloudTrailStackName', 'CloudTrailArn', 'CloudTrailBucketAccountId')) {
+        if ($Context[$k]) { $splat[$k] = $Context[$k] }
     }
     & $impl @splat -WhatIf:$WhatIfPreference
 }
@@ -92,15 +78,30 @@ function Register-AwsConnectorDefinitions {
         Product      = 'ISC'
         CoreSwitch   = 'SaaSConnector'
         CliName      = 'aws'
-        Title        = 'Amazon Web Services SaaS connector IAM role'
-        FolderName   = 'Amazon-Web-Services-SaaS'
+        Title        = 'Amazon Web Services connector IAM role'
+        FolderName   = 'Amazon-Web-Services'
         AccessLevels = @('ReadOnly', 'ReadWrite')
         AdminRoles   = @('IAM role and policy management in target account(s)')
         OutputsHelp  = 'Paste role name, region, External ID, and management account ID into ISC Connection Settings.'
         Inputs       = $commonInputs + @(
             @{ Name = 'RoleName'; Source = 'Discover'; Prompt = 'IAM role name'; Purpose = 'Role SailPoint assumes'; Required = $false; Default = 'SailPointAWSRole' }
             @{ Name = 'PolicySet'; Source = 'Supply'; Prompt = 'Policy set'; Purpose = 'Mgo vs NonMgo entitlement model'; Required = $false; ValidateSet = @('Mgo', 'NonMgo'); Default = 'Mgo' }
-            @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: ActivityInsights, AgentDiscovery, Ciem)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
+            @{
+                Name        = 'Feature'
+                Source      = 'Supply'
+                Prompt      = 'Feature packs (Space toggles, Enter confirms, Enter for none)'
+                Purpose     = 'Optional ISC feature permissions'
+                Required    = $false
+                MultiChoice = $true
+                Options     = @('ActivityInsights', 'AgentDiscovery', 'Ciem')
+                Labels      = @(
+                    'ActivityInsights (Audit and CloudTrail activity)'
+                    'AgentDiscovery (Bedrock & Connect AI agents)'
+                    'Ciem (Cloud Infrastructure Entitlement Management)'
+                )
+            }
+            @{ Name = 'Scope'; Source = 'Supply'; Prompt = 'Scope'; Purpose = 'Single account or organization'; Required = $false; ValidateSet = @('CurrentAccount', 'Organization'); Default = 'CurrentAccount' }
+            @{ Name = 'CloudTrailBucket'; Source = 'Discover'; Prompt = 'CloudTrail S3 bucket (for CIEM)'; Purpose = 'Required when CIEM feature is selected'; Required = $false; When = { param($c) (@($c['Feature']) -join ',') -match '\bCiem\b' } }
         )
         Steps        = { param($ctx) @() }
         BuildScript  = {
@@ -111,6 +112,7 @@ function Register-AwsConnectorDefinitions {
             $region = if ($c['Region']) { [string]$c['Region'] } else { 'us-east-1' }
             $cloud = if ($c['Cloud']) { [string]$c['Cloud'] } else { 'Commercial' }
             $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
+            $scope = if ($c['Scope']) { [string]$c['Scope'] } else { 'CurrentAccount' }
             $extId = if ($c['IscExternalId']) { [string]$c['IscExternalId'] } else { [string]$c['ExternalId'] }
 
             $trustPrincipal = if ($cloud -eq 'GovCloud') { 'arn:aws-us-gov:iam::229634586956:role/ciem_universal' } else { 'arn:aws:iam::874540850173:role/ciem_universal' }
@@ -127,16 +129,44 @@ function Register-AwsConnectorDefinitions {
 
             $hasAgentDiscovery = $features -contains 'AgentDiscovery'
             $hasActivityInsights = $features -contains 'ActivityInsights'
+            $hasCiem = $features -contains 'Ciem'
+
+            $icInlineBlock = ''
+            if ($hasCiem -and $scope -eq 'Organization') {
+                if (-not (Get-Command Get-CiemIdentityCenterRequirementActions -ErrorAction SilentlyContinue)) {
+                    Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'ISC.AwsCiemConnector.psm1') -Force -Global -WarningAction SilentlyContinue
+                }
+                $icActions = Get-CiemIdentityCenterRequirementActions
+                $roJson = (@{ Version = '2012-10-17'; Statement = @(@{ Effect = 'Allow'; Action = @($icActions.ReadOnly); Resource = '*' }) } | ConvertTo-Json -Depth 5 -Compress)
+                $rwJson = if ($access -ne 'ReadOnly') {
+                    (@{ Version = '2012-10-17'; Statement = @(@{ Effect = 'Allow'; Action = @($icActions.ReadWrite); Resource = '*' }) } | ConvertTo-Json -Depth 5 -Compress)
+                } else { '' }
+                $icInlineBlock = @"
+
+# -----------------------------------------------------------------------------
+# CIEM Identity Center Inline Policies (Organization Scope)
+# -----------------------------------------------------------------------------
+Write-Host "Attaching SailPointCIEMAuditICReadOnlyPolicy to `$roleName..." -ForegroundColor Cyan
+& aws iam put-role-policy --role-name `$roleName --policy-name 'SailPointCIEMAuditICReadOnlyPolicy' --policy-document '$($roJson -replace "'", "''")' --output json
+$(if ($rwJson) {
+@"
+Write-Host "Attaching SailPointCIEMAuditICProvisionPolicy to `$roleName..." -ForegroundColor Cyan
+& aws iam put-role-policy --role-name `$roleName --policy-name 'SailPointCIEMAuditICProvisionPolicy' --policy-document '$($rwJson -replace "'", "''")' --output json
+"@
+})
+"@
+            }
 
             @"
 # -----------------------------------------------------------------------------
-# AWS SaaS Connector IAM Role & Policy Setup
+# AWS Connector IAM Role & Policy Setup
 # -----------------------------------------------------------------------------
 `$roleName = '$roleName'
 `$externalId = '$extId'
 `$region = '$region'
 `$trustPrincipal = '$trustPrincipal'
 `$access = '$access'
+`$scope = '$scope'
 
 Write-Host "Configuring AWS region: `$region" -ForegroundColor Cyan
 `$env:AWS_DEFAULT_REGION = `$region
@@ -171,7 +201,7 @@ Write-Host "Ensuring IAM Role `$roleName..." -ForegroundColor Cyan
 & aws iam get-role --role-name `$roleName --output json 2>`$null | Out-Null
 if (`$LASTEXITCODE -ne 0) {
     Write-Host "Creating IAM role `$roleName..."
-    & aws iam create-role --role-name `$roleName --assume-role-policy-document `$trustPolicy --description "SailPoint ISC AWS SaaS connector" --output json --quiet
+    & aws iam create-role --role-name `$roleName --assume-role-policy-document `$trustPolicy --description "SailPoint ISC AWS connector" --output json --quiet
 } else {
     Write-Host "Updating trust policy on `$roleName..."
     & aws iam update-assume-role-policy --role-name `$roleName --policy-document `$trustPolicy --output json --quiet
@@ -253,6 +283,7 @@ Write-Host "Configuring Activity Insights permissions..." -ForegroundColor Cyan
 Set-ConnectorPolicy -PolicyName 'SPActivityInsightsPolicy' -PolicyDoc `$insightsPolicyDoc
 "@
 })
+$icInlineBlock
 
 if (`$access -ne 'ReadOnly') {
     Write-Host "Access level is ReadWrite: provisioning permissions can be attached via IAM policies as needed." -ForegroundColor Yellow
@@ -270,64 +301,6 @@ Write-Host '====================================================================
 "@
         }
         LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AwsLegacyFromContext -SourceType 'AwsSaas' -Context $ctx -WhatIf:$WhatIfPreference }
-    }
-    Register-IntegrationWizardDefinition @{
-        Id           = 'aws-ciem-connector'
-        Platform     = 'AWS'
-        Product      = 'ISC'
-        CoreSwitch   = 'CiemConnector'
-        CliName      = 'aws'
-        Title        = 'AWS CIEM connector (CloudFormation)'
-        FolderName   = 'AWS-CIEM'
-        AccessLevels = @('ReadOnly', 'ReadWrite')
-        AdminRoles   = @('CloudFormation in management account; StackSet for organizations')
-        OutputsHelp  = 'Paste Role ARN, External ID, and CloudTrail ARNs into CIEM Connection Settings.'
-        Inputs       = $commonInputs + @(
-            @{ Name = 'CloudTrailBucket'; Source = 'Discover'; Prompt = 'CloudTrail S3 bucket'; Purpose = 'Required by SailPoint CIEM templates'; Required = $true }
-            @{ Name = 'Scope'; Source = 'Supply'; Prompt = 'Scope'; Purpose = 'Single account or organization'; Required = $false; ValidateSet = @('CurrentAccount', 'Organization'); Default = 'CurrentAccount' }
-        )
-        Steps        = { param($ctx) @() }
-        BuildScript  = {
-            param($c)
-            $cloudTrail = if ($c['CloudTrailBucket']) { [string]$c['CloudTrailBucket'] } else { 'sailpoint-ciem-bucket' }
-            $scope = if ($c['Scope']) { [string]$c['Scope'] } else { 'CurrentAccount' }
-            $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
-            $extId = if ($c['IscExternalId']) { [string]$c['IscExternalId'] } else { [string]$c['ExternalId'] }
-            $roleName = if ($c['RoleName']) { [string]$c['RoleName'] } else { 'SailPointCIEMAuditRole' }
-            $stackName = if ($c['InventoryStackName']) { [string]$c['InventoryStackName'] } else { 'SailPointCiemInventory' }
-
-            @"
-# -----------------------------------------------------------------------------
-# AWS CIEM Connector CloudFormation Setup
-# -----------------------------------------------------------------------------
-`$roleName = '$roleName'
-`$externalId = '$extId'
-`$bucketName = '$cloudTrail'
-`$stackName = '$stackName'
-`$scope = '$scope'
-
-Write-Host "Checking AWS account identity..." -ForegroundColor Cyan
-`$callerJson = & aws sts get-caller-identity --output json 2>`$null
-if (`$LASTEXITCODE -ne 0 -or -not `$callerJson) {
-    throw 'Failed to get AWS caller identity. Ensure your AWS credentials/profile are configured.'
-}
-`$caller = `$callerJson | ConvertFrom-Json
-`$accountId = `$caller.Account
-Write-Host "AWS Account ID: `$accountId" -ForegroundColor Green
-
-Write-Host "Deploying SailPoint CIEM Inventory CloudFormation template..." -ForegroundColor Cyan
-Write-Host "Stack Name: `$stackName"
-Write-Host "CloudTrail Bucket: `$bucketName"
-
-# Note: CloudFormation stack deploy with parameter overrides
-# For detailed template options, refer to SailPoint CIEM documentation:
-# https://documentation.sailpoint.com/saas/help/ciem/aws/connect_aws.html
-
-Write-Host "CIEM Deployment configuration prepared for `$scope." -ForegroundColor Green
-Write-Host "Role Name: `$roleName"
-"@
-        }
-        LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-AwsLegacyFromContext -SourceType 'CiemAws' -Context $ctx -WhatIf:$WhatIfPreference }
     }
 }
 

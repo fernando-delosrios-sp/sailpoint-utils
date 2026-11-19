@@ -92,12 +92,9 @@ Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBound
 
 Start-IntegrationWizardFlow -Platform 'Slack' -ScriptName 'Slack.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
-        $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Connector', 'Entro') `
-            -Labels @('Slack SaaS connector (Agentic Fabric)', 'Entro Slack integration') -Default 'Connector'
-        switch ($picked) {
-            'Connector' { $context['Connector'] = $true; Get-IntegrationWizardDefinition -Id 'slack-connector' }
-            'Entro' { $context['Entro'] = $true; Get-IntegrationWizardDefinition -Id 'slack-entro' }
-        }
+        $context['Connector'] = $true
+        $context['Entro'] = $true
+        Get-IntegrationWizardDefinition -Id 'slack-connector'
     } `
     -Discover { param($n, $c) @() } `
     -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx }

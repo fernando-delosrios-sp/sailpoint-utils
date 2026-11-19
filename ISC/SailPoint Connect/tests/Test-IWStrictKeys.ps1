@@ -44,9 +44,13 @@ function global:Read-YesNo {
     if ($Prompt -like 'Also configure Entro*') { return $false }
     return $true
 }
+function global:Read-MultiChoice {
+    param($Prompt, $Options, $Labels)
+    return @()
+}
 
 Register-IntegrationWizardPlatform -Name 'GoogleCloud' -Title 'Google Cloud' `
-    -CoreOptions @('SaaSConnector', 'CiemConnector', 'GcpEntro', 'WorkspaceEntro') -CliName 'gcloud' `
+    -CoreOptions @('SaaSConnector', 'GcpEntro', 'WorkspaceEntro') -CliName 'gcloud' `
     -EntroCompanions @{ SaaSConnector = @{ Variants = @('GcpEntro', 'WorkspaceEntro') } }
 Register-GoogleConnectorDefinitions
 Register-GoogleEntroDefinitions
@@ -62,7 +66,7 @@ $noDiscover = { param($name, $ctx) @() }
 $script:Executed = $null
 $ctx = @{
     Wizard = $true; NonInteractive = $false
-    SaaSConnector = $false; CiemConnector = $false; GcpEntro = $true; WorkspaceEntro = $false
+    SaaSConnector = $false; GcpEntro = $true; WorkspaceEntro = $false
     Access = $null; Action = $null; OrganizationId = $null; ProjectId = $null
     ImpersonateUser = $null; Method = $null; ClientId = $null; OutputDirectory = $null
 }
@@ -82,7 +86,7 @@ Assert-Equal 'entro-automatic-onboard' $script:Executed.Ctx['ServiceAccountName'
 $script:Executed = $null
 $ctx2 = @{
     Wizard = $true; NonInteractive = $false
-    SaaSConnector = $false; CiemConnector = $false; GcpEntro = $false; WorkspaceEntro = $false
+    SaaSConnector = $false; GcpEntro = $false; WorkspaceEntro = $false
     Access = $null; Action = $null; OrganizationId = $null; ProjectId = $null
     ImpersonateUser = $null; Method = $null; ClientId = $null; OutputDirectory = $null
 }

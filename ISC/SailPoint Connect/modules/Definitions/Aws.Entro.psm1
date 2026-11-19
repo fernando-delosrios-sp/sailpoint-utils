@@ -5,12 +5,32 @@ function Get-EntroAwsTemplatePath {
         [ValidateSet('Default', 'Europe')]
         [string]$Region = 'Default'
     )
-    Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'IW.EntroCatalog.psm1') -Force -WarningAction SilentlyContinue
-    $base = Join-Path (Get-EntroConnectSkillRoot) 'integrations/amazon-web-services'
-    if ($Region -eq 'Europe') {
-        return Join-Path $base 'Entro Security AWS Template - Europe region.json'
+    Import-Module (Join-Path (Split-Path $PSScriptRoot -Parent) 'IW.EntroCatalog.psm1') -Force -WarningAction SilentlyContinue -Global
+    $fileName = if ($Region -eq 'Europe') {
+        'Entro Security AWS Template - Europe region.json'
+    } else {
+        'Entro Security AWS Template.json'
     }
-    Join-Path $base 'Entro Security AWS Template.json'
+    $skillRoot = Get-EntroConnectSkillRoot
+    if ($skillRoot) {
+        $primary = Join-Path (Join-Path $skillRoot 'integrations/amazon-web-services') $fileName
+        if (Test-Path -LiteralPath $primary) { return $primary }
+    }
+    $homeDir = [System.Environment]::GetFolderPath('UserProfile')
+    if (-not $homeDir -and $env:HOME) { $homeDir = $env:HOME }
+    if ($homeDir) {
+        $candidates = @(
+            (Join-Path $homeDir "Documents/Development/TES/sailpoint-utils/Entro/entro-connect/.agents/skills/entro-connect/integrations/amazon-web-services/$fileName"),
+            (Join-Path $homeDir "Documents/Development/TES/sailpoint-utils/skills/entro-connect/integrations/amazon-web-services/$fileName"),
+            (Join-Path $homeDir "Development/TES/sailpoint-utils/Entro/entro-connect/.agents/skills/entro-connect/integrations/amazon-web-services/$fileName"),
+            (Join-Path $homeDir "Development/TES/sailpoint-utils/skills/entro-connect/integrations/amazon-web-services/$fileName")
+        )
+        foreach ($c in $candidates) {
+            if (Test-Path -LiteralPath $c) { return $c }
+        }
+    }
+    $base = if ($skillRoot) { Join-Path $skillRoot 'integrations/amazon-web-services' } else { '' }
+    return (Join-Path $base $fileName)
 }
 
 function Get-EntroAwsCloudFormationStackName {

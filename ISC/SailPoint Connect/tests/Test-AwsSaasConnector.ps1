@@ -82,4 +82,60 @@ Assert-True ($ciemDocs.Contains('SPCiemPolicy')) 'CIEM policy when Ciem feature 
 Assert-True ($ciemDocs.Contains('SPCloudTrailBucketPolicy')) 'bucket policy when bucket name supplied'
 Assert-Contains $ciemDocs['SPCiemPolicy'] 'cloudtrail:LookupEvents' 'CIEM policy includes CloudTrail read'
 
+# Embedded AWS CIEM Identity Center inline policies in Aws.Connector.psm1 BuildScript & Set-CiemIdentityCenterPolicy
+$iwCorePath = Join-Path (Split-Path -Parent $PSScriptRoot) 'modules/IW.Core.psm1'
+$awsDefPath = Join-Path (Split-Path -Parent $PSScriptRoot) 'modules/Definitions/Aws.Connector.psm1'
+Import-Module $iwCorePath -Force -Global -WarningAction SilentlyContinue
+Import-Module $awsDefPath -Force -WarningAction SilentlyContinue
+Register-IntegrationWizardPlatform -Name 'AWS' -Title 'AWS' -CoreOptions @('SaaSConnector', 'Entro') -CliName 'aws'
+Register-AwsConnectorDefinitions
+$awsSaasDef = Get-IntegrationWizardDefinition -Id 'aws-saas-connector'
+Assert-True ($null -ne $awsSaasDef) 'aws-saas-connector definition is registered'
+
+$roOrgScript = & $awsSaasDef.BuildScript @{ Feature = @('Ciem'); Scope = 'Organization'; Access = 'ReadOnly'; IscExternalId = 'ext-1' }
+Assert-Contains $roOrgScript 'SailPointCIEMAuditICReadOnlyPolicy' 'ReadOnly org CIEM BuildScript attaches IC ReadOnly policy'
+Assert-True ($roOrgScript -notlike '*SailPointCIEMAuditICProvisionPolicy*') 'ReadOnly org CIEM BuildScript omits IC Provision policy'
+
+$rwOrgScript = & $awsSaasDef.BuildScript @{ Feature = @('Ciem'); Scope = 'Organization'; Access = 'ReadWrite'; IscExternalId = 'ext-1' }
+Assert-Contains $rwOrgScript 'SailPointCIEMAuditICReadOnlyPolicy' 'ReadWrite org CIEM BuildScript attaches IC ReadOnly policy'
+Assert-Contains $rwOrgScript 'SailPointCIEMAuditICProvisionPolicy' 'ReadWrite org CIEM BuildScript attaches IC Provision policy'
+
+$currentAcctScript = & $awsSaasDef.BuildScript @{ Feature = @('Ciem'); Scope = 'CurrentAccount'; Access = 'ReadWrite'; IscExternalId = 'ext-1' }
+Assert-True ($currentAcctScript -notlike '*SailPointCIEMAuditICReadOnlyPolicy*') 'CurrentAccount CIEM BuildScript omits IC ReadOnly policy'
+Assert-True ($currentAcctScript -notlike '*SailPointCIEMAuditICProvisionPolicy*') 'CurrentAccount CIEM BuildScript omits IC Provision policy'
+
+Import-Module (Join-Path (Split-Path -Parent $PSScriptRoot) 'modules/ISC.OperatorConsole.psm1') -Force -WarningAction SilentlyContinue
+$writtenPolicies = [System.Collections.Generic.List[string]]::new()
+$removedPolicies = [System.Collections.Generic.List[string]]::new()
+Set-Item -Path function:global:Write-IAMRolePolicy -Value {
+    param([string]$RoleName, [string]$PolicyName, [string]$PolicyDocument, [string]$RegionName)
+    $null = $script:TestWrittenPolicies.Add($PolicyName)
+}
+Set-Item -Path function:global:Remove-IAMRolePolicy -Value {
+    param([string]$RoleName, [string]$PolicyName, [switch]$Force, [string]$RegionName)
+    $null = $script:TestRemovedPolicies.Add($PolicyName)
+}
+$script:TestWrittenPolicies = $writtenPolicies
+$script:TestRemovedPolicies = $removedPolicies
+try {
+    Set-CiemIdentityCenterPolicy -RoleArn 'arn:aws:iam::123456789012:role/SailPointAWSRole' -RegionName 'us-east-1' -IncludeReadOnly:$true -IncludeProvision:$false 6>$null
+    Assert-True ($writtenPolicies -contains 'SailPointCIEMAuditICReadOnlyPolicy') 'Set-CiemIdentityCenterPolicy attaches ICReadOnlyPolicy for ReadOnly'
+    Assert-True ($removedPolicies -contains 'SailPointCIEMAuditICProvisionPolicy') 'Set-CiemIdentityCenterPolicy removes ICProvisionPolicy when IncludeProvision=false'
+    Assert-True ($removedPolicies -contains 'SailPointCIEMAuditICProvisionSupplementPolicy') 'Set-CiemIdentityCenterPolicy removes ICProvisionSupplementPolicy when IncludeProvision=false'
+
+    $writtenPolicies.Clear()
+    $removedPolicies.Clear()
+    Set-CiemIdentityCenterPolicy -RoleArn 'arn:aws:iam::123456789012:role/SailPointAWSRole' -RegionName 'us-east-1' -IncludeReadOnly:$true -IncludeProvision:$true 6>$null
+    Assert-True ($writtenPolicies -contains 'SailPointCIEMAuditICReadOnlyPolicy') 'Set-CiemIdentityCenterPolicy attaches ICReadOnlyPolicy for ReadWrite'
+    Assert-True ($writtenPolicies -contains 'SailPointCIEMAuditICProvisionPolicy') 'Set-CiemIdentityCenterPolicy attaches ICProvisionPolicy for ReadWrite'
+    Assert-True ($writtenPolicies -contains 'SailPointCIEMAuditICProvisionSupplementPolicy') 'Set-CiemIdentityCenterPolicy attaches ICProvisionSupplementPolicy for ReadWrite'
+}
+finally {
+    Remove-Item -Path function:global:Write-IAMRolePolicy -ErrorAction SilentlyContinue
+    Remove-Item -Path function:global:Remove-IAMRolePolicy -ErrorAction SilentlyContinue
+}
+
+$implText = Get-Content -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'modules/Legacy/AWS.Implementation.ps1') -Raw
+Assert-True ($implText.Contains('Set-CiemIdentityCenterPolicy -RoleArn $roleArns[0] -RegionName $Region -IncludeReadOnly:$true -IncludeProvision:(-not $AggregationOnly)')) 'Legacy AWS.Implementation.ps1 invokes Set-CiemIdentityCenterPolicy for AwsSaas Ciem Organization'
+
 Write-Host "PASS ($script:AssertionCount assertions)"

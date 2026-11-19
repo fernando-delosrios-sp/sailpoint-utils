@@ -10,7 +10,7 @@ Import-Module (Join-Path $wizardRoot 'modules/Definitions/Google.Connector.psm1'
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Google.Entro.psm1') -Force
 
 Register-IntegrationWizardPlatform -Name 'GoogleCloud' -Title 'Google Cloud' `
-    -CoreOptions @('SaaSConnector', 'CiemConnector', 'GcpEntro', 'WorkspaceEntro') -CliName 'gcloud' `
+    -CoreOptions @('SaaSConnector', 'GcpEntro', 'WorkspaceEntro') -CliName 'gcloud' `
     -EntroCompanions @{
         SaaSConnector = @{ Variants = @('GcpEntro', 'WorkspaceEntro') }
     }
@@ -19,62 +19,42 @@ Register-GoogleEntroDefinitions
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Azure.Entro.psm1') -Force
 Register-AzureEntroDefinitions
 
-# Test 1: Resolve-IntegrationWizardEntroAddon handles Esc on variant prompt by looping back to Yes/No
-$script:yesNoCalls = 0
-$script:choiceCalls = 0
-function Mock-PromptBackFlow {
-    # Redefine Read-YesNo and Read-Choice in script scope
-    $script:yesNoCalls = 0
-    $script:choiceCalls = 0
+# Test 1: Resolve-IntegrationWizardEntroAddon is removed in unified flow (Fabric + Entro auto-combined)
+Assert-True ($null -eq (Get-Command Resolve-IntegrationWizardEntroAddon -ErrorAction SilentlyContinue)) 'Resolve-IntegrationWizardEntroAddon is removed in unified flow'
 
-    function global:Read-YesNo {
-        param($Prompt, $Default)
-        $script:yesNoCalls++
-        if ($script:yesNoCalls -eq 1) { return $true }
-        return $false
-    }
-
-    function global:Read-Choice {
-        param($Prompt, $Options, $Labels, $Default)
-        $script:choiceCalls++
-        if ($script:choiceCalls -eq 1) {
-            Invoke-PromptBack
-        }
-        return 'GcpEntro'
-    }
-}
-
-Mock-PromptBackFlow
-$ctx = @{ Wizard = $true }
-$connDef = Get-IntegrationWizardDefinition -Id 'google-saas-connector'
-Resolve-IntegrationWizardEntroAddon -Platform 'GoogleCloud' -Context $ctx -ConnectorDefinition $connDef -Wizard
-
-Assert-Equal 2 $script:yesNoCalls 'Read-YesNo was called twice after Esc on variants'
-Assert-Equal 1 $script:choiceCalls 'Read-Choice threw PROMPT_BACK once'
-Assert-True (-not $ctx['GcpEntro']) 'GcpEntro not set because user chose No on re-prompt'
-
-# Test 2: Resolve-IntegrationWizardEntroAddon recovers and sets chosen variant on second try
-$script:yesNoCalls = 0
-$script:choiceCalls = 0
-function global:Read-YesNo {
-    param($Prompt, $Default)
-    $script:yesNoCalls++
-    return $true
-}
-function global:Read-Choice {
-    param($Prompt, $Options, $Labels, $Default)
-    $script:choiceCalls++
-    if ($script:choiceCalls -eq 1) {
+# Test 2: Collect-IntegrationWizardInputs handles Esc (PromptBack) cleanly: backing out from second prompt clears first prompt and re-asks it
+$script:inputCalls = 0
+function global:Read-InputString {
+    param($Prompt, $Default, [switch]$Required, [switch]$Mask)
+    $script:inputCalls++
+    if ($script:inputCalls -eq 2) {
         Invoke-PromptBack
     }
-    return 'GcpEntro'
+    return "val-$($script:inputCalls)"
+}
+function global:Read-MultiChoice {
+    param($Prompt, $Options, $Labels)
+    return @()
+}
+function global:Read-YesNo {
+    param($Prompt, $Default)
+    return $true
 }
 
-$ctx2 = @{ Wizard = $true }
-Resolve-IntegrationWizardEntroAddon -Platform 'GoogleCloud' -Context $ctx2 -ConnectorDefinition $connDef -Wizard
-Assert-Equal 2 $script:yesNoCalls 'Read-YesNo called twice when user confirms Yes second time'
-Assert-Equal 2 $script:choiceCalls 'Read-Choice called second time after Esc'
-Assert-True ([bool]$ctx2['GcpEntro']) 'GcpEntro set after successful second try'
+$backDef = @{
+    Inputs = @(
+        @{ Name = 'First'; Source = 'Supply'; Prompt = 'First value'; Required = $true }
+        @{ Name = 'Second'; Source = 'Supply'; Prompt = 'Second value'; Required = $true }
+    )
+}
+$backCtx = @{ Action = 'Run' }
+Collect-IntegrationWizardInputs -Definition $backDef -Context $backCtx -Wizard
+Assert-Equal 4 $script:inputCalls 'Backing out at second input re-asks first then second input'
+Assert-Equal 'val-3' $backCtx['First'] 'First input updated after back navigation'
+Assert-Equal 'val-4' $backCtx['Second'] 'Second input collected on retry'
+Remove-Item function:\global:Read-InputString -ErrorAction SilentlyContinue
+Remove-Item function:\global:Read-MultiChoice -ErrorAction SilentlyContinue
+Remove-Item function:\global:Read-YesNo -ErrorAction SilentlyContinue
 
 # Test 3: Start-IntegrationWizardFlow catches PROMPT_BACK on PickTarget without crashing
 function global:Read-Choice {

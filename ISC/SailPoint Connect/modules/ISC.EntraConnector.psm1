@@ -161,6 +161,22 @@ $script:FeaturePacks = [ordered]@{
             @{ Value = 'ThreatHunting.Read.All'; Resource = 'Graph' }
         )
     }
+    AzureRbacAudit = @{
+        Label       = 'Azure RBAC - EntroSecurityRole custom role, Key Vault Reader & App Configuration Data Reader'
+        Permissions = @()
+    }
+    KeyVaultActivityLogs = @{
+        Label       = 'Key Vault activity logs - Diagnostic setting to Log Analytics Workspace'
+        Permissions = @()
+    }
+    KeyVaultScanning = @{
+        Label       = 'Key Vault scanning - Access policies and Key Vault Reader RBAC'
+        Permissions = @()
+    }
+    LogAnalyticsForwarding = @{
+        Label       = 'Log Analytics forwarding - Entra AuditLogs & ServicePrincipalSignInLogs'
+        Permissions = @()
+    }
 }
 
 $script:DirectoryRoleMap = [ordered]@{
@@ -391,6 +407,18 @@ function Get-EntraIscFeatureChecklist {
     $nhiPacks = @('NhiDiscovery', 'TeamsSecretScanning', 'SharePointScanning', 'DefenderHunting')
     if (@($FeatureNames | Where-Object { $nhiPacks -contains $_ }).Count -gt 0) {
         $items.Add('NHI Discovery features require SailPoint Agentic Fabric license on the tenant.')
+    }
+    if (@($FeatureNames) -contains 'AzureRbacAudit') {
+        $items.Add('Azure Entro RBAC: verify EntroSecurityRole custom role, Key Vault Reader, and App Configuration Data Reader assignments plus Microsoft.Insights provider registration.')
+    }
+    if (@($FeatureNames) -contains 'LogAnalyticsForwarding') {
+        $items.Add('Azure Entro Log Analytics: verify EntroSecurityLogForwarding sends AuditLogs and ServicePrincipalSignInLogs to the target workspace.')
+    }
+    if (@($FeatureNames) -contains 'KeyVaultScanning') {
+        $items.Add('Azure Entro Key Vault scanning: verify Key Vault access policies (or Key Vault Reader RBAC) on target vaults.')
+    }
+    if (@($FeatureNames) -contains 'KeyVaultActivityLogs') {
+        $items.Add('Azure Entro Key Vault activity logs: verify EntroKVActivityLogs diagnostic setting streams audit and allLogs to the Log Analytics Workspace.')
     }
     $items.Add('Managed identities: assign Managed Identity Operator (or Reader) at Tenant Root for user-assigned identities.')
     $items.Add('Azure PIM for Azure resource roles: assign Owner or User Access Administrator on subscriptions (CIEM license).')

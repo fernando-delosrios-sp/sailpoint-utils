@@ -54,7 +54,52 @@ function Register-AzureConnectorDefinitions {
         Inputs       = @(
             @{ Name = 'TenantId'; Source = 'Supply'; Prompt = 'Tenant ID or domain'; Purpose = 'Microsoft Entra tenant'; Required = $false }
             @{ Name = 'ApplicationName'; Source = 'Discover'; Prompt = 'Application display name'; Purpose = 'App registration name'; Required = $true }
-            @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
+            @{
+                Name        = 'Feature'
+                Source      = 'Supply'
+                Prompt      = 'Feature packs (Space toggles, Enter confirms, Enter for none)'
+                Purpose     = 'Optional ISC feature permissions'
+                Required    = $false
+                MultiChoice = $true
+                Options     = @(
+                    'CopilotDiscovery',
+                    'Agent365',
+                    'AccessPackages',
+                    'MfaManagement',
+                    'ActivityInsights',
+                    'AdministrativeUnits',
+                    'ServicePrincipalProvisioning',
+                    'NhiDiscovery',
+                    'DefenderHunting',
+                    'TeamsSecretScanning',
+                    'TeamsMessaging',
+                    'SharePointScanning',
+                    'ExchangeOnline',
+                    'AzureRbacAudit',
+                    'LogAnalyticsForwarding',
+                    'KeyVaultScanning',
+                    'KeyVaultActivityLogs'
+                )
+                Labels      = @(
+                    'CopilotDiscovery (AI Agent Governance - Copilot Studio & Foundry)',
+                    'Agent365 (Microsoft Agent 365 catalog & delegated refresh token)',
+                    'AccessPackages (Entitlement Management - Access Packages)',
+                    'MfaManagement (MFA & Authentication Methods)',
+                    'ActivityInsights (Audit logs & sign-in activity)',
+                    'AdministrativeUnits (Administrative unit management)',
+                    'ServicePrincipalProvisioning (Service principal account provisioning)',
+                    'NhiDiscovery (Non-Human Identity Discovery - Azure cloud assets)',
+                    'DefenderHunting (Microsoft Defender Threat Hunting & inventory)',
+                    'TeamsSecretScanning (Teams chats & channels secret scanning)',
+                    'TeamsMessaging (Teams risk notifications)',
+                    'SharePointScanning (SharePoint & OneDrive secret scanning)',
+                    'ExchangeOnline (Exchange Online mailbox management)',
+                    'AzureRbacAudit (Azure RBAC - EntroSecurityRole, Key Vault Reader & App Configuration Data Reader)',
+                    'LogAnalyticsForwarding (Log Analytics forwarding - Entra AuditLogs & ServicePrincipalSignInLogs)',
+                    'KeyVaultScanning (Key Vault scanning - Access policies & Key Vault Reader RBAC)',
+                    'KeyVaultActivityLogs (Key Vault activity logs - Diagnostic setting to Log Analytics)'
+                )
+            }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
             @{ Name = 'RotateSecret'; Source = 'Supply'; Prompt = 'Rotate secret'; Purpose = 'Create new client secret on update'; Required = $false }
         )

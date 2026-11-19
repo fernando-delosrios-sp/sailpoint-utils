@@ -27,7 +27,19 @@ function Register-GitHubConnectorDefinitions {
             @{ Name = 'PrivateKey'; Source = 'Supply'; Prompt = 'GitHub App private key (PEM)'; Purpose = 'Full PEM including BEGIN/END PRIVATE KEY lines'; Required = $true; Secret = $true; When = { param($c) $m = if ($c['AuthMethod']) { [string]$c['AuthMethod'] } else { 'GitHubApp' }; $m -eq 'GitHubApp' } }
             @{ Name = 'Token'; Source = 'Supply'; Prompt = 'GitHub Personal Access Token (PAT)'; Purpose = 'GitHub Personal Access Token (PAT)'; Required = $true; Secret = $true; When = { param($c) $c['AuthMethod'] -eq 'PersonalAccessToken' } }
             @{ Name = 'ApiUrl'; Source = 'Supply'; Prompt = 'API URL'; Purpose = 'GitHub API endpoint'; Required = $false; Default = 'https://api.github.com' }
-            @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: AgentDiscovery, ActivityInsights)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
+            @{
+                Name        = 'Feature'
+                Source      = 'Supply'
+                Prompt      = 'Feature packs (Space toggles, Enter confirms, Enter for none)'
+                Purpose     = 'Optional ISC feature permissions'
+                Required    = $false
+                MultiChoice = $true
+                Options     = @('AgentDiscovery', 'ActivityInsights')
+                Labels      = @(
+                    'AgentDiscovery (GitHub Copilot seats & Bots)'
+                    'ActivityInsights (Audit and activity logs)'
+                )
+            }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Output directory'; Required = $false }
         )
         CheckInputs  = @(

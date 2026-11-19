@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-18 · v1.16.0
+
+### Fixed
+
+- **SailPoint Connect — Entro skill root & onboarding script resolution in installed modules**: Enhanced `Get-EntroConnectSkillRoot` in `modules/IW.EntroCatalog.psm1` to discover the Entro skill root across multiple candidate paths (explicit `$env:ENTRO_CONNECT_SKILL_ROOT`, in-module bundled paths, repository ancestor walks from module and caller working directories, and well-known development directory fallbacks). Added path fallbacks to `Get-EntroAzureOnboardingScriptPath` and `Get-EntroAwsTemplatePath`, and ensured `-Global` is passed when importing `IW.EntroCatalog.psm1` so running `Invoke-SailPointConnect` or `sailpoint-connect` from an installed module path (`~/.local/share/powershell/Modules/SailPoint.Connect/...`) resolves `Entro-Azure-Onboarding.ps1` and AWS templates without missing-script exceptions.
+
 ## 2026-11-16 · v1.15.0
 
 ### Fixed

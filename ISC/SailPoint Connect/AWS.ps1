@@ -81,6 +81,11 @@ param(
 
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
+    [ValidateSet('CurrentAccount', 'Organization')]
+    [string]$Scope,
+
+    [Parameter(ParameterSetName = 'SaaSConnector')]
+    [Parameter(ParameterSetName = 'CiemConnector')]
     [string]$CloudTrailBucket,
 
     [Parameter(ParameterSetName = 'Wizard')]
@@ -127,7 +132,7 @@ Import-IntegrationWizardConsole -WizardRoot $wizardRoot -NonInteractive:$NonInte
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Aws.Connector.psm1') -Force
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Aws.Entro.psm1') -Force
 
-Register-IntegrationWizardPlatform -Name 'AWS' -Title 'AWS' -CoreOptions @('SaaSConnector', 'CiemConnector', 'Entro') -CliName 'aws' `
+Register-IntegrationWizardPlatform -Name 'AWS' -Title 'AWS' -CoreOptions @('SaaSConnector', 'Entro') -CliName 'aws' `
     -EntroCompanions @{
         SaaSConnector = @{ EntroSwitch = 'Entro' }
     }
@@ -135,16 +140,23 @@ Register-AwsConnectorDefinitions
 Register-AwsEntroDefinitions
 
 $coreHelp = [ordered]@{
-    SaaSConnector = @{ Short = 'SaaS connector'; Long = 'ISC "Amazon Web Services" SaaS connector IAM role' }
-    CiemConnector = @{ Short = 'CIEM connector'; Long = 'AWS CIEM connector (CloudFormation)' }
+    SaaSConnector = @{ Short = 'AWS connector'; Long = 'ISC "Amazon Web Services" connector IAM role (select Ciem in Feature for CIEM)' }
     Entro         = @{ Short = 'Entro'; Long = 'Entro AWS integration (Assume Role / CloudFormation / Terraform)' }
+}
+
+$resolvedFeature = @(if ($Feature) { $Feature })
+$effectiveSaas = [bool]$SaaSConnector
+if ($CiemConnector) {
+    $effectiveSaas = $true
+    if ($resolvedFeature -notcontains 'Ciem') {
+        $resolvedFeature += 'Ciem'
+    }
 }
 
 $context = @{
     Wizard           = [bool]$Wizard
     NonInteractive   = [bool]$NonInteractive
-    SaaSConnector    = [bool]$SaaSConnector
-    CiemConnector    = [bool]$CiemConnector
+    SaaSConnector    = $effectiveSaas
     Entro            = [bool]$Entro
     Method           = $Method
     Cloud            = $Cloud
@@ -157,14 +169,15 @@ $context = @{
     RoleName         = $RoleName
     EntroRoleName    = $EntroRoleName
     ProfileName      = $ProfileName
-    Feature          = $Feature
+    Feature          = $(if (@($resolvedFeature).Count -gt 0) { $resolvedFeature } else { $Feature })
+    Scope            = $Scope
     CloudTrailBucket = $CloudTrailBucket
     OutputDirectory  = $OutputDirectory
     OutputFormat     = $OutputFormat
     Project          = $Project
 }
 
-$hasCore = $SaaSConnector -or $CiemConnector -or $Entro
+$hasCore = $effectiveSaas -or $Entro
 if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $hasCore) {
     Show-IntegrationWizardPlatformHelp -Platform 'AWS' -ScriptName 'AWS.ps1' -CoreOptionHelp $coreHelp
     return
@@ -174,18 +187,9 @@ Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBound
 
 Start-IntegrationWizardFlow -Platform 'AWS' -ScriptName 'AWS.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
-        $opts = @(
-            @{ Id = 'aws-saas-connector'; Label = 'Amazon Web Services SaaS connector' }
-            @{ Id = 'aws-ciem-connector'; Label = 'AWS CIEM connector' }
-            @{ Id = 'aws-entro'; Label = 'Entro AWS integration' }
-        )
-        $picked = Read-Choice -Prompt 'What do you want to configure?' `
-            -Options ($opts.Id) -Labels ($opts.Label) -Default 'aws-saas-connector'
-        switch ($picked) {
-            'aws-saas-connector' { $context.SaaSConnector = $true; Get-IntegrationWizardDefinition -Id 'aws-saas-connector' }
-            'aws-ciem-connector' { $context.CiemConnector = $true; Get-IntegrationWizardDefinition -Id 'aws-ciem-connector' }
-            'aws-entro' { $context.Entro = $true; Get-IntegrationWizardDefinition -Id 'aws-entro' }
-        }
+        $context.SaaSConnector = $true
+        $context.Entro = $true
+        Get-IntegrationWizardDefinition -Id 'aws-saas-connector'
     } `
     -Discover {
         param($name, $ctx)

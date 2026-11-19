@@ -1,26 +1,8 @@
 {
   "version": 1,
-  "menuFlow": ["Project", "Action", "Integration", "Product", "Variant", "CredentialKind", "ReuseOrCreate", "Access"],
+  "menuFlow": ["Project", "Action", "Integration", "Variant", "CredentialKind", "ReuseOrCreate", "Access"],
   "actions": ["BuildRequirements", "Check", "BuildScript", "Run"],
-  "products": {
-    "fabric": {
-      "label": "SailPoint Fabric",
-      "access": ["ReadOnly", "ReadWrite"],
-      "legacyCoreSwitches": ["SaaSConnector", "Connector"]
-    },
-    "entro": {
-      "label": "Entro",
-      "access": ["ReadOnly"],
-      "legacyCoreSwitches": ["Entro", "GcpEntro", "WorkspaceEntro", "GhesEntro", "GitLabSelfManaged", "Smb", "Sftp", "WinRm"]
-    },
-    "ciem": {
-      "label": "CIEM",
-      "access": ["ReadOnly", "ReadWrite"],
-      "legacyCoreSwitches": ["CiemConnector"]
-    }
-  },
   "policies": {
-    "oneProductPerRun": true,
     "mutations": "additive-only",
     "update": {
       "rotateSecrets": false,
@@ -130,18 +112,6 @@
       "secretFields": ["AccessToken"],
       "checkSubject": "Manual"
     },
-    "entroOutpost.connector": {
-      "label": "Entro Outpost container deployment (Worker Group)",
-      "discriminators": ["WorkerGroup", "DeploymentMode"],
-      "secretFields": ["CrPat", "AwsSecretAccessKey", "EntroPassword"],
-      "checkSubject": "Manual"
-    },
-    "github.ghesPat": {
-      "label": "GitHub Enterprise Server classic PAT",
-      "discriminators": ["Hostname"],
-      "secretFields": ["Token"],
-      "checkSubject": "Manual"
-    },
     "ad.ldapsServiceAccount": {
       "label": "On-prem Active Directory LDAPS service account",
       "discriminators": ["Domain", "DcFqdn", "SamAccountName"],
@@ -171,553 +141,369 @@
     {
       "id": "aws",
       "title": "Amazon Web Services",
+      "coverage": "SailPoint Fabric",
       "cli": "aws",
       "launcher": "AWS.ps1",
       "platformName": "AWS",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "saas",
-              "label": "AWS SaaS connector",
-              "definitionId": "aws-saas-connector",
-              "definitionModule": "modules/Definitions/Aws.Connector.psm1",
-              "folderName": "Amazon-Web-Services-SaaS",
-              "credentialKinds": ["aws.iamAssumeRole"]
-            }
-          ]
-        },
-        "ciem": {
-          "bindings": [
-            {
-              "variantId": "aws-ciem",
-              "label": "AWS CIEM connector",
-              "definitionId": "aws-ciem-connector",
-              "definitionModule": "modules/Definitions/Aws.Connector.psm1",
-              "folderName": "Amazon-Web-Services-CIEM",
-              "credentialKinds": ["aws.iamAssumeRole"]
-            }
-          ]
-        },
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "aws",
-              "label": "Entro AWS account",
-              "definitionId": "aws-entro",
-              "definitionModule": "modules/Definitions/Aws.Entro.psm1",
-              "folderName": "Entro-AWS",
-              "credentialKinds": ["aws.iamAssumeRole"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "aws",
+          "label": "Amazon Web Services (SaaS + CIEM + Entro)",
+          "definitionId": "aws-saas-connector",
+          "definitionIds": ["aws-saas-connector", "aws-entro"],
+          "definitionModule": "modules/Definitions/Aws.Connector.psm1",
+          "definitionModules": ["modules/Definitions/Aws.Connector.psm1", "modules/Definitions/Aws.Entro.psm1"],
+          "legacySwitches": ["SaaSConnector", "Entro"],
+          "folderName": "Amazon-Web-Services",
+          "credentialKinds": ["aws.iamAssumeRole"]
         }
-      }
+      ]
     },
     {
       "id": "azure",
       "title": "Microsoft Azure & Entra ID",
+      "coverage": "SailPoint Fabric",
       "cli": "az",
       "launcher": "Azure.ps1",
       "platformName": "Azure",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "entra",
-              "label": "Microsoft Entra ID connector",
-              "definitionId": "azure-connector",
-              "definitionModule": "modules/Definitions/Azure.Connector.psm1",
-              "folderName": "Microsoft-Entra-ID",
-              "credentialKinds": ["entra.appClientSecret"]
-            }
-          ]
-        },
-        "ciem": {
-          "bindings": [
-            {
-              "variantId": "entra-ciem",
-              "label": "Azure CIEM (Entra embedded CIEM packs)",
-              "definitionId": "azure-connector",
-              "definitionModule": "modules/Definitions/Azure.Connector.psm1",
-              "folderName": "Microsoft-Entra-CIEM",
-              "credentialKinds": ["entra.appClientSecret"],
-              "contextDefaults": {
-                "Feature": "Ciem"
-              }
-            }
-          ]
-        },
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "microsoft-ecosystem",
-              "label": "Entro Microsoft ecosystem",
-              "definitionId": "azure-entro",
-              "definitionModule": "modules/Definitions/Azure.Entro.psm1",
-              "folderName": "Entro-Microsoft",
-              "credentialKinds": ["entra.appClientSecret"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "azure",
+          "label": "Microsoft Azure & Entra ID (Connector + CIEM + Entro)",
+          "definitionId": "azure-connector",
+          "definitionIds": ["azure-connector", "azure-entro"],
+          "definitionModule": "modules/Definitions/Azure.Connector.psm1",
+          "definitionModules": ["modules/Definitions/Azure.Connector.psm1", "modules/Definitions/Azure.Entro.psm1"],
+          "legacySwitches": ["Connector", "Entro"],
+          "folderName": "Microsoft-Entra-ID",
+          "credentialKinds": ["entra.appClientSecret"]
         }
-      }
+      ]
     },
     {
       "id": "google-cloud",
       "title": "Google Cloud & Workspace",
+      "coverage": "SailPoint Fabric",
       "cli": "gcloud",
       "launcher": "Google Cloud.ps1",
       "platformName": "GoogleCloud",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "workspace-saas",
-              "label": "Google Workspace connector",
-              "definitionId": "google-saas-connector",
-              "definitionModule": "modules/Definitions/Google.Connector.psm1",
-              "folderName": "Google-Workspace",
-              "credentialKinds": ["gcp.serviceAccountKey", "google.oauthClientCredentials"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "gcp",
+          "label": "Google Cloud Platform (GCP + CIEM + Entro)",
+          "definitionId": "google-saas-connector",
+          "definitionIds": ["google-saas-connector", "google-gcp-entro"],
+          "definitionModule": "modules/Definitions/Google.Connector.psm1",
+          "definitionModules": ["modules/Definitions/Google.Connector.psm1", "modules/Definitions/Google.Entro.psm1"],
+          "legacySwitches": ["SaaSConnector", "GcpEntro"],
+          "folderName": "Google-Cloud-GCP",
+          "credentialKinds": ["gcp.serviceAccountKey", "gcp.workloadIdentity"]
         },
-        "ciem": {
-          "bindings": [
-            {
-              "variantId": "gcp-ciem",
-              "label": "GCP CIEM connector",
-              "definitionId": "google-ciem-connector",
-              "definitionModule": "modules/Definitions/Google.Connector.psm1",
-              "folderName": "GCP-CIEM",
-              "credentialKinds": ["gcp.serviceAccountKey"]
-            }
-          ]
-        },
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "gcp-org",
-              "label": "Entro GCP organization",
-              "definitionId": "google-gcp-entro",
-              "definitionModule": "modules/Definitions/Google.Entro.psm1",
-              "folderName": "Entro-GCP",
-              "credentialKinds": ["gcp.serviceAccountKey", "gcp.workloadIdentity"]
-            },
-            {
-              "variantId": "workspace",
-              "label": "Entro Google Workspace",
-              "definitionId": "google-workspace-entro",
-              "definitionModule": "modules/Definitions/Google.Entro.psm1",
-              "folderName": "Entro-Workspace",
-              "credentialKinds": ["google.workspaceDomainDelegation"]
-            }
-          ]
+        {
+          "variantId": "workspace",
+          "label": "Google Workspace (Connector + Entro)",
+          "definitionId": "google-saas-connector",
+          "definitionIds": ["google-saas-connector", "google-workspace-entro"],
+          "definitionModule": "modules/Definitions/Google.Connector.psm1",
+          "definitionModules": ["modules/Definitions/Google.Connector.psm1", "modules/Definitions/Google.Entro.psm1"],
+          "legacySwitches": ["SaaSConnector", "WorkspaceEntro"],
+          "folderName": "Google-Workspace",
+          "credentialKinds": ["gcp.serviceAccountKey", "google.oauthClientCredentials", "google.workspaceDomainDelegation"]
         }
-      }
+      ]
     },
     {
       "id": "github",
       "title": "GitHub",
+      "coverage": "SailPoint Fabric",
       "cli": "gh",
       "launcher": "GitHub.ps1",
       "platformName": "GitHub",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "saas",
-              "label": "GitHub SaaS connector",
-              "definitionId": "github-connector",
-              "definitionModule": "modules/Definitions/GitHub.Connector.psm1",
-              "folderName": "GitHub",
-              "credentialKinds": ["github.appInstallation", "github.pat"]
-            }
-          ]
-        },
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "github",
-              "label": "Entro GitHub Cloud",
-              "definitionId": "github-entro",
-              "definitionModule": "modules/Definitions/GitHub.Entro.psm1",
-              "folderName": "Entro-GitHub",
-              "credentialKinds": ["github.appInstallation", "github.pat"]
-            },
-            {
-              "variantId": "ghes",
-              "label": "Entro GitHub Enterprise Server [Requires Outpost]",
-              "definitionId": "github-ghes-entro",
-              "definitionModule": "modules/Definitions/GitHub.Entro.psm1",
-              "folderName": "Entro-GitHub-Enterprise-Server",
-              "hosting": "self-hosted",
-              "requiresOutpost": true,
-              "targetHostRole": "Internal host that can reach GitHub Enterprise Server",
-              "credentialKinds": ["github.ghesPat"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "github",
+          "label": "GitHub (SaaS Connector + Entro)",
+          "definitionId": "github-connector",
+          "definitionIds": ["github-connector", "github-entro"],
+          "definitionModule": "modules/Definitions/GitHub.Connector.psm1",
+          "definitionModules": ["modules/Definitions/GitHub.Connector.psm1", "modules/Definitions/GitHub.Entro.psm1"],
+          "legacySwitches": ["Connector", "Entro"],
+          "folderName": "GitHub",
+          "credentialKinds": ["github.appInstallation", "github.pat"]
         }
-      }
+      ]
     },
     {
       "id": "okta",
       "title": "Okta",
+      "coverage": "SailPoint Fabric",
       "cli": "okta",
       "launcher": "Okta.ps1",
       "platformName": "Okta",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "saas",
-              "label": "Okta SaaS connector",
-              "definitionId": "okta-connector",
-              "definitionModule": "modules/Definitions/Okta.Connector.psm1",
-              "folderName": "Okta",
-              "credentialKinds": ["okta.jwtServiceApp"]
-            }
-          ]
-        },
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "okta",
-              "label": "Entro Okta",
-              "definitionId": "okta-entro",
-              "definitionModule": "modules/Definitions/Okta.Entro.psm1",
-              "folderName": "Entro-Okta",
-              "credentialKinds": ["okta.apiServicesPublicKey"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "okta",
+          "label": "Okta (SaaS Connector + Entro)",
+          "definitionId": "okta-connector",
+          "definitionIds": ["okta-connector", "okta-entro"],
+          "definitionModule": "modules/Definitions/Okta.Connector.psm1",
+          "definitionModules": ["modules/Definitions/Okta.Connector.psm1", "modules/Definitions/Okta.Entro.psm1"],
+          "legacySwitches": ["Connector", "Entro"],
+          "folderName": "Okta",
+          "credentialKinds": ["okta.jwtServiceApp", "okta.apiServicesPublicKey"]
         }
-      }
+      ]
     },
     {
       "id": "crowdstrike",
       "title": "CrowdStrike",
+      "coverage": "SailPoint Fabric",
       "cli": "falcon",
       "launcher": "CrowdStrike.ps1",
       "platformName": "CrowdStrike",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "saas",
-              "label": "CrowdStrike Falcon SaaS connector",
-              "definitionId": "crowdstrike-connector",
-              "definitionModule": "modules/Definitions/CrowdStrike.Connector.psm1",
-              "folderName": "CrowdStrike",
-              "credentialKinds": ["oauth.clientIdSecret"]
-            }
-          ]
-        },
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "crowdstrike",
-              "label": "Entro CrowdStrike",
-              "definitionId": "crowdstrike-entro",
-              "definitionModule": "modules/Definitions/CrowdStrike.Entro.psm1",
-              "folderName": "Entro-CrowdStrike",
-              "credentialKinds": ["oauth.clientIdSecret"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "crowdstrike",
+          "label": "CrowdStrike (Falcon SaaS Connector + Entro)",
+          "definitionId": "crowdstrike-connector",
+          "definitionIds": ["crowdstrike-connector", "crowdstrike-entro"],
+          "definitionModule": "modules/Definitions/CrowdStrike.Connector.psm1",
+          "definitionModules": ["modules/Definitions/CrowdStrike.Connector.psm1", "modules/Definitions/CrowdStrike.Entro.psm1"],
+          "legacySwitches": ["Connector", "Entro"],
+          "folderName": "CrowdStrike",
+          "credentialKinds": ["oauth.clientIdSecret"]
         }
-      }
+      ]
     },
     {
       "id": "slack",
       "title": "Slack",
+      "coverage": "SailPoint Fabric",
       "cli": "slack",
       "launcher": "Slack.ps1",
       "platformName": "Slack",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "saas",
-              "label": "Slack SaaS connector",
-              "definitionId": "slack-connector",
-              "definitionModule": "modules/Definitions/Slack.Connector.psm1",
-              "folderName": "Slack",
-              "credentialKinds": ["slack.botUserAppTokens"]
-            }
-          ]
-        },
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "slack",
-              "label": "Entro Slack",
-              "definitionId": "slack-entro",
-              "definitionModule": "modules/Definitions/Slack.Entro.psm1",
-              "folderName": "Entro-Slack",
-              "credentialKinds": ["slack.botUserAppTokens"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "slack",
+          "label": "Slack (SaaS Connector + Entro)",
+          "definitionId": "slack-connector",
+          "definitionIds": ["slack-connector", "slack-entro"],
+          "definitionModule": "modules/Definitions/Slack.Connector.psm1",
+          "definitionModules": ["modules/Definitions/Slack.Connector.psm1", "modules/Definitions/Slack.Entro.psm1"],
+          "legacySwitches": ["Connector", "Entro"],
+          "folderName": "Slack",
+          "credentialKinds": ["slack.botUserAppTokens"]
         }
-      }
+      ]
     },
     {
       "id": "gitlab",
       "title": "GitLab",
+      "coverage": "SailPoint Fabric",
       "cli": "glab",
       "launcher": "GitLab.ps1",
       "platformName": "GitLab",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "saas",
-              "label": "GitLab SaaS connector",
-              "definitionId": "gitlab-connector",
-              "definitionModule": "modules/Definitions/GitLab.Connector.psm1",
-              "folderName": "GitLab",
-              "credentialKinds": ["gitlab.accessToken"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "gitlab",
+          "label": "GitLab Cloud (gitlab.com Connector + Entro)",
+          "definitionId": "gitlab-connector",
+          "definitionIds": ["gitlab-connector", "gitlab-entro"],
+          "definitionModule": "modules/Definitions/GitLab.Connector.psm1",
+          "definitionModules": ["modules/Definitions/GitLab.Connector.psm1", "modules/Definitions/GitLab.Entro.psm1"],
+          "legacySwitches": ["Connector", "Entro"],
+          "folderName": "GitLab",
+          "credentialKinds": ["gitlab.accessToken"]
         },
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "gitlab",
-              "label": "Entro GitLab (gitlab.com)",
-              "definitionId": "gitlab-entro",
-              "definitionModule": "modules/Definitions/GitLab.Entro.psm1",
-              "folderName": "Entro-GitLab",
-              "requiresOutpost": false,
-              "credentialKinds": ["gitlab.accessToken"]
-            },
-            {
-              "variantId": "self-managed",
-              "label": "Entro GitLab self-managed [Requires Outpost]",
-              "definitionId": "gitlab-selfmanaged-entro",
-              "definitionModule": "modules/Definitions/GitLab.Entro.psm1",
-              "folderName": "Entro-GitLab-Self-Managed",
-              "hosting": "self-hosted",
-              "requiresOutpost": true,
-              "targetHostRole": "Internal host with HTTPS reachability to self-managed GitLab",
-              "credentialKinds": ["gitlab.accessToken"]
-            }
-          ]
+        {
+          "variantId": "self-managed",
+          "label": "GitLab self-managed (Entro)",
+          "definitionId": "gitlab-selfmanaged-entro",
+          "definitionIds": ["gitlab-selfmanaged-entro"],
+          "definitionModule": "modules/Definitions/GitLab.Entro.psm1",
+          "definitionModules": ["modules/Definitions/GitLab.Entro.psm1"],
+          "legacySwitches": ["GitLabSelfManaged"],
+          "folderName": "Entro-GitLab-Self-Managed",
+          "hosting": "self-hosted",
+          "credentialKinds": ["gitlab.accessToken"]
         }
-      }
+      ]
     },
     {
       "id": "salesforce",
       "title": "Salesforce",
+      "coverage": "SailPoint Fabric",
       "cli": "sf",
       "launcher": "Salesforce.ps1",
       "platformName": "Salesforce",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "saas",
-              "label": "Salesforce SaaS connector",
-              "definitionId": "salesforce-connector",
-              "definitionModule": "modules/Definitions/Salesforce.Connector.psm1",
-              "folderName": "Salesforce",
-              "credentialKinds": ["salesforce.connectedAppOrToken"]
-            }
-          ]
-        },
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "salesforce",
-              "label": "Entro Salesforce",
-              "definitionId": "salesforce-entro",
-              "definitionModule": "modules/Definitions/Salesforce.Entro.psm1",
-              "folderName": "Entro-Salesforce",
-              "credentialKinds": ["salesforce.connectedAppOrToken"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "salesforce",
+          "label": "Salesforce (SaaS Connector + Entro)",
+          "definitionId": "salesforce-connector",
+          "definitionIds": ["salesforce-connector", "salesforce-entro"],
+          "definitionModule": "modules/Definitions/Salesforce.Connector.psm1",
+          "definitionModules": ["modules/Definitions/Salesforce.Connector.psm1", "modules/Definitions/Salesforce.Entro.psm1"],
+          "legacySwitches": ["Connector", "Entro"],
+          "folderName": "Salesforce",
+          "credentialKinds": ["salesforce.connectedAppOrToken"]
         }
-      }
+      ]
     },
     {
       "id": "databricks",
       "title": "Databricks",
+      "coverage": "SailPoint Fabric (ISC)",
       "cli": "databricks",
       "launcher": "Databricks.ps1",
       "platformName": "Databricks",
-      "products": {
-        "fabric": {
-          "bindings": [
-            {
-              "variantId": "account",
-              "label": "Databricks account connector",
-              "definitionId": "databricks-connector",
-              "definitionModule": "modules/Definitions/Databricks.Connector.psm1",
-              "folderName": "Databricks",
-              "credentialKinds": ["entra.appClientSecret"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "account",
+          "label": "Databricks account connector",
+          "definitionId": "databricks-connector",
+          "definitionIds": ["databricks-connector"],
+          "definitionModule": "modules/Definitions/Databricks.Connector.psm1",
+          "definitionModules": ["modules/Definitions/Databricks.Connector.psm1"],
+          "legacySwitches": ["Connector"],
+          "folderName": "Databricks",
+          "credentialKinds": ["entra.appClientSecret"]
         }
-      }
+      ]
     },
     {
       "id": "snowflake",
       "title": "Snowflake",
+      "coverage": "Entro",
       "cli": "snow",
       "launcher": "Snowflake.ps1",
       "platformName": "Snowflake",
-      "products": {
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "snowflake",
-              "label": "Entro Snowflake",
-              "definitionId": "snowflake-entro",
-              "definitionModule": "modules/Definitions/Snowflake.Entro.psm1",
-              "folderName": "Entro-Snowflake",
-              "credentialKinds": ["snowflake.keyPairUser"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "snowflake",
+          "label": "Entro Snowflake",
+          "definitionId": "snowflake-entro",
+          "definitionIds": ["snowflake-entro"],
+          "definitionModule": "modules/Definitions/Snowflake.Entro.psm1",
+          "definitionModules": ["modules/Definitions/Snowflake.Entro.psm1"],
+          "legacySwitches": ["Entro"],
+          "folderName": "Entro-Snowflake",
+          "credentialKinds": ["snowflake.keyPairUser"]
         }
-      }
+      ]
     },
     {
       "id": "servicenow",
       "title": "ServiceNow",
+      "coverage": "Entro",
       "cli": "servicenow",
       "launcher": "ServiceNow.ps1",
       "platformName": "ServiceNow",
-      "products": {
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "servicenow",
-              "label": "Entro ServiceNow",
-              "definitionId": "servicenow-entro",
-              "definitionModule": "modules/Definitions/ServiceNow.Entro.psm1",
-              "folderName": "Entro-ServiceNow",
-              "credentialKinds": ["servicenow.restApiKey"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "servicenow",
+          "label": "Entro ServiceNow",
+          "definitionId": "servicenow-entro",
+          "definitionIds": ["servicenow-entro"],
+          "definitionModule": "modules/Definitions/ServiceNow.Entro.psm1",
+          "definitionModules": ["modules/Definitions/ServiceNow.Entro.psm1"],
+          "legacySwitches": ["Entro"],
+          "folderName": "Entro-ServiceNow",
+          "credentialKinds": ["servicenow.restApiKey"]
         }
-      }
+      ]
     },
     {
       "id": "hashicorp-vault",
       "title": "HashiCorp Vault",
+      "coverage": "Entro",
       "cli": "pwsh",
       "launcher": "HashiCorp Vault.ps1",
       "platformName": "HashiCorpVault",
       "hosting": "self-hosted",
-      "requiresOutpost": true,
-      "products": {
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "vault",
-              "label": "Entro HashiCorp Vault",
-              "definitionId": "hashicorp-vault-entro",
-              "definitionModule": "modules/Definitions/HashiCorp.Entro.psm1",
-              "folderName": "Entro-HashiCorp-Vault",
-              "credentialKinds": ["vault.policyToken"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "vault",
+          "label": "Entro HashiCorp Vault",
+          "definitionId": "hashicorp-vault-entro",
+          "definitionIds": ["hashicorp-vault-entro"],
+          "definitionModule": "modules/Definitions/HashiCorp.Entro.psm1",
+          "definitionModules": ["modules/Definitions/HashiCorp.Entro.psm1"],
+          "legacySwitches": ["Entro"],
+          "folderName": "Entro-HashiCorp-Vault",
+          "credentialKinds": ["vault.policyToken"]
         }
-      }
-    },
-    {
-      "id": "entro-outpost",
-      "title": "Entro Outpost (On-Prem Connector)",
-      "cli": "pwsh",
-      "launcher": "Entro Outpost.ps1",
-      "platformName": "EntroOutpost",
-      "hosting": "on-prem",
-      "products": {
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "docker-compose",
-              "label": "Docker Compose (Linux AMD64 host)",
-              "definitionId": "entro-outpost-docker",
-              "definitionModule": "modules/Definitions/EntroOutpost.psm1",
-              "folderName": "Entro-Outpost-Docker",
-              "targetHostRole": "On-Premises Linux Docker Host (AMD64 / x86_64)",
-              "credentialKinds": ["entroOutpost.connector"]
-            },
-            {
-              "variantId": "kubernetes-helm",
-              "label": "Kubernetes Helm (Linux AMD64 nodes)",
-              "definitionId": "entro-outpost-kubernetes",
-              "definitionModule": "modules/Definitions/EntroOutpost.psm1",
-              "folderName": "Entro-Outpost-Kubernetes",
-              "targetHostRole": "Kubernetes Control Workstation (helm + kubectl -> Linux AMD64 nodes)",
-              "credentialKinds": ["entroOutpost.connector"]
-            }
-          ]
-        }
-      }
+      ]
     },
     {
       "id": "on-prem-active-directory",
       "title": "On-Prem Active Directory",
+      "coverage": "Entro",
       "cli": "pwsh",
       "launcher": "On-Prem Active Directory.ps1",
       "platformName": "OnPremActiveDirectory",
       "hosting": "on-prem",
-      "requiresOutpost": true,
-      "products": {
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "ad",
-              "label": "Entro on-prem Active Directory [Requires Outpost]",
-              "definitionId": "on-prem-active-directory-entro",
-              "definitionModule": "modules/Definitions/ActiveDirectory.Entro.psm1",
-              "folderName": "Entro-On-Prem-Active-Directory",
-              "targetHostRole": "Windows host with the ActiveDirectory module",
-              "credentialKinds": ["ad.ldapsServiceAccount"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "ad",
+          "label": "Entro on-prem Active Directory",
+          "definitionId": "on-prem-active-directory-entro",
+          "definitionIds": ["on-prem-active-directory-entro"],
+          "definitionModule": "modules/Definitions/ActiveDirectory.Entro.psm1",
+          "definitionModules": ["modules/Definitions/ActiveDirectory.Entro.psm1"],
+          "legacySwitches": ["Entro"],
+          "folderName": "Entro-On-Prem-Active-Directory",
+          "targetHostRole": "Windows host with the ActiveDirectory module",
+          "credentialKinds": ["ad.ldapsServiceAccount"]
         }
-      }
+      ]
     },
     {
       "id": "remote-file-system",
       "title": "Remote File System",
+      "coverage": "Entro",
       "cli": "pwsh",
       "launcher": "Remote File System.ps1",
       "platformName": "RemoteFileSystem",
       "hosting": "on-prem",
-      "requiresOutpost": true,
-      "products": {
-        "entro": {
-          "bindings": [
-            {
-              "variantId": "smb",
-              "label": "SMB file shares [Requires Outpost]",
-              "definitionId": "remote-file-smb-entro",
-              "definitionModule": "modules/Definitions/RemoteFileSystem.Entro.psm1",
-              "folderName": "Entro-Remote-File-SMB",
-              "targetHostRole": "Windows file server",
-              "credentialKinds": ["filesystem.smb"]
-            },
-            {
-              "variantId": "sftp",
-              "label": "SFTP [Requires Outpost]",
-              "definitionId": "remote-file-sftp-entro",
-              "definitionModule": "modules/Definitions/RemoteFileSystem.Entro.psm1",
-              "folderName": "Entro-Remote-File-SFTP",
-              "targetHostRole": "Host that can reach the SFTP server",
-              "credentialKinds": ["filesystem.sftp"]
-            },
-            {
-              "variantId": "winrm",
-              "label": "WinRM [Requires Outpost]",
-              "definitionId": "remote-file-winrm-entro",
-              "definitionModule": "modules/Definitions/RemoteFileSystem.Entro.psm1",
-              "folderName": "Entro-Remote-File-WinRM",
-              "targetHostRole": "Windows host that Entro will scan over WinRM",
-              "credentialKinds": ["filesystem.winrm"]
-            }
-          ]
+      "bindings": [
+        {
+          "variantId": "smb",
+          "label": "SMB file shares",
+          "definitionId": "remote-file-smb-entro",
+          "definitionIds": ["remote-file-smb-entro"],
+          "definitionModule": "modules/Definitions/RemoteFileSystem.Entro.psm1",
+          "definitionModules": ["modules/Definitions/RemoteFileSystem.Entro.psm1"],
+          "legacySwitches": ["Smb"],
+          "folderName": "Entro-Remote-File-SMB",
+          "targetHostRole": "Windows file server",
+          "credentialKinds": ["filesystem.smb"]
+        },
+        {
+          "variantId": "sftp",
+          "label": "SFTP",
+          "definitionId": "remote-file-sftp-entro",
+          "definitionIds": ["remote-file-sftp-entro"],
+          "definitionModule": "modules/Definitions/RemoteFileSystem.Entro.psm1",
+          "definitionModules": ["modules/Definitions/RemoteFileSystem.Entro.psm1"],
+          "legacySwitches": ["Sftp"],
+          "folderName": "Entro-Remote-File-SFTP",
+          "targetHostRole": "Host that can reach the SFTP server",
+          "credentialKinds": ["filesystem.sftp"]
+        },
+        {
+          "variantId": "winrm",
+          "label": "WinRM",
+          "definitionId": "remote-file-winrm-entro",
+          "definitionIds": ["remote-file-winrm-entro"],
+          "definitionModule": "modules/Definitions/RemoteFileSystem.Entro.psm1",
+          "definitionModules": ["modules/Definitions/RemoteFileSystem.Entro.psm1"],
+          "legacySwitches": ["WinRm"],
+          "folderName": "Entro-Remote-File-WinRM",
+          "targetHostRole": "Windows host that Entro will scan over WinRM",
+          "credentialKinds": ["filesystem.winrm"]
         }
-      }
+      ]
     }
   ]
 }

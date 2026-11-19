@@ -1,0 +1,413 @@
+{
+  "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Resources/deployments/sailpoint-ccf-20261118153957",
+  "location": null,
+  "name": "sailpoint-ccf-20261118153957",
+  "properties": {
+    "correlationId": "60d97de1-c4d5-4829-8f80-fdceb8312664",
+    "debugSetting": null,
+    "dependencies": [
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionEndpoints/dce-law-emea-tes-sentinel",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dce-law-emea-tes-sentinel",
+            "resourceType": "Microsoft.Insights/dataCollectionEndpoints"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_Events_CL",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "law-emea-tes-sentinel/SailPointISC_Events_CL",
+            "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_AccountActivities_CL",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "law-emea-tes-sentinel/SailPointISC_AccountActivities_CL",
+            "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_WorkflowHistory_CL",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "law-emea-tes-sentinel/SailPointISC_WorkflowHistory_CL",
+            "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_Identities_CL",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "law-emea-tes-sentinel/SailPointISC_Identities_CL",
+            "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+          }
+        ],
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceName": "dcr-sailpoint-u527uf6sx5o6s",
+        "resourceType": "Microsoft.Insights/dataCollectionRules"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dcr-sailpoint-u527uf6sx5o6s",
+            "resourceType": "Microsoft.Insights/dataCollectionRules"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionEndpoints/dce-law-emea-tes-sentinel",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dce-law-emea-tes-sentinel",
+            "resourceType": "Microsoft.Insights/dataCollectionEndpoints"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_Events_CL",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "law-emea-tes-sentinel/SailPointISC_Events_CL",
+            "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+          },
+          {
+            "apiVersion": "2023-03-11",
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dcr-sailpoint-u527uf6sx5o6s",
+            "resourceType": "Microsoft.Insights/dataCollectionRules"
+          }
+        ],
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/providers/Microsoft.SecurityInsights/dataConnectors/SailPointISC_Events_CLdinrrg4clzeos",
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceName": "SailPointISC_Events_CLdinrrg4clzeos",
+        "resourceType": "Microsoft.SecurityInsights/dataConnectors"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dcr-sailpoint-u527uf6sx5o6s",
+            "resourceType": "Microsoft.Insights/dataCollectionRules"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionEndpoints/dce-law-emea-tes-sentinel",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dce-law-emea-tes-sentinel",
+            "resourceType": "Microsoft.Insights/dataCollectionEndpoints"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_AccountActivities_CL",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "law-emea-tes-sentinel/SailPointISC_AccountActivities_CL",
+            "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+          },
+          {
+            "apiVersion": "2023-03-11",
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dcr-sailpoint-u527uf6sx5o6s",
+            "resourceType": "Microsoft.Insights/dataCollectionRules"
+          }
+        ],
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/providers/Microsoft.SecurityInsights/dataConnectors/SailPointISC_AccountActivities_CLdinrrg4clzeos",
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceName": "SailPointISC_AccountActivities_CLdinrrg4clzeos",
+        "resourceType": "Microsoft.SecurityInsights/dataConnectors"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dcr-sailpoint-u527uf6sx5o6s",
+            "resourceType": "Microsoft.Insights/dataCollectionRules"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionEndpoints/dce-law-emea-tes-sentinel",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dce-law-emea-tes-sentinel",
+            "resourceType": "Microsoft.Insights/dataCollectionEndpoints"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_WorkflowHistory_CL",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "law-emea-tes-sentinel/SailPointISC_WorkflowHistory_CL",
+            "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+          },
+          {
+            "apiVersion": "2023-03-11",
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dcr-sailpoint-u527uf6sx5o6s",
+            "resourceType": "Microsoft.Insights/dataCollectionRules"
+          }
+        ],
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/providers/Microsoft.SecurityInsights/dataConnectors/SailPointISC_WorkflowHistory_CLdinrrg4clzeos",
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceName": "SailPointISC_WorkflowHistory_CLdinrrg4clzeos",
+        "resourceType": "Microsoft.SecurityInsights/dataConnectors"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dcr-sailpoint-u527uf6sx5o6s",
+            "resourceType": "Microsoft.Insights/dataCollectionRules"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionEndpoints/dce-law-emea-tes-sentinel",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dce-law-emea-tes-sentinel",
+            "resourceType": "Microsoft.Insights/dataCollectionEndpoints"
+          },
+          {
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_Identities_CL",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "law-emea-tes-sentinel/SailPointISC_Identities_CL",
+            "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+          },
+          {
+            "apiVersion": "2023-03-11",
+            "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+            "resourceGroup": "rg-sentinel-emea-tes-team",
+            "resourceName": "dcr-sailpoint-u527uf6sx5o6s",
+            "resourceType": "Microsoft.Insights/dataCollectionRules"
+          }
+        ],
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/providers/Microsoft.SecurityInsights/dataConnectors/SailPointISC_Identities_CLdinrrg4clzeos",
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceName": "SailPointISC_Identities_CLdinrrg4clzeos",
+        "resourceType": "Microsoft.SecurityInsights/dataConnectors"
+      }
+    ],
+    "diagnostics": null,
+    "duration": "PT14.5961522S",
+    "error": null,
+    "extensions": [],
+    "mode": "Incremental",
+    "onErrorDeployment": null,
+    "outputResources": [
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionEndpoints/dce-law-emea-tes-sentinel",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.Insights/dataCollectionEndpoints"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.Insights/dataCollectionRules"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/providers/Microsoft.SecurityInsights/dataConnectors/SailPointISC_AccountActivities_CLdinrrg4clzeos",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.SecurityInsights/dataConnectors"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/providers/Microsoft.SecurityInsights/dataConnectors/SailPointISC_Events_CLdinrrg4clzeos",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.SecurityInsights/dataConnectors"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/providers/Microsoft.SecurityInsights/dataConnectors/SailPointISC_Identities_CLdinrrg4clzeos",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.SecurityInsights/dataConnectors"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/providers/Microsoft.SecurityInsights/dataConnectors/SailPointISC_WorkflowHistory_CLdinrrg4clzeos",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.SecurityInsights/dataConnectors"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_AccountActivities_CL",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_Events_CL",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_Identities_CL",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+      },
+      {
+        "apiVersion": null,
+        "extension": null,
+        "id": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.OperationalInsights/workspaces/law-emea-tes-sentinel/tables/SailPointISC_WorkflowHistory_CL",
+        "identifiers": null,
+        "resourceGroup": "rg-sentinel-emea-tes-team",
+        "resourceType": "Microsoft.OperationalInsights/workspaces/tables"
+      }
+    ],
+    "outputs": {
+      "aaConnectorName": {
+        "type": "String",
+        "value": "SailPointISC_AccountActivities_CLdinrrg4clzeos"
+      },
+      "connectorName": {
+        "type": "String",
+        "value": "SailPointISC_Events_CLdinrrg4clzeos"
+      },
+      "dataCollectionEndpointId": {
+        "type": "String",
+        "value": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionEndpoints/dce-law-emea-tes-sentinel"
+      },
+      "dataCollectionRuleId": {
+        "type": "String",
+        "value": "/subscriptions/180aa0bd-2861-4b9e-9593-eba6a027c2c5/resourceGroups/rg-sentinel-emea-tes-team/providers/Microsoft.Insights/dataCollectionRules/dcr-sailpoint-u527uf6sx5o6s"
+      },
+      "idConnectorName": {
+        "type": "String",
+        "value": "SailPointISC_Identities_CLdinrrg4clzeos"
+      },
+      "wfConnectorName": {
+        "type": "String",
+        "value": "SailPointISC_WorkflowHistory_CLdinrrg4clzeos"
+      }
+    },
+    "parameters": {
+      "clientId": {
+        "type": "String",
+        "value": "3cdab3e19e7b4bb59fad63eec9c2f9c2"
+      },
+      "clientSecret": "***",
+      "identityNowDomain": {
+        "type": "String",
+        "value": "identitynow-demo"
+      },
+      "location": {
+        "type": "String",
+        "value": "northeurope"
+      },
+      "tenantId": {
+        "type": "String",
+        "value": "company24509-poc"
+      },
+      "workspaceName": {
+        "type": "String",
+        "value": "law-emea-tes-sentinel"
+      }
+    },
+    "parametersLink": null,
+    "providers": [
+      {
+        "id": null,
+        "namespace": "Microsoft.Insights",
+        "providerAuthorizationConsentState": null,
+        "registrationPolicy": null,
+        "registrationState": null,
+        "resourceTypes": [
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              "northeurope"
+            ],
+            "properties": null,
+            "resourceType": "dataCollectionEndpoints",
+            "zoneMappings": null
+          },
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              "northeurope"
+            ],
+            "properties": null,
+            "resourceType": "dataCollectionRules",
+            "zoneMappings": null
+          }
+        ]
+      },
+      {
+        "id": null,
+        "namespace": "Microsoft.OperationalInsights",
+        "providerAuthorizationConsentState": null,
+        "registrationPolicy": null,
+        "registrationState": null,
+        "resourceTypes": [
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              null
+            ],
+            "properties": null,
+            "resourceType": "workspaces/tables",
+            "zoneMappings": null
+          }
+        ]
+      },
+      {
+        "id": null,
+        "namespace": "Microsoft.SecurityInsights",
+        "providerAuthorizationConsentState": null,
+        "registrationPolicy": null,
+        "registrationState": null,
+        "resourceTypes": [
+          {
+            "aliases": null,
+            "apiProfiles": null,
+            "apiVersions": null,
+            "capabilities": null,
+            "defaultApiVersion": null,
+            "locationMappings": null,
+            "locations": [
+              "northeurope"
+            ],
+            "properties": null,
+            "resourceType": "dataConnectors",
+            "zoneMappings": null
+          }
+        ]
+      }
+    ],
+    "provisioningState": "Succeeded",
+    "templateHash": "11516272228707455851",
+    "templateLink": null,
+    "timestamp": "2026-11-18T14:40:15.594580+00:00",
+    "validatedResources": null,
+    "validationLevel": null
+  },
+  "resourceGroup": "rg-sentinel-emea-tes-team",
+  "tags": null,
+  "type": "Microsoft.Resources/deployments"
+}

@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.15.0' $manifest.Version.ToString() 'Manifest version 1.15.0'
+Assert-Equal '1.17.0' $manifest.Version.ToString() 'Manifest version 1.17.0'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members
@@ -30,7 +30,6 @@ $expectedFunctions = @(
     'Connect-SailPointSnowflake',
     'Connect-SailPointServiceNow',
     'Connect-SailPointHashiCorpVault',
-    'Connect-SailPointEntroOutpost',
     'Connect-SailPointOnPremActiveDirectory',
     'Connect-SailPointRemoteFileSystem',
     'Invoke-SailPointIQServiceControl',
@@ -43,6 +42,7 @@ $expectedFunctions = @(
 foreach ($fn in $expectedFunctions) {
     Assert-True ($m.ExportedFunctions.ContainsKey($fn)) "Function $fn is exported"
 }
+Assert-True (-not $m.ExportedFunctions.ContainsKey('Connect-SailPointEntroOutpost')) 'Connect-SailPointEntroOutpost is removed and not exported'
 
 $expectedAliases = @('sailpoint-connect', 'Start-SailPointIQServiceControl', 'update-sailpoint-connect')
 foreach ($alias in $expectedAliases) {
@@ -143,7 +143,6 @@ try {
         @{ Cmd = 'Connect-SailPointDatabricks'; Script = 'Databricks.ps1' }
         @{ Cmd = 'Connect-SailPointSalesforce'; Script = 'Salesforce.ps1' }
         @{ Cmd = 'Connect-SailPointCrowdStrike'; Script = 'CrowdStrike.ps1' }
-        @{ Cmd = 'Connect-SailPointEntroOutpost'; Script = 'Entro Outpost.ps1' }
     )
     foreach ($p in $checkPlatforms) {
         $cmdInfo = Get-Command $p.Cmd
@@ -154,6 +153,8 @@ try {
         $scriptActionAttr = $scriptInfo.Parameters['Action'].Attributes | Where-Object { $_ -is [System.Management.Automation.ValidateSetAttribute] }
         Assert-True ($scriptActionAttr.ValidValues -contains 'Check') "$($p.Script) includes Check in Action ValidateSet"
     }
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $connectRoot 'Entro Outpost.ps1'))) 'Entro Outpost.ps1 removed'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $connectRoot 'Entro-Outpost.ps1'))) 'Entro-Outpost.ps1 removed'
 
     # 9) OutputFormat parameter and ValidateSet verification on all connector cmdlets
     $connectorCmdlets = @(
@@ -163,8 +164,7 @@ try {
         'Connect-SailPointDatabricks',
         'Connect-SailPointSalesforce',
         'Connect-SailPointGitHub',
-        'Connect-SailPointCrowdStrike',
-        'Connect-SailPointEntroOutpost'
+        'Connect-SailPointCrowdStrike'
     )
     foreach ($cmdletName in $connectorCmdlets) {
         $cmd = Get-Command $cmdletName -ErrorAction Stop
@@ -201,7 +201,6 @@ try {
     # 12) Kebab-case script entrypoints alongside spaced scripts
     $scriptPairs = @(
         @{ Kebab = 'Google-Cloud.ps1'; Spaced = 'Google Cloud.ps1' },
-        @{ Kebab = 'Entro-Outpost.ps1'; Spaced = 'Entro Outpost.ps1' },
         @{ Kebab = 'On-Prem-Active-Directory.ps1'; Spaced = 'On-Prem Active Directory.ps1' },
         @{ Kebab = 'Remote-File-System.ps1'; Spaced = 'Remote File System.ps1' },
         @{ Kebab = 'IQService-Control.ps1'; Spaced = 'IQService Control.ps1' },
@@ -221,7 +220,7 @@ try {
     # 13) Parameter set resolution for Wizard with generic options on all platform scripts
     $platformScripts = @(
         'AWS.ps1', 'Azure.ps1', 'Google Cloud.ps1', 'Databricks.ps1', 'Salesforce.ps1', 'GitHub.ps1', 'CrowdStrike.ps1',
-        'Okta.ps1', 'GitLab.ps1', 'Slack.ps1', 'Snowflake.ps1', 'ServiceNow.ps1', 'HashiCorp Vault.ps1', 'Entro Outpost.ps1',
+        'Okta.ps1', 'GitLab.ps1', 'Slack.ps1', 'Snowflake.ps1', 'ServiceNow.ps1', 'HashiCorp Vault.ps1',
         'On-Prem Active Directory.ps1', 'Remote File System.ps1'
     )
     foreach ($scriptName in $platformScripts) {
@@ -242,7 +241,7 @@ try {
     # 14) Hashtable splatting with switches to kebab-case forwarding scripts and IQService/M365 cmdlets
     $splatOutDir = Join-Path $tmp 'kebab-splat-out'
     $gcKebab = Join-Path $connectRoot 'Google-Cloud.ps1'
-    $gcSplat = @{ GcpEntro = $true; Method = 'WorkloadIdentity'; ProjectId = 'p-test'; ServiceAccountName = 'sa-test'; Action = 'BuildRequirements'; NonInteractive = $true; OutputDirectory = $splatOutDir }
+    $gcSplat = @{ GcpEntro = $true; Access = 'ReadOnly'; Method = 'WorkloadIdentity'; ProjectId = 'p-test'; ServiceAccountName = 'sa-test'; Action = 'BuildRequirements'; NonInteractive = $true; OutputDirectory = $splatOutDir }
     $gcRes = & $gcKebab @gcSplat 6>&1 | Out-String
     Assert-True ($gcRes -match 'Entro Google GCP') 'Google-Cloud.ps1 forwards hashtable splat with switches cleanly'
 
@@ -299,7 +298,7 @@ try {
     $m365Primary = Join-Path $connectRoot 'Microsoft 365 Access Profiles.ps1'
     $iqScopeOut = & pwsh -NoProfile -Command {
         param($manifest, $iqPath)
-        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.15.0'
+        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.17.0'
         Import-Module $manifest -Force -Global
         & (Get-Module SailPoint.Connect) {
             param($p)
@@ -315,7 +314,7 @@ try {
     $missingM365Cfg = Join-Path $tmp 'missing-m365-config.yaml'
     $m365ScopeOut = & pwsh -NoProfile -Command {
         param($manifest, $m365Path, $cfg)
-        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.15.0'
+        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.17.0'
         Import-Module $manifest -Force -Global
         & (Get-Module SailPoint.Connect) {
             param($p, $c)

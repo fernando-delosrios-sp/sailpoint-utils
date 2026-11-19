@@ -7,18 +7,18 @@ Configures SailPoint ISC AWS connectors and Entro cloud integrations.
 ```powershell
 Connect-SailPointAWS [-Wizard] [-SaaSConnector] [-CiemConnector] [-Entro]
     [-Method <String>] [-Cloud <String>] [-Region <String>]
-    [-Access <String>] [-Action <String>] [-IscExternalId <String>]
-    [-EntroExternalId <String>] [-RoleName <String>] [-Project <String>]
-    [-OutputDirectory <String>] [-NonInteractive] [<CommonParameters>]
+    [-Feature <String[]>] [-Scope <String>] [-Access <String>]
+    [-Action <String>] [-IscExternalId <String>] [-EntroExternalId <String>]
+    [-RoleName <String>] [-Project <String>] [-OutputDirectory <String>]
+    [-NonInteractive] [<CommonParameters>]
 ```
 
 ## Description
 
-`Connect-SailPointAWS` configures AWS IAM roles, policies, and CloudFormation stacks for:
-1. **Amazon Web Services SaaS connector**: Creates or updates the connector IAM role with tailored ReadOnly or ReadWrite policies and STS external-ID trust.
-2. **AWS CIEM connector**: Provisions CloudFormation stacks and integrates CloudTrail S3 bucket event notifications.
-3. **Entro AWS Onboarding**: Creates the Entro IAM trust and permissions across commercial AWS or GovCloud.
-4. **Combined SaaS + Entro**: Configures both ISC SaaS connector and Entro in a single coordinated run.
+`Connect-SailPointAWS` configures AWS IAM roles and policies for:
+1. **Amazon Web Services connector**: Creates or updates the connector IAM role with tailored ReadOnly or ReadWrite policies and STS external-ID trust (including optional `-Feature Ciem` for CloudTrail + Identity Center CIEM permissions).
+2. **Entro AWS Onboarding**: Creates the Entro IAM trust and permissions across commercial AWS or GovCloud.
+3. **Combined Connector + Entro**: Configures both ISC AWS connector and Entro in a single coordinated run.
 
 ## Parameters
 
@@ -26,13 +26,19 @@ Connect-SailPointAWS [-Wizard] [-SaaSConnector] [-CiemConnector] [-Entro]
 Launches the interactive questionnaire. You can type every value. If you are signed in, some questions also offer existing IAM roles and CloudTrail buckets. That pick-list does not create them. The default action is a checklist.
 
 ### `-SaaSConnector`
-Selects the ISC Amazon Web Services SaaS connector IAM role.
+Selects the ISC Amazon Web Services connector IAM role (add `-Feature Ciem` to include CIEM permissions).
 
 ### `-CiemConnector`
-Selects the AWS CIEM CloudFormation connector.
+Backward-compatible alias that targets the AWS connector with the `Ciem` feature enabled.
 
 ### `-Entro`
 Selects the Entro AWS integration. Can be combined with `-SaaSConnector`.
+
+### `-Feature`
+Optional feature packs for the AWS connector (`ActivityInsights`, `AgentDiscovery`, `Ciem`).
+
+### `-Scope`
+AWS deployment scope (`CurrentAccount` or `Organization`). With `Organization` and `-Feature Ciem`, attaches the CIEM Identity Center permission policy.
 
 ### `-Method`
 Entro onboarding method: `AssumeRole`, `CloudFormation`, or `Terraform`.

@@ -1,0 +1,47 @@
+{
+  "name": "Cost Center Lookup",
+  "description": "Delimited entitlements mapping SuccessFactors CostCenterID to paraphrased display labels (zf2 tenant).",
+  "type": "DelimitedFile",
+  "connector": "delimited-file-angularsc",
+  "connectorClass": "sailpoint.connector.delimitedfile.DelimitedFileConnector",
+  "connectorScriptName": "delimited-file-angularsc",
+  "owner": {
+    "type": "IDENTITY",
+    "id": "22592abf3d184cbab8c7483b657a8834",
+    "name": "andre.hostombe"
+  },
+  "features": ["DIRECT_PERMISSIONS", "DISCOVER_SCHEMA", "NO_RANDOM_ACCESS"],
+  "connectorAttributes": {
+    "hasHeader": true,
+    "group.hasHeader": true,
+    "delimiter": ",",
+    "parseType": "delimited",
+    "filetransport": "local",
+    "group.filetransport": "local",
+    "filterEmptyRecords": true,
+    "group.filterEmptyRecords": true,
+    "partitionMode": "disabled",
+    "group.partitionMode": "disabled",
+    "group.columnNames": [
+      "id",
+      "name",
+      "displayName",
+      "created",
+      "description",
+      "modified",
+      "entitlements",
+      "groups",
+      "permissions"
+    ],
+    "columnNames": [
+      "id",
+      "name",
+      "givenName",
+      "familyName",
+      "e-mail",
+      "location",
+      "manager",
+      "groups"
+    ]
+  }
+}

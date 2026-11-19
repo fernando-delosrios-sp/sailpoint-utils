@@ -15,11 +15,10 @@ Connect-SailPointAWS
 Output:
 ```
 AWS integration wizard
-  Connect-SailPointAWS -Wizard              Guided setup, asks every question
-  Connect-SailPointAWS -Wizard -SaaSConnector Guided setup, SaaS connector already chosen
-  Connect-SailPointAWS -SaaSConnector       Amazon Web Services SaaS connector
-  Connect-SailPointAWS -CiemConnector       AWS CIEM connector (CloudFormation)
-  Connect-SailPointAWS -Entro               Entro AWS integration
+  Connect-SailPointAWS -Wizard               Guided setup, asks every question
+  Connect-SailPointAWS -Wizard -SaaSConnector Guided setup, connector already chosen
+  Connect-SailPointAWS -SaaSConnector        Amazon Web Services connector (select Ciem in Feature for CIEM)
+  Connect-SailPointAWS -Entro                Entro AWS integration
 ```
 
 ### Layer 2: Guided Interactive Questionnaire (`-Wizard`)

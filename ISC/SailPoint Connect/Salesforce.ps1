@@ -121,18 +121,9 @@ Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBound
 
 Start-IntegrationWizardFlow -Platform 'Salesforce' -ScriptName 'Salesforce.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
-        $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Connector', 'Entro') `
-            -Labels @('Salesforce SaaS connector (with Agentforce)', 'Entro Salesforce integration') -Default 'Connector'
-        switch ($picked) {
-            'Connector' {
-                $context['Connector'] = $true
-                Get-IntegrationWizardDefinition -Id 'salesforce-connector'
-            }
-            'Entro' {
-                $context['Entro'] = $true
-                Get-IntegrationWizardDefinition -Id 'salesforce-entro'
-            }
-        }
+        $context['Connector'] = $true
+        $context['Entro'] = $true
+        Get-IntegrationWizardDefinition -Id 'salesforce-connector'
     } `
     -Discover { param($n, $c) @() } `
     -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx }

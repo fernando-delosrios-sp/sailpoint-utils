@@ -278,11 +278,6 @@ function Get-IntegrationCheckSubject {
                 -Name (Get-CheckContextValue -Context $Context -Name 'RoleName' -Default 'SailPointAWSRole') `
                 -Note 'Reads the role policy. Does not create the role or attach anything.'
         }
-        '^aws-ciem-connector$' {
-            return New-CheckSubject -Kind 'IamRole' -Label 'IAM role' -Readable $true -ReadableFamilies @('Aws') `
-                -Name (Get-CheckContextValue -Context $Context -Name 'RoleName' -Default 'SailPointCIEMAuditRole') `
-                -Note 'Reads the role policy. Does not create the role or change CloudFormation.'
-        }
         '^aws-entro$' {
             return New-CheckSubject -Kind 'IamRole' -Label 'IAM role' -Readable $true -ReadableFamilies @('Aws') `
                 -Name (Get-CheckContextValue -Context $Context -Name 'EntroRoleName' -Default 'EntroReadOnly') `
@@ -300,7 +295,7 @@ function Get-IntegrationCheckSubject {
                 -Name $name `
                 -Note 'Reads admin-consented application permissions on the existing service principal. Does not create the app or grant consent.'
         }
-        '^google-(saas|ciem)-connector$' {
+        '^google-saas-connector$' {
             $project = Get-CheckContextValue -Context $Context -Name 'ProjectId'
             $account = Get-CheckContextValue -Context $Context -Name 'ServiceAccountId' -Default 'sailpoint-isc-gws'
             $email = if ($account -match '@') { $account } elseif ($project -and $account) { "$account@$project.iam.gserviceaccount.com" } else { '' }

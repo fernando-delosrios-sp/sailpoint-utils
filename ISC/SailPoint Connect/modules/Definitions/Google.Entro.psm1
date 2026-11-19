@@ -114,7 +114,7 @@ function Register-GoogleEntroDefinitions {
         CliName      = 'gcloud'
         Title        = 'Entro Google GCP organization integration'
         FolderName   = 'Entro-GCP'
-        AccessLevels = @()
+        AccessLevels = @('ReadOnly', 'ReadWrite')
         AdminRoles   = @('Organization admin')
         OutputsHelp  = 'Upload private key JSON or WIF JSON and organization domain in Entro GCP onboarding.'
         Inputs       = @(
@@ -212,9 +212,10 @@ Invoke-EntroGcpEnsureServiceAccount -ProjectId '$($c['ProjectId'])' -ServiceAcco
                         param($c)
                         Import-EntroGcpWizardModules
                         $sa = Get-EntroGcpServiceAccountName -Context $c
-                        if (Test-EntroGcpIamGrantsComplete -OrganizationId $c['OrganizationId'] -ProjectId $c['ProjectId'] -ServiceAccountName $sa) {
+                        $access = if ($c.ContainsKey('Access')) { [string]$c['Access'] } else { '' }
+                        if (Test-EntroGcpIamGrantsComplete -OrganizationId $c['OrganizationId'] -ProjectId $c['ProjectId'] -ServiceAccountName $sa -Access $access) {
                             Sync-EntroGcpIamReport -OrganizationId $c['OrganizationId'] -ProjectId $c['ProjectId'] `
-                                -ServiceAccountName $sa -StateDirectory (Get-EntroGcpWizardStateDirectory -Context $c) -Context $c
+                                -ServiceAccountName $sa -StateDirectory (Get-EntroGcpWizardStateDirectory -Context $c) -Context $c -Access $access
                             'Skip'
                         }
                         else { 'Apply' }
@@ -223,18 +224,20 @@ Invoke-EntroGcpEnsureServiceAccount -ProjectId '$($c['ProjectId'])' -ServiceAcco
                         param($c)
                         Import-EntroGcpWizardModules
                         $sa = Get-EntroGcpServiceAccountName -Context $c
+                        $access = if ($c.ContainsKey('Access')) { [string]$c['Access'] } else { '' }
                         Invoke-EntroGcpIamGrants -OrganizationId $c['OrganizationId'] -ProjectId $c['ProjectId'] `
-                            -ServiceAccountName $sa -StateDirectory (Get-EntroGcpWizardStateDirectory -Context $c) -Context $c -Mode 'apply'
+                            -ServiceAccountName $sa -StateDirectory (Get-EntroGcpWizardStateDirectory -Context $c) -Context $c -Access $access -Mode 'apply'
                     }
                     BuildScript = {
                         param($c)
                         $sa = Get-EntroGcpServiceAccountName -Context $c
                         $stateDir = (Get-EntroGcpWizardStateDirectory -Context $c) -replace "'", "''"
+                        $accessFlag = if ($c.ContainsKey('Access') -and -not [string]::IsNullOrWhiteSpace([string]$c['Access'])) { " -Access '$($c['Access'])'" } else { '' }
                         @"
 Import-Module (Join-Path `$PSScriptRoot 'modules/ISC.GoogleWorkspaceConnector.psm1') -Force
 Import-Module (Join-Path `$PSScriptRoot 'modules/ISC.EntroGcp.psm1') -Force
 Initialize-GoogleWorkspaceConnectorData
-Invoke-EntroGcpIamGrants -OrganizationId '$($c['OrganizationId'])' -ProjectId '$($c['ProjectId'])' -ServiceAccountName '$sa' -StateDirectory '$stateDir' -Mode apply
+Invoke-EntroGcpIamGrants -OrganizationId '$($c['OrganizationId'])' -ProjectId '$($c['ProjectId'])' -ServiceAccountName '$sa' -StateDirectory '$stateDir'$accessFlag -Mode apply
 "@
                     }
                 }

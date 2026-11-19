@@ -73,12 +73,31 @@ function Register-GoogleConnectorDefinitions {
             @{ Name = 'OrganizationId'; Source = 'Discover'; Prompt = 'Organization ID'; Purpose = 'Google Cloud organization'; Required = $true }
             @{ Name = 'ProjectId'; Source = 'Discover'; Prompt = 'Project ID'; Purpose = 'Host project'; Required = $true }
             @{ Name = 'ImpersonateUser'; Source = 'Supply'; Prompt = 'Admin user to impersonate'; Purpose = 'Workspace domain-wide delegation'; Required = $true }
+            @{
+                Name        = 'Feature'
+                Source      = 'Supply'
+                Prompt      = 'Feature packs (Space toggles, Enter confirms, Enter for none)'
+                Purpose     = 'Optional ISC SaaS, GCP, and CIEM feature packs'
+                Required    = $false
+                MultiChoice = $true
+                Options     = @('ActivityInsights', 'AgentDiscovery', 'Ciem', 'DeltaAggregation', 'DomainManagement', 'Gcp', 'GmailDelegates', 'NhiDiscovery')
+                Labels      = @(
+                    'ActivityInsights (Audit and sign-in activity)'
+                    'AgentDiscovery (Vertex AI Reasoning Engines & agents)'
+                    'Ciem (GCP CIEM cloud governance)'
+                    'DeltaAggregation (Optimized delta sync)'
+                    'DomainManagement (Multi-domain management)'
+                    'Gcp (GCP folders, projects, IAM inventory)'
+                    'GmailDelegates (Gmail delegate account governance)'
+                    'NhiDiscovery (Service account & credential discovery)'
+                )
+            }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Keys and connection settings'; Required = $false }
         )
         Steps        = { param($ctx) @() }
         BuildScript  = {
             param($c)
-            $orgId = if ($c['OrganizationId']) { [string]$c['OrganizationId'] } else { '' }
+            $orgId = if ($c['OrganizationId']) { [string]$c['OrganizationId'] } else { 'YOUR_ORG_ID' }
             $projId = if ($c['ProjectId']) { [string]$c['ProjectId'] } else { 'YOUR_PROJECT_ID' }
             $user = if ($c['ImpersonateUser']) { [string]$c['ImpersonateUser'] } else { 'admin@yourdomain.com' }
             $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
@@ -86,14 +105,23 @@ function Register-GoogleConnectorDefinitions {
             $saEmail = "$saId@$projId.iam.gserviceaccount.com"
             $displayName = if ($c['DisplayName']) { [string]$c['DisplayName'] } else { 'SailPoint ISC Google Workspace' }
 
+            $features = @(Get-GoogleContextFeatureNames $c['Feature'])
+            $needsGcp = $false
+            foreach ($f in $features) {
+                if ($f -in @('Gcp', 'Ciem', 'NhiDiscovery', 'AgentDiscovery')) { $needsGcp = $true; break }
+            }
+
             $scopes = if ($access -eq 'ReadOnly') {
                 @('https://www.googleapis.com/auth/admin.directory.group.readonly', 'https://www.googleapis.com/auth/admin.directory.user.readonly', 'https://www.googleapis.com/auth/admin.directory.rolemanagement.readonly')
             } else {
                 @('https://www.googleapis.com/auth/admin.directory.group', 'https://www.googleapis.com/auth/admin.directory.user', 'https://www.googleapis.com/auth/apps.groups.settings', 'https://www.googleapis.com/auth/admin.directory.rolemanagement', 'https://www.googleapis.com/auth/admin.directory.rolemanagement.readonly')
             }
-            $scopeCsv = $scopes -join ','
+            if ($needsGcp) {
+                $scopes += @('https://www.googleapis.com/auth/cloud-platform', 'https://www.googleapis.com/auth/iam')
+            }
+            $scopeCsv = (@($scopes | Select-Object -Unique)) -join ','
 
-            @"
+            $baseScript = @"
 # -----------------------------------------------------------------------------
 # Google Workspace SaaS Connector Setup
 # -----------------------------------------------------------------------------
@@ -162,43 +190,9 @@ Write-Host "3. Client ID: `$uniqueId"
 Write-Host "4. OAuth Scopes: `$scopes"
 Write-Host "========================================================================" -ForegroundColor Cyan
 "@
-        }
-        LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-GoogleLegacyFromContext -Mode 'Saas' -Context $ctx -WhatIf:$WhatIfPreference }
-    }
-    Register-IntegrationWizardDefinition @{
-        Id           = 'google-ciem-connector'
-        Platform     = 'GoogleCloud'
-        Product      = 'ISC'
-        CoreSwitch   = 'CiemConnector'
-        CliName      = 'gcloud'
-        Title        = 'GCP CIEM connector feature packs'
-        FolderName   = 'GCP-CIEM'
-        AccessLevels = @('ReadOnly', 'ReadWrite')
-        AdminRoles   = @('Organization admin for custom org roles')
-        OutputsHelp  = 'Enable CIEM/NHI packs in ISC using the GCP org role from connection settings.'
-        Inputs       = @(
-            @{ Name = 'OrganizationId'; Source = 'Discover'; Prompt = 'Organization ID'; Purpose = 'GCP organization'; Required = $true }
-            @{ Name = 'ProjectId'; Source = 'Discover'; Prompt = 'Project ID'; Purpose = 'Host project'; Required = $true }
-            @{ Name = 'ImpersonateUser'; Source = 'Supply'; Prompt = 'Admin user to impersonate'; Purpose = 'Workspace domain-wide delegation'; Required = $true }
-            @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Extra feature packs (comma-separated)'; Purpose = 'Optional packs merged with Gcp and Ciem'; Required = $false }
-            @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Artifacts'; Required = $false }
-        )
-        Steps        = { param($ctx) @() }
-        BuildScript  = {
-            param($c)
-            $orgId = if ($c['OrganizationId']) { [string]$c['OrganizationId'] } else { 'YOUR_ORG_ID' }
-            $projId = if ($c['ProjectId']) { [string]$c['ProjectId'] } else { 'YOUR_PROJECT_ID' }
-            $user = if ($c['ImpersonateUser']) { [string]$c['ImpersonateUser'] } else { 'admin@yourdomain.com' }
-            $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
-            $saId = if ($c['ServiceAccountId']) { [string]$c['ServiceAccountId'] } else { 'sailpoint-isc-gws' }
-            $saEmail = "$saId@$projId.iam.gserviceaccount.com"
 
-            $features = @('Gcp', 'Ciem')
-            if ($c['Feature']) {
-                foreach ($f in ($c['Feature'] -split ',')) {
-                    $trim = $f.Trim()
-                    if ($trim -and -not ($features -contains $trim)) { $features += $trim }
-                }
+            if (-not $needsGcp) {
+                return $baseScript
             }
 
             $perms = @(
@@ -235,19 +229,14 @@ Write-Host "====================================================================
             }
             $permYamlList = ($perms | ForEach-Object { "- $_" }) -join "`n"
 
-            @"
+            $gcpScript = @"
+
 # -----------------------------------------------------------------------------
-# Google Cloud CIEM Connector Setup
+# Google Cloud / CIEM Organization Role & Bindings
 # -----------------------------------------------------------------------------
 `$orgId = '$orgId'
-`$projectId = '$projId'
-`$serviceAccountEmail = '$saEmail'
-`$impersonateUser = '$user'
 `$customRoleTitle = 'SailPoint Google Workspace CIEM'
 `$customRoleId = 'sailpointGoogleWorkspace'
-
-Write-Host "Configuring Google Cloud project: `$projectId" -ForegroundColor Cyan
-& gcloud config set project `$projectId --quiet
 
 Write-Host "Enabling GCP & CIEM APIs..." -ForegroundColor Cyan
 & gcloud services enable iam.googleapis.com cloudresourcemanager.googleapis.com cloudasset.googleapis.com logging.googleapis.com --project=`$projectId --quiet
@@ -266,7 +255,7 @@ Set-Content -Path `$tempRoleFile -Value `$roleYaml -Encoding utf8
 
 try {
     Write-Host "Checking organization custom role `$customRoleId..." -ForegroundColor Cyan
-    `$roleExists = & gcloud iam roles describe `$customRoleId --organization=`$orgId 2>`$null
+    `$null = & gcloud iam roles describe `$customRoleId --organization=`$orgId 2>`$null
     if (`$LASTEXITCODE -eq 0) {
         Write-Host "Updating custom role `$customRoleId at organization `$orgId..."
         & gcloud iam roles update `$customRoleId --organization=`$orgId --file=`$tempRoleFile --quiet
@@ -282,10 +271,12 @@ Write-Host "Binding custom role to service account and delegated admin user..." 
 & gcloud organizations add-iam-policy-binding `$orgId --member="serviceAccount:`$serviceAccountEmail" --role="organizations/`$orgId/roles/`$customRoleId" --quiet
 & gcloud organizations add-iam-policy-binding `$orgId --member="user:`$impersonateUser" --role="organizations/`$orgId/roles/`$customRoleId" --quiet
 
-Write-Host "CIEM organization IAM bindings applied successfully." -ForegroundColor Green
+Write-Host "GCP / CIEM organization IAM bindings applied successfully." -ForegroundColor Green
 "@
+
+            return ($baseScript + $gcpScript)
         }
-        LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-GoogleLegacyFromContext -Mode 'Ciem' -Context $ctx -WhatIf:$WhatIfPreference }
+        LegacyRun    = { [CmdletBinding(SupportsShouldProcess = $true)] param($ctx) Invoke-GoogleLegacyFromContext -Mode 'Saas' -Context $ctx -WhatIf:$WhatIfPreference }
     }
 }
 

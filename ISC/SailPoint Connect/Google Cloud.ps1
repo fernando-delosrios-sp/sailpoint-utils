@@ -29,6 +29,8 @@ param(
 
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
+    [Parameter(ParameterSetName = 'GcpEntro')]
+    [Parameter(ParameterSetName = 'BothEntro')]
     [ValidateSet('ReadOnly', 'ReadWrite')]
     [string]$Access,
 
@@ -54,6 +56,7 @@ param(
     [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [string]$ImpersonateUser,
+    [Parameter(ParameterSetName = 'SaaSConnector')]
     [Parameter(ParameterSetName = 'CiemConnector')]
     [ValidateSet('ActivityInsights', 'AgentDiscovery', 'Ciem', 'DeltaAggregation', 'DomainManagement', 'Gcp', 'GmailDelegates', 'NhiDiscovery')]
     [string[]]$Feature,
@@ -131,7 +134,7 @@ Import-Module (Join-Path $wizardRoot 'modules/Definitions/Google.Connector.psm1'
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Google.Entro.psm1') -Force
 
 Register-IntegrationWizardPlatform -Name 'GoogleCloud' -Title 'Google Cloud' `
-    -CoreOptions @('SaaSConnector', 'CiemConnector', 'GcpEntro', 'WorkspaceEntro') -CliName 'gcloud' `
+    -CoreOptions @('SaaSConnector', 'GcpEntro', 'WorkspaceEntro') -CliName 'gcloud' `
     -EntroCompanions @{
         SaaSConnector = @{ Variants = @('GcpEntro', 'WorkspaceEntro') }
     }
@@ -139,17 +142,29 @@ Register-GoogleConnectorDefinitions
 Register-GoogleEntroDefinitions
 
 $coreHelp = [ordered]@{
-    SaaSConnector   = @{ Short = 'Workspace connector'; Long = 'Google Workspace connector' }
-    CiemConnector   = @{ Short = 'GCP CIEM connector'; Long = 'GCP CIEM connector feature packs' }
+    SaaSConnector   = @{ Short = 'Google connector'; Long = 'Google Workspace / GCP connector (select Gcp/Ciem in Feature for CIEM)' }
     GcpEntro        = @{ Short = 'GCP Entro'; Long = 'Entro Google GCP organization integration' }
     WorkspaceEntro  = @{ Short = 'Workspace Entro'; Long = 'Entro Google Workspace integration' }
 }
+
+$resolvedFeature = @(if ($Feature) { $Feature })
+$effectiveSaas = [bool]$SaaSConnector
+if ($CiemConnector) {
+    $effectiveSaas = $true
+    foreach ($reqPack in @('Gcp', 'Ciem')) {
+        if ($resolvedFeature -notcontains $reqPack) {
+            $resolvedFeature += $reqPack
+        }
+    }
+}
+
 $context = @{
     Wizard = [bool]$Wizard; NonInteractive = [bool]$NonInteractive
-    SaaSConnector = [bool]$SaaSConnector; CiemConnector = [bool]$CiemConnector
+    SaaSConnector = $effectiveSaas
     GcpEntro = [bool]$GcpEntro; WorkspaceEntro = [bool]$WorkspaceEntro
     Access = $Access; Action = $Action
-    OrganizationId = $OrganizationId; ProjectId = $ProjectId; ImpersonateUser = $ImpersonateUser; Feature = $Feature
+    OrganizationId = $OrganizationId; ProjectId = $ProjectId; ImpersonateUser = $ImpersonateUser
+    Feature = $(if (@($resolvedFeature).Count -gt 0) { $resolvedFeature } else { $Feature })
     Method = $Method; ClientId = $ClientId; ServiceAccountName = $ServiceAccountName; OutputDirectory = $OutputDirectory
     OutputFormat = $OutputFormat
     Project = $Project
@@ -157,7 +172,7 @@ $context = @{
 if ($PSBoundParameters.ContainsKey('ApplyPreconditionFix')) {
     $context['ApplyPreconditionFix'] = [bool]$ApplyPreconditionFix
 }
-$hasCore = $SaaSConnector -or $CiemConnector -or $GcpEntro -or $WorkspaceEntro
+$hasCore = $effectiveSaas -or $GcpEntro -or $WorkspaceEntro
 if ($PSCmdlet.ParameterSetName -eq 'Help' -and -not $Wizard -and -not $hasCore) {
     Show-IntegrationWizardPlatformHelp -Platform 'GoogleCloud' -ScriptName 'Google Cloud.ps1' -CoreOptionHelp $coreHelp
     return
@@ -167,15 +182,12 @@ Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBound
 Start-IntegrationWizardFlow -Platform 'GoogleCloud' -ScriptName 'Google Cloud.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
         $picked = Read-Choice -Prompt 'What do you want to configure?' `
-            -Options @('SaaSConnector', 'CiemConnector', 'GcpEntro', 'WorkspaceEntro') `
-            -Labels @('Google Workspace connector', 'GCP CIEM connector', 'Entro GCP', 'Entro Workspace') -Default 'SaaSConnector'
-        $context[$picked] = $true
-        switch ($picked) {
-            'SaaSConnector' { Get-IntegrationWizardDefinition -Id 'google-saas-connector' }
-            'CiemConnector' { Get-IntegrationWizardDefinition -Id 'google-ciem-connector' }
-            'GcpEntro' { Get-IntegrationWizardDefinition -Id 'google-gcp-entro' }
-            'WorkspaceEntro' { Get-IntegrationWizardDefinition -Id 'google-workspace-entro' }
-        }
+            -Options @('GcpCombined', 'WorkspaceCombined') `
+            -Labels @('Google Cloud Platform (Connector + Entro GCP)', 'Google Workspace (Connector + Entro Workspace)') -Default 'GcpCombined'
+        $context.SaaSConnector = $true
+        $context.GcpEntro = ($picked -ne 'WorkspaceCombined')
+        $context.WorkspaceEntro = ($picked -eq 'WorkspaceCombined')
+        Get-IntegrationWizardDefinition -Id 'google-saas-connector'
     } `
     -Discover {
         param($name, $ctx)

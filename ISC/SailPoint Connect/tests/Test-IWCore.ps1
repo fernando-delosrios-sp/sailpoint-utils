@@ -7,7 +7,7 @@ Import-Module (Join-Path $wizardRoot 'modules/IW.Core.psm1') -Force
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Aws.Connector.psm1') -Force
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Aws.Entro.psm1') -Force
 
-Register-IntegrationWizardPlatform -Name 'AWS' -Title 'AWS' -CoreOptions @('SaaSConnector', 'CiemConnector', 'Entro') -CliName 'aws' `
+Register-IntegrationWizardPlatform -Name 'AWS' -Title 'AWS' -CoreOptions @('SaaSConnector', 'Entro') -CliName 'aws' `
     -EntroCompanions @{ SaaSConnector = @{ EntroSwitch = 'Entro' } }
 Register-AwsConnectorDefinitions
 Register-AwsEntroDefinitions
@@ -43,15 +43,47 @@ $compositeCtxMissing = @{ SaaSConnector = $true; Entro = $true; IscExternalId = 
 $missingEntro = Test-IntegrationWizardRequiredInputs -Definition $plan -Context $compositeCtxMissing
 Assert-True ($missingEntro -contains 'EntroExternalId') 'EntroExternalId required in composite when absent'
 
-$ciemEntroThrown = $false
-try {
-    $null = Resolve-IntegrationWizardPlan -Platform 'AWS' -Context @{ CiemConnector = $true; Entro = $true }
-}
-catch {
-    $ciemEntroThrown = $true
-}
-Assert-True $ciemEntroThrown 'CIEM + Entro rejected'
+$awsFeature = @($def.Inputs | Where-Object { $_.Name -eq 'Feature' })[0]
+Assert-True ($null -ne $awsFeature -and $awsFeature.Options -contains 'Ciem') 'CIEM is exposed as a selectable Feature on aws-saas-connector'
 
 Assert-Equal 'Run: aws login  (or aws sso login / aws configure)' (Get-IntegrationWizardLoginHint -CliName 'aws') 'aws login hint points to aws login, sso, and configure'
 
-Write-Host 'PASS (11 assertions)'
+# Test MultiChoice inputs
+Import-Module (Join-Path $wizardRoot 'modules/Definitions/Azure.Connector.psm1') -Force
+Register-AzureConnectorDefinitions
+$azureDef = Get-IntegrationWizardDefinition -Id 'azure-connector'
+Assert-True ($null -ne $azureDef) 'azure-connector registered'
+$azureFeatureInput = @($azureDef.Inputs | Where-Object { $_.Name -eq 'Feature' })[0]
+Assert-True ($null -ne $azureFeatureInput) 'Feature input exists in azure-connector'
+Assert-True ($azureFeatureInput.MultiChoice) 'Feature input has MultiChoice enabled'
+Assert-True ($azureFeatureInput.Options -contains 'CopilotDiscovery') 'Feature options include CopilotDiscovery'
+Assert-True ($azureFeatureInput.Options -contains 'Agent365') 'Feature options include Agent365'
+Assert-True ($azureFeatureInput.Options -contains 'AccessPackages') 'Feature options include AccessPackages'
+
+# Test Collect-IntegrationWizardInputs with MultiChoice
+$script:MultiChoiceCalled = $false
+function global:Read-MultiChoice {
+    param($Options, $Prompt, $Labels)
+    $script:MultiChoiceCalled = $true
+    return @('CopilotDiscovery', 'Agent365')
+}
+$mockDef = @{
+    Inputs = @(
+        @{
+            Name        = 'Feature'
+            Source      = 'Supply'
+            Prompt      = 'Feature packs'
+            Required    = $false
+            MultiChoice = $true
+            Options     = @('CopilotDiscovery', 'Agent365', 'MfaManagement')
+            Labels      = @('Copilot', 'Agent365', 'MFA')
+        }
+    )
+}
+$testCtx = @{ Action = 'Run' }
+Collect-IntegrationWizardInputs -Definition $mockDef -Context $testCtx -Wizard
+Assert-True $script:MultiChoiceCalled 'Read-MultiChoice was invoked for MultiChoice input'
+Assert-Equal 'CopilotDiscovery,Agent365' $testCtx['Feature'] 'MultiChoice selections saved as comma-separated string'
+Remove-Item function:\global:Read-MultiChoice -ErrorAction SilentlyContinue
+
+Write-Host 'PASS (19 assertions)'

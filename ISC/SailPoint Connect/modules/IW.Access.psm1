@@ -107,7 +107,7 @@ function Filter-PermissionsForAccess {
         return @($Permissions)
     }
     $filtered = @($Permissions | Where-Object {
-        $value = if ($_.Value) { [string]$_.Value } else { [string]$_ }
+        $value = if ($_ -isnot [string] -and $null -ne $_ -and $_.PSObject.Properties['Value']) { [string]$_.Value } else { [string]$_ }
         Test-RequirementIncludedForAccess -Kind $Kind -Name $value -Access 'ReadOnly'
     })
     return $filtered
@@ -223,21 +223,15 @@ function Get-IntegrationWizardAccessRequirementLists {
                         }
                     }
                 }
-            }
-            '^aws-ciem-connector$' {
-                Import-Module (Join-Path $moduleRoot 'ISC.AwsCiemConnector.psm1') -Force -WarningAction SilentlyContinue
-                Initialize-AwsCiemConnectorData
-                $ciemActions = @(Get-CiemPolicyActions)
-                $split = Split-RequirementsByAccessClass -Names $ciemActions -Kind 'AwsAction'
-                foreach ($a in $split.ReadOnly) { $readOnly.Add($a) }
-                foreach ($a in $split.ReadWrite) { $readWrite.Add($a) }
-                $ic = Get-CiemIdentityCenterRequirementActions
-                foreach ($a in @($ic.ReadOnly)) { $readOnly.Add($a) }
-                if ($access -ne 'ReadOnly') {
-                    foreach ($a in @($ic.ReadWrite)) { $readWrite.Add($a) }
+                if (($features -contains 'Ciem') -and $Context.ContainsKey('Scope') -and $Context['Scope'] -eq 'Organization') {
+                    $ic = Get-CiemIdentityCenterRequirementActions
+                    foreach ($a in @($ic.ReadOnly)) { $readOnly.Add($a) }
+                    if ($access -ne 'ReadOnly') {
+                        foreach ($a in @($ic.ReadWrite)) { $readWrite.Add($a) }
+                    }
                 }
             }
-            '^google-(saas|ciem)-connector$' {
+            '^google-saas-connector$' {
                 Import-Module (Join-Path $moduleRoot 'ISC.GoogleCiemConnector.psm1') -Force -Global -WarningAction SilentlyContinue
                 Import-Module (Join-Path $moduleRoot 'ISC.GoogleWorkspaceConnector.psm1') -Force -Global -WarningAction SilentlyContinue
                 Initialize-GoogleWorkspaceConnectorData
@@ -260,7 +254,9 @@ function Get-IntegrationWizardAccessRequirementLists {
             '^google-gcp-entro$' {
                 $split = Split-RequirementsByAccessClass -Names @(Get-EntroGcpPinnedCustomRolePermissions) -Kind 'EntroGcpCustomPermission'
                 foreach ($p in $split.ReadOnly) { $readOnly.Add($p) }
-                foreach ($p in $split.ReadWrite) { $readWrite.Add($p) }
+                if ($access -ne 'ReadOnly') {
+                    foreach ($p in $split.ReadWrite) { $readWrite.Add($p) }
+                }
                 $readOnly.Add('Entro predefined org roles: logging.privateLogViewer, organizationViewer, secretmanager.viewer, and nine other viewer roles (see Entro GCP catalog)')
             }
             '^databricks-connector$' {
@@ -288,6 +284,22 @@ function Get-IntegrationWizardAccessRequirementLists {
                 $readOnly.Add('Microsoft Graph: Directory.Read.All')
                 $readOnly.Add('Microsoft Graph: Application.Read.All')
                 $readOnly.Add('Microsoft Graph: AuditLog.Read.All')
+                if ($access -ne 'ReadOnly') {
+                    $readWrite.Add('Microsoft Graph: Application.ReadWrite.All')
+                }
+                $features = Get-ContextFeatureNames -Context $Context
+                if ($features -contains 'AzureRbacAudit') {
+                    $readOnly.Add('Azure RBAC: EntroSecurityRole custom role, Key Vault Reader, App Configuration Data Reader')
+                }
+                if ($features -contains 'LogAnalyticsForwarding') {
+                    $readOnly.Add('Azure Log Analytics: EntroSecurityLogForwarding diagnostic setting (AuditLogs, ServicePrincipalSignInLogs)')
+                }
+                if ($features -contains 'KeyVaultScanning') {
+                    $readOnly.Add('Azure Key Vault: Key Vault Reader RBAC and access policy (keys, secrets, certificates read)')
+                }
+                if ($features -contains 'KeyVaultActivityLogs') {
+                    $readOnly.Add('Azure Key Vault: EntroKVActivityLogs diagnostic setting to Log Analytics Workspace')
+                }
             }
             '^aws-entro$|^google-workspace-entro$' {
                 $readOnly.Add('Entro connected identity (read-only discovery; onboarding steps create IAM/app resources in the cloud)')

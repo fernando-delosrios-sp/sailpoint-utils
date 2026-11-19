@@ -90,6 +90,24 @@ try {
     Assert-Equal 0 $script:Roles.Count 'rollback deletes the recorded custom role'
     Assert-True (-not (Test-Path -LiteralPath $env:ENTRO_GCP_IAM_STATE)) 'rollback removes the state file'
     Assert-True (-not [string]::IsNullOrEmpty($roleId)) 'custom role id was captured'
+
+    # Access=ReadOnly filters out write permissions (logging.queries.create|delete|update); Access=ReadWrite includes them.
+    $script:Bound.Clear(); $script:Roles.Clear(); $script:Calls.Clear()
+    Invoke-EntroGcpIamGrants @iam -Access 'ReadOnly' -Mode apply 6>$null
+    Assert-True (Test-EntroGcpIamGrantsComplete @iam -Access 'ReadOnly') 'ReadOnly custom role passes ReadOnly verification'
+    Assert-True (-not (Test-EntroGcpIamGrantsComplete @iam -Access 'ReadWrite')) 'ReadOnly custom role does not satisfy ReadWrite verification'
+    $roRoleId = @($script:Roles.Keys)[0]
+    $roPerms = @($script:Roles[$roRoleId])
+    Assert-True ($roPerms -notcontains 'logging.queries.create') 'ReadOnly omits logging.queries.create'
+    Assert-True ($roPerms -notcontains 'logging.queries.delete') 'ReadOnly omits logging.queries.delete'
+    Assert-True ($roPerms -notcontains 'logging.queries.update') 'ReadOnly omits logging.queries.update'
+
+    Invoke-EntroGcpIamGrants @iam -Access 'ReadWrite' -Mode apply 6>$null
+    Assert-True (Test-EntroGcpIamGrantsComplete @iam -Access 'ReadWrite') 'ReadWrite apply updates custom role and passes ReadWrite verification'
+    $rwPerms = @($script:Roles[$roRoleId])
+    Assert-True ($rwPerms -contains 'logging.queries.create') 'ReadWrite includes logging.queries.create'
+    Assert-True ($rwPerms -contains 'logging.queries.delete') 'ReadWrite includes logging.queries.delete'
+    Assert-True ($rwPerms -contains 'logging.queries.update') 'ReadWrite includes logging.queries.update'
 }
 finally {
     if ($env:ENTRO_GCP_IAM_STATE -and (Test-Path -LiteralPath $env:ENTRO_GCP_IAM_STATE)) {

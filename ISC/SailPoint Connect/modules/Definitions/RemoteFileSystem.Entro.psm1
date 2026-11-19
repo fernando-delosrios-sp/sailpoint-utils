@@ -54,7 +54,7 @@ function Test-RemoteFileTcpCheck {
         Met           = @($met)
         Missing       = @($missing)
         Manual        = @($manual)
-        PurposeMap    = @{ "$Label port $($Ports[0])" = 'The Outpost host can open this port' }
+        PurposeMap    = @{ "$Label port $($Ports[0])" = 'Host can open this port' }
         ReadNote      = "Checked $hostName from $([Environment]::MachineName)."
     }
 }
@@ -82,10 +82,10 @@ if (-not [System.OperatingSystem]::IsWindows()) { throw 'Run this script on the 
         RequiredTools = @('Windows file server or domain-joined admin host')
         AccessLevels  = @()
         AdminRoles    = @('File-server administrator or AD account operator')
-        OutputsHelp   = 'Upload smb-file-shares.json in Entro (File Shares Scanning -> JSON Upload) or paste Nickname, Username, Password, and host:445. Select the Outpost Worker Group.'
+        OutputsHelp   = 'Upload smb-file-shares.json in Entro (File Shares Scanning -> JSON Upload) or paste Nickname, Username, Password, and host:445.'
         TargetHost    = @{
             Role         = 'Windows file server or domain-joined admin host'
-            Notes        = 'The Outpost must reach the file server on TCP 445. The JSON file contains the password; do not commit it.'
+            Notes        = 'Ensure TCP 445 is reachable from the collector host. The JSON file contains the password; do not commit it.'
             Assert       = $windowsAssert
             AssertScript = $windowsAssertScript
         }
@@ -96,7 +96,6 @@ if (-not [System.OperatingSystem]::IsWindows()) { throw 'Run this script on the 
             @{ Name = 'ShareHost'; Source = 'Supply'; Prompt = 'File server host'; Purpose = 'Host or host:445'; Required = $true }
             @{ Name = 'ShareNames'; Source = 'Supply'; Prompt = 'Share names to grant read (comma-separated)'; Purpose = 'Existing SMB share names on this server'; Required = $false }
             @{ Name = 'IgnoreShares'; Source = 'Supply'; Prompt = 'Share names to exclude (comma-separated)'; Purpose = 'ignore_shares in the Entro JSON'; Required = $false }
-            @{ Name = 'WorkerGroup'; Source = 'Supply'; Prompt = 'Entro Outpost Worker Group'; Purpose = 'Worker Group that can reach port 445'; Required = $false }
             @{ Name = 'Password'; Source = 'Supply'; Prompt = 'Service account password'; Purpose = 'Password stored only in the JSON file'; Secret = $true; When = $runRequired; Required = $runRequired }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
@@ -205,14 +204,12 @@ Write-Host "Wrote $jsonPath. Upload it in Entro. Do not commit it."
         }
         OnRunComplete = {
             param($ctx)
-            $wg = if ($ctx['WorkerGroup']) { $ctx['WorkerGroup'] } else { '(select the Outpost Worker Group)' }
             $jsonPath = if ($ctx['SmbJsonPath']) { $ctx['SmbJsonPath'] } else { 'smb-file-shares.json' }
             Write-Host ''
             Write-Host 'Entro handoff' -ForegroundColor Cyan
             Write-Host '  Target host: Windows file server or domain admin host'
             Write-Host "  JSON: $jsonPath"
             Write-Host "  URL: $(ConvertTo-EntroShareUrl -HostOrUrl ([string]$ctx['ShareHost']))"
-            Write-Host "  Worker Group: $wg"
             Write-Host ''
         }
     }
@@ -228,10 +225,10 @@ Write-Host "Wrote $jsonPath. Upload it in Entro. Do not commit it."
         RequiredTools = @('ssh-keygen (when generating a key)')
         AccessLevels  = @()
         AdminRoles    = @('Administrator of the SFTP server (to install the public key)')
-        OutputsHelp   = 'Paste Nickname, Host, Username, and the private key into Entro File Shares Scanning. Install the public key for that user on the server. Select the Outpost Worker Group.'
+        OutputsHelp   = 'Paste Nickname, Host, Username, and the private key into Entro File Shares Scanning. Install the public key for that user on the server.'
         TargetHost    = @{
-            Role  = 'Operator host that can reach the SFTP server, plus the SFTP server itself for the account'
-            Notes = 'This host generates the key and checks TCP 22. Create the OS user on the SFTP server with the printed commands. The Outpost must reach port 22.'
+            Role         = 'Operator host that can reach the SFTP server, plus the SFTP server itself for the account'
+            Notes        = 'This host generates the key and checks TCP 22. Create the OS user on the SFTP server with the printed commands.'
             Assert = {
                 param($c)
                 if ((-not $c['PublicKeyPath']) -and -not (Get-Command ssh-keygen -ErrorAction SilentlyContinue)) {
@@ -266,7 +263,6 @@ finally { $sftpClient.Dispose() }
             @{ Name = 'FileHost'; Source = 'Supply'; Prompt = 'SFTP host'; Purpose = 'DNS or IP, optional :port'; Required = $true }
             @{ Name = 'Username'; Source = 'Supply'; Prompt = 'SFTP username'; Purpose = 'Read-only SFTP user'; Required = $true; Default = 'entro_sftp' }
             @{ Name = 'TargetDirectories'; Source = 'Supply'; Prompt = 'Target directories (comma-separated, optional)'; Purpose = 'Absolute paths Entro should scan'; Required = $false }
-            @{ Name = 'WorkerGroup'; Source = 'Supply'; Prompt = 'Entro Outpost Worker Group'; Purpose = 'Worker Group that can reach SSH'; Required = $false }
             @{ Name = 'PublicKeyPath'; Source = 'Supply'; Prompt = 'Existing public key path (leave empty to generate)'; Purpose = 'Skip ssh-keygen when you already have a key'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
@@ -349,7 +345,6 @@ Write-Host "Wrote $(Join-Path $dir 'entro-sftp-user.sh')"
         }
         OnRunComplete = {
             param($ctx)
-            $wg = if ($ctx['WorkerGroup']) { $ctx['WorkerGroup'] } else { '(select the Outpost Worker Group)' }
             Write-Host ''
             Write-Host 'Entro handoff' -ForegroundColor Cyan
             Write-Host "  Nickname: $($ctx['Nickname'])"
@@ -358,7 +353,6 @@ Write-Host "Wrote $(Join-Path $dir 'entro-sftp-user.sh')"
             Write-Host "  Private key: $(if ($ctx['PrivateKeyPath']) { $ctx['PrivateKeyPath'] } else { '(use the key that matches the public key)' })"
             Write-Host "  Server script: $(if ($ctx['SftpCommandPath']) { $ctx['SftpCommandPath'] } else { 'entro-sftp-user.sh' })"
             if ($ctx['TargetDirectories']) { Write-Host "  Target directories: $($ctx['TargetDirectories'])" }
-            Write-Host "  Worker Group: $wg"
             Write-Host ''
         }
     }
@@ -374,10 +368,10 @@ Write-Host "Wrote $(Join-Path $dir 'entro-sftp-user.sh')"
         RequiredTools = @('Windows host with permission to enable PSRemoting')
         AccessLevels  = @()
         AdminRoles    = @('Local administrator on the Windows host Entro will scan')
-        OutputsHelp   = 'Paste Nickname, Host, Username, and Password into Entro File Shares Scanning. Select the Outpost Worker Group. The account is in Remote Management Users only.'
+        OutputsHelp   = 'Paste Nickname, Host, Username, and Password into Entro File Shares Scanning. The account is in Remote Management Users only.'
         TargetHost    = @{
             Role         = 'Windows host that Entro will scan over WinRM'
-            Notes        = 'Run on that host. The Outpost must reach TCP 5985 or 5986.'
+            Notes        = 'Run on that host. Ensure TCP 5985 or 5986 is reachable from the collector host.'
             Assert       = $windowsAssert
             AssertScript = $windowsAssertScript
         }
@@ -386,7 +380,6 @@ Write-Host "Wrote $(Join-Path $dir 'entro-sftp-user.sh')"
             @{ Name = 'FileHost'; Source = 'Supply'; Prompt = 'Windows host'; Purpose = 'DNS or IP Entro will connect to'; Required = $true }
             @{ Name = 'Username'; Source = 'Supply'; Prompt = 'WinRM username'; Purpose = 'Local read-only WinRM user'; Default = 'entro_winrm'; Required = $false }
             @{ Name = 'TargetDirectories'; Source = 'Supply'; Prompt = 'Directories to grant read (comma-separated)'; Purpose = 'Optional NTFS read grant'; Required = $false }
-            @{ Name = 'WorkerGroup'; Source = 'Supply'; Prompt = 'Entro Outpost Worker Group'; Purpose = 'Worker Group that can reach WinRM'; Required = $false }
             @{ Name = 'Password'; Source = 'Supply'; Prompt = 'WinRM user password'; Purpose = 'Password for the local user'; Secret = $true; When = $runRequired; Required = $runRequired }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
@@ -444,7 +437,6 @@ Write-Host "WinRM user $leaf is in Remote Management Users."
         }
         OnRunComplete = {
             param($ctx)
-            $wg = if ($ctx['WorkerGroup']) { $ctx['WorkerGroup'] } else { '(select the Outpost Worker Group)' }
             $user = if ($ctx['Username']) { $ctx['Username'] } else { 'entro_winrm' }
             Write-Host ''
             Write-Host 'Entro handoff' -ForegroundColor Cyan
@@ -452,7 +444,6 @@ Write-Host "WinRM user $leaf is in Remote Management Users."
             Write-Host "  Nickname: $($ctx['Nickname'])"
             Write-Host "  Host: $($ctx['FileHost'])"
             Write-Host "  Username: $user"
-            Write-Host "  Worker Group: $wg"
             Write-Host ''
         }
     }

@@ -733,11 +733,12 @@ function Test-EntroGcpIamGrantsComplete {
     param(
         [Parameter(Mandatory)][string]$OrganizationId,
         [Parameter(Mandatory)][string]$ProjectId,
-        [Parameter(Mandatory)][string]$ServiceAccountName
+        [Parameter(Mandatory)][string]$ServiceAccountName,
+        [string]$Access = ''
     )
     try {
         Invoke-EntroGcpIamGrants -OrganizationId $OrganizationId -ProjectId $ProjectId `
-            -ServiceAccountName $ServiceAccountName -Mode 'verify' 6>$null | Out-Null
+            -ServiceAccountName $ServiceAccountName -Access $Access -Mode 'verify' 6>$null | Out-Null
         return $true
     }
     catch {
@@ -772,7 +773,8 @@ function Sync-EntroGcpIamReport {
         [hashtable]$Context,
         [string]$CustomRoleId,
         [string]$CustomRoleResult,
-        [string[]]$GrantedThisRun = @()
+        [string[]]$GrantedThisRun = @(),
+        [string]$Access = ''
     )
     $record = Get-EntroGcpRunRecord -Context $Context
     if (-not $record) { return }
@@ -794,7 +796,9 @@ function Sync-EntroGcpIamReport {
     $record.ServiceAccountEmail = $member.Substring('serviceAccount:'.Length)
     $record.CustomRoleId = $CustomRoleId
     $record.CustomRoleResult = $CustomRoleResult
-    $record.CustomRolePermissions = @(Get-EntroGcpPinnedCustomRolePermissions | Sort-Object)
+    $effectiveAccess = if (-not [string]::IsNullOrWhiteSpace($Access)) { $Access } elseif ($Context -and $Context.ContainsKey('Access')) { [string]$Context['Access'] } else { '' }
+    $filteredPerms = @(Filter-PermissionsForAccess -Permissions @(Get-EntroGcpPinnedCustomRolePermissions) -Access $effectiveAccess -Kind 'EntroGcpCustomPermission')
+    $record.CustomRolePermissions = @($filteredPerms | Sort-Object)
     $record.Bindings = [System.Collections.Generic.List[hashtable]]::new()
     $customRole = "organizations/$OrganizationId/roles/$CustomRoleId"
     $earlier = @($state.Bindings)
@@ -813,6 +817,7 @@ function Invoke-EntroGcpIamGrants {
         [Parameter(Mandatory)][string]$ServiceAccountName,
         [string]$StateDirectory,
         [hashtable]$Context,
+        [string]$Access = '',
         [ValidateSet('apply', 'verify', 'rollback')]
         [string]$Mode = 'apply'
     )
@@ -820,8 +825,9 @@ function Invoke-EntroGcpIamGrants {
     if (-not (Get-Module -Name 'IW.Access')) {
         Import-Module (Join-Path $PSScriptRoot 'IW.Access.psm1') -Force -WarningAction SilentlyContinue
     }
+    $effectiveAccess = if (-not [string]::IsNullOrWhiteSpace($Access)) { $Access } elseif ($Context -and $Context.ContainsKey('Access')) { [string]$Context['Access'] } else { '' }
     $member = "serviceAccount:${ServiceAccountName}@${ProjectId}.iam.gserviceaccount.com"
-    $permissions = @(Get-EntroGcpPinnedCustomRolePermissions)
+    $permissions = @(Filter-PermissionsForAccess -Permissions @(Get-EntroGcpPinnedCustomRolePermissions) -Access $effectiveAccess -Kind 'EntroGcpCustomPermission')
     $predefined = @(Get-EntroGcpPredefinedOrgRoles)
     $stateFile = Get-EntroGcpIamStatePath -OrganizationId $OrganizationId -ProjectId $ProjectId `
         -ServiceAccountName $ServiceAccountName -Directory $StateDirectory
@@ -868,9 +874,9 @@ function Invoke-EntroGcpIamGrants {
             Write-Ok 'Entro GCP IAM rollback completed'
         }
         'apply' {
-            if (Test-EntroGcpIamGrantsComplete -OrganizationId $OrganizationId -ProjectId $ProjectId -ServiceAccountName $ServiceAccountName) {
+            if (Test-EntroGcpIamGrantsComplete -OrganizationId $OrganizationId -ProjectId $ProjectId -ServiceAccountName $ServiceAccountName -Access $effectiveAccess) {
                 Sync-EntroGcpIamReport -OrganizationId $OrganizationId -ProjectId $ProjectId `
-                    -ServiceAccountName $ServiceAccountName -StateDirectory $StateDirectory -Context $Context
+                    -ServiceAccountName $ServiceAccountName -StateDirectory $StateDirectory -Context $Context -Access $effectiveAccess
                 Write-Ok 'Entro GCP IAM grants already in place'
                 return
             }
@@ -922,9 +928,9 @@ function Invoke-EntroGcpIamGrants {
             }
             Sync-EntroGcpIamReport -OrganizationId $OrganizationId -ProjectId $ProjectId `
                 -ServiceAccountName $ServiceAccountName -StateDirectory $StateDirectory -Context $Context `
-                -CustomRoleId $customRoleId -CustomRoleResult $roleResult -GrantedThisRun @($grantedNow)
+                -CustomRoleId $customRoleId -CustomRoleResult $roleResult -GrantedThisRun @($grantedNow) -Access $effectiveAccess
             Invoke-EntroGcpIamGrants -OrganizationId $OrganizationId -ProjectId $ProjectId `
-                -ServiceAccountName $ServiceAccountName -Mode 'verify'
+                -ServiceAccountName $ServiceAccountName -Access $effectiveAccess -Mode 'verify'
         }
     }
 }

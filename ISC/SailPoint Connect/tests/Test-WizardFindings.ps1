@@ -11,8 +11,8 @@ $awsMod = Import-Module (Join-Path $wizardRoot 'modules/Definitions/Aws.Connecto
 $google = Import-Module (Join-Path $wizardRoot 'modules/Definitions/Google.Connector.psm1') -Force -PassThru
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/Aws.Entro.psm1') -Force
 
-Register-IntegrationWizardPlatform -Name 'AWS' -Title 'AWS' -CoreOptions @('SaaSConnector', 'CiemConnector', 'Entro') -CliName 'aws'
-Register-IntegrationWizardPlatform -Name 'GoogleCloud' -Title 'Google Cloud' -CoreOptions @('SaaSConnector', 'CiemConnector') -CliName 'gcloud'
+Register-IntegrationWizardPlatform -Name 'AWS' -Title 'AWS' -CoreOptions @('SaaSConnector', 'Entro') -CliName 'aws'
+Register-IntegrationWizardPlatform -Name 'GoogleCloud' -Title 'Google Cloud' -CoreOptions @('SaaSConnector') -CliName 'gcloud'
 Register-AwsConnectorDefinitions
 Register-AwsEntroDefinitions
 Register-GoogleConnectorDefinitions
@@ -47,8 +47,9 @@ $govCloud = & $awsMod { Get-AwsLegacyArguments -SourceType 'AwsSaas' -Context @{
 Assert-Equal 'GovCloud' $govCloud.Cloud 'an explicit cloud is passed through'
 
 Assert-True (@($saasDef.Inputs.Name) -contains 'Cloud') 'AWS SaaS definition collects the AWS cloud'
-$ciemAwsDef = Get-IntegrationWizardDefinition -Id 'aws-ciem-connector'
-Assert-True (@($ciemAwsDef.Inputs.Name) -contains 'Cloud') 'AWS CIEM definition collects the AWS cloud'
+Assert-True ($null -eq (Get-IntegrationWizardDefinition -Id 'aws-ciem-connector')) 'aws-ciem-connector is retired; CIEM is a Feature on aws-saas-connector'
+$awsFeatureOpt = @($saasDef.Inputs | Where-Object { $_.Name -eq 'Feature' })[0]
+Assert-True ($awsFeatureOpt.Options -contains 'Ciem') 'AWS SaaS definition offers Ciem as a selectable Feature'
 
 function Get-ScriptParameterSetNames {
     param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$ParameterName)
@@ -72,12 +73,16 @@ Assert-True ($awsFeatureSets -contains 'SaaSConnector') 'AWS.ps1 accepts -Featur
 
 $awsCloudSets = @(Get-ScriptParameterSetNames -Path (Join-Path $wizardRoot 'AWS.ps1') -ParameterName 'Cloud')
 Assert-True ($awsCloudSets -contains 'SaaSConnector') 'AWS.ps1 accepts -Cloud for the SaaS connector'
-Assert-True ($awsCloudSets -contains 'CiemConnector') 'AWS.ps1 accepts -Cloud for the CIEM connector'
+Assert-True ($awsCloudSets -contains 'CiemConnector') 'AWS.ps1 retains -Cloud on compat CiemConnector set'
 
-$ciemDef = Get-IntegrationWizardDefinition -Id 'google-ciem-connector'
-Assert-True (@($ciemDef.Inputs.Name) -contains 'ImpersonateUser') 'GCP CIEM collects the impersonated admin'
-$missingImpersonation = Test-IntegrationWizardRequiredInputs -Definition $ciemDef -Context @{ OrganizationId = '1'; ProjectId = 'p' }
-Assert-True ($missingImpersonation -contains 'ImpersonateUser') 'GCP CIEM requires ImpersonateUser'
+Assert-True ($null -eq (Get-IntegrationWizardDefinition -Id 'google-ciem-connector')) 'google-ciem-connector is retired; CIEM is a Feature on google-saas-connector'
+$googleSaasDef = Get-IntegrationWizardDefinition -Id 'google-saas-connector'
+Assert-True (@($googleSaasDef.Inputs.Name) -contains 'ImpersonateUser') 'Google Workspace definition collects the impersonated admin'
+$missingImpersonation = Test-IntegrationWizardRequiredInputs -Definition $googleSaasDef -Context @{ OrganizationId = '1'; ProjectId = 'p' }
+Assert-True ($missingImpersonation -contains 'ImpersonateUser') 'Google Workspace requires ImpersonateUser'
+$googleFeatureOpt = @($googleSaasDef.Inputs | Where-Object { $_.Name -eq 'Feature' })[0]
+Assert-True ($googleFeatureOpt.Options -contains 'Ciem') 'Google Workspace definition offers Ciem as a selectable Feature'
+Assert-True ($googleFeatureOpt.Options -contains 'Gcp') 'Google Workspace definition offers Gcp as a selectable Feature'
 
 $ciemArgs = & $google { Get-GoogleLegacyArguments -Mode 'Ciem' -Context @{ Feature = 'NhiDiscovery,AgentDiscovery'; ImpersonateUser = 'admin@contoso.com' } }
 Assert-Equal 'Gcp' @($ciemArgs.Feature)[0] 'CIEM mode enables the Gcp pack'
@@ -90,9 +95,9 @@ Assert-True (-not $saasArgs.ContainsKey('Feature')) 'SaaS mode does not force CI
 
 $googlePath = Join-Path $wizardRoot 'Google Cloud.ps1'
 $googleImpersonateSets = @(Get-ScriptParameterSetNames -Path $googlePath -ParameterName 'ImpersonateUser')
-Assert-True ($googleImpersonateSets -contains 'CiemConnector') 'Google Cloud.ps1 accepts -ImpersonateUser for CIEM'
+Assert-True ($googleImpersonateSets -contains 'CiemConnector') 'Google Cloud.ps1 retains -ImpersonateUser on compat CiemConnector set'
 $googleFeatureSets = @(Get-ScriptParameterSetNames -Path $googlePath -ParameterName 'Feature')
-Assert-True ($googleFeatureSets -contains 'CiemConnector') 'Google Cloud.ps1 accepts -Feature for CIEM'
+Assert-True ($googleFeatureSets -contains 'CiemConnector') 'Google Cloud.ps1 retains -Feature on compat CiemConnector set'
 
 $render = Get-Module -Name 'IW.Render'
 & $render {

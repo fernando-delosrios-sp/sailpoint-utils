@@ -24,18 +24,6 @@ param(
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Entro')]
     [string]$KvMount,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [string]$WorkerGroup,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [string]$OutpostId,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [string]$OutpostPublicKeyPath,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [string]$OutpostDeploymentMode,
 
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Entro')]
@@ -80,7 +68,6 @@ $coreHelp = [ordered]@{
 $context = @{
     Wizard = [bool]$Wizard; NonInteractive = [bool]$NonInteractive; Entro = [bool]$Entro; Action = $Action
     Environment = $Environment; VaultUrl = $VaultUrl; PolicyMode = $PolicyMode; KvMount = $KvMount
-    WorkerGroup = $WorkerGroup
     OutputDirectory = $OutputDirectory; OutputFormat = $OutputFormat; Project = $Project
 }
 

@@ -44,7 +44,7 @@ try {
 
     Register-IntegrationWizardPlatform -Name 'HashiCorpVault' -Title 'HashiCorp Vault' -CoreOptions @('Entro') -CliName 'pwsh'
     Register-IntegrationWizardPlatform -Name 'GitLab' -Title 'GitLab' -CoreOptions @('Connector', 'Entro', 'GitLabSelfManaged') -CliName 'glab'
-    Register-IntegrationWizardPlatform -Name 'GitHub' -Title 'GitHub' -CoreOptions @('Connector', 'Entro', 'GhesEntro') -CliName 'gh'
+    Register-IntegrationWizardPlatform -Name 'GitHub' -Title 'GitHub' -CoreOptions @('Connector', 'Entro') -CliName 'gh'
     Register-IntegrationWizardPlatform -Name 'OnPremActiveDirectory' -Title 'On-Prem Active Directory' -CoreOptions @('Entro') -CliName 'pwsh'
     Register-IntegrationWizardPlatform -Name 'RemoteFileSystem' -Title 'Remote File System' -CoreOptions @('Smb', 'Sftp', 'WinRm') -CliName 'pwsh'
     Register-HashiCorpEntroDefinitions
@@ -57,21 +57,19 @@ try {
     $gitLabCloud = Get-IntegrationWizardDefinition -Id 'gitlab-entro'
     $gitLabSm = Get-IntegrationWizardDefinition -Id 'gitlab-selfmanaged-entro'
     $gitHubCloud = Get-IntegrationWizardDefinition -Id 'github-entro'
-    $ghesDef = Get-IntegrationWizardDefinition -Id 'github-ghes-entro'
     $adDef = Get-IntegrationWizardDefinition -Id 'on-prem-active-directory-entro'
     $smbDef = Get-IntegrationWizardDefinition -Id 'remote-file-smb-entro'
     $sftpDef = Get-IntegrationWizardDefinition -Id 'remote-file-sftp-entro'
     $winDef = Get-IntegrationWizardDefinition -Id 'remote-file-winrm-entro'
 
+    Assert-True ($null -eq (Get-IntegrationWizardDefinition -Id 'github-ghes-entro')) 'GHES Entro definition is removed'
     Assert-Equal 'pwsh' ([string]$vaultDef.CliName) 'Vault Entro uses pwsh'
     Assert-Equal 'pwsh' ([string]$gitLabCloud.CliName) 'GitLab Entro uses pwsh'
     Assert-Equal 'pwsh' ([string]$gitLabSm.CliName) 'GitLab self-managed uses pwsh'
     Assert-Equal 'gh' ([string]$gitHubCloud.CliName) 'GitHub Cloud Entro stays on gh'
-    Assert-Equal 'pwsh' ([string]$ghesDef.CliName) 'GHES Entro uses pwsh'
     Assert-Equal 'pwsh' ([string]$adDef.CliName) 'AD Entro uses pwsh'
     Assert-Equal 'pwsh' ([string]$smbDef.CliName) 'SMB Entro uses pwsh'
     Assert-True (-not [string]::IsNullOrWhiteSpace([string]$vaultDef.TargetHost.Role)) 'Vault names a target host'
-    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$ghesDef.TargetHost.Role)) 'GHES names a target host'
     Assert-True (-not [string]::IsNullOrWhiteSpace([string]$adDef.TargetHost.Role)) 'AD names a target host'
 
     $cloudSteps = @(& $gitHubCloud.Steps @{ Organization = 'acme'; Method = 'GitHubApp' })
@@ -83,10 +81,8 @@ try {
     Assert-Equal 'gitlab-entro' $gitLabEntroTargets[0].Id 'GitLab Entro stays gitlab.com'
     $gitLabSmTargets = @(Get-IntegrationWizardTargets -Platform 'GitLab' -Context @{ GitLabSelfManaged = $true })
     Assert-Equal 'gitlab-selfmanaged-entro' $gitLabSmTargets[0].Id 'GitLab self-managed uses its own switch'
-    $ghesTargets = @(Get-IntegrationWizardTargets -Platform 'GitHub' -Context @{ GhesEntro = $true })
-    Assert-Equal 'github-ghes-entro' $ghesTargets[0].Id 'GHES resolves from GhesEntro'
     $gitHubEntroTargets = @(Get-IntegrationWizardTargets -Platform 'GitHub' -Context @{ Entro = $true })
-    Assert-Equal 'github-entro' $gitHubEntroTargets[0].Id 'GitHub Cloud Entro does not collide with GHES'
+    Assert-Equal 'github-entro' $gitHubEntroTargets[0].Id 'GitHub Cloud Entro resolves cleanly'
 
     $hcl = Get-EntroVaultPolicyHcl -Mode Standard
     Assert-True ($hcl.Contains('path "*"')) 'Standard Vault policy lists path *'
@@ -102,12 +98,6 @@ try {
     Assert-True (Test-EntroGitLabHostIsCloud -Url 'https://gitlab.com') 'gitlab.com is the cloud host'
     Assert-True (-not (Test-EntroGitLabHostIsCloud -Url 'https://gitlab.corp.local')) 'private GitLab is not cloud'
 
-    $ghesScopes = Get-EntroGhesClassicScopes
-    foreach ($scope in @('repo', 'read:org', 'read:repo_hook', 'user', 'read:discussion')) {
-        Assert-True (@($ghesScopes.Required) -contains $scope) "GHES required scope $scope"
-    }
-    Assert-Equal 'https://github.corp.local/api/v3' (Get-EntroGhesApiBase -Hostname 'github.corp.local') 'GHES API base strips no extra port'
-
     Assert-Equal 4 @(Get-EntroAdLdapsPorts).Count 'AD probe covers four directory ports'
     Assert-Equal 'files.corp.local:445' (ConvertTo-EntroShareUrl -HostOrUrl 'files.corp.local') 'SMB url gains :445'
     $smbJson = New-EntroSmbSharesJson -Nickname 'finance' -User 'CORP\entro' -Password 'secret' -Url 'files.corp.local' -IgnoreShares @('C$')
@@ -115,48 +105,36 @@ try {
     Assert-True ($smbJson.Contains('ignore_shares')) 'SMB JSON includes ignore_shares'
     Assert-True ($smbJson.Contains('files.corp.local:445')) 'SMB JSON url includes the port'
 
-    $vaultBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'hashicorp-vault' -Product 'entro' -VariantId 'vault'
-    $gitLabCloudBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'gitlab' -Product 'entro' -VariantId 'gitlab'
-    $gitLabSmBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'gitlab' -Product 'entro' -VariantId 'self-managed'
-    $ghesBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'github' -Product 'entro' -VariantId 'ghes'
-    $adBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'on-prem-active-directory' -Product 'entro' -VariantId 'ad'
-    $smbBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'remote-file-system' -Product 'entro' -VariantId 'smb'
-    $sftpBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'remote-file-system' -Product 'entro' -VariantId 'sftp'
-    $winBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'remote-file-system' -Product 'entro' -VariantId 'winrm'
-    Assert-True ([bool]$vaultBinding.RequiresOutpost) 'Vault requires an Outpost'
-    Assert-True (-not [bool]$gitLabCloudBinding.RequiresOutpost) 'gitlab.com does not require an Outpost'
-    Assert-True ([bool]$gitLabSmBinding.RequiresOutpost) 'self-managed GitLab requires an Outpost'
-    Assert-True ([bool]$ghesBinding.RequiresOutpost) 'GHES requires an Outpost'
-    Assert-True ([bool]$adBinding.RequiresOutpost) 'AD requires an Outpost'
-    Assert-True ([bool]$smbBinding.RequiresOutpost) 'SMB requires an Outpost'
-    Assert-True ([bool]$sftpBinding.RequiresOutpost) 'SFTP requires an Outpost'
-    Assert-True ([bool]$winBinding.RequiresOutpost) 'WinRM requires an Outpost'
+    $vaultBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'hashicorp-vault' -Product 'SailPoint Fabric' -VariantId 'vault'
+    $gitLabCloudBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'gitlab' -Product 'SailPoint Fabric' -VariantId 'gitlab'
+    $gitLabSmBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'gitlab' -Product 'SailPoint Fabric' -VariantId 'self-managed'
+    $adBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'on-prem-active-directory' -Product 'SailPoint Fabric' -VariantId 'ad'
+    $smbBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'remote-file-system' -Product 'SailPoint Fabric' -VariantId 'smb'
+    $sftpBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'remote-file-system' -Product 'SailPoint Fabric' -VariantId 'sftp'
+    $winBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'remote-file-system' -Product 'SailPoint Fabric' -VariantId 'winrm'
+    foreach ($b in @($vaultBinding, $gitLabCloudBinding, $gitLabSmBinding, $adBinding, $smbBinding, $sftpBinding, $winBinding)) {
+        Assert-True (-not $b.Contains('RequiresOutpost') -or -not [bool]$b['RequiresOutpost']) "Binding $($b.IntegrationId)/$($b.VariantId) does not require Outpost"
+    }
     Assert-Equal 'pwsh' ([string]$vaultBinding.Cli) 'Vault catalog cli is pwsh'
 
-    $ghesBinding['SelectedCredentialKind'] = 'github.ghesPat'
-    $ghesLaunch = Get-IntegrationCatalogLegacyLaunchParameters -Binding $ghesBinding -Product 'entro'
-    Assert-True ([bool]$ghesLaunch['GhesEntro']) 'GHES catalog launch uses GhesEntro'
-    Assert-True (-not $ghesLaunch.Contains('Entro')) 'GHES catalog launch does not also set Entro'
-    Assert-True (-not $ghesLaunch.Contains('Method')) 'GHES catalog launch does not set Method'
-    $smLaunch = Get-IntegrationCatalogLegacyLaunchParameters -Binding $gitLabSmBinding -Product 'entro'
+    $smLaunch = Get-IntegrationCatalogLegacyLaunchParameters -Binding $gitLabSmBinding
     Assert-True ([bool]$smLaunch['GitLabSelfManaged']) 'self-managed GitLab launch uses GitLabSelfManaged'
-    $smbLaunch = Get-IntegrationCatalogLegacyLaunchParameters -Binding $smbBinding -Product 'entro'
+    $smbLaunch = Get-IntegrationCatalogLegacyLaunchParameters -Binding $smbBinding
     Assert-True ([bool]$smbLaunch['Smb']) 'SMB catalog launch uses Smb'
-    $sftpLaunch = Get-IntegrationCatalogLegacyLaunchParameters -Binding $sftpBinding -Product 'entro'
+    $sftpLaunch = Get-IntegrationCatalogLegacyLaunchParameters -Binding $sftpBinding
     Assert-True ([bool]$sftpLaunch['Sftp']) 'SFTP catalog launch uses Sftp'
-    $winLaunch = Get-IntegrationCatalogLegacyLaunchParameters -Binding $winBinding -Product 'entro'
+    $winLaunch = Get-IntegrationCatalogLegacyLaunchParameters -Binding $winBinding
     Assert-True ([bool]$winLaunch['WinRm']) 'WinRM catalog launch uses WinRm'
 
     $common = @{ NonInteractive = $true; Project = 'wave1' }
     $vaultOut = Join-Path $tmp 'vault'
     $gitLabOut = Join-Path $tmp 'gitlab'
     $gitLabSmOut = Join-Path $tmp 'gitlab-sm'
-    $ghesOut = Join-Path $tmp 'ghes'
     $adOut = Join-Path $tmp 'ad'
     $smbOut = Join-Path $tmp 'smb'
     $sftpOut = Join-Path $tmp 'sftp'
     $winOut = Join-Path $tmp 'winrm'
-    foreach ($dir in @($vaultOut, $gitLabOut, $gitLabSmOut, $ghesOut, $adOut, $smbOut, $sftpOut, $winOut)) {
+    foreach ($dir in @($vaultOut, $gitLabOut, $gitLabSmOut, $adOut, $smbOut, $sftpOut, $winOut)) {
         New-Item -ItemType Directory -Path $dir -Force | Out-Null
     }
 
@@ -171,10 +149,6 @@ try {
     $gitLabSmResult = @(Connect-SailPointGitLab -GitLabSelfManaged -Action BuildScript @common -Nickname 'corp' -GitLabUrl 'https://gitlab.corp.local' -OutputDirectory $gitLabSmOut)
     Assert-Equal 1 $gitLabSmResult.Count 'GitLab self-managed BuildScript returns one object'
     Assert-GeneratedScript -Path $gitLabSmResult[0].Path -Label 'GitLab self-managed script' -MustContain @('gitlab.com belongs on the Entro GitLab cloud variant', 'access_tokens')
-
-    $ghesResult = @(Connect-SailPointGitHub -GhesEntro -Action BuildScript @common -DisplayName 'Corp GHES' -Hostname 'github.corp.local' -EnvironmentType Development -OutputDirectory $ghesOut)
-    Assert-Equal 1 $ghesResult.Count 'GHES BuildScript returns one object'
-    Assert-GeneratedScript -Path $ghesResult[0].Path -Label 'GHES script' -MustContain @('/api/v3/user', 'repo')
 
     $adResult = @(Connect-SailPointOnPremActiveDirectory -Entro -Action BuildScript @common -Nickname 'corp-ad' -DomainController 'dc01' -DcFqdn 'dc01.corp.local' -Domain 'corp.local' -EnvironmentNickname 'corp' -OutputDirectory $adOut)
     Assert-Equal 1 $adResult.Count 'AD BuildScript returns one object'
@@ -208,14 +182,12 @@ try {
     New-Item -ItemType Directory -Path $redactDir -Force | Out-Null
     $vaultSecret = 'plant-vault-admin-9f3a'
     $gitLabSecret = 'plant-gitlab-admin-9f3a'
-    $ghesSecret = 'plant-ghes-token-9f3a'
     $adSecret = 'plant-ad-password-9f3a'
     $smbSecret = 'plant-smb-password-9f3a'
     $winSecret = 'plant-winrm-password-9f3a'
     $redactions = @(
         @{ Def = (Get-IntegrationWizardDefinition -Id 'hashicorp-vault-entro'); Name = 'vault'; Context = @{ Environment = 'prod'; VaultUrl = 'https://vault.corp.local:8200'; PolicyMode = 'Standard'; VaultAdminToken = $vaultSecret; OutputDirectory = $redactDir }; Secret = $vaultSecret; Need = @('/v1/auth/token/create') }
         @{ Def = (Get-IntegrationWizardDefinition -Id 'gitlab-selfmanaged-entro'); Name = 'gitlab'; Context = @{ Nickname = 'corp'; GitLabUrl = 'https://gitlab.corp.local'; TokenKind = 'Group'; AdminToken = $gitLabSecret; OutputDirectory = $redactDir }; Secret = $gitLabSecret; Need = @('access_tokens') }
-        @{ Def = (Get-IntegrationWizardDefinition -Id 'github-ghes-entro'); Name = 'ghes'; Context = @{ DisplayName = 'Corp'; Hostname = 'github.corp.local'; EnvironmentType = 'Development'; Token = $ghesSecret; OutputDirectory = $redactDir }; Secret = $ghesSecret; Need = @('/api/v3/user') }
         @{ Def = (Get-IntegrationWizardDefinition -Id 'on-prem-active-directory-entro'); Name = 'ad'; Context = @{ Nickname = 'corp-ad'; DomainController = 'dc01'; DcFqdn = 'dc01.corp.local'; Domain = 'corp.local'; EnvironmentNickname = 'corp'; Password = $adSecret; OutputDirectory = $redactDir }; Secret = $adSecret; Need = @('svc_entro') }
         @{ Def = (Get-IntegrationWizardDefinition -Id 'remote-file-smb-entro'); Name = 'smb'; Context = @{ Nickname = 'finance'; Username = 'CORP\entro_smb'; ShareHost = 'files.corp.local'; Password = $smbSecret; OutputDirectory = $redactDir }; Secret = $smbSecret; Need = @('ignore_shares') }
         @{ Def = (Get-IntegrationWizardDefinition -Id 'remote-file-winrm-entro'); Name = 'winrm'; Context = @{ Nickname = 'win'; FileHost = 'win.corp.local'; Password = $winSecret; OutputDirectory = $redactDir }; Secret = $winSecret; Need = @('5985') }

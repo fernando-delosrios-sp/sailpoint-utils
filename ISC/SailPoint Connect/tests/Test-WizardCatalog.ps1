@@ -31,7 +31,6 @@ function Register-AllCatalogDefinitions {
     Import-Module (Join-Path $defRoot 'Snowflake.Entro.psm1') -Force
     Import-Module (Join-Path $defRoot 'ServiceNow.Entro.psm1') -Force
     Import-Module (Join-Path $defRoot 'HashiCorp.Entro.psm1') -Force
-    Import-Module (Join-Path $defRoot 'EntroOutpost.psm1') -Force
     Import-Module (Join-Path $defRoot 'ActiveDirectory.Entro.psm1') -Force
     Import-Module (Join-Path $defRoot 'RemoteFileSystem.Entro.psm1') -Force
     Register-AwsConnectorDefinitions
@@ -56,56 +55,80 @@ function Register-AllCatalogDefinitions {
     Register-SnowflakeEntroDefinitions
     Register-ServiceNowEntroDefinitions
     Register-HashiCorpEntroDefinitions
-    Register-EntroOutpostDefinitions
     Register-ActiveDirectoryEntroDefinitions
     Register-RemoteFileSystemEntroDefinitions
 }
 
 $catalog = Import-IntegrationWizardCatalog -Force
 Assert-Equal 1 ([int]$catalog.version) 'catalog version is 1'
-Assert-True ($catalog.policies.oneProductPerRun) 'one product per run'
+Assert-True (@($catalog.menuFlow) -notcontains 'Product') 'unified catalog menuFlow omits Product prompt'
+Assert-True ((-not ($catalog.policies.PSObject.Properties.Name -contains 'oneProductPerRun')) -or (-not [bool]$catalog.policies.oneProductPerRun)) 'unified catalog does not enforce oneProductPerRun'
+
+$coverages = @(Get-IntegrationCatalogProductNames)
+Assert-True ($coverages -contains 'SailPoint Fabric') 'catalog includes SailPoint Fabric coverage'
+Assert-True ($coverages -contains 'SailPoint Fabric (ISC)') 'catalog includes SailPoint Fabric (ISC) coverage'
+Assert-True ($coverages -contains 'Entro') 'catalog includes Entro coverage'
+Assert-Equal 3 $coverages.Count 'catalog uses strictly three coverage badge values'
 
 $integrations = @(Get-IntegrationCatalogIntegrations)
-Assert-True ($integrations.Count -ge 5) 'catalog lists multiple integrations'
+Assert-True ($integrations.Count -ge 15) 'catalog lists all unified integrations'
+Assert-True (@($integrations.id) -notcontains 'entro-outpost') 'entro-outpost is removed from catalog'
 
 Register-AllCatalogDefinitions
 
 foreach ($row in @(Get-IntegrationCatalogFlatBindings)) {
-    $def = Get-IntegrationWizardDefinition -Id $row.DefinitionId
-    Assert-True ($null -ne $def) "definition $($row.DefinitionId) registered for $($row.IntegrationId)/$($row.Product)/$($row.VariantId)"
-    Assert-Equal $row.PlatformName ([string]$def.Platform) "platform matches for $($row.DefinitionId)"
+    foreach ($did in @($row.DefinitionIds)) {
+        $def = Get-IntegrationWizardDefinition -Id $did
+        Assert-True ($null -ne $def) "definition $did registered for $($row.IntegrationId)/$($row.VariantId)"
+        Assert-Equal $row.PlatformName ([string]$def.Platform) "platform matches for $did"
+    }
 }
 
-$azureCiem = Resolve-IntegrationCatalogBinding -IntegrationId 'azure' -Product 'ciem' -VariantId 'entra-ciem'
-Assert-Equal 'Ciem' $azureCiem.ContextDefaults['Feature'] 'azure ciem binding sets Feature Ciem'
-Assert-Equal 'Microsoft-Entra-CIEM' $azureCiem.FolderName 'azure ciem folder'
+$awsBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'aws' -VariantId 'aws'
+Assert-Equal 'aws-saas-connector' $awsBinding.DefinitionId 'aws primary definition is aws-saas-connector'
+Assert-True (@($awsBinding.DefinitionIds) -contains 'aws-entro') 'aws binding combines aws-entro'
+$legacyAws = Get-IntegrationCatalogLegacyLaunchParameters -Binding $awsBinding -Product 'SailPoint Fabric'
+Assert-True ([bool]$legacyAws['SaaSConnector']) 'aws unified legacy launch sets SaaSConnector'
+Assert-True ([bool]$legacyAws['Entro']) 'aws unified legacy launch sets Entro'
 
-$gcpEntro = Resolve-IntegrationCatalogBinding -IntegrationId 'google-cloud' -Product 'entro' -VariantId 'gcp-org'
-Assert-Equal 'google-gcp-entro' $gcpEntro.DefinitionId 'google gcp entro variant resolves'
+$azureBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'azure' -VariantId 'azure'
+Assert-Equal 'Microsoft-Entra-ID' $azureBinding.FolderName 'azure unified folder'
+Assert-True (@($azureBinding.DefinitionIds) -contains 'azure-connector') 'azure binding includes azure-connector'
+Assert-True (@($azureBinding.DefinitionIds) -contains 'azure-entro') 'azure binding includes azure-entro'
+$legacyAzure = Get-IntegrationCatalogLegacyLaunchParameters -Binding $azureBinding -Product 'SailPoint Fabric'
+Assert-True ([bool]$legacyAzure['Connector']) 'azure unified legacy launch sets Connector switch'
+Assert-True ([bool]$legacyAzure['Entro']) 'azure unified legacy launch sets Entro switch'
+
+$gcpBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'google-cloud' -VariantId 'gcp'
+Assert-Equal 'google-saas-connector' $gcpBinding.DefinitionId 'google gcp variant primary definition is google-saas-connector'
+Assert-True (@($gcpBinding.DefinitionIds) -contains 'google-gcp-entro') 'google gcp variant combines google-gcp-entro'
+$legacyGcp = Get-IntegrationCatalogLegacyLaunchParameters -Binding $gcpBinding -Product 'SailPoint Fabric'
+Assert-True ([bool]$legacyGcp['SaaSConnector']) 'google gcp legacy launch uses SaaSConnector'
+Assert-True ([bool]$legacyGcp['GcpEntro']) 'google gcp legacy launch uses GcpEntro'
 
 $kind = Get-IntegrationCatalogCredentialKind -KindId 'entra.appClientSecret'
 Assert-True ($kind.Discriminators -contains 'TenantId') 'entra kind has TenantId discriminator'
 
 $threw = $false
 try {
-    Resolve-IntegrationCatalogBinding -IntegrationId 'google-cloud' -Product 'entro'
+    Resolve-IntegrationCatalogBinding -IntegrationId 'google-cloud'
 }
 catch {
     $threw = $true
 }
-Assert-True $threw 'entro without variant throws when multiple bindings'
+Assert-True $threw 'google-cloud without variant throws when multiple bindings exist'
 
-$azureCiemBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'azure' -Product 'ciem' -VariantId 'entra-ciem'
-$legacyCiem = Get-IntegrationCatalogLegacyLaunchParameters -Binding $azureCiemBinding -Product 'ciem'
-Assert-True ([bool]$legacyCiem['Connector']) 'azure ciem legacy launch uses Connector switch'
-Assert-True (@($legacyCiem['Feature']) -contains 'Ciem') 'azure ciem legacy launch includes Ciem feature'
-
-$awsFabric = Resolve-IntegrationCatalogBinding -IntegrationId 'aws' -Product 'fabric' -VariantId 'saas'
-$legacyAws = Get-IntegrationCatalogLegacyLaunchParameters -Binding $awsFabric -Product 'fabric'
-Assert-True ([bool]$legacyAws['SaaSConnector']) 'aws fabric legacy launch uses SaaSConnector'
-
-$gcpEntroBinding = Resolve-IntegrationCatalogBinding -IntegrationId 'google-cloud' -Product 'entro' -VariantId 'gcp-org'
-$legacyGcp = Get-IntegrationCatalogLegacyLaunchParameters -Binding $gcpEntroBinding -Product 'entro'
-Assert-True ([bool]$legacyGcp['GcpEntro']) 'google gcp entro legacy launch uses GcpEntro'
+# Negative guardrail: retired definitionIds must fail catalog validation
+$badCatalog = $catalog | ConvertTo-Json -Depth 12 | ConvertFrom-Json
+$badCatalog.integrations[0].bindings[0].definitionId = 'aws-ciem-connector'
+$badCatalog.integrations[0].bindings[0].definitionIds = @('aws-ciem-connector')
+$guardThrew = $false
+try {
+    Test-IntegrationWizardCatalog -Catalog $badCatalog -WizardRoot $wizardRoot | Out-Null
+}
+catch {
+    $guardThrew = $_.Exception.Message -match 'retired definitionId'
+}
+Assert-True $guardThrew 'Test-IntegrationWizardCatalog rejects retired definitionIds'
 
 Write-Host "PASS ($script:AssertionCount assertions)"

@@ -49,26 +49,6 @@ param(
     [string]$TargetDirectories,
     [Parameter(ParameterSetName = 'Sftp')]
     [string]$PublicKeyPath,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Smb')]
-    [Parameter(ParameterSetName = 'Sftp')]
-    [Parameter(ParameterSetName = 'WinRm')]
-    [string]$WorkerGroup,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Smb')]
-    [Parameter(ParameterSetName = 'Sftp')]
-    [Parameter(ParameterSetName = 'WinRm')]
-    [string]$OutpostId,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Smb')]
-    [Parameter(ParameterSetName = 'Sftp')]
-    [Parameter(ParameterSetName = 'WinRm')]
-    [string]$OutpostPublicKeyPath,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Smb')]
-    [Parameter(ParameterSetName = 'Sftp')]
-    [Parameter(ParameterSetName = 'WinRm')]
-    [string]$OutpostDeploymentMode,
 
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Smb')]
@@ -126,7 +106,6 @@ $context = @{
     Nickname = $Nickname; AccountScope = $AccountScope; Username = $Username
     ShareHost = $ShareHost; ShareNames = $ShareNames; IgnoreShares = $IgnoreShares
     FileHost = $FileHost; TargetDirectories = $TargetDirectories; PublicKeyPath = $PublicKeyPath
-    WorkerGroup = $WorkerGroup
     OutputDirectory = $OutputDirectory; OutputFormat = $OutputFormat; Project = $Project
 }
 
@@ -141,7 +120,7 @@ Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBound
 Start-IntegrationWizardFlow -Platform 'RemoteFileSystem' -ScriptName 'Remote File System.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
         $picked = Read-Choice -Prompt 'Which file transport?' -Options @('Smb', 'Sftp', 'WinRm') `
-            -Labels @('SMB file shares [Requires Outpost]', 'SFTP [Requires Outpost]', 'WinRM [Requires Outpost]') -Default 'Smb'
+            -Labels @('SMB file shares', 'SFTP', 'WinRM') -Default 'Smb'
         $context[$picked] = $true
         switch ($picked) {
             'Smb' { Get-IntegrationWizardDefinition -Id 'remote-file-smb-entro' }

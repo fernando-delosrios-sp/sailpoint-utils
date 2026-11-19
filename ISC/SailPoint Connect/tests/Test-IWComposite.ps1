@@ -35,7 +35,7 @@ try {
     New-IntegrationWizardRequirementsDoc -Definition $plan -Context $ctx -OutputPath (Join-Path $outDir 'aws-composite-requirements.md')
     $md = Get-Content (Join-Path $outDir 'aws-composite-requirements.md') -Raw
     Assert-True ($md -match 'Entro AWS integration') 'requirements doc includes Entro section heading'
-    Assert-True ($md -match 'SaaS') 'requirements doc includes SaaS connector section'
+    Assert-True ($md -match 'Amazon Web Services connector IAM role') 'requirements doc includes AWS connector section'
     $stepHeadings = ([regex]::Matches($md, '^#### \d+\.', [System.Text.RegularExpressions.RegexOptions]::Multiline)).Count
     Assert-True ($stepHeadings -ge 2) 'requirements doc lists steps from both members'
 }

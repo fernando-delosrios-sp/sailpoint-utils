@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.15.0'
+    ModuleVersion = '1.17.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -21,7 +21,7 @@
     Copyright = '(c) 2026 SailPoint Technologies. All rights reserved.'
 
     # Description of the functionality provided by this module
-    Description = 'SailPoint Connect: checklist, read-only check of an existing identity, or an explicit Run for SailPoint ISC connectors, Entro cloud and on-premise Outpost integrations (Vault, GitLab, GHES, Active Directory, remote files), Microsoft 365 access profiles, and IQService host management.'
+    Description = 'SailPoint Connect: checklist, read-only check of an existing identity, or an explicit Run for SailPoint ISC connectors, Entro cloud and on-premise integrations (Vault, GitLab, Active Directory, remote files), Microsoft 365 access profiles, and IQService host management.'
 
     # Minimum version of the PowerShell engine required by this module
     PowerShellVersion = '7.0'
@@ -41,7 +41,6 @@
         'Connect-SailPointSnowflake'
         'Connect-SailPointServiceNow'
         'Connect-SailPointHashiCorpVault'
-        'Connect-SailPointEntroOutpost'
         'Connect-SailPointOnPremActiveDirectory'
         'Connect-SailPointRemoteFileSystem'
         'Connect-SailPointCrowdStrike'
@@ -75,7 +74,6 @@
                 'ISC'
                 'IdentitySecurityCloud'
                 'Entro'
-                'EntroOutpost'
                 'OnPremises'
                 'AWS'
                 'Azure'

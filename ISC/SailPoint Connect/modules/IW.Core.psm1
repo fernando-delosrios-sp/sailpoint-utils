@@ -171,7 +171,7 @@ function Show-IntegrationWizardPlatformHelp {
         Write-Host "  ./$ScriptName -$key         [...]  $($CoreOptionHelp[$key].Long)"
     }
     Write-Host '  Artifacts go under ~/.sailpoint-connect/<project>/<platform>/<integration>/ (-Project to skip the project menu)'
-    Write-Host '  Combine ISC connector + Entro: pass both switches (e.g. -SaaSConnector -Entro on AWS)'
+    Write-Host '  Combined integrations include SailPoint Fabric + Entro together automatically; pass a specific switch (e.g. -SaaSConnector, -Connector, -Entro) to target one side explicitly.'
     $first = ($CoreOptionHelp.Keys | Select-Object -First 1)
     if ($first) {
         Write-Host "Next: ./$ScriptName -$first   (lists its options)"
@@ -182,76 +182,6 @@ function Show-IntegrationWizardPlatformHelp {
 function Test-IntegrationWizardContextSwitch {
     param([hashtable]$Context, [string]$Name)
     return $Context.ContainsKey($Name) -and [bool]$Context[$Name]
-}
-
-function Get-IntegrationWizardEntroCompanionConfig {
-    param(
-        [Parameter(Mandatory)][string]$Platform,
-        [Parameter(Mandatory)][string]$ConnectorCoreSwitch
-    )
-    $meta = $script:IntegrationWizardPlatforms[$Platform]
-    if (-not $meta -or -not $meta.EntroCompanions) { return $null }
-    $meta.EntroCompanions[$ConnectorCoreSwitch]
-}
-
-function Resolve-IntegrationWizardEntroAddon {
-    param(
-        [Parameter(Mandatory)][string]$Platform,
-        [Parameter(Mandatory)][hashtable]$Context,
-        [Parameter(Mandatory)][hashtable]$ConnectorDefinition,
-        [switch]$Wizard,
-        [switch]$NonInteractive
-    )
-    $companion = Get-IntegrationWizardEntroCompanionConfig -Platform $Platform -ConnectorCoreSwitch $ConnectorDefinition.CoreSwitch
-    if (-not $companion) { return }
-
-    if ($companion['EntroSwitch'] -and (Test-IntegrationWizardContextSwitch -Context $Context -Name $companion['EntroSwitch'])) {
-        $Context[$companion['EntroSwitch']] = $true
-        return
-    }
-    if ($companion['Variants']) {
-        foreach ($v in @($companion['Variants'])) {
-            if (Test-IntegrationWizardContextSwitch -Context $Context -Name $v) { return }
-        }
-    }
-
-    if (-not $Wizard) { return }
-
-    while ($true) {
-        $configureEntro = Read-YesNo -Prompt 'Also configure Entro for this platform?' -Default $false
-        if (-not $configureEntro) {
-            if ($companion['EntroSwitch']) { $Context[$companion['EntroSwitch']] = $false }
-            if ($companion['Variants']) {
-                foreach ($v in @($companion['Variants'])) { $Context[$v] = $false }
-            }
-            return
-        }
-
-        if ($companion['EntroSwitch']) {
-            $Context[$companion['EntroSwitch']] = $true
-            return
-        }
-        if ($companion['Variants']) {
-            try {
-                $picked = Read-Choice -Prompt 'Which Entro integration?' -Options $companion['Variants'] `
-                    -Labels @($companion['Variants'] | ForEach-Object {
-                        switch ($_) {
-                            'GcpEntro' { 'Entro Google GCP organization' }
-                            'WorkspaceEntro' { 'Entro Google Workspace' }
-                            default { $_ }
-                        }
-                    }) -Default $companion['Variants'][0]
-                $Context[$picked] = $true
-                return
-            }
-            catch {
-                if (Test-PromptBack $_) {
-                    continue
-                }
-                throw
-            }
-        }
-    }
 }
 
 function Get-IntegrationWizardTargets {
@@ -267,9 +197,6 @@ function Get-IntegrationWizardTargets {
 
     if ($isc.Count -gt 1) {
         throw 'Only one ISC connector target can be selected per run.'
-    }
-    if ($isc.Count -eq 1 -and $isc[0]['CoreSwitch'] -eq 'CiemConnector' -and $entro.Count -gt 0) {
-        throw 'CIEM connector cannot be combined with Entro in the same run.'
     }
     if ($entro.Count -gt 1) {
         throw 'Only one Entro target can be selected per run.'
@@ -287,9 +214,12 @@ function Merge-IntegrationWizardDefinitions {
     )
     if ($Members.Count -eq 1) { return $Members[0] }
 
-    $cli = $Members[0].CliName
+    $cli = 'pwsh'
     foreach ($m in $Members) {
-        if ($m.CliName -ne $cli) { throw 'Combined definitions must use the same CLI.' }
+        if ($m['CliName'] -and [string]$m['CliName'] -ne 'pwsh') {
+            $cli = [string]$m['CliName']
+            break
+        }
     }
 
     $mergedInputs = [ordered]@{}
@@ -299,12 +229,39 @@ function Merge-IntegrationWizardDefinitions {
             $name = $inputDef.Name
             if ($mergedInputs.Contains($name)) {
                 $existing = $mergedInputs[$name]
-                if ($existing.Purpose -ne $inputDef.Purpose) {
-                    throw "Input name collision '$name' with different purpose; use distinct names (e.g. IscExternalId vs EntroExternalId)."
+                $merged = @{}
+                foreach ($k in $existing.Keys) { $merged[$k] = $existing[$k] }
+                if (-not $merged['Purpose'] -and $inputDef['Purpose']) {
+                    $merged['Purpose'] = $inputDef['Purpose']
                 }
+                if ($existing.ContainsKey('When') -and $existing['When'] -is [scriptblock]) {
+                    if (-not $inputDef.ContainsKey('When') -or $null -eq $inputDef['When']) {
+                        $merged.Remove('When')
+                    }
+                    elseif ($inputDef['When'] -is [scriptblock]) {
+                        $w1 = $existing['When']
+                        $w2 = $inputDef['When']
+                        $merged['When'] = { param($c) (& $w1 $c) -or (& $w2 $c) }.GetNewClosure()
+                    }
+                }
+                if ($existing.ContainsKey('Secret') -or $inputDef.ContainsKey('Secret')) {
+                    $merged['Secret'] = [bool]($existing['Secret'] -or $inputDef['Secret'])
+                }
+                $mergedInputs[$name] = $merged
                 continue
             }
             $mergedInputs[$name] = $inputDef
+        }
+    }
+
+    $mergedCheckInputs = [ordered]@{}
+    foreach ($m in $Members) {
+        $mCheckInputs = if ($m.ContainsKey('CheckInputs') -and $m['CheckInputs']) { @($m['CheckInputs']) } else { @() }
+        foreach ($ci in $mCheckInputs) {
+            if (-not $ci) { continue }
+            if (-not $mergedCheckInputs.Contains($ci.Name)) {
+                $mergedCheckInputs[$ci.Name] = $ci
+            }
         }
     }
 
@@ -313,7 +270,31 @@ function Merge-IntegrationWizardDefinitions {
 
     $access = @()
     foreach ($m in $Members) {
-        if ($m['AccessLevels'] -and @($m['AccessLevels']).Count -gt 0) { $access = @($m['AccessLevels']); break }
+        $lvl = @($m['AccessLevels'])
+        if ($lvl -contains 'ReadWrite' -and $lvl -contains 'ReadOnly') {
+            $access = @('ReadOnly', 'ReadWrite')
+            break
+        }
+        if ($lvl.Count -gt 0 -and $access.Count -eq 0) {
+            $access = $lvl
+        }
+    }
+
+    $requiredTools = [System.Collections.Generic.List[string]]::new()
+    foreach ($m in $Members) {
+        foreach ($t in @($m['RequiredTools'])) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$t) -and -not $requiredTools.Contains([string]$t)) {
+                $requiredTools.Add([string]$t)
+            }
+        }
+    }
+
+    $targetHost = $null
+    foreach ($m in $Members) {
+        if ($m.ContainsKey('TargetHost') -and $m['TargetHost']) {
+            $targetHost = $m['TargetHost']
+            break
+        }
     }
 
     $membersCopy = @($Members)
@@ -321,20 +302,21 @@ function Merge-IntegrationWizardDefinitions {
         if ($_['FolderName']) { [string]$_['FolderName'] } else { [string]$_.Title }
     })
 
-    return @{
-        IsComposite  = $true
-        Id           = $ids
-        Platform     = $Members[0].Platform
-        Product      = 'Combined'
-        CliName      = $cli
-        Title        = ($titles -join ' + ')
-        FolderName   = (($folderNames -join '-and-') -replace '\s+', '-')
-        AccessLevels = $access
-        Inputs       = @($mergedInputs.Values)
-        Members      = $membersCopy
-        AdminRoles   = @($Members | ForEach-Object { @($_['AdminRoles']) } | ForEach-Object { $_ })
-        OutputsHelp  = ($Members | ForEach-Object { if ($_['OutputsHelp']) { $_['OutputsHelp'] } }) -join "`n`n"
-        Steps        = {
+    $def = @{
+        IsComposite   = $true
+        Id            = $ids
+        Platform      = $Members[0].Platform
+        Product       = 'SailPoint Fabric'
+        CliName       = $cli
+        Title         = ($titles -join ' + ')
+        FolderName    = (($folderNames -join '-and-') -replace '\s+', '-')
+        AccessLevels  = $access
+        Inputs        = @($mergedInputs.Values)
+        RequiredTools = @($requiredTools.ToArray())
+        Members       = $membersCopy
+        AdminRoles    = @($Members | ForEach-Object { @($_['AdminRoles']) } | ForEach-Object { $_ })
+        OutputsHelp   = ($Members | ForEach-Object { if ($_['OutputsHelp']) { $_['OutputsHelp'] } }) -join "`n`n"
+        Steps         = {
             param($ctx)
             $allSteps = @()
             foreach ($member in $membersCopy) {
@@ -343,6 +325,13 @@ function Merge-IntegrationWizardDefinitions {
             $allSteps
         }
     }
+    if ($mergedCheckInputs.Count -gt 0) {
+        $def['CheckInputs'] = @($mergedCheckInputs.Values)
+    }
+    if ($null -ne $targetHost) {
+        $def['TargetHost'] = $targetHost
+    }
+    return $def
 }
 
 function Resolve-IntegrationWizardPlan {
@@ -588,7 +577,22 @@ function Collect-IntegrationWizardInputs {
                     continue
                 }
             }
-            if ($inputDef['ValidateSet']) {
+            $isMulti = ($inputDef.ContainsKey('MultiChoice') -and $inputDef['MultiChoice']) -or ($inputDef.ContainsKey('MultiSelect') -and $inputDef['MultiSelect'])
+            if ($isMulti) {
+                $opts = if ($inputDef.ContainsKey('Options') -and $inputDef['Options']) { @($inputDef['Options']) }
+                        elseif ($inputDef.ContainsKey('ValidateSet') -and $inputDef['ValidateSet']) { @($inputDef['ValidateSet']) }
+                        else { @() }
+                $lbls = if ($inputDef.ContainsKey('Labels') -and $inputDef['Labels']) { @($inputDef['Labels']) } else { $opts }
+                if ($opts.Count -gt 0 -and (Get-Command Read-MultiChoice -ErrorAction SilentlyContinue)) {
+                    $picked = @(Read-MultiChoice -Prompt $inputDef['Prompt'] -Options $opts -Labels $lbls)
+                    $Context[$name] = if ($picked.Count -gt 0) { $picked -join ',' } else { '' }
+                }
+                else {
+                    $isReq = Test-IntegrationWizardInputRequired -InputDef $inputDef -Context $Context
+                    $Context[$name] = Read-InputString -Prompt $inputDef['Prompt'] -Default $inputDef['Default'] -Required:$isReq
+                }
+            }
+            elseif ($inputDef.ContainsKey('ValidateSet') -and $inputDef['ValidateSet']) {
                 $Context[$name] = Read-Choice -Prompt $inputDef['Prompt'] -Options $inputDef['ValidateSet'] -Default $inputDef['Default']
             }
             else {
@@ -636,18 +640,10 @@ function Show-IntegrationWizardSummary {
         Write-Host "  Run on:  $($th['Role'])" -ForegroundColor Cyan
         if ($th['Notes']) { Write-Host "  Host note: $($th['Notes'])" -ForegroundColor DarkGray }
     }
-    if ($Context['WorkerGroup'] -and -not $Definition['OutpostDefinition']) {
-        Write-Host "  Outpost: $($Context['WorkerGroup'])"
-    }
     if ($Context['Access']) { Write-Host "  Access:  $($Context['Access'])" }
     if ($Context['Action']) { Write-Host "  Action:  $($Context['Action'])" }
     if ($Context['Action'] -eq 'Run') {
-        if ($Definition['OutpostDefinition']) {
-            Write-Host '  Run modifies the target host/cluster. The next question is the confirmation.' -ForegroundColor Yellow
-        }
-        else {
-            Write-Host '  Run changes the tenant. The next question is the confirmation.' -ForegroundColor Yellow
-        }
+        Write-Host '  Run changes the tenant. The next question is the confirmation.' -ForegroundColor Yellow
     }
     elseif ($Context['Action']) {
         Write-Host '  This action does not change the tenant or target host.'
@@ -728,8 +724,7 @@ function Copy-IntegrationWizardCatalogContext {
     )
     foreach ($name in @(
         'CatalogIntegrationId', 'CatalogProduct', 'CatalogVariantId', 'CatalogCredentialKind',
-        'CatalogReuseMode', 'CatalogCredentialId',
-        'WorkerGroup', 'OutpostId', 'OutpostPublicKeyPath', 'OutpostDeploymentMode'
+        'CatalogReuseMode', 'CatalogCredentialId'
     )) {
         $hasKey = if ($BoundParameters.PSObject.Methods.Name -contains 'ContainsKey') {
             $BoundParameters.ContainsKey($name)
@@ -811,41 +806,11 @@ function Start-IntegrationWizardFlow {
                     2 {
                         if (-not $plan -or $pickedTarget) {
                             if ($PickTarget) {
-                                :pickLoop while ($true) {
-                                    $connectorDef = & $PickTarget
-                                    if (-not $connectorDef) { break :pickLoop }
-                                    $pickedTarget = $true
-                                    if ($connectorDef.Product -eq 'ISC') {
-                                        try {
-                                            Resolve-IntegrationWizardEntroAddon -Platform $Platform -Context $Context -ConnectorDefinition $connectorDef `
-                                                -Wizard:$wizard -NonInteractive:$nonInteractive
-                                            break :pickLoop
-                                        }
-                                        catch {
-                                            if (Test-PromptBack $_) {
-                                                continue
-                                            }
-                                            throw
-                                        }
-                                    }
-                                    else {
-                                        break :pickLoop
-                                    }
-                                }
+                                $connectorDef = & $PickTarget
                                 if ($connectorDef) {
+                                    $pickedTarget = $true
                                     $plan = Resolve-IntegrationWizardPlan -Platform $Platform -Context $Context
                                 }
-                            }
-                        }
-                        elseif ($plan -and -not $plan['IsComposite'] -and $plan.Product -eq 'ISC' -and -not $Context['CatalogIntegrationId']) {
-                            Resolve-IntegrationWizardEntroAddon -Platform $Platform -Context $Context -ConnectorDefinition $plan `
-                                -Wizard:$wizard -NonInteractive:$nonInteractive
-                            try {
-                                $plan = Resolve-IntegrationWizardPlan -Platform $Platform -Context $Context
-                            }
-                            catch {
-                                Write-Error $_.Exception.Message
-                                return
                             }
                         }
 
@@ -940,8 +905,7 @@ function Start-IntegrationWizardFlow {
                     6 {
                         Show-IntegrationWizardSummary -Definition $plan -Context $Context
                         $proceed = if ($Context['Action'] -eq 'Run') {
-                            if ($plan['OutpostDefinition']) { 'Run modifies the target host/cluster. Proceed?' }
-                            else { 'Run will change the tenant. Proceed?' }
+                            'Run will change the tenant. Proceed?'
                         }
                         else {
                             'Write the local result? The tenant will not be changed.'
@@ -1088,16 +1052,9 @@ function Start-IntegrationWizardFlow {
         & $Execute $plan $Context
         if (-not $WhatIfPreference -and $Context['IntegrationProjectName'] -and
             $Context['IntegrationProjectName'] -ne 'ephemeral') {
-            if ($Context['CatalogIntegrationId'] -and $Context['CatalogCredentialKind'] -and -not $plan['OutpostDefinition']) {
+            if ($Context['CatalogIntegrationId'] -and $Context['CatalogCredentialKind']) {
                 Save-IntegrationProjectCredential -Context $Context -Definition $plan -Platform $Platform -ScriptName $ScriptName | Out-Null
                 Write-IntegrationProjectLogLine -Level 'INFO' -Message "Updated credential index for project $($Context['IntegrationProjectName'])"
-            }
-            if ($plan['OutpostDefinition'] -and (Get-Command Save-IntegrationProjectOutpost -ErrorAction SilentlyContinue)) {
-                $savedOutpost = Save-IntegrationProjectOutpost -ProjectName $Context['IntegrationProjectName'] -Context $Context -Definition $plan
-                if ($savedOutpost -and $savedOutpost['id']) {
-                    $Context['OutpostId'] = [string]$savedOutpost['id']
-                }
-                Write-IntegrationProjectLogLine -Level 'INFO' -Message "Updated outpost index for project $($Context['IntegrationProjectName'])"
             }
         }
     }
@@ -1267,7 +1224,6 @@ Export-ModuleMember -Function @(
     'Get-IntegrationWizardTargets'
     'Merge-IntegrationWizardDefinitions'
     'Resolve-IntegrationWizardPlan'
-    'Resolve-IntegrationWizardEntroAddon'
     'Resolve-IntegrationWizardConnectionChoice'
     'Resolve-IntegrationWizardAction'
     'Test-IntegrationWizardRequiredInputs'
@@ -1280,6 +1236,7 @@ Export-ModuleMember -Function @(
     'Install-IntegrationWizardCli'
     'Invoke-IntegrationWizardCliLogin'
     'Get-IntegrationWizardLoginHint'
+    'Collect-IntegrationWizardInputs'
     'Test-IntegrationWizardCancelled'
     'Test-PromptBack'
     'Invoke-PromptBack'

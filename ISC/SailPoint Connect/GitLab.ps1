@@ -15,6 +15,7 @@ param(
     [switch]$Entro,
 
     [Parameter(ParameterSetName = 'GitLabSelfManaged', Mandatory)]
+    [Parameter(ParameterSetName = 'Connector')]
     [switch]$GitLabSelfManaged,
 
     [Parameter(ParameterSetName = 'Wizard')]
@@ -37,41 +38,31 @@ param(
     [Parameter(ParameterSetName = 'Connector')]
     [string]$TargetGroups,
 
+    [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [Parameter(ParameterSetName = 'GitLabSelfManaged')]
     [string]$Nickname,
+    [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [Parameter(ParameterSetName = 'GitLabSelfManaged')]
     [string]$GitLabUrl,
+    [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [Parameter(ParameterSetName = 'GitLabSelfManaged')]
     [ValidateSet('Group', 'Personal')]
     [string]$TokenKind,
+    [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [Parameter(ParameterSetName = 'GitLabSelfManaged')]
     [string]$GroupPath,
+    [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [Parameter(ParameterSetName = 'GitLabSelfManaged')]
     [string]$Username,
+    [Parameter(ParameterSetName = 'Connector')]
     [Parameter(ParameterSetName = 'Entro')]
     [Parameter(ParameterSetName = 'GitLabSelfManaged')]
     [string]$TokenExpires,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [Parameter(ParameterSetName = 'GitLabSelfManaged')]
-    [string]$WorkerGroup,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [Parameter(ParameterSetName = 'GitLabSelfManaged')]
-    [string]$OutpostId,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [Parameter(ParameterSetName = 'GitLabSelfManaged')]
-    [string]$OutpostPublicKeyPath,
-    [Parameter(ParameterSetName = 'Wizard')]
-    [Parameter(ParameterSetName = 'Entro')]
-    [Parameter(ParameterSetName = 'GitLabSelfManaged')]
-    [string]$OutpostDeploymentMode,
 
     [Parameter(ParameterSetName = 'Wizard')]
     [Parameter(ParameterSetName = 'Connector')]
@@ -116,14 +107,14 @@ Import-Module (Join-Path $wizardRoot 'modules/Definitions/GitLab.Connector.psm1'
 Import-Module (Join-Path $wizardRoot 'modules/Definitions/GitLab.Entro.psm1') -Force
 
 Register-IntegrationWizardPlatform -Name 'GitLab' -Title 'GitLab' -CoreOptions @('Connector', 'Entro', 'GitLabSelfManaged') -CliName 'glab' `
-    -EntroCompanions @{ Connector = @{ EntroSwitch = 'Entro' } }
+    -EntroCompanions @{ Connector = @{ Variants = @('Entro', 'GitLabSelfManaged') } }
 Register-GitLabConnectorDefinitions
 Register-GitLabEntroDefinitions
 
 $coreHelp = [ordered]@{
     Connector          = @{ Short = 'GitLab SaaS connector'; Long = 'GitLab PAT / group token & NHI discovery' }
     Entro              = @{ Short = 'Entro'; Long = 'Entro GitLab (gitlab.com)' }
-    GitLabSelfManaged  = @{ Short = 'Self-managed'; Long = 'Entro GitLab self-managed (requires an Outpost)' }
+    GitLabSelfManaged  = @{ Short = 'Self-managed'; Long = 'Entro GitLab self-managed' }
 }
 
 $context = @{
@@ -133,7 +124,6 @@ $context = @{
     AccessToken = $AccessToken; TargetGroups = $TargetGroups
     Nickname = $Nickname; GitLabUrl = $GitLabUrl; TokenKind = $TokenKind
     GroupPath = $GroupPath; Username = $Username; TokenExpires = $TokenExpires
-    WorkerGroup = $WorkerGroup
     OutputDirectory = $OutputDirectory; OutputFormat = $OutputFormat; Project = $Project
 }
 
@@ -147,17 +137,15 @@ Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBound
 
 Start-IntegrationWizardFlow -Platform 'GitLab' -ScriptName 'GitLab.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
-        $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Connector', 'Entro', 'GitLabSelfManaged') `
+        $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Cloud', 'SelfManaged') `
             -Labels @(
-                'GitLab SaaS connector',
-                'Entro GitLab (gitlab.com)',
-                'Entro GitLab self-managed [Requires Outpost]'
-            ) -Default 'Connector'
-        switch ($picked) {
-            'Connector' { $context['Connector'] = $true; Get-IntegrationWizardDefinition -Id 'gitlab-connector' }
-            'Entro' { $context['Entro'] = $true; Get-IntegrationWizardDefinition -Id 'gitlab-entro' }
-            'GitLabSelfManaged' { $context['GitLabSelfManaged'] = $true; Get-IntegrationWizardDefinition -Id 'gitlab-selfmanaged-entro' }
-        }
+                'GitLab Cloud (gitlab.com)',
+                'GitLab Self-Managed'
+            ) -Default 'Cloud'
+        $context['Connector'] = $true
+        $context['Entro'] = ($picked -ne 'SelfManaged')
+        $context['GitLabSelfManaged'] = ($picked -eq 'SelfManaged')
+        Get-IntegrationWizardDefinition -Id 'gitlab-connector'
     } `
     -Discover { param($n, $c) @() } `
     -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx }

@@ -25,7 +25,19 @@ function Register-SalesforceConnectorDefinitions {
             @{ Name = 'ConsumerKey'; Source = 'Supply'; Prompt = 'Connected App Consumer Key (Client ID)'; Purpose = 'OAuth client credential'; Required = $true }
             @{ Name = 'ConsumerSecret'; Source = 'Supply'; Prompt = 'Connected App Consumer Secret (Client Secret)'; Purpose = 'OAuth client secret'; Required = $true; Secret = $true }
             @{ Name = 'Username'; Source = 'Supply'; Prompt = 'Integration user username'; Purpose = 'Salesforce account for integration'; Required = $false }
-            @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: AgentDiscovery, ActivityInsights)'; Purpose = 'Optional ISC feature permissions'; Required = $false }
+            @{
+                Name        = 'Feature'
+                Source      = 'Supply'
+                Prompt      = 'Feature packs (Space toggles, Enter confirms, Enter for none)'
+                Purpose     = 'Optional ISC feature permissions'
+                Required    = $false
+                MultiChoice = $true
+                Options     = @('AgentDiscovery', 'ActivityInsights')
+                Labels      = @(
+                    'AgentDiscovery (Salesforce Agentforce bots)'
+                    'ActivityInsights (Login history & event monitoring)'
+                )
+            }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings file path'; Required = $false }
         )
         Steps        = {

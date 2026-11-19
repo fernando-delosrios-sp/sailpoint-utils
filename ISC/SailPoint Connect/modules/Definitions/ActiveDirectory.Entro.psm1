@@ -72,7 +72,7 @@ function Test-ActiveDirectoryEntroCheck {
         Missing       = @($missing)
         Manual        = @($manual)
         PurposeMap    = @{
-            'DNS'                    = 'The Worker Group can resolve the domain controller'
+            'DNS'                    = 'Host can resolve the domain controller'
             'LDAPS 636'              = 'Entro binds over LDAPS'
             'ActiveDirectory module' = 'This host can create the read-only service account'
         }
@@ -95,12 +95,12 @@ function Register-ActiveDirectoryEntroDefinitions {
         AdminRoles    = @('Account operator on a domain-joined Windows host (create a user, do not grant admin roles)')
         OutputsHelp   = @'
 Paste into Entro (Management -> Accounts & Integrations -> Active Directory):
-Nickname, Domain Controller, DC FQDN, Domain, Username (UPN), Password, Root CA PEM from root-ca.pem, Environment Nickname, Environment Type, and the Outpost Worker Group.
+Nickname, Domain Controller, DC FQDN, Domain, Username (UPN), Password, Root CA PEM from root-ca.pem, Environment Nickname, and Environment Type.
 The service account is read-only. Do not add it to Domain Admins or other admin groups.
 '@
         TargetHost    = @{
             Role  = 'Active Directory domain controller or domain-joined Windows host'
-            Notes = 'Create svc_entro here. The Outpost Worker Group must reach the DC on LDAP 389, LDAPS 636, and Global Catalog 3268/3269.'
+            Notes = 'Create svc_entro here. Ensure LDAP 389, LDAPS 636, and Global Catalog 3268/3269 are reachable from the collector host.'
             Assert = {
                 param($c)
                 if (-not [System.OperatingSystem]::IsWindows()) {
@@ -123,7 +123,6 @@ if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) { throw 'Install the
             @{ Name = 'SamAccountName'; Source = 'Supply'; Prompt = 'Service account sAMAccountName'; Purpose = 'Read-only bind account'; Default = 'svc_entro'; Required = $false }
             @{ Name = 'EnvironmentNickname'; Source = 'Supply'; Prompt = 'Environment nickname'; Purpose = 'Entro environment label'; Required = $true }
             @{ Name = 'EnvironmentType'; Source = 'Supply'; Prompt = 'Environment type'; Purpose = 'Production, Staging, or Dev'; ValidateSet = @('Production', 'Staging', 'Dev'); Default = 'Dev'; Required = $false }
-            @{ Name = 'WorkerGroup'; Source = 'Supply'; Prompt = 'Entro Outpost Worker Group'; Purpose = 'Worker Group that will query this domain'; Required = $false }
             @{ Name = 'Password'; Source = 'Supply'; Prompt = 'Service account password'; Purpose = 'Password for the read-only bind account'; Secret = $true; When = $runRequired; Required = $runRequired }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
@@ -139,10 +138,10 @@ if (-not (Get-Module -ListAvailable -Name ActiveDirectory)) { throw 'Install the
             @(
                 @{
                     Id     = 'entro-ad-network'
-                    Title  = 'Confirm Outpost reachability to the domain controller'
+                    Title  = 'Confirm network reachability to the domain controller'
                     Kind   = 'Manual'
-                    Why    = 'Entro queries AD from the Outpost, over LDAP, LDAPS, and the Global Catalog.'
-                    Manual = "From the Outpost host, resolve $($ctx['DcFqdn']) and open TCP 389, 636, 3268, and 3269. DNS uses UDP 53."
+                    Why    = 'Entro queries AD over LDAP, LDAPS, and the Global Catalog.'
+                    Manual = "Resolve $($ctx['DcFqdn']) and confirm TCP 389, 636, 3268, and 3269 (plus DNS UDP 53) are reachable."
                 }
                 @{
                     Id    = 'entro-ad-account'
@@ -228,7 +227,6 @@ Write-Host "Wrote the LDAPS root CA to $caPath. Paste the whole PEM into Entro."
             param($ctx)
             $sam = if ($ctx['SamAccountName']) { $ctx['SamAccountName'] } else { 'svc_entro' }
             $upn = if ($ctx['ServiceUpn']) { $ctx['ServiceUpn'] } else { "$sam@$($ctx['Domain'])" }
-            $wg = if ($ctx['WorkerGroup']) { $ctx['WorkerGroup'] } else { '(select the Outpost Worker Group)' }
             $ca = if ($ctx['RootCaPath']) { $ctx['RootCaPath'] } else { 'root-ca.pem' }
             Write-Host ''
             Write-Host 'Entro handoff' -ForegroundColor Cyan
@@ -240,7 +238,6 @@ Write-Host "Wrote the LDAPS root CA to $caPath. Paste the whole PEM into Entro."
             Write-Host "  Username: $upn"
             Write-Host "  Root CA PEM: $ca"
             Write-Host "  Environment: $($ctx['EnvironmentNickname']) ($($ctx['EnvironmentType']))"
-            Write-Host "  Worker Group: $wg"
             Write-Host ''
         }
     }

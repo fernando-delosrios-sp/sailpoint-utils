@@ -55,7 +55,16 @@ function Register-DatabricksConnectorDefinitions {
             @{ Name = 'ServicePrincipalName'; Source = 'Supply'; Prompt = 'Service principal display name'; Purpose = 'Account-level SP for ISC'; Required = $false; Default = 'SailPoint-source' }
             @{ Name = 'AccountId'; Source = 'Discover'; Prompt = 'Databricks Account ID'; Purpose = 'From account console menu'; Required = $true }
             @{ Name = 'MetastoreId'; Source = 'Supply'; Prompt = 'Unity Catalog metastore ID'; Purpose = 'Governs workspaces in metastore'; Required = $true }
-            @{ Name = 'Feature'; Source = 'Supply'; Prompt = 'Feature packs (comma-separated: AgentDiscovery)'; Purpose = 'Optional ISC feature permissions'; Required = $false; ValidateSet = @('AgentDiscovery') }
+            @{
+                Name        = 'Feature'
+                Source      = 'Supply'
+                Prompt      = 'Feature packs (Space toggles, Enter confirms, Enter for none)'
+                Purpose     = 'Optional ISC feature permissions'
+                Required    = $false
+                MultiChoice = $true
+                Options     = @('AgentDiscovery')
+                Labels      = @('AgentDiscovery (AI agents & Model Serving endpoints)')
+            }
             @{ Name = 'RotateSecret'; Source = 'Supply'; Prompt = 'Rotate OAuth secret'; Purpose = 'Create new secret if SP exists'; Required = $false }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Connection settings'; Required = $false }
         )

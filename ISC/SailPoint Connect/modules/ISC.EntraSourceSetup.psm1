@@ -594,6 +594,258 @@ function Invoke-EntraAgentApply {
     return Build-EntraSourceResult -Resolved $resolved -ApplyResult $applyResult -RunDirectory $run.Path
 }
 
+function Get-EntroAzureRbacRoleDefinitionSpec {
+    return [PSCustomObject]@{
+        DefaultRoleName = 'EntroSecurityRole'
+        Description     = 'Entro Security requires permissions to manage and monitor tokens, secrets, and vaults.'
+        Actions         = @(
+            '*/read'
+            'Microsoft.OperationalInsights/workspaces/analytics/query/action'
+            'Microsoft.OperationalInsights/workspaces/search/action'
+            'Microsoft.Insights/alertRules/*'
+            'Microsoft.Support/*'
+            'Microsoft.Web/sites/config/list/Action'
+        )
+        NotActions      = @(
+            'Microsoft.OperationalInsights/workspaces/sharedKeys/read'
+        )
+        BuiltInRoles    = @(
+            'Key Vault Reader'
+            'App Configuration Data Reader'
+        )
+    }
+}
+
+function Get-EntroPlainArmToken {
+    param($AccessToken)
+    if ($null -eq $AccessToken) {
+        $AccessToken = Get-AzAccessToken -ResourceTypeName Arm -ErrorAction Stop
+    }
+    $raw = if ($AccessToken.PSObject.Properties['Token']) { $AccessToken.Token } else { $AccessToken }
+    if ($raw -is [System.Security.SecureString]) {
+        return [System.Net.NetworkCredential]::new('', $raw).Password
+    }
+    return [string]$raw
+}
+
+function Set-EntroAzureRbacAudit {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory)][string]$ServicePrincipalObjectId,
+        [Parameter(Mandatory)][string[]]$Scopes,
+        [string]$RoleName = 'EntroSecurityRole',
+        [switch]$RegisterInsightsProvider
+    )
+
+    $spec = Get-EntroAzureRbacRoleDefinitionSpec
+    if ([string]::IsNullOrWhiteSpace($RoleName)) { $RoleName = $spec.DefaultRoleName }
+
+    $assigned = [System.Collections.Generic.List[object]]::new()
+    $counter = 0
+    foreach ($scope in @($Scopes | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })) {
+        $counter++
+        $scopedRoleName = if (@($Scopes).Count -gt 1) { "$RoleName$counter" } else { $RoleName }
+        if (-not $PSCmdlet.ShouldProcess($scope, "Ensure custom role '$scopedRoleName' and assign EntroSecurityRole, Key Vault Reader, App Configuration Data Reader")) {
+            continue
+        }
+
+        $existingRole = Get-AzRoleDefinition -Scope $scope -Name $scopedRoleName -ErrorAction SilentlyContinue
+        if (-not $existingRole) {
+            $roleDef = [Microsoft.Azure.Commands.Resources.Models.Authorization.PSRoleDefinition]::new()
+            $roleDef.Name = $scopedRoleName
+            $roleDef.Description = $spec.Description
+            $roleDef.IsCustom = $true
+            $roleDef.Actions = @($spec.Actions)
+            $roleDef.NotActions = @($spec.NotActions)
+            $roleDef.AssignableScopes = @($scope)
+            $null = New-AzRoleDefinition -SkipClientSideScopeValidation -Role $roleDef -ErrorAction Stop
+            $existingRole = Get-AzRoleDefinition -Scope $scope -Name $scopedRoleName -ErrorAction Stop
+        }
+
+        if ($existingRole) {
+            $null = New-AzRoleAssignment -ObjectId $ServicePrincipalObjectId -RoleDefinitionId $existingRole.Id -Scope $scope -ErrorAction SilentlyContinue
+        }
+        foreach ($builtInName in $spec.BuiltInRoles) {
+            $builtIn = Get-AzRoleDefinition -Name $builtInName -ErrorAction SilentlyContinue
+            if ($builtIn) {
+                $null = New-AzRoleAssignment -ObjectId $ServicePrincipalObjectId -RoleDefinitionId $builtIn.Id -Scope $scope -ErrorAction SilentlyContinue
+            }
+        }
+        $assigned.Add([PSCustomObject]@{ Scope = $scope; CustomRole = $scopedRoleName; BuiltInRoles = @($spec.BuiltInRoles) })
+
+        if ($RegisterInsightsProvider -and $scope -match '^/subscriptions/(?<sub>[^/]+)$') {
+            $subId = $Matches['sub']
+            $null = Set-AzContext -SubscriptionId $subId -ErrorAction SilentlyContinue
+            $rp = Get-AzResourceProvider -ProviderNamespace 'Microsoft.Insights' -ErrorAction SilentlyContinue
+            if (-not $rp -or $rp.RegistrationState -ne 'Registered') {
+                $null = Register-AzResourceProvider -ProviderNamespace 'Microsoft.Insights' -ErrorAction SilentlyContinue
+            }
+        }
+    }
+    return @($assigned)
+}
+
+function New-EntroLogAnalyticsWorkspace {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [string]$SubscriptionId,
+        [string]$ResourceGroupName = 'EntroSecurityRG',
+        [string]$WorkspaceName = 'EntroSecurityLogAnalytics',
+        [string]$Location = 'eastus',
+        [int]$RetentionInDays = 30
+    )
+
+    if (-not $PSCmdlet.ShouldProcess("$ResourceGroupName/$WorkspaceName", 'Ensure Log Analytics Workspace for Entro')) {
+        return $null
+    }
+    if ($SubscriptionId) {
+        $null = Set-AzContext -SubscriptionId $SubscriptionId -ErrorAction Stop
+    }
+    $rg = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue
+    if (-not $rg) {
+        $rg = New-AzResourceGroup -Name $ResourceGroupName -Location $Location -ErrorAction Stop
+    }
+    $law = Get-AzOperationalInsightsWorkspace -ResourceGroupName $ResourceGroupName -Name $WorkspaceName -ErrorAction SilentlyContinue
+    if (-not $law) {
+        $law = New-AzOperationalInsightsWorkspace -ResourceGroupName $ResourceGroupName -Name $WorkspaceName -Location $rg.Location -Sku 'PerGB2018' -RetentionInDays $RetentionInDays -Force -ErrorAction Stop
+    }
+    return $law
+}
+
+function Set-EntroSignInLogForwarding {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory)][string]$WorkspaceResourceId,
+        [string]$DiagnosticSettingName = 'EntroSecurityLogForwarding'
+    )
+
+    $apiVersion = '2017-04-01'
+    $uri = "https://management.azure.com/providers/microsoft.aadiam/diagnosticSettings/$DiagnosticSettingName`?api-version=$apiVersion"
+    if (-not $PSCmdlet.ShouldProcess($uri, 'Configure Microsoft Entra AuditLogs and ServicePrincipalSignInLogs forwarding')) {
+        return $null
+    }
+
+    $token = Get-EntroPlainArmToken
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        throw 'Failed to retrieve Azure Resource Manager access token via Get-AzAccessToken.'
+    }
+    $headers = @{
+        'Authorization' = "Bearer $token"
+        'Content-Type'  = 'application/json'
+    }
+    $categories = @(
+        'AuditLogs', 'SignInLogs', 'NonInteractiveUserSignInLogs', 'ServicePrincipalSignInLogs',
+        'ManagedIdentitySignInLogs', 'ProvisioningLogs', 'ADFSSignInLogs', 'RiskyUsers',
+        'UserRiskEvents', 'NetworkAccessTrafficLogs', 'RiskyServicePrincipals',
+        'ServicePrincipalRiskEvents', 'EnrichedOffice365AuditLogs', 'MicrosoftGraphActivityLogs',
+        'RemoteNetworkHealthLogs', 'NetworkAccessAlerts'
+    )
+    $logsPayload = @(foreach ($cat in $categories) {
+        @{
+            category        = $cat
+            categoryGroup   = $null
+            enabled         = ($cat -in @('AuditLogs', 'ServicePrincipalSignInLogs'))
+            retentionPolicy = @{ days = 0; enabled = $false }
+        }
+    })
+    $body = @{
+        properties = @{
+            workspaceId                 = $WorkspaceResourceId
+            logAnalyticsDestinationType = $null
+            metrics                     = @()
+            logs                        = $logsPayload
+        }
+    } | ConvertTo-Json -Depth 10
+
+    return Invoke-RestMethod -Uri $uri -Method Put -Headers $headers -Body $body -ErrorAction Stop
+}
+
+function Set-EntroKeyVaultAccess {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory)][string]$ServicePrincipalObjectId,
+        [Parameter(Mandatory)][object[]]$Vaults
+    )
+
+    $results = [System.Collections.Generic.List[object]]::new()
+    foreach ($vault in @($Vaults)) {
+        if (-not $vault) { continue }
+        $vName = [string]$vault.VaultName
+        $vSub = if ($vault.PSObject.Properties['SubscriptionId']) { [string]$vault.SubscriptionId } else { '' }
+        $vId = if ($vault.PSObject.Properties['ResourceId']) { [string]$vault.ResourceId } else { '' }
+        $isRbac = [bool]($vault.PSObject.Properties['EnableRbacAuthorization'] -and $vault.EnableRbacAuthorization)
+        if (-not $PSCmdlet.ShouldProcess($vName, 'Grant Entro Key Vault scanning permissions')) {
+            continue
+        }
+        if ($vSub) {
+            $null = Set-AzContext -SubscriptionId $vSub -ErrorAction SilentlyContinue
+        }
+        if (-not $isRbac) {
+            $null = Set-AzKeyVaultAccessPolicy `
+                -VaultName $vName `
+                -ObjectId $ServicePrincipalObjectId `
+                -BypassObjectIdValidation `
+                -PermissionsToKeys @('get', 'list', 'decrypt', 'unwrapKey') `
+                -PermissionsToSecrets @('get', 'list') `
+                -PermissionsToCertificates @('get', 'list', 'getissuers', 'listissuers') `
+                -ErrorAction Stop
+            $results.Add([PSCustomObject]@{ VaultName = $vName; Mode = 'AccessPolicy'; Status = 'Configured' })
+        }
+        else {
+            $kvReader = Get-AzRoleDefinition -Name 'Key Vault Reader' -ErrorAction SilentlyContinue
+            if ($kvReader -and $vId) {
+                $null = New-AzRoleAssignment -ObjectId $ServicePrincipalObjectId -RoleDefinitionId $kvReader.Id -Scope $vId -ErrorAction SilentlyContinue
+            }
+            $results.Add([PSCustomObject]@{ VaultName = $vName; Mode = 'RBAC'; Status = 'Configured' })
+        }
+    }
+    return @($results)
+}
+
+function Set-EntroKeyVaultActivityLogs {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory)][string]$WorkspaceResourceId,
+        [Parameter(Mandatory)][object[]]$Vaults,
+        [string]$DiagnosticSettingName = 'EntroKVActivityLogs'
+    )
+
+    $logSettings = @(
+        (New-AzDiagnosticSettingLogSettingsObject -Enabled $true -CategoryGroup 'audit')
+        (New-AzDiagnosticSettingLogSettingsObject -Enabled $true -CategoryGroup 'allLogs')
+    )
+    $metricSettings = New-AzDiagnosticSettingMetricSettingsObject -Enabled $false -Category 'AllMetrics'
+
+    $results = [System.Collections.Generic.List[object]]::new()
+    foreach ($vault in @($Vaults)) {
+        if (-not $vault) { continue }
+        $vName = [string]$vault.VaultName
+        $vSub = if ($vault.PSObject.Properties['SubscriptionId']) { [string]$vault.SubscriptionId } else { '' }
+        $vId = [string]$vault.ResourceId
+        if (-not $PSCmdlet.ShouldProcess($vName, "Enable $DiagnosticSettingName diagnostic setting")) {
+            continue
+        }
+        if ($vSub) {
+            $null = Set-AzContext -SubscriptionId $vSub -ErrorAction SilentlyContinue
+        }
+        try {
+            Remove-AzDiagnosticSetting -ResourceId $vId -Name 'EntroAuditLogging' -ErrorAction SilentlyContinue | Out-Null
+        }
+        catch {
+            Write-Verbose "Ignoring missing legacy diagnostic setting EntroAuditLogging on ${vName}: $($_.Exception.Message)"
+        }
+        $null = New-AzDiagnosticSetting -Name $DiagnosticSettingName `
+            -ResourceId $vId `
+            -WorkspaceId $WorkspaceResourceId `
+            -Log $logSettings `
+            -Metric $metricSettings `
+            -LogAnalyticsDestinationType 'AzureDiagnostics' `
+            -ErrorAction Stop
+        $results.Add([PSCustomObject]@{ VaultName = $vName; DiagnosticSetting = $DiagnosticSettingName; Status = 'Configured' })
+    }
+    return @($results)
+}
+
 Export-ModuleMember -Function @(
     'Initialize-EntraSourceSetup'
     'Test-Agent365Selected'
@@ -605,4 +857,11 @@ Export-ModuleMember -Function @(
     'Invoke-EntraSourceApply'
     'Build-EntraSourceResult'
     'Invoke-EntraAgentApply'
+    'Get-EntroAzureRbacRoleDefinitionSpec'
+    'Get-EntroPlainArmToken'
+    'Set-EntroAzureRbacAudit'
+    'New-EntroLogAnalyticsWorkspace'
+    'Set-EntroSignInLogForwarding'
+    'Set-EntroKeyVaultAccess'
+    'Set-EntroKeyVaultActivityLogs'
 )

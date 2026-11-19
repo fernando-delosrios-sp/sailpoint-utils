@@ -127,7 +127,7 @@ function Test-HashiCorpVaultEntroCheck {
         Missing       = @($missing)
         Manual        = @($manual)
         PurposeMap    = @{
-            'TCP reachability'  = 'Outpost or operator host can open the Vault API port'
+            'TCP reachability'  = 'Host can open the Vault API port'
             'Vault sys/health'  = 'Vault API is responding'
             'entro-policy token' = 'Renewable token is bound to entro-policy'
         }
@@ -150,12 +150,12 @@ function Register-HashiCorpEntroDefinitions {
         AdminRoles   = @('Vault operator who can write ACL policies and create tokens')
         OutputsHelp  = @'
 Paste into Entro (Management -> Accounts & Integrations -> HashiCorp Vault):
-Environment, Vault Server URL, the renewable access token written to entro-vault-token.txt, and the Outpost Worker Group.
+Environment, Vault Server URL, and the renewable access token written to entro-vault-token.txt.
 Do not commit the token file.
 '@
         TargetHost   = @{
             Role  = 'Internal host with HTTPS reachability to the Vault API'
-            Notes = 'Run on a host that can reach Vault (often the Outpost host or a jump host). The Outpost Worker Group must also reach Vault. This does not use the vault CLI.'
+            Notes = 'Run on a host that can reach Vault (or use BuildScript and copy the .ps1 to a host with Vault API access). This does not use the vault CLI.'
             Assert = {
                 param($c)
                 $ep = Get-OnPremEndpoint -Address ([string]$c['VaultUrl']) -DefaultPort 8200
@@ -180,7 +180,6 @@ finally { $vaultClient.Dispose() }
             @{ Name = 'VaultUrl'; Source = 'Supply'; Prompt = 'Vault server URL'; Purpose = 'https://vault.example.com:8200'; Required = $true }
             @{ Name = 'PolicyMode'; Source = 'Supply'; Prompt = 'ACL policy'; Purpose = 'Standard list/read, or KV v2 metadata-only'; ValidateSet = @('Standard', 'KvMetadata'); Default = 'Standard'; Required = $false }
             @{ Name = 'KvMount'; Source = 'Supply'; Prompt = 'KV v2 mount path'; Purpose = 'Mount path for metadata-only ACL (for example secret)'; Default = 'secret'; Required = $false; When = { param($c) $c['PolicyMode'] -eq 'KvMetadata' } }
-            @{ Name = 'WorkerGroup'; Source = 'Supply'; Prompt = 'Entro Outpost Worker Group'; Purpose = 'Worker Group that will scan this Vault'; Required = $false }
             @{ Name = 'VaultAdminToken'; Source = 'Supply'; Prompt = 'Vault admin token (policy write + token create)'; Purpose = 'Short-lived admin token used only to create entro-policy'; Secret = $true; When = $runRequired; Required = $runRequired }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
@@ -194,13 +193,6 @@ finally { $vaultClient.Dispose() }
             param($ctx)
             $mode = if ($ctx['PolicyMode']) { [string]$ctx['PolicyMode'] } else { 'Standard' }
             @(
-                @{
-                    Id     = 'entro-vault-outpost'
-                    Title  = 'Confirm the Outpost Worker Group can reach Vault'
-                    Kind   = 'Manual'
-                    Why    = 'Entro scans Vault from the on-prem Outpost, not from SailPoint Cloud.'
-                    Manual = 'Select the project Outpost Worker Group in Entro. The connector host needs TCP to the Vault API (usually 8200).'
-                }
                 @{
                     Id    = 'entro-vault-policy'
                     Title = "Write entro-policy ($mode)"
@@ -283,14 +275,12 @@ Write-Host "Wrote the renewable token to $tokenPath. Paste it into Entro. Do not
         }
         OnRunComplete = {
             param($ctx)
-            $wg = if ($ctx['WorkerGroup']) { $ctx['WorkerGroup'] } else { '(select the Outpost Worker Group)' }
             $tokenPath = if ($ctx['CreatedTokenPath']) { $ctx['CreatedTokenPath'] } else { 'entro-vault-token.txt' }
             Write-Host ''
             Write-Host 'Entro handoff' -ForegroundColor Cyan
             Write-Host "  Target host: internal host that can reach $($ctx['VaultUrl'])"
             Write-Host "  Environment: $($ctx['Environment'])"
             Write-Host "  Vault URL: $($ctx['VaultUrl'])"
-            Write-Host "  Worker Group: $wg"
             Write-Host "  Access token file: $tokenPath"
             Write-Host ''
         }

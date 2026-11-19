@@ -16,6 +16,7 @@ param(
     [switch]$Entro,
 
     [Parameter(ParameterSetName = 'Connector')]
+    [Parameter(ParameterSetName = 'Entro')]
     [ValidateSet('ReadOnly', 'ReadWrite')]
     [string]$Access,
 
@@ -32,6 +33,7 @@ param(
     [Parameter(ParameterSetName = 'Entro')]
     [string]$ApplicationName,
     [Parameter(ParameterSetName = 'Connector')]
+    [Parameter(ParameterSetName = 'Entro')]
     [string[]]$Feature,
     [Parameter(ParameterSetName = 'Entro')]
     [Parameter(ParameterSetName = 'Connector')]
@@ -105,14 +107,9 @@ Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBound
 
 Start-IntegrationWizardFlow -Platform 'Azure' -ScriptName 'Azure.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
-        $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Connector', 'Entro') `
-            -Labels @('Microsoft Entra ID connector', 'Entro Microsoft ecosystem') -Default 'Connector'
-        if ($picked -eq 'Connector') {
-            $context.Connector = $true
-            return Get-IntegrationWizardDefinition -Id 'azure-connector'
-        }
+        $context.Connector = $true
         $context.Entro = $true
-        Get-IntegrationWizardDefinition -Id 'azure-entro'
+        Get-IntegrationWizardDefinition -Id 'azure-connector'
     } `
     -Discover {
         param($name, $ctx)

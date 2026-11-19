@@ -129,18 +129,9 @@ Copy-IntegrationWizardCatalogContext -Context $context -BoundParameters $PSBound
 
 Start-IntegrationWizardFlow -Platform 'CrowdStrike' -ScriptName 'CrowdStrike.ps1' -CoreOptionHelp $coreHelp -Context $context `
     -PickTarget {
-        $picked = Read-Choice -Prompt 'What do you want to configure?' -Options @('Connector', 'Entro') `
-            -Labels @('CrowdStrike Falcon SaaS connector (with Machine Identity Governance)', 'Entro CrowdStrike integration') -Default 'Connector'
-        switch ($picked) {
-            'Connector' {
-                $context['Connector'] = $true
-                Get-IntegrationWizardDefinition -Id 'crowdstrike-connector'
-            }
-            'Entro' {
-                $context['Entro'] = $true
-                Get-IntegrationWizardDefinition -Id 'crowdstrike-entro'
-            }
-        }
+        $context['Connector'] = $true
+        $context['Entro'] = $true
+        Get-IntegrationWizardDefinition -Id 'crowdstrike-connector'
     } `
     -Discover { param($n, $c) @() } `
     -Execute { param($def, $ctx) Invoke-IntegrationWizardAction -Definition $def -Context $ctx }
