@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 Set-StrictMode -Version Latest
 
 function Import-IscModule {
@@ -966,7 +966,7 @@ function Get-SailPointConnectVersion {
         }
         catch {}
     }
-    return '1.16.0'
+    return '1.18.0'
 }
 
 function Write-OperatorFramedRow {

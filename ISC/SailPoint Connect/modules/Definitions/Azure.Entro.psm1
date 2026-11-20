@@ -85,7 +85,7 @@ function Register-AzureEntroDefinitions {
         OutputsHelp  = 'Paste Environment nickname, Tenant ID, Client ID, and Client Secret into Entro.'
         Inputs       = @(
             @{ Name = 'EnvironmentNickname'; Source = 'Supply'; Prompt = 'Environment nickname'; Purpose = 'Label in Entro'; Required = $true }
-            @{ Name = 'DisplayName'; Source = 'Supply'; Prompt = 'App display name'; Purpose = 'Entra application name'; Required = $false; Default = 'EntroSecurityApp' }
+            @{ Name = 'ApplicationName'; Source = 'Discover'; Prompt = 'Application display name'; Purpose = 'App registration name'; Required = $false; Default = 'EntroSecurityApp' }
             @{ Name = 'TenantId'; Source = 'Supply'; Prompt = 'Tenant ID or domain'; Purpose = 'Microsoft Entra tenant (optional)'; Required = $false }
             @{
                 Name        = 'Feature'
@@ -108,7 +108,7 @@ function Register-AzureEntroDefinitions {
                 Prompt  = 'Azure Subscription ID(s) or Management Group scope (optional)'
                 Purpose = 'Target scope for Azure RBAC, Log Analytics, or Key Vault configuration'
                 Required = $false
-                When    = { param($c) (Get-EntroAzureContextFeatureNames -Context $c | Where-Object { $_ -in @('AzureRbacAudit', 'LogAnalyticsForwarding', 'KeyVaultScanning', 'KeyVaultActivityLogs') }).Count -gt 0 }
+                When    = { param($c) @(Get-EntroAzureContextFeatureNames -Context $c | Where-Object { $_ -in @('AzureRbacAudit', 'LogAnalyticsForwarding', 'KeyVaultScanning', 'KeyVaultActivityLogs') }).Count -gt 0 }
             }
             @{
                 Name     = 'ResourceGroupName'
@@ -117,7 +117,7 @@ function Register-AzureEntroDefinitions {
                 Purpose  = 'Resource group holding the Entro Log Analytics Workspace'
                 Required = $false
                 Default  = 'EntroSecurityRG'
-                When     = { param($c) (Get-EntroAzureContextFeatureNames -Context $c | Where-Object { $_ -in @('LogAnalyticsForwarding', 'KeyVaultActivityLogs') }).Count -gt 0 }
+                When     = { param($c) @(Get-EntroAzureContextFeatureNames -Context $c | Where-Object { $_ -in @('LogAnalyticsForwarding', 'KeyVaultActivityLogs') }).Count -gt 0 }
             }
             @{
                 Name     = 'LogAnalyticsWorkspaceName'
@@ -126,7 +126,7 @@ function Register-AzureEntroDefinitions {
                 Purpose  = 'Workspace receiving Entra sign-in / audit logs and Key Vault diagnostics'
                 Required = $false
                 Default  = 'EntroSecurityLogAnalytics'
-                When     = { param($c) (Get-EntroAzureContextFeatureNames -Context $c | Where-Object { $_ -in @('LogAnalyticsForwarding', 'KeyVaultActivityLogs') }).Count -gt 0 }
+                When     = { param($c) @(Get-EntroAzureContextFeatureNames -Context $c | Where-Object { $_ -in @('LogAnalyticsForwarding', 'KeyVaultActivityLogs') }).Count -gt 0 }
             }
             @{
                 Name     = 'KeyVaultName'
@@ -134,7 +134,7 @@ function Register-AzureEntroDefinitions {
                 Prompt   = 'Key Vault name(s), comma-separated (blank for all accessible vaults)'
                 Purpose  = 'Target Key Vaults for scanning or activity log diagnostic settings'
                 Required = $false
-                When     = { param($c) (Get-EntroAzureContextFeatureNames -Context $c | Where-Object { $_ -in @('KeyVaultScanning', 'KeyVaultActivityLogs') }).Count -gt 0 }
+                When     = { param($c) @(Get-EntroAzureContextFeatureNames -Context $c | Where-Object { $_ -in @('KeyVaultScanning', 'KeyVaultActivityLogs') }).Count -gt 0 }
             }
             @{ Name = 'OutputDirectory'; Source = 'Supply'; Prompt = 'Output directory'; Purpose = 'Wizard output directory'; Required = $false }
         )
@@ -160,7 +160,9 @@ function Register-AzureEntroDefinitions {
                     Import-Module (Join-Path $modRoot 'ISC.EntraSourceSetup.psm1') -Force -Global -WarningAction SilentlyContinue
                     Initialize-EntraConnectorData
 
-                    $displayName = if ($c['DisplayName']) { [string]$c['DisplayName'] } else { 'EntroSecurityApp' }
+                    $displayName = if ($c['ApplicationName']) { [string]$c['ApplicationName'] } elseif ($c['DisplayName']) { [string]$c['DisplayName'] } else { 'EntroSecurityApp' }
+                    $c['ApplicationName'] = $displayName
+                    $c['DisplayName'] = $displayName
                     $tenantReq = if ($c['TenantId']) { [string]$c['TenantId'] } else { '' }
                     $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
                     $permSpec = Get-EntroAzureGraphPermissions -Access $access
@@ -211,7 +213,9 @@ function Register-AzureEntroDefinitions {
                 }
                 BuildScript = {
                     param($c)
-                    $displayName = if ($c['DisplayName']) { [string]$c['DisplayName'] } else { 'EntroSecurityApp' }
+                    $displayName = if ($c['ApplicationName']) { [string]$c['ApplicationName'] } elseif ($c['DisplayName']) { [string]$c['DisplayName'] } else { 'EntroSecurityApp' }
+                    $c['ApplicationName'] = $displayName
+                    $c['DisplayName'] = $displayName
                     $tenantReq = if ($c['TenantId']) { [string]$c['TenantId'] } else { '' }
                     $access = if ($c['Access']) { [string]$c['Access'] } else { 'ReadOnly' }
                     $permSpec = Get-EntroAzureGraphPermissions -Access $access

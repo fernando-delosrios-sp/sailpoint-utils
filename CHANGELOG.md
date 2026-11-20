@@ -4,6 +4,12 @@ All notable changes to **sailpoint-utils** — reusable SailPoint ISC/IIQ utilit
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Dates use ISO 8601.
 
+## 2026-11-20 · v1.18.0
+
+### Fixed
+
+- **SailPoint Connect — Deduplicate Entra application name in Azure setup wizard**: Unified the input name in `modules/Definitions/Azure.Entro.psm1` from `DisplayName` to `ApplicationName` (`Prompt = 'Application display name'`, `Purpose = 'App registration name'`). In combined Microsoft Entra ID connector + Entro Microsoft ecosystem wizard sessions, `Merge-IntegrationWizardDefinitions` now merges them into a single input prompt with discovery support, eliminating the redundant second prompt (`App display name [EntroSecurityApp]:`) after the application name had already been selected or specified. Backward compatibility is retained for callers or configurations passing either `ApplicationName` or `DisplayName`.
+
 ## 2026-11-18 · v1.16.0
 
 ### Fixed

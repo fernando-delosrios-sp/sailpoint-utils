@@ -128,6 +128,12 @@ foreach ($pair in $pairs) {
     Assert-True ([bool]$pairPlan['IsComposite']) "$($pair.Label) resolves to a composite plan"
 }
 
+$azPlan = Resolve-IntegrationWizardPlan -Platform 'Azure' -Context @{ Connector = $true; Entro = $true }
+$azInputNames = @($azPlan.Inputs | ForEach-Object { $_.Name })
+Assert-True ($azInputNames -contains 'ApplicationName') 'Azure composite plan contains ApplicationName'
+Assert-True ($azInputNames -notcontains 'DisplayName') 'Azure composite plan does not duplicate app name as DisplayName'
+Assert-Equal 1 (@($azInputNames | Where-Object { $_ -eq 'ApplicationName' })).Count 'ApplicationName appears exactly once in Azure composite plan'
+
 # 3) Requirements document build for a definition with no composite/legacy keys.
 $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("iw-strictkeys-" + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $tmp | Out-Null

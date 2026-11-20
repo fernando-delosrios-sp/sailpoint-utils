@@ -10,7 +10,7 @@ $modulePath = Join-Path $connectRoot 'SailPoint.Connect.psm1'
 Assert-True (Test-Path -LiteralPath $manifestPath) 'SailPoint.Connect.psd1 exists'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 Assert-Equal 'SailPoint.Connect' $manifest.Name 'Manifest module name'
-Assert-Equal '1.17.0' $manifest.Version.ToString() 'Manifest version 1.17.0'
+Assert-Equal '1.18.0' $manifest.Version.ToString() 'Manifest version 1.18.0'
 Assert-Equal 'SailPoint Technologies' $manifest.Author 'Manifest author'
 
 # 2) Module import and exported members
@@ -298,7 +298,7 @@ try {
     $m365Primary = Join-Path $connectRoot 'Microsoft 365 Access Profiles.ps1'
     $iqScopeOut = & pwsh -NoProfile -Command {
         param($manifest, $iqPath)
-        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.17.0'
+        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.18.0'
         Import-Module $manifest -Force -Global
         & (Get-Module SailPoint.Connect) {
             param($p)
@@ -314,7 +314,7 @@ try {
     $missingM365Cfg = Join-Path $tmp 'missing-m365-config.yaml'
     $m365ScopeOut = & pwsh -NoProfile -Command {
         param($manifest, $m365Path, $cfg)
-        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.17.0'
+        $env:SAILPOINT_CONNECT_MOCK_LATEST_VERSION = '1.18.0'
         Import-Module $manifest -Force -Global
         & (Get-Module SailPoint.Connect) {
             param($p, $c)

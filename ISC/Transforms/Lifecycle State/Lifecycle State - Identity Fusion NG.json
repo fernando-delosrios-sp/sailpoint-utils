@@ -1,0 +1,150 @@
+{
+  "id": "bdbc9985-64de-487d-9815-da71f60c0c27",
+  "name": "Lifecycle State - Identity Fusion NG",
+  "type": "firstValid",
+  "attributes": {
+    "ignoreErrors": true,
+    "values": [
+      {
+        "type": "conditional",
+        "attributes": {
+          "expression": "$originSource eq MelonHRM",
+          "positiveCondition": "Fusion Demo",
+          "negativeCondition": {
+            "type": "conditional",
+            "attributes": {
+              "expression": "$type eq orphan",
+              "positiveCondition": "terminated",
+              "negativeCondition": "$dateBased",
+              "type": {
+                "type": "firstValid",
+                "attributes": {
+                  "values": [
+                    {
+                      "type": "accountAttribute",
+                      "attributes": {
+                        "sourceName": "Identity Fusion NG",
+                        "attributeName": "type"
+                      }
+                    },
+                    "-"
+                  ]
+                }
+              },
+              "dateBased": {
+                "type": "dateCompare",
+                "attributes": {
+                  "firstDate": {
+                    "type": "firstValid",
+                    "attributes": {
+                      "values": [
+                        {
+                          "type": "reference",
+                          "attributes": {
+                            "id": "Effective End Date - Identity Fusion NG"
+                          }
+                        },
+                        {
+                          "type": "dateMath",
+                          "attributes": {
+                            "expression": "now+1M"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "secondDate": "now",
+                  "operator": "lte",
+                  "positiveCondition": {
+                    "type": "dateCompare",
+                    "attributes": {
+                      "firstDate": {
+                        "type": "reference",
+                        "attributes": {
+                          "id": "Effective End Date - Identity Fusion NG"
+                        }
+                      },
+                      "secondDate": {
+                        "type": "dateMath",
+                        "attributes": {
+                          "expression": "now-30d"
+                        }
+                      },
+                      "operator": "lt",
+                      "positiveCondition": "deleted",
+                      "negativeCondition": {
+                        "type": "dateCompare",
+                        "attributes": {
+                          "firstDate": {
+                            "type": "reference",
+                            "attributes": {
+                              "id": "Effective End Date - Identity Fusion NG"
+                            }
+                          },
+                          "secondDate": {
+                            "type": "dateMath",
+                            "attributes": {
+                              "expression": "now-7d"
+                            }
+                          },
+                          "operator": "lt",
+                          "positiveCondition": "archived",
+                          "negativeCondition": "terminated"
+                        }
+                      }
+                    }
+                  },
+                  "negativeCondition": {
+                    "type": "dateCompare",
+                    "attributes": {
+                      "firstDate": {
+                        "type": "firstValid",
+                        "attributes": {
+                          "values": [
+                            {
+                              "type": "reference",
+                              "attributes": {
+                                "id": "Effective Start Date - Identity Fusion NG"
+                              }
+                            },
+                            {
+                              "type": "dateMath",
+                              "attributes": {
+                                "expression": "now-1M"
+                              }
+                            }
+                          ]
+                        }
+                      },
+                      "secondDate": "now",
+                      "operator": "lte",
+                      "positiveCondition": "active",
+                      "negativeCondition": "preHire"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "originSource": {
+            "type": "firstValid",
+            "attributes": {
+              "values": [
+                {
+                  "type": "accountAttribute",
+                  "attributes": {
+                    "sourceName": "Identity Fusion NG",
+                    "attributeName": "originSource"
+                  }
+                },
+                "NONE"
+              ]
+            }
+          }
+        }
+      },
+      "-"
+    ]
+  },
+  "internal": false
+}

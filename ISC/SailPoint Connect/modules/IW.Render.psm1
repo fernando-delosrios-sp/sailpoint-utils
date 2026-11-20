@@ -1,4 +1,4 @@
-# SailPoint Connect: Run, Build script, Build requirements.
+﻿# SailPoint Connect: Run, Build script, Build requirements.
 
 Set-StrictMode -Version Latest
 
@@ -452,6 +452,7 @@ function New-IntegrationWizardRequirementsDoc {
             $steps = & $member.Steps $Context
             $n = 0
             foreach ($step in @($steps)) {
+                if (-not $step) { continue }
                 if ($step.ContainsKey('When') -and $step['When'] -and -not (& $step['When'] $Context)) { continue }
                 $n++
                 [void]$sb.AppendLine("#### $n. $($step.Title)")
@@ -465,6 +466,7 @@ function New-IntegrationWizardRequirementsDoc {
         $steps = & $Definition.Steps $Context
         $n = 0
         foreach ($step in @($steps)) {
+            if (-not $step) { continue }
             if ($step.ContainsKey('When') -and $step['When'] -and -not (& $step['When'] $Context)) { continue }
             $n++
             [void]$sb.AppendLine("### $n. $($step.Title)")

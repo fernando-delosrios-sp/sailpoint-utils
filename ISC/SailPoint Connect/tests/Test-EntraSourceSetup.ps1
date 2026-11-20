@@ -140,6 +140,8 @@ foreach ($name in @('client-secret.txt', 'agent365-refresh-token.txt')) {
     Register-AzureEntroDefinitions
     $azureEntroDef = Get-IntegrationWizardDefinition -Id 'azure-entro'
     Assert-True ($null -ne $azureEntroDef) 'azure-entro definition is registered'
+    Assert-True (@($azureEntroDef.Inputs | ForEach-Object { $_.Name }) -contains 'ApplicationName') 'azure-entro defines ApplicationName input'
+    Assert-True (@($azureEntroDef.Inputs | ForEach-Object { $_.Name }) -notcontains 'DisplayName') 'azure-entro does not define duplicate DisplayName input'
 
     $featureInput = @($azureEntroDef.Inputs | Where-Object { $_.Name -eq 'Feature' })[0]
     Assert-True ($null -ne $featureInput -and [bool]$featureInput.MultiChoice) 'azure-entro exposes MultiChoice Feature input'

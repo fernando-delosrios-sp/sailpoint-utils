@@ -3,7 +3,7 @@
     RootModule = 'SailPoint.Connect.psm1'
 
     # Version number of this module.
-    ModuleVersion = '1.17.0'
+    ModuleVersion = '1.18.0'
 
     # Supported PSEditions
     CompatiblePSEditions = @('Core')
@@ -98,7 +98,7 @@
             # IconUri = ''
 
             # ReleaseNotes of this module
-            ReleaseNotes = 'Installation docs now include PowerShell 7+ steps for macOS (Homebrew and the signed pkg), Windows (winget and the MSI), and Linux (Ubuntu and Red Hat Enterprise Linux, with a pointer for Debian and other distributions).'
+            ReleaseNotes = 'Unified Entra application name input in Azure wizard definitions so combined Connector and Entro integrations prompt once for ApplicationName without redundant display name prompt.'
 
             # External help XML URI
             HelpInfoURI = 'https://github.com/sailpoint-oss/sailpoint-connect/tree/main/docs'
