@@ -181,12 +181,15 @@ describe('drift-decision report issues', () => {
     );
     assert.match(approved, /gh pr merge "\$PR_URL" --squash --delete-branch/);
     assert.match(approved, /chore\(backup\): sync drift from ISC/);
+    assert.match(approved, /for i in 1 2 3 4 5; do/);
     const stale = yaml.slice(yaml.indexOf('Approved but stale'), yaml.indexOf('Rejected — put ISC back'));
     assert.match(stale, /gh pr close "\$PR_URL" --delete-branch/);
     const rejected = yaml.slice(yaml.indexOf('Rejected — put ISC back'), yaml.indexOf('Expired — record decision'));
     assert.match(rejected, /gh pr close "\$PR_URL" --delete-branch/);
     const expired = yaml.slice(yaml.indexOf('Expired — record decision'), yaml.indexOf('Close the drift issue'));
     assert.match(expired, /gh pr close "\$PR_URL" --delete-branch/);
+    const closeStep = yaml.slice(yaml.indexOf('Close the drift issue this decision answers'));
+    assert.match(closeStep, /if: success\(\) && steps\.issue\.outputs\.number != ''/);
   });
 
   it('renders the rejected-restore report as markdown, not a JSON-quoted string', () => {

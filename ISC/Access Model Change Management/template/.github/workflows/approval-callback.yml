@@ -143,7 +143,19 @@ jobs:
           set -e
           if [ "$STATUS" != "0" ]; then
             cat /tmp/merge.err >&2
-            gh pr merge "$PR" --squash --subject "$MERGE_SUBJECT" || gh pr merge "$PR" --merge
+            MERGED=false
+            for i in 1 2 3 4 5; do
+              if gh pr merge "$PR" --squash --subject "$MERGE_SUBJECT" || gh pr merge "$PR" --merge; then
+                MERGED=true
+                break
+              fi
+              echo "Merge attempt $i failed, retrying in 3s..."
+              sleep 3
+            done
+            if [ "$MERGED" != "true" ]; then
+              echo "Failed to merge PR $PR after 5 attempts" >&2
+              exit 1
+            fi
           fi
           gh pr comment "$PR" --body "ISC approved${DECIDED_BY:+" by $DECIDED_BY"} (diff hash \`$HASH\`)."
 
@@ -450,7 +462,7 @@ jobs:
           # detected now — a stale decision still answers its original issue.
           HASH=$(jq -r '.driftHash // empty' /tmp/drift-decision.json)
           if [ -n "$HASH" ]; then
-            gh issue list --state open --label amcm-drift --limit 100 \
+            gh issue list --state all --label amcm-drift --limit 100 \
               --json number,url,body \
               --jq "[.[] | select(.body | contains(\"$HASH\"))][0] // {}" > /tmp/drift-issue-ref.json
             echo "number=$(jq -r '.number // empty' /tmp/drift-issue-ref.json)" >> "$GITHUB_OUTPUT"
@@ -499,17 +511,50 @@ jobs:
               -f context=isc-approval \
               -f description="Approved drift"
             DECIDED_BY="${{ steps.verify.outputs.decided_by }}"
-            gh pr merge "$PR_URL" --squash --delete-branch \
-              --subject "chore(backup): sync drift from ISC (${DECIDED_BY:+"approved by $DECIDED_BY"}${DECIDED_BY:-"governance approved"})"
+            DECIDED_STR="${DECIDED_BY:+approved by $DECIDED_BY}"
+            DECIDED_STR="${DECIDED_STR:-governance approved}"
+            MERGE_SUBJECT="chore(backup): sync drift from ISC ($DECIDED_STR)"
+            MERGED=false
+            for i in 1 2 3 4 5; do
+              if gh pr merge "$PR_URL" --squash --delete-branch --subject "$MERGE_SUBJECT"; then
+                MERGED=true
+                break
+              fi
+              echo "Merge attempt $i failed. Checking if main moved or PR is settling..."
+              sleep 3
+              git fetch origin main
+              BASE_SHA=$(git rev-parse origin/main)
+              CURR_BASE=$(git rev-parse HEAD~1 2>/dev/null || echo "")
+              if [ "$CURR_BASE" != "$BASE_SHA" ]; then
+                echo "Base branch moved to $BASE_SHA; updating PR branch..."
+                git checkout -B "$BRANCH" origin/main
+                node scripts/cli.mjs drift-materialize --drift /tmp/drift-now.json --snapshot /tmp/isc-snapshot.json
+                git add -A access
+                git diff --cached --quiet || git commit -m "chore(backup): drift snapshot"
+                git push --force-with-lease origin "HEAD:refs/heads/$BRANCH"
+                SHA=$(git rev-parse HEAD)
+                gh api "repos/${{ github.repository }}/statuses/$SHA" \
+                  -f state=success \
+                  -f context=isc-approval \
+                  -f description="Approved drift"
+                sleep 2
+              fi
+            done
+            if [ "$MERGED" != "true" ]; then
+              echo "Failed to merge $PR_URL after 5 attempts" >&2
+              exit 1
+            fi
             git checkout main
             git fetch origin main
             git merge --ff-only origin/main
           else
             # In-flight approvals opened before drift had a pull request.
             DECIDED_BY="${{ steps.verify.outputs.decided_by }}"
+            DECIDED_STR="${DECIDED_BY:+approved by $DECIDED_BY}"
+            DECIDED_STR="${DECIDED_STR:-governance approved}"
             node scripts/cli.mjs backup --snapshot /tmp/isc-snapshot.json
             git add access/
-            git diff --cached --quiet || git commit -m "chore(backup): sync drift from ISC (${DECIDED_BY:+"approved by $DECIDED_BY"}${DECIDED_BY:-"governance approved"})"
+            git diff --cached --quiet || git commit -m "chore(backup): sync drift from ISC ($DECIDED_STR)"
             git push origin main
           fi
           DRIFT_PR_NUM=""
@@ -683,7 +728,7 @@ jobs:
           done
 
       - name: Close the drift issue this decision answers
-        if: always() && steps.issue.outputs.number != ''
+        if: success() && steps.issue.outputs.number != ''
         env:
           GH_TOKEN: ${{ steps.app.outputs.token }}
           NUMBER: ${{ steps.issue.outputs.number }}
